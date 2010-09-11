@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+xcommand=`basename $0`
+xpath=`echo $0 | sed "s|${xcommand}||"`
+
+# Checking dependencies
+
+BC=`which bc 2>/dev/null`
+IPTABLES=`which iptables 2>/dev/null`
+MAILX=`which mail`
+SQLITE=`which sqlite3 2>/dev/null`
+S3CMD=`which s3cmd 2>/dev/null`
+
+if [ "X${BC}" == "X" ]
+then
+  echo "BC not found. It IS necessary, please install it first."
+  echo "It is kind of shell calculator, and it is impossible to provide any results"
+  echo "without it."
+  exit 1
+fi
+
+if [ "X${MAILX}" == "X" ]
+then
+  echo "Mailx not found. It IS necessary, please install it first."
+  echo "You can also install any alternative, which has similar syntax and "
+  echo "provides the 'mail' command."
+  exit 1
+fi
+
+if [ "X${IPTABLES}" == "X" ]
+then
+  echo "Iptables not found. It is not necessary, but useful to provide an average"
+  echo "bandwidth usage report. If you need it, install iptables and run setup.run again"
+  read -p "Do you want to proceed without iptables? [y/N] " noiptables
+  if [ `echo $noiptables | grep -c -i "^y"` -ne 0 ]
+  then
+    if [ `grep -c "^IPTABLES=" ${xpath}mon.conf` -ne 0 ]
+    then
+      sed -i -e "s|IPTABLES=.*|IPTABLES=0|g" ${xpath}mon.conf
+    else    
+      echo "IPTABLES=0" >> ${xpath}mon.conf
+    fi
+  else
+    exit 1
+  fi
+else
+  if [ `grep -c "^IPTABLES=" ${xpath}mon.conf` -ne 0 ]
+  then
+    sed -i -e "s|IPTABLES=.*|IPTABLES=1|g" ${xpath}mon.conf
+  else    
+    echo "IPTABLES=1" >> ${xpath}mon.conf
+  fi
+fi
+
+if [ "X${S3CMD}" == "X" ]
+then
+  echo "s3cmd not found. It is needed only if you are going to use Amazon S3 service"
+  echo "for backups. If you need it, install and configure s3cmd and run setup.run again"
+  read -p "Do you want to proceed without s3cmd? [y/N] " nos3
+  if [ `echo $nos3 | grep -c -i "^y"` -eq 0 ]
+  then
+    exit 1
+  fi
+fi
+
+if [ "X${SQLITE}" == "X" ]
+then
+  echo "SQLite3 is not found. It is not necessary, but without it many features like"
+  echo "log analysis and performance analysis will be unavailable."
+  read -p "Do you want to proceed without SQLite3? [y/N] " nosqlite
+  if [ `echo $nosqlite | grep -c -i "^y"` -ne 0 ]
+  then
+    if [ `grep -c "^SQLITE3=" ${xpath}mon.conf` -ne 0 ]
+    then
+      sed -i -e "s|SQLITE3=.*|SQLITE3=0|g" ${xpath}mon.conf
+    else    
+      echo "SQLITE3=0" >> ${xpath}mon.conf
+    fi
+  else
+    exit 1
+  fi
+else
+  if [ `grep -c "^SQLITE3=" ${xpath}mon.conf` -ne 0 ]
+  then
+    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" ${xpath}mon.conf
+  else    
+    echo "SQLITE3=1" >> ${xpath}mon.conf
+  fi
+  sqlite3 ${xpath}sysdata 'create table sysdata(timeindex varchar(16) primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
+  sqlite3 ${xpath}sysdata 'create table rootfolders(timeindex varchar(16), foldername varchar(64), foldersize real)'
+fi
+
+[ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
+[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
+if [ `uname` == "Linux" ]; then
+  if [ "X$NETSTATCMD" == "X" ]; then
+    echo "Netstat utility not found! Aborting.."
+    exit 1
+  else 
+    NETSTAT="${NETSTATCMD} -tuapn"
+  fi
+fi
+if [ `uname` == "FreeBSD" ]; then
+  if [ "X$NETSTATCMD" == "X" ]; then
+    echo "Netstat utility not found! Aborting.."
+    exit 1
+  else
+    NETSTAT="${NETSTATCMD} -f inet -p tcp -n -a -S"
+  fi
+fi
+
+# Looking for open ports and putting them into file
+${NETSTAT} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${xpath}ports.list
+
+chmod 755 ${xpath}*.run ${xpath}*.sh
+chmod 700 ${xpath}*.backup.sh
+

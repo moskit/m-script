@@ -1,0 +1,58 @@
+Prerequisites
+=============
+
+There are several dependencies, that should be satisfied for everything to work. You hardly don't have them already installed.
+1. For monitoring.
+  1. sqlite3 - optional, but some features won't work
+  2. bc - necessary, used for floating point numbers calculations
+  3. mailx - required to send reports and alerts by email. Alternatives providing same syntax are OK too.
+  4. iptables - optional, used for bandwidth reports
+  5. netstat - required, used to monitor connections and open ports
+2. For backups.
+  1. tar - required
+  2. ssh, scp - required for remote backups
+  3. rsync - required only if you want incremental backups
+  4. ncftp - required only if you want to use ftp for remote backups
+  5. gzip or bzip2 - one of these is required if you want to compress your backups
+
+Installation
+============
+
+To install the collection, uncompress it to your folder of choice, cd to the collection folder and run:
+
+./setup.run
+
+If it didn't complain about missing dependencies, you have it installed successfully.
+If it did, install missing dependencies and run setup.run again.
+
+Settings
+========
+
+There are two main scripts: backup.run and mon.run. Run these with the --help option to get further help.
+Edit the settings in the correspondent files:
+1. mon.conf - monitoring settings like alert threshold etc.
+2. backup.conf - backup settings (also read ./backup.run --configfile=help)
+3. backup.conf.list - it is the list of folders you wish to be backed up. Its name must correspond to the backup configuration file, you may have many such pairs.
+4. mail.admin.list - the list of email addresses where monitoring reports will be sent to.
+5. mail.alert.list - the list of email addresses where monitoring alerts will be sent to.
+6. mail.backup.list - the list of email addresses where backup reports and alerts will be sent to.
+
+You may also want to edit other files not having .run and .sh extensions to customize your alerts headers etc.
+
+If you are going to use scp or rsync for backup to remote host, you will also need to setup access to that host via public key authentication.
+
+Running
+=======
+
+These scripts are supposed to be periodically started via cron. You can also run monitoring as ./mon.run -dry to get output to stdin.
+
+monitorload.run script
+======================
+
+This script is different, it has its own configuration inside. It is still work to do to integrate it properly but you can use it, it's pretty easy to setup.
+This script is running in background and monitoring average load. If load changes fast, it starts the main monitor script in report mode, thus making possible to find out (hopefully) what's going on.
+To run it, use the following syntax:
+
+./monitorload.run &
+
+or setup a bootscript for it. The latter is recommended and will be implemented as part of setup process later.

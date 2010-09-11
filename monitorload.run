@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+### Daemon control
+# This allows to start this script on boot
+# Just create a symlink like this:
+# ln -s /path-to/monitoringload.run /etc/init.d
+# (or /etc/rc.d/init.d if you have FHS compliant distro)
+
+tempfile=/tmp/avgload-$$
+pidfile=/var/run/monitorload.pid
+touch ${tempfile}
+trap 'rm -f $tempfile; exit' 0
+trap 'rm -f $tempfile; exit' 3
+trap 'rm -f $tempfile; exit' 15
+
+case $1 in
+start)
+
+  [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+  rcommand=${xcommand##*/}
+  rpath=${xcommand%/*}
+#*/ (this is needed to fix vi comments syntax highlighting)
+
+  source ${rpath}/mon.conf
+
+  UPTIME=`which uptime`
+  echo $$ > $pidfile
+  echo 0 > $tempfile
+
+  while true
+  do
+    [ -f ${tempfile} ] && rloadprev=`cat ${tempfile}` || rloadprev=0
+    rload="$($UPTIME | awk -F'average: ' '{ print $2}' | sed s/,//g | awk '{ print $2}' | tee $tempfile)"
+    rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
+    x="$(echo "$rloadchng > $THRESHOLD" | bc)"
+    [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
+    if [ "X$x" == "X1" ]; then
+      ${rpath}/mon.run -ao &
+    fi
+
+    sleep $FREQ
+    
+### Add your own tests here
+
+# The example below makes services running monitored constantly
+# ${rpath}/mon.run connections.mon.sh
+# Or run it like this to prevent sending too many alerts about not running
+# and not monitored services:
+  touch /tmp/m_script/conn_test_runs_count
+  [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt 3 ] && ${rpath}/fixports.run
+  ${rpath}/mon.run connections.mon.sh ; echo '' >> /tmp/m_script/conn_test_runs_count
+# Checking other servers (listed in servers.conf) availability
+  ${rpath}/mon.run servers.mon.sh
+###
+  done & 2>/dev/null
+  echo $! > $pidfile
+  ;;
+stop)
+  if [ -f ${pidfile} ]; then
+    pid=`cat ${pidfile}|tail -1`
+    printf "Stopping monitorload (pid $pid)...      "
+    kill -15 $pid && printf "done\n"
+  else
+    echo "${pidfile} not found!"
+  fi
+  ;;
+restart)
+  $0 stop
+  sleep 3
+  $0 start
+  ;;
+*)
+  echo "Usage: $0 start|stop|restart"
+  ;;
+esac
+
+

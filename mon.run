@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+returnpath="${PWD}"
+currentlocale=`echo ${LC_MESSAGES}`
+export LC_MESSAGES="C"
+MAILX=`which mail`
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+tmpdir=/tmp/m_script && install -d $tmpdir
+# removing stale lock file (if older than an hour)
+find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f
+for ((i=1; i<=10; i++))
+do
+  if [ -f ${rpath}/mon.run.lock ] ; then
+    echo "Delay 1 min, another instance is running" >> ${rpath}/monitoring.log
+    sleep 60
+    continue
+  else
+    break
+  fi
+done
+if [ -f ${rpath}/mon.run.lock ] ; then
+  echo "Giving up..."
+  exit 1
+fi
+touch ${rpath}/mon.run.lock
+# bc workaround to make it work with floating point numbers
+solve() {
+bc << EOF
+scale=6
+${1}
+EOF
+}
+
+function mailreport() {
+  while read RLINE
+  do
+    if [ -n "${RLINE}" ]; then
+      cat ${rpath}/rep.header ${rpath}/report | ${MAILX} -s "Server $(hostname -f) report" ${RLINE}
+    fi
+  done < ${rpath}/mail.admin.list
+}
+
+function mailalert() {
+  if [ -f ${rpath}/alert1 ] && [ `cat ${rpath}/alert1 | wc -l` -ne 0 ]; then
+    al='*'
+    cat ${rpath}/header.alert1 ${rpath}/alert1 >> ${rpath}/alert
+    echo "" >> ${rpath}/alert
+  fi
+  if [ -f ${rpath}/alert2 ] && [ `cat ${rpath}/alert2 | wc -l` -ne 0 ]; then
+    al='**'
+    cat ${rpath}/header.alert2 ${rpath}/alert2 >> ${rpath}/alert
+    echo "" >> ${rpath}/alert
+  fi
+  if [ -f ${rpath}/alert3 ] && [ `cat ${rpath}/alert3 | wc -l` -ne 0 ]; then
+    al='***'
+    cat ${rpath}/header.alert3 ${rpath}/alert3 >> ${rpath}/alert
+    echo "" >> ${rpath}/alert
+  fi
+  for MLINE in `cat ${rpath}/mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
+  do
+    if [ "X$al" != "X" ]
+    then
+      cat ${rpath}/alert >> ${rpath}/monitoring.log
+      cat ${rpath}/alert | ${MAILX} -s "$al Server $(hostname -f) alert" ${MLINE} 2>&1>>${rpath}/monitoring.log
+    fi
+  done
+  rm -f ${rpath}/alert* 2>/dev/null
+}
+
+function runscript() {
+  daynow=$(date +"%Y%m%d")
+  if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
+  then
+    sqlite3 ${rpath}/sysdata "select max(timeindex) from sysdata" > ${tmpdir}/lasttimeindex 
+    sqlite3 ${rpath}/sysdata "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
+  fi
+  if [ "X$1" == "XSQL" ]; then
+    echo "------------------------------" >> ${rpath}/monitoring.log
+    date | tee -a ${rpath}/monitoring.log | tee ${rpath}/report | tee ${rpath}/alert >/dev/null
+    echo "------------------------------" | tee -a ${rpath}/monitoring.log  | tee -a ${rpath}/report | tee -a ${rpath}/alert >/dev/null
+    for script in ${rpath}/rc/*.mon.sh  #*/
+    do
+      $script ${1}
+    done 2>&1 | tee -a ${rpath}/monitoring.log | tee -a ${rpath}/report >/dev/null
+  elif [ "X$1" != "X" ]; then
+    date | tee ${rpath}/alert >/dev/null
+    echo "------------------------------" | tee -a ${rpath}/alert >/dev/null
+    [ -x ${rpath}/tests/*${1} ] && ${rpath}/tests/*${1} 2>&1 | tee ${rpath}/report >/dev/null #*/
+  fi
+  grep '<\*\*\*>' ${rpath}/report | sed 's|<\*\*\*>||g' > ${rpath}/alert3
+  grep '<\*\*>' ${rpath}/report | sed 's|<\*\*>||g' > ${rpath}/alert2
+  grep '<\*>' ${rpath}/report | sed 's|<\*>||g' > ${rpath}/alert1
+}
+
+function runsysanalyze() {
+  echo "------------------------------" >> ${rpath}/monitoring.log
+  date | tee -a ${rpath}/monitoring.log | tee ${rpath}/report | tee ${rpath}/alert >/dev/null
+  echo "------------------------------" | tee -a ${rpath}/monitoring.log  | tee -a ${rpath}/report | tee -a ${rpath}/alert >/dev/null
+  sysanalysis 2>&1 | tee -a ${rpath}/monitoring.log | tee -a ${rpath}/report >/dev/null
+  grep '<\*\*\*>' ${rpath}/report | sed 's|<\*\*\*>||g' > ${rpath}/alert3
+  grep '<\*\*>' ${rpath}/report | sed 's|<\*\*>||g' > ${rpath}/alert2
+  grep '<\*>' ${rpath}/report | sed 's|<\*>||g' > ${rpath}/alert1
+}
+
+function analyzesysparams() {
+  afrdatefirst=$3
+  adayfirst=$dayfirst
+  amonthfirst=$monthfirst
+  ayearfirst=$yearfirst
+  #echo "First date: $afrdatefirst"
+  if [ "X$4" == "X" ]
+  then
+    partotal=""
+  else
+    partotal=`sqlite3 ${rpath}/sysdata "select avg($4) from sysdata where day='$afrdatefirst' group by day"`
+  fi
+  afrdatefirst=$datefirst
+  for ((n=1; n <= $ANALYS_DAYS; n++))
+  do
+    results[$n]=`sqlite3 ${rpath}/sysdata "select avg($1) from sysdata where day='$afrdatefirst' group by day"`
+    #echo "== n=$n; date: $afrdatefirst; result: ${results[$n]}"
+    if [ $adayfirst -eq ${daysin[$amonthfirst]} ]
+    then
+      adayfirst=1
+      if [ $amonthfirst -ne 12 ]
+      then
+        amonthfirst=`expr $amonthfirst + 1`
+      else
+        amonthfirst=1
+        ayearfirst=`expr $ayearfirst + 1`
+      fi
+    else
+      adayfirst=`expr $adayfirst + 1`
+    fi
+    dayfirst2=$adayfirst
+    monthfirst2=$amonthfirst
+    [ `expr length $dayfirst2` -eq 1 ] && dayfirst2=0$adayfirst
+    [ `expr length $monthfirst2` -eq 1 ] && monthfirst2=0$amonthfirst
+    afrdatefirst=$ayearfirst$monthfirst2$dayfirst2
+  done
+  daysnum="${#results[@]}"
+  if [ $daysnum -lt $ANALYS_DAYS ]
+  then
+    echo "Number of days we have $1 results for is $daysnum"
+    return
+  fi
+  avg1=0
+  avg2=0
+  days1=`expr $daysnum / 2`
+  days2=`expr $daysnum - $days1`
+  #echo "Days total: $daysnum, last date: $afrdatefirst"
+  #echo "=================================================================="
+  #for ((i=1; i <= $daysnum; i++))
+  #do
+  #  printf "$i: ${results[$i]}; "
+  #done
+  #printf "\n"
+  #echo "-----------------"
+  for ((n=1; n <= ${days1}; n++))
+  do
+    #echo "days1=$days1, days2=$days2"
+    m=`expr $days2 + $n`
+    #echo "left count: $n, right count: $m"
+    #echo "results left: ${results[$n]}, right: ${results[$m]}"
+    avg1=`solve "$avg1 + (${results[$n]} / $days1)"`
+    avg2=`solve "$avg2 + (${results[$m]} / $days1)"`
+    #echo "left average: $avg1, right average: $avg2"
+    #echo "---------------"
+  done
+  changespeed=`solve "($avg2 - $avg1) / $days2"`
+  #echo "changespeed=$changespeed; days=$days2"
+  x1="$(echo "$changespeed > 0" | bc)"
+  x2="$(echo "$changespeed < 0" | bc)"
+  if [ "${x1}" == "1" ]
+  then
+    if [ "X$4" == "X" ]
+    then
+      changespeedperc=''
+      changes=$changespeed
+    else
+      changespeedperc=`solve "$changespeed / $partotal * 100"`
+      changespeedperc=`echo "$changespeedperc" | sed "s|0*$||" | sed "s|\.$|\.0|"`
+      changes=$changespeedperc
+      changespeedperc="( $changespeedperc % )"
+    fi
+    if [ "X$(eval echo \$${6}_1)" != "X" ] &&
+       [ "X$(eval echo \$${6}_2)" != "X" ] &&
+       [ "X$(eval echo \$${6}_3)" != "X" ]
+    then
+      y1="$(echo "$changes ${7} $(eval echo \$${6}_1)" | bc)"
+      y2="$(echo "$changes ${7} $(eval echo \$${6}_2)" | bc)"
+      y3="$(echo "$changes ${7} $(eval echo \$${6}_3)" | bc)"
+      warnind='(OK) '
+      [ "$y1" == "1" ] && warnind=' <*> '
+      [ "$y2" == "1" ] && warnind='<**> '
+      [ "$y3" == "1" ] && warnind='<***>'
+    else
+      echo "${6} is not set correctly. Check mon.conf please."
+      echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
+    fi
+    echo "${warnind} ${5} was increasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
+  elif [ "$x2" == "1" ]
+  then
+    if [ "X$4" == "X" ]
+    then
+      changespeedperc=""
+      changespeed=`solve "- $changespeed"`
+      changes=$changespeed
+    else
+      changespeedperc=`solve "- $changespeed / $partotal * 100"`
+      changespeedperc=`echo "$changespeedperc" | sed "s|0*$||" | sed "s|\.$|\.0|"`
+      changes=$changespeedperc
+      changespeedperc="( $changespeedperc % )"
+      changespeed=`solve "- $changespeed"`
+    fi
+    if [ "X$(eval echo \$${6}_1)" != "X" ] &&
+       [ "X$(eval echo \$${6}_2)" != "X" ] &&
+       [ "X$(eval echo \$${6}_3)" != "X" ]
+    then
+      y1="$(echo "$changes ${7} $(eval echo \$${6}_1)" | bc)"
+      y2="$(echo "$changes ${7} $(eval echo \$${6}_2)" | bc)"
+      y3="$(echo "$changes ${7} $(eval echo \$${6}_3)" | bc)"
+      warnind='(OK) '
+      [ "$y1" == "1" ] && warnind=' <*> '
+      [ "$y2" == "1" ] && warnind='<**> '
+      [ "$y3" == "1" ] && warnind='<***>'
+    else
+      echo "${6} is not set correctly. Check mon.conf please."
+      echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
+    fi
+    echo "${warnind} ${5} was decreasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
+  else
+    echo "(OK)  $5 wasnt changing during last $daysnum days"
+  fi
+}
+
+function sysanalysis() {
+  if [ "X$SQLITE3" != "X1" ]
+  then
+    echo "To use --analyze-system option, SQLite3 must be installed and SQLITE3 must"
+    echo "be set to 1 in mon.conf"
+    exit 1
+  fi
+  daycurrent=$(date +"%d" | sed "s|^0||")
+  monthcurrent=$(date +"%m" | sed "s|^0||")
+  yearcurrent=$(date +"%Y")
+  daysin=([1]=31 [2]=28 [3]=31 [4]=30 [5]=31 [6]=30 [7]=31 [8]=31 [9]=30
+[10]=31 [11]=30 [12]=31)
+  if [ `expr $yearcurrent / 4` -eq 0 ]
+  then
+    daysin[2]=29
+  fi
+  if [ $ANALYS_DAYS -gt 28 ]
+  then
+    echo "Configuration error! ANALYS_DAYS variable cannot be set higher than 28"
+    exit 1
+  fi
+  if [ $ANALYS_DAYS -lt 2 ]
+  then
+    echo "Configuration error! ANALYS_DAYS variable cannot be set lower than 2"
+    exit 1
+  fi
+  if [ $daycurrent -gt $ANALYS_DAYS ]
+  then
+    dayfirst=`expr $daycurrent - $ANALYS_DAYS`
+    [ `expr length $dayfirst` -eq 1 ] && dayfirst=0$dayfirst
+    monthfirst=$monthcurrent
+    [ `expr length $monthfirst` -eq 1 ] && monthfirst=0$monthfirst
+    yearfirst=$yearcurrent
+  elif [ $monthcurrent -ne 1 ]
+  then
+    monthfirst=`expr $monthcurrent - 1`
+    dayfirst=`expr ${daysin[$monthfirst]} - $ANALYS_DAYS + $daycurrent`
+    [ `expr length $monthfirst` -eq 1 ] && monthfirst=0$monthfirst
+    [ `expr length $dayfirst` -eq 1 ] && dayfirst=0$dayfirst
+    yearfirst=$yearcurrent
+  else
+    yearfirst=`expr $yearcurrent - 1`
+    monthfirst=12
+    dayfirst=`expr 31 - $ANALYS_DAYS + $daycurrent`
+    [ `expr length $dayfirst` -eq 1 ] && dayfirst=0$dayfirst
+  fi
+  datefirst=$yearfirst$monthfirst$dayfirst
+  dayfirst=`echo $dayfirst | sed "s|^0||"`
+  monthfirst=`echo $monthfirst | sed "s|^0||"`
+  testdays=`sqlite3 ${rpath}/sysdata "select day from sysdata where day='$datefirst'"`
+  if [ "X$testdays" != "X" ]
+  then
+#   ------------ Database -- un -- "From" - DB column  - Human  ----- Warning level - Con
+#   ------------  column  -- it --  date  - name for   - column ----- variable name - dit
+#   ------------   name   -- s  --        - total(max) -  name  ----- (mon.conf)    - ion
+analyzesysparams 'freeram'   KB   $datefirst totalram  "Free RAM"      "FREERAM"      '>='
+analyzesysparams 'activeram' KB   $datefirst totalram  "Active RAM"    "ACTIVERAM"    '>='
+analyzesysparams 'freeswap'  KB   $datefirst totalswap "Free swap"     "FREESWAP"     '>='
+analyzesysparams 'loadavg'   ""   $datefirst   ""      "Load average"  "LOADAVG"      '>='
+analyzesysparams 'procnum'   ""   $datefirst   ""   "Number of processes" "PROCNUM"   '>='
+analyzesysparams 'diskusage' '%'  $datefirst   ""      "Disk usage"    "DISKUSAGE"    '>='
+analyzesysparams 'diskiord' 'MB/sec' $datefirst "" "Disk average read speed" "DISKIORD" '>='
+analyzesysparams 'diskiowr' 'MB/sec' $datefirst "" "Disk average write speed" "DISKIOWR" '>='
+analyzesysparams 'cpuusage'  '%'  $datefirst   ""     "CPU usage"       "CPUUSAGE"    '>='
+analyzesysparams 'cputemp'  'Celsius' $datefirst ""    "CPU temperature" "CPUTEMP"    '>='
+analyzesysparams 'cpufscale' '%'  $datefirst   ""   "CPU frequency scale" "CPUFSCALE" '>='
+analyzesysparams 'uptime'   'days' $datefirst   ""       "Uptime"        "UPTIME"     '<'
+  else
+    echo "There is no data in the database for $ANALYS_DAYS days back."
+    echo "Please wait or change the ANALYS_DAYS parameter in mon.conf."
+  fi
+}
+
+install -d ${tmpdir}
+source ${rpath}/mon.conf
+timeindexnow=$(date +"%Y_%m_%d_%H_%M_%S")
+echo $timeindexnow > ${tmpdir}/timeindex
+
+case ${1} in
+  --alert-only | -ao | -alert | --only-alert)
+    runscript SQL
+    mailalert
+    ${rpath}/fixports.run
+  ;;
+  -dry | --dry | --dry-run)
+    runscript SQL
+    cat ${rpath}/report
+  ;;
+  -analyze-sys | -analyze-system | --analyze-system | -as)
+    runsysanalyze
+    mailreport
+    mailalert
+  ;;
+  -analyze-logs | --analyze-logs | -al)
+    loganalysis
+    mailreport
+    mailalert
+  ;;
+  -h | -help | --help)
+    echo "Usage: mon.run --report"
+    echo "         - collects and logs system data and then sends report"
+    echo "       mon.run --alert-only"
+    echo "         - collects and logs system data, but sends report only if problems"
+    echo "           found"
+    echo "       mon.run --dry-run"
+    echo "         - collects and logs system data, outputs it to stdout and store it"
+    echo "           into the database, but doesn't send any reports."
+    echo "       mon.run --analyze-system"
+    echo "         - analyzes system parameters change over a period of time and sends"
+    echo "       a report."
+    echo "       mon.run <scriptname.mon.sh>"
+    echo "         - runs a selected script and sends an alert if necessary"
+#    echo "       mon.run --analyze-logs"
+#    echo "         - analyzes log messages since the last run and sends a statistical"
+#    echo "       data and an unusual activity report."
+  ;;
+  -rep | -report | --report)
+    runscript SQL
+    mailreport
+    mailalert
+    ${rpath}/fixports.run
+  ;;
+  *.mon.sh)
+    runscript ${1}
+    mailalert
+  ;;
+  *)
+    echo "Run mon.run --help to see possible options"
+  ;;
+esac
+rm -f ${rpath}/mon.run.lock
+chmod 666 ${rpath}/alert* 2>/dev/null
+cd ${returnpath}
+export LC_MESSAGES=`echo ${currentlocale}`

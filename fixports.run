@@ -1,0 +1,40 @@
+#!/bin/bash
+# Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+xcommand=`basename $0`
+xpath=`echo $0 | sed "s|${xcommand}||"`
+
+[ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
+[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
+if [ `uname` == "Linux" ]; then
+  if [ "X$NETSTATCMD" == "X" ]; then
+    echo "Netstat utility not found! Aborting.."
+    exit 1
+  else 
+    NETSTAT="${NETSTATCMD} -tuapn"
+  fi
+fi
+if [ `uname` == "FreeBSD" ]; then
+  if [ "X$NETSTATCMD" == "X" ]; then
+    echo "Netstat utility not found! Aborting.."
+    exit 1
+  else
+    NETSTAT="${NETSTATCMD} -f inet -p tcp -n -a -S"
+  fi
+fi
+
+# Looking for open ports and putting them into file
+${NETSTAT} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${xpath}ports.list
