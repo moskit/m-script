@@ -15,8 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-xcommand=`basename $0`
-xpath=`echo $0 | sed "s|${xcommand}||"`
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/ (this is needed to fool vi syntax highlighting)
 
 # Checking dependencies
 
@@ -49,21 +51,21 @@ then
   read -p "Do you want to proceed without iptables? [y/N] " noiptables
   if [ `echo $noiptables | grep -c -i "^y"` -ne 0 ]
   then
-    if [ `grep -c "^IPTABLES=" ${xpath}mon.conf` -ne 0 ]
+    if [ `grep -c "^IPTABLES=" ${rpath}/mon.conf` -ne 0 ]
     then
-      sed -i -e "s|IPTABLES=.*|IPTABLES=0|g" ${xpath}mon.conf
+      sed -i -e "s|IPTABLES=.*|IPTABLES=0|g" ${rpath}/mon.conf
     else    
-      echo "IPTABLES=0" >> ${xpath}mon.conf
+      echo "IPTABLES=0" >> ${rpath}/mon.conf
     fi
   else
     exit 1
   fi
 else
-  if [ `grep -c "^IPTABLES=" ${xpath}mon.conf` -ne 0 ]
+  if [ `grep -c "^IPTABLES=" ${rpath}/mon.conf` -ne 0 ]
   then
-    sed -i -e "s|IPTABLES=.*|IPTABLES=1|g" ${xpath}mon.conf
+    sed -i -e "s|IPTABLES=.*|IPTABLES=1|g" ${rpath}/mon.conf
   else    
-    echo "IPTABLES=1" >> ${xpath}mon.conf
+    echo "IPTABLES=1" >> ${rpath}/mon.conf
   fi
 fi
 
@@ -85,24 +87,24 @@ then
   read -p "Do you want to proceed without SQLite3? [y/N] " nosqlite
   if [ `echo $nosqlite | grep -c -i "^y"` -ne 0 ]
   then
-    if [ `grep -c "^SQLITE3=" ${xpath}mon.conf` -ne 0 ]
+    if [ `grep -c "^SQLITE3=" ${rpath}/mon.conf` -ne 0 ]
     then
-      sed -i -e "s|SQLITE3=.*|SQLITE3=0|g" ${xpath}mon.conf
+      sed -i -e "s|SQLITE3=.*|SQLITE3=0|g" ${rpath}/mon.conf
     else    
-      echo "SQLITE3=0" >> ${xpath}mon.conf
+      echo "SQLITE3=0" >> ${rpath}/mon.conf
     fi
   else
     exit 1
   fi
 else
-  if [ `grep -c "^SQLITE3=" ${xpath}mon.conf` -ne 0 ]
+  if [ `grep -c "^SQLITE3=" ${rpath}/mon.conf` -ne 0 ]
   then
-    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" ${xpath}mon.conf
+    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" ${rpath}/mon.conf
   else    
-    echo "SQLITE3=1" >> ${xpath}mon.conf
+    echo "SQLITE3=1" >> ${rpath}/mon.conf
   fi
-  sqlite3 ${xpath}sysdata 'create table sysdata(timeindex varchar(16) primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
-  sqlite3 ${xpath}sysdata 'create table rootfolders(timeindex varchar(16), foldername varchar(64), foldersize real)'
+  $SQLITE ${xpath}sysdata 'create table sysdata(timeindex varchar(16) primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
+  $SQLITE ${xpath}sysdata 'create table rootfolders(timeindex varchar(16), foldername varchar(64), foldersize real)'
 fi
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
@@ -125,8 +127,7 @@ if [ `uname` == "FreeBSD" ]; then
 fi
 
 # Looking for open ports and putting them into file
-${NETSTAT} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${xpath}ports.list
+${NETSTAT} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${rpath}/ports.list
 
-chmod 755 ${xpath}*.run ${xpath}*.sh
-chmod 700 ${xpath}*.backup.sh
+chmod 755 ${rpath}/*.run ${rpath}/*.sh
 

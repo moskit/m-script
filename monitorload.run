@@ -34,7 +34,7 @@ start)
   [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
   rcommand=${xcommand##*/}
   rpath=${xcommand%/*}
-#*/ (this is needed to fix vi comments syntax highlighting)
+#*/ (this is needed to fool vi comments syntax highlighting)
 
   source ${rpath}/mon.conf
 

@@ -15,14 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-returnpath="${PWD}"
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 MAILX=`which mail`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/ (this is needed to fool vi syntax highlighting)
 tmpdir=/tmp/m_script && install -d $tmpdir
 # removing stale lock file (if older than an hour)
 find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f
@@ -384,5 +383,5 @@ case ${1} in
 esac
 rm -f ${rpath}/mon.run.lock
 chmod 666 ${rpath}/alert* 2>/dev/null
-cd ${returnpath}
 export LC_MESSAGES=`echo ${currentlocale}`
+

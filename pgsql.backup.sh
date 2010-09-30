@@ -25,7 +25,7 @@ BZIP2="$(which bzip2)"
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/ (this is needed to fool vi syntax highlighting)
 
 if [ "X${1}" == "X" ]; then
   echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
