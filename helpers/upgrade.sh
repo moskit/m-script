@@ -26,16 +26,17 @@ if [ "X$GIT" == "X" ]; then
     echo "Wget not found! Giving up, sorry..."
     exit 1
   else
-    $WGET -nH -P /tmp/m_script.$$ http://igorsimonov.com/m_script.latest.tar.gz
+    install -d /tmp/m_script/.update /tmp/m_script.$$
+    $WGET -nH -P /tmp/m_script http://igorsimonov.com/m_script.latest.tar.gz
     `which tar` -xzf /tmp/m_script/m_script.latest.tar.gz -C /tmp/m_script.$$
-    rm -f /tmp/m_script.$$/m_script.latest.tar.gz
-    install -d /tmp/m_script/.update
+    rm -f /tmp/m_script/m_script.latest.tar.gz
     mv /tmp/m_script.$$/m_script*/* /tmp/m_script/.update
   fi
 else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
 fi
-for script in `find "${rpath}/../" -type f -name "*.sh" -name "*.run"`; do
-  cp `echo "$script" | sed "s|${rpath}|/tmp/m_script/.update|"` "$script"
+for script in `find "${rpath}/../" -type f -name "*.sh" -o -name "*.run"`; do
+  cp `echo "$script" | sed "s|${rpath}/../|/tmp/m_script/.update/|"` "$script" && chown `id -un`:`id -gn` "$script" && echo "OK"
 done
+rm -r /tmp/m_script/.update
 

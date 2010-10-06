@@ -616,6 +616,7 @@ bconf=`basename ${backupconf}`
       else
         echo "FTP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.$linetoname.ftp.log
     ;;
     scp)
       ${SCP} -q "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
@@ -630,7 +631,8 @@ bconf=`basename ${backupconf}`
         echo "SCP: Files transferred (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       else
         echo "SCP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
-      fi   
+      fi
+      rm -f /tmp/m_script/$archname.$linetoname.scp.log
     ;;
     rsync)
       ${RSYNC} "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
@@ -646,6 +648,7 @@ bconf=`basename ${backupconf}`
       else
         echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.$linetoname.rsync.log
     ;;
     local)
       ${SCP} "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
@@ -661,6 +664,7 @@ bconf=`basename ${backupconf}`
       else
         echo "CP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.$linetoname.local.log
     ;;
     esac
     ${SSH} "${remoteuser}"@"${remotehost}" "rm -f ${remotepath}/m_backup.*"

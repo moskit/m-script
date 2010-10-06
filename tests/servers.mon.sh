@@ -30,28 +30,97 @@ echo ""
 echo "Other servers availability"
 echo "--------------------------"
 echo ""
+PING=`which ping`
+SSH=`which ssh`
+CURL=`which curl`
+LYNX=`which lynx`
+LINKS=`which links`
+WGET=`which wget`
 for mserver in `cat ${rpath}/../servers.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
-  pingedip="no"
-  # Simple ping test
-  [ -x /bin/ping ] && PING='/bin/ping'
-  [ "X$PING" == "X" ] && PING=`which ping`
-  
   serverip=`echo $mserver|awk '{print $1}'`
   servername=`echo $mserver|awk '{print $2}'`
-  $PING -c1 $serverip >/dev/null
-  if [ "$?" != "0" ] ; then
-    failed="${failed} ${servername}"
-  else
-    pingedip="yes"
-  fi
-  
-  if [ "x$pingedip" == "xyes" ]; then
-    echo "<OK> Server $servername is online"
-  else
-    echo "<***> Server $servername is offline!"
-  fi
+  serverport=`echo $mserver|awk '{print $3}'`
 
+  if [ "X$serverport" == "X" ] ; then
+    for ((i=0; i<3; i++)) ; do
+      $PING -c1 $serverip >/dev/null
+      if [ "$?" == "0" ] ; then
+        pingtest="yes"
+      fi
+    done
+    if [ "x$pingtest" == "xyes" ]; then
+      echo "<OK> $servername is online"
+    else
+      echo "<***> Ping probe to $servername failed!"
+    fi
+    unset pingtest
+  elif [ "X$serverport" == "X22" ] ; then
+    [ "X$SSH" == "X" ] && echo "SSH client not found!" && continue
+    $SSH $serverip pwd >/dev/null
+    if [ "$?" == "0" ] ; then
+      sshtest="yes"
+    fi
+    if [ "x$sshtest" == "xyes" ]; then
+      echo "<OK> $servername is online"
+    else
+      echo "<***> SSH test connect to $servername failed!"
+    fi
+    unset sshtest
+  else
+    if [ "X$CURL" != "X" ]; then
+      $CURL -s $serverip > /dev/null 2>&1
+      if [ "$?" == "0" ] ; then
+        curltest="yes"
+      fi
+      if [ "x$curltest" == "xyes" ]; then
+        echo "<OK> $servername is online"
+      else
+        echo "<***> Curl test connect to $servername failed!"
+      fi
+      unset curltest
+      continue
+    fi
+    if [ "X$LYNX" != "X" ]; then
+      $LYNX -dump http://$serverip > /dev/null 2>&1
+      if [ "$?" == "0" ] ; then
+        lynxtest="yes"
+      fi
+      if [ "x$lynxtest" == "xyes" ]; then
+        echo "<OK> $servername is online"
+      else
+        echo "<***> Lynx test connect to $servername failed!"
+      fi
+      unset lynxtest
+      continue
+    fi
+    if [ "X$LINKS" != "X" ]; then
+      $LINKS -dump http://$serverip > /dev/null 2>&1
+      if [ "$?" == "0" ] ; then
+        linkstest="yes"
+      fi
+      if [ "x$linkstest" == "xyes" ]; then
+        echo "<OK> $servername is online"
+      else
+        echo "<***> Links test connect to $servername failed!"
+      fi
+      unset linkstest
+      continue
+    fi
+    if [ "X$WGET" != "X" ]; then
+      $WGET -O - http://$serverip > /dev/null 2>&1
+      if [ "$?" == "0" ] ; then
+        wgettest="yes"
+      fi
+      if [ "x$wgettest" == "xyes" ]; then
+        echo "<OK> $servername is online"
+      else
+        echo "<***> Wget test connect to $servername failed!"
+      fi
+      unset wgettest
+      continue
+    fi
+  fi
 done
 IFS=$IFS1
 
