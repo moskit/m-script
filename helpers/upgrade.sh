@@ -36,7 +36,8 @@ else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
 fi
 for script in `find "${rpath}/../" -type f -name "*.sh" -o -name "*.run"`; do
+  printf "${script##*/}
   cp `echo "$script" | sed "s|${rpath}/../|/tmp/m_script/.update/|"` "$script" && chown `id -un`:`id -gn` "$script" && echo "OK"
 done
-rm -r /tmp/m_script/.update
+rm -rf /tmp/m_script/.update
 

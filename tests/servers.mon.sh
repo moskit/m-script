@@ -30,12 +30,12 @@ echo ""
 echo "Other servers availability"
 echo "--------------------------"
 echo ""
-PING=`which ping` 2>/dev/null
-SSH=`which ssh` 2>/dev/null
-CURL=`which curl` 2>/dev/null
-LYNX=`which lynx` 2>/dev/null
-LINKS=`which links` 2>/dev/null
-WGET=`which wget` 2>/dev/null
+PING=`which ping 2>/dev/null`
+SSH=`which ssh 2>/dev/null`
+CURL=`which curl 2>/dev/null`
+LYNX=`which lynx 2>/dev/null`
+LINKS=`which links 2>/dev/null`
+WGET=`which wget 2>/dev/null`
 for mserver in `cat ${rpath}/../servers.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
   serverip=`echo $mserver|awk '{print $1}'`
