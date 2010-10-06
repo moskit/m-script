@@ -30,12 +30,12 @@ echo ""
 echo "Other servers availability"
 echo "--------------------------"
 echo ""
-PING=`which ping`
-SSH=`which ssh`
-CURL=`which curl`
-LYNX=`which lynx`
-LINKS=`which links`
-WGET=`which wget`
+PING=`which ping` 2>/dev/null
+SSH=`which ssh` 2>/dev/null
+CURL=`which curl` 2>/dev/null
+LYNX=`which lynx` 2>/dev/null
+LINKS=`which links` 2>/dev/null
+WGET=`which wget` 2>/dev/null
 for mserver in `cat ${rpath}/../servers.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
   serverip=`echo $mserver|awk '{print $1}'`
@@ -50,7 +50,7 @@ do
       fi
     done
     if [ "x$pingtest" == "xyes" ]; then
-      echo "<OK> $servername is online"
+      echo "<OK> $servername is online (ping test)"
     else
       echo "<***> Ping probe to $servername failed!"
     fi
@@ -62,7 +62,7 @@ do
       sshtest="yes"
     fi
     if [ "x$sshtest" == "xyes" ]; then
-      echo "<OK> $servername is online"
+      echo "<OK> $servername is online (SSH test)"
     else
       echo "<***> SSH test connect to $servername failed!"
     fi
@@ -74,7 +74,7 @@ do
         curltest="yes"
       fi
       if [ "x$curltest" == "xyes" ]; then
-        echo "<OK> $servername is online"
+        echo "<OK> $servername is online (Curl test, port $serverport)"
       else
         echo "<***> Curl test connect to $servername failed!"
       fi
@@ -87,7 +87,7 @@ do
         lynxtest="yes"
       fi
       if [ "x$lynxtest" == "xyes" ]; then
-        echo "<OK> $servername is online"
+        echo "<OK> $servername is online (Lynx test, port $serverport)"
       else
         echo "<***> Lynx test connect to $servername failed!"
       fi
@@ -100,7 +100,7 @@ do
         linkstest="yes"
       fi
       if [ "x$linkstest" == "xyes" ]; then
-        echo "<OK> $servername is online"
+        echo "<OK> $servername is online (Links test, port $serverport)"
       else
         echo "<***> Links test connect to $servername failed!"
       fi
@@ -113,7 +113,7 @@ do
         wgettest="yes"
       fi
       if [ "x$wgettest" == "xyes" ]; then
-        echo "<OK> $servername is online"
+        echo "<OK> $servername is online (Wget test, port $serverport)"
       else
         echo "<***> Wget test connect to $servername failed!"
       fi
