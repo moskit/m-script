@@ -734,7 +734,7 @@ bconf=`basename ${backupconf}`
     find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm -v -f 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log && echo "Outdated backups at ${localrmpath} have been removed" >> ${rpath}/m_backup.log
   fi
 #  echo "if X\$r_proto=X$r_proto"
-  if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ "X$r_proto" != "Xlocal" ]
+  if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ "X$r_proto" != "Xlocal" ] && [ "X${remotehost}" != "X" ]
   then
     case $r_proto in 
     ftp)
@@ -769,7 +769,7 @@ bconf=`basename ${backupconf}`
           remotepath1="`head -1 /tmp/m_script/s3dirs.$$`"
           sed -i -e '1d' /tmp/m_script/s3dirs.$$ 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
           if [ "X$debugflag" != "X" ]; then
-            echo "=== Entering remotepath1 directory" >> ${rpath}/m_backup.log
+            echo "=== Entering $remotepath1 directory" >> ${rpath}/m_backup.log
           fi
           continue
         else
@@ -786,19 +786,17 @@ bconf=`basename ${backupconf}`
         echo "No SSH client found! It is impossible to remove outdated backups on remote hosts." | tee -a ${rpath}/m_backup.error | tee -a ${rpath}/m_backup.log
         exit 1
       fi
-      if [ "X${remoteuser}" != "X" ] && [ "X${remotehost}" != "X" ]
-      then
-        [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
-        ${SSH} "${remoteuser}"@"${remotehost}" "find ${remotepath} -mtime +$keepremotedays -type f" 2>>${rpath}/m_backup.error > /tmp/m_script/remote_files_to_remove.list
-        for LINE in `cat /tmp/m_script/remote_files_to_remove.list`
-        do
-          ${SSH} "${remoteuser}"@"${remotehost}" "rm -v -f \"${LINE}\"" 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log
-        done
-        if [ "X@?" == "X0" ]; then
-          echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> ${rpath}/m_backup.log
-        else
-          echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >> ${rpath}/m_backup.error
-        fi
+      [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
+      ${SSH} "${remoteuser}"@"${remotehost}" "find ${remotepath} -mtime +$keepremotedays -type f" 2>>${rpath}/m_backup.error > /tmp/m_script/remote_files_to_remove.list
+      for LINE in `cat /tmp/m_script/remote_files_to_remove.list`
+      do
+        [ "X$debugflag" == "X" ] || rmv='-v'
+        ${SSH} "${remoteuser}"@"${remotehost}" "rm $rmv -f \"${LINE}\"" 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log
+      done
+      if [ "X@?" == "X0" ]; then
+        echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> ${rpath}/m_backup.log
+      else
+        echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >> ${rpath}/m_backup.error
       fi
     ;;
     esac
