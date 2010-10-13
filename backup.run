@@ -235,6 +235,7 @@ bconf=`basename ${backupconf}`
   RSYNC_RSH_BK="${RSYNC_RSH}"
   
   source ${backupconf}
+  [ "X$remoteuser" == "X" ] && remoteuser=$USER
   
   export RSYNC_RSH="${RSYNC_RSH}"
   locallogpath=${localbackuppath}
@@ -387,7 +388,7 @@ bconf=`basename ${backupconf}`
       [ "X$samefs" != "Xyes" ] || FTPOPTS="${FTPOPTS}"
       FTPOPTS="${ftpoptions}"
       [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && FTPOPTS="${FTPOPTS} -d ${rpath}/m_backup.log" && echo "FTP options are: ${FTPOPTS}" >> ${rpath}/m_backup.log
-      ftptime=`(time -p ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}/* 2>/tmp/m_script/$archname.ftp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      ftptime=`(time -p ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}/* 2>/tmp/m_script/$archname.ftp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       ftptime=`expr $ftptime + 1`
       if [ "X$debugflag" != "X" ]
@@ -414,7 +415,7 @@ bconf=`basename ${backupconf}`
       [ "X$xfercompression" != "Xyes" ] || SCPOPTS="${SCPOPTS} -C"
       SCPOPTS="${scpoptions}"
       [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && SCPOPTS="${SCPOPTS} -v" && echo "SCP options are: ${SCPOPTS}" >> ${rpath}/m_backup.log
-      scptime=`(time -p ${SCP} ${SCPOPTS} ${localbackuppath}/* "${remoteuser}"@"${remotehost}:${remotepath}" 2>/tmp/m_script/$archname.scp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      scptime=`(time -p ${SCP} ${SCPOPTS} ${localbackuppath}/* "${remoteuser}"@"${remotehost}:${remotepath}" 2>/tmp/m_script/$archname.scp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       scptime=`expr $scptime + 1`
       if [ "X$debugflag" != "X" ]
@@ -441,7 +442,7 @@ bconf=`basename ${backupconf}`
       [ "X$xfercompression" != "Xyes" ] || RSYNCOPTS="${RSYNCOPTS} -z"
       RSYNCOPTS="${rsyncoptions} -rt "
       [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && RSYNCOPTS="${RSYNCOPTS} -v" && echo "Rsync options are: ${RSYNCOPTS}" >> ${rpath}/m_backup.log
-      rsynctime=`(time -p ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}" 1>>${rpath}/m_backup.log 2>/tmp/m_script/$archname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      rsynctime=`(time -p ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}" 1>>${rpath}/m_backup.log 2>/tmp/m_script/$archname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       rsynctime=`expr $rsynctime + 1`
       if [ "X$debugflag" != "X" ]
@@ -493,7 +494,7 @@ bconf=`basename ${backupconf}`
       [ "X$samefs" != "Xyes" ] || CPOPTS="${CPOPTS} --one-file-system"
       CPOPTS="${cpoptions}"
       [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && CPOPTS="${CPOPTS} -v" && echo "CP options are: ${CPOPTS}" >> ${rpath}/m_backup.log
-      ltime=`(time -p cp ${CPOPTS} -r ${localbackuppath}/* ${remotepath} 2>/tmp/m_script/$archname.local.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      ltime=`(time -p cp ${CPOPTS} -r ${localbackuppath}/* ${remotepath} 2>/tmp/m_script/$archname.local.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       ltime=`expr $ltime + 1`
       if [ "X$debugflag" != "X" ]
@@ -605,7 +606,7 @@ bconf=`basename ${backupconf}`
     ftp)
       ${ftpget} -V -u${remoteuser} -p${remotepw} ${remotehost} ${rpath}/ ${remotepath}/m_backup.*
       archname=`cat ${rpath}/m_backup.archname`
-      ftptime=`(time -p ${ftpget} -R -V -u${remoteuser} -p${remotepw} ${remotehost} ${localbackuppath}/backup.tmp ${remotepath}/* 2>/tmp/m_script/$archname.$linetoname.ftp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      ftptime=`(time -p ${ftpget} -R -V -u${remoteuser} -p${remotepw} ${remotehost} ${localbackuppath}/backup.tmp ${remotepath}/* 2>/tmp/m_script/$archname.$linetoname.ftp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       ftptime=`expr $ftptime + 1`
       if [ -f /tmp/m_script/$archname.$linetoname.ftp.log ] && [ `cat /tmp/m_script/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]
@@ -621,7 +622,7 @@ bconf=`basename ${backupconf}`
     scp)
       ${SCP} -q "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
       archname=`cat ${rpath}/m_backup.archname`
-      scptime=`(time -p ${SCP} -q -r "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>/tmp/m_script/$archname.$linetoname.scp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      scptime=`(time -p ${SCP} -q -r "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>/tmp/m_script/$archname.$linetoname.scp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       scptime=`expr $scptime + 1`
       if [ -f /tmp/m_script/$archname.$linetoname.scp.log ] && [ `cat /tmp/m_script/$archname.$linetoname.scp.log | wc -l` -gt 0 ]
@@ -637,7 +638,7 @@ bconf=`basename ${backupconf}`
     rsync)
       ${RSYNC} "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
       archname=`cat ${rpath}/m_backup.archname`
-      rsynctime=`(time -p ${RSYNC} -r -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>/tmp/m_script/$archname.$linetoname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      rsynctime=`(time -p ${RSYNC} -r -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>/tmp/m_script/$archname.$linetoname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       rsynctime=`expr $rsynctime + 1`
       if [ -f /tmp/m_script/$archname.$linetoname.rsync.log ] && [ `cat /tmp/m_script/$archname.$linetoname.rsync.log | wc -l` -gt 0 ]
@@ -653,7 +654,7 @@ bconf=`basename ${backupconf}`
     local)
       ${SCP} "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
       archname=`cat ${rpath}/m_backup.archname`
-      ltime=`(time -p ${SSH} "${remoteuser}"@"${remotehost}" "cp -r ${remotepath}/* ${remotebackuppath}/backup.tmp 2>/tmp/m_script/$archname.$linetoname.local.log") 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      ltime=`(time -p ${SSH} "${remoteuser}"@"${remotehost}" "cp -r ${remotepath}/* ${remotebackuppath}/backup.tmp 2>/tmp/m_script/$archname.$linetoname.local.log") 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       ltime=`expr $rsynctime + 1`
       if [ -f /tmp/m_script/$archname.$linetoname.local.log ] && [ `cat /tmp/m_script/$archname.$linetoname.local.log | wc -l` -gt 0 ]
