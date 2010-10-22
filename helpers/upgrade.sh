@@ -42,7 +42,7 @@ for script in `find "${rpath}/../" -type f -name "*.sh" -o -name "*.run"`; do
     if [ "${updated}" -nt "$script" ]; then
       cp "${updated}" "$script" && chown `id -un`:`id -gn` "$script" && echo "OK"
     else
-      echo "This file either don't exist in update or is older than the local one. Not updated"
+      echo "This file either dont exist in update or is older than the local one. Not updated"
     fi
   fi
 done
