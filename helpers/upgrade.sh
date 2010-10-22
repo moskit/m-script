@@ -37,7 +37,14 @@ else
 fi
 for script in `find "${rpath}/../" -type f -name "*.sh" -o -name "*.run"`; do
   printf "${script##*/} ... "
-  cp `echo "$script" | sed "s|${rpath}/../|/tmp/m_script/.update/|"` "$script" && chown `id -un`:`id -gn` "$script" && echo "OK"
+  updated=`echo "$script" | sed "s|${rpath}/../|/tmp/m_script/.update/|"`
+  if [ -e "${updated}" ]; then
+    if [ "${updated}" -nt "$script" ]; then
+      cp "${updated}" "$script" && chown `id -un`:`id -gn` "$script" && echo "OK"
+    else
+      echo "This file either don't exist in update or is older than the local one. Not updated"
+    fi
+  fi
 done
 rm -rf /tmp/m_script/.update/
 

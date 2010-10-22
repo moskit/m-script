@@ -69,7 +69,7 @@ do
     unset sshtest
   else
     if [ "X$CURL" != "X" ]; then
-      $CURL -s $serverip > /dev/null 2>&1
+      $CURL -s ${serverip}:$serverport > /dev/null 2>&1
       if [ "$?" == "0" ] ; then
         curltest="yes"
       fi
@@ -82,7 +82,7 @@ do
       continue
     fi
     if [ "X$LYNX" != "X" ]; then
-      $LYNX -dump http://$serverip > /dev/null 2>&1
+      $LYNX -dump http://${serverip}:$serverport > /dev/null 2>&1
       if [ "$?" == "0" ] ; then
         lynxtest="yes"
       fi
@@ -95,7 +95,7 @@ do
       continue
     fi
     if [ "X$LINKS" != "X" ]; then
-      $LINKS -dump http://$serverip > /dev/null 2>&1
+      $LINKS -dump http://${serverip}:$serverport > /dev/null 2>&1
       if [ "$?" == "0" ] ; then
         linkstest="yes"
       fi
@@ -108,7 +108,7 @@ do
       continue
     fi
     if [ "X$WGET" != "X" ]; then
-      $WGET -O - http://$serverip > /dev/null 2>&1
+      $WGET -O - http://${serverip}:$serverport > /dev/null 2>&1
       if [ "$?" == "0" ] ; then
         wgettest="yes"
       fi

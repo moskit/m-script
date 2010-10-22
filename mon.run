@@ -378,7 +378,7 @@ case ${1} in
     mailalert
   ;;
   *)
-    echo "Run mon.run --help to see possible options"
+    echo "Run mon.run --help to see available options"
   ;;
 esac
 rm -f ${rpath}/mon.run.lock
