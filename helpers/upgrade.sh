@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+rm -rf /tmp/m_script/.update/
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
@@ -30,7 +31,7 @@ if [ "X$GIT" == "X" ]; then
     $WGET -nH -P /tmp/m_script http://igorsimonov.com/m_script.latest.tar.gz
     `which tar` -xzf /tmp/m_script/m_script.latest.tar.gz -C /tmp/m_script.$$
     rm -f /tmp/m_script/m_script.latest.tar.gz
-    mv /tmp/m_script.$$/m_script*/* /tmp/m_script/.update
+    mv /tmp/m_script.$$/m/* /tmp/m_script/.update
   fi
 else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update

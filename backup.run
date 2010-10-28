@@ -319,7 +319,7 @@ bconf=`basename ${backupconf}`
     if [ "X$nonbackup" == "X" ]
     then
 # Removing tmp files created during the previous run
-      [ -d ${localbackuppath} ] && rm -rf ${localbackuppath}/*
+      [ -d ${localbackuppath} ] && rm -rf ${localbackuppath}/*  #*/
       if [ "X$replaceflag" == "X" ] || [ ! -f ${rpath}/lastbackup.${bconf}.archname ]
       then
         archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
@@ -336,6 +336,7 @@ bconf=`basename ${backupconf}`
           linetoname=`echo ${LINE} | sed 's|/|_|g'`
           if [ "X${compression}" == "Xgzip" ]
           then
+            [ "X$debugflag" != "X" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> ${rpath}/m_backup.log
             tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
             if [ "X$split_size" != "X" ]; then
               split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar.gz ${localbackuppath}/$archname.$linetoname.tar.gz 2>>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
@@ -344,6 +345,7 @@ bconf=`basename ${backupconf}`
           fi
           if [ "X${compression}" == "Xbzip2" ]
           then
+            [ "X$debugflag" != "X" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> ${rpath}/m_backup.log
             tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
             if [ "X$split_size" != "X" ]; then
               split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar.bz2 ${localbackuppath}/$archname.$linetoname.tar.bz2 2>>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
@@ -352,19 +354,21 @@ bconf=`basename ${backupconf}`
           fi
           if [ "X${compression}" == "X" ]
           then
+            [ "X$debugflag" != "X" ] && echo "Creating archive $archname.$linetoname.tar" >> ${rpath}/m_backup.log
           	tar ${ARCOPTS} -c -f ${localbackuppath}/$archname.$linetoname.tar ${LINE} 2>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-                if [ "X$split_size" != "X" ]; then
-                  split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar ${localbackuppath}/$archname.$linetoname.tar 2>>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-                  rm -f ${localbackuppath}/$archname.$linetoname.tar
-                fi
+            if [ "X$split_size" != "X" ]; then
+              split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar ${localbackuppath}/$archname.$linetoname.tar 2>>/tmp/m_script/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+              rm -f ${localbackuppath}/$archname.$linetoname.tar
+            fi
           fi
-          if [ -f /tmp/m_script/$archname.$linetoname.tar.log ] && [ $(grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' | wc -l) -gt 0 ]
+          if [ -f /tmp/m_script/$archname.$linetoname.tar.log ] && [ $(grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' | wc -l) -gt 0 ]
           then
-            grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' >> ${rpath}/m_backup.error
+            grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' >> ${rpath}/m_backup.error
             echo "Tar: ${LINE} copied with some errors, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
             echo "Tar: ${LINE} copied `grep '^Total bytes written:' /tmp/m_script/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
           else
             echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' /tmp/m_script/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log 2>/dev/null
+            rm -f /tmp/m_script/$archname.$linetoname.tar.log
           fi
         fi
       done < ${backupconf}.list
@@ -405,6 +409,7 @@ bconf=`basename ${backupconf}`
       else
         echo "FTP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.ftp.log
     ;;
     scp)
       [ "X$followlinks" != "Xyes" ] || SCPOPTS="${SCPOPTS}"
@@ -432,6 +437,7 @@ bconf=`basename ${backupconf}`
       else
         echo "SCP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.scp.log
     ;;
     rsync)
       [ "X$followlinks" == "Xyes" ] || RSYNCOPTS="${RSYNCOPTS} -l"
@@ -459,6 +465,7 @@ bconf=`basename ${backupconf}`
       else
         echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.rsync.log
     ;;
     s3)
       [ "X$followlinks" != "Xyes" ] || S3OPTS="${S3OPTS}"
@@ -487,6 +494,7 @@ bconf=`basename ${backupconf}`
       else
         echo "S3: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.s3.log
     ;;
     local)
       [ "X$followlinks" != "Xyes" ] && CPOPTS="${CPOPTS} -d" || CPOPTS="${CPOPTS} -L"
@@ -511,6 +519,7 @@ bconf=`basename ${backupconf}`
       else
         echo "CP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       fi
+      rm -f /tmp/m_script/$archname.local.log
     ;;
     esac
   fi
@@ -686,7 +695,7 @@ bconf=`basename ${backupconf}`
 ###################
 
       archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
-      echo "No --from-remote nor --to-remote option is set, so this is a local backup." >> ${rpath}/m_backup.log
+      echo "Neither --from-remote nor --to-remote option is set, so this is a local backup." >> ${rpath}/m_backup.log
       echo "Making local backup to ${localbackuppath}/backup.local..." >> ${rpath}/m_backup.log
       while read LINE
       do
@@ -701,9 +710,9 @@ bconf=`basename ${backupconf}`
           then
             tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>/tmp/m_script/$archname.$linetoname.tar.log
           fi
-          if [[ $(grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' | wc -l) -gt 0 ]]
+          if [[ $(grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' | wc -l) -gt 0 ]]
           then
-            grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' >> ${rpath}/m_backup.error
+            grep '^tar:' /tmp/m_script/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' >> ${rpath}/m_backup.error
             echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${rpath}/m_backup.log
             echo "Tar: ${LINE} copied `grep '^Total bytes written:' /tmp/m_script/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
           else
@@ -713,6 +722,7 @@ bconf=`basename ${backupconf}`
       done < ${backupconf}.list
     fi
   fi
+  rm -f /tmp/m_script/$archname.$linetoname.tar.log
 # Copying backups to proper location
   if [ "X$keeplocal" == "Xyes" ] && [ "X$nonbackup" == "X" ]
   then
@@ -732,7 +742,8 @@ bconf=`basename ${backupconf}`
   if [ "X$removeoldlocal" == "Xyes" ]
   then
     [ $keeplocaldays -gt 0 ] && keeplocaldays=`expr $keeplocaldays - 1`
-    find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm -v -f 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log && echo "Outdated backups at ${localrmpath} have been removed" >> ${rpath}/m_backup.log
+    [ "X$debugflag" == "X" ] || rmv='-v'
+    find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log && echo "Outdated backups at ${localrmpath} have been removed" >> ${rpath}/m_backup.log
   fi
 #  echo "if X\$r_proto=X$r_proto"
   if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ "X$r_proto" != "Xlocal" ] && [ "X${remotehost}" != "X" ]
@@ -792,7 +803,7 @@ bconf=`basename ${backupconf}`
       for LINE in `cat /tmp/m_script/remote_files_to_remove.list`
       do
         [ "X$debugflag" == "X" ] || rmv='-v'
-        ${SSH} "${remoteuser}"@"${remotehost}" "rm $rmv -f \"${LINE}\"" 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log
+        ${SSH} "${remoteuser}"@"${remotehost}" "rm "$rmv" -f \"${LINE}\"" 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log
       done
       if [ "X@?" == "X0" ]; then
         echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> ${rpath}/m_backup.log
@@ -815,8 +826,10 @@ bconf=`basename ${backupconf}`
   fi
   echo "--------------------------------------------------------------" >> ${rpath}/backup.report
   echo "" >> ${rpath}/backup.report
-  if [ `grep -c -v "\*\*\*" ${rpath}/m_backup.error` -ne 0 ]
-  then
+  if [ `grep -c "\*\*\*" ${rpath}/m_backup.error` -ne 0 ]; then
+    if [ "X$debugflag" == "X" ]; then
+      grep "\*\*\*" ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
+    fi
     echo "*** There were errors during this backup:" >> ${rpath}/backup.report
     for command in "cp scp rsync debug mv rm mysql pgsql ncftpput tar"
     do
