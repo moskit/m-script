@@ -19,35 +19,35 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 ports=`cat ${rpath}/../ports.list | grep -v '^#' | grep -v '^[:space:]*#'`
+sockets=`cat ${rpath}/../sockets.list | grep -v '^#' | grep -v '^[:space:]*#'`
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
+
 if [ `uname` == "Linux" ]; then
-  [ "X$NETSTATCMD" == "X" ] && echo "Netstat utility not found! Aborting.." && exit 1 || NETSTAT="${NETSTATCMD} -tuapn"
+  [ "X$NETSTATCMD" == "X" ] && echo "Netstat utility not found! Aborting.." && exit 1
+  NETCONNS="${NETSTATCMD} -tuapn"
+  SOCKCONNS="${NETSTATCMD} -xlpn"
 fi
-if [ `uname` == "FreeBSD" ]; then
-  [ "X$NETSTATCMD" == "X" ] && echo "Netstat utility not found! Aborting.." && exit 1 || NETSTAT="${NETSTATCMD} -f inet -p tcp -n -a -S"
-fi
+
 [ -x /bin/ping ] && PING='/bin/ping'
 [ "X$PING" == "X" ] && PING=`which ping`
 
 if [ `uname` == "Linux" ]; then
   ROUTE="${NETSTATCMD} -rn"
 fi
-if [ `uname` == "FreeBSD" ]; then
-  ROUTE="${NETSTATCMD} -r -f inet -n | grep 'G' | grep -v 'Flags' | grep -v '^$' | awk '{print $2}'"
-fi
+
 
 source ${rpath}/../mon.conf
 
 echo ""
 echo "Services status:"
 echo "----------------"
-${NETSTAT} | grep -vE '^Active|Proto' | grep 'LISTEN' > /tmp/m_script/netstat.tmp
+${NETCONNS} | grep -vE '^Active|Proto' | grep 'LISTEN' > /tmp/m_script/netstat.tmp
 while read LINE
 do
   portfound=0
-  t=$(echo $LINE | awk '{ print $4}')
-  sname=$(echo $LINE | awk '{ print $7}' | cut -d/ -f2 | cut -d: -f1)
+  t=$(echo $LINE | awk '{ print $4 }')
+  sname=$(echo $LINE | awk '{ print $7 }' | cut -d/ -f2 | cut -d: -f1)
   # now compare ports
   for i in ${ports}
   do
@@ -56,19 +56,43 @@ do
       j=`expr "${i}" : '.*\(:[0-9]*\)'`
       ports=$(echo ${ports} | sed 's@'$t'@@')
       printf "Service $sname is running on ${t}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
-      printf " and serving `${NETSTAT} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l` clients.\n"
+      printf " and serving `${NETCONNS} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l` connections.\n"
       portfound=1
       break
     fi
   done
 [ $portfound -ne 1 ] && echo "<**> Service ${sname} running on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 done < /tmp/m_script/netstat.tmp
-rm -f /tmp/m_script/netstat.tmp
 if [ "X${ports}" != "X" ]
 then
- echo "<***> There is no service running on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+ echo "<***> There is no services running on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 fi
-
+echo
+${SOCKCONNS} | grep STREAM > /tmp/m_script/netstat.tmp
+#  | awk -F'STREAM' '{print $2}' | awk '{print $3}'
+while read LINE
+do
+  socketfound=0
+  t=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $4}')
+  sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
+  sname=${sname#*/}
+  # now compare sockets
+  for i in ${sockets}
+  do
+    if [ "X${i}" == "X${t}" ]
+    then
+      sockets=$(echo ${sockets} | sed 's@'$t'@@')
+      printf "Service $sname is running and listening on unix socket ${t}.\n"
+      portfound=1
+      break
+    fi
+  done
+done < /tmp/m_script/netstat.tmp
+rm -f /tmp/m_script/netstat.tmp
+if [ "X${sockets}" != "X" ]
+then
+ echo "<***> There is no services listening on unix sockets: ${sockets}"
+fi
 # End of netstat test
 
 # Connectivity test

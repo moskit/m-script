@@ -107,27 +107,8 @@ else
   $SQLITE ${xpath}sysdata 'create table rootfolders(timeindex varchar(16), foldername varchar(64), foldersize real)'
 fi
 
-[ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
-[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
-if [ `uname` == "Linux" ]; then
-  if [ "X$NETSTATCMD" == "X" ]; then
-    echo "Netstat utility not found! Aborting.."
-    exit 1
-  else 
-    NETSTAT="${NETSTATCMD} -tuapn"
-  fi
-fi
-if [ `uname` == "FreeBSD" ]; then
-  if [ "X$NETSTATCMD" == "X" ]; then
-    echo "Netstat utility not found! Aborting.."
-    exit 1
-  else
-    NETSTAT="${NETSTATCMD} -f inet -p tcp -n -a -S"
-  fi
-fi
-
-# Looking for open ports and putting them into file
-${NETSTAT} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${rpath}/ports.list
-
 chmod 755 ${rpath}/*.run ${rpath}/*.sh
+chmod 600 ${rpath}/backup.conf
+
+${rpath}/fixports.run
 
