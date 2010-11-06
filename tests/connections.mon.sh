@@ -39,10 +39,13 @@ fi
 
 source ${rpath}/../mon.conf
 
-echo ""
-echo "Services status:"
+echo
+echo "Services up and running:"
 echo "----------------"
-${NETCONNS} | grep -vE '^Active|Proto' | grep 'LISTEN' > /tmp/m_script/netstat.tmp
+echo
+echo "Name                Listening on                            Connections"
+echo
+${NETCONNS} | grep 'LISTEN' > /tmp/m_script/netstat.tmp
 while read LINE
 do
   portfound=0
@@ -55,17 +58,25 @@ do
     then
       j=`expr "${i}" : '.*\(:[0-9]*\)'`
       ports=$(echo ${ports} | sed 's@'$t'@@')
-      printf "Service $sname is running on ${t}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
-      printf " and serving `${NETCONNS} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l` connections.\n"
+      printf "$sname"
+      m=`expr length $sname`
+      l=`expr 20 - $m`
+      for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "${t}"
+      # | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+      m=`expr length "${t}"`
+      l=`expr 20 - $m`
+      for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "`${NETCONNS} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
       portfound=1
       break
     fi
   done
-[ $portfound -ne 1 ] && echo "<**> Service ${sname} running on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+[ $portfound -ne 1 ] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 done < /tmp/m_script/netstat.tmp
 if [ "X${ports}" != "X" ]
 then
- echo "<***> There is no services running on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+ echo "<***> There is no services listening on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 fi
 echo
 ${SOCKCONNS} | grep STREAM > /tmp/m_script/netstat.tmp
@@ -82,7 +93,7 @@ do
     if [ "X${i}" == "X${t}" ]
     then
       sockets=$(echo ${sockets} | sed 's@'$t'@@')
-      printf "Service $sname is running and listening on unix socket ${t}.\n"
+      printf "Service $sname is up and listening on unix socket ${t}.\n"
       portfound=1
       break
     fi
@@ -103,7 +114,7 @@ then
   elif [ -f /etc/resolv.conf ]; then
     grep '^nameserver' /etc/resolv.conf | awk '{print $2}' > /tmp/m_script/ping.tmp
   else
-    echo "Couldn't fetch gateway or nameserver from server configuration files. Please provide IP address for ping test in mon.conf file"
+    echo "Unable to get any IP from system to ping (tried: gateway, nameserver). Please provide IP address for ping test in mon.conf file"
   fi
   failedip=""
   pingedip=""

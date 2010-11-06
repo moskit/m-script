@@ -16,7 +16,7 @@
 
 
 
-### Uncomment below and put your servers list to servers.conf if you need 
+### Uncomment below and put your servers list to servers.list if you need 
 ### to monitor multiple servers.
 ### Details and examples can be found in doc/multiple_servers.txt.
 
