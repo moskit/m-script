@@ -24,7 +24,7 @@ rpath=${xcommand%/*}
 
 BC=`which bc 2>/dev/null`
 IPTABLES=`which iptables 2>/dev/null`
-MAILX=`which mail`
+MAILX=`which mail 2>/dev/null`
 SQLITE=`which sqlite3 2>/dev/null`
 S3CMD=`which s3cmd 2>/dev/null`
 

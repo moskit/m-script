@@ -57,7 +57,7 @@ do
     if [ "X${i}" == "X${t}" ]
     then
       j=`expr "${i}" : '.*\(:[0-9]*\)'`
-      ports=$(echo ${ports} | sed "s@${t}@@")
+      ports=$(echo ${ports} | sed "s|${t}||")
       printf "$sname"
       m=`expr length $sname`
       l=`expr 20 - $m`
@@ -92,7 +92,7 @@ do
   do
     if [ "X${i}" == "X${t}" ]
     then
-      sockets=$(echo ${sockets} | sed "s@${t}@@")
+      sockets=$(echo ${sockets} | sed "s|${t}||")
       printf "$sname"
       m=`expr length $sname`
       l=`expr 20 - $m`
