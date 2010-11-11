@@ -65,7 +65,7 @@ do
       printf "${t}"
       # | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
       m=`expr length "${t}"`
-      l=`expr 20 - $m`
+      l=`expr 40 - $m`
       for ((n=1; n <= $l; n++)); do printf " "; done
       printf "`${NETCONNS} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
       portfound=1
@@ -84,7 +84,7 @@ ${SOCKCONNS} | grep STREAM > /tmp/m_script/netstat.tmp
 while read LINE
 do
   socketfound=0
-  t=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $4}')
+  t="${line##*[[:space:]]}"
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
   sname=${sname#*/}
   # now compare sockets

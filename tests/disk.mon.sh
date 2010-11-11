@@ -83,25 +83,25 @@ then
     echo "Couldn't get disk stats"
     exit 0
   fi
-  df | grep '^\/dev\/' | awk '{ print $1}' > /tmp/m_script/disk.tmp
-  cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1}' >> /tmp/m_script/disk.tmp
+  df | grep '^\/dev\/' | awk '{ print $1 }' > /tmp/m_script/disk.tmp
+  cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp
   disks=""
   while read LINE
   do
     diskexists=0
-    disk=`basename ${LINE}`
+    disk=${LINE##*/}
     for d in ${disks}
     do
       if [ "X${d}" == "X${disk}" ]; then
         diskexists=1
       fi
     done
-    if [ `$DISKSTAT | grep "^${disk}" | wc -l` -gt 0 ]
+    if [ `$DISKSTAT | grep -c "^${disk}"` -gt 0 ]
     then
       if [ $diskexists -eq 0 ]; then
         disks="$disk ${disks}"
-        dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4}')
-        drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5}')
+        dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
+        drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
         if [ $drtime -ne 0 ]; then
           drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
           printf "/dev/${disk} read:"
@@ -111,8 +111,8 @@ then
           printf "${drspeed} Mbytes/sec\n"
           echo "${drspeed}" >> /tmp/m_script/diskiord
         fi
-        dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8}')
-        dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9}')
+        dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
+        dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
         if [ $dwtime -ne 0 ]; then
           dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
           printf "/dev/${disk} write:"
@@ -124,18 +124,14 @@ then
         fi
       fi
     else
-      disklen=`expr $disk : '[a-z]*.*[a-z]'`
-      disk1=`echo $disk | cut -c 1-$disklen`
-      disklenbefore=`expr length $disk`
-      disklenafter=`expr length $disk1`
+      disk1=${disk%[0-9]*}
       
-      [ $disklenafter -lt $disklenbefore ] && echo ${disk1} >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk ${disk1}"
+      [ "X$disk" != "X$disk1" ] && echo ${disk1} >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk ${disk1}"
     fi
   done < /tmp/m_script/disk.tmp
   rm -f /tmp/m_script/disk.tmp
-else
-  echo "Disk I/O statistics is unavailable for this system"
 fi
+
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
 then
   disksnum=`cat /tmp/m_script/diskusage | wc -l`
