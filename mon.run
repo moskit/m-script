@@ -24,7 +24,7 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 tmpdir=/tmp/m_script && install -d $tmpdir
-[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5
+[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
 # removing stale lock file (if older than an hour)
 find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f
 for ((i=1; i<=10; i++))

@@ -788,6 +788,7 @@ bconf=`basename ${backupconf}`
           break
         fi
       done
+      rm -f /tmp/m_script/s3dirs.$$ /tmp/m_script/s3files.$$
     ;;
     *)
       SSH=`which ssh`
@@ -858,6 +859,7 @@ bconf=`basename ${backupconf}`
   cat ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
   cat ${rpath}/m_backup.log >> ${locallogpath}/logs/m_backup.log
   rm -f ${rpath}/m_backup.*
+  rm -f /tmp/m_script/$archname*log
 ### Now it's time to restore some environment variables
   export RSYNC_RSH="${RSYNC_RSH_BK}"
 done

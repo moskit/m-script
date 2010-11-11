@@ -63,7 +63,7 @@ start)
 # and not monitored services:
   touch /tmp/m_script/conn_test_runs_count
   [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt 3 ] && ${rpath}/fixports.run
-  ${rpath}/mon.run connections.mon.sh ; echo '' >> /tmp/m_script/conn_test_runs_count
+  ${rpath}/mon.run connections.mon.sh ; echo > /tmp/m_script/conn_test_runs_count
 # Checking other servers (listed in servers.conf) availability
   ${rpath}/mon.run servers.mon.sh
 ###
