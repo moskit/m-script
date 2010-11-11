@@ -32,6 +32,7 @@ fi
 # Looking for open ports and putting them into file
 ${NETSTAT1} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${xpath}ports.list
 ${NETSTAT2} | grep STREAM > /tmp/m_script/netstat.tmp
+echo > ${xpath}sockets.list
 while read LINE
 do
   echo "${LINE##*[[:space:]]}" >> ${xpath}sockets.list
