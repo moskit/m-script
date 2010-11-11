@@ -97,7 +97,7 @@ do
       m=`expr length $sname`
       l=`expr 20 - $m`
       for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "${t}"
+      printf "${t}\n"
       portfound=1
       break
     fi

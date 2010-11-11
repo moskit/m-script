@@ -17,8 +17,8 @@
 
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
-MAILX=`which mail` 2>/dev/null
-SAR=`which sar` 2>/dev/null
+MAILX=`which mail` >/dev/null
+SAR=`which sar` >/dev/null
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
