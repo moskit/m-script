@@ -79,29 +79,15 @@ if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
     boutput=`expr "${c}" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
   fi
 
-  currsec=`echo $timeindexnow | awk -F'_' '{print $6}'`
-  prevsec=`echo $lasttimeindex | awk -F'_' '{print $6}'`
-  currmin=`echo $timeindexnow | awk -F'_' '{print $5}'`
-  prevmin=`echo $lasttimeindex | awk -F'_' '{print $5}'`
-  currhour=`echo $timeindexnow | awk -F'_' '{print $4}'`
-  prevhour=`echo $lasttimeindex | awk -F'_' '{print $4}'`
-  [ "X$currsec" == "X" ] && currsec=0
-  [ "X$prevsec" == "X" ] && prevsec=0
-  [ "X$currmin" == "X" ] && currmin=0
-  [ "X$prevmin" == "X" ] && prevmin=0
-  [ "X$currhour" == "X" ] && currhour=0
-  [ "X$prevhour" == "X" ] && prevhour=0
+  diffsec=`expr $timeindexnow - $lasttimeindex`
 
-  diffsec=`expr $currsec - $prevsec`
-  diffmin=`expr $currmin - $prevmin`
-  diffhour=`expr $currhour - $prevhour`
   [ "X$binputlast" == "X" ] && binputlast=$binput
   [ "X$boutputlast" == "X" ] && boutputlast=$boutput
   # Number 2.5 represents approximately average number of seconds in one
   # month divided by 1024 twice
   
-  diffbwin=`solve "25 * ($binput - $binputlast) / (($diffhour * 3600 + $diffmin * 60 + $diffsec) * 10240)"`
-  diffbwout=`solve "25 * ($boutput - $boutputlast) / (($diffhour * 3600 + $diffmin * 60 + $diffsec) * 10240)"`
+  diffbwin=`solve "25 * ($binput - $binputlast) / ($diffsec * 10240)"`
+  diffbwout=`solve "25 * ($boutput - $boutputlast) / ($diffsec * 10240)"`
 else
   binput=0
   boutput=0
