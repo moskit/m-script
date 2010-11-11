@@ -84,7 +84,7 @@ ${SOCKCONNS} | grep STREAM > /tmp/m_script/netstat.tmp
 while read LINE
 do
   socketfound=0
-  t="${line##*[[:space:]]}"
+  t="${LINE##*[[:space:]]}"
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
   sname=${sname#*/}
   # now compare sockets
