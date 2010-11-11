@@ -57,7 +57,7 @@ do
     if [ "X${i}" == "X${t}" ]
     then
       j=`expr "${i}" : '.*\(:[0-9]*\)'`
-      ports=$(echo ${ports} | sed 's@'$t'@@')
+      ports=$(echo ${ports} | sed "s@${t}@@")
       printf "$sname"
       m=`expr length $sname`
       l=`expr 20 - $m`
@@ -92,8 +92,12 @@ do
   do
     if [ "X${i}" == "X${t}" ]
     then
-      sockets=$(echo ${sockets} | sed 's@'$t'@@')
-      printf "Service $sname is up and listening on unix socket ${t}.\n"
+      sockets=$(echo ${sockets} | sed "s@${t}@@")
+      printf "$sname"
+      m=`expr length $sname`
+      l=`expr 20 - $m`
+      for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "${t}"
       portfound=1
       break
     fi
