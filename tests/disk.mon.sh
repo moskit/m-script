@@ -125,7 +125,7 @@ then
       fi
     else
       if [ "X$DMSETUP" != "X" ]; then
-        dmdisk=`$DMSETUP | grep "^${disk}"`
+        dmdisk=`$DMSETUP ls | grep "^${disk}"`
         if [ "X$dmdisk" != "X" ]; then
           dmnode="${dmdisk#*(}"; dmnode="${dmnode%)*}"; dmnode=`echo "$dmnode" | sed 's/, /:/'`
           for blockdev in /sys/block/*/dev; do
