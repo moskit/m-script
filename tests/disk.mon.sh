@@ -132,14 +132,18 @@ then
             bdname="${blockdev%/*}"
             bdname="${bdname##*/}"
             if [ "X`cat $blockdev`" == "X$dmnode" ]; then
-              echo "$dmnode" >> /tmp/m_script/disk.tmp
+              echo "$bdname" >> /tmp/m_script/disk.tmp
+              itsdm=1
               break
             fi
           done
         fi
       fi
-      disk1=${disk%[0-9]*}
-      [ "X$disk" != "X$disk1" ] && echo "$disk1" >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk $disk1"
+      if [ "X$itsdm" != "X1" ]; then
+        disk1=${disk%[0-9]*}
+        [ "X$disk" != "X$disk1" ] && echo "$disk1" >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk $disk1"
+      fi
+      unset itsdm
     fi
   done < /tmp/m_script/disk.tmp
   rm -f /tmp/m_script/disk.tmp
