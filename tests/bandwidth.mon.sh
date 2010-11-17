@@ -79,7 +79,7 @@ if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
     boutput=`expr "${c}" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
   fi
 
-  diffsec=`expr $timeindexnow - $lasttimeindex` || diffsec=1
+  diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
   [ "X$binputlast" == "X" ] && binputlast=$binput
   [ "X$boutputlast" == "X" ] && boutputlast=$boutput

@@ -71,11 +71,12 @@ done < /tmp/m_script/disk.tmp
 echo ""
 echo "Average disk I/O speed:"
 echo "-----------------------"
-VMSTAT=`which vmstat`
+VMSTAT=`which vmstat 2>/dev/null`
 if [ "X${VMSTAT}" != "X" ]
 then
   DISKSTAT="$VMSTAT -d"
 fi
+DMSETUP=`which dmsetup 2>/dev/null`
 if [ "X${DISKSTAT}" != "X" ]
 then
   $VMSTAT -d >/dev/null 2>&1
@@ -96,8 +97,7 @@ then
         diskexists=1
       fi
     done
-    if [ `$DISKSTAT | grep -c "^${disk}"` -gt 0 ]
-    then
+    if [ `$DISKSTAT | grep -c "^${disk}"` -gt 0 ]; then
       if [ $diskexists -eq 0 ]; then
         disks="$disk ${disks}"
         dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
@@ -124,16 +124,28 @@ then
         fi
       fi
     else
+      if [ "X$DMSETUP" != "X" ]; then
+        dmdisk=`$DMSETUP | grep "^${disk}"`
+        if [ "X$dmdisk" != "X" ]; then
+          dmnode="${dmdisk#*(}"; dmnode="${dmnode%)*}"; dmnode=`echo "$dmnode" | sed 's/, /:/'`
+          for blockdev in /sys/block/*/dev; do
+            bdname="${blockdev%/*}"
+            bdname="${bdname##*/}"
+            if [ "X`cat $blockdev`" == "X$dmnode" ]; then
+              echo "$dmnode" >> /tmp/m_script/disk.tmp
+              break
+            fi
+          done
+        fi
+      fi
       disk1=${disk%[0-9]*}
-      
-      [ "X$disk" != "X$disk1" ] && echo ${disk1} >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk ${disk1}"
+      [ "X$disk" != "X$disk1" ] && echo "$disk1" >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk $disk1"
     fi
   done < /tmp/m_script/disk.tmp
   rm -f /tmp/m_script/disk.tmp
 fi
 
-if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
-then
+if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   disksnum=`cat /tmp/m_script/diskusage | wc -l`
   diskusage=0
   if [ -f /tmp/m_script/diskusage ]; then
