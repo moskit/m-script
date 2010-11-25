@@ -72,13 +72,11 @@ echo ""
 echo "Average disk I/O speed:"
 echo "-----------------------"
 VMSTAT=`which vmstat 2>/dev/null`
-if [ "X${VMSTAT}" != "X" ]
-then
+if [ "X${VMSTAT}" != "X" ]; then
   DISKSTAT="$VMSTAT -d"
 fi
 DMSETUP=`which dmsetup 2>/dev/null`
-if [ "X${DISKSTAT}" != "X" ]
-then
+if [ "X${DISKSTAT}" != "X" ]; then
   $VMSTAT -d >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "Couldn't get disk stats"
@@ -87,12 +85,10 @@ then
   df | grep '^\/dev\/' | awk '{ print $1 }' > /tmp/m_script/disk.tmp
   cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp
   disks=""
-  while read LINE
-  do
+  while read LINE; do
     diskexists=0
     disk=${LINE##*/}
-    for d in ${disks}
-    do
+    for d in ${disks}; do
       if [ "X${d}" == "X${disk}" ]; then
         diskexists=1
       fi
@@ -153,8 +149,7 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   disksnum=`cat /tmp/m_script/diskusage | wc -l`
   diskusage=0
   if [ -f /tmp/m_script/diskusage ]; then
-    while read LINE
-    do
+    while read LINE; do
       diskusage=`solve "$diskusage + $LINE"`
     done < /tmp/m_script/diskusage
     diskusage=`solve "$diskusage / $disksnum"`
@@ -162,8 +157,7 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   fi
   if [ -f /tmp/m_script/diskiord ]; then
     disksnum=`cat /tmp/m_script/diskiord | wc -l`
-    while read LINE
-    do
+    while read LINE; do
       diskiord=`solve "$diskiord + $LINE"`
     done < /tmp/m_script/diskiord
     diskiord=`solve "$diskiord / $disksnum"`
@@ -171,8 +165,7 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   fi
   if [ -f /tmp/m_script/diskiowr ]; then
     disksnum=`cat /tmp/m_script/diskiowr | wc -l`
-    while read LINE
-    do
+    while read LINE; do
       diskiowr=`solve "$diskiowr + $LINE"`
     done < /tmp/m_script/diskiowr
     diskiowr=`solve "$diskiowr / $disksnum"`

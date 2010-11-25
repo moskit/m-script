@@ -16,6 +16,7 @@
 
 xcommand=`basename $0`
 xpath=`echo $0 | sed "s|${xcommand}||"`
+install -d /tmp/m_script
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
