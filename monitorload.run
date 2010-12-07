@@ -44,7 +44,7 @@ start)
 
   while true
   do
-    [ -f ${tempfile} ] && rloadprev=`cat ${tempfile}` || rloadprev=0
+    rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
     rload="$($UPTIME | awk -F'average: ' '{ print $2}' | sed s/,//g | awk '{ print $2}' | tee $tempfile)"
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"

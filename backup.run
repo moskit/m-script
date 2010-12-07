@@ -158,53 +158,6 @@ then
   echo "configfiles = ${configfiles}" >> ${rpath}/m_backup.log
   echo "replaceflag = ${replaceflag}" >> ${rpath}/m_backup.log
 fi
-  
-if [ "$r_proto" == "ftp" ]
-then
-  ftpput=`which ncftpput 2>/dev/null`
-  ftpget=`which ncftpget 2>/dev/null`
-  if [ "X${ftpput}" == "X" ]
-  then
-    echo 'To use FTP uploads please install NcFTP client' >> ${rpath}/m_backup.error
-    exit 1
-  fi
-fi
-if [ "$r_proto" == "scp" ]
-then
-  SCP="`which scp 2>/dev/null` -r -q"
-  if [ "X${SCP}" == "X" ]
-  then
-    echo "No scp command found! Is OpenSSH installed?" >> ${rpath}/m_backup.error
-    exit 1
-  elif [ "X$debugflag" != "X" ]
-  then
-    echo "SCP command is ${SCP}" >> ${rpath}/m_backup.log
-  fi
-fi
-if [ "$r_proto" == "rsync" ]
-then
-  RSYNC="`which rsync 2>/dev/null`"
-  if [ "X${RSYNC}" == "X" ]
-  then
-    echo 'No rsync command found!' >> ${rpath}/m_backup.error
-    exit 1
-  elif [ "X$debugflag" != "X" ]
-  then
-    echo "RSYNC command is ${RSYNC}" >> ${rpath}/m_backup.log
-  fi
-fi
-if [ "$r_proto" == "s3" ]
-then
-  S3="`which s3cmd 2>/dev/null`"
-  if [ "X${S3}" == "X" ]
-  then
-    echo 'No s3cmd command found!' >> ${rpath}/m_backup.error
-    exit 1
-  elif [ "X$debugflag" != "X" ]
-  then
-    echo "S3 command is ${S3}" >> ${rpath}/m_backup.log
-  fi
-fi
 
 ###################################################################
 # Main loop. Runs as many times as many backup.*.conf files used  #
@@ -235,9 +188,58 @@ bconf=`basename ${backupconf}`
   RSYNC_RSH_BK="${RSYNC_RSH}"
   
   source ${backupconf}
+
+  if [ "$r_proto" == "ftp" ]
+  then
+    ftpput=`which ncftpput 2>/dev/null`
+    ftpget=`which ncftpget 2>/dev/null`
+    if [ "X${ftpput}" == "X" ]
+    then
+      echo 'To use FTP uploads please install NcFTP client' >> ${rpath}/m_backup.error
+      exit 1
+    fi
+  fi
+  if [ "$r_proto" == "scp" ]
+  then
+    SCP="`which scp 2>/dev/null` -r -q"
+    if [ "X${SCP}" == "X" ]
+    then
+      echo "No scp command found! Is OpenSSH installed?" >> ${rpath}/m_backup.error
+      exit 1
+    elif [ "X$debugflag" != "X" ]
+    then
+      echo "SCP command is ${SCP}" >> ${rpath}/m_backup.log
+    fi
+  fi
+  if [ "$r_proto" == "rsync" ]
+  then
+    RSYNC="`which rsync 2>/dev/null`"
+    if [ "X${RSYNC}" == "X" ]
+    then
+      echo 'No rsync command found!' >> ${rpath}/m_backup.error
+      exit 1
+    elif [ "X$debugflag" != "X" ]
+    then
+      echo "RSYNC command is ${RSYNC}" >> ${rpath}/m_backup.log
+    fi
+  fi
+  if [ "$r_proto" == "s3" ]
+  then
+    S3="`which s3cmd 2>/dev/null`"
+    if [ "X${S3}" == "X" ]
+    then
+      echo 'No s3cmd command found!' >> ${rpath}/m_backup.error
+      exit 1
+    elif [ "X$debugflag" != "X" ]
+    then
+      echo "S3 command is ${S3}" >> ${rpath}/m_backup.log
+    fi
+  fi
+
   [ "X$remoteuser" == "X" ] && remoteuser=$USER
   
   export RSYNC_RSH="${RSYNC_RSH}"
+  
   locallogpath=${localbackuppath}
   if [ "X$onlyclean" == "Xyes" ]
   then

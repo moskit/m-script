@@ -45,7 +45,7 @@ echo "----------------"
 echo
 echo "Name                Listening on                            Connections"
 echo
-${NETCONNS} | grep 'LISTEN' > /tmp/m_script/netstat.tmp
+${NETCONNS} | grep 'LISTEN' > /tmp/m_script/ports.$$
 while read LINE
 do
   portfound=0
@@ -73,13 +73,13 @@ do
     fi
   done
 [ $portfound -ne 1 ] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
-done < /tmp/m_script/netstat.tmp
+done < /tmp/m_script/ports.$$
 if [ "X${ports}" != "X" ]
 then
  echo "<***> There is no services listening on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 fi
 echo
-${SOCKCONNS} | grep STREAM > /tmp/m_script/netstat.tmp
+${SOCKCONNS} | grep STREAM > /tmp/m_script/sockets.$$
 #  | awk -F'STREAM' '{print $2}' | awk '{print $3}'
 while read LINE
 do
@@ -102,8 +102,8 @@ do
       break
     fi
   done
-done < /tmp/m_script/netstat.tmp
-rm -f /tmp/m_script/netstat.tmp
+done < /tmp/m_script/sockets.$$
+rm -f /tmp/m_script/ports.$$ /tmp/m_script/sockets.$$
 if [ "X${sockets}" != "X" ]
 then
  echo "<***> There is no services listening on unix sockets: ${sockets}"
@@ -116,9 +116,9 @@ then
   if [ "X$ROUTE" != "X" ]; then
     ${ROUTE} | grep 'G' | grep -v 'Flags' | awk '{print $2}' > /tmp/m_script/ping.tmp
   elif [ -f /etc/resolv.conf ]; then
-    grep '^nameserver' /etc/resolv.conf | awk '{print $2}' > /tmp/m_script/ping.tmp
+    grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> /tmp/m_script/ping.tmp
   else
-    echo "Unable to get any IP from system to ping (tried: gateway, nameserver). Please provide IP address for ping test in mon.conf file"
+    echo "Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for ping test in mon.conf file"
   fi
   failedip=""
   pingedip=""
@@ -142,12 +142,20 @@ else
     fi
   done
 fi
-
-if [ "x$pingedip" == "xyes" ]; then
- echo ""
- echo 'Server is connected'
+rm -f /tmp/m_script/ping.tmp
+if [ "X$CONNTEST_IP" == "X127.0.0.1" ] || [ "X$CONNTEST_IP" == "Xlocalhost" ]; then
+  if [ "x$pingedip" == "xyes" ]; then
+   echo ""
+   echo 'Localhost pinged successfully'
+  else
+   echo '<***> Ping to localhost timeout!'
+  fi
 else
- echo '<***> Server is disconnected!'
- echo "<***> IP(s) ${failedip} unavailable"
+  if [ "x$pingedip" == "xyes" ]; then
+   echo ""
+   echo 'Server is connected'
+  else
+   echo '<***> Server is disconnected!'
+   echo "<***> IP(s) ${failedip} unavailable"
+  fi
 fi
-

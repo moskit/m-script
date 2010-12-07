@@ -15,13 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-PSQL="$(which psql)"
-PG_DUMP="$(which pg_dump)"
-CHOWN="$(which chown)"
-CHMOD="$(which chmod)"
-GZIP="$(which gzip)"
-BZIP2="$(which bzip2)"
-
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
@@ -33,6 +26,14 @@ if [ "X${1}" == "X" ]; then
 else
   source ${1}
 fi
+
+PSQL="$(which psql)"
+PG_DUMP="$(which pg_dump)"
+CHOWN="$(which chown)"
+CHMOD="$(which chmod)"
+GZIP="$(which gzip)"
+BZIP2="$(which bzip2)"
+
 if [ "X$pgsqlpass" != "X" ]; then
   echo "*:*:*:*:${pgsqlpass}" > ~/.pgpass && chmod 600 ~/.pgpass
 fi

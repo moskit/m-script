@@ -14,13 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-MYSQL="$(which mysql)"
-MYSQLDUMP="$(which mysqldump)"
-CHOWN="$(which chown)"
-CHMOD="$(which chmod)"
-GZIP="$(which gzip)"
-
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
@@ -32,6 +25,12 @@ if [ "X${1}" == "X" ]; then
 else
   source ${1}
 fi
+
+MYSQL="$(which mysql)"
+MYSQLDUMP="$(which mysqldump)"
+CHOWN="$(which chown)"
+CHMOD="$(which chmod)"
+GZIP="$(which gzip)"
 
 [ "X$mysqluser" == "X" ] && echo "Error: database user not defined" >> ${rpath}/m_backup.error && exit 1
 [ "X$mysqlhost" == "X" ] && echo "Error: database host not defined" >> ${rpath}/m_backup.error && exit 1
