@@ -98,26 +98,30 @@ if [ "X${DISKSTAT}" != "X" ]; then
         disks="$disk ${disks}"
         dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
         drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
-        if [ $drtime -ne 0 ]; then
+        if [[ $drtime -gt 100 ]]; then
           drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
-          printf "/dev/${disk} read:"
-          m=`expr length $disk`
-          l=`expr 29 - $m`
-          for ((n=1; n <= $l; n++)); do printf " "; done
-          printf "${drspeed} Mbytes/sec\n"
-          echo "${drspeed}" >> /tmp/m_script/diskiord
+        else
+          drspeed=0
         fi
+        printf "/dev/${disk} read:"
+        m=`expr length $disk`
+        l=`expr 29 - $m`
+        for ((n=1; n <= $l; n++)); do printf " "; done
+        printf "${drspeed} Mbytes/sec\n"
+        echo "${drspeed}" >> /tmp/m_script/diskiord
         dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
         dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
-        if [ $dwtime -ne 0 ]; then
-          dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
-          printf "/dev/${disk} write:"
-          m=`expr length $disk`
-          l=`expr 28 - $m`
-          for ((n=1; n <= $l; n++)); do printf " "; done
-          printf "${dwspeed} Mbytes/sec\n"
-          echo "${dwspeed}" >> /tmp/m_script/diskiowr
+        if [[ $dwtime -ne 0 ]]; then
+        dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
+        else
+          dwspeed=0
         fi
+        printf "/dev/${disk} write:"
+        m=`expr length $disk`
+        l=`expr 28 - $m`
+        for ((n=1; n <= $l; n++)); do printf " "; done
+        printf "${dwspeed} Mbytes/sec\n"
+        echo "${dwspeed}" >> /tmp/m_script/diskiowr
       fi
     else
       if [ "X$DMSETUP" != "X" ]; then
