@@ -181,7 +181,11 @@ chmod 600 ${rpath}/backup.conf
 ${rpath}/fixports.run
 [ -d /etc/init.d ] && rcdir=/etc/init.d
 [ -d /etc/rc.d/init.d ] && rcdir=/etc/rc.d/init.d
-[ "X$rcdir" == "X" ] || ln -s ${rpath}/monitorload.run $rcdir/monitorload
+[ "X$rcdir" == "X" ] || ln -s $(cd ${rpath} && pwd)/monitorload.run $rcdir/monitorload
+read -p "What email address to send reports and alerts to? " email
+echo $email > ${rpath}/mail.alert.list
+echo $email > ${rpath}/mail.admin.list
+echo $email > ${rpath}/mail.backup.list
 
 read -p "Do you want to setup the load monitoring daemon to start up at boot automatically? [y/N] " bootmon
 if [ `echo $bootmon | grep -c -i "^y"` -ne 0 ]
