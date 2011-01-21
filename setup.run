@@ -40,7 +40,7 @@ then
   read -p "Do you want me to install it now?  [y/N] " installbc
   if [ `echo $installbc | grep -c -i "^y"` -ne 0 ]
   then
-    case OS in
+    case $OS in
     debian)
       `which apt-get` install bc
       ;;
@@ -69,7 +69,7 @@ then
   read -p "Do you want me to install it now?  [y/N] " installmailx
   if [ `echo $installmailx | grep -c -i "^y"` -ne 0 ]
   then
-    case OS in
+    case $OS in
     debian)
       `which apt-get` install mailx
       [[ $? -eq 100 ]] && `which apt-get` install bsd-mailx
@@ -144,7 +144,7 @@ then
     read -p "Do you want me to install it now?  [y/N] " installsqlite
     if [ `echo $installsqlite | grep -c -i "^y"` -ne 0 ]
     then
-      case OS in
+      case $OS in
       debian)
         `which apt-get` install sqlite3
         ;;
