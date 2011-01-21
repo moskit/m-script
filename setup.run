@@ -51,7 +51,7 @@ then
       [ "X`which yum`" == "X" ] || `which yum` install bc
       ;;
     *)
-      "Unable to determine operating system, sorry.. PLease install BC manually."
+      echo "Unable to determine operating system, sorry.. PLease install BC manually."
       exit 1
       ;;
     esac
@@ -81,7 +81,7 @@ then
       [ "X`which yum`" == "X" ] || `which yum` install mailx
       ;;
     *)
-      "Unable to determine operating system, sorry.. PLease install Mailx manually."
+      echo "Unable to determine operating system, sorry.. PLease install Mailx manually."
       exit 1
       ;;
     esac
@@ -155,7 +155,7 @@ then
         [ "X`which yum`" == "X" ] || `which yum` install sqlite
         ;;
       *)
-        "Unable to determine operating system, sorry.. PLease install SQLite3 manually."
+        echo "Unable to determine operating system, sorry.. PLease install SQLite3 manually."
         exit 1
         ;;
       esac
