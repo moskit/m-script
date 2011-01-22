@@ -1,0 +1,37 @@
+#!/bin/bash
+
+solve() {
+bc << EOF
+scale=2
+${1}
+EOF
+}
+
+IFS1=$IFS
+IFS='
+'
+ps aux | tail -n +2 > ps.list
+for LINE in `cat ps.list | grep -v ^$`; do
+  command=`echo "${LINE}" | awk '{print $11}'`
+  virtual=`echo "${LINE}" | awk '{print $5}'`
+  resident=`echo "${LINE}" | awk '{print $6}'`
+  user=`echo "${LINE}" | awk '{print $1}'`
+  echo "${command} ${user} ${resident} ${virtual}" >> ps.list.reordered
+done
+for proc in `cat ps.list.reordered | awk '{print $1" "$2}' | sort | uniq` ; do
+  virtual=0
+  resident=0
+  procuser=`echo $proc | awk '{print $1" "$2}'`
+  for thisproc in `cat ps.list.reordered | grep "^${procuser}"` ; do
+    VSZ=`echo $thisproc | awk '{print $4}'`
+    RSS=`echo $thisproc | awk '{print $3}'`
+#echo "=== $VSZ $RSS $virtual $resident ==="
+    virtual=`solve "$virtual + ($VSZ / 1024)"`
+    resident=`solve "$resident + ($RSS / 1024)"`
+  done
+  echo "${procuser} ${resident}MB ${virtual}MB"
+done
+rm -f ps.list*
+IFS=$IFS1
+
+### for cat in applications cpanel system dotDefender http mail mysql ; do suma=0; for a in `cat mem_usage.txt | grep "${cat}$" | awk '{print $3}'`; do suma=`echo "scale=2; $suma + $a" | bc`; done; sumb=0; for b in `cat mem_usage.txt | grep "${cat}$" | awk '{print $4}'`; do sumb=`echo "scale=2; $sumb + $b" | bc`; done; echo "${cat} $suma $sumb"; done > totals

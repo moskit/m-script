@@ -1,0 +1,3 @@
+# If any pattern from this file matches a socket name, this socket is excluded
+# from being monitored
+
