@@ -83,6 +83,10 @@ ${SOCKCONNS} | grep STREAM > /tmp/m_script/sockets.$$
 #  | awk -F'STREAM' '{print $2}' | awk '{print $3}'
 while read LINE
 do
+  for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  do
+    [[ $LINE =~ $exclsocket ]] && continue
+  done
   socketfound=0
   t="${LINE##*[[:space:]]}"
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
