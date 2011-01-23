@@ -72,7 +72,7 @@ do
       break
     fi
   done
-[ $portfound -ne 1 ] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+  [[ $portfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 done < /tmp/m_script/ports.$$
 if [ "X${ports}" != "X" ]
 then
@@ -85,8 +85,9 @@ while read LINE
 do
   for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
   do
-    [[ $LINE =~ $exclsocket ]] && continue
+    [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
+  [[ $skip -eq 1 ]] && skip=0 && continue
   socketfound=0
   t="${LINE##*[[:space:]]}"
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
@@ -102,10 +103,11 @@ do
       l=`expr 20 - $m`
       for ((n=1; n <= $l; n++)); do printf " "; done
       printf "${t}\n"
-      portfound=1
+      socketfound=1
       break
     fi
   done
+  [[ $socketfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored."
 done < /tmp/m_script/sockets.$$
 rm -f /tmp/m_script/ports.$$ /tmp/m_script/sockets.$$
 if [ "X${sockets}" != "X" ]

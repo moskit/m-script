@@ -36,5 +36,9 @@ ${NETSTAT2} | grep STREAM > /tmp/m_script/netstat.tmp
 rm -f ${xpath}sockets.list
 while read LINE
 do
-  echo "${LINE##*[[:space:]]}" >> ${xpath}sockets.list
+  for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  do
+    [[ $LINE =~ $exclsocket ]] && skip=1 && break
+  done
+  [[ $skip -eq 1 ]] && skip=0 && echo "${LINE##*[[:space:]]}" >> ${xpath}sockets.list
 done < /tmp/m_script/netstat.tmp
