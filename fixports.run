@@ -41,5 +41,5 @@ do
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
-  [[ $skip -eq 1 ]] && skip=0 && echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
+  [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
 done < /tmp/m_script/netstat.tmp
