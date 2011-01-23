@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-xcommand=`basename $0`
-xpath=`echo $0 | sed "s|${xcommand}||"`
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
 install -d /tmp/m_script
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
@@ -31,14 +32,14 @@ if [ `uname` == "Linux" ]; then
 fi
 
 # Looking for open ports and putting them into file
-${NETSTAT1} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${xpath}ports.list
+${NETSTAT1} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${rpath}/ports.list
 ${NETSTAT2} | grep STREAM > /tmp/m_script/netstat.tmp
-rm -f ${xpath}sockets.list
+rm -f ${rpath}/sockets.list
 while read LINE
 do
-  for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  for exclsocket in `cat ${rpath}/conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
-  [[ $skip -eq 1 ]] && skip=0 && echo "${LINE##*[[:space:]]}" >> ${xpath}sockets.list
+  [[ $skip -eq 1 ]] && skip=0 && echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
 done < /tmp/m_script/netstat.tmp
