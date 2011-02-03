@@ -6,17 +6,26 @@ scale=2
 ${1}
 EOF
 }
+PATH="/sbin:/usr/sbin:${PATH}"
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+source ${rpath}/../mon.conf
+
+echo ""
+echo "Memory eaters:"
+echo "--------------"
 
 IFS1=$IFS
 IFS='
 '
-ps aux | tail -n +2 > ps.list
+ps aux | tail -n +2 > /tmp/m_script/ps.list
 for LINE in `cat ps.list | grep -v ^$`; do
   command=`echo "${LINE}" | awk '{print $11}'`
   virtual=`echo "${LINE}" | awk '{print $5}'`
   resident=`echo "${LINE}" | awk '{print $6}'`
   user=`echo "${LINE}" | awk '{print $1}'`
-  echo "${command} ${user} ${resident} ${virtual}" >> ps.list.reordered
+  echo "${command} ${user} ${resident} ${virtual}" >> /tmp/m_script/ps.list.reordered
 done
 for proc in `cat ps.list.reordered | awk '{print $1" "$2}' | sort | uniq` ; do
   virtual=0
@@ -29,9 +38,14 @@ for proc in `cat ps.list.reordered | awk '{print $1" "$2}' | sort | uniq` ; do
     virtual=`solve "$virtual + ($VSZ / 1024)"`
     resident=`solve "$resident + ($RSS / 1024)"`
   done
-  echo "${procuser} ${resident}MB ${virtual}MB"
+  if [[ `solve "$resident - $MEM_RES_MIN"` -ge 0 ]] ; then
+    echo "<**> Process \"${procuser}\" is using ${resident}MB of RAM"
+  fi
+  if [[ `solve "$virtual - $MEM_VIR_MIN"` -ge 0 ]] ; then
+    echo "<**> Process \"${procuser}\" is using ${virtual}MB of virtual memory"
+  fi
 done
-rm -f ps.list*
+rm -f /tmp/m_script/ps.list*
 IFS=$IFS1
 
 ### for cat in applications cpanel system dotDefender http mail mysql ; do suma=0; for a in `cat mem_usage.txt | grep "${cat}$" | awk '{print $3}'`; do suma=`echo "scale=2; $suma + $a" | bc`; done; sumb=0; for b in `cat mem_usage.txt | grep "${cat}$" | awk '{print $4}'`; do sumb=`echo "scale=2; $sumb + $b" | bc`; done; echo "${cat} $suma $sumb"; done > totals

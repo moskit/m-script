@@ -18,8 +18,8 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-ports=`cat ${rpath}/../ports.list | grep -v '^#' | grep -v '^[:space:]*#'`
-sockets=`cat ${rpath}/../sockets.list | grep -v '^#' | grep -v '^[:space:]*#'`
+ports=`cat ${rpath}/../ports.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
+sockets=`cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
 
