@@ -36,15 +36,19 @@ if [ "X$GIT" == "X" ]; then
 else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
 fi
-for script in `find "${rpath}/../" -type f -name "*.sh" -o -name "*.run"`; do
+find /tmp/m_script/.update -type d -name .git | xargs rm -rf
+for script in `find "/tmp/m_script/.update" -type f -name "*.sh" -o -name "*.run"`; do
   printf "${script##*/} ... "
-  updated=`echo "$script" | sed "s|${rpath}/../|/tmp/m_script/.update/|"`
-  if [ -e "${updated}" ]; then
-    if [ "${updated}" -nt "$script" ]; then
-      cp "${updated}" "$script" && chown `id -un`:`id -gn` "$script" && echo "OK"
+  oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
+  if [ -e "${oldscript}" ]; then
+    if [ "${script}" -nt "$oldscript" ]; then
+      cp "${script}" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
     else
-      echo "This file either dont exist in update or is older than the local one. Not updated"
+      echo "This file is older than the local one. Not updated"
     fi
+  else
+    printf "new file. Copying ... "
+    cp "${script}" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
   fi
 done
 rm -rf /tmp/m_script/.update/

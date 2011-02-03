@@ -20,28 +20,28 @@ IFS1=$IFS
 IFS='
 '
 ps aux | tail -n +2 > /tmp/m_script/ps.list
-for LINE in `cat ps.list | grep -v ^$`; do
+for LINE in `cat /tmp/m_script/ps.list | grep -v ^$`; do
   command=`echo "${LINE}" | awk '{print $11}'`
   virtual=`echo "${LINE}" | awk '{print $5}'`
   resident=`echo "${LINE}" | awk '{print $6}'`
   user=`echo "${LINE}" | awk '{print $1}'`
   echo "${command} ${user} ${resident} ${virtual}" >> /tmp/m_script/ps.list.reordered
 done
-for proc in `cat ps.list.reordered | awk '{print $1" "$2}' | sort | uniq` ; do
+for proc in `cat /tmp/m_script/ps.list.reordered | awk '{print $1" "$2}' | sort | uniq` ; do
   virtual=0
   resident=0
   procuser=`echo $proc | awk '{print $1" "$2}'`
-  for thisproc in `cat ps.list.reordered | grep "^${procuser}"` ; do
+  for thisproc in `cat /tmp/m_script/ps.list.reordered | grep "^${procuser}"` ; do
     VSZ=`echo $thisproc | awk '{print $4}'`
     RSS=`echo $thisproc | awk '{print $3}'`
 #echo "=== $VSZ $RSS $virtual $resident ==="
     virtual=`solve "$virtual + ($VSZ / 1024)"`
     resident=`solve "$resident + ($RSS / 1024)"`
   done
-  if [[ `solve "$resident - $MEM_RES_MIN"` -ge 0 ]] ; then
+  if [[ `echo "$resident > $MEM_RES_MIN"|bc` -eq 1 ]] ; then
     echo "<**> Process \"${procuser}\" is using ${resident}MB of RAM"
   fi
-  if [[ `solve "$virtual - $MEM_VIR_MIN"` -ge 0 ]] ; then
+  if [[ `echo "$virtual > $MEM_VIR_MIN"|bc` -eq 1 ]] ; then
     echo "<**> Process \"${procuser}\" is using ${virtual}MB of virtual memory"
   fi
 done
