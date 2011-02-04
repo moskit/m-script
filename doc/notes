@@ -1,0 +1,6 @@
+while true; do ps aux | awk '{print $3" "$11" "$12" "$13" "$14" "$15}' | grep -v ^0.0 | grep -v COMMAND | while read LINE; do a=${LINE%% *}; a=${a#*.}; if [[ $a -gt 80 ]]; then echo $LINE; fi; done; sleep 3; done
+
+while true; do ps aux | awk '{print $3" "$11" "$12" "$13" "$14" "$15}' | grep -v ^0.0 | grep -v COMMAND | while read LINE; do a=${LINE%% *}; a=${a#*.}; if [[ $a -gt 80 ]]; then echo $LINE; b=1; fi; done; if [ "X$b" == "X1" ]; then echo "---"; b=0; fi; sleep 10; done
+
+#getting IP
+/sbin/ifconfig eth0 | sed '/inet\ /!d;s/.*r://;s/\ .*//'

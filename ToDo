@@ -1,0 +1,2 @@
+remove the trailing slash from --only-pickup argument
+with --only-pickup it still searches for local backup folder
