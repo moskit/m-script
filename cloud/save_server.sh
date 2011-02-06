@@ -76,13 +76,13 @@ do
   [ -e $E ] || ex=0
 done
 [ "X$ex" != "X0" ] && EXCLUDE="-e $EXCLUDE" || EXCLUDE=""
-[ "X$1" == "X" ] && echo "Name needed" && exit 1
+[ "X$name" == "X" ] && echo "Name needed" && exit 1
 [ "X`which ec2-bundle-vol`" == "X" ] && echo "AMI Tools needed" && exit 1
 [ "X`which ec2-register`" == "X" ] && echo "API Tools needed" && exit 1
-arch=i386
+#arch=i386
 
 rm -rf ${SAVED_FILES_PATH%/}/image* 2>/dev/null
-ec2-bundle-vol -r $arch --prefix "${1}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT
-ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${1}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
-ec2-register --region $EC2_REGION "${BUCKETNAME}/${1}".manifest.xml -n "${1}"
+ec2-bundle-vol -r $arch --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT
+ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${name}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
+ec2-register --region $EC2_REGION "${BUCKETNAME}/${name}".manifest.xml -n "${name}"
 
