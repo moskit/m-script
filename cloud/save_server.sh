@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,8 +20,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster"
-necessary_options="cluster"
+possible_options="name"
+necessary_options="name"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -68,15 +69,20 @@ source ${rpath}/../conf/cloud.conf
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
+install -d $SAVED_FILES_PATH
+EXCLUDE="/usr/portage/distfiles"
+for E in $EXCLUDE
+do
+  [ -e $E ] || ex=0
+done
+[ "X$ex" != "X0" ] && EXCLUDE="-e $EXCLUDE" || EXCLUDE=""
+[ "X$1" == "X" ] && echo "Name needed" && exit 1
+[ "X`which ec2-bundle-vol`" == "X" ] && echo "AMI Tools needed" && exit 1
+[ "X`which ec2-register`" == "X" ] && echo "API Tools needed" && exit 1
+arch=i386
 
-ec2-describe-instances -F $APP_SERVERS_FILTER --show-empty-fields | grep '^INSTANCE' | awk '{print $18}' > $TMPDIR/${cluster}.servers.ips
-
-echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-while read IP; do
-  echo "  server ${IP}:${APP_SERVERS_PORT};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-done<$TMPDIR/${cluster}.servers.ips
-echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-
-
+rm -rf ${SAVED_FILES_PATH%/}/image* 2>/dev/null
+ec2-bundle-vol -r $arch --prefix "${1}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT
+ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${1}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
+ec2-register --region $EC2_REGION "${BUCKETNAME}/${1}".manifest.xml -n "${1}"
 
