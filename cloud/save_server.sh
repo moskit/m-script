@@ -79,10 +79,16 @@ done
 [ "X$name" == "X" ] && echo "Name needed" && exit 1
 [ "X`which ec2-bundle-vol`" == "X" ] && echo "AMI Tools needed" && exit 1
 [ "X`which ec2-register`" == "X" ] && echo "API Tools needed" && exit 1
-#arch=i386
 
+S3CMD=`which s3cmd 2>/dev/null`
+if [ -n "$S3CMD" ] ; then
+  echo "Removing AMI with the same name, if any"
+  $S3CMD del "${BUCKETNAME}/${name}"*
+else
+  echo "Warning: S3cmd not found, so S3 bucket ${BUCKETNAME} has not been searched for previously saved AMI with the same name. No worries, this search is just a precaution."
+fi
 rm -rf ${SAVED_FILES_PATH%/}/image* 2>/dev/null
-ec2-bundle-vol -r $arch --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT
+ec2-bundle-vol -r $ARCH --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT
 ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${name}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
 ec2-register --region $EC2_REGION "${BUCKETNAME}/${name}".manifest.xml -n "${name}"
 

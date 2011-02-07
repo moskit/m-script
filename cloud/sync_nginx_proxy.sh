@@ -18,9 +18,10 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
 possible_options="cluster"
-necessary_options="cluster"
+necessary_options=""
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -53,6 +54,18 @@ do
     exit 1
   fi
 done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options>"
+  echo 
+  echo "Without options all clusters defined in conf/cloud.conf will be synced"
+  echo
+  echo "Options:"
+  echo
+  echo "  --cluster=clustername    - syncs only this single cluster."
+  echo "                             No port number allowed here! Port(s) will"
+  echo "                             be taken from conf/cloud.conf"
+  exit 0
+fi
 found=0
 
 for option in `echo $necessary_options | sed 's/,//g'`; do
@@ -68,15 +81,31 @@ source ${rpath}/../conf/cloud.conf
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
+install -d $NGINX_PROXY_CLUSTER_CONF_DIR
+if [ -z "$cluster" ] ; then
+  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%:*}"; done; printf "$names" | sort | uniq`
+fi
 
-ec2-describe-instances -F $APP_SERVERS_FILTER --show-empty-fields | grep '^INSTANCE' | awk '{print $18}' > $TMPDIR/${cluster}.servers.ips
-
-echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-while read IP; do
-  echo "  server ${IP}:${APP_SERVERS_PORT};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-done<$TMPDIR/${cluster}.servers.ips
-echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-
+for cluster in "$cluster $CLUSTERS" ; do
+  for CLUSTER in $APP_SERVERS; do
+    if [ "X${CLUSTER%:*}" == "X$cluster" ] ; then
+      ports="$ports ${CLUSTER#*:}"
+    fi
+  done
+  mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev
+  for IP in `ec2-describe-instances -F "cluster=$cluster" --show-empty-fields --region $EC2_REGION | grep '^INSTANCE' | awk '{print $18}'` ; do
+    for PORT in $ports ; do
+      echo "$IP:$PORT" >> $TMPDIR/${cluster}.servers.ips
+    done
+  done
+  [ -z `$DIFF $TMPDIR/${cluster}.servers.ips.prev $TMPDIR/${cluster}.servers.ips` ] && continue
+  
+  echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
+  echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
+  while read IP; do
+    echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
+  done<$TMPDIR/${cluster}.servers.ips
+  echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
+done
 
 
