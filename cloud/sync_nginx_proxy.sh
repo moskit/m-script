@@ -20,9 +20,9 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
-possible_options="cluster"
+possible_options="cluster help"
 necessary_options=""
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
   found=0
@@ -78,27 +78,36 @@ if [[ found -eq 1 ]]; then
 fi
 
 source ${rpath}/../conf/cloud.conf
+
+for var in EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
+  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
+done
+
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 if [ -z "$cluster" ] ; then
-  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%:*}"; done; printf "$names" | sort | uniq`
+  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%:*}"; done; printf "$names" | sort | uniq` ; CLUSTERS=`echo $CLUSTERS`
+else
+  CLUSTERS="$cluster"
 fi
 
-for cluster in "$cluster $CLUSTERS" ; do
+for cluster in "$CLUSTERS" ; do
+  cluster=${cluster#* }; cluster=${cluster% *}
   for CLUSTER in $APP_SERVERS; do
     if [ "X${CLUSTER%:*}" == "X$cluster" ] ; then
       ports="$ports ${CLUSTER#*:}"
     fi
   done
-  mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev
-  for IP in `ec2-describe-instances -F "cluster=$cluster" --show-empty-fields --region $EC2_REGION | grep '^INSTANCE' | awk '{print $18}'` ; do
+  [ -f $TMPDIR/${cluster}.servers.ips ] && mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev
+  for IP in `ec2-describe-instances -F "tag:cluster=$cluster" --show-empty-fields --region $EC2_REGION | grep '^INSTANCE' | awk '{print $18}'` ; do
     for PORT in $ports ; do
+      PORT=${PORT#* }; PORT=${PORT% *}
       echo "$IP:$PORT" >> $TMPDIR/${cluster}.servers.ips
     done
   done
-  [ -z `$DIFF $TMPDIR/${cluster}.servers.ips.prev $TMPDIR/${cluster}.servers.ips` ] && continue
+  [ -f $TMPDIR/${cluster}.servers.ips.prev ] && [ -f $TMPDIR/${cluster}.servers.ips ] && [ -z "`$DIFF -q $TMPDIR/${cluster}.servers.ips.prev $TMPDIR/${cluster}.servers.ips`" ] && continue
   
   echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
   echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
@@ -108,4 +117,5 @@ for cluster in "$cluster $CLUSTERS" ; do
   echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
 done
 
+$NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND
 
