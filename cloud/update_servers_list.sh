@@ -81,7 +81,7 @@ fi
 
 source ${rpath}/../conf/cloud.conf
 
-for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
+for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
@@ -146,9 +146,9 @@ do
   echo "$inIP $sname $srole" >> ${rpath}/../servers.list
 done<$TMPDIR/ec2.servers.ips
 
-#${rpath}/update_nginx_proxy
-#${rpath}/update_hosts_file
-#${rpath}/update_mynetworks
-#${rpath}/update_firewalls
+${rpath}/update_nginx_proxy.sh
+${rpath}/update_hosts_file.sh
+${rpath}/update_mynetworks.sh
+#${rpath}/update_firewalls.sh
 
 
