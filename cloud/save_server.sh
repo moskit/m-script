@@ -70,12 +70,12 @@ PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 install -d $SAVED_FILES_PATH
-EXCLUDE="/usr/portage/distfiles"
-for E in $EXCLUDE
+#EXCLUDE_PATHS="/usr/portage/distfiles"
+for E in $EXCLUDE_PATHS
 do
   [ -e $E ] || ex=0
 done
-[ "X$ex" != "X0" ] && EXCLUDE="-e $EXCLUDE" || EXCLUDE=""
+[ "X$ex" != "X0" ] && EXCLUDE="-e $EXCLUDE_PATHS" || EXCLUDE=""
 [ "X$name" == "X" ] && echo "Name needed" && exit 1
 [ "X`which ec2-bundle-vol`" == "X" ] && echo "AMI Tools needed" && exit 1
 [ "X`which ec2-register`" == "X" ] && echo "API Tools needed" && exit 1
