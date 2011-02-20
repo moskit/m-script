@@ -36,7 +36,8 @@ if [ `uname` == "Linux" ]; then
   ROUTE="${NETSTATCMD} -rn"
 fi
 
-
+[ -f ${rpath}/../conf/sockets.exclude ] || touch ${rpath}/../conf/sockets.exclude
+[ -f ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
 source ${rpath}/../mon.conf
 
 echo
