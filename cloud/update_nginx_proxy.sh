@@ -82,6 +82,8 @@ source ${rpath}/../conf/cloud.conf
 for var in APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
+PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
+export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
