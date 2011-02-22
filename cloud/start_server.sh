@@ -66,7 +66,7 @@ if [[ found -eq 1 ]]; then
 fi
 
 source ${rpath}/../conf/cloud.conf
-for var in EXCLUDE_PATHS SAVED_FILES_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION ; do
+for var in EXCLUDE_PATHS SAVED_FILES_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
@@ -80,5 +80,6 @@ install -d $TMPDIR
 [ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
 
 amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
-ec2-start-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION "$amiID"
+[ -n "$amiID" ] && echo "Found AMI: $amiID" || exit 1
+ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION "$amiID"
 
