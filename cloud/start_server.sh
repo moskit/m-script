@@ -77,14 +77,15 @@ install -d $TMPDIR
 
 [ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
 
+[ "X$number" == "X" ] || number="-n $number"
 if [ "X$ami" == "X" ] ; then
   amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
   [ -n "$amiID" ] && echo "Found AMI: $amiID" || (echo "Unable to find any AMI to use" && exit 1)
 else
   amiID=$ami
 fi
-instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION -n $number "$amiID" | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
-ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster}
+instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $number $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
+[ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster}
 
 
 
