@@ -20,8 +20,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="name"
-necessary_options="name"
+possible_options="cluster ami"
+necessary_options=""
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -75,11 +75,13 @@ export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 
-[ "X$name" == "X" ] && echo "Name needed" && exit 1
-
 [ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
 
-amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
-[ -n "$amiID" ] && echo "Found AMI: $amiID" || exit 1
+if [ "X$ami" == "X" ] ; then
+  amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
+  [ -n "$amiID" ] && echo "Found AMI: $amiID" || (echo "Unable to find any AMI to use" && exit 1)
+else
+  amiID=$ami
+fi
 ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION "$amiID"
 
