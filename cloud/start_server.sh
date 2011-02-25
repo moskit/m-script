@@ -20,7 +20,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster ami number"
+possible_options="cluster ami number aki"
 necessary_options=""
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -76,7 +76,7 @@ TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 
 [ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
-
+[ "X$aki" == "X" ] || aki="--kernel $aki"
 [ "X$number" == "X" ] || number="-n $number"
 if [ "X$ami" == "X" ] ; then
   amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
@@ -84,7 +84,7 @@ if [ "X$ami" == "X" ] ; then
 else
   amiID=$ami
 fi
-instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $number $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
+instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
 [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster}
 
 

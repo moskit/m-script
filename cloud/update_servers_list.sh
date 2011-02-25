@@ -101,9 +101,9 @@ while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
-      sname=`$SSH $inIP hostname 2>/dev/null`
+      sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
       [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-      echo "$inIP|$extIP|$inst|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
+      [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$inst|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
       unset inIP extIP inst ami state keypair isize secgroup started zone aki ari cluster sname
     else
       firstline=0
@@ -129,9 +129,9 @@ do
   fi
 done<$TMPDIR/ec2.servers.tmp
 [ -z "$inIP" ] && echo "ERROR: empty IP!" >> ${rpath}/../cloud.log && exit 1
-sname=`$SSH $inIP hostname 2>/dev/null`
+sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
 [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-echo "$inIP|$extIP|$inst|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
+[ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$inst|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
 unset inIP extIP inst ami state keypair isize secgroup started zone aki ari cluster sname
 
 [ -f $TMPDIR/ec2.servers.ips.prev ] && [ -f $TMPDIR/ec2.servers.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.ips.prev $TMPDIR/ec2.servers.ips`" ] && exit 0
@@ -146,7 +146,9 @@ do
   echo "$inIP $sname $srole" >> ${rpath}/../servers.list
 done<$TMPDIR/ec2.servers.ips
 
-${rpath}/update_nginx_proxy.sh
+if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
+  ${rpath}/update_nginx_proxy.sh
+fi
 ${rpath}/update_hosts_file.sh
 ${rpath}/update_mynetworks.sh
 #${rpath}/update_firewalls.sh

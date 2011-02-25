@@ -20,7 +20,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="name"
+possible_options="name aki"
 necessary_options="name"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -97,8 +97,9 @@ if [ -n "$S3CMD" ] ; then
 else
   echo "Warning: S3cmd not found, so S3 bucket ${BUCKETNAME} has not been searched for previously saved AMI with the same name. No worries, this search is just a precaution."
 fi
+[ -n "$aki" ] && aki="--kernel $aki"
 rm -rf ${SAVED_FILES_PATH%/}/image* ${SAVED_FILES_PATH%/}/img-mnt* ${SAVED_FILES_PATH%/}/${name} ${SAVED_FILES_PATH%/}/${name}.manifest.xml ${SAVED_FILES_PATH%/}/${name}.part.* 2>/dev/null
-ec2-bundle-vol -r $ARCH --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT
+ec2-bundle-vol -r $ARCH --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT "$aki"
 ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${name}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
 amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
 [ -n "$amiID" ] && echo "The name ${name} is registered. De-registering first" && ec2-deregister -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $amiID
