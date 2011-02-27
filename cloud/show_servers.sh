@@ -162,8 +162,6 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-declare -a current_server
-
 source ${rpath}/../conf/cloud.conf
 for var in EXCLUDE_PATHS SAVED_FILES_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
@@ -177,11 +175,14 @@ install -d $TMPDIR
 [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
 
 ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.tmp
-
+newr=true
 while read SERVER
 do
-  if [[ $SERVER =~ ^RESERVATION ]] || [[ $SERVER =~ ^INSTANCE ]] ; then
-    [ -n "$current_server" ] && print_server $current_server
+  if [[ $SERVER =~ ^RESERVATION ]] ; then
+    [ -n "$current_server" ] && print_server $current_server && unset current_server
+    current_server=`parse_server $SERVER` && newr=false
+  elif [[ $SERVER =~ ^INSTANCE ]] && [[ $newr ]] ; then
+    print_server $current_server && unset current_server
     current_server=`parse_server $SERVER`
   else
     current_server="$current_server`parse_server $SERVER`"
