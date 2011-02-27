@@ -181,10 +181,10 @@ ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT
 while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] || [[ $SERVER =~ ^INSTANCE ]] ; then
-    [ -n "$current_server" ] && print_server($current_server)
-    current_server=`parse_server($SERVER)`
+    [ -n "$current_server" ] && print_server $current_server
+    current_server=`parse_server $SERVER`
   else
-    current_server="$current_server`parse_server($SERVER)`"
+    current_server="$current_server`parse_server $SERVER`"
   fi
 done<$TMPDIR/ec2.servers.tmp
 
