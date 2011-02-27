@@ -93,11 +93,11 @@ parse_server() {
     zone=`echo ${1} | awk -F'|' '{print $12}'`
     aki=`echo ${1} | awk -F'|' '{print $13}'`
     ari=`echo ${1} | awk -F'|' '{print $14}'`
-    printf "iID:$iID|ami:$ami|aki:$aki|ari:$ari|"
+    printf "iID::$iID|ami::$ami|aki::$aki|ari::$ari|"
     if [ "X$state" == "Xrunning" ] ; then
-      printf "inIP:$inIP|extIP:$extIP|"
+      printf "inIP::$inIP|extIP::$extIP|"
     fi
-    printf "state:$state|istarted:$istarted|zone:$zone|keypair:$keypair|"
+    printf "state::$state|istarted::$istarted|zone::$zone|keypair::$keypair|"
     
   fi
   if [[ ${1} =~ ^TAG ]] ; then
@@ -106,9 +106,9 @@ parse_server() {
     tagvalue=`echo ${1} | awk -F'|' '{print $5}'`
     if [ "X$object" == "Xinstance" ] ; then
       if [ "X$tag" == "Xcluster" ] ; then
-        printf "cluster:$tagvalue|"
+        printf "cluster::$tagvalue|"
       else
-        printf "tag:${tag}=${tagvalue}|"
+        printf "tag::${tag}=${tagvalue}|"
       fi
     fi
   fi
@@ -116,7 +116,7 @@ parse_server() {
     bdev=`echo ${1} | awk -F'|' '{print $2}'`
     bID=`echo ${1} | awk -F'|' '{print $3}'`
     bstarted=`echo ${1} | awk -F'|' '{print $4}'`
-    printf "bdev:$bdev|bID:$bID|bstarted:$bstarted|"
+    printf "bdev::$bdev|bID::$bID|bstarted::$bstarted|"
   fi
 }
 
