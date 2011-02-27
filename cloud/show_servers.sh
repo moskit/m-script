@@ -36,16 +36,16 @@ print_server() {
       extIP)
         line2="$line2 external $b"
         ;;
-      ami)
+      iami)
         line5="AMI: $b $line5"
         ;;
-      state)
+      istate)
         line4="State: $b $line4"
         ;;
-      zone)
+      izone)
         line3="Zone: $b $line3"
         ;;
-      keypair)
+      ikeypair)
         line3="$line3 Key: $b"
         ;;
       istarted)
@@ -57,7 +57,7 @@ print_server() {
       cluster)
         line1="$line1 cluster: $b"
         ;;
-      tag)
+      itag)
         line6="$line6 $b"
         ;;
       bdev)
@@ -69,10 +69,21 @@ print_server() {
       bstarted)
         line7="$line7 since $b\n"
         ;;
+      iaki)
+        line5="$line5  AKI: $b"
+        ;;
+      iari)
+        line5="$line5  ARI: $b"
+        ;;
     esac
   done
+  [ -n "$state" ] && [ "X$state" != "X$istate" ] && exit 0
+  [ -n "$ami" ] && [ "X$ami" != "X$iami" ] && exit 0
+  [ -n "$cluster" ] && [ "X$cluster" != "X$icluster" ] && exit 0
   echo "---------------------------------------------------------------------"
-  printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n${line6}\n${line7}\n"
+  printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
+  [ -n "$line6" ] && printf "${line6}\n"
+  [ -n "$line7" ] && printf "${line7}\n"
   unset line1 line2 line3 line4 line5 line6 line7
   IFS=$IFS1
 }
@@ -85,30 +96,30 @@ parse_server() {
     iID=`echo ${1} | awk -F'|' '{print $2}'`
     inIP=`echo ${1} | awk -F'|' '{print $18}'`
     extIP=`echo ${1} | awk -F'|' '{print $17}'`
-    ami=`echo ${1} | awk -F'|' '{print $3}'`
-    state=`echo ${1} | awk -F'|' '{print $6}'`
-    keypair=`echo ${1} | awk -F'|' '{print $7}'`
+    iami=`echo ${1} | awk -F'|' '{print $3}'`
+    istate=`echo ${1} | awk -F'|' '{print $6}'`
+    ikeypair=`echo ${1} | awk -F'|' '{print $7}'`
     isize=`echo ${1} | awk -F'|' '{print $10}'`
     istarted=`echo ${1} | awk -F'|' '{print $11}'`
-    zone=`echo ${1} | awk -F'|' '{print $12}'`
-    aki=`echo ${1} | awk -F'|' '{print $13}'`
-    ari=`echo ${1} | awk -F'|' '{print $14}'`
-    printf "iID::$iID|ami::$ami|aki::$aki|ari::$ari|"
-    if [ "X$state" == "Xrunning" ] ; then
+    izone=`echo ${1} | awk -F'|' '{print $12}'`
+    iaki=`echo ${1} | awk -F'|' '{print $13}'`
+    iari=`echo ${1} | awk -F'|' '{print $14}'`
+    printf "iID::$iID|ami::$iami|aki::$iaki|ari::$iari|"
+    if [ "X$istate" == "Xrunning" ] ; then
       printf "inIP::$inIP|extIP::$extIP|"
     fi
-    printf "state::$state|istarted::$istarted|zone::$zone|keypair::$keypair|"
+    printf "state::$istate|istarted::$istarted|zone::$izone|keypair::$ikeypair|"
     
   fi
   if [[ ${1} =~ ^TAG ]] ; then
     object=`echo ${1} | awk -F'|' '{print $2}'`
-    tag=`echo ${1} | awk -F'|' '{print $4}'`
+    itag=`echo ${1} | awk -F'|' '{print $4}'`
     tagvalue=`echo ${1} | awk -F'|' '{print $5}'`
     if [ "X$object" == "Xinstance" ] ; then
-      if [ "X$tag" == "Xcluster" ] ; then
+      if [ "X$itag" == "Xcluster" ] ; then
         printf "cluster::$tagvalue|"
       else
-        printf "tag::${tag}=${tagvalue}|"
+        printf "tag::${itag}=${tagvalue}|"
       fi
     fi
   fi
@@ -122,7 +133,7 @@ parse_server() {
 
 possible_options="cluster ami state"
 necessary_options=""
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
   found=0
@@ -194,7 +205,7 @@ do
     fi
   fi
 done<$TMPDIR/ec2.servers.tmp
-
+print_server "$current_server"
 unset newr current_server
 
 
