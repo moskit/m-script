@@ -37,9 +37,11 @@ print_server() {
         line2="$line2 external $b"
         ;;
       iami)
+        [ -n "$ami" ] && [ "X$ami" != "X$b" ] && return
         line5="AMI: $b $line5"
         ;;
       istate)
+        [ -n "$state" ] && [ "X$state" != "X$b" ] && return
         line4="State: $b $line4"
         ;;
       izone)
@@ -54,7 +56,8 @@ print_server() {
       SG)
         line1="${line1}Security group: $b"
         ;;
-      cluster)
+      icluster)
+        [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && return
         line1="$line1 cluster: $b"
         ;;
       itag)
@@ -77,9 +80,6 @@ print_server() {
         ;;
     esac
   done
-  [ -n "$state" ] && [ "X$state" != "X$istate" ] && exit 0
-  [ -n "$ami" ] && [ "X$ami" != "X$iami" ] && exit 0
-  [ -n "$cluster" ] && [ "X$cluster" != "X$icluster" ] && exit 0
   echo "---------------------------------------------------------------------"
   printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
   [ -n "$line6" ] && printf "${line6}\n"
