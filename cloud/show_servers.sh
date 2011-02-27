@@ -21,10 +21,11 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
 print_server() {
+  IFS1=$IFS
   IFS='|'
-  for s in `echo ${1}` ; do
-    a=`echo "$s" | cut -d: -f1`
-    b=`echo "$s" | cut -d: -f2`
+  for s in `echo "${1}"` ; do
+    a=`echo "$s" | awk -F'::' '{print $1}'`
+    b=`echo "$s" | awk -F'::' '{print $2}'`
     case $a in
       iID)
         line1="Server $b $line1"
@@ -72,6 +73,8 @@ print_server() {
   done
   echo "---------------------------------------------------------------------"
   printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n${line6}\n${line7}\n"
+  unset line1 line2 line3 line4 line5 line6 line7
+  IFS=$IFS1
 }
 
 parse_server() {
@@ -175,20 +178,23 @@ install -d $TMPDIR
 [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
 
 ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.tmp
-newr=true
+
 while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then
-    [ -n "$current_server" ] && print_server $current_server && unset current_server
-    current_server=`parse_server $SERVER` && newr=false
-  elif [[ $SERVER =~ ^INSTANCE ]] && [[ $newr ]] ; then
-    print_server $current_server && unset current_server
-    current_server=`parse_server $SERVER`
+    [ -n "$current_server" ] && print_server "$current_server" && unset current_server
+    current_server=`parse_server $SERVER` && unset newr
   else
-    current_server="$current_server`parse_server $SERVER`"
+    if [[ $SERVER =~ ^INSTANCE ]] && [ $newr ] ; then
+      print_server "$current_server" && unset current_server
+      current_server=`parse_server $SERVER`
+      newr=1
+    else
+      current_server="$current_server`parse_server $SERVER`"
+    fi
   fi
 done<$TMPDIR/ec2.servers.tmp
 
-
+unset newr current_server
 
 
