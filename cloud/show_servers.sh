@@ -104,11 +104,11 @@ parse_server() {
     izone=`echo ${1} | awk -F'|' '{print $12}'`
     iaki=`echo ${1} | awk -F'|' '{print $13}'`
     iari=`echo ${1} | awk -F'|' '{print $14}'`
-    printf "iID::$iID|ami::$iami|aki::$iaki|ari::$iari|"
+    printf "iID::$iID|iami::$iami|iaki::$iaki|iari::$iari|"
     if [ "X$istate" == "Xrunning" ] ; then
       printf "inIP::$inIP|extIP::$extIP|"
     fi
-    printf "state::$istate|istarted::$istarted|zone::$izone|keypair::$ikeypair|"
+    printf "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|"
     
   fi
   if [[ ${1} =~ ^TAG ]] ; then
@@ -117,9 +117,9 @@ parse_server() {
     tagvalue=`echo ${1} | awk -F'|' '{print $5}'`
     if [ "X$object" == "Xinstance" ] ; then
       if [ "X$itag" == "Xcluster" ] ; then
-        printf "cluster::$tagvalue|"
+        printf "icluster::$tagvalue|"
       else
-        printf "tag::${itag}=${tagvalue}|"
+        printf "itag::${itag}=${tagvalue}|"
       fi
     fi
   fi
