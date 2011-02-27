@@ -103,8 +103,8 @@ do
     if [[ $firstline -eq 0 ]] ; then
       sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
       [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-      [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$inst|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
-      unset inIP extIP inst ami state keypair isize secgroup started zone aki ari cluster sname
+      [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
+      unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
     else
       firstline=0
     fi
@@ -113,7 +113,7 @@ do
   if [[ $SERVER =~ ^INSTANCE ]] ; then
     inIP=`echo $SERVER | awk -F'|' '{print $18}'`
     extIP=`echo $SERVER | awk -F'|' '{print $17}'`
-    inst=`echo $SERVER | awk -F'|' '{print $2}'`
+    iID=`echo $SERVER | awk -F'|' '{print $2}'`
     ami=`echo $SERVER | awk -F'|' '{print $3}'`
     state=`echo $SERVER | awk -F'|' '{print $6}'`
     keypair=`echo $SERVER | awk -F'|' '{print $7}'`
@@ -121,7 +121,7 @@ do
     started=`echo $SERVER | awk -F'|' '{print $11}'`
     zone=`echo $SERVER | awk -F'|' '{print $12}'`
     aki=`echo $SERVER | awk -F'|' '{print $13}'`
-    zri=`echo $SERVER | awk -F'|' '{print $14}'`
+    ari=`echo $SERVER | awk -F'|' '{print $14}'`
   fi
   if [[ $SERVER =~ ^TAG ]] ; then
     tag=`echo $SERVER | awk -F'|' '{print $4}'`
@@ -131,8 +131,8 @@ done<$TMPDIR/ec2.servers.tmp
 [ -z "$inIP" ] && echo "ERROR: empty IP!" >> ${rpath}/../cloud.log && exit 1
 sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
 [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-[ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$inst|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
-unset inIP extIP inst ami state keypair isize secgroup started zone aki ari cluster sname
+[ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
+unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
 
 [ -f $TMPDIR/ec2.servers.ips.prev ] && [ -f $TMPDIR/ec2.servers.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.ips.prev $TMPDIR/ec2.servers.ips`" ] && exit 0
 
