@@ -92,17 +92,17 @@ print_server() {
     printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
     [ -n "$line6" ] && printf "${line6}\n"
     [ -n "$line7" ] && printf "${line7}\n"
-
   else
+    filter=`echo $filter | sed 's_,_|_g'`
     for s in `echo "${1}"` ; do
       a=`echo "$s" | awk -F'::' '{print $1}'`
       b=`echo "$s" | awk -F'::' '{print $2}'`
-      filter=`echo $filter | sed 's_,_|_g'`
+      [ "X$a" == "Xistate"] && [ -n "$state" ] && [ "X$state" != "X$b" ] && IFS=$IFS1 && return 0
       for s in $filter ; do
         [ "X$a" == "X$s" ] && printf "$b "
       done
-      printf "\n"
     done
+    printf "\n"
   fi
   IFS=$IFS1
   return 0
