@@ -93,16 +93,16 @@ print_server() {
     [ -n "$line6" ] && printf "${line6}\n"
     [ -n "$line7" ] && printf "${line7}\n"
   else
-    filter=`echo $filter | sed 's_,_|_g'`
     for s in `echo "${1}"` ; do
       a=`echo "$s" | awk -F'::' '{print $1}'`
       b=`echo "$s" | awk -F'::' '{print $2}'`
-      [ "X$a" == "Xistate"] && [ -n "$state" ] && [ "X$state" != "X$b" ] && IFS=$IFS1 && return 0
+      [ "X$a" == "Xistate" ] && [ -n "$state" ] && [ "X$state" != "X$b" ] && unset line && IFS=$IFS1 && return 0
       for s in $filter ; do
-        [ "X$a" == "X$s" ] && printf "$b "
+        [ "X$a" == "X$s" ] && printf line="${line}${b} "
       done
     done
-    printf "\n"
+    echo $line
+    unset line
   fi
   IFS=$IFS1
   return 0
@@ -151,7 +151,7 @@ parse_server() {
   fi
 }
 
-possible_options="cluster ami state filter noupdate"
+possible_options="cluster ami state filter noupdate help"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -196,6 +196,67 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+if [ -n "$help" ] ; then
+  case $help in 
+    cluster)
+      echo "Usage: --cluster=<cluster name>"
+      echo "  Shows only instances within this cluster"
+      echo "  (tagged with \"cluster=<cluster name>\")"
+    ;;
+    ami)
+      echo "Usage: --ami=<ami_id>"
+      echo "  Shows only instances with this AMI ID"
+    ;;
+    state)
+      echo "Usage: --state=<state>"
+      echo "  Shows only instances in this state"
+      echo "  e.g. --state=running"
+    ;;
+    filter)
+      cat << "EOF"
+Usage: --filter=<var1,var2,var3>
+
+  Shows the defined variables only, like this:
+  
+  var1 var2 var3
+  
+  for each instance according to other options, e.g. to get intenal and external
+  IPs of running instances, use:
+  
+  show_servers.sh --state=running --filter=inIP,extIP
+  
+  Possible variables are:
+  
+    iID
+    inIP
+    extIP
+    iami
+    istate
+    izone
+    ikeypair
+    istarted
+    SG
+    icluster
+    itag
+    bdev
+    bID
+    bstarted
+    iaki
+    iari
+  
+EOF
+      
+    ;;
+    noupdate)
+    
+    ;;
+    *)
+    echo "Use help=option"
+    echo "Possible options are: ${possible_options}"
+    ;;
+  esac
+fi
+
 source ${rpath}/../conf/cloud.conf
 for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
@@ -205,6 +266,8 @@ export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_
 
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
+
+filter=`echo $filter | sed 's_,_|_g'`
 
 if [ "X$noupdate" == "X" ] ; then
   [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
@@ -226,7 +289,7 @@ do
     fi
   fi
 done<$TMPDIR/ec2.servers.tmp
-print_server "$current_server"
+print_server "$current_server" && unset current_server
 unset newr current_server
 
 
