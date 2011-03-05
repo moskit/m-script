@@ -98,7 +98,7 @@ print_server() {
       b=`echo "$s" | awk -F'::' '{print $2}'`
       [ "X$a" == "Xistate" ] && [ -n "$state" ] && [ "X$state" != "X$b" ] && unset line && IFS=$IFS1 && return 0
       for s in $filter ; do
-        [ "X$a" == "X$s" ] && printf line="${line}${b} "
+        [ "X$a" == "X$s" ] && line="${line}${b} "
       done
     done
     echo $line
