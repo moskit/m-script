@@ -30,10 +30,10 @@ print_server() {
   local line7
   IFS1=$IFS
   IFS='|'
-  for s in `echo "${1}"` ; do
-    a=`echo "$s" | awk -F'::' '{print $1}'`
-    b=`echo "$s" | awk -F'::' '{print $2}'`
-    if [ "X$filter" == "X" ] ; then
+  if [ "X$filter" == "X" ] ; then
+    for s in `echo "${1}"` ; do
+      a=`echo "$s" | awk -F'::' '{print $1}'`
+      b=`echo "$s" | awk -F'::' '{print $2}'`
       case $a in
         iID)
           line1="Server $b $line1"
@@ -92,12 +92,17 @@ print_server() {
     printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
     [ -n "$line6" ] && printf "${line6}\n"
     [ -n "$line7" ] && printf "${line7}\n"
+
   else
-    filter=`echo $filter | sed 's_,_|_g'`
-    for s in $filter ; do
-      [ "X$a" == "X$s" ] && printf "$b "
+    for s in `echo "${1}"` ; do
+      a=`echo "$s" | awk -F'::' '{print $1}'`
+      b=`echo "$s" | awk -F'::' '{print $2}'`
+      filter=`echo $filter | sed 's_,_|_g'`
+      for s in $filter ; do
+        [ "X$a" == "X$s" ] && printf "$b "
+      done
+      printf "\n"
     done
-    printf "\n"
   fi
   IFS=$IFS1
   return 0
