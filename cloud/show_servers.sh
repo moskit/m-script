@@ -21,76 +21,91 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
 print_server() {
+  local line1
+  local line2
+  local line3
+  local line4
+  local line5
+  local line6
+  local line7
   IFS1=$IFS
   IFS='|'
   for s in `echo "${1}"` ; do
     a=`echo "$s" | awk -F'::' '{print $1}'`
     b=`echo "$s" | awk -F'::' '{print $2}'`
-    case $a in
-      iID)
-        line1="Server $b $line1"
-        ;;
-      inIP)
-        line2="IP: internal $b $line2"
-        ;;
-      extIP)
-        line2="$line2 external $b"
-        ;;
-      iami)
-        [ -n "$ami" ] && [ "X$ami" != "X$b" ] && return
-        line5="AMI: $b $line5"
-        ;;
-      istate)
-        [ -n "$state" ] && [ "X$state" != "X$b" ] && return
-        line4="State: $b $line4"
-        ;;
-      izone)
-        line3="Zone: $b $line3"
-        ;;
-      ikeypair)
-        line3="$line3 Key: $b"
-        ;;
-      istarted)
-        line4="$line4 since $b"
-        ;;
-      SG)
-        line1="${line1}Security group: $b"
-        ;;
-      icluster)
-        [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && return
-        line1="$line1 cluster: $b"
-        ;;
-      itag)
-        line6="$line6 $b"
-        ;;
-      bdev)
-        line7="EBS device: $b $line7"
-        ;;
-      bID)
-        line7="$line7 ID: $b"
-        ;;
-      bstarted)
-        line7="$line7 since $b\n"
-        ;;
-      iaki)
-        line5="$line5  AKI: $b"
-        ;;
-      iari)
-        line5="$line5  ARI: $b"
-        ;;
-    esac
-  done
-  echo "---------------------------------------------------------------------"
-  printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
-  [ -n "$line6" ] && printf "${line6}\n"
-  [ -n "$line7" ] && printf "${line7}\n"
-  unset line1 line2 line3 line4 line5 line6 line7
+    if [ "X$filter" == "X" ] ; then
+      case $a in
+        iID)
+          line1="Server $b $line1"
+          ;;
+        inIP)
+          line2="IP: internal $b $line2"
+          ;;
+        extIP)
+          line2="$line2 external $b"
+          ;;
+        iami)
+          [ -n "$ami" ] && [ "X$ami" != "X$b" ] && IFS=$IFS1 && return 0
+          line5="AMI: $b $line5"
+          ;;
+        istate)
+          [ -n "$state" ] && [ "X$state" != "X$b" ] && IFS=$IFS1 && return 0
+          line4="State: $b $line4"
+          ;;
+        izone)
+          line3="Zone: $b $line3"
+          ;;
+        ikeypair)
+          line3="$line3 Key: $b"
+          ;;
+        istarted)
+          line4="$line4 since $b"
+          ;;
+        SG)
+          line1="${line1}Security group: $b"
+          ;;
+        icluster)
+          [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
+          line1="$line1 cluster: $b"
+          ;;
+        itag)
+          line6="$line6 $b"
+          ;;
+        bdev)
+          line7="EBS device: $b $line7"
+          ;;
+        bID)
+          line7="$line7 ID: $b"
+          ;;
+        bstarted)
+          line7="$line7 since $b\n"
+          ;;
+        iaki)
+          line5="$line5  AKI: $b"
+          ;;
+        iari)
+          line5="$line5  ARI: $b"
+          ;;
+      esac
+    done
+    echo "---------------------------------------------------------------------"
+    printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
+    [ -n "$line6" ] && printf "${line6}\n"
+    [ -n "$line7" ] && printf "${line7}\n"
+  else
+    filter=`echo $filter | sed 's_,_|_g'`
+    for s in $filter ; do
+      [ "X$a" == "X$s" ] && printf "$b "
+    done
+    printf "\n"
+  fi
   IFS=$IFS1
+  return 0
 }
 
 parse_server() {
   if [[ ${1} =~ ^RESERVATION ]] ; then
-    printf "SG:`echo ${1} | awk -F'|' '{print $4}'`|"
+    printf "SG::`echo ${1} | awk -F'|' '{print $4}'`|"
   fi
   if [[ ${1} =~ ^INSTANCE ]] ; then
     iID=`echo ${1} | awk -F'|' '{print $2}'`
@@ -131,7 +146,7 @@ parse_server() {
   fi
 }
 
-possible_options="cluster ami state"
+possible_options="cluster ami state filter noupdate"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -177,7 +192,7 @@ if [[ found -eq 1 ]]; then
 fi
 
 source ${rpath}/../conf/cloud.conf
-for var in EXCLUDE_PATHS SAVED_FILES_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
+for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
@@ -186,9 +201,10 @@ export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 
-[ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
-
-${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.tmp
+if [ "X$noupdate" == "X" ] ; then
+  [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
+  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.tmp
+fi
 
 while read SERVER
 do

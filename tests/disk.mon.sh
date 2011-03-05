@@ -111,7 +111,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
         echo "${drspeed}" >> /tmp/m_script/diskiord
         dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
         dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
-        if [[ $dwtime -ne 0 ]]; then
+        if [[ $dwtime -gt 100 ]]; then
         dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
         else
           dwspeed=0
