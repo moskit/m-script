@@ -151,7 +151,7 @@ parse_server() {
   fi
 }
 
-possible_options="cluster ami state filter noupdate help"
+possible_options="cluster ami state filter noupdate help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -243,18 +243,20 @@ Usage: --filter=<var1,var2,var3>
     bstarted
     iaki
     iari
-  
+
 EOF
-      
-    ;;
-    noupdate)
     
     ;;
+    noupdate)
+      echo "Usage: --noupdate"
+      echo "doesn't query AWS, uses the raw data of the previous query instead"
+    ;;
     *)
-    echo "Use help=option"
-    echo "Possible options are: ${possible_options}"
+      echo "Use help=option"
+      echo "Possible options are: ${possible_options}"
     ;;
   esac
+  exit 0
 fi
 
 source ${rpath}/../conf/cloud.conf
@@ -268,6 +270,7 @@ TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 
 filter=`echo $filter | sed 's_,_|_g'`
+[ -n "$region" ] && EC2_REGION=$region
 
 if [ "X$noupdate" == "X" ] ; then
   [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1

@@ -24,7 +24,7 @@ SED=`which sed 2>/dev/null`
 [ -z "$SED" ] && echo "Sed utility not found, exiting" && exit 1
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
-possible_options="cluster help"
+possible_options="cluster help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -88,14 +88,17 @@ PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
+
+[ -n "$region" ] && EC2_REGION=$region
+
 `which date` >> ${rpath}/../cloud.log
 echo "------------------" >> ${rpath}/../cloud.log
 
 changed=0
-[ -f $TMPDIR/ec2.servers.ips ] && mv $TMPDIR/ec2.servers.ips $TMPDIR/ec2.servers.ips.prev
+[ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips ] && mv $TMPDIR/ec2.servers.${EC2_REGION}.ips $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev
 [ -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] || (echo "ec2-describe-instances binary not found! Exiting.." >> ${rpath}/../cloud.log && exit 1)
   
-${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.tmp
+${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.${EC2_REGION}.tmp
 firstline=1
 while read SERVER
 do
@@ -103,7 +106,7 @@ do
     if [[ $firstline -eq 0 ]] ; then
       sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
       [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-      [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
+      [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
       unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
     else
       firstline=0
@@ -127,24 +130,24 @@ do
     tag=`echo $SERVER | awk -F'|' '{print $4}'`
     [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | awk -F'|' '{print $5}'`
   fi
-done<$TMPDIR/ec2.servers.tmp
+done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
 [ -z "$inIP" ] && echo "ERROR: empty IP!" >> ${rpath}/../cloud.log && exit 1
 sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
 [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-[ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.ips
+[ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
 unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
 
-[ -f $TMPDIR/ec2.servers.ips.prev ] && [ -f $TMPDIR/ec2.servers.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.ips.prev $TMPDIR/ec2.servers.ips`" ] && exit 0
+[ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev $TMPDIR/ec2.servers.${EC2_REGION}.ips`" ] && exit 0
 
-$SED -i -e '/^#/!d' ${rpath}/../servers.list
+$SED -i -e "/${EC2_REGION}[[:space:]]*$/d" ${rpath}/../servers.list
 echo >> ${rpath}/../servers.list
 while read SERVER
 do
   inIP=`echo $SERVER | awk -F'|' '{print $1}'`
   sname=`echo $SERVER | awk -F'|' '{print $13}'`
   srole=`echo $SERVER | awk -F'|' '{print $14}'`
-  echo "$inIP $sname $srole" >> ${rpath}/../servers.list
-done<$TMPDIR/ec2.servers.ips
+  echo "$inIP $sname $srole ${EC2_REGION}" >> ${rpath}/../servers.list
+done<$TMPDIR/ec2.servers.${EC2_REGION}.ips
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
   ${rpath}/update_nginx_proxy.sh

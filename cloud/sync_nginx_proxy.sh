@@ -20,7 +20,7 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
-possible_options="cluster help"
+possible_options="cluster help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -87,6 +87,9 @@ export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
+
+[ -n "$region" ] && EC2_REGION=$region
+
 `which date` >> ${rpath}/../cloud.log
 echo "------------------" >> ${rpath}/../cloud.log
 if [ -z "$cluster" ] ; then

@@ -20,7 +20,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster ami number aki"
+possible_options="cluster ami number aki region"
 necessary_options=""
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -74,6 +74,8 @@ export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_
 
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
+
+[ -n "$region" ] && EC2_REGION=$region
 
 [ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
 [ "X$aki" == "X" ] || aki="--kernel $aki"
