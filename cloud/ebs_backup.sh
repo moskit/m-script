@@ -19,7 +19,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-currtime=`date +"%s"`
+currtime=`date`
 
 possible_options="keep cluster ami state filter noupdate help region"
 necessary_options=""
@@ -152,6 +152,7 @@ if [ -n "$keep" ] ; then
     cat $TMPDIR/snapshots.list | grep " $ebs " | while read snap ; do
       snapID=`echo $snap | awk '{print $2}'`
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
+      snaptime=`date -d "$snaptime" +"%s"`
       if [[ $snaptime -lt $outdated ]] ; then
         ec2-delete-snapshot $snapID
       fi
