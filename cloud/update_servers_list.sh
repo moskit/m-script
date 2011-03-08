@@ -104,7 +104,9 @@ while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
-      sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      if [ -f "keys/${keypair}.pem" ] ; then
+        sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      fi
       [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
       [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
       unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
