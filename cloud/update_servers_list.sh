@@ -91,6 +91,7 @@ install -d $TMPDIR
 
 [ -n "$region" ] && EC2_REGION=$region
 
+localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 `which date` >> ${rpath}/../cloud.log
 echo "------------------" >> ${rpath}/../cloud.log
 
@@ -105,7 +106,11 @@ do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
       if [ -f "keys/${keypair}.pem" ] ; then
-        sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+        if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
+          sname=`hostname`
+        else
+          sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+        fi
       fi
       [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
       [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
