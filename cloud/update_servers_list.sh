@@ -106,15 +106,17 @@ while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
-      if [ -f "keys/${keypair}.pem" ] ; then
-        if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
-          sname=`hostname`
-        else
-          sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      if [ "X$state" == "Xrunning" ] ; then
+        if [ -f "keys/${keypair}.pem" ] ; then
+          if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
+            sname=`hostname`
+          else
+            sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+          fi
         fi
+        [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
+        echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
       fi
-      [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-      [ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
       unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
     else
       firstline=0
@@ -139,10 +141,17 @@ do
     [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | awk -F'|' '{print $5}'`
   fi
 done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
-[ -z "$inIP" ] && echo "ERROR: empty IP!" >> ${rpath}/../cloud.log && exit 1
-sname=`$SSH -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
-[ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-[ "X$state" == "Xrunning" ] && echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
+if [ "X$state" == "Xrunning" ] ; then
+  if [ -f "keys/${keypair}.pem" ] ; then
+    if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
+      sname=`hostname`
+    else
+      sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+    fi
+  fi
+  [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
+  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
+fi
 unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
 
 [ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev $TMPDIR/ec2.servers.${EC2_REGION}.ips`" ] && exit 0
