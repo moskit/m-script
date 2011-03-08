@@ -69,7 +69,7 @@ source ${rpath}/../conf/cloud.conf
 for var in BUCKETNAME EXCLUDE_PATHS SAVED_FILES_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
-PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
+PATH="${EC2_TOOLS_BIN_PATH}:${EC2_AMI_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_REGION PATH
 [ -n "$region" ] && EC2_REGION=$region
 TMPDIR=/tmp/m_script/cloud

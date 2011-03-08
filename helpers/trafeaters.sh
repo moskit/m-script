@@ -15,20 +15,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+### This script is monitoring net traffic between the machine it is running on
+### and other hosts in the same network
+ 
+class=24  # means CIDR notation ( /${class} )
 
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
+
+solve() {
+bc << EOF
+scale=2
+${1}
+EOF
+}
 
 NMAP=`which nmap 2>/dev/null`
 [ "X$NMAP" == "X" ] && echo "Nmap not found. It's needed for this script to work, sorry" && exit 0
 IPT=`which iptables 2>/dev/null`
 [ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
 MAILX=`which mail 2>/dev/null`
+IFCFG=`which ifconfig 2>/dev/null`
 
 possible_options="ip if threshold"
 necessary_options=""
-#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
   found=0
@@ -76,48 +88,65 @@ if [ -n "$ip" ] && [ -f "$if" ] ; then
   exit 0
 fi
 
+if [ -n "$threshold" ] ; then
+  [[ $threshold =~ [A-Za-z.,] ]] && echo "Threshold must be an integer. Setting it to 0" && threshold=0
+else
+  threshold=0
+fi
+
 TMPDIR=/tmp/m_script
 install -d $TMPDIR
 
 ip=`echo "$ip" | sed 's|,| |g'`
 if=`echo "$if" | sed 's|,| |g'`
 
-$IPT -X ACCT_IN
-$IPT -X ACCT_OUT
-$IPT -N ACCT_IN
-$IPT -N ACCT_OUT
+$IPT -L ACCT_IN >/dev/null 2>&1
+[[ $? -eq 1 ]] && $IPT -N ACCT_IN || $IPT -F ACCT_IN
+$IPT -L ACCT_OUT >/dev/null 2>&1
+[[ $? -eq 1 ]] && $IPT -N ACCT_OUT || $IPT -F ACCT_OUT
 
+if [ -n "$ip" ] ; then
+  for i in $ip ; do $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} ; done
+fi
+if [ -n "$if" ] ; then
+  [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+  for ifc in $if ; do
+    i=`$IFCFG $ifc | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
+    $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i}
+  done
+fi
 IFS1=$IFS
 IFS='
 '
-for ipt in `for i in $ip; do $NMAP -sP ${i}/24 | grep -v "${i%.*}\.1\)"; done | grep ^Host`; do
-  ipt="${ipt#*(}"; ipt="${ipt%)*}"
+[ -f $TMPDIR/ips.list ] && rm -f $TMPDIR/ips.list
+for ipt in `cat $TMPDIR/nmap.sp.* | grep 'Status: Up' | grep ^Host | awk '{print $2}'`; do
   $IPT -I ACCT_IN -d $ipt
   $IPT -I ACCT_OUT -s $ipt
-  echo $ipt >> $TMPDIR/ips.`date +"%H.%M.%S"`
+  echo $ipt >> $TMPDIR/ips.list
 done
 sleep 100
 $IPT -L ACCT_OUT -x -n -v | tail -n +2 | awk '{print $7" "$2}' > ${TMPDIR}/ipt.out
 $IPT -L ACCT_IN -x -n -v | tail -n +2 | awk '{print $8" "$2}' > ${TMPDIR}/ipt.in
-echo "     IP          incoming      outcoming"
+
 for ip in `cat ${TMPDIR}/ips.list`; do
   trin=`cat ${TMPDIR}/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve "$trin / 800000"`
   trout=`cat ${TMPDIR}/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve "$trout / 800000"`
-  if [ $trin != "0" ] || [ $trout != "0" ]; then
-    echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" > ${TMPDIR}/trafeaters.report
-    if [[ $trin -gt 3  ]] || [[ $trout -gt 3 ]]; then
-      $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> ${TMPDIR}/trafeaters.report 2>&1
-    fi
+  if [[ $trin -gt $threshold  ]] || [[ $trout -gt $threshold ]]; then
+    echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" >> ${TMPDIR}/trafeaters.report
+#    $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> ${TMPDIR}/trafeaters.report 2>&1
   fi
 done
 
+
 if [ `cat ${TMPDIR}/trafeaters.report | wc -l` -gt 0 ] ; then
-  cat ${TMPDIR}/trafeaters.report >> ${rpath}/../monitoring.log
+  cat ${TMPDIR}/trafeaters.report >> ${rpath}/../monitoring.log && rm -f ${TMPDIR}/trafeaters.report
   for MLINE in `cat ${rpath}/../mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
   do
     cat ${TMPDIR}/trafeaters.report | ${MAILX} -s "Server $(hostname -f) traffic consumers" ${MLINE}
   done
+else
+  echo "No traffic eaters at the moment" >> ${rpath}/../monitoring.log
 fi
 
-rm -f ${TMPDIR}/ips.* ${TMPDIR}/ipt.in ${TMPDIR}/ipt.out
+rm -f ${TMPDIR}/ips.* ${TMPDIR}/ipt.in ${TMPDIR}/ipt.out $TMPDIR/nmap.sp.* 2>/dev/null
 IFS=$IFS1
