@@ -58,20 +58,20 @@ then
       thrt=0
       for cpu in `ls /proc/acpi/processor`
       do
-        if [ "X`cat /proc/acpi/processor/$cpu/throttling | grep 'T0' | awk '{print $2}'`" == 'X100%' ] ; then isnormal=''; else isnormal='is scaled down by' ; fi
-        thrstate=`cat /proc/acpi/processor/$cpu/throttling | grep '\*' | awk '{ print $1}'`
+        if [ "X`cat /proc/acpi/processor/$cpu/throttling | grep 'T0:' | awk '{print $2}'`" == 'X100%' ] ; then isnormal=''; else isnormal=' scaled down by' ; fi
+        thrstate=`cat /proc/acpi/processor/$cpu/throttling | grep '\*' | awk '{ print $1}' | sed 's_*__'`
         thr=`cat /proc/acpi/processor/$cpu/throttling | grep '\*' | awk '{ print $2}' | sed "s|%$||" | sed "s|^0||"`
         thrt=`solve "$thrt + $thr"`
         if [ "X${thr}" == "X0" ]; then
           warnind='(OK) '
         else
-          if [ "X${thr}" == "X100" ] && [ "X${thrstate}" == "XT0" ]; then
+          if [ "X${thr}" == "X100" ] && [ "X${thrstate}" == "XT0:" ]; then
             warnind='(OK) '
           else
             warnind='<***>'
           fi
         fi
-        echo "${warnind} $cpu frequency $isnormal ${thr} %"
+        echo "${warnind} $cpu frequency is$isnormal ${thr} %"
       done
       thrt=`solve "$thrt / $cpunum"`
     fi

@@ -144,9 +144,10 @@ echo >> ${rpath}/../servers.list
 while read SERVER
 do
   inIP=`echo $SERVER | awk -F'|' '{print $1}'`
+  skey=`echo $SERVER | awk -F'|' '{print $6}'`
   sname=`echo $SERVER | awk -F'|' '{print $13}'`
   srole=`echo $SERVER | awk -F'|' '{print $14}'`
-  echo "$inIP $sname $srole ${EC2_REGION}" >> ${rpath}/../servers.list
+  echo "$inIP $sname $skey $srole ${EC2_REGION}" >> ${rpath}/../servers.list
 done<$TMPDIR/ec2.servers.${EC2_REGION}.ips
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
