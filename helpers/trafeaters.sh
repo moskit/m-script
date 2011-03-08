@@ -30,6 +30,7 @@ scale=2
 ${1}
 EOF
 }
+declare -i threshold
 
 NMAP=`which nmap 2>/dev/null`
 [ "X$NMAP" == "X" ] && echo "Nmap not found. It's needed for this script to work, sorry" && exit 0
@@ -106,13 +107,13 @@ $IPT -L ACCT_OUT >/dev/null 2>&1
 [[ $? -eq 1 ]] && $IPT -N ACCT_OUT || $IPT -F ACCT_OUT
 
 if [ -n "$ip" ] ; then
-  for i in $ip ; do $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} ; done
+  for i in $ip ; do $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} > /dev/null ; done
 fi
 if [ -n "$if" ] ; then
   [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
   for ifc in $if ; do
     i=`$IFCFG $ifc | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
-    $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i}
+    $NMAP -n -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} > /dev/null
   done
 fi
 IFS1=$IFS
@@ -138,7 +139,7 @@ for ip in `cat ${TMPDIR}/ips.list`; do
 done
 
 
-if [ `cat ${TMPDIR}/trafeaters.report | wc -l` -gt 0 ] ; then
+if [ `cat ${TMPDIR}/trafeaters.report 2>/dev/null | wc -l` -gt 0 ] ; then
   cat ${TMPDIR}/trafeaters.report >> ${rpath}/../monitoring.log && rm -f ${TMPDIR}/trafeaters.report
   for MLINE in `cat ${rpath}/../mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
   do

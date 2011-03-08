@@ -115,77 +115,8 @@ warnind='(OK) '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
 echo "${warnind} Active memory is ${mactiveram} MB, ${totalramused}% of total RAM"
-$VMSTAT -n 1 6 | grep -v "^[a-z]" | grep -v "^\ [a-z]" | awk '{ print $13}' > /tmp/m_script/cpuusage
-tail -n 5 /tmp/m_script/cpuusage > /tmp/m_script/cpuusage.1
-mv /tmp/m_script/cpuusage.1 /tmp/m_script/cpuusage
-cputestnum=`cat /tmp/m_script/cpuusage | wc -l`
-cpuusage=0
-while read LINE
-do
-  cpuusage=`solve "$cpuusage + $LINE"`
-done < /tmp/m_script/cpuusage
-cpuusage=`solve "$cpuusage / $cputestnum"`
-y1="$(echo "$cpuusage >= $CPU_USAGE_1" | bc)"
-y2="$(echo "$cpuusage >= $CPU_USAGE_2" | bc)"
-y3="$(echo "$cpuusage >= $CPU_USAGE_3" | bc)"
 
-warnind='(OK) '
-[ "$y1" == "1" ] && warnind=' <*> '
-[ "$y2" == "1" ] && warnind='<**> '
-[ "$y3" == "1" ] && warnind='<***>'
-echo "${warnind} Average CPU usage is ${cpuusage}"
-if [ -d "/proc/acpi/processor" ]
-then
-  throttle=`find /proc/acpi/processor -name "throttling"`
-  if [ "X$throttle" != "X" ]
-  then
-    if [ `cat $throttle | grep -c 'not supported'` -eq 0 ]
-    then
-      cpunum=`ls /proc/acpi/processor | wc -l`
-      thrt=0
-      for cpu in `ls /proc/acpi/processor`
-      do
-        thr=`cat /proc/acpi/processor/$cpu/throttling | grep '\*' | awk '{ print $2}' | sed "s|%$||" | sed "s|^0||"`
-        thrt=`solve "$thrt + $thr"`
-        if [ "X${thr}" == "X0" ]; then
-          warnind='(OK) '
-        else
-          warnind='<***>'
-        fi
-        echo "${warnind} $cpu frequency is scaled down by ${thr} %"
-      done
-      thrt=`solve "$thrt / $cpunum"`
-    fi
-  fi
-fi
-if [ -d /proc/acpi/thermal_zone ]
-then
-  if [ `ls /proc/acpi/thermal_zone | wc -l` -ne 0 ]
-  then
-    temperature=`find /proc/acpi/thermal_zone -name temperature`
-    if [ "X$temperature" != "X" ]
-    then
-      thrmnum=`ls /proc/acpi/thermal_zone | wc -l`
-      tmprt=0
-      for thrm in `ls /proc/acpi/thermal_zone`
-      do
-        tmpr=`cat /proc/acpi/thermal_zone/$thrm/temperature  | awk '{ print $2}'`
-        tmprt=`solve "$tmprt + $tmpr"`
-        y1="$(echo "$tmpr >= $CPU_TEMP_1" | bc)"
-        y2="$(echo "$tmpr >= $CPU_TEMP_2" | bc)"
-        y3="$(echo "$tmpr >= $CPU_TEMP_3" | bc)"
-
-        warnind='(OK) '
-        [ "$y1" == "1" ] && warnind=' <*> '
-        [ "$y2" == "1" ] && warnind='<**> '
-        [ "$y3" == "1" ] && warnind='<***>'
-        echo "${warnind} The $thrm zone temperature is ${tmpr} Centigrade"
-      done
-      tmprt=`solve "$tmprt / $thrmnum"`
-    fi
-  fi
-fi
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
 then
-  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime='${dbuptime}', loadavg=$rloadavg, procnum=$rtotalprocess, cpuusage=$cpuusage, cpufscale='${thrt}', cputemp='${tmprt}' where timeindex='$timeindexnow'"
+  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime='${dbuptime}', loadavg=$rloadavg, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi
