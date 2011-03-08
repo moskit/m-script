@@ -164,7 +164,7 @@ do
   skey=`echo $SERVER | awk -F'|' '{print $6}'`
   sname=`echo $SERVER | awk -F'|' '{print $13}'`
   srole=`echo $SERVER | awk -F'|' '{print $14}'`
-  echo "$inIP $sname $skey $srole ${EC2_REGION}" >> ${rpath}/../servers.list
+  echo "$inIP $skey ${EC2_REGION} $sname $srole" >> ${rpath}/../servers.list
 done<$TMPDIR/ec2.servers.${EC2_REGION}.ips
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
