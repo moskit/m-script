@@ -24,6 +24,7 @@ SED=`which sed 2>/dev/null`
 [ -z "$SED" ] && echo "Sed utility not found, exiting" && exit 1
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+IFCFG=`which ifconfig 2>/dev/null`
 possible_options="cluster help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -91,7 +92,7 @@ install -d $TMPDIR
 
 [ -n "$region" ] && EC2_REGION=$region
 
-localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
+[ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 `which date` >> ${rpath}/../cloud.log
 echo "------------------" >> ${rpath}/../cloud.log
 
