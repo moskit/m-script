@@ -58,14 +58,7 @@ do
     fi
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
-  done
-  [ "X$s_option" == "X$s_param" ] && found=1
-  if [[ found -ne 1 ]]; then 
-    echo "Unknown option: $s_optname"
-    exit 1
-  fi
+
 done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
@@ -79,14 +72,6 @@ if [ "X$help" == "Xyes" ] ; then
 fi
 found=0
 
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
-  exit 1
-fi
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
