@@ -132,7 +132,7 @@ $IPT -L ACCT_IN -x -n -v | tail -n +2 | awk '{print $8" "$2}' > ${TMPDIR}/ipt.in
 for ip in `cat ${TMPDIR}/ips.list`; do
   trin=`cat ${TMPDIR}/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve "$trin / 800000"`
   trout=`cat ${TMPDIR}/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve "$trout / 800000"`
-  if [[ $trin -gt $threshold  ]] || [[ $trout -gt $threshold ]]; then
+  if [[ `echo "( $trin - $threshold ) > 0" | bc` -eq 1  ]] || [[ `echo "( $trout - $threshold ) > 0" | bc` -eq 1 ]]; then
     echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" >> ${TMPDIR}/trafeaters.report
 #    $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> ${TMPDIR}/trafeaters.report 2>&1
   fi
