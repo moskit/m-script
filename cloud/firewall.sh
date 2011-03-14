@@ -23,9 +23,9 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-IPTABLES=`which iptables 2>/dev/null`
+[ -f "/sbin/iptables" ] && IPTABLES=/sbin/iptables || IPTABLES=`which iptables 2>/dev/null`
 [ "X$IPTABLES" == "X" ] && echo "iptables not found!" && exit 1
-IFCONFIG=`which ifconfig 2>/dev/null`
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCONFIG=`which ifconfig 2>/dev/null`
 if [ "X$IFCONFIG" == "X" ]; then
   IFCONFIG=`which ip 2>/dev/null`
   if [ "X$IFCONFIG" == "X" ]; then

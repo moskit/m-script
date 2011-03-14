@@ -30,16 +30,27 @@ scale=2
 ${1}
 EOF
 }
+
+cleanup() {
+rm -f ${TMPDIR}/trafeaters.report ${TMPDIR}/ips.* ${TMPDIR}/ipt.in ${TMPDIR}/ipt.out $TMPDIR/nmap.sp.* 2>/dev/null
+$IPT -F M_ACCT_IN
+$IPT -F M_ACCT_OUT
+sh ${TMPDIR}/cleanup
+$IPT -X M_ACCT_IN
+$IPT -X M_ACCT_OUT
+unset threshold NMAP NETSTAT MAILX possible_options necessary_options s_option s_optname s_optarg found s_param option missing_options ip if TMPDIR IFCFG IPT local_networks forwarded_only i ipt trin trout rpath
+}
+
 declare -i threshold
 
 NMAP=`which nmap 2>/dev/null`
 [ "X$NMAP" == "X" ] && echo "Nmap not found. It's needed for this script to work, sorry" && exit 0
-IPT=`which iptables 2>/dev/null`
+NETSTAT=`which netstat 2>/dev/null`
+[ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
 [ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
 MAILX=`which mail 2>/dev/null`
-IFCFG=`which ifconfig 2>/dev/null`
-
-possible_options="ip if threshold"
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+possible_options="ip if threshold local_networks forwarded_only"
 necessary_options=""
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -98,36 +109,71 @@ fi
 TMPDIR=/tmp/m_script
 install -d $TMPDIR
 
-ip=`echo "$ip" | sed 's|,| |g'`
-if=`echo "$if" | sed 's|,| |g'`
+[ -n "$ip" ] && ip=`echo "$ip" | sed 's|,| |g'`
+[ -n "$if" ] && if=`echo "$if" | sed 's|,| |g'`
 
-$IPT -L ACCT_IN >/dev/null 2>&1
-[[ $? -eq 1 ]] && $IPT -N ACCT_IN || $IPT -F ACCT_IN
-$IPT -L ACCT_OUT >/dev/null 2>&1
-[[ $? -eq 1 ]] && $IPT -N ACCT_OUT || $IPT -F ACCT_OUT
+$IPT -L M_ACCT_IN >/dev/null 2>&1
+[[ $? -eq 1 ]] && $IPT -N M_ACCT_IN || $IPT -F M_ACCT_IN
+$IPT -L M_ACCT_OUT >/dev/null 2>&1
+[[ $? -eq 1 ]] && $IPT -N M_ACCT_OUT || $IPT -F M_ACCT_OUT
 
-if [ -n "$ip" ] ; then
-  for i in $ip ; do $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} > /dev/null ; done
+if [ "X$forwarded_only" == "Xyes" ] ; then
+  if [ -n "$if" ] ; then
+    for i in $if ; do
+      $IPT -A FORWARD -i $i -j M_ACCT_OUT && echo "$IPT -D FORWARD -i $i -j M_ACCT_OUT" >> $TMPDIR/cleanup
+      $IPT -A FORWARD -o $i -j M_ACCT_IN && echo "$IPT -D FORWARD -o $i -j M_ACCT_IN" >> $TMPDIR/cleanup
+    done
+  else
+    [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+    for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}'` ; do
+      $IPT -A FORWARD -i $i -j M_ACCT_OUT && echo "$IPT -D FORWARD -i $i -j M_ACCT_OUT" >> $TMPDIR/cleanup
+      $IPT -A FORWARD -o $i -j M_ACCT_IN && echo "$IPT -D FORWARD -o $i -j M_ACCT_IN" >> $TMPDIR/cleanup
+    done
+  fi
+  unset i
+else
+  if [ -n "$if" ] ; then
+    for i in $if ; do
+      $IPT -A INPUT -i $i -j M_ACCT_IN && echo "$IPT -D INPUT -i $i -j M_ACCT_IN" >> $TMPDIR/cleanup
+      $IPT -A OUTPUT -o $i -j M_ACCT_OUT && echo "$IPT -D OUTPUT -o $i -j M_ACCT_OUT" >> $TMPDIR/cleanup
+    done
+  else
+    [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+    for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}'` ; do
+      $IPT -A INPUT -i $i -j M_ACCT_IN && echo "$IPT -D INPUT -i $i -j M_ACCT_IN" >> $TMPDIR/cleanup
+      $IPT -A OUTPUT -o $i -j M_ACCT_OUT && echo "$IPT -D OUTPUT -o $i -j M_ACCT_OUT" >> $TMPDIR/cleanup
+    done
+  fi
+  unset i
 fi
-if [ -n "$if" ] ; then
-  [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
-  for ifc in $if ; do
-    i=`$IFCFG $ifc | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
-    $NMAP -n -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} > /dev/null
-  done
+
+if [ "X$local_networks" == "Xyes" ] ; then
+  if [ -n "$ip" ] ; then
+    for i in $ip ; do $NMAP -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} > /dev/null ; done
+  fi
+  if [ -n "$if" ] ; then
+    [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+    for ifc in $if ; do
+      i=`$IFCFG $ifc | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
+      $NMAP -n -sP ${i%.*}.0/${class} -oG $TMPDIR/nmap.sp.${i} > /dev/null
+    done
+  fi
+  cat $TMPDIR/nmap.sp.* | grep 'Status: Up' | grep ^Host | awk '{print $2}' > $TMPDIR/ips.list
+else
+  $NETSTAT -tuapn | grep EST | grep -v '127.0.0.1' | awk '{print $5}' | awk -F':' '{print $1}' | sort | uniq > $TMPDIR/ips.list
 fi
+
 IFS1=$IFS
 IFS='
 '
-[ -f $TMPDIR/ips.list ] && rm -f $TMPDIR/ips.list
-for ipt in `cat $TMPDIR/nmap.sp.* | grep 'Status: Up' | grep ^Host | awk '{print $2}'`; do
-  $IPT -I ACCT_IN -d $ipt
-  $IPT -I ACCT_OUT -s $ipt
-  echo $ipt >> $TMPDIR/ips.list
+
+for ipt in `cat $TMPDIR/ips.list`; do
+  $IPT -I M_ACCT_IN -d $ipt
+  $IPT -I M_ACCT_OUT -s $ipt
 done
 sleep 100
-$IPT -L ACCT_OUT -x -n -v | tail -n +2 | awk '{print $7" "$2}' > ${TMPDIR}/ipt.out
-$IPT -L ACCT_IN -x -n -v | tail -n +2 | awk '{print $8" "$2}' > ${TMPDIR}/ipt.in
+$IPT -L M_ACCT_OUT -x -n -v | tail -n +2 | awk '{print $7" "$2}' > ${TMPDIR}/ipt.out
+$IPT -L M_ACCT_IN -x -n -v | tail -n +2 | awk '{print $8" "$2}' > ${TMPDIR}/ipt.in
 
 for ip in `cat ${TMPDIR}/ips.list`; do
   trin=`cat ${TMPDIR}/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve "$trin / 800000"`
@@ -140,7 +186,7 @@ done
 
 
 if [ `cat ${TMPDIR}/trafeaters.report 2>/dev/null | wc -l` -gt 0 ] ; then
-  cat ${TMPDIR}/trafeaters.report >> ${rpath}/../monitoring.log && rm -f ${TMPDIR}/trafeaters.report
+  cat ${TMPDIR}/trafeaters.report >> ${rpath}/../monitoring.log
   for MLINE in `cat ${rpath}/../mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
   do
     cat ${TMPDIR}/trafeaters.report | ${MAILX} -s "Server $(hostname -f) traffic consumers" ${MLINE}
@@ -149,5 +195,6 @@ else
   echo "No traffic eaters at the moment" >> ${rpath}/../monitoring.log
 fi
 
-rm -f ${TMPDIR}/ips.* ${TMPDIR}/ipt.in ${TMPDIR}/ipt.out $TMPDIR/nmap.sp.* 2>/dev/null
+cleanup
+
 IFS=$IFS1
