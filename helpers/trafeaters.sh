@@ -36,6 +36,7 @@ rm -f ${TMPDIR}/trafeaters.report ${TMPDIR}/ips.* ${TMPDIR}/ipt.in ${TMPDIR}/ipt
 $IPT -F M_ACCT_IN
 $IPT -F M_ACCT_OUT
 sh ${TMPDIR}/cleanup
+rm -f ${TMPDIR}/cleanup
 $IPT -X M_ACCT_IN
 $IPT -X M_ACCT_OUT
 unset threshold NMAP NETSTAT MAILX possible_options necessary_options s_option s_optname s_optarg found s_param option missing_options ip if TMPDIR IFCFG IPT local_networks forwarded_only i ipt trin trout rpath

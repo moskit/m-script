@@ -154,10 +154,12 @@ if [ -n "$keep" ] ; then
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
       snaptime=`date -d "$snaptime" +"%s"`
       if [[ $snaptime -lt $outdated ]] ; then
-        ec2-delete-snapshot $snapID
+        printf "Deleting snapshot $snapID created at $snaptime ... "
+        ec2-delete-snapshot $snapID && echo "done" || echo "error"
       fi
     done
-    ec2-create-snapshot $ebs
+    printf "Creating snapshot of volume $ebs ... "
+    ec2-create-snapshot $ebs && echo "done" || echo "error"
   done
 else
   for ebs in `cat $TMPDIR/volumes.list` ; do
