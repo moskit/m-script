@@ -22,15 +22,16 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="cluster help region"
+possible_options="cluster help region verbose"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+commflag=0
 for s_option in "${@}"
 do
   found=0
   case ${s_option} in
   --*=*)
-    if [ -n "$commflag" ] ; then
+    if [ "$commflag" == "1" ] ; then
       command="$command ${s_option}"
     else
       s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
@@ -38,7 +39,7 @@ do
     fi
     ;;
   --*)
-    if [ -n "$commflag" ] ; then
+    if [ "$commflag" == "1" ] ; then
       command="$command ${s_option}"
     else
       s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
@@ -50,7 +51,7 @@ do
     exit 1
     ;;
   *)
-    if [ -n "$commflag" ] ; then
+    if [ "$commflag" == "1" ] ; then
       command="$command ${s_option}"
     else
       commflag=1
@@ -58,16 +59,23 @@ do
     fi
     ;;
   esac
-
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options>"
+  echo "Usage: ${0##*/} <options> command"
   echo 
-  echo "Without options all found clusters will be synced"
+  echo "Without options the command will be run on all servers from servers.list"
   echo
   echo "Options:"
   echo
-  echo "  --cluster=clustername    - syncs only this single cluster."
+  echo "  --cluster=clustername    - the command will be run on all servers"
+  echo "                             from this cluster."
+  echo "  --region=region          - the command will be run on all servers"
+  echo "                             from this region."
+  echo "  --verbose                - shows each server details before running"
+  echo "                             the command."
   exit 0
 fi
 found=0
@@ -88,6 +96,11 @@ for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v
   if [ -n "$cluster" ] ; then
     CLUSTER=`echo $server | cut -d' ' -f5`
     [ "X$CLUSTER" == "X$cluster" ] || continue
+  fi
+  if [ "X$verbose" == "Xyes" ] ; then
+    echo
+    echo "### Server: $server"
+    echo
   fi
   if [ `echo $IP | grep -c $localip` -ne 0 ] ; then
     eval $command

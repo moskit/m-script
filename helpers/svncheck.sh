@@ -86,13 +86,13 @@ for repo in `cat ${rpath}/../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v 
   [ "X$repouser" == "X" ] || repouser="--username=$repouser"
   repopass=`echo "${repo}" | cut -d'|' -f5`
   [ "X$repopass" == "X" ] || repopass="--password=$repopass"
-  prevrev=`cat "${rpath}/../repos.revisions" | grep "^$reponame" | cut -d'|' -f2`
+  prevrev=`cat "${rpath}/../repos.revisions" | grep "^$reponame" | cut -d' ' -f2 | sed 's|[^0-9]||g'`
   [ -n "$prevrev" ] || prevrev=0
-  currev=`$SVN $repouser $repopass --non-interactive info "$repourl" | grep ^Revision | cut -d' ' -f2`
+  currev=`$SVN $repouser $repopass --non-interactive info "$repourl" | grep '^Last Changed Rev' | cut -d':' -f2 | sed 's|[^0-9]||g'`
   if [[ $prevrev =~ [0-9] ]] && [[ $currev =~ [0-9] ]] ; then
     if [ $currev -gt $prevrev ] ; then
-      sed -i -e "/^$reponame/d" ${rpath}/../conf/deployment.conf
-      echo "$reponame $currev" | tee -a ${rpath}/../conf/deployment.conf
+      sed -i -e "/^$reponame/d" ${rpath}/../repos.revisions
+      echo "$reponame $currev" | tee -a ${rpath}/../repos.revisions
     else
       echo "$reponame 0"
     fi
