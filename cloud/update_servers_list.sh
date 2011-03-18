@@ -156,8 +156,8 @@ unset inIP extIP iID ami state keypair isize secgroup started zone aki ari clust
 
 [ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev $TMPDIR/ec2.servers.${EC2_REGION}.ips`" ] && exit 0
 
-$SED -i -e "/${EC2_REGION}[[:space:]]*$/d" ${rpath}/../servers.list
-echo >> ${rpath}/../servers.list
+$SED -i -e "/[[:space:]]${EC2_REGION}[[:space:]].*$/d" ${rpath}/../servers.list
+
 while read SERVER
 do
   inIP=`echo $SERVER | awk -F'|' '{print $1}'`

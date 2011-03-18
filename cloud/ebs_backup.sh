@@ -149,21 +149,22 @@ if [ -n "$keep" ] ; then
   outdated=`date -d "$currtime - $keep days" +"%s"`
   ec2-describe-snapshots $region > $TMPDIR/snapshots.list
   for ebs in `cat $TMPDIR/volumes.list` ; do
-    cat $TMPDIR/snapshots.list | grep " $ebs " | while read snap ; do
+    cat $TMPDIR/snapshots.list | grep "[[:space:]]$ebs[[:space:]]" | while read snap ; do
       snapID=`echo $snap | awk '{print $2}'`
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
       snaptime=`date -d "$snaptime" +"%s"`
       if [[ $snaptime -lt $outdated ]] ; then
         printf "Deleting snapshot $snapID created at $snaptime ... "
-        ec2-delete-snapshot $snapID && echo "done" || echo "error"
+        printf "`ec2-delete-snapshot $snapID` ... " && echo "DONE" || echo "ERROR"
       fi
     done
     printf "Creating snapshot of volume $ebs ... "
-    ec2-create-snapshot $ebs && echo "done" || echo "error"
+    printf "`ec2-create-snapshot $ebs` ... " && echo "DONE" || echo "ERROR"
   done
 else
   for ebs in `cat $TMPDIR/volumes.list` ; do
-    ec2-create-snapshot $ebs
+    printf "Creating snapshot of volume $ebs ... "
+    printf "`ec2-create-snapshot $ebs` ... " && echo "DONE" || echo "ERROR"
   done
 fi
 
