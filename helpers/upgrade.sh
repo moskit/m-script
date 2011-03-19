@@ -37,7 +37,7 @@ else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
 fi
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf
-for script in `find "/tmp/m_script/.update" -type f -name "*.sh" -o -name "*.run"`; do
+for script in `find "/tmp/m_script/.update" -executable -type f`; do
   printf "${script##*/} ... "
   oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
   if [ -e "${oldscript}" ]; then
