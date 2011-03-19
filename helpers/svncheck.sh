@@ -80,6 +80,9 @@ IFS='
 '
 for repo in `cat ${rpath}/../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   reponame=`echo "${repo}" | cut -d'|' -f1`
+  [ -n "$repository" ] && [ "$repository" == "$reponame" ] || continue
+  repocluster=`echo "${repo}" | cut -d'|' -f6`
+  [ -n "$cluster" ] && [ "$cluster" == "$repocluster" ] || continue
   # only svn is supported so far
   repourl=`echo "${repo}" | cut -d'|' -f3`
   repouser=`echo "${repo}" | cut -d'|' -f4`
