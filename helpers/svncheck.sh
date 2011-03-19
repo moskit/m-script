@@ -19,7 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 SVN=`which svn 2>/dev/null`
-[ "X$SVN" == "X" ] && echo "No svn found, exiting" && exit 1
+[ "X$SVN" == "X" ] && echo "No Subversion found, exiting" && exit 1
 possible_options="cluster help repository"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
