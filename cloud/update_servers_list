@@ -110,11 +110,11 @@ do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
       if [ "X$state" == "Xrunning" ] ; then
-        if [ -f "keys/${keypair}.pem" ] ; then
+        if [ -f "${rpath}/../keys/${keypair}.pem" ] ; then
           if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
             sname=`hostname`
           else
-            sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+            sname=`$SSH -i "${rpath}/../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
           fi
         fi
         [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
@@ -146,11 +146,11 @@ do
 done
 
 if [ "X$state" == "Xrunning" ] ; then
-  if [ -f "${rpath}/keys/${keypair}.pem" ] ; then
+  if [ -f "${rpath}/../keys/${keypair}.pem" ] ; then
     if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
       sname=`hostname`
     else
-      sname=`$SSH -i "${rpath}/keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      sname=`$SSH -i "${rpath}/../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
     fi
   fi
   [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
@@ -177,5 +177,7 @@ fi
 ${rpath}/update_hosts_file.sh
 ${rpath}/update_mynetworks.sh
 #${rpath}/update_firewalls.sh
+
+IFS=$IFS1
 
 
