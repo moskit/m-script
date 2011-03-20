@@ -75,10 +75,17 @@ if [ "X$check" == "Xyes" ] ; then
   done
 else
   for repo in `cat ${rpath}/../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
-    reponame=`echo "${repo}" | cut -d'|' -f1`
-    [ -n "$repository" ] && [ "$repository" == "$reponame" ] || continue
+    if [ -n "$repository" ] ; then
+      if [ "$repository" != "$reponame" ] ; then
+        continue
+      fi
+    fi
     repocluster=`echo "${repo}" | cut -d'|' -f6`
-    [ -n "$cluster" ] && [ "$cluster" == "$repocluster" ] || continue
+    if [ -n "$cluster" ] ; then
+      if [ "$cluster" == "$repocluster" ] ; then
+        continue
+      fi
+    fi
     # only svn is supported so far
     repourl=`echo "${repo}" | cut -d'|' -f3`
     repouser=`echo "${repo}" | cut -d'|' -f4`
