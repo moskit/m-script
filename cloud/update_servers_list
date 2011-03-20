@@ -102,7 +102,10 @@ changed=0
   
 ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.${EC2_REGION}.tmp
 firstline=1
-while read SERVER
+IFS1=$IFS
+IFS='
+'
+for SERVER in `cat $TMPDIR/ec2.servers.${EC2_REGION}.tmp`
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
@@ -140,13 +143,14 @@ do
     tag=`echo $SERVER | awk -F'|' '{print $4}'`
     [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | awk -F'|' '{print $5}'`
   fi
-done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
+done
+
 if [ "X$state" == "Xrunning" ] ; then
-  if [ -f "keys/${keypair}.pem" ] ; then
+  if [ -f "${rpath}/keys/${keypair}.pem" ] ; then
     if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
       sname=`hostname`
     else
-      sname=`$SSH -i "keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      sname=`$SSH -i "${rpath}/keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
     fi
   fi
   [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log

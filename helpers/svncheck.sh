@@ -28,35 +28,32 @@ do
   found=0
   case ${s_option} in
   --*=*)
-    if [ -n "$commflag" ] ; then
-      command="$command ${s_option}"
-    else
-      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
-      s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
-    fi
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
     ;;
   --*)
-    if [ -n "$commflag" ] ; then
-      command="$command ${s_option}"
-    else
-      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-      s_optarg='yes'
-    fi
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
     ;;
   *=*)
-    command="$command ${s_option}"
+    echo "Wrong syntax: options must start with a double dash"
     exit 1
     ;;
   *)
-    if [ -n "$commflag" ] ; then
-      command="$command ${s_option}"
-    else
-      commflag=1
-      command="${s_option}"
-    fi
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
     ;;
   esac
-
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
 done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
@@ -80,9 +77,9 @@ IFS='
 '
 for repo in `cat ${rpath}/../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   reponame=`echo "${repo}" | cut -d'|' -f1`
-  [ -n "$repository" ] && [ "$repository" == "$reponame" ] || continue
+  [ -n "$repository" ] && ([ "$repository" == "$reponame" ] || continue)
   repocluster=`echo "${repo}" | cut -d'|' -f6`
-  [ -n "$cluster" ] && [ "$cluster" == "$repocluster" ] || continue
+  [ -n "$cluster" ] && ([ "$cluster" == "$repocluster" ] || continue)
   # only svn is supported so far
   repourl=`echo "${repo}" | cut -d'|' -f3`
   repouser=`echo "${repo}" | cut -d'|' -f4`
