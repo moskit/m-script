@@ -82,7 +82,7 @@ else
     fi
     repocluster=`echo "${repo}" | cut -d'|' -f6`
     if [ -n "$cluster" ] ; then
-      if [ "$cluster" == "$repocluster" ] ; then
+      if [ "$cluster" != "$repocluster" ] ; then
         continue
       fi
     fi

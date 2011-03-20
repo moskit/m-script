@@ -83,7 +83,7 @@ for repo in `cat ${rpath}/../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v 
   fi
   repocluster=`echo "${repo}" | cut -d'|' -f6`
   if [ -n "$cluster" ] ; then
-    if [ "$cluster" == "$repocluster" ] ; then
+    if [ "$cluster" != "$repocluster" ] ; then
       continue
     fi
   fi
