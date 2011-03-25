@@ -21,6 +21,8 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
 print_server() {
+# icluster is not always present
+  [[ "$1" =~ '|icluster::' ]] || return 0
   local line1
   local line2
   local line3
@@ -97,6 +99,7 @@ print_server() {
       a=`echo "$s" | awk -F'::' '{print $1}'`
       b=`echo "$s" | awk -F'::' '{print $2}'`
       [ "X$a" == "Xistate" ] && [ -n "$state" ] && [ "X$state" != "X$b" ] && unset line && IFS=$IFS1 && return 0
+      [ "X$a" == "Xicluster" ] && [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && unset line && IFS=$IFS1 && return 0
       for s in $filter ; do
         [ "X$a" == "X$s" ] && line="${line}${b} "
       done
@@ -260,11 +263,11 @@ EOF
 fi
 
 source ${rpath}/../conf/cloud.conf
-for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
+for var in EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
-export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_REGION PATH
+export EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_AK EC2_REGION PATH
 
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
@@ -274,7 +277,7 @@ filter=`echo $filter | sed 's_,_|_g'`
 
 if [ "X$noupdate" == "X" ] ; then
   [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
-  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.tmp
+  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.${EC2_REGION}.tmp
 fi
 
 while read SERVER
@@ -291,7 +294,7 @@ do
       current_server="$current_server`parse_server $SERVER`"
     fi
   fi
-done<$TMPDIR/ec2.servers.tmp
+done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
 print_server "$current_server" && unset current_server
 unset newr current_server
 
