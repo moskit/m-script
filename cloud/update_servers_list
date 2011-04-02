@@ -172,11 +172,11 @@ do
 done<$TMPDIR/ec2.servers.${EC2_REGION}.ips
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
-  ${rpath}/update_nginx_proxy.sh
+  ${rpath}/update_nginx_proxy
 fi
-${rpath}/update_hosts_file.sh
-${rpath}/update_mynetworks.sh
-#${rpath}/update_firewalls.sh
+${rpath}/update_hosts_file
+${rpath}/update_mynetworks
+#${rpath}/update_firewalls
 
 IFS=$IFS1
 

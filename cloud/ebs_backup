@@ -70,71 +70,36 @@ if [ -n "$help" ] ; then
   case $help in 
     cluster)
       echo "Usage: --cluster=<cluster name>"
-      echo "  Shows only instances within this cluster"
-      echo "  (tagged with \"cluster=<cluster name>\")"
+      echo "  Backups volumes belonging to this cluster only"
+      echo "  (attached to instances tagged with \"cluster=<cluster name>\")"
     ;;
     ami)
       echo "Usage: --ami=<ami_id>"
-      echo "  Shows only instances with this AMI ID"
+      echo "  Backups volumes attached to instances with this AMI ID"
     ;;
     state)
       echo "Usage: --state=<state>"
-      echo "  Shows only instances in this state"
+      echo "  Backups volumes attached to instances in this state"
       echo "  e.g. --state=running"
-    ;;
-    filter)
-      cat << "EOF"
-Usage: --filter=<var1,var2,var3>
-
-  Shows the defined variables only, like this:
-  
-  var1 var2 var3
-  
-  for each instance according to other options, e.g. to get intenal and external
-  IPs of running instances, use:
-  
-  show_servers.sh --state=running --filter=inIP,extIP
-  
-  Possible variables are:
-  
-    iID
-    inIP
-    extIP
-    iami
-    istate
-    izone
-    ikeypair
-    istarted
-    SG
-    icluster
-    itag
-    bdev
-    bID
-    bstarted
-    iaki
-    iari
-
-EOF
-    
     ;;
     noupdate)
       echo "Usage: --noupdate"
-      echo "doesn't query AWS, uses the raw data of the previous query instead"
+      echo "  Doesn't query AWS, uses the raw data of the previous query instead"
     ;;
     *)
       echo "Use help=option"
-      echo "Possible options are: ${possible_options}"
+      echo "  Possible options are: ${possible_options}"
     ;;
   esac
   exit 0
 fi
 
 source ${rpath}/../conf/cloud.conf
-for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
+for var in EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
-export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_REGION PATH
+export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 
 TMPDIR=/tmp/m_script/cloud
 install -d $TMPDIR
@@ -144,7 +109,7 @@ install -d $TMPDIR
 [ -n "$ami" ] && ami="--ami=$ami"
 [ -n "$state" ] && state="--state=$state"
 
-${rpath}/show_servers.sh $noupdate $region $cluster $ami $state --filter=bID > $TMPDIR/volumes.list
+${rpath}/show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $TMPDIR/volumes.list
 if [ -n "$keep" ] ; then
   outdated=`date -d "$currtime - $keep days" +"%s"`
   ec2-describe-snapshots $region > $TMPDIR/snapshots.list

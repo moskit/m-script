@@ -95,7 +95,7 @@ else
     repopath=`echo "${repo}" | cut -d'|' -f7`
     [ -n "$cluster" ] && cluster="--cluster=$cluster"
     [ "X$verbose" == "Xyes" ] && verbose="--verbose"
-    ${rpath}/cloudexec $cluster $verbose svn export $repouser $repopass --non-interactive $repourl $repopath
+    ${rpath}/cloudexec "$cluster" "$verbose" "svn export $repouser $repopass --non-interactive $repourl $repopath"
   done
 fi
 

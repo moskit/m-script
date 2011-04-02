@@ -102,7 +102,7 @@ for cluster in "$CLUSTERS" ; do
       ports="$ports ${CLUSTER#*:}"
     fi
   done
-  [ -f $TMPDIR/${cluster}.servers.ips ] && mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev || ${rpath}/update_servers_list.sh
+  [ -f $TMPDIR/${cluster}.servers.ips ] && mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev || ${rpath}/update_servers_list
   for IP in `cat $TMPDIR/ec2.servers.ips | awk -F'|' '{print $1" "$14}' | grep "$cluster" | awk '{print $1}'` ; do
     for PORT in $ports ; do
       PORT=${PORT#* }; PORT=${PORT% *}
