@@ -102,6 +102,6 @@ rm -rf ${SAVED_FILES_PATH%/}/image* ${SAVED_FILES_PATH%/}/img-mnt* ${SAVED_FILES
 ec2-bundle-vol -r $ARCH --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT "$aki"
 ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${name}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
 amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
-[ -n "$amiID" ] && echo "The name ${name} is registered. De-registering first" && ec2-deregister -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $amiID
-ec2-register -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION "${BUCKETNAME}/${name}".manifest.xml -n "${name}"
+[ -n "$amiID" ] && echo "The name ${name} is registered. De-registering first" && echo "Deregistered: `ec2-deregister -K $EC2_PRIVATE_KEY -C $EC2_CERT --region $EC2_REGION $amiID | cut -d' ' -f2`" 
+echo "Registered: `ec2-register -K $EC2_PRIVATE_KEY -C $EC2_CERT --region $EC2_REGION ${BUCKETNAME}/${name}.manifest.xml -n ${name} | cut -d' ' -f2`"
 

@@ -88,6 +88,7 @@ else
   amiID=$ami
 fi
 instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
+echo $instances
 [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster}
 
 
