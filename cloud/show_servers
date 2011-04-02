@@ -42,6 +42,10 @@ print_server() {
         iID)
           line1="Server $b $line1"
           ;;
+        isize)
+          [ -n "$size" ] && [ "X$size" != "X$b" ] && IFS=$IFS1 && return 0
+          line1="$line1 Size: $isize"
+          ;;
         inIP)
           line2="IP: internal $b $line2"
           ;;
@@ -59,15 +63,16 @@ print_server() {
         izone)
           line3="Zone: $b $line3"
           ;;
+        SG)
+          line3="$line3 Security group: $b"
+          ;;
         ikeypair)
           line3="$line3 Key: $b"
           ;;
         istarted)
           line4="$line4 since $b"
           ;;
-        SG)
-          line1="${line1}Security group: $b"
-          ;;
+        
         icluster)
           [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
           line1="$line1 cluster: $b"
@@ -133,7 +138,7 @@ parse_server() {
     if [ "X$istate" == "Xrunning" ] ; then
       printf "inIP::$inIP|extIP::$extIP|"
     fi
-    printf "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|"
+    printf "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|isize::$isize|"
     
   fi
   if [[ ${1} =~ ^TAG ]] ; then

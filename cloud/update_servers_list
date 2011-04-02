@@ -67,17 +67,8 @@ if [ "X$help" == "Xyes" ] ; then
   echo "Options:"
   echo
   echo "  --cluster=clustername    - syncs only this single cluster."
+  echo "  --region=region          - syncs only servers in this region."
   exit 0
-fi
-found=0
-
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
-  exit 1
 fi
 
 source ${rpath}/../conf/cloud.conf
