@@ -19,6 +19,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 touch /etc/mynetworks
+IFS1=$IFS
+IFS='|'
 cat ${rpath}/../servers.list | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | awk '{print $1" "$2}' | while read HOST
 do
   ip=`echo $HOST | awk '{print $1}'`
@@ -36,4 +38,5 @@ do
     echo "$ip $hname" >> /etc/mynetworks
   fi
 done
+IFS=$IFS1
 

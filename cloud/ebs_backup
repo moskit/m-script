@@ -19,8 +19,11 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
+MAILX=`which mail 2>/dev/null`
 currtime=`date`
-
+echo $currtime > ${rpath}/../ebs_backup.report
+echo "------------------------" >> ${rpath}/../ebs_backup.report
+echo >> ${rpath}/../ebs_backup.report
 possible_options="keep cluster ami state filter noupdate help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -119,17 +122,24 @@ if [ -n "$keep" ] ; then
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
       snaptime=`date -d "$snaptime" +"%s"`
       if [[ $snaptime -lt $outdated ]] ; then
-        printf "Deleting snapshot $snapID created at $snaptime ... "
-        printf "`ec2-delete-snapshot $snapID` ... " && echo "DONE" || echo "ERROR"
+        printf "Deleting snapshot $snapID created at $snaptime ... " >> ${rpath}/../ebs_backup.report
+        printf "`ec2-delete-snapshot $snapID >/dev/null` ... " >> ${rpath}/../ebs_backup.report && echo "DONE" >> ${rpath}/../ebs_backup.report || echo "ERROR" >> ${rpath}/../ebs_backup.report
       fi
     done
-    printf "Creating snapshot of volume $ebs ... "
-    printf "`ec2-create-snapshot $ebs` ... " && echo "DONE" || echo "ERROR"
+    printf "Creating snapshot of volume $ebs ... " >> ${rpath}/../ebs_backup.report
+    printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> ${rpath}/../ebs_backup.report && echo "DONE" >> ${rpath}/../ebs_backup.report || echo "ERROR" >> ${rpath}/../ebs_backup.report
   done
 else
   for ebs in `cat $TMPDIR/volumes.list` ; do
-    printf "Creating snapshot of volume $ebs ... "
-    printf "`ec2-create-snapshot $ebs` ... " && echo "DONE" || echo "ERROR"
+    printf "Creating snapshot of volume $ebs ... " >> ${rpath}/../ebs_backup.report
+    printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> ${rpath}/../ebs_backup.report && echo "DONE" >> ${rpath}/../ebs_backup.report || echo "ERROR" >> ${rpath}/../ebs_backup.report
   done
 fi
-
+if [ -n "$MAILX" ] ; then
+  while read RLINE
+  do
+    if [ -n "${RLINE}" ]; then
+      cat ${rpath}/../ebs_backup.report | ${MAILX} -s "Server $(hostname -f) EBS volume backup report" ${RLINE}
+    fi
+  done < ${rpath}/mail.backup.list
+fi

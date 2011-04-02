@@ -40,7 +40,7 @@ IFS='
 '
 for clserver in `cat ${rpath}/../servers.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
-  serverip=`echo $clserver | awk '{print $1}'`
+  serverip=`echo $clserver | awk -F'|' '{print $1}'`
   if [ -n `$IFCONFIG | grep $serverip` ]; then
   echo $serverip
   $IPTABLES -I INPUT -s $serverip -j ACCEPT

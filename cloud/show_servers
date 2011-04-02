@@ -22,7 +22,9 @@ rpath=${0%/*}
 
 print_server() {
 # icluster is not always present
-  [ -n "$cluster" ] && ([[ "$1" =~ '|icluster::' ]] || return 0)
+  if [ -n "$cluster" ] ; then
+    [[ "$1" =~ '|icluster::' ]] || return 0
+  fi
   local line1
   local line2
   local line3
@@ -223,7 +225,7 @@ Usage: --filter=<var1,var2,var3>
   
   var1 var2 var3
   
-  for each instance according to other options, e.g. to get intenal and external
+  for each instance according to other options, e.g. to get internal and external
   IPs of running instances, use:
   
   show_servers --state=running --filter=inIP,extIP
