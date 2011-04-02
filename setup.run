@@ -27,6 +27,7 @@ IPTABLES=`which iptables 2>/dev/null`
 MAILX=`which mail 2>/dev/null`
 SQLITE=`which sqlite3 2>/dev/null`
 S3CMD=`which s3cmd 2>/dev/null`
+MONGOOSE=`which mongoose 2>/dev/null`
 
 if [ -f /etc/debian_version ]; then OS="debian"; fi
 if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
@@ -91,6 +92,61 @@ then
   fi
 fi
 
+if [ "X${MONGOOSE}" == "X" ]
+then
+  echo "Mongoose not found. You need it only in case if you want web interface"
+  echo "here on this server "
+  read -p "Do you want me to install it now?  [y/N] " installmongoose
+  if [ `echo $installmongoose | grep -c -i "^y"` -ne 0 ]
+  then
+    (mkdir tmp && cd tmp && ${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ${rpath}/www/)
+    if [[ $? -ne 0 ]] ; then 
+      echo "Some error.. disabling it for awhile. Compile it or install some other way and copy its binary to ${rpath}/www/ if you need it"
+      sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" ${rpath}/mon.conf
+    else
+      if [ `grep -c "^MONGOOSE=" ${rpath}/mon.conf` -ne 0 ]
+      then
+        sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" ${rpath}/mon.conf
+      else    
+        echo "MONGOOSE=1" >> ${rpath}/mon.conf
+      fi
+    fi
+  else
+    exit 1
+  fi
+else
+  if [ `grep -c "^MONGOOSE=" ${rpath}/mon.conf` -ne 0 ]
+  then
+    sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" ${rpath}/mon.conf
+  else    
+    echo "MONGOOSE=1" >> ${rpath}/mon.conf
+  fi
+fi
+
+if [ `grep -c "^MONGOOSE=1" ${rpath}/mon.conf` -ne 0 ]
+then
+  if [ `grep -c "^p " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  then
+    read -p "Enter a port number for the web interface: [8080] " mongooseport
+    echo "p $mongooseport" >> ${rpath}/conf/mongoose.conf
+  fi
+  if [ `grep -c "^d " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  then
+    echo "d no" >> ${rpath}/conf/mongoose.conf
+  fi
+  if [ `grep -c "^g " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  then
+    echo "g ${rpath}/conf/htaccess" >> ${rpath}/conf/mongoose.conf
+  fi
+  if [ `grep -c "^r " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  then
+    echo "r ${rpath}/www" >> ${rpath}/conf/mongoose.conf
+  fi
+  echo "You may want to adjust access settings for the web interface."
+  echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
+  echo "and edit ${rpath}/conf/mongoose.conf"
+fi
+      
 if [ "X${IPTABLES}" == "X" ]
 then
   echo "Iptables not found. It is not necessary, but useful to provide an average"
