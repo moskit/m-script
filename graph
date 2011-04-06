@@ -96,16 +96,23 @@ install -d $TMPDIR
 areaH=`expr $graphH - 2 \* $padding - $legend`
 areaV=`expr $graphV - 2 \* $padding - $legend`
 if [ -n "$from" ] ; then
-  from=`date -d "$from" +"%s"`
+  tfrom=`date -u -d "$from"`
+  from=`date -u -d "$from" +"%s"`
   if [ -n "$to" ] ; then
-    to=`date -d "$to" +"%s"`
+    tto=`date -u -d "$to"`
+    to=`date -u -d "$to" +"%s"`
   else
     to=`date -u +"%s"`
+    tto=`date -u`
   fi
 else
   from=`date -u +"%s"` ; from=`expr $from - $areaH \* $freqdef`
+  tfrom=`date -d "1970/01/01 +$from sec"`
   to=`date -u +"%s"`
+  tto=`date -u`
 fi
+title="Graph: $metric from $tfrom to $tto"
+tlength=`expr length $title`
 
 if [ ! -f "${rpath}/servers.list" ] ; then
   echo "Create ${rpath}/servers.list please" | tee -a "${rpath}/dashboard.log"
@@ -165,14 +172,21 @@ hourX=`expr 3600 / $perdotX`
 [[ $hourX -lt 1 ]] && hourX=1
 # Variable looping across all X marks
 currpoint=$from
+# Various coordinates
 startX=`expr $legend + $padding`
 startY=`expr $graphV - $legend - $padding`
 mX1=`expr $startY + 2`
-mXT1=`expr $mX1 + 10`
+mXT1=`expr $mX1 + 14`
 mX2=$padding
 mY1=`expr $startX - 2`
-mYT1=`expr $mY1 - 10`
+mYT1=`expr $mY1 - 50`
 mY2=`expr $graphH - $padding`
+axisXX=`expr $graphH - $padding - 60`
+axisXY=`expr $graphV - $legend`
+axisYX=$padding
+axisYY=$padding
+titleX=`expr \( $graphH - $tlength \) / 2`
+titleY=`expr $graphH - $padding`
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
   # How many hours are within 40 pixels
@@ -197,6 +211,7 @@ if [[ $hourX -lt $countminX ]] ; then
         else
           res=1
         fi
+        axisX="months"
         # Finding the next month beginning
         while [[ $currpoint -le $to ]]
         do
@@ -206,11 +221,12 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-          textX="$textX`echo "text $themark,$mXT1 \"$themonth\""`"
+          textX="$textX`printf "text $themark,$mXT1 \'$themonth\' "`"
         done
         unset nextmonth res monthX
       else
         #echo "Using days"
+        axisX="days"
         [[ $dayN -eq 0 ]] && dayN=1  # just in case
         while [[ $currpoint -le $to ]]
         do
@@ -221,12 +237,13 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-          textX="$textX`echo "text $themark,$mXT1 \"$theday\""`"
+          textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
         done
         unset nextday
       fi
     else
       dayN=1
+      axisX="days"
       while [[ $currpoint -le $to ]]
       do
         currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
@@ -236,12 +253,12 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-        textX="$textX`echo "text $themark,$mXT1 \"$theday\""`"
+        textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
       done
     fi
     unset dayN
   else
-    #echo "Using hours"
+    axisX="hours"
     [[ $hourN -eq 0 ]] && hourN=1
     while [[ $currpoint -le $to ]]
     do
@@ -253,7 +270,7 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-      textX="$textX`echo "text $themark,$mXT1 \"$thehour\""`"
+      textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
     done
   fi
   unset hourN
@@ -261,6 +278,7 @@ else
 # So 1-hour marks are far enough from each other, and it is the maximal
 # resolution possible. It's the same as the previous loop actually, but
 # I leave it here to possibly add more resolution like e.g. 10 minutes
+  axisX="hours"
   while [[ $currpoint -le $to ]]
   do
     currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
@@ -271,7 +289,7 @@ else
     themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-    textX="$textX`echo "text $themark,$mXT1 \"$thehour\""`"
+    textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
   done
 fi
 
@@ -294,7 +312,8 @@ if [[ $res -lt $a ]] ; then
     res=`expr $pof / 2`
   fi
 fi
-imark=`expr $metricmin / $res`
+imark=`expr $metricmin / $res \* $res`
+
 # Drawing
 declare -i i
 ires=`expr $res / $perdotY`
@@ -306,18 +325,21 @@ do
   [[ $i -gt $imax ]] && break
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
-  textY="$textY`echo "text $mYT1,$irev \"$imark\" "`"
+  textY="$textY`printf "text $mYT1,$irev \'$imark\' "`"
   imark+=$res
 done
 
 datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
 
-convert -size ${graphH}x${graphV} xc:white -fill none -font Vera.ttf -pointsize 10 \
+convert -size ${graphH}x${graphV} xc:white -family arial -pointsize 10 \
   -draw "stroke gray line $startX,$startY $mY2,$startY" \
   -draw "stroke gray line $startX,$startY $startX,$mX2" \
   -draw "stroke gray $marksX " -draw "stroke gray $marksY " \
   -draw "stroke black $textY " -draw "stroke black $textX " \
   -draw "stroke green $datalines " \
+  -draw "stroke black text $titleX,$titleY `printf "\'$title\'"`" \
+  -draw "stroke black text $axisXX,$axisXY `printf "\'$axisX\'"`" \
+  -draw "stroke black text $axisYX,$axisYY `printf "\'$metric\'"`" \
   test.png
 
 
