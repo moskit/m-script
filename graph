@@ -112,8 +112,8 @@ else
   tto=`date -u`
 fi
 title="Graph: $metric from $tfrom to $tto"
-tlength=`expr length $title`
-
+#tlength=`expr length $title`
+echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
 if [ ! -f "${rpath}/servers.list" ] ; then
   echo "Create ${rpath}/servers.list please" | tee -a "${rpath}/dashboard.log"
   exit 1
@@ -182,11 +182,12 @@ mY1=`expr $startX - 2`
 mYT1=`expr $mY1 - 50`
 mY2=`expr $graphH - $padding`
 axisXX=`expr $graphH - $padding - 60`
-axisXY=`expr $graphV - $legend`
+axisXY=`expr $graphV - $legend + 20`
 axisYX=$padding
 axisYY=$padding
-titleX=`expr \( $graphH - $tlength \) / 2`
-titleY=`expr $graphH - $padding`
+#titleX=`expr \( $graphH - $tlength \) / 2`
+titleX=`expr $padding + $legend + 20`
+titleY=`expr $graphV - $padding`
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
   # How many hours are within 40 pixels
@@ -316,6 +317,7 @@ imark=`expr $metricmin / $res \* $res`
 
 # Drawing
 declare -i i
+declare -i imark
 ires=`expr $res / $perdotY`
 i=`expr $legend + $padding`
 imax=`expr $i + $areaV`
@@ -332,14 +334,17 @@ done
 datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
 
 convert -size ${graphH}x${graphV} xc:white -family arial -pointsize 10 \
-  -draw "stroke gray line $startX,$startY $mY2,$startY" \
-  -draw "stroke gray line $startX,$startY $startX,$mX2" \
+  -strokewidth 2 \
+  -draw "stroke black line $startX,$startY $mY2,$startY" \
+  -draw "stroke black line $startX,$startY $startX,$mX2" \
+  -strokewidth 1 \
   -draw "stroke gray $marksX " -draw "stroke gray $marksY " \
-  -draw "stroke black $textY " -draw "stroke black $textX " \
+  -draw "$textY " -draw "$textX " \
   -draw "stroke green $datalines " \
-  -draw "stroke black text $titleX,$titleY `printf "\'$title\'"`" \
-  -draw "stroke black text $axisXX,$axisXY `printf "\'$axisX\'"`" \
-  -draw "stroke black text $axisYX,$axisYY `printf "\'$metric\'"`" \
+  -draw "text $axisXX,$axisXY `printf "\'$axisX\'"`" \
+  -draw "text $axisYX,$axisYY `printf "\'$metric\'"`" \
+  -pointsize 12 \
+  -draw "text $titleX,$titleY `printf "\'$title\'"`" \
   test.png
 
 
