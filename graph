@@ -91,8 +91,8 @@ source ${rpath}/conf/dash.conf
 TMPDIR=/tmp/m_script
 install -d $TMPDIR
 
-areaH=`expr $graphH - 200`
-areaV=`expr $graphV - 200`
+areaH=`expr $graphH - 2 \* $padding - $legend`
+areaV=`expr $graphV - 2 \* $padding - $legend`
 if [ -n "$from" ] ; then
   from=`date -d "$from" +"%s"`
   if [ -n "$to" ] ; then
@@ -105,11 +105,11 @@ else
   to=`date -u +"%s"`
 fi
 
-if [ -f "${rpath}/servers.list" ] ; then
+if [ ! -f "${rpath}/servers.list" ] ; then
   echo "Create ${rpath}/servers.list please" | tee -a "${rpath}/dashboard.log"
   exit 1
 fi
-if [ -f "${rpath}/conf/clusters.conf" ] ; then
+if [ ! -f "${rpath}/conf/clusters.conf" ] ; then
   echo "Create ${rpath}/conf/clusters.conf please" | tee -a "${rpath}/dashboard.log"
   exit 1
 fi
@@ -126,7 +126,7 @@ if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
   thekey="-i ${rpath}/keys/${skey}.pem"
 fi
 rm -f ${TMPDIR}/graph.${sIP}.${metric}*
-$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select $timeindex, $metric from sysdata where timeindex between $from and $to;\"" > ${TMPDIR}/graph.${sIP}.${metric}
+$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select timeindex, $metric from sysdata where timeindex between $from and $to;\"" > ${TMPDIR}/graph.${sIP}.${metric}
 if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
   echo "Too few data for graph. Might be ssh error." >> "${rpath}/dashboard.log"
   exit 1
@@ -142,8 +142,8 @@ while read LINE
 do
   X=`echo $LINE | cut -d'|' -f1`
   Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-  X=`expr \( $X - $from \) / $perdotX`
-  Y=`expr \( $Y - $metricmin \) / $perdotY`
+  X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
+  Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin \) / $perdotY`
   firstdot=1 && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=0
   firstdot=0 && echo "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=1
 done<${TMPDIR}/graph.${sIP}.${metric}
@@ -157,7 +157,12 @@ countminY=20
 hourX=`expr 3600 / $perdotX`
 # Variable looping across all X marks
 currpoint=$from
-
+startX=`expr $legend + $padding`
+startY=`expr $graphV - $legend - $padding`
+mX1=`expr $startY + 2`
+mX2=$padding
+mY1=`expr $startX - 2`
+mY2=`expr $graphH - $padding`
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
   # How many hours are within 40 pixels
@@ -186,7 +191,8 @@ if [[ $hourX -lt $countminX ]] ; then
           themonth=`date -d "1970/01/01 +$currpoint" +"%m"`
           theyear=`date -d "1970/01/01 +$currpoint" +"%Y"`
           themark=`date -d "${theyear}/${themonth}/1" +"%s"`
-          marksX="$marksX`echo "line $themark,148 $themark,152 "`"
+          themark=`expr \( $themark - $from \) / $perdotX + $startX`
+          marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
         done
         unset nextmonth res monthX
       else
@@ -199,7 +205,8 @@ if [[ $hourX -lt $countminX ]] ; then
           themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
           theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
           themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
-          marksX="$marksX`echo "line $themark,148 $themark,152 "`"
+          themark=`expr \( $themark - $from \) / $perdotX + $startX`
+          marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
         done
         unset nextday
       fi
@@ -212,7 +219,8 @@ if [[ $hourX -lt $countminX ]] ; then
         themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
         theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
         themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
-        marksX="$marksX`echo "line $themark,148 $themark,152 "`"
+        themark=`expr \( $themark - $from \) / $perdotX + $startX`
+        marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
       done
     fi
     unset dayN
@@ -227,8 +235,8 @@ if [[ $hourX -lt $countminX ]] ; then
       themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
       theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
       themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
-      marksX="$marksX`echo "line $themark,148 $themark,152 "`"
-      
+      themark=`expr \( $themark - $from \) / $perdotX + $startX`
+      marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
     done
   fi
   unset hourN
@@ -244,7 +252,8 @@ else
     themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
     theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
     themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
-    marksX="$marksX`echo "line $themark,148 $themark,152 "`"
+    themark=`expr \( $themark - $from \) / $perdotX + $startX`
+    marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
   done
 fi
 
@@ -255,7 +264,7 @@ unset nexthour theday themonth theyear themark currpoint hourX
 a=`expr $perdotX \* 2`
 s=`expr length $a`
 pof=1
-for ((i=0; i<$a; i++)); do pof="${pof}0"; done
+for ((i=0; i<$s; i++)); do pof="${pof}0"; done
 res=`expr $pof / 10`
 if [[ $res -lt $perdotX ]] ; then
   res=`expr $pof / 4`
@@ -265,16 +274,26 @@ if [[ $res -lt $perdotX ]] ; then
 fi
 # Drawing
 declare -i i
-i=$countminY
-while [[ $i -le $countmaxY ]]
+
+i=`expr $legend + $padding`
+imax=`expr $i + $areaV`
+while [[ $i -le $imax ]]
 do
   i+=$res
-  marksY="$marksY`echo "line 148,$i 152,$i"`"
+  irev=`expr ${graphV} - $i`
+  marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
 done
 
 echo "$marksX"
 echo "============================"
 echo "$marksY"
+
+convert -size ${graphH}x${graphV} xc:white -fill none \
+  -draw "stroke gray line $startX,$startY $mY2,$startY" \
+  -draw "stroke gray line $startX,$startY $startX,$mX2" \
+  -draw "stroke gray $marksX " -draw "stroke gray $marksY" \
+  -draw "stroke green `cat ${TMPDIR}/graph.${sIP}.${metric}.dots`" \
+  test.png
 
 #  points="10,10 30,90   25,10 50,50   50,50 80,50   70,10 90,40"
 #  clines=`echo "$points" | sed 's/   /\n/g' |\
