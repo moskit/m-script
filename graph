@@ -206,7 +206,7 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-          textX="$textX`echo "text $themark,$mXT1 $themonth"`"
+          textX="$textX`echo "text $themark,$mXT1 \"$themonth\""`"
         done
         unset nextmonth res monthX
       else
@@ -221,7 +221,7 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-          textX="$textX`echo "text $themark,$mXT1 $theday"`"
+          textX="$textX`echo "text $themark,$mXT1 \"$theday\""`"
         done
         unset nextday
       fi
@@ -236,7 +236,7 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-        textX="$textX`echo "text $themark,$mXT1 $theday"`"
+        textX="$textX`echo "text $themark,$mXT1 \"$theday\""`"
       done
     fi
     unset dayN
@@ -253,7 +253,7 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-      textX="$textX`echo "text $themark,$mXT1 $thehour"`"
+      textX="$textX`echo "text $themark,$mXT1 \"$thehour\""`"
     done
   fi
   unset hourN
@@ -271,7 +271,7 @@ else
     themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
-    textX="$textX`echo "text $themark,$mXT1 $thehour"`"
+    textX="$textX`echo "text $themark,$mXT1 \"$thehour\""`"
   done
 fi
 
@@ -306,15 +306,15 @@ do
   [[ $i -gt $imax ]] && break
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
-  textY="$textY`echo "text $mYT1,$irev $imark "`"
+  textY="$textY`echo "text $mYT1,$irev \"$imark\" "`"
   imark+=$res
 done
 
 datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
 
 convert -size ${graphH}x${graphV} xc:white -fill none -font Vera.ttf -pointsize 10 \
-  -draw "stroke gray strokewidth 2 line $startX,$startY $mY2,$startY" \
-  -draw "stroke gray strokewidth 2 line $startX,$startY $startX,$mX2" \
+  -draw "stroke gray line $startX,$startY $mY2,$startY" \
+  -draw "stroke gray line $startX,$startY $startX,$mX2" \
   -draw "stroke gray $marksX " -draw "stroke gray $marksY " \
   -draw "stroke black $textY " -draw "stroke black $textX " \
   -draw "stroke green $datalines " \
