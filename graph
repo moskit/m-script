@@ -138,9 +138,9 @@ metricmin=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricmin%.*}
 metricmax=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmax%.*}
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
-[[ $perdotY -lt 1 ]] && perdotY=`solve "($metricmax - $metricmin)/$areaV"`
+[[ $perdotY -lt 1 ]] && perdotY=1
 perdotX=`expr \( $to - $from \) / $areaH`
-[[ $perdotX -lt 1 ]] && perdotX=`solve "($metricmax - $metricmin)/$areaH"`
+[[ $perdotX -lt 1 ]] && perdotX=1
 firstdot=1
 
 while read LINE
@@ -162,7 +162,7 @@ countminY=20
 
 # How many pixels one hour takes
 hourX=`expr 3600 / $perdotX`
-[[ $hourX -lt 1 ]] && hourX=`solve "3600/$perdotX"`
+[[ $hourX -lt 1 ]] && hourX=1
 # Variable looping across all X marks
 currpoint=$from
 startX=`expr $legend + $padding`
@@ -177,9 +177,10 @@ if [[ $hourX -lt $countminX ]] ; then
   hourN=`expr 2 \* $countminX / $hourX`
   # If it's more than 24 hours, try days instead:
   if [[ $hourN -ge 24 ]] ; then
+    echo "Trying days"
     # How many pixels 1 day takes
     dayX=`expr 86400 / $perdotX`
-    [[ $dayX -lt 1 ]] && dayX=`solve "86400/$perdotX"`
+    [[ $dayX -lt 1 ]] && dayX=1
     if [[ $dayX -lt $countminX ]] ; then
       # How many days are within 40 pixels
       dayN=`expr 2 \* $countminX / $dayX`
@@ -187,7 +188,7 @@ if [[ $hourX -lt $countminX ]] ; then
       if [[ $dayN -ge 30 ]] ; then
         # How many pixels are there in one month
         monthX=`expr 2592000 / $perdotX`
-        [[ $monthX -lt 1 ]] && monthX=`solve "2592000/$perdotX"`
+        [[ $monthX -lt 1 ]] && monthX=1
         if [[ $monthX -lt $countminX ]] ; then
         # Resolution should be this many months
           res=`expr 2 \* $countminX / $monthX`
@@ -206,7 +207,7 @@ if [[ $hourX -lt $countminX ]] ; then
         done
         unset nextmonth res monthX
       else
-        # So using days
+        echo "Using days"
         [[ $dayN -eq 0 ]] && dayN=1  # just in case
         while [[ $currpoint -le $to ]]
         do
@@ -235,7 +236,7 @@ if [[ $hourX -lt $countminX ]] ; then
     fi
     unset dayN
   else
-    # Using hours
+    echo "Using hours"
     [[ $hourN -eq 0 ]] && hourN=1
     while [[ $currpoint -le $to ]]
     do
@@ -271,22 +272,29 @@ unset nexthour theday themonth theyear themark currpoint hourX
 
 # Now for Y
 # Finding out what resolution might be
-a=`expr $perdotX \* 2`
-s=`expr length $a`
+a=`expr $perdotY \* $countminY`
+b=`expr 2 \* $a`
+s=`expr length $b`
+echo "in 40 pixels: $b"
+echo "length: $s"
 pof=1
 for ((i=0; i<$s; i++)); do pof="${pof}0"; done
+echo "power of: $pof"
 res=`expr $pof / 10`
-if [[ $res -lt $perdotX ]] ; then
+if [[ $res -lt $a ]] ; then
   res=`expr $pof / 4`
-  if [[ $res -lt $perdotX ]] ; then
+  if [[ $res -lt $a ]] ; then
     res=`expr $pof / 2`
   fi
 fi
+echo "resolution: $res"
 # Drawing
 declare -i i
-
+res=`expr $res / $perdotY`
+echo "pixel resolution: $res"
 i=`expr $legend + $padding`
 imax=`expr $i + $areaV`
+echo "i current: $i  i max: $imax"
 while true
 do
   i+=$res
@@ -294,6 +302,7 @@ do
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
 done
+
 
 echo "$marksX"
 echo "============================"
