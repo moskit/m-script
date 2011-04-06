@@ -1,0 +1,48 @@
+<div id="folder_content">
+  <ul id="folder_menu">
+    <span>Sort by:</span>
+    <li>
+      <form id="form_folder_sortbyname" class="sort_form" action="/bin/sortbyname" method="get">
+        <input name="sort_action" type="hidden" value="name" />
+        <input id="action_folder_sortbyname" type="submit" value="name" />
+      </form>
+      <ul>
+        <li>
+          <form id="form_folder_sortbyname_r" class="sort_form" action="/bin/sortbyname_r" method="get">
+            <input name="sort_action" type="hidden" value="name_r" />
+            <input id="action_folder_sortbyname_r" type="submit" value="reverse" />
+          </form>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <form id="form_folder_sortbytime" class="sort_form" action="/bin/sortbytime" method="get">
+        <input name="sort_action" type="hidden" value="time" />
+        <input id="action_folder_sortbyname" type="submit" value="time" />
+      </form>
+      <ul>
+        <li>
+          <form id="form_folder_sortbytime_r" class="sort_form" action="/bin/sortbytime_r" method="get">
+            <input name="sort_action" type="hidden" value="time_r">
+            <input id="action_folder_sortbytime_r" type="submit" value="reverse" />
+          </form>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <form id="form_folder_sortbysize" class="sort_form" action="/bin/sortbysize" method="get">
+        <input name="sort_action" type="hidden" value="size" />
+        <input id="action_folder_sortbysize" type="submit" value="size" />
+      </form>
+      <ul>
+        <li>
+          <form id="form_folder_sortbysize_r" class="sort_form" action="/bin/sortbysize_r" method="get">
+            <input name="sort_action" type="hidden" value="size_r" />
+            <input id="action_folder_sortbysize_r" type="submit" value="reverse" />
+          </form>
+        </li>
+      </ul>
+    </li>
+  </ul>
+  <div id="content">
+    <div id="clusters">

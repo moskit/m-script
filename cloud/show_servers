@@ -40,11 +40,11 @@ print_server() {
       b=`echo "$s" | awk -F'::' '{print $2}'`
       case $a in
         iID)
-          line1="Server $b $line1"
+          line1="Server: $b $line1"
           ;;
         isize)
           [ -n "$size" ] && [ "X$size" != "X$b" ] && IFS=$IFS1 && return 0
-          line1="$line1 Size: $isize"
+          line1="$line1 Size: $b"
           ;;
         inIP)
           line2="IP: internal $b $line2"
@@ -67,18 +67,17 @@ print_server() {
           line3="$line3 Security group: $b"
           ;;
         ikeypair)
-          line3="$line3 Key: $b"
+          line3="$line3  Key: $b"
           ;;
         istarted)
-          line4="$line4 since $b"
+          line4="$line4 Started: $b"
           ;;
-        
         icluster)
           [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
-          line1="$line1 cluster: $b"
+          line1="$line1  Cluster: $b"
           ;;
         itag)
-          line6="$line6 $b"
+          line6="Tags: $b"
           ;;
         bdev)
           line7="EBS device: $b $line7"
@@ -87,7 +86,7 @@ print_server() {
           line7="$line7 ID: $b"
           ;;
         bstarted)
-          line7="$line7 since $b\n"
+          line7="$line7  Started: $b\n"
           ;;
         iaki)
           line5="$line5  AKI: $b"

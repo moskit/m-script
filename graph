@@ -1,0 +1,268 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+solve() {
+bc << EOF
+scale=2
+${1}
+EOF
+}
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+SSH=`which ssh 2>/dev/null`
+[ -n "$SSH" ] || (echo "No ssh found" && exit 1)
+
+possible_options="metric help from to ip"
+necessary_options="metric ip"
+#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} --metric=metric <options>"
+  echo 
+  echo "Without --from a graph for the last 600 * \$FREQ will be generated"
+  echo "(see mon.conf). The --to option is ignored in this case."
+  echo "With --from but without --to the latter defaults to the current time."
+  echo
+  echo "Options:"
+  echo
+  echo "  --from=<start time in any format acceptable by the 'date' utility>"
+  echo "  --to=<end time in any format acceptable by the 'date' utility>"
+  echo "  --metric=<check sqlite3 sysdata '.schema sysdata' to see all metrics>"
+  exit 0
+fi
+found=0
+
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: ${missing_options} not found"
+  exit 1
+fi
+
+source ${rpath}/conf/dash.conf
+TMPDIR=/tmp/m_script
+install -d $TMPDIR
+
+areaH=`expr $graphH - 200`
+areaV=`expr $graphV - 200`
+if [ -n "$from" ] ; then
+  from=`date -d "$from" +"%s"`
+  if [ -n "$to" ] ; then
+    to=`date -d "$to" +"%s"`
+  else
+    to=`date -u +"%s"`
+  fi
+else
+  from=`date -u +"%s"` ; from=`expr $from - ( $areaH \* $freqdef )`
+  to=`date -u +"%s"`
+fi
+
+server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
+sIP=`echo $server | cut -d'|' -f1`
+skey=`echo $server | cut -d'|' -f2`
+scluster=`echo $server | cut -d'|' -f5`
+spath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
+$SSH -i "keys/${skey}.pem" -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select $timeindex, $metric from sysdata where timeindex between $from and $to;\"" > ${TMPDIR}/graph.${sIP}.${metric}
+if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
+  echo "Too few data for graph. Might be ssh error." >> "${rpath}/dashboard.log"
+  exit 1
+fi
+minmax=`$SSH -i "keys/${skey}.pem" -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to;"`
+metricmin=`echo $minmax|cut -d'|' -f1`
+metricmax=`echo $minmax|cut -d'|' -f2`
+
+perdotY=`expr ( $metricmax - $metricmin ) / $areaV`
+perdotX=`expr ( $to - $from ) / $areaH`
+
+while read LINE
+do
+  X=`echo $LINE | cut -d'|' -f1`
+  Y=`echo $LINE | cut -d'|' -f2`
+  X=`expr ( $X - $from ) / $perdotX`
+  Y=`expr ( $Y - $metricmin ) / $perdotY`
+  firstdot=1 && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=0
+  firstdot=0 && echo "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=1
+done<${TMPDIR}/graph.${sIP}.${metric}
+
+# 20 to 40 pixels
+
+countminX=20
+countminY=20
+
+# How many pixels one hour takes
+hourX=`expr 3600 / $perdotX`
+# Variable looping across all X marks
+currpoint=$from
+
+if [[ $hourX -lt $countminX ]] ; then
+  # 1-hour marks would be too close to each other
+  # How many hours are within 40 pixels
+  hourN=`expr 2 \* $countminX / $hourX`
+  # If it's more than 24 hours, try days instead:
+  if [[ $hourN -ge 24 ]] ; then
+    # How many pixels 1 day takes
+    dayX=`expr 86400 / $perdotX`
+    if [[ $dayX -lt $countminX ]] ; then
+      # How many days are within 40 pixels
+      dayN=`expr 2 \* $countminX / $dayX`
+      # If it's more than 30 days, use months instead:
+      if [[ $dayN -ge 30 ]] ; then
+        # How many pixels are there in one month
+        monthX=`expr 2592000 / $perdotX`
+        if [[ $monthX -lt $countminX ]] ; then
+        # Resolution should be this many months
+          res=`expr 2 \* $countminX / $monthX`
+        else
+          res=1
+        fi
+        # Finding the next month beginning
+        while [[ $currpoint -le $to ]]
+        do
+          nextmonth=$(expr `date -d "1970/01/01 +$currpoint sec" +"%m"` + $res)
+          theyear=`date -d "1970/01/01 +$currpoint sec +$res month" +"%Y"`
+          themark=`date -d "${theyear}/${nextmonth}/1" +"%s"`
+          marksX="$marksX`echo "line $themark,148 $themark,152"`"
+          currpoint=`date -d "1970/01/01 +$currpoint sec +$res month"`
+        done
+        unset nextmonth res monthX
+      else
+      # So using days
+      [[ $dayN -eq 0 ]] && dayN=1  # just in case
+      while [[ $currpoint -le $to ]]
+      do
+        nextday=$(expr `date -d "1970/01/01 +$currpoint sec" +"%H"` + $dayN)
+        themonth=`date -d "1970/01/01 +$currpoint sec +$dayN hour" +"%m"`
+        theyear=`date -d "1970/01/01 +$currpoint sec +$dayN hour" +"%Y"`
+        themark=`date -d "${theyear}/${themonth}/${theday} ${nexthour}:00" +"%s"`
+        marksX="$marksX`echo "line $themark,148 $themark,152"`"
+        currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN hour"`
+      done
+      unset nextday
+    fi
+    unset dayN
+  else
+    # Using hours
+    [[ $hourN -eq 0 ]] && hourN=1
+    while [[ $currpoint -le $to ]]
+    do
+      nexthour=$(expr `date -d "1970/01/01 +$currpoint sec" +"%H"` + $hourN)
+      theday=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%d"`
+      themonth=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%m"`
+      theyear=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%Y"`
+      themark=`date -d "${theyear}/${themonth}/${theday} ${nexthour}:00" +"%s"`
+      marksX="$marksX`echo "line $themark,148 $themark,152"`"
+      currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour"`
+    done
+  fi
+  unset hourN
+else
+# So 1-hour marks are far enough from each other, and it is the maximal
+# resolution possible. It's the same as the previous loop actually, but
+# I leave it here to possibly add more resolution like e.g. 10 minutes
+  while [[ $currpoint -le $to ]]
+  do
+    nexthour=$(expr `date -d "1970/01/01 +$currpoint sec" +"%H"` + 1)
+    theday=`date -d "1970/01/01 +$currpoint sec +1 hour" +"%d"`
+    themonth=`date -d "1970/01/01 +$currpoint sec +1 hour" +"%m"`
+    theyear=`date -d "1970/01/01 +$currpoint sec +1 hour" +"%Y"`
+    themark=`date -d "${theyear}/${themonth}/${theday} ${nexthour}:00" +"%s"`
+    marksX="$marksX`echo "line $themark,148 $themark,152"`"
+    currpoint=`date -d "1970/01/01 +$currpoint sec +1 hour"`
+  done
+fi
+
+unset nexthour theday themonth theyear themark currpoint hourX
+
+# Now for Y
+# Finding out what resolution might be
+a=`expr $perdotX \* 2`
+s=`expr length $a`
+pof=1
+for ((i=0; i<$a; i++)); do pof="${pof}0"; done
+res=`expr $pof / 10`
+if [[ $res -lt $perdotX ]] ; then
+  res=`expr $pof / 4`
+  if [[ $res -lt $perdotX ]] ; then
+    res=`expr $pof / 2`
+  fi
+fi
+# Drawing
+declare -i i
+i=$countminY
+while [[ $i -le $countmaxY ]]
+do
+  i+=$res
+  marksY="$marksY`echo "line 148,$i 152,$i"`"
+done
+
+echo "$marksX"
+echo "============================"
+echo "$marksY"
+
+#  points="10,10 30,90   25,10 50,50   50,50 80,50   70,10 90,40"
+#  clines=`echo "$points" | sed 's/   /\n/g' |\
+#             while read line; do echo "line $line"; done`
+#  symbols=`echo path "'"; for point in $points; do
+#             echo "M $point   l -2,-2 +4,+4 -2,-2   l -2,+2 +4,-4 -2,+2"
+#           done;  echo "'"`
+#  convert -size 100x100 xc:skyblue -fill none \
+#          -draw "stroke gray $clines    stroke blue $symbols " \
+#          -draw "stroke red  bezier 10,10 30,90   25,10 50,50 " \
+#          -draw "stroke red  bezier 50,50 80,50   70,10 90,40 " \
+#          draw_bezier_disjoint.gif
+
+# convert -size ${graphH}x${graphV} xc:white -fill none \
+#  -draw "stroke gray $marksX " -draw "stroke gray $marksY" \
+#  test.png
+
+
+
+

@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+parse_server() {
+  if [[ ${1} =~ ^RESERVATION ]] ; then
+    printf "SG::`echo ${1} | awk -F'|' '{print $4}'`|"
+  fi
+  if [[ ${1} =~ ^INSTANCE ]] ; then
+    iID=`echo ${1} | awk -F'|' '{print $2}'`
+    inIP=`echo ${1} | awk -F'|' '{print $18}'`
+    extIP=`echo ${1} | awk -F'|' '{print $17}'`
+    iami=`echo ${1} | awk -F'|' '{print $3}'`
+    istate=`echo ${1} | awk -F'|' '{print $6}'`
+    ikeypair=`echo ${1} | awk -F'|' '{print $7}'`
+    isize=`echo ${1} | awk -F'|' '{print $10}'`
+    istarted=`echo ${1} | awk -F'|' '{print $11}'`
+    izone=`echo ${1} | awk -F'|' '{print $12}'`
+    printf "iID::$iID|iami::$iami|"
+    if [ "X$istate" == "Xrunning" ] ; then
+      printf "inIP::$inIP|extIP::$extIP|"
+    fi
+    printf "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|isize::$isize|"
+  fi
+  if [[ ${1} =~ ^TAG ]] ; then
+    object=`echo ${1} | awk -F'|' '{print $2}'`
+    itag=`echo ${1} | awk -F'|' '{print $4}'`
+    tagvalue=`echo ${1} | awk -F'|' '{print $5}'`
+    if [ "X$object" == "Xinstance" ] ; then
+      if [ "X$itag" == "Xcluster" ] ; then
+        printf "icluster::$tagvalue|"
+      else
+        printf "itag::${itag}=${tagvalue}|"
+      fi
+    fi
+  fi
+}
+
+fix_server() {
+  IFS1=$IFS
+  IFS='|'
+  for s in `echo "${1}"` ; do
+    a=`echo "$s" | awk -F'::' '{print $1}'`
+    b=`echo "$s" | awk -F'::' '{print $2}'`
+    case $a in
+      icluster)
+        cluster="$b"
+        ;;
+      itag)
+        c=${b%=*}
+        d=${b#*=}
+        if [ "X$c" == "Xscalr-role-name" ] ; then
+          scalrrole="$d"
+        fi
+        if [ "X$c" == "Xscalr-farm-name" ] ; then
+          scalrfarm="$d"
+        fi
+        ;;
+      iID)
+        id=$b
+        ;;
+      isize)
+        size=$b
+        ;;
+      iami)
+        ami=$b
+        ;;
+      istate)
+        [ "X$b" != "Xrunning" ] && IFS=$IFS1 && return 0
+        ;;
+      izone)
+        zone=$b
+        ;;
+      SG)
+        sg="$b"
+        ;;
+      ikeypair)
+        keypair="$b"
+        ;;
+    esac
+  done
+  IFS=$IFS1
+  if [ -n "$cluster" ] ; then
+    clusterdetails=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | tail -1`
+    ### Cluster name|Key name|Availability zone|Security group|Instance type|AMI|Scalable?
+    keypairconf=`echo $clusterdetails | cut -d'|' -f2`
+    zoneconf=`echo $clusterdetails | cut -d'|' -f3`
+    sgconf=`echo $clusterdetails | cut -d'|' -f4`
+    sizeconf=`echo $clusterdetails | cut -d'|' -f4`
+    amiconf=`echo $clusterdetails | cut -d'|' -f5`
+    scaleconf=`echo $clusterdetails | cut -d'|' -f6`
+    if [ "X$keypair" != "X$keypairconf" ] ; then
+      if [ -f "${rpath}/../keys/${keypairconf}.pem" ] ; then
+        if [ `grep "^${keypair}|" "${rpath}/../conf/keys.compat" 2>/dev/null | grep -c "${keypairconf}"` -eq 0 ] ; then
+          if [ `grep -c "^${keypair}|" "${rpath}/../conf/keys.compat" 2>/dev/null` -ne 0 ] ; then
+            sed -i -e "/${keypair}|/s/$/|${keypairconf}/" "${rpath}/../conf/keys.compat"
+          else
+            echo "${keypair}|${keypairconf}" >> "${rpath}/../conf/keys.compat"
+          fi
+        fi
+      else
+        echo "Key file ${rpath}/../keys/${keypairconf}.pem not found" >> "${rpath}/../fix_clusters.report"
+      fi
+    fi
+    
+  fi
+  
+}
+
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
+SED=`which sed 2>/dev/null`
+[ -z "$SED" ] && echo "Sed utility not found, exiting" && exit 1
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+IFCFG=`which ifconfig 2>/dev/null`
+possible_options="cluster help region"
+necessary_options=""
+#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options>"
+  echo 
+  echo "Without options all found clusters will be checked and fixed"
+  echo
+  echo "Options:"
+  echo
+  echo "  --cluster=clustername    - fixes only this single cluster."
+  echo "  --region=region          - fixes only clusters available in this"
+  echo "                             region."
+  exit 0
+fi
+
+source ${rpath}/../conf/cloud.conf
+
+for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH ; do
+  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
+done
+PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
+export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
+TMPDIR=/tmp/m_script/cloud
+install -d $TMPDIR
+
+[ -n "$region" ] && EC2_REGION=$region
+
+while read SERVER
+do
+  if [[ $SERVER =~ ^RESERVATION ]] ; then
+    [ -n "$current_server" ] && fix_server "$current_server" && unset current_server
+    current_server=`parse_server $SERVER` && unset newr
+  else
+    if [[ $SERVER =~ ^INSTANCE ]] && [ $newr ] ; then
+      fix_server "$current_server" && unset current_server
+      current_server=`parse_server $SERVER`
+      newr=1
+    else
+      current_server="$current_server`parse_server $SERVER`"
+    fi
+  fi
+done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
+fix_server "$current_server" && unset current_server
+unset newr current_server
+
