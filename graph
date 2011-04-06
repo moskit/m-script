@@ -168,8 +168,10 @@ currpoint=$from
 startX=`expr $legend + $padding`
 startY=`expr $graphV - $legend - $padding`
 mX1=`expr $startY + 2`
+mXT1=`expr $mX1 + 10`
 mX2=$padding
 mY1=`expr $startX - 2`
+mYT1=`expr $mY1 - 10`
 mY2=`expr $graphH - $padding`
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
@@ -177,7 +179,7 @@ if [[ $hourX -lt $countminX ]] ; then
   hourN=`expr 2 \* $countminX / $hourX`
   # If it's more than 24 hours, try days instead:
   if [[ $hourN -ge 24 ]] ; then
-    echo "Trying days"
+    #echo "Trying days"
     # How many pixels 1 day takes
     dayX=`expr 86400 / $perdotX`
     [[ $dayX -lt 1 ]] && dayX=1
@@ -204,10 +206,11 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+          textX="$textX`echo "text $themark,$mXT1 $themonth"`"
         done
         unset nextmonth res monthX
       else
-        echo "Using days"
+        #echo "Using days"
         [[ $dayN -eq 0 ]] && dayN=1  # just in case
         while [[ $currpoint -le $to ]]
         do
@@ -218,6 +221,7 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+          textX="$textX`echo "text $themark,$mXT1 $theday"`"
         done
         unset nextday
       fi
@@ -232,11 +236,12 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+        textX="$textX`echo "text $themark,$mXT1 $theday"`"
       done
     fi
     unset dayN
   else
-    echo "Using hours"
+    #echo "Using hours"
     [[ $hourN -eq 0 ]] && hourN=1
     while [[ $currpoint -le $to ]]
     do
@@ -248,6 +253,7 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+      textX="$textX`echo "text $themark,$mXT1 $thehour"`"
     done
   fi
   unset hourN
@@ -265,6 +271,7 @@ else
     themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+    textX="$textX`echo "text $themark,$mXT1 $thehour"`"
   done
 fi
 
@@ -287,51 +294,33 @@ if [[ $res -lt $a ]] ; then
     res=`expr $pof / 2`
   fi
 fi
-echo "resolution: $res"
+imark=`expr $metricmin / $res`
 # Drawing
 declare -i i
-res=`expr $res / $perdotY`
-echo "pixel resolution: $res"
+ires=`expr $res / $perdotY`
 i=`expr $legend + $padding`
 imax=`expr $i + $areaV`
-echo "i current: $i  i max: $imax"
 while true
 do
-  i+=$res
+  i+=$ires
   [[ $i -gt $imax ]] && break
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
+  textY="$textY`echo "text $mYT1,$irev $imark "`"
+  imark+=$res
 done
-
-
-echo "$marksX"
-echo "============================"
-echo "$marksY"
 
 datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
 
-convert -size ${graphH}x${graphV} xc:white -fill none \
-  -draw "stroke gray line $startX,$startY $mY2,$startY" \
-  -draw "stroke gray line $startX,$startY $startX,$mX2" \
+convert -size ${graphH}x${graphV} xc:white -fill none -font Vera.ttf -pointsize 10 \
+  -draw "stroke gray strokewidth 2 line $startX,$startY $mY2,$startY" \
+  -draw "stroke gray strokewidth 2 line $startX,$startY $startX,$mX2" \
   -draw "stroke gray $marksX " -draw "stroke gray $marksY " \
+  -draw "stroke black $textY " -draw "stroke black $textX " \
   -draw "stroke green $datalines " \
   test.png
 
-#  points="10,10 30,90   25,10 50,50   50,50 80,50   70,10 90,40"
-#  clines=`echo "$points" | sed 's/   /\n/g' |\
-#             while read line; do echo "line $line"; done`
-#  symbols=`echo path "'"; for point in $points; do
-#             echo "M $point   l -2,-2 +4,+4 -2,-2   l -2,+2 +4,-4 -2,+2"
-#           done;  echo "'"`
-#  convert -size 100x100 xc:skyblue -fill none \
-#          -draw "stroke gray $clines    stroke blue $symbols " \
-#          -draw "stroke red  bezier 10,10 30,90   25,10 50,50 " \
-#          -draw "stroke red  bezier 50,50 80,50   70,10 90,40 " \
-#          draw_bezier_disjoint.gif
 
-# convert -size ${graphH}x${graphV} xc:white -fill none \
-#  -draw "stroke gray $marksX " -draw "stroke gray $marksY" \
-#  test.png
 
 
 
