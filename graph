@@ -101,33 +101,49 @@ if [ -n "$from" ] ; then
     to=`date -u +"%s"`
   fi
 else
-  from=`date -u +"%s"` ; from=`expr $from - ( $areaH \* $freqdef )`
+  from=`date -u +"%s"` ; from=`expr $from - $areaH \* $freqdef`
   to=`date -u +"%s"`
 fi
 
+if [ -f "${rpath}/servers.list" ] ; then
+  echo "Create ${rpath}/servers.list please" | tee -a "${rpath}/dashboard.log"
+  exit 1
+fi
+if [ -f "${rpath}/conf/clusters.conf" ] ; then
+  echo "Create ${rpath}/conf/clusters.conf please" | tee -a "${rpath}/dashboard.log"
+  exit 1
+fi
 server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
+if [ -z "$server" ] ; then
+  echo "Server with IP ${ip} not found in ${rpath}/servers.list" | tee -a "${rpath}/dashboard.log"
+  exit 1
+fi
 sIP=`echo $server | cut -d'|' -f1`
 skey=`echo $server | cut -d'|' -f2`
 scluster=`echo $server | cut -d'|' -f5`
 spath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
-$SSH -i "keys/${skey}.pem" -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select $timeindex, $metric from sysdata where timeindex between $from and $to;\"" > ${TMPDIR}/graph.${sIP}.${metric}
+if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
+  thekey="-i ${rpath}/keys/${skey}.pem"
+fi
+rm -f ${TMPDIR}/graph.${sIP}.${metric}*
+$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select $timeindex, $metric from sysdata where timeindex between $from and $to;\"" > ${TMPDIR}/graph.${sIP}.${metric}
 if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
   echo "Too few data for graph. Might be ssh error." >> "${rpath}/dashboard.log"
   exit 1
 fi
-minmax=`$SSH -i "keys/${skey}.pem" -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to;"`
-metricmin=`echo $minmax|cut -d'|' -f1`
-metricmax=`echo $minmax|cut -d'|' -f2`
+minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
+metricmin=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricmin%.*}
+metricmax=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmax%.*}
 
-perdotY=`expr ( $metricmax - $metricmin ) / $areaV`
-perdotX=`expr ( $to - $from ) / $areaH`
+perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
+perdotX=`expr \( $to - $from \) / $areaH`
 
 while read LINE
 do
   X=`echo $LINE | cut -d'|' -f1`
-  Y=`echo $LINE | cut -d'|' -f2`
-  X=`expr ( $X - $from ) / $perdotX`
-  Y=`expr ( $Y - $metricmin ) / $perdotY`
+  Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+  X=`expr \( $X - $from \) / $perdotX`
+  Y=`expr \( $Y - $metricmin \) / $perdotY`
   firstdot=1 && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=0
   firstdot=0 && echo "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=1
 done<${TMPDIR}/graph.${sIP}.${metric}
@@ -166,26 +182,38 @@ if [[ $hourX -lt $countminX ]] ; then
         # Finding the next month beginning
         while [[ $currpoint -le $to ]]
         do
-          nextmonth=$(expr `date -d "1970/01/01 +$currpoint sec" +"%m"` + $res)
-          theyear=`date -d "1970/01/01 +$currpoint sec +$res month" +"%Y"`
-          themark=`date -d "${theyear}/${nextmonth}/1" +"%s"`
-          marksX="$marksX`echo "line $themark,148 $themark,152"`"
-          currpoint=`date -d "1970/01/01 +$currpoint sec +$res month"`
+          currpoint=`date -d "1970/01/01 +$currpoint sec +$res month" +"%s"`
+          themonth=`date -d "1970/01/01 +$currpoint" +"%m"`
+          theyear=`date -d "1970/01/01 +$currpoint" +"%Y"`
+          themark=`date -d "${theyear}/${themonth}/1" +"%s"`
+          marksX="$marksX`echo "line $themark,148 $themark,152 "`"
         done
         unset nextmonth res monthX
       else
-      # So using days
-      [[ $dayN -eq 0 ]] && dayN=1  # just in case
+        # So using days
+        [[ $dayN -eq 0 ]] && dayN=1  # just in case
+        while [[ $currpoint -le $to ]]
+        do
+          currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
+          theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
+          themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
+          theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
+          themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
+          marksX="$marksX`echo "line $themark,148 $themark,152 "`"
+        done
+        unset nextday
+      fi
+    else
+      dayN=1
       while [[ $currpoint -le $to ]]
       do
-        nextday=$(expr `date -d "1970/01/01 +$currpoint sec" +"%H"` + $dayN)
-        themonth=`date -d "1970/01/01 +$currpoint sec +$dayN hour" +"%m"`
-        theyear=`date -d "1970/01/01 +$currpoint sec +$dayN hour" +"%Y"`
-        themark=`date -d "${theyear}/${themonth}/${theday} ${nexthour}:00" +"%s"`
-        marksX="$marksX`echo "line $themark,148 $themark,152"`"
-        currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN hour"`
+        currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
+        theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
+        themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
+        theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
+        themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
+        marksX="$marksX`echo "line $themark,148 $themark,152 "`"
       done
-      unset nextday
     fi
     unset dayN
   else
@@ -193,13 +221,14 @@ if [[ $hourX -lt $countminX ]] ; then
     [[ $hourN -eq 0 ]] && hourN=1
     while [[ $currpoint -le $to ]]
     do
-      nexthour=$(expr `date -d "1970/01/01 +$currpoint sec" +"%H"` + $hourN)
-      theday=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%d"`
-      themonth=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%m"`
-      theyear=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%Y"`
-      themark=`date -d "${theyear}/${themonth}/${theday} ${nexthour}:00" +"%s"`
-      marksX="$marksX`echo "line $themark,148 $themark,152"`"
-      currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour"`
+      currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
+      thehour=`date -d "1970/01/01 +$currpoint sec" +"%H"`
+      theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
+      themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
+      theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
+      themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
+      marksX="$marksX`echo "line $themark,148 $themark,152 "`"
+      
     done
   fi
   unset hourN
@@ -209,13 +238,13 @@ else
 # I leave it here to possibly add more resolution like e.g. 10 minutes
   while [[ $currpoint -le $to ]]
   do
-    nexthour=$(expr `date -d "1970/01/01 +$currpoint sec" +"%H"` + 1)
-    theday=`date -d "1970/01/01 +$currpoint sec +1 hour" +"%d"`
-    themonth=`date -d "1970/01/01 +$currpoint sec +1 hour" +"%m"`
-    theyear=`date -d "1970/01/01 +$currpoint sec +1 hour" +"%Y"`
-    themark=`date -d "${theyear}/${themonth}/${theday} ${nexthour}:00" +"%s"`
-    marksX="$marksX`echo "line $themark,148 $themark,152"`"
-    currpoint=`date -d "1970/01/01 +$currpoint sec +1 hour"`
+    currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
+    thehour=`date -d "1970/01/01 +$currpoint sec" +"%H"`
+    theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
+    themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
+    theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
+    themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
+    marksX="$marksX`echo "line $themark,148 $themark,152 "`"
   done
 fi
 
