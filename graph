@@ -138,8 +138,9 @@ metricmin=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricmin%.*}
 metricmax=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmax%.*}
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
-[ 
+[[ $perdotY -lt 1 ]] && perdotY=`solve "($metricmax - $metricmin)/$areaV"`
 perdotX=`expr \( $to - $from \) / $areaH`
+[[ $perdotX -lt 1 ]] && perdotX=`solve "($metricmax - $metricmin)/$areaH"`
 firstdot=1
 
 while read LINE
@@ -161,6 +162,7 @@ countminY=20
 
 # How many pixels one hour takes
 hourX=`expr 3600 / $perdotX`
+[[ $hourX -lt 1 ]] && hourX=`solve "3600/$perdotX"`
 # Variable looping across all X marks
 currpoint=$from
 startX=`expr $legend + $padding`
@@ -177,6 +179,7 @@ if [[ $hourX -lt $countminX ]] ; then
   if [[ $hourN -ge 24 ]] ; then
     # How many pixels 1 day takes
     dayX=`expr 86400 / $perdotX`
+    [[ $dayX -lt 1 ]] && dayX=`solve "86400/$perdotX"`
     if [[ $dayX -lt $countminX ]] ; then
       # How many days are within 40 pixels
       dayN=`expr 2 \* $countminX / $dayX`
@@ -184,6 +187,7 @@ if [[ $hourX -lt $countminX ]] ; then
       if [[ $dayN -ge 30 ]] ; then
         # How many pixels are there in one month
         monthX=`expr 2592000 / $perdotX`
+        [[ $monthX -lt 1 ]] && monthX=`solve "2592000/$perdotX"`
         if [[ $monthX -lt $countminX ]] ; then
         # Resolution should be this many months
           res=`expr 2 \* $countminX / $monthX`
