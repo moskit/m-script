@@ -90,7 +90,9 @@ fi
 source ${rpath}/conf/dash.conf
 TMPDIR=/tmp/m_script
 install -d $TMPDIR
-
+[ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size please" && exit 1)
+[ -n "$padding" ] || padding=20
+[ -n "$legend" ] || legend=60
 areaH=`expr $graphH - 2 \* $padding - $legend`
 areaV=`expr $graphV - 2 \* $padding - $legend`
 if [ -n "$from" ] ; then
@@ -136,7 +138,9 @@ metricmin=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricmin%.*}
 metricmax=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmax%.*}
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
+[ 
 perdotX=`expr \( $to - $from \) / $areaH`
+firstdot=1
 
 while read LINE
 do
@@ -144,9 +148,11 @@ do
   Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
   X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
   Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin \) / $perdotY`
-  firstdot=1 && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=0
-  firstdot=0 && echo "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots && firstdot=1
+  [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
+  [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
+  firstdot=0
 done<${TMPDIR}/graph.${sIP}.${metric}
+printf "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots
 
 # 20 to 40 pixels
 
@@ -277,9 +283,10 @@ declare -i i
 
 i=`expr $legend + $padding`
 imax=`expr $i + $areaV`
-while [[ $i -le $imax ]]
+while true
 do
   i+=$res
+  [[ $i -gt $imax ]] && break
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
 done
@@ -288,11 +295,13 @@ echo "$marksX"
 echo "============================"
 echo "$marksY"
 
+datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
+
 convert -size ${graphH}x${graphV} xc:white -fill none \
   -draw "stroke gray line $startX,$startY $mY2,$startY" \
   -draw "stroke gray line $startX,$startY $startX,$mX2" \
-  -draw "stroke gray $marksX " -draw "stroke gray $marksY" \
-  -draw "stroke green `cat ${TMPDIR}/graph.${sIP}.${metric}.dots`" \
+  -draw "stroke gray $marksX " -draw "stroke gray $marksY " \
+  -draw "stroke green $datalines " \
   test.png
 
 #  points="10,10 30,90   25,10 50,50   50,50 80,50   70,10 90,40"
