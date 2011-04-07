@@ -136,32 +136,67 @@ if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
 fi
 rm -f ${TMPDIR}/graph.${sIP}.${metric}*
 
-minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
-metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
-metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
-if [ -z "$metricmin" ] || [ -z "$metricmax" ] ; then
-  echo "Error getting minimum and maximum values for $metric from $from to $to" >> "${rpath}/dashboard.log"
-  exit 1
-fi
-# Ideally we want 3 meaningful digits
-if [ `expr length $metricmax` -lt 3 ] ; then
-  metricmaxdec=`expr length ${metricmaxfp#*.}`
-  if [[ $metricmaxdec -eq 0 ]] ; then
-    mp=10
-  else
-    mp=1 ; for ((i=0; i<$metricmaxdec; i++)) ; do mp="${mp}0" ; done
-  fi
-  QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
-  metricmin=`solve "$metricminfp * $mp"` ; metricmin=${metricmin%.*}
-  metricmax=`solve "$metricmaxfp * $mp"` ; metricmax=${metricmax%.*}
-else
-  QUERY="select timeindex, $metric from sysdata where timeindex between $from and $to;"
-fi
+######     Getting min and max values from database
+
+#minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
+#metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
+#metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
+#if [ -z "$metricminfp" ] || [ -z "$metricmaxfp" ] ; then
+#  echo "Error getting minimum and maximum values for $metric from $from to $to" >> "${rpath}/dashboard.log"
+#  exit 1
+#fi
+#[ -z "$metricmin" ] && metricmin=0
+#[ -z "$metricmax" ] && metricmax=0
+
+## Ideally we want 3 meaningful digits
+#if [ `expr length $metricmax` -lt 3 ] ; then
+#  metricmaxdec=`expr length ${metricmaxfp#*.}`
+#  if [[ $metricmaxdec -eq 0 ]] ; then
+#    mp=10
+#  else
+#    mp=1 ; for ((i=0; i<$metricmaxdec; i++)) ; do mp="${mp}0" ; done
+#  fi
+#  QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
+#  metricmin=`solve "$metricminfp * $mp"` ; metricmin=${metricmin%.*}
+#  metricmax=`solve "$metricmaxfp * $mp"` ; metricmax=${metricmax%.*}
+#else
+#  QUERY="select timeindex, $metric from sysdata where timeindex between $from and #$to;"
+#fi
+#$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
+#if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
+#  echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
+#  exit 1
+#fi
+########
+
+########    The part above, but with getting min and max from the file
+
+# Using fixed multiplyer to avoid double querying
+mp=100
+QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
 $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
 if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
   echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
   exit 1
 fi
+SED=`which sed 2>/dev/null`
+[ -n "$SED" ] || (echo "Sed not found" >> "${rpath}/dashboard.log" && exit 1)
+
+declare -a arr
+cat ${TMPDIR}/graph.${sIP}.${metric} | cut -d'|' -f2 | sort | uniq | while read x
+do
+  arr=( ${arr[*]} ${x%.*} )
+done
+for ((i=0; i<${#arr[*]}; i++)) ; do
+  [[ $i -eq 0 ]] && metricmin=${arr[$i]}
+  [[ ${arr[$i]} -lt $metricmin ]] && metricmin=${arr[$i]}
+done
+unset arr
+for ((i=0; i<${#arr[*]}; i++)) ; do
+  [[ $i -eq 0 ]] && metricmax=${arr[$i]}
+  [[ ${arr[$i]} -gt $metricmax ]] && metricmax=${arr[$i]}
+done
+unset arr
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
 [[ $perdotY -lt 1 ]] && perdotY=1
@@ -331,16 +366,18 @@ imax=`expr $i + $areaV`
 while true
 do
   i+=$ires
+  imark+=$res
   [[ $i -gt $imax ]] && break
+  # Freeing some room for axis Y title
+  [[ `expr $i + $ires` -gt $imax ]] && unset imark imarkfp
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
   if [ -n "$mp" ] ; then
-    imarkfp=`solve "$imark/$mp"`
+    [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
     textY="$textY`printf "text $mYT1,$irev \'$imarkfp\' "`"
   else
     textY="$textY`printf "text $mYT1,$irev \'$imark\' "`"
   fi
-  imark+=$res
 done
 
 firstdot=1
@@ -349,6 +386,7 @@ while read LINE
 do
   X=`echo $LINE | cut -d'|' -f1`
   Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+  if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
   X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
   Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin - $shiftY \) / $perdotY`
   [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
