@@ -167,19 +167,6 @@ perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
 [[ $perdotY -lt 1 ]] && perdotY=1
 perdotX=`expr \( $to - $from \) / $areaH`
 [[ $perdotX -lt 1 ]] && perdotX=1
-firstdot=1
-
-while read LINE
-do
-  X=`echo $LINE | cut -d'|' -f1`
-  Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-  X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
-  Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin \) / $perdotY`
-  [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
-  [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
-  firstdot=0
-done<${TMPDIR}/graph.${sIP}.${metric}
-printf "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots
 
 # 20 to 40 pixels
 
@@ -337,6 +324,7 @@ fi
 declare -i i
 declare -i imark
 imark=`expr $metricmin / $res \* $res`
+shiftY=`expr $metricmin - $imark`
 ires=`expr $res / $perdotY`
 i=`expr $legend + $padding`
 imax=`expr $i + $areaV`
@@ -354,6 +342,20 @@ do
   fi
   imark+=$res
 done
+
+firstdot=1
+
+while read LINE
+do
+  X=`echo $LINE | cut -d'|' -f1`
+  Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+  X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
+  Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin - $shiftY \) / $perdotY`
+  [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
+  [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
+  firstdot=0
+done<${TMPDIR}/graph.${sIP}.${metric}
+printf "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots
 
 datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
 
