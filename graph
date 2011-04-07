@@ -144,16 +144,16 @@ if [ -z "$metricmin" ] || [ -z "$metricmax" ] ; then
   exit 1
 fi
 # Ideally we want 3 meaningful digits
-if [ `expr length $metricmin` -lt 3 ] ; then
-  metricmindec=`expr length ${metricminfp#*.}`
-  if [[ $metricmindec -eq 0 ]] ; then
+if [ `expr length $metricmax` -lt 3 ] ; then
+  metricmaxdec=`expr length ${metricmaxfp#*.}`
+  if [[ $metricmaxdec -eq 0 ]] ; then
     mp=10
   else
-    mp=1 ; for ((i=0; i<$metricmindec; i++)) ; do mp="${mp}0" ; done
+    mp=1 ; for ((i=0; i<$metricmaxdec; i++)) ; do mp="${mp}0" ; done
   fi
   QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
-  metricmin=`solve "$metricminfp * $mp"`
-  metricmax=`solve "$metricmaxfp * $mp"`
+  metricmin=`solve "$metricminfp * $mp"` ; metricmin=${metricmin%.*}
+  metricmax=`solve "$metricmaxfp * $mp"` ; metricmax=${metricmax%.*}
 else
   QUERY="select timeindex, $metric from sysdata where timeindex between $from and $to;"
 fi
@@ -332,11 +332,11 @@ if [[ $res -lt $a ]] ; then
     res=`expr $pof / 2`
   fi
 fi
-imark=`expr $metricmin / $res \* $res`
 
 # Drawing
 declare -i i
 declare -i imark
+imark=`expr $metricmin / $res \* $res`
 ires=`expr $res / $perdotY`
 i=`expr $legend + $padding`
 imax=`expr $i + $areaV`
