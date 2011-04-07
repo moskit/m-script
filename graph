@@ -135,14 +135,33 @@ if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
   thekey="-i ${rpath}/keys/${skey}.pem"
 fi
 rm -f ${TMPDIR}/graph.${sIP}.${metric}*
-$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select timeindex, $metric from sysdata where timeindex between $from and $to;\"" > ${TMPDIR}/graph.${sIP}.${metric}
-if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
-  echo "Too few data for graph. Might be ssh error." >> "${rpath}/dashboard.log"
+
+minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
+metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
+metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
+if [ -z "$metricmin" ] || [ -z "$metricmax" ] ; then
+  echo "Error getting minimum and maximum values for $metric from $from to $to" >> "${rpath}/dashboard.log"
   exit 1
 fi
-minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
-metricmin=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricmin%.*}
-metricmax=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmax%.*}
+# Ideally we want 3 meaningful digits
+if [ `expr length $metricmin` -lt 3 ] ; then
+  metricmindec=`expr length ${metricminfp#*.}`
+  if [[ $metricmindec -eq 0 ]] ; then
+    mp=10
+  else
+    mp=1 ; for ((i=0; i<$metricmindec; i++)) ; do mp="${mp}0" ; done
+  fi
+  QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
+  metricmin=`solve "$metricminfp * $mp"`
+  metricmax=`solve "$metricmaxfp * $mp"`
+else
+  QUERY="select timeindex, $metric from sysdata where timeindex between $from and $to;"
+fi
+$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
+if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
+  echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
+  exit 1
+fi
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
 [[ $perdotY -lt 1 ]] && perdotY=1
@@ -327,7 +346,12 @@ do
   [[ $i -gt $imax ]] && break
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
-  textY="$textY`printf "text $mYT1,$irev \'$imark\' "`"
+  if [ -n "$mp" ] ; then
+    imarkfp=`solve "$imark/$mp"`
+    textY="$textY`printf "text $mYT1,$irev \'$imarkfp\' "`"
+  else
+    textY="$textY`printf "text $mYT1,$irev \'$imark\' "`"
+  fi
   imark+=$res
 done
 
