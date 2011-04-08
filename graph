@@ -28,8 +28,11 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 
-possible_options="metric help from to ip"
+possible_options="metric help from to ip new"
 necessary_options="metric ip"
+
+RSYNC=`which rsync 2>/dev/null`
+
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -44,7 +47,7 @@ do
     s_optarg='yes' 
     ;;
   *=*)
-    echo "Wrong syntax: options must start with a double dash"
+    echo "Wrong syntax: options must start with a double dash" >> "${rpath}/dashboard.log"
     exit 1
     ;;
   *)
@@ -58,15 +61,16 @@ do
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ found -ne 1 ]]; then 
-    echo "Unknown option: $s_optname"
+    echo "Unknown option: $s_optname" >> "${rpath}/dashboard.log"
     exit 1
   fi
 done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} --metric=metric <options>"
   echo 
-  echo "Without --from a graph for the last 600 * \$FREQ will be generated"
-  echo "(see mon.conf). The --to option is ignored in this case."
+  echo "Without --from a graph for the default period will be generated,"
+  echo "depending on the graph size and FREQ variable (see conf/dash.conf)."
+  echo "The --to option is ignored in this case."
   echo "With --from but without --to the latter defaults to the current time."
   echo
   echo "Options:"
@@ -74,6 +78,10 @@ if [ "X$help" == "Xyes" ] ; then
   echo "  --from=<start time in any format acceptable by the 'date' utility>"
   echo "  --to=<end time in any format acceptable by the 'date' utility>"
   echo "  --metric=<check sqlite3 sysdata '.schema sysdata' to see all metrics>"
+  echo "  --new  - forces getting the latest data from the server. Without this"
+  echo "           option a new graph is generated using the data received by"
+  echo "           the dashboard update daemon. Option --from always invokes"
+  echo "           this option"
   exit 0
 fi
 found=0
@@ -83,14 +91,19 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: ${missing_options} not found" >> "${rpath}/dashboard.log"
+  exit 1
+fi
+if [ -n "$from" ] ; then new="yes" ; fi
+if [ -z "$new" ] && [ $RSYNC == "" ] ; then
+  echo "Rsync is required if neither --new nor --from is present" >> "${rpath}/dashboard.log"
   exit 1
 fi
 
 source ${rpath}/conf/dash.conf
-TMPDIR=/tmp/m_script
+TMPDIR=/tmp/m_script/dash
 install -d $TMPDIR
-[ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size please" && exit 1)
+[ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size in conf/dash.conf please >> "${rpath}/dashboard.log"" && exit 1)
 [ -n "$padding" ] || padding=20
 [ -n "$legend" ] || legend=60
 areaH=`expr $graphH - 2 \* $padding - $legend`
@@ -115,16 +128,16 @@ title="Graph: $metric from $tfrom to $tto"
 #tlength=`expr length $title`
 echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
 if [ ! -f "${rpath}/servers.list" ] ; then
-  echo "Create ${rpath}/servers.list please" | tee -a "${rpath}/dashboard.log"
+  echo "Create ${rpath}/servers.list please"  >> "${rpath}/dashboard.log"
   exit 1
 fi
 if [ ! -f "${rpath}/conf/clusters.conf" ] ; then
-  echo "Create ${rpath}/conf/clusters.conf please" | tee -a "${rpath}/dashboard.log"
+  echo "Create ${rpath}/conf/clusters.conf please"  >> "${rpath}/dashboard.log"
   exit 1
 fi
 server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
 if [ -z "$server" ] ; then
-  echo "Server with IP ${ip} not found in ${rpath}/servers.list" | tee -a "${rpath}/dashboard.log"
+  echo "Server with IP ${ip} not found in ${rpath}/servers.list" >> "${rpath}/dashboard.log"
   exit 1
 fi
 sIP=`echo $server | cut -d'|' -f1`
@@ -134,7 +147,7 @@ spath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f
 if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
   thekey="-i ${rpath}/keys/${skey}.pem"
 fi
-rm -f ${TMPDIR}/graph.${sIP}.${metric}*
+rm -f ${TMPDIR}/graph.${sIP}.${metric}.dots
 
 ######     Getting min and max values from database
 
@@ -173,17 +186,20 @@ rm -f ${TMPDIR}/graph.${sIP}.${metric}*
 
 # Using fixed multiplyer to avoid double querying
 mp=100
-QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
-$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
-if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
-  echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
-  exit 1
+if [ -n "$new" ] ; then
+  QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
+  $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
+  if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
+    echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
+    exit 1
+  fi
 fi
-SED=`which sed 2>/dev/null`
-[ -n "$SED" ] || (echo "Sed not found" >> "${rpath}/dashboard.log" && exit 1)
-
 declare -a arr
-cat ${TMPDIR}/graph.${sIP}.${metric} | cut -d'|' -f2 | sort | uniq | while read x
+cat ${TMPDIR}/graph.${sIP}.${metric} | awk -F'|' '{print $2}' | sort | uniq
+IFS1=$IFS
+IFS='
+'
+for x in `cat ${TMPDIR}/graph.${sIP}.${metric} | awk -F'|' '{print $2}' | sort | uniq`
 do
   arr=( ${arr[*]} ${x%.*} )
 done
@@ -191,12 +207,12 @@ for ((i=0; i<${#arr[*]}; i++)) ; do
   [[ $i -eq 0 ]] && metricmin=${arr[$i]}
   [[ ${arr[$i]} -lt $metricmin ]] && metricmin=${arr[$i]}
 done
-unset arr
 for ((i=0; i<${#arr[*]}; i++)) ; do
   [[ $i -eq 0 ]] && metricmax=${arr[$i]}
   [[ ${arr[$i]} -gt $metricmax ]] && metricmax=${arr[$i]}
 done
 unset arr
+IFS=$IFS1
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
 [[ $perdotY -lt 1 ]] && perdotY=1
@@ -388,7 +404,7 @@ do
   Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
   if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
   X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
-  Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin - $shiftY \) / $perdotY`
+  Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin + $shiftY \) / $perdotY`
   [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
   [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
   firstdot=0
