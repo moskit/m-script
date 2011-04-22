@@ -35,6 +35,7 @@ print_server() {
   IFS1=$IFS
   IFS='|'
   if [ "X$filter" == "X" ] ; then
+    line6="Tags:"
     for s in `echo "${1}"` ; do
       a=`echo "$s" | awk -F'::' '{print $1}'`
       b=`echo "$s" | awk -F'::' '{print $2}'`
@@ -77,7 +78,7 @@ print_server() {
           line1="$line1  Cluster: $b"
           ;;
         itag)
-          line6="Tags: $b"
+          line6="$line6 $b"
           ;;
         bdev)
           line7="EBS device: $b $line7"
@@ -268,14 +269,14 @@ EOF
   exit 0
 fi
 
-source ${rpath}/../conf/cloud.conf
+source ${rpath}/../../conf/cloud.conf
 for var in EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_AK EC2_REGION PATH
 
-TMPDIR=/tmp/m_script/cloud
+TMPDIR=/tmp/m_script/cloud/ec2
 install -d $TMPDIR
 
 filter=`echo $filter | sed 's_,_|_g'`
@@ -283,13 +284,16 @@ filter=`echo $filter | sed 's_,_|_g'`
 
 if [ "X$noupdate" == "X" ] ; then
   [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
-  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.${EC2_REGION}.tmp
+  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/servers.${EC2_REGION}.tmp
 fi
-
+# newr = New Reservation, inverted
 while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then
+    # if there was a previous server, then print it, forget it and mark it a new
+    # reservation
     [ -n "$current_server" ] && print_server "$current_server" && unset current_server
+    # start collecting new server data
     current_server=`parse_server $SERVER` && unset newr
   else
     if [[ $SERVER =~ ^INSTANCE ]] && [ $newr ] ; then
@@ -300,7 +304,7 @@ do
       current_server="$current_server`parse_server $SERVER`"
     fi
   fi
-done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
+done<$TMPDIR/servers.${EC2_REGION}.tmp
 print_server "$current_server" && unset current_server
 unset newr current_server
 

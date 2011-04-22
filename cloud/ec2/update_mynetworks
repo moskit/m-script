@@ -18,23 +18,24 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
+touch /etc/mynetworks
 IFS1=$IFS
 IFS='|'
-cat ${rpath}/../servers.list | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | awk '{print $1" "$2}' | while read HOST
+cat ${rpath}/../../servers.list | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | awk '{print $1" "$2}' | while read HOST
 do
   ip=`echo $HOST | awk '{print $1}'`
   hname=`echo $HOST | awk '{print $2}'`
-  if [ `grep -c "$ip[[:space:]]*$hname" /etc/hosts` -eq 0 ] ; then
-    if [ `grep -c "$ip " /etc/hosts` -eq 1 ] ; then
-      sed -i -e "/$ip/d" /etc/hosts
+  if [ `grep -c "$ip[[:space:]]*$hname" /etc/mynetworks` -eq 0 ] ; then
+    if [ `grep -c "$ip " /etc/mynetworks` -eq 1 ] ; then
+      sed -i -e "/$ip/d" /etc/mynetworks
     fi
-    if [ `grep -c " $hname " /etc/hosts` -eq 1 ] ; then
-      sed -i -e "/ $hname /d" /etc/hosts
+    if [ `grep -c " $hname " /etc/mynetworks` -eq 1 ] ; then
+      sed -i -e "/ $hname /d" /etc/mynetworks
     fi
-    if [ `grep -c " $hname$" /etc/hosts` -eq 1 ] ; then
-      sed -i -e "/ $hname$/d" /etc/hosts
+    if [ `grep -c " $hname$" /etc/mynetworks` -eq 1 ] ; then
+      sed -i -e "/ $hname$/d" /etc/mynetworks
     fi
-    echo "$ip $hname" >> /etc/hosts
+    echo "$ip $hname" >> /etc/mynetworks
   fi
 done
 IFS=$IFS1

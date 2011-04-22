@@ -31,7 +31,7 @@ for proc in `cat /tmp/m_script/ps.list.reordered | awk '{print $1" "$2}' | sort 
   virtual=0
   resident=0
   procuser=`echo $proc | awk '{print $1" "$2}'`
-  for thisproc in `cat /tmp/m_script/ps.list.reordered | grep "^${procuser}"` ; do
+  for thisproc in `cat /tmp/m_script/ps.list.reordered | grep "^${procuser}" 2>/dev/null` ; do
     VSZ=`echo $thisproc | awk '{print $4}'`
     RSS=`echo $thisproc | awk '{print $3}'`
 #echo "=== $VSZ $RSS $virtual $resident ==="

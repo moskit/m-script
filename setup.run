@@ -111,8 +111,6 @@ then
         echo "MONGOOSE=1" >> ${rpath}/mon.conf
       fi
     fi
-  else
-    exit 1
   fi
 else
   if [ `grep -c "^MONGOOSE=" ${rpath}/mon.conf` -ne 0 ]
@@ -251,8 +249,12 @@ then
   [ -d /etc/rc5.d ] && ln -s /etc/init.d/monitorload /etc/rc5.d/S99monitorload
   [ -d /etc/rc0.d ] && ln -s /etc/init.d/monitorload /etc/rc0.d/K01monitorload
   [ -d /etc/rc6.d ] && ln -s /etc/init.d/monitorload /etc/rc6.d/K01monitorload
+  echo "If you want to start the load monitoring daemon now, run:"
+  echo "$rcdir/monitorload start"
+else
+  echo "If you want to start the load monitoring daemon now, run:"
+  echo "$rpath/monitorload.sh start"
 fi
 
-echo "If you want to start the load monitoring daemon now, run:"
-echo "$rcdir/monitorload start"
+
 

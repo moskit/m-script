@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<slices type="array">
+  <slice>
+    <name>seliger</name>
+    <image-id type="integer">3</image-id>
+    <addresses type="array">
+      <address>67.23.4.56</address>
+      <address>10.176.36.7</address>
+    </addresses>
+    <progress type="integer">100</progress>
+    <id type="integer">33473</id>
+    <bw-out type="float">2.61</bw-out>
+    <bw-in type="float">0.54</bw-in>
+    <flavor-id type="integer">1</flavor-id>
+    <status>active</status>
+    <ip-address>67.23.4.56</ip-address>
+  </slice>
+  <slice>
+    <name>r-proxy-1</name>
+    <image-id type="integer">3</image-id>
+    <addresses type="array">
+      <address>67.23.2.128</address>
+      <address>10.176.34.103</address>
+    </addresses>
+    <progress type="integer">100</progress>
+    <id type="integer">43802</id>
+    <bw-out type="float">7.4</bw-out>
+    <bw-in type="float">0.22</bw-in>
+    <flavor-id type="integer">1</flavor-id>
+    <status>active</status>
+    <ip-address>67.23.2.128</ip-address>
+  </slice>
+  <slice>
+    <name>app-rails-001</name>
+    <image-id type="integer">3</image-id>
+    <addresses type="array">
+      <address>10.176.49.60</address>
+      <address>67.23.16.112</address>
+    </addresses>
+    <progress type="integer">100</progress>
+    <id type="integer">157942</id>
+    <bw-out type="float">0.02</bw-out>
+    <bw-in type="float">0.24</bw-in>
+    <flavor-id type="integer">1</flavor-id>
+    <status>active</status>
+    <ip-address>10.176.49.60</ip-address>
+  </slice>
+  <slice>
+    <name>app-rails-002</name>
+    <image-id type="integer">3</image-id>
+    <addresses type="array">
+      <address>10.176.50.181</address>
+      <address>67.23.17.253</address>
+    </addresses>
+    <progress type="integer">100</progress>
+    <id type="integer">187385</id>
+    <bw-out type="float">0.36</bw-out>
+    <bw-in type="float">0.3</bw-in>
+    <flavor-id type="integer">1</flavor-id>
+    <status>active</status>
+    <ip-address>10.176.50.181</ip-address>
+  </slice>
+  <slice>
+    <name>mail</name>
+    <image-id type="integer">19</image-id>
+    <addresses type="array">
+      <address>67.23.2.253</address>
+      <address>10.176.33.21</address>
+    </addresses>
+    <progress type="integer">100</progress>
+    <id type="integer">262551</id>
+    <bw-out type="float">0.73</bw-out>
+    <bw-in type="float">0.76</bw-in>
+    <flavor-id type="integer">1</flavor-id>
+    <status>active</status>
+    <ip-address>67.23.2.253</ip-address>
+  </slice>
+</slices>
+

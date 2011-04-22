@@ -20,8 +20,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster ami number aki region zone"
-necessary_options=""
+possible_options="name aki region"
+necessary_options="name"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -65,31 +65,43 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source ${rpath}/../conf/cloud.conf
-for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
+source ${rpath}/../../conf/cloud.conf
+for var in BUCKETNAME EXCLUDE_PATHS SAVED_FILES_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
-PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
+PATH="${EC2_TOOLS_BIN_PATH}:${EC2_AMI_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_REGION PATH
-
-TMPDIR=/tmp/m_script/cloud
-install -d $TMPDIR
-
 [ -n "$region" ] && EC2_REGION=$region
-
-[ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
-[ "X$aki" == "X" ] || aki="--kernel $aki"
-[ "X$number" == "X" ] || number="-n $number"
-[ "X$zone" == "X" ] || zone="-z $zone"
-if [ "X$ami" == "X" ] ; then
-  amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
-  [ -n "$amiID" ] && echo "Found AMI: $amiID" || (echo "Unable to find any AMI to use" && exit 1)
+TMPDIR=/tmp/m_script/cloud/ec2
+if [[ $BUCKETNAME =~ ^s3 ]] ; then
+  FULLBUCKETNAME="$BUCKETNAME"
+  BUCKETNAME="${BUCKETNAME#*://}"
 else
-  amiID=$ami
+  FULLBUCKETNAME="s3://$BUCKETNAME"
 fi
-instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
-echo $instances
-[ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster}
+install -d $TMPDIR
+install -d $SAVED_FILES_PATH
+for E in $EXCLUDE_PATHS
+do
+  [ -e $E ] || ex=0
+done
+[ "X$ex" != "X0" ] && EXCLUDE="-e $EXCLUDE_PATHS" || EXCLUDE=""
+[ "X$name" == "X" ] && echo "Name needed" && exit 1
+[ "X`which ec2-bundle-vol`" == "X" ] && echo "AMI Tools needed" && exit 1
+[ "X`which ec2-register`" == "X" ] && echo "API Tools needed" && exit 1
 
-
+S3CMD=`which s3cmd 2>/dev/null`
+if [ -n "$S3CMD" ] ; then
+  echo "Removing AMI with the same name, if any"
+  $S3CMD del "${FULLBUCKETNAME}/${name}"*
+else
+  echo "Warning: S3cmd not found, so S3 bucket ${BUCKETNAME} has not been searched for previously saved AMI with the same name. No worries, this search is just a precaution."
+fi
+[ -n "$aki" ] && aki="--kernel $aki"
+rm -rf ${SAVED_FILES_PATH%/}/image* ${SAVED_FILES_PATH%/}/img-mnt* ${SAVED_FILES_PATH%/}/${name} ${SAVED_FILES_PATH%/}/${name}.manifest.xml ${SAVED_FILES_PATH%/}/${name}.part.* 2>/dev/null
+ec2-bundle-vol -r $ARCH --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT "$aki"
+ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${name}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY
+amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
+[ -n "$amiID" ] && echo "The name ${name} is registered. De-registering first" && echo "Deregistered: `ec2-deregister -K $EC2_PRIVATE_KEY -C $EC2_CERT --region $EC2_REGION $amiID | cut -d' ' -f2`" 
+echo "Registered: `ec2-register -K $EC2_PRIVATE_KEY -C $EC2_CERT --region $EC2_REGION ${BUCKETNAME}/${name}.manifest.xml -n ${name} | cut -d' ' -f2`"
 

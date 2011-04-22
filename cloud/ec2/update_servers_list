@@ -71,45 +71,45 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-source ${rpath}/../conf/cloud.conf
+source ${rpath}/../../conf/cloud.conf
 
 for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
-TMPDIR=/tmp/m_script/cloud
+TMPDIR=/tmp/m_script/cloud/ec2
 install -d $TMPDIR
 
 [ -n "$region" ] && EC2_REGION=$region
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
-`which date` >> ${rpath}/../cloud.log
-echo "------------------" >> ${rpath}/../cloud.log
+`which date` >> ${rpath}/../../cloud.log
+echo "------------------" >> ${rpath}/../../cloud.log
 
 changed=0
-[ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips ] && mv $TMPDIR/ec2.servers.${EC2_REGION}.ips $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev
-[ -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] || (echo "ec2-describe-instances binary not found! Exiting.." >> ${rpath}/../cloud.log && exit 1)
+[ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev
+[ -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] || (echo "ec2-describe-instances binary not found! Exiting.." >> ${rpath}/../../cloud.log && exit 1)
   
-${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/ec2.servers.${EC2_REGION}.tmp
+${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/servers.${EC2_REGION}.tmp
 firstline=1
 IFS1=$IFS
 IFS='
 '
-for SERVER in `cat $TMPDIR/ec2.servers.${EC2_REGION}.tmp`
+for SERVER in `cat $TMPDIR/servers.${EC2_REGION}.tmp`
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
       if [ "X$state" == "Xrunning" ] ; then
-        if [ -f "${rpath}/../keys/${keypair}.pem" ] ; then
+        if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
           if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
             sname=`hostname`
           else
-            sname=`$SSH -i "${rpath}/../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+            sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
           fi
         fi
-        [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-        echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
+        [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../../cloud.log
+        echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
       fi
       unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
     else
@@ -137,20 +137,20 @@ do
 done
 
 if [ "X$state" == "Xrunning" ] ; then
-  if [ -f "${rpath}/../keys/${keypair}.pem" ] ; then
+  if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
     if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
       sname=`hostname`
     else
-      sname=`$SSH -i "${rpath}/../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
     fi
   fi
-  [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../cloud.log
-  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/ec2.servers.${EC2_REGION}.ips
+  [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../../cloud.log
+  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
 fi
 
-[ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/ec2.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/ec2.servers.${EC2_REGION}.ips.prev $TMPDIR/ec2.servers.${EC2_REGION}.ips`" ] && exit 0
+[ -f $TMPDIR/servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/servers.${EC2_REGION}.ips.prev $TMPDIR/servers.${EC2_REGION}.ips`" ] && exit 0
 
-$SED -i -e "/|${EC2_REGION}|.*$/d" ${rpath}/../servers.list
+$SED -i -e "/|${EC2_REGION}|.*$/d" ${rpath}/../../servers.list
 
 while read SERVER
 do
@@ -158,17 +158,17 @@ do
   keypair=`echo $SERVER | awk -F'|' '{print $6}'`
   sname=`echo $SERVER | awk -F'|' '{print $13}'`
   srole=`echo $SERVER | awk -F'|' '{print $14}'`
-  echo "${inIP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> ${rpath}/../servers.list
-done<$TMPDIR/ec2.servers.${EC2_REGION}.ips
+  echo "${inIP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> ${rpath}/../../servers.list
+done<$TMPDIR/servers.${EC2_REGION}.ips
 
 unset inIP extIP keypair iID ami state isize secgroup started zone aki ari sname srole
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
-  ${rpath}/update_nginx_proxy
+  ${rpath}/../update_nginx_proxy
 fi
-${rpath}/update_hosts_file
-${rpath}/update_mynetworks
-#${rpath}/update_firewalls
+${rpath}/../update_hosts_file
+${rpath}/../update_mynetworks
+#${rpath}/../update_firewalls
 
 IFS=$IFS1
 

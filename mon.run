@@ -122,40 +122,20 @@ function runsysanalyze() {
 }
 
 function analyzesysparams() {
-  afrdatefirst=$3
-  adayfirst=$dayfirst
-  amonthfirst=$monthfirst
-  ayearfirst=$yearfirst
-  #echo "First date: $afrdatefirst"
+  afrdayfirst=$3
+
   if [ "X$4" == "X" ]
   then
     partotal=""
   else
-    partotal=`sqlite3 ${rpath}/sysdata "select avg($4) from sysdata where day='$afrdatefirst' group by day"`
+    partotal=`sqlite3 ${rpath}/sysdata "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
   fi
-  afrdatefirst=$datefirst
+
   for ((n=1; n <= $ANALYS_DAYS; n++))
   do
-    results[$n]=`sqlite3 ${rpath}/sysdata "select avg($1) from sysdata where day='$afrdatefirst' group by day"`
+    results[$n]=`sqlite3 ${rpath}/sysdata "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
     #echo "== n=$n; date: $afrdatefirst; result: ${results[$n]}"
-    if [ $adayfirst -eq ${daysin[$amonthfirst]} ]
-    then
-      adayfirst=1
-      if [ $amonthfirst -ne 12 ]
-      then
-        amonthfirst=`expr $amonthfirst + 1`
-      else
-        amonthfirst=1
-        ayearfirst=`expr $ayearfirst + 1`
-      fi
-    else
-      adayfirst=`expr $adayfirst + 1`
-    fi
-    dayfirst2=$adayfirst
-    monthfirst2=$amonthfirst
-    [ `expr length $dayfirst2` -eq 1 ] && dayfirst2=0$adayfirst
-    [ `expr length $monthfirst2` -eq 1 ] && monthfirst2=0$amonthfirst
-    afrdatefirst=$ayearfirst$monthfirst2$dayfirst2
+    afrdayfirst=`date -d "$afrdayfirst + 1 day" +"%Y%m%d"`
   done
   daysnum="${#results[@]}"
   if [ $daysnum -lt $ANALYS_DAYS ]
@@ -260,66 +240,31 @@ function sysanalysis() {
     echo "be set to 1 in mon.conf"
     exit 1
   fi
-  daycurrent=$(date +"%d" | sed "s|^0||")
-  monthcurrent=$(date +"%m" | sed "s|^0||")
-  yearcurrent=$(date +"%Y")
-  daysin=([1]=31 [2]=28 [3]=31 [4]=30 [5]=31 [6]=30 [7]=31 [8]=31 [9]=30
-[10]=31 [11]=30 [12]=31)
-  if [ `expr $yearcurrent / 4` -eq 0 ]
-  then
-    daysin[2]=29
-  fi
-  if [ $ANALYS_DAYS -gt 28 ]
-  then
-    echo "Configuration error! ANALYS_DAYS variable cannot be set higher than 28"
-    exit 1
-  fi
+
   if [ $ANALYS_DAYS -lt 2 ]
   then
     echo "Configuration error! ANALYS_DAYS variable cannot be set lower than 2"
     exit 1
   fi
-  if [ $daycurrent -gt $ANALYS_DAYS ]
-  then
-    dayfirst=`expr $daycurrent - $ANALYS_DAYS`
-    [ `expr length $dayfirst` -eq 1 ] && dayfirst=0$dayfirst
-    monthfirst=$monthcurrent
-    [ `expr length $monthfirst` -eq 1 ] && monthfirst=0$monthfirst
-    yearfirst=$yearcurrent
-  elif [ $monthcurrent -ne 1 ]
-  then
-    monthfirst=`expr $monthcurrent - 1`
-    dayfirst=`expr ${daysin[$monthfirst]} - $ANALYS_DAYS + $daycurrent`
-    [ `expr length $monthfirst` -eq 1 ] && monthfirst=0$monthfirst
-    [ `expr length $dayfirst` -eq 1 ] && dayfirst=0$dayfirst
-    yearfirst=$yearcurrent
-  else
-    yearfirst=`expr $yearcurrent - 1`
-    monthfirst=12
-    dayfirst=`expr 31 - $ANALYS_DAYS + $daycurrent`
-    [ `expr length $dayfirst` -eq 1 ] && dayfirst=0$dayfirst
-  fi
-  datefirst=$yearfirst$monthfirst$dayfirst
-  dayfirst=`echo $dayfirst | sed "s|^0||"`
-  monthfirst=`echo $monthfirst | sed "s|^0||"`
-  testdays=`sqlite3 ${rpath}/sysdata "select day from sysdata where day='$datefirst'"`
+
+  testdays=`sqlite3 ${rpath}/sysdata "select day from sysdata where day='$dayfirst'"`
   if [ "X$testdays" != "X" ]
   then
 #   ------------ Database -- un -- "From" - DB column  - Human  ----- Warning level - Con
 #   ------------  column  -- it --  date  - name for   - column ----- variable name - dit
 #   ------------   name   -- s  --        - total(max) -  name  ----- (mon.conf)    - ion
-analyzesysparams 'freeram'   KB   $datefirst totalram  "Free RAM"      "FREERAM"      '>='
-analyzesysparams 'activeram' KB   $datefirst totalram  "Active RAM"    "ACTIVERAM"    '>='
-analyzesysparams 'freeswap'  KB   $datefirst totalswap "Free swap"     "FREESWAP"     '>='
-analyzesysparams 'loadavg'   ""   $datefirst   ""      "Load average"  "LOADAVG"      '>='
-analyzesysparams 'procnum'   ""   $datefirst   ""   "Number of processes" "PROCNUM"   '>='
-analyzesysparams 'diskusage' '%'  $datefirst   ""      "Disk usage"    "DISKUSAGE"    '>='
-analyzesysparams 'diskiord' 'MB/sec' $datefirst "" "Disk average read speed" "DISKIORD" '>='
-analyzesysparams 'diskiowr' 'MB/sec' $datefirst "" "Disk average write speed" "DISKIOWR" '>='
-analyzesysparams 'cpuusage'  '%'  $datefirst   ""     "CPU usage"       "CPUUSAGE"    '>='
-analyzesysparams 'cputemp'  'Celsius' $datefirst ""    "CPU temperature" "CPUTEMP"    '>='
-analyzesysparams 'cpufscale' '%'  $datefirst   ""   "CPU frequency scale" "CPUFSCALE" '>='
-analyzesysparams 'uptime'   'days' $datefirst   ""       "Uptime"        "UPTIME"     '<'
+analyzesysparams 'freeram'   KB   $dayfirst totalram  "Free RAM"      "FREERAM"      '>='
+analyzesysparams 'activeram' KB   $dayfirst totalram  "Active RAM"    "ACTIVERAM"    '>='
+analyzesysparams 'freeswap'  KB   $dayfirst totalswap "Free swap"     "FREESWAP"     '>='
+analyzesysparams 'loadavg'   ""   $dayfirst   ""      "Load average"  "LOADAVG"      '>='
+analyzesysparams 'procnum'   ""   $dayfirst   ""   "Number of processes" "PROCNUM"   '>='
+analyzesysparams 'diskusage' '%'  $dayfirst   ""      "Disk usage"    "DISKUSAGE"    '>='
+analyzesysparams 'diskiord' 'MB/sec' $dayfirst "" "Disk average read speed" "DISKIORD" '>='
+analyzesysparams 'diskiowr' 'MB/sec' $dayfirst "" "Disk average write speed" "DISKIOWR" '>='
+analyzesysparams 'cpuusage'  '%'  $dayfirst   ""     "CPU usage"       "CPUUSAGE"    '>='
+analyzesysparams 'cputemp'  'Celsius' $dayfirst ""    "CPU temperature" "CPUTEMP"    '>='
+analyzesysparams 'cpufscale' '%'  $dayfirst   ""   "CPU frequency scale" "CPUFSCALE" '>='
+analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"     '<'
   else
     echo "There is no data in the database for $ANALYS_DAYS days back."
     echo "Please wait or change the ANALYS_DAYS parameter in mon.conf."
@@ -365,7 +310,7 @@ case ${1} in
     echo "       mon.run <scriptname.mon.sh>"
     echo "         - runs a selected script and sends an alert if necessary"
 #    echo "       mon.run --analyze-logs"
-#    echo "         - analyzes log messages since the last run and sends a statistical"
+#    echo "         - analyzes log messages since the last run and sends the statistical"
 #    echo "       data and an unusual activity report."
   ;;
   -rep | -report | --report)

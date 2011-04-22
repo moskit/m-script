@@ -19,6 +19,16 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
+# Array of 3rd party services compatibility tags
+declare -i i
+i=2
+for LINE in `cat ${rpath}/../3rdparty.compat | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+  ctag=`echo $LINE | cut -d'|' -f2 | cut -d'%' -f$i`
+  [ -n "$ctag" ] || continue
+  i+=1
+  ctags="${ctags} $ctag"
+done
+
 parse_server() {
   if [[ ${1} =~ ^RESERVATION ]] ; then
     printf "SG::`echo ${1} | awk -F'|' '{print $4}'`|"
@@ -61,17 +71,31 @@ fix_server() {
     b=`echo "$s" | awk -F'::' '{print $2}'`
     case $a in
       icluster)
-        cluster="$b"
+        icluster="$b"
+        [ -n "$cluster" ] && [ "X$icluster" != "X$cluster" ] && IFS=$IFS1 && return 0
         ;;
       itag)
         c=${b%=*}
         d=${b#*=}
-        if [ "X$c" == "Xscalr-role-name" ] ; then
-          scalrrole="$d"
-        fi
-        if [ "X$c" == "Xscalr-farm-name" ] ; then
-          scalrfarm="$d"
-        fi
+        for ctag in $ctags ; do
+          if [ "X$c" == "Xctag" ] ; then
+            cleft=`cat ${rpath}/../3rdparty.compat | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|grep "%${ctag}%"|awk -F'|' '{print $1}'`
+            if [ -n "$compat" ] ; then
+              provider=`echo "$compat" | awk -F'::' '{print $1}'`
+              if [ "X$provider" == "X$cleft" ] ; then
+                compatstring=`echo "$compat" | awk -F'::' '{print $2}'|sed "s|%${ctag}%|$d|g"`
+              else
+                echo "Check this server, looks like it has tags from several service providers messed up:" >> "${rpath}/../../fix_clusters.report"
+                echo "${1}" >> "${rpath}/../../fix_clusters.report"
+                echo "Giving up for now" >> "${rpath}/../../fix_clusters.report"
+                break
+              fi
+            else
+              cright=`cat ${rpath}/../3rdparty.compat | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|grep "%${ctag}%"|awk -F'|' '{print $2}'|sed "s|%${ctag}%|$d|g"`
+              compat="${cleft}::${cright}"
+            fi
+          fi
+        done
         ;;
       iID)
         id=$b
@@ -97,31 +121,46 @@ fix_server() {
     esac
   done
   IFS=$IFS1
-  if [ -n "$cluster" ] ; then
-    clusterdetails=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | tail -1`
-    ### Cluster name|Key name|Availability zone|Security group|Instance type|AMI|Scalable?
-    keypairconf=`echo $clusterdetails | cut -d'|' -f2`
-    zoneconf=`echo $clusterdetails | cut -d'|' -f3`
-    sgconf=`echo $clusterdetails | cut -d'|' -f4`
-    sizeconf=`echo $clusterdetails | cut -d'|' -f4`
-    amiconf=`echo $clusterdetails | cut -d'|' -f5`
-    scaleconf=`echo $clusterdetails | cut -d'|' -f6`
-    if [ "X$keypair" != "X$keypairconf" ] ; then
-      if [ -f "${rpath}/../keys/${keypairconf}.pem" ] ; then
-        if [ `grep "^${keypair}|" "${rpath}/../conf/keys.compat" 2>/dev/null | grep -c "${keypairconf}"` -eq 0 ] ; then
-          if [ `grep -c "^${keypair}|" "${rpath}/../conf/keys.compat" 2>/dev/null` -ne 0 ] ; then
-            sed -i -e "/${keypair}|/s/$/|${keypairconf}/" "${rpath}/../conf/keys.compat"
-          else
-            echo "${keypair}|${keypairconf}" >> "${rpath}/../conf/keys.compat"
+  if [ -n "$icluster" ] ; then
+    clusterdetails=`grep "^${icluster}|" "${rpath}/../../conf/clusters.conf" | tail -1`
+    ### Cluster name|Key name|Availability zone|Security group|Instance type|AMI|Scalable?|M-Script path|3rd party compatibility
+    if [ -n "$clusterdetails" ] ; then
+      keypairconf=`echo $clusterdetails | cut -d'|' -f2`
+      zoneconf=`echo $clusterdetails | cut -d'|' -f3`
+      sgconf=`echo $clusterdetails | cut -d'|' -f4`
+      sizeconf=`echo $clusterdetails | cut -d'|' -f4`
+      amiconf=`echo $clusterdetails | cut -d'|' -f5`
+      scaleconf=`echo $clusterdetails | cut -d'|' -f6`
+      if [ "X$keypair" != "X$keypairconf" ] ; then
+        if [ -f "${rpath}/../../keys/${keypairconf}.pem" ] ; then
+          if [ `grep "^${keypair}|" "${rpath}/../../conf/keys.compat" 2>/dev/null | grep -c "${keypairconf}"` -eq 0 ] ; then
+            if [ `grep -c "^${keypair}|" "${rpath}/../../conf/keys.compat" 2>/dev/null` -ne 0 ] ; then
+              sed -i -e "/${keypair}|/s/$/|${keypairconf}/" "${rpath}/../../conf/keys.compat"
+            else
+              echo "${keypair}|${keypairconf}" >> "${rpath}/../../conf/keys.compat"
+            fi
           fi
+        else
+          echo "Key file ${rpath}/../../keys/${keypairconf}.pem not found" >> "${rpath}/../../fix_clusters.report"
         fi
-      else
-        echo "Key file ${rpath}/../keys/${keypairconf}.pem not found" >> "${rpath}/../fix_clusters.report"
       fi
     fi
-    
+  else
+    # No cluster server found. Checking if it belongs to 3rd party services 
+    if [ -n "$provider" ] ; then
+      if [ -n "$compatstring" ] ; then
+        if [[ "$compatstring" =~ '%' ]] ; then
+          echo "Failed to generate a cluster name from compatible tags:" >> "${rpath}/../../fix_clusters.report"
+          echo "${provider}::${compatstring}" >> "${rpath}/../../fix_clusters.report"
+          echo "The server was:" >> "${rpath}/../../fix_clusters.report"
+          echo "$1" >> "${rpath}/../../fix_clusters.report"
+          return 0
+        else
+        
+        fi
+      fi
+    fi
   fi
-  
 }
 
 DIFF=`which diff 2>/dev/null`
@@ -131,6 +170,7 @@ SED=`which sed 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
+
 possible_options="cluster help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -178,16 +218,15 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-source ${rpath}/../conf/cloud.conf
+source ${rpath}/../../conf/cloud.conf
 
 for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
-TMPDIR=/tmp/m_script/cloud
-install -d $TMPDIR
-
+TMPDIR=/tmp/m_script/cloud/ec2
+[ -f "$TMPDIR/servers.${EC2_REGION}.tmp" ] || (echo "Looks like ${rpath}/../update_servers_list has never run before. Run it first please." && exit 1)
 [ -n "$region" ] && EC2_REGION=$region
 
 while read SERVER
@@ -204,7 +243,7 @@ do
       current_server="$current_server`parse_server $SERVER`"
     fi
   fi
-done<$TMPDIR/ec2.servers.${EC2_REGION}.tmp
+done<$TMPDIR/servers.${EC2_REGION}.tmp
 fix_server "$current_server" && unset current_server
 unset newr current_server
 

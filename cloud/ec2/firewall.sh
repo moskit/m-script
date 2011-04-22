@@ -38,7 +38,7 @@ fi
 IFS1=$IFS
 IFS='
 '
-for clserver in `cat ${rpath}/../servers.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
+for clserver in `cat ${rpath}/../../servers.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
   serverip=`echo $clserver | awk -F'|' '{print $1}'`
   if [ -n `$IFCONFIG | grep $serverip` ]; then
