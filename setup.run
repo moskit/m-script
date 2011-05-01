@@ -35,9 +35,11 @@ if [ -f /etc/redhat-release ]; then OS="redhat"; fi
 
 if [ "X${BC}" == "X" ]
 then
+  echo
   echo "BC not found. It IS necessary, please install it first."
   echo "It is kind of shell calculator, and it is impossible to provide any results"
   echo "without it."
+  echo
   read -p "Do you want me to install it now?  [y/N] " installbc
   if [ `echo $installbc | grep -c -i "^y"` -ne 0 ]
   then
@@ -52,6 +54,7 @@ then
       [ "X`which yum`" == "X" ] || `which yum` install bc
       ;;
     *)
+      echo
       echo "Unable to determine operating system, sorry.. PLease install BC manually."
       exit 1
       ;;
@@ -64,9 +67,11 @@ fi
 
 if [ "X${MAILX}" == "X" ]
 then
+  echo
   echo "Mailx not found. It IS necessary, please install it first."
   echo "You can also install any alternative, which has similar syntax and "
   echo "provides the 'mail' command."
+  echo
   read -p "Do you want me to install it now?  [y/N] " installmailx
   if [ `echo $installmailx | grep -c -i "^y"` -ne 0 ]
   then
@@ -82,6 +87,7 @@ then
       [ "X`which yum`" == "X" ] || `which yum` install mailx
       ;;
     *)
+      echo
       echo "Unable to determine operating system, sorry.. PLease install Mailx manually."
       exit 1
       ;;
@@ -94,13 +100,16 @@ fi
 
 if [ "X${MONGOOSE}" == "X" ]
 then
+  echo
   echo "Mongoose not found. You need it only in case if you want web interface"
   echo "here on this server "
+  echo
   read -p "Do you want me to install it now?  [y/N] " installmongoose
   if [ `echo $installmongoose | grep -c -i "^y"` -ne 0 ]
   then
     (mkdir tmp && cd tmp && ${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ${rpath}/www/)
-    if [[ $? -ne 0 ]] ; then 
+    if [[ $? -ne 0 ]] ; then
+      echo
       echo "Some error.. disabling it for awhile. Compile it or install some other way and copy its binary to ${rpath}/www/ if you need it"
       sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" ${rpath}/mon.conf
     else
@@ -125,6 +134,7 @@ if [ `grep -c "^MONGOOSE=1" ${rpath}/mon.conf` -ne 0 ]
 then
   if [ `grep -c "^p " ${rpath}/conf/mongoose.conf` -eq 0 ]
   then
+    echo
     read -p "Enter a port number for the web interface: [8080] " mongooseport
     echo "p $mongooseport" >> ${rpath}/conf/mongoose.conf
   fi
@@ -140,6 +150,7 @@ then
   then
     echo "r ${rpath}/www" >> ${rpath}/conf/mongoose.conf
   fi
+  echo
   echo "You may want to adjust access settings for the web interface."
   echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
   echo "and edit ${rpath}/conf/mongoose.conf"
@@ -147,8 +158,10 @@ fi
       
 if [ "X${IPTABLES}" == "X" ]
 then
+  echo
   echo "Iptables not found. It is not necessary, but useful to provide an average"
   echo "bandwidth usage report. If you need it, install iptables and run setup.run again"
+  echo
   read -p "Do you want to proceed without iptables? [y/N] " noiptables
   if [ `echo $noiptables | grep -c -i "^y"` -ne 0 ]
   then
@@ -172,8 +185,10 @@ fi
 
 if [ "X${S3CMD}" == "X" ]
 then
+  echo
   echo "s3cmd not found. It is needed only if you are going to use Amazon S3 service"
   echo "for backups. If you need it, install and configure s3cmd and run setup.run again"
+  echo
   read -p "Do you want to proceed without s3cmd? [y/N] " nos3
   if [ `echo $nos3 | grep -c -i "^y"` -eq 0 ]
   then
@@ -183,6 +198,7 @@ fi
 
 if [ "X${SQLITE}" == "X" ]
 then
+  echo
   echo "SQLite3 is not found. It is not necessary, but without it many features like"
   echo "log analysis and performance analysis will be unavailable."
   read -p "Do you want to proceed without SQLite3? [y/N] " nosqlite
@@ -195,6 +211,7 @@ then
       echo "SQLITE3=0" >> ${rpath}/mon.conf
     fi
   else
+    echo
     read -p "Do you want me to install it now?  [y/N] " installsqlite
     if [ `echo $installsqlite | grep -c -i "^y"` -ne 0 ]
     then
@@ -209,6 +226,7 @@ then
         [ "X`which yum`" == "X" ] || `which yum` install sqlite
         ;;
       *)
+        echo
         echo "Unable to determine operating system, sorry.. PLease install SQLite3 manually."
         exit 1
         ;;
@@ -218,6 +236,14 @@ then
       exit 1
     fi
   fi
+  if [ `grep -c "^SQLITE3=" ${rpath}/mon.conf` -ne 0 ]
+  then
+    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" ${rpath}/mon.conf
+  else    
+    echo "SQLITE3=1" >> ${rpath}/mon.conf
+  fi
+  $SQLITE ${xpath}sysdata 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
+  $SQLITE ${xpath}sysdata 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
 else
   if [ `grep -c "^SQLITE3=" ${rpath}/mon.conf` -ne 0 ]
   then
@@ -236,11 +262,15 @@ ${rpath}/fixports.run
 [ -d /etc/init.d ] && rcdir=/etc/init.d
 [ -d /etc/rc.d/init.d ] && rcdir=/etc/rc.d/init.d
 [ "X$rcdir" == "X" ] || ln -s $(cd ${rpath} && pwd)/monitorload.run $rcdir/monitorload
+echo
+echo "Default email address for reports and alerts is root@localhost. You can change"
+echo "it now or leave it for later. In the latter case just press Enter"
+echo
 read -p "What email address to send reports and alerts to? " email
 echo $email > ${rpath}/mail.alert.list
 echo $email > ${rpath}/mail.admin.list
 echo $email > ${rpath}/mail.backup.list
-
+echo
 read -p "Do you want to setup the load monitoring daemon to start up at boot automatically? [y/N] " bootmon
 if [ `echo $bootmon | grep -c -i "^y"` -ne 0 ]
 then

@@ -20,20 +20,41 @@ rpath=${0%/*}
 install -d /tmp/m_script
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
-[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
+[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
 if [ `uname` == "Linux" ]; then
   if [ "X$NETSTATCMD" == "X" ]; then
     echo "Netstat utility not found! Aborting.."
     exit 1
-  else 
-    NETSTAT1="${NETSTATCMD} -tuapn"
-    NETSTAT2="${NETSTATCMD} -xlpn"
   fi
 fi
 
-# Looking for open ports and putting them into file
-${NETSTAT1} 2>/dev/null | grep 'LISTEN' | awk '{print $4}' > ${rpath}/ports.list
-${NETSTAT2} | grep STREAM > /tmp/m_script/netstat.tmp
+# PORTS
+${NETSTATCMD} tlpn 2>/dev/null | awk '{print $4" "$7}' > /tmp/m_script/netstat.tmp
+${NETSTATCMD} ulpn 2>/dev/null | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
+rm -f ${rpath}/ports.list
+IFS1=$IFS
+IFS='
+'
+while read LINE
+do
+  port=${LINE#* }
+  prog=${LINE% *}
+  for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  do
+    if [[ $exclport =~ [^[0-9-]]* ]] ; then
+      [[ $prog =~ $exclport ]] && skip=1 && break
+    else
+      portif=${port%:*}
+      portnum=${port##*:}
+      port1=${exclport%-*}
+      port2=${exclport#*-}
+      ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+    fi
+  done
+  [[ $skip -eq 1 ]] && skip=0 || echo "$port" >> ${rpath}/ports.list
+done < /tmp/m_script/netstat.tmp
+# SOCKETS
+${NETSTAT2} 2>/dev/null | grep STREAM > /tmp/m_script/netstat.tmp
 rm -f ${rpath}/sockets.list
 while read LINE
 do
@@ -43,3 +64,5 @@ do
   done
   [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
 done < /tmp/m_script/netstat.tmp
+IFS=$IFS1
+

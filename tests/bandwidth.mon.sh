@@ -30,13 +30,13 @@ source ${rpath}/../mon.conf
 if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
 then
 
-netstatbin=`which netstat`
-iptablesbin=`which iptables`
+netstatbin=`which netstat 2>/dev/null`
+iptablesbin=`which iptables 2>/dev/null`
  
 timeindexnow=`cat /tmp/m_script/timeindex`
 lasttimeindex=`cat /tmp/m_script/lasttimeindex`
 
-numconn=`${netstatbin} -tupn | grep 'ESTABLISHED' | wc -l`
+numconn=`${netstatbin} -s | grep 'connections established' | awk '{print $1}'`
 binputlast=`sqlite3 ${rpath}/../sysdata "select input from sysdata where timeindex='$lasttimeindex'"`
 boutputlast=`sqlite3 ${rpath}/../sysdata "select output from sysdata where timeindex='$lasttimeindex'"`
 
