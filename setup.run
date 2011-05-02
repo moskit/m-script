@@ -242,6 +242,7 @@ then
   else    
     echo "SQLITE3=1" >> ${rpath}/mon.conf
   fi
+  SQLITE=`which sqlite3 2>/dev/null`
   $SQLITE ${xpath}sysdata 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
   $SQLITE ${xpath}sysdata 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
 else
