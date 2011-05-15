@@ -57,6 +57,7 @@ do
   t=${LINE%%%*}
   prog=${LINE#* }
   prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+  t=${t%% *}
   cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
     if [[ $exclport =~ [^[0-9-]]* ]] ; then
       
@@ -78,8 +79,8 @@ do
     then
       j=`expr "${i}" : '.*\(:[0-9]*\)'`
       ports=$(echo ${ports} | sed "s|${t}||")
-      printf "$sname"
-      m=`expr length $sname`
+      printf "$prog"
+      m=`expr length $prog`
       l=`expr 20 - $m`
       for ((n=1; n <= $l; n++)); do printf " "; done
       printf "${t}"
