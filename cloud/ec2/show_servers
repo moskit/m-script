@@ -290,22 +290,25 @@ fi
 while read SERVER
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then
-    # if there was a previous server, then print it, forget it and mark it a new
+    # if there is a previous server, print it, forget it and start a new
     # reservation
     [ -n "$current_server" ] && print_server "$current_server" && unset current_server
     # start collecting new server data
-    current_server=`parse_server $SERVER` && unset newr
+    current_server=`parse_server $SERVER` && newr=1
+    # save for other servers in this reservation
+    reservation_line=$current_server
   else
-    if [[ $SERVER =~ ^INSTANCE ]] && [ $newr ] ; then
+    if [[ $SERVER =~ ^INSTANCE ]] && [ ! $newr ] ; then
+      # This is another instance within the same reservation
       print_server "$current_server" && unset current_server
-      current_server=`parse_server $SERVER`
+      current_server="$reservation_line`parse_server $SERVER`"
       newr=1
     else
-      current_server="$current_server`parse_server $SERVER`"
+      current_server="$current_server`parse_server $SERVER`" && unset newr
     fi
   fi
 done<$TMPDIR/servers.${EC2_REGION}.tmp
-print_server "$current_server" && unset current_server
+print_server "$current_server"
 unset newr current_server
 
 

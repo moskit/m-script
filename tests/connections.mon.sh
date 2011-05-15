@@ -21,7 +21,7 @@ rpath=${0%/*}
 ports=`cat ${rpath}/../ports.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
 sockets=`cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
-[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat`
+[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
 
 if [ `uname` == "Linux" ]; then
   [ "X$NETSTATCMD" == "X" ] && echo "Netstat utility not found! Aborting.." && exit 1
@@ -33,25 +33,44 @@ fi
 [ "X$PING" == "X" ] && PING=`which ping`
 
 if [ `uname` == "Linux" ]; then
-  ROUTE="${NETSTATCMD} -rn"
+  ROUTE="$NETSTATCMD -rn"
 fi
 
 [ -f ${rpath}/../conf/sockets.exclude ] || touch ${rpath}/../conf/sockets.exclude
 [ -f ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
+
 source ${rpath}/../mon.conf
 
 echo
 echo "Services up and running:"
-echo "----------------"
+echo "-----------------------"
 echo
 echo "Name                Listening on                            Connections"
 echo
-${NETCONNS} | grep 'LISTEN' > /tmp/m_script/ports.$$
+
+$NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.$$
+$NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.$$
+
 while read LINE
 do
   portfound=0
-  t=$(echo $LINE | awk '{ print $4 }')
-  sname=$(echo $LINE | awk '{ print $7 }' | cut -d/ -f2 | cut -d: -f1)
+  t=${LINE%%%*}
+  prog=${LINE#* }
+  prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+  cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
+    if [[ $exclport =~ [^[0-9-]]* ]] ; then
+      
+      [[ $prog =~ $exclport ]] && skip=1 && break
+    else
+      portif=${t%:*}
+      portnum=${t##*:}
+      port1=${exclport%-*}
+      port2=${exclport#*-}
+      ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+    fi
+  done
+  
+  [[ $skip -eq 1 ]] && skip=0 && continue
   # now compare ports
   for i in ${ports}
   do
@@ -73,14 +92,16 @@ do
       break
     fi
   done
-  [[ $portfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+  [[ $portfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 done < /tmp/m_script/ports.$$
+
 if [ "X${ports}" != "X" ]
 then
- echo "<***> There is no services listening on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+ echo "<***> There is no services listening on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
 fi
+
 echo
-${SOCKCONNS} | grep STREAM > /tmp/m_script/sockets.$$
+$SOCKCONNS | grep STREAM > /tmp/m_script/sockets.$$
 #  | awk -F'STREAM' '{print $2}' | awk '{print $3}'
 while read LINE
 do
@@ -121,7 +142,7 @@ fi
 if [ "X$CONNTEST_IP" == "X" ]
 then
   if [ "X$ROUTE" != "X" ]; then
-    ${ROUTE} | grep 'G' | grep -v 'Flags' | awk '{print $2}' > /tmp/m_script/ping.tmp
+    $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' > /tmp/m_script/ping.tmp
   elif [ -f /etc/resolv.conf ]; then
     grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> /tmp/m_script/ping.tmp
   else

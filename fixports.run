@@ -29,16 +29,17 @@ if [ `uname` == "Linux" ]; then
 fi
 
 # PORTS
-${NETSTATCMD} tlpn 2>/dev/null | awk '{print $4" "$7}' > /tmp/m_script/netstat.tmp
-${NETSTATCMD} ulpn 2>/dev/null | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
+$NETSTATCMD -tlpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$7}' > /tmp/m_script/netstat.tmp
+$NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
 rm -f ${rpath}/ports.list
 IFS1=$IFS
 IFS='
 '
 while read LINE
 do
-  port=${LINE#* }
-  prog=${LINE% *}
+  prog=${LINE#* }
+  prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+  port=${LINE% *}
   for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
   do
     if [[ $exclport =~ [^[0-9-]]* ]] ; then
@@ -54,7 +55,7 @@ do
   [[ $skip -eq 1 ]] && skip=0 || echo "$port" >> ${rpath}/ports.list
 done < /tmp/m_script/netstat.tmp
 # SOCKETS
-${NETSTAT2} 2>/dev/null | grep STREAM > /tmp/m_script/netstat.tmp
+$NETSTATCMD -xlpn 2>/dev/null | grep STREAM > /tmp/m_script/netstat.tmp
 rm -f ${rpath}/sockets.list
 while read LINE
 do
