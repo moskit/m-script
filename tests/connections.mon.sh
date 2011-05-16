@@ -71,7 +71,6 @@ do
     fi
   done
   
-  [[ $skip -eq 1 ]] && skip=0 && continue
   # now compare ports
   for i in ${ports}
   do
@@ -93,7 +92,8 @@ do
       break
     fi
   done
-  [[ $portfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+  [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+  skip=0
 done < /tmp/m_script/ports.$$
 
 if [ "X${ports}" != "X" ]
