@@ -33,6 +33,12 @@ if [ -f /etc/debian_version ]; then OS="debian"; fi
 if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
 if [ -f /etc/redhat-release ]; then OS="redhat"; fi
 
+echo "*** If during the setup process you choose to allow the script to install ***"
+echo "*** suggested packages and it fails to install them for whatever reason,  ***"
+echo "*** it doesn't cause any problems at all, just run the script again       ***"
+echo "*** (you may also want to install failed packages manually before this)   ***"
+echo
+
 if [ "X${BC}" == "X" ]
 then
   echo

@@ -3,7 +3,7 @@
 # 2. port ranges (no spaces, e.g. 2048-4096)
 # 3. program name patterns
 # 4. port number or port range AND program name pattern separated by %, e.g.
-# 1023-65535%ftp
+# 1024-65535%ftp
 # allows to avoid alerts being sent each time FTP opens port for data transfer.
 #
 # Program name patterns are checked against 'netstat -tulpn' output via Bash 
