@@ -69,8 +69,9 @@ do
     unset sshtest
   else
     if [ "X$CURL" != "X" ]; then
-      $CURL -s ${serverip}:$serverport > /dev/null 2>&1
-      if [ "$?" == "0" ] ; then
+      $CURL -m 5 -s ${serverip}:$serverport > /dev/null 2>&1
+      res="$?"
+      if [ "$res" == "0" ] || [ "$res" == "28" ] ; then
         curltest="yes"
       fi
       if [ "x$curltest" == "xyes" ]; then
