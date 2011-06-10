@@ -144,11 +144,9 @@ if [ "X$CONNTEST_IP" == "X" ]
 then
   if [ "X$ROUTE" != "X" ]; then
     $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' > /tmp/m_script/ping.tmp
-  elif [ -f /etc/resolv.conf ]; then
-    grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> /tmp/m_script/ping.tmp
-  else
-    echo "Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for ping test in mon.conf file"
   fi
+  [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> /tmp/m_script/ping.tmp
+  [ -f /tmp/m_script/ping.tmp ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in mon.conf file"
   failedip=""
   pingedip=""
   while read LINE
@@ -158,6 +156,7 @@ then
     failedip="${failedip} ${LINE}"
    else
     pingedip="yes"
+    break
    fi
   done < /tmp/m_script/ping.tmp
 else
@@ -168,6 +167,7 @@ else
       failedip="${failedip} ${LINE}"
     else
       pingedip="yes"
+      break
     fi
   done
 fi
