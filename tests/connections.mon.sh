@@ -155,8 +155,7 @@ then
    if [ "$?" != "0" ] ; then
     failedip="${failedip} ${LINE}"
    else
-    pingedip="yes"
-    break
+    pingedip="${pingedip} ${LINE}"
    fi
   done < /tmp/m_script/ping.tmp
 else
@@ -166,23 +165,24 @@ else
     if [ "$?" != "0" ] ; then
       failedip="${failedip} ${LINE}"
     else
-      pingedip="yes"
-      break
+      pingedip="${pingedip} ${LINE}"
     fi
   done
 fi
 rm -f /tmp/m_script/ping.tmp
 if [ "X$CONNTEST_IP" == "X127.0.0.1" ] || [ "X$CONNTEST_IP" == "Xlocalhost" ]; then
-  if [ "x$pingedip" == "xyes" ]; then
+  if [ -n "$pingedip" ]; then
    echo ""
    echo 'Localhost pinged successfully'
   else
    echo '<***> Ping to localhost timeout!'
   fi
 else
-  if [ "x$pingedip" == "xyes" ]; then
+  if [ -n "$pingedip" ]; then
    echo ""
    echo 'Server is connected'
+   echo "Successfully pinged: $pingedip"
+   [ -n "$failedip" ] && echo "Ping to $failedip failed though"
   else
    echo '<***> Server is disconnected!'
    echo "<***> IP(s) ${failedip} unavailable"
