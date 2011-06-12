@@ -33,7 +33,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
       find "$thepath" -name "*\.pid" | while read pidfile ; do
         pid=`cat "$pidfile"|sed 's|\r||'`
         if [ -f "/proc/$pid/cmdline" ] ; then
-          echo "`cat /proc/$pid/cmdline` is running with process ID $pid"
+          echo "`cat /proc/$pid/comm` is running with process ID $pid"
           echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
         else
           echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist!"
@@ -43,7 +43,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
       find "$thepath" -maxdepth 1 -name "*\.pid" -print0 | xargs -0 | while read pidfile ; do
         pid=`cat "$pidfile"|sed 's|\r||'`
         if [ -f "/proc/$pid/cmdline" ] ; then
-          echo "`cat /proc/$pid/cmdline` is running with process ID $pid"
+          echo "`cat /proc/$pid/comm` is running with process ID $pid"
           echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
         else
           echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist!"
@@ -53,7 +53,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
   elif [ -f "$thepath" ] ; then
     pid=`cat "$thepath"|sed 's|\r||'`
     if [ -f "/proc/$pid/cmdline" ] ; then
-      echo "`cat /proc/$pid/cmdline` is running with process ID $pid"
+      echo "`cat /proc/$pid/comm` is running with process ID $pid"
       echo "$thepath|$pid" >> /tmp/m_script/services.tmp
     else
       echo "<***> Stale pidfile found: $thepath. Process with ID $pid doesn't exist!"
@@ -70,9 +70,9 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
       service=`echo $LINE | cut -d'|' -f1`
       pid=`echo $LINE | cut -d'|' -f2`
       if [ $(echo "$prevlist" | grep "^$service") -ne 0 ] ; then
-        echo "<*> Service `cat /proc/$pid/cmdline` with pidfile $service restarted"
+        echo "<*> Service `cat /proc/$pid/comm` with pidfile $service restarted"
       else
-        echo "<**> Service `cat /proc/$pid/cmdline` with pidfile $service is a new service"
+        echo "<**> Service `cat /proc/$pid/comm` with pidfile $service is a new service"
       fi
     fi
   done
@@ -80,7 +80,7 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
     if [ `echo "$currlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
       service=`echo $LINE | cut -d'|' -f1`
       pid=`echo $LINE | cut -d'|' -f2`
-      echo "<***> Service `cat /proc/$pid/cmdline` with pidfile $service stopped!"
+      echo "<***> Service `cat /proc/$pid/comm` with pidfile $service stopped!"
     fi
   done
 fi
