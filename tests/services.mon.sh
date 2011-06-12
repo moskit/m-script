@@ -29,8 +29,8 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
   LINE=`echo "$LINE" | sed 's|[[:space:]]*$||'`
   thepath=`echo "$LINE" | sed 's|[[:space:]]*recursive||'`
   if [ -d "$thepath" ] ; then
-    if [ "$LINE" =~ '[[:space:]]*recursive$' ] ; then
-      find "$thepath" -name "*\.pid" -print0 | xargs -0 | while read pidfile ; do
+    if [[ "$LINE" =~ '[[:space:]]*recursive$' ]] ; then
+      find "$thepath" -name "*\.pid" | while read pidfile ; do
         pid=`cat "$pidfile"|sed 's|\r||'`
         if [ -f "/proc/$pid/cmdline" ] ; then
           echo "`cat /proc/$pid/cmdline` is running with process ID $pid"
@@ -64,22 +64,27 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
 done
 prevlist=`cat "${rpath}/../services.list" 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
 currlist=`cat /tmp/m_script/services.tmp 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
-for LINE in $currlist ; do
-  if [ `echo $prevlist | grep -c "^${LINE}$"` -eq 0 ] ; then
-    service=`echo $LINE | cut -d'|' -f1`
-    pid=`echo $LINE | cut -d'|' -f2`
-    if [ $(echo $prevlist | grep "^$service") -ne 0 ] ; then
-      echo "<*> Service `cat /proc/$pid/cmdline` with pidfile $service restarted"
-    else
-      echo "<**> Service `cat /proc/$pid/cmdline` with pidfile $service is a new service"
+if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; then
+  for LINE in $currlist ; do
+    if [ `echo "$prevlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
+      service=`echo $LINE | cut -d'|' -f1`
+      pid=`echo $LINE | cut -d'|' -f2`
+      if [ $(echo "$prevlist" | grep "^$service") -ne 0 ] ; then
+        echo "<*> Service `cat /proc/$pid/cmdline` with pidfile $service restarted"
+      else
+        echo "<**> Service `cat /proc/$pid/cmdline` with pidfile $service is a new service"
+      fi
     fi
-  fi
-done
-for LINE in $prevlist ; do
-  if [ `echo $currlist | grep -c "^${LINE}$"` -eq 0 ] ; then
-    service=`echo $LINE | cut -d'|' -f1`
-    pid=`echo $LINE | cut -d'|' -f2`
-    echo "<***> Service `cat /proc/$pid/cmdline` with pidfile $service stopped!"
-  fi
-done
+  done
+  for LINE in $prevlist ; do
+    if [ `echo "$currlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
+      service=`echo $LINE | cut -d'|' -f1`
+      pid=`echo $LINE | cut -d'|' -f2`
+      echo "<***> Service `cat /proc/$pid/cmdline` with pidfile $service stopped!"
+    fi
+  done
+fi
+cat /tmp/m_script/services.tmp > "${rpath}/../services.list"
+rm -f /tmp/m_script/services.tmp
+IFS=$IFS1
 
