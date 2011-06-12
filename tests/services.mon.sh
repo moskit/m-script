@@ -29,21 +29,31 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
   LINE=`echo "$LINE" | sed 's|[[:space:]]*$||'`
   thepath=`echo "$LINE" | sed 's|[[:space:]]*recursive||'`
   if [ -d "$thepath" ] ; then
-    if [[ "$LINE" =~ '[[:space:]]*recursive$' ]] ; then
+    if [[ "$LINE" =~ [[:space:]]*recursive$ ]] ; then
       find "$thepath" -name "*\.pid" | while read pidfile ; do
         pid=`cat "$pidfile"|sed 's|\r||'`
-        if [ -f "/proc/$pid/cmdline" ] ; then
-          echo "`cat /proc/$pid/comm` is running with process ID $pid"
+        if [ -f "/proc/$pid/comm" ] ; then
+          pcomm=`cat /proc/$pid/comm`
+          printf "$pcomm"
+          m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+          printf "PID $pid"
+          m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+          printf "$pidfile\n"
           echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
         else
           echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist!"
         fi
       done
     else
-      find "$thepath" -maxdepth 1 -name "*\.pid" -print0 | xargs -0 | while read pidfile ; do
+      find "$thepath" -maxdepth 1 -name "*\.pid" | while read pidfile ; do
         pid=`cat "$pidfile"|sed 's|\r||'`
-        if [ -f "/proc/$pid/cmdline" ] ; then
-          echo "`cat /proc/$pid/comm` is running with process ID $pid"
+        if [ -f "/proc/$pid/comm" ] ; then
+          pcomm=`cat /proc/$pid/comm`
+          printf "$pcomm"
+          m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+          printf "PID $pid"
+          m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+          printf "$pidfile\n"
           echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
         else
           echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist!"
@@ -52,9 +62,14 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
     fi
   elif [ -f "$thepath" ] ; then
     pid=`cat "$thepath"|sed 's|\r||'`
-    if [ -f "/proc/$pid/cmdline" ] ; then
-      echo "`cat /proc/$pid/comm` is running with process ID $pid"
-      echo "$thepath|$pid" >> /tmp/m_script/services.tmp
+    if [ -f "/proc/$pid/comm" ] ; then
+      pcomm=`cat /proc/$pid/comm`
+      printf "$pcomm"
+      m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "PID $pid"
+      m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "$pidfile\n"
+      echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
     else
       echo "<***> Stale pidfile found: $thepath. Process with ID $pid doesn't exist!"
     fi
