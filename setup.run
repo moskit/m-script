@@ -28,6 +28,9 @@ MAILX=`which mail 2>/dev/null`
 SQLITE=`which sqlite3 2>/dev/null`
 S3CMD=`which s3cmd 2>/dev/null`
 MONGOOSE=`which mongoose 2>/dev/null`
+SED=`which sed 2>/dev/null`
+NETSTAT=`which netstat 2>/dev/null`
+
 
 if [ -f /etc/debian_version ]; then OS="debian"; fi
 if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
@@ -39,10 +42,27 @@ echo "*** it doesn't cause any problems at all, just run the script again       
 echo "*** (you may also want to install failed packages manually before this)   ***"
 echo
 
+
+if [ "X${SED}" == "X" ]
+then
+  echo
+  echo "Sed not found. It is necessary, please install it first."
+  echo
+  exit 1
+fi
+
+if [ "X${NETSTAT}" == "X" ]
+then
+  echo
+  echo "Netstat not found. It is necessary, please install it first."
+  echo
+  exit 1
+fi
+
 if [ "X${BC}" == "X" ]
 then
   echo
-  echo "BC not found. It IS necessary, please install it first."
+  echo "BC not found. It is necessary, please install it first."
   echo "It is kind of shell calculator, and it is impossible to provide any results"
   echo "without it."
   echo

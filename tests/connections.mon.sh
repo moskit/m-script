@@ -42,8 +42,8 @@ fi
 source ${rpath}/../mon.conf
 
 echo
-echo "Services up and running:"
-echo "-----------------------"
+echo "Listening ports and sockets:"
+echo "----------------------------"
 echo
 echo "Name                Listening on                            Connections"
 echo
