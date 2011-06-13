@@ -37,18 +37,30 @@ else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
 fi
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf
-for script in `find "/tmp/m_script/.update" -type f -perm /110`; do
+for script in `find "/tmp/m_script/.update" -type d`; do
   printf "${script##*/} ... "
   oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
-  if [ -e "${oldscript}" ]; then
+  if [ ! -e "${oldscript}" ]; then
+    cp -r "${script}" "$oldscript" && chown -R `id -un`:`id -gn` "$oldscript" && echo "OK"
+  fi
+done
+for script in `find "/tmp/m_script/.update" -type f`; do
+  printf "${script##*/} ... "
+  oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
+  if [ -x "${oldscript}" ]; then
     if [ "${script}" -nt "$oldscript" ]; then
       cp "${script}" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
     else
       echo "This file is older than the local one. Not updated"
     fi
-  else
+  elif [ ! -e "${oldscript}" ]; then
     printf "new file. Copying ... "
     cp "${script}" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
+  elif [ "${script}" -nt "$oldscript" ]; then
+    printf "this file is newer than the local one; saving as ${oldscript}.new, please check the differences manually ... "
+    cp "${script}" "${oldscript}.new" && chown `id -un`:`id -gn` "${oldscript}.new" && echo "OK"
+  else
+    echo "not copying this file"
   fi
 done
 rm -rf /tmp/m_script/.update/
