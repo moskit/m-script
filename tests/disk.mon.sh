@@ -61,11 +61,19 @@ do
   printf "$warnind\t$disk"
   m=`expr length $disk`
   l=`expr 32 - $m`
-  for ((n=1; n <= $l; n++)); do printf " "; done
+  if [ $l -lt 1 ] ; then
+    printf " "
+  else
+    for ((n=1; n <= $l; n++)); do printf " "; done
+  fi
   printf "$mpoint"
   m=`expr length $mpoint`
   l=`expr 32 - $m`
-  for ((n=1; n <= $l; n++)); do printf " "; done
+  if [ $l -lt 1 ] ; then
+    printf " "
+  else
+    for ((n=1; n <= $l; n++)); do printf " "; done
+  fi
   printf "$used%%\n"
 done < /tmp/m_script/disk.tmp
 echo ""
