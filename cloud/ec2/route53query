@@ -23,8 +23,11 @@ LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
+TMPDIR=/tmp/m_script/cloud/ec2
+install -d $TMPDIR
+CURL="$CURL -s"
 
-possible_options="region action id name"
+possible_options="region action id name listzone types"
 necessary_options="action"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -69,36 +72,84 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+[ -n "$listzone" ] && [ -z "$types" ] && types="A,AAAA,CNAME,MX,NS,PTR,SOA,SPF,SRV,TXT"
+
 source ${rpath}/../../conf/cloud.conf
 
 request=/tmp/m_script/cloud/r53query.$$
 
 server_date=`curl -q -s -S -I --max-time 5 --url https://route53.amazonaws.com/date | grep ^Date | awk -F'Date: ' '{print $2}' | sed 's|\r||'`
 
-signature=`printf "$server_date" | $SSLEX dgst -sha1 -hmac $AWS_SECRET_ACCESS_KEY -r | awk '{print $1}' | base64`
+signature=`printf "$server_date" | $SSLEX dgst -binary -sha1 -hmac $AWS_SECRET_ACCESS_KEY | base64`
+
 case $action in 
   list)
     $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone > $request
-    ${rpath}/lib/xml2txt $request | grep ^ListHostedZonesResponse_HostedZones_HostedZone_Id | cut -d' ' -f2 | sed 's|/hostedzone/||' > ${request}.ids
+    ${rpath}/../../lib/xml2txt $request > ${request}.txt
+    grep ^ListHostedZonesResponse_HostedZones_HostedZone_Id ${request}.txt | cut -d' ' -f2 | sed 's|/hostedzone/||' > ${request}.ids
     while read zoneid ; do
-    zonename=`grep -A 1 "${zoneid}$" $request | tail -1 | cut -d' ' -f2`
-    [[ `grep -c ^$zoneid|$zonename$ ${rpath}/$CLOUD.dnszones.list` -eq 0 ]] && echo "$zoneid|$zonename" >> "${rpath}/$CLOUD.dnszones.list"
+    zonename=`grep -A 1 "${zoneid}$" ${request}.txt | tail -1 | cut -d' ' -f2`
+    [[ `grep -c ^$zoneid|$zonename$ ${rpath}/../../$CLOUD.dnszones.list 2>/dev/null` -eq 0 ]] && echo "$zoneid|$zonename" && echo "$zoneid|$zonename" >> "${rpath}/../../$CLOUD.dnszones.list"
     done < ${request}.ids
-  ;;
+    ;;
   show)
     if [ -z "$id" ] ; then
       if [ -z "$name" ] ; then
         echo "Either zone ID or zone name should be defined" && exit 1
       else
-        id=`grep "|${name}$" "${rpath}/$CLOUD.dnszones.list" | tail -1| cut -d' ' -f1`
+        name="${name%.}."
+        id=`grep "|${name}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
           echo "Unable to find zone ID by this name. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
         fi
       fi
     fi
     $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone/$id > $request
-    ${rpath}/lib/xml2txt $request
-  ;;
+    printf "Zone name: ${name}\tZone id: ${id}\n"
+    echo "--------------------------------------------------"
+    ${rpath}/../../lib/xml2txt $request | grep ^GetHostedZoneResponse_HostedZone_DelegationSet_NameServers_NameServer | cut -d' ' -f2
+    ;;
+  listzone)
+    if [ -z "$id" ] ; then
+      if [ -z "$name" ] ; then
+        echo "Either zone ID or zone name should be defined" && exit 1
+      else
+        name="${name%.}."
+        id=`grep "|${name}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
+        if [ -z "$id" ] ; then
+          echo "Unable to find zone ID by this name. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+        fi
+      fi
+    fi
+    printf "Zone name: ${name}\tZone id: ${id}\n" > $TMPDIR/r53.${name}.records
+    echo "--------------------------------------------------" >> $TMPDIR/r53.${name}.records
+    for type in `echo $types | sed 's|,| |g'` ; do
+      $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" "https://route53.amazonaws.com/2011-05-05/hostedzone/$id/rrset?name=${name%.}&type=${type}" > $request
+      ${rpath}/../../lib/xml2txt $request > ${request}.txt
+      grep ^ListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name ${request}.txt | cut -d' ' -f2 > ${request}.names
+      while read recname ; do
+        while read txtline ; do
+          var=`echo $txtline | cut -d' ' -f1`
+          value=`echo $txtline | cut -d' ' -f2`
+          [ "X$var" == "XListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name" ] && [ "X$value" == "X$recname" ] && thiszone=1
+          [ "X$var" == "XListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name" ] && [ "X$value" != "X$recname" ] &&  unset thiszone
+          if [ -n "$thiszone" ] ; then
+            case ${var##*_} in 
+            Type)
+              rectype=$value
+            ;;
+            TTL)
+              recttl=$value
+            ;;
+            Value)
+              recvalue=$value
+            ;;
+            esac
+          fi
+          [ -n "$value" ] && printf "$recname\t$rectype\t$recttl\t$recvalue\n" && unset recvalue
+        done < ${request}.txt
+      done < ${request}.names
+    done
   *)
     postrequest=1
   esac
@@ -107,5 +158,5 @@ case $action in
     $CURL -X POST --upload-file $request -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone
     unset postrequest
   fi
-
+  rm -f ${request}*
 
