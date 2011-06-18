@@ -90,25 +90,47 @@ function runscript() {
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
   then
-    sqlite3 ${rpath}/sysdata "select max(timeindex) from sysdata" > ${tmpdir}/lasttimeindex 
-    sqlite3 ${rpath}/sysdata "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
+    sqlite3 "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${tmpdir}/lasttimeindex"
+    sqlite3 "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
   if [ "X$1" == "XSQL" ]; then
-    echo "------------------------------" >> ${rpath}/monitoring.log
-    date | tee -a ${rpath}/monitoring.log | tee ${rpath}/report | tee ${rpath}/alert >/dev/null
-    echo "------------------------------" | tee -a ${rpath}/monitoring.log  | tee -a ${rpath}/report | tee -a ${rpath}/alert >/dev/null
+    echo "------------------------------" >> "${rpath}/monitoring.log"
+    date | tee -a "${rpath}/monitoring.log" | tee "${rpath}/report" | tee "${rpath}/alert" >/dev/null
+    echo "------------------------------" | tee -a "${rpath}/monitoring.log"  | tee -a ${rpath}/report | tee -a "${rpath}/alert" >/dev/null
     for script in ${rpath}/rc/*.mon.sh  #*/
     do
       $script ${1}
-    done 2>&1 | tee -a ${rpath}/monitoring.log | tee -a ${rpath}/report >/dev/null
+    done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
   elif [ "X$1" != "X" ]; then
-    date | tee ${rpath}/alert >/dev/null
-    echo "------------------------------" | tee -a ${rpath}/alert >/dev/null
-    [ -x ${rpath}/tests/*${1} ] && ${rpath}/tests/*${1} 2>&1 | tee ${rpath}/report >/dev/null #*/
+    date | tee "${rpath}/alert" >/dev/null
+    echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
+    [ -x "${rpath}/tests/*${1}" ] && ${rpath}/tests/*${1} 2>&1 | tee "${rpath}/report" >/dev/null #*/
   fi
-  grep '<\*\*\*>' ${rpath}/report | sed 's|<\*\*\*>||g' > ${rpath}/alert3
-  grep '<\*\*>' ${rpath}/report | sed 's|<\*\*>||g' > ${rpath}/alert2
-  grep '<\*>' ${rpath}/report | sed 's|<\*>||g' > ${rpath}/alert1
+  grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
+  grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
+  grep '<\*>' "${rpath}/report" | sed 's|<\*>||g' > "${rpath}/alert1"
+}
+
+function runactions() {
+  for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+    pattern=`echo $confline | cut -d'%' -f1`
+    level=`echo $confline | cut -d'%' -f2`
+    action=`echo $confline | cut -d'%' -f3`
+    while read line ; do
+      [[ $line =~ $pattern ]] && eval $action
+    done<"${rpath}/alert$level"
+  done
+}
+
+function runactionstest() {
+  for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+    pattern=`echo $confline | cut -d'%' -f1`
+    level=`echo $confline | cut -d'%' -f2`
+    action=`echo $confline | cut -d'%' -f3`
+    while read line ; do
+      [[ $line =~ $pattern ]] && echo "The alert message: \'$line\' would trigger the action: \'$action\'"
+    done<"${rpath}/alert$level"
+  done
 }
 
 function runsysanalyze() {
@@ -278,11 +300,13 @@ echo $timeindexnow > ${tmpdir}/timeindex
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)
     runscript SQL
+    runactions
     mailalert
     ${rpath}/fixports.run
   ;;
   -dry | --dry | --dry-run)
     runscript SQL
+    runactionstest
     cat ${rpath}/report
   ;;
   -analyze-sys | -analyze-system | --analyze-system | -as)
@@ -321,6 +345,7 @@ case ${1} in
   ;;
   *.mon.sh)
     runscript ${1}
+    runactions
     mailalert
   ;;
   *)

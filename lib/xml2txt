@@ -15,51 +15,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-declare -i depth
-depth=0
 declare -i i
 i=0
 declare -a branch
+declare -a index
 
 addnode() {
   nd=${1% *}
   [[ "$nd" =~ ^\? ]] && return 0
-
-#  [ -z "$filename" ] && filename=${inputfile%.*}.$nd.txt && depth+=1 && return 0
-#  [[ $lf -eq 0 ]] && lname=$nd && lf=1 && depth+=1 && return 0
-  if [[ "$nd" =~ ^\/ ]] ; then
-    unset cont
-    for ((n=0; n<${#branch[*]}; n++)) ; do
-
-      if [ "X${branch[$n]}" == "X${nd#/}" ] ; then
-        
-        ndcont=${branch[$n+1]}
-        echo "=== $n: ${branch[$n]} == ${nd#/} : ${branch[$n+1]}"
-        break
+#echo "=== ${nd}"
+  index[$i]="$nd"
+  unset ndcont
+  if [ $i -gt 1 ] ; then
+    if [ "X${index[$i-2]}" == "X${nd#/}" ] ; then
+      ndcont=${index[$i-1]}
+    fi
+  fi
+  n=${#branch[*]}
+  #echo "$i | $n  --  $ndcont"
+  if [ -n "$ndcont" ] ; then
+    for ((l=0; l<$n; l++)) ; do
+      printf "${branch[$l]}"
+      if [ $l -eq `expr $n - 1` ] ; then
+        printf "\n"
+      elif [ $l -eq `expr $n - 2` ] ; then
+        printf " "
+      else
+        printf "_"
       fi
     done
-    i+=-1
-    if [ -n "$ndcont" ] ; then
-      i+=-1
-    else
-#      for ((n=0; n<${#branch[*]}; n++)) ; do tree="${tree}::${branch[$n]}" ; done
-      for ((n=0; n<${#branch[*]}; n++)) ; do echo "${branch[$n]}::" ; done
-    fi
+    unset branch[$n-1]; unset branch[$n-2]
   else
-    unset ndcont
-    [ -n "$cont" ] || cont=$nd
-    i+=1
-    branch[$i]=$nd
-    if [[ $i -gt $depth ]] ; then depth+=1 ; fi
-  
+    branch[$n]=$nd
+    for ((l=0; l<=$n; l++)) ; do
+      if [ "X${branch[$l]}" == "X${nd#/}" ] ; then
+        for ((m=0; m<`expr $n - $l`; m++)) ; do unset branch[$l+$m+1] ; done
+      fi
+    done
   fi
-  echo "$i|$depth|$nd|$cont|$ndcont|$tree"
+  i+=1
 }
 
-# Getting the nodes
+( IFS='<>' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read node ; do ([ "$node" != "" ] && [ "$node" != "|" ]) && addnode "$node"; done
 
-inputfile=$1
-( IFS='<>' ; for LINE in `cat $inputfile` ; do echo "${LINE}" ; done ) | while read node ; do ([ "$node" != "" ] && [ "$node" != "|" ]) && addnode $node; done
-
-unset branch ndcont cont i depth tree LINE node inputfile
+unset branch index ndcont cont i LINE node
 

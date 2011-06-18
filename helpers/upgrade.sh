@@ -37,15 +37,18 @@ else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
 fi
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf
+echo "Checking directories:"
 for script in `find "/tmp/m_script/.update" -type d`; do
   printf "${script##*/} ... "
   oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
   if [ ! -e "${oldscript}" ]; then
+    printf "copying ... "
     cp -r "${script}" "$oldscript" && chown -R `id -un`:`id -gn` "$oldscript" && echo "OK"
   fi
 done
+echo "Checking files:"
 for script in `find "/tmp/m_script/.update" -type f`; do
-  printf "${script##*/} ... "
+  printf " -- ${script##*/} ... "
   oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
   if [ -x "${oldscript}" ]; then
     if [ "${script}" -nt "$oldscript" ]; then
@@ -63,5 +66,11 @@ for script in `find "/tmp/m_script/.update" -type f`; do
     echo "not copying this file"
   fi
 done
+printf "Removing .new files that have zero difference with the local files ..."
+for newfile in `find ${rpath} -name "*.new"` ; do
+  if [ `diff $newfile ${newfile%.new} | wc -l` -eq 0 ] ; then
+    rm -f $newfile && touch ${newfile%.new} && printf "."
+  fi
+done && echo "OK"
 rm -rf /tmp/m_script/.update/
 

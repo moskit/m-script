@@ -425,7 +425,7 @@ convert -size ${graphH}x${graphV} xc:white -family arial -pointsize 10 \
   -draw "text $axisYX,$axisYY `printf "\'$metric\'"`" \
   -pointsize 12 \
   -draw "text $titleX,$titleY `printf "\'$title\'"`" \
-  test.png
+  "${rpath}/www/graphs/${sIP}.${metric}.png"
 
 
 

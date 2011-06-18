@@ -133,7 +133,8 @@ then
   read -p "Do you want me to install it now?  [y/N] " installmongoose
   if [ `echo $installmongoose | grep -c -i "^y"` -ne 0 ]
   then
-    (mkdir tmp && cd tmp && ${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ${rpath}/www/)
+    rm -rf ${rpath}/mongoose-source 2>/dev/null
+    (mkdir ${rpath}/mongoose-source && cd ${rpath}/mongoose-source && ../${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../${rpath}/www/)
     if [[ $? -ne 0 ]] ; then
       echo
       echo "Some error.. disabling it for awhile. Compile it or install some other way and copy its binary to ${rpath}/www/ if you need it"
@@ -162,6 +163,7 @@ then
   then
     echo
     read -p "Enter a port number for the web interface: [8080] " mongooseport
+    [ -n "$mongooseport" ] || mongooseport=8080
     echo "p $mongooseport" >> ${rpath}/conf/mongoose.conf
   fi
   if [ `grep -c "^d " ${rpath}/conf/mongoose.conf` -eq 0 ]

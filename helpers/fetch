@@ -29,8 +29,10 @@ if [[ "${1}" =~ '://' ]] ; then
 else
   URL=$1
 fi
+filename=${URL##*/}
 echo "Protocol: $PROTO"
 echo "URL: $URL"
+
 [ "X$PROTO" == "X" ] && PROTO="http"
 
 if [ -n "$WGET" ] ; then
@@ -39,6 +41,17 @@ if [ -n "$WGET" ] ; then
 fi
 [ "$?" == "0" ] && exit 0
 
+if [ -n "$CURL" ] ; then
+  [ -n "$2" ] && DEST="-o ${2}/$filename" || DEST="-o $filename"
+  $CURL -# "${PROTO}://${URL}" $DEST
+fi
+[ "$?" == "0" ] && exit 0
+
+if [ -n "$LINKS" ] ; then
+  [ -n "$2" ] && DEST="${2}/$filename" || DEST="$filename"
+  $LINKS -source 1 "${PROTO}://${URL}" > $DEST
+fi
+[ "$?" == "0" ] && exit 0
 
 
 
