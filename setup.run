@@ -134,10 +134,10 @@ then
   if [ `echo $installmongoose | grep -c -i "^y"` -ne 0 ]
   then
     rm -rf ${rpath}/mongoose-source 2>/dev/null
-    (mkdir ${rpath}/mongoose-source && cd ${rpath}/mongoose-source && ../${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../${rpath}/www/)
+    (mkdir ${rpath}/mongoose-source && cd ${rpath}/mongoose-source && ../${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../${rpath}/)
     if [[ $? -ne 0 ]] ; then
       echo
-      echo "Some error.. disabling it for awhile. Compile it or install some other way and copy its binary to ${rpath}/www/ if you need it"
+      echo "Some error.. disabling it for awhile. Compile it or install some other way and copy its binary to ${rpath}/ if you need it"
       sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" ${rpath}/mon.conf
     else
       if [ `grep -c "^MONGOOSE=" ${rpath}/mon.conf` -ne 0 ]

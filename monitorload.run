@@ -54,7 +54,8 @@ start)
         exit 1
       fi
     fi
-    $MG ${rpath}/conf/mongoose.conf & 2>/dev/null
+    MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
+    nohup $MG ${MGOPTS} >> ${rpath}/mongoose.log
     echo $! > /var/run/mongoose.pid
     echo "done"
   fi
@@ -98,10 +99,10 @@ stop)
   else
     echo "${pidfile} not found!"
   fi
-  if [ "X$MONGOOSE" == "X1" ] ; then
+  if [ -f /var/run/mongoose.pid ] ; then
     pid=`cat /var/run/mongoose.pid`
     printf "Stopping web interface...       "
-    kill -15 $pid && echo "done"
+    kill -15 $pid && rm -f /var/run/mongoose.pid && echo "done"
   fi
   ;;
 restart)
