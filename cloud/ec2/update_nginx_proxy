@@ -102,21 +102,21 @@ for cluster in "$CLUSTERS" ; do
       ports="$ports ${CLUSTER#*:}"
     fi
   done
-  [ -f $TMPDIR/${cluster}.servers.ips ] && mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev || ${rpath}/../update_servers_list
-  for IP in `cat $TMPDIR/servers.ips | awk -F'|' '{print $1" "$14}' | grep "$cluster" | awk '{print $1}'` ; do
+  [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev || ${rpath}/update_servers_list
+  for IP in `cat $TMPDIR/servers.${EC2_REGION}.ips | awk -F'|' '{print $1" "$14}' | grep "$cluster" | awk '{print $1}'` ; do
     for PORT in $ports ; do
       PORT=${PORT#* }; PORT=${PORT% *}
-      echo "$IP:$PORT" >> $TMPDIR/${cluster}.servers.ips
+      echo "$IP:$PORT" >> $TMPDIR/${cluster}.servers.${EC2_REGION}.ips
     done
   done
-  [ -f $TMPDIR/${cluster}.servers.ips.prev ] && [ -f $TMPDIR/${cluster}.servers.ips ] && [ -z "`$DIFF -q $TMPDIR/${cluster}.servers.ips.prev $TMPDIR/${cluster}.servers.ips`" ] && continue
-  if [ `cat $TMPDIR/${cluster}.servers.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
+  [ -f $TMPDIR/${cluster}.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/${cluster}.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/${cluster}.servers.${EC2_REGION}.ips.prev $TMPDIR/${cluster}.servers.${EC2_REGION}.ips`" ] && continue
+  if [ `cat $TMPDIR/${cluster}.servers.${EC2_REGION}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
     changed=1
     echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
     echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
     while read IP; do
       echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-    done<$TMPDIR/${cluster}.servers.ips
+    done<$TMPDIR/${cluster}.servers.${EC2_REGION}.ips
     echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
   else
     echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log
