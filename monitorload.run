@@ -55,7 +55,8 @@ start)
       fi
     fi
     MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
-    nohup $MG ${MGOPTS} >> ${rpath}/mongoose.log
+    echo "`date` -- Starting $MG ${MGOPTS}" >> ${rpath}/mongoose.log
+    $MG ${MGOPTS} >> ${rpath}/mongoose.log 2>&1 &
     echo $! > /var/run/mongoose.pid
     echo "done"
   fi
@@ -79,8 +80,11 @@ start)
 # ${rpath}/mon.run connections.mon.sh
 # Or run it like this to prevent sending too many alerts about not running
 # and not monitored services:
-  touch /tmp/m_script/conn_test_runs_count 2>/dev/null
-  [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt 3 ] && echo > /tmp/m_script/conn_test_runs_count && ${rpath}/fixports.run
+  if [ -f /tmp/m_script/conn_test_runs_count ] ; then
+    [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt 3 ] && echo > /tmp/m_script/conn_test_runs_count && ${rpath}/fixports.run
+  else
+    echo > /tmp/m_script/conn_test_runs_count
+  fi
   ${rpath}/mon.run connections.mon.sh ; echo >> /tmp/m_script/conn_test_runs_count
 # Checking running processes (services.conf)
   ${rpath}/mon.run services.mon.sh

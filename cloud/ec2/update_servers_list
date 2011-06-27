@@ -132,6 +132,7 @@ do
   if [[ $SERVER =~ ^TAG ]] ; then
     tag=`echo $SERVER | awk -F'|' '{print $4}'`
     [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | awk -F'|' '{print $5}'`
+    [ "X$tag" == "XName" ] && altname=`echo $SERVER | awk -F'|' '{print $5}'`
   fi
 done
 
@@ -142,8 +143,10 @@ if [ "X$state" == "Xrunning" ] ; then
     else
       sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
     fi
+  else
+    message=" (key ${rpath}/../../keys/${keypair}.pem not found)"
   fi
-  [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../../cloud.log
+  [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" >> ${rpath}/../../cloud.log && unset message && sname=$altname
   echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
 fi
 
