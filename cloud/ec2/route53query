@@ -27,7 +27,7 @@ TMPDIR=/tmp/m_script/cloud/ec2
 install -d $TMPDIR
 CURL="$CURL -s"
 
-possible_options="region action id zone name type items wholezone noupdate"
+possible_options="region action id zone name type value items wholezone noupdate comment"
 necessary_options="action"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -88,10 +88,12 @@ case $action in
     $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone > $TMPDIR/r53.list.xml
     ${rpath}/../../lib/xml2txt $TMPDIR/r53.list.xml > $TMPDIR/r53.list.txt
     grep ^ListHostedZonesResponse_HostedZones_HostedZone_Id $TMPDIR/r53.list.txt | cut -d' ' -f2 | sed 's|/hostedzone/||' > $TMPDIR/r53.list.ids
+    [ `cat $TMPDIR/r53.list.ids | wc -l` -ne 0 ] && rm -f "${rpath}/../../$CLOUD.dnszones.list"
     while read zoneid ; do
     zonename=`grep -A 1 "${zoneid}$" $TMPDIR/r53.list.txt | tail -1 | cut -d' ' -f2`
     [ -x "$noupdate" ] && [[ `grep -c ^$zoneid|$zonename$ ${rpath}/../../$CLOUD.dnszones.list 2>/dev/null` -eq 0 ]] && echo "$zoneid|$zonename" && echo "$zoneid|$zonename" >> "${rpath}/../../$CLOUD.dnszones.list"
     done < $TMPDIR/r53.list.ids
+    cat "${rpath}/../../$CLOUD.dnszones.list"
     ;;
   show)
     if [ -z "$id" ] ; then
@@ -150,10 +152,10 @@ case $action in
       ns=`grep -n "ListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name $recname" ${request}.txt | cut -d':' -f1`
       for n in `echo $ns` ; do
         cat ${request}.txt | tail -n +${n} | while read txtline ; do
-          var=`echo $txtline | cut -d' ' -f1`
-          value=`echo $txtline | cut -d' ' -f2`
-          [ "X$var" == "XListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name" ] && [ "X$value" == "X$recname" ] && thiszone=1
-          [ "X$var" == "XListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name" ] && [ "X$value" != "X$recname" ] && unset thiszone && break
+          var=${txtline%% *}
+          value=${txtline#* }
+          [ "X$var" == "XListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name" ] && [ -n "$thiszone" ] && unset thiszone && break
+          [ "X$var" == "XListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name" ] && [ "X$value" == "X$recname" ] && [ -z "$thiszone" ] && thiszone=1
           if [ -n "$thiszone" ] ; then
             case ${var##*_} in 
             Type)
@@ -173,14 +175,78 @@ case $action in
     done < ${request}.names
 # done
     ;;
+  addrecord)
+    [ -z "$type" ] && echo "type not defined" && exit 1
+    [ -z "$value" ] && echo "value not defined" && exit 1
+    [ -z "$name" ] && echo "name not definded" && exit 1
+    if [ -z "$id" ] ; then
+      if [ -z "$zone" ] ; then
+        echo "Either zone ID or zone name should be defined" && exit 1
+      else
+        zone="${zone%.}."
+        id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
+        if [ -z "$id" ] ; then
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+        fi
+      fi
+    fi
+    postrequest=1
+    echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?><ChangeResourceRecordSetsRequest xmlns=\"https://route53.amazonaws.com/doc/2011-05-05/\"><ChangeBatch><Comment></Comment><Changes><Change><Action>CREATE</Action><ResourceRecordSet><Name>${name}.</Name><Type>$type</Type><TTL>300</TTL><ResourceRecords><ResourceRecord><Value>$value</Value></ResourceRecord></ResourceRecords></ResourceRecordSet></Change></Changes></ChangeBatch></ChangeResourceRecordSetsRequest>" > $request
+    requrl="https://route53.amazonaws.com/2011-05-05/hostedzone/$id/rrset"
+    ;;
+  delrecord|deleterecord)
+    [ -z "$type" ] && echo "type not defined" && exit 1
+    [ -z "$value" ] && echo "value not defined" && exit 1
+    [ -z "$name" ] && echo "name not definded" && exit 1
+    if [ -z "$id" ] ; then
+      if [ -z "$zone" ] ; then
+        echo "Either zone ID or zone name should be defined" && exit 1
+      else
+        zone="${zone%.}."
+        id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
+        if [ -z "$id" ] ; then
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+        fi
+      fi
+    fi
+    postrequest=1
+    echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?><ChangeResourceRecordSetsRequest xmlns=\"https://route53.amazonaws.com/doc/2011-05-05/\"><ChangeBatch><Comment></Comment><Changes><Change><Action>DELETE</Action><ResourceRecordSet><Name>${name}.</Name><Type>$type</Type><TTL>300</TTL><ResourceRecords><ResourceRecord><Value>$value</Value></ResourceRecord></ResourceRecords></ResourceRecordSet></Change></Changes></ChangeBatch></ChangeResourceRecordSetsRequest>" > $request
+    requrl="https://route53.amazonaws.com/2011-05-05/hostedzone/$id/rrset"
+    ;;
+  check|status)
+    $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" "https://route53.amazonaws.com/2011-05-05/change/`tail -1 \"${rpath}/../../r53requests\"`"
+    ;;
+  createzone|create)
+    [ -z "$zone" ] && echo "zone not defined" && exit 1
+    postrequest=1
+    echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?><CreateHostedZoneRequest xmlns=\"https://route53.amazonaws.com/doc/2011-05-05/\"><Name>${zone}.</Name>   <CallerReference>createzone_$zone_`date +"%s"`</CallerReference><HostedZoneConfig><Comment>$comment</Comment></HostedZoneConfig></CreateHostedZoneRequest>" > $request
+    requrl="https://route53.amazonaws.com/2011-05-05/hostedzone"
+    ;;
+  deletezone|delete)
+    if [ -z "$id" ] ; then
+      if [ -z "$zone" ] ; then
+        echo "Either zone ID or zone name should be defined" && exit 1
+      else
+        zone="${zone%.}."
+        id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
+        if [ -z "$id" ] ; then
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+        fi
+      fi
+    fi
+    echo "$action|$server_date" >> "${rpath}/../../r53requests"
+    $CURL -X DELETE -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" "https://route53.amazonaws.com/2011-05-05/hostedzone/$id" | ${rpath}/../../lib/xml2txt | grep ChangeResourceRecordSetsResponse_ChangeInfo_Id | cut -d'/' -f3 >> "${rpath}/../../r53requests"
+    ;;
   *)
     postrequest=1
+    ;;
   esac
   
   if [ -n "$postrequest" ] ; then
-    $CURL -X POST --upload-file $request -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone
+    echo "$action|$server_date" >> "${rpath}/../../r53requests"
+    $CURL -X POST --upload-file $request -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" "${requrl}" | ${rpath}/../../lib/xml2txt | grep ChangeResourceRecordSetsResponse_ChangeInfo_Id | cut -d'/' -f3 >> "${rpath}/../../r53requests"
     unset postrequest
   fi
-#  rm -f ${request}*
+  #rm -f ${request}*
 for option in `echo $possible_options | sed 's/,//g'`; do unset $option ; done
 

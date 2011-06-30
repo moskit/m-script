@@ -21,7 +21,7 @@ declare -a branch
 declare -a index
 
 addnode() {
-  nd=${1% *}
+  nd=$1
   [[ "$nd" =~ ^\? ]] && return 0
 #echo "=== ${nd}"
   index[$i]="$nd"
@@ -37,11 +37,11 @@ addnode() {
     for ((l=0; l<$n; l++)) ; do
       printf "${branch[$l]}"
       if [ $l -eq `expr $n - 1` ] ; then
-        printf "\n"
+        printf "${branch[$l]}\n"
       elif [ $l -eq `expr $n - 2` ] ; then
-        printf " "
+        printf "${branch[$l]% *} "
       else
-        printf "_"
+        printf "${branch[$l]% *}_"
       fi
     done
     unset branch[$n-1]; unset branch[$n-2]
