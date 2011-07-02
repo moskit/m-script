@@ -35,7 +35,6 @@ addnode() {
   #echo "$i | $n  --  $ndcont"
   if [ -n "$ndcont" ] ; then
     for ((l=0; l<$n; l++)) ; do
-      printf "${branch[$l]}"
       if [ $l -eq `expr $n - 1` ] ; then
         printf "${branch[$l]}\n"
       elif [ $l -eq `expr $n - 2` ] ; then
