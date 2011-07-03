@@ -30,39 +30,27 @@ CURL="$CURL -s"
 possible_options="region action id zone name type value items wholezone noupdate comment hostedzoneid dnsname"
 necessary_options="action"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
-for s_option in "${@}"
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
 do
-  found=0
-  case ${s_option} in
-  --*=*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
-    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
-    ;;
-  --*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-    s_optarg='yes' 
-    ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
-  *)
-    s_param=${s_option}
-    s_optname=''
-    s_optarg=''
-    ;;
-  esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
-  if [[ found -ne 1 ]]; then 
+   if [[ found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
 done
-found=0
+IFS=$IFS1
 
+found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
   [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
 done
@@ -104,7 +92,7 @@ case $action in
         zone="${zone%.}."
         id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
-          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --action=list to update it." && exit 1
         fi
       fi
     fi
@@ -124,10 +112,11 @@ case $action in
         zone="${zone%.}."
         id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
-          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --action=list to update it." && exit 1
         fi
       fi
     fi
+    [ -z "$name" ] && name=`grep "^${id}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f2`
     if [ -n "$wholezone" ] ; then
       request=$TMPDIR/r53.${id}.listzone.wholezone
     else
@@ -168,6 +157,9 @@ case $action in
             Value)
               recvalue=$value
             ;;
+            DNSName)
+              recvalue=$value
+            ;;
             esac
           fi
           [ -n "$recvalue" ] && printf "$recname\t$rectype\t$recttl\t$recvalue\n" && unset recvalue
@@ -187,7 +179,7 @@ case $action in
         zone="${zone%.}."
         id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
-          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --action=list to update it." && exit 1
         fi
       fi
     fi
@@ -198,7 +190,7 @@ case $action in
   addalias)
     if ([ -z "$hostedzoneid" ] || [ -z "$dnsname" ]) ; then
       if [ -n "`which elb-describe-lbs`" ] ; then
-        elbzone=`elb-describe-lbs | awk '{print $4" "$5}' | grep $hostedzoneid | grep $dnsname`
+        elbzone=`elb-describe-lbs | awk '{print $4" "$5}' | grep "$hostedzoneid" | grep "$dnsname"`
         if [ -n "$elbzone" ] ; then
           if [ `echo $elbzone | wc -l` -eq 1 ] ; then
             dnsname=`echo $elbzone | awk '{print $1}'`
@@ -224,7 +216,7 @@ case $action in
         zone="${zone%.}."
         id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
-          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --action=list to update it." && exit 1
         fi
       fi
     fi
@@ -243,7 +235,7 @@ case $action in
         zone="${zone%.}."
         id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
-          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --list to update it." && exit 1
+          echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --action=list to update it." && exit 1
         fi
       fi
     fi
