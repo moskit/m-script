@@ -84,10 +84,10 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
     if [ `echo "$prevlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
       service=`echo $LINE | cut -d'|' -f1`
       pid=`echo $LINE | cut -d'|' -f2`
-      if [ $(echo "$prevlist" | grep "^$service") -ne 0 ] ; then
-        echo "<*> Service `cat /proc/$pid/comm` with pidfile $service restarted"
+      if [ $(echo "$prevlist" | grep -c "^$service") -ne 0 ] ; then
+        echo "<*> Service `cat /proc/$pid/comm 2>/dev/null` with pidfile $service restarted"
       else
-        echo "<**> Service `cat /proc/$pid/comm` with pidfile $service is a new service"
+        echo "<**> Service `cat /proc/$pid/comm 2>/dev/null` with pidfile $service is a new service"
       fi
     fi
   done
