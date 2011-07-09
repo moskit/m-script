@@ -184,7 +184,9 @@ case $action in
       fi
     fi
     postrequest=1
-    echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?><ChangeResourceRecordSetsRequest xmlns=\"https://route53.amazonaws.com/doc/2011-05-05/\"><ChangeBatch><Comment></Comment><Changes><Change><Action>CREATE</Action><ResourceRecordSet><Name>${name}.</Name><Type>$type</Type><TTL>300</TTL><ResourceRecords><ResourceRecord><Value>$value</Value></ResourceRecord></ResourceRecords></ResourceRecordSet></Change></Changes></ChangeBatch></ChangeResourceRecordSetsRequest>" > $request
+    printf "<?xml version=\"1.0\" encoding=\"UTF-8\"?><ChangeResourceRecordSetsRequest xmlns=\"https://route53.amazonaws.com/doc/2011-05-05/\"><ChangeBatch><Comment></Comment><Changes><Change><Action>CREATE</Action><ResourceRecordSet><Name>${name}.</Name><Type>$type</Type><TTL>300</TTL><ResourceRecords>" > $request
+    IFS1=$IFS; IFS='|'; for eachvalue in `printf "$value"`; do printf "<ResourceRecord><Value>$eachvalue</Value></ResourceRecord>" >> $request ; done; IFS=$IFS1
+    printf "</ResourceRecords></ResourceRecordSet></Change></Changes></ChangeBatch></ChangeResourceRecordSetsRequest>" >> $request
     requrl="https://route53.amazonaws.com/2011-05-05/hostedzone/$id/rrset"
     ;;
   addalias)
