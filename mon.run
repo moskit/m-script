@@ -104,7 +104,8 @@ function runscript() {
   elif [ "X$1" != "X" ]; then
     date | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
-    [ -x "${rpath}/tests/*${1}" ] && ${rpath}/tests/*${1} 2>&1 | tee "${rpath}/report" >/dev/null #*/
+    echo > "${rpath}/report"
+    [ -x "${rpath}/tests/${1}" ] && ${rpath}/tests/${1} 2>&1 | tee "${rpath}/report" >/dev/null #*/
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
   grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
@@ -219,7 +220,7 @@ function analyzesysparams() {
       echo "${6} is not set correctly. Check mon.conf please."
       echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
     fi
-    echo "${warnind} ${5} was increasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
+    echo "${warnind} ${5} has been increasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
   elif [ "$x2" == "1" ]
   then
     if [ "X$4" == "X" ]
@@ -249,9 +250,9 @@ function analyzesysparams() {
       echo "${6} is not set correctly. Check mon.conf please."
       echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
     fi
-    echo "${warnind} ${5} was decreasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
+    echo "${warnind} ${5} has been decreasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during the last $daysnum days"
   else
-    echo "(OK)  $5 wasnt changing during last $daysnum days"
+    echo "(OK)  $5 hasn't been changing during the last $daysnum days"
   fi
 }
 
@@ -268,7 +269,7 @@ function sysanalysis() {
     echo "Configuration error! ANALYS_DAYS variable cannot be set lower than 2"
     exit 1
   fi
-
+  dayfirst=`date -d "- 7 day" +"%Y%m%d"`
   testdays=`sqlite3 ${rpath}/sysdata "select day from sysdata where day='$dayfirst'"`
   if [ "X$testdays" != "X" ]
   then
@@ -289,7 +290,6 @@ analyzesysparams 'cpufscale' '%'  $dayfirst   ""   "CPU frequency scale" "CPUFSC
 analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"     '<'
   else
     echo "There is no data in the database for $ANALYS_DAYS days back."
-    echo "Please wait or change the ANALYS_DAYS parameter in mon.conf."
   fi
 }
 
