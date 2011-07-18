@@ -21,6 +21,8 @@ rpath=${xcommand%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 
 [ "X$1" == "Xdefault" ] && defopt=1
+[ "X$1" == "Xuninstall" ] 
+[ "X$1" == "Xreinit" ]
 
 # Checking dependencies
 
@@ -38,12 +40,13 @@ if [ -f /etc/debian_version ]; then OS="debian"; fi
 if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
 if [ -f /etc/redhat-release ]; then OS="redhat"; fi
 
-echo "*** If during the setup process you choose to allow the script to install ***"
-echo "*** suggested packages and it fails to install them for whatever reason,  ***"
-echo "*** it doesn't cause any problems at all, just run the script again       ***"
-echo "*** (you may also want to install failed packages manually before this)   ***"
-echo
-
+if [ -z "$defopt" ] ; then
+  echo "*** If during the setup process you choose to allow the script to install ***"
+  echo "*** suggested packages and it fails to install them for whatever reason,  ***"
+  echo "*** it doesn't cause any problems at all, just run the script again       ***"
+  echo "*** (you may also want to install failed packages manually before this)   ***"
+  echo
+fi
 
 if [ "X${SED}" == "X" ]
 then
@@ -337,11 +340,11 @@ else
 fi
 if [ `echo $bootmon | grep -c -i "^y"` -ne 0 ]
 then
-  [ -d /etc/rc3.d ] && ln -s /etc/init.d/monitorload /etc/rc3.d/S99monitorload
-  [ -d /etc/rc4.d ] && ln -s /etc/init.d/monitorload /etc/rc4.d/S99monitorload
-  [ -d /etc/rc5.d ] && ln -s /etc/init.d/monitorload /etc/rc5.d/S99monitorload
-  [ -d /etc/rc0.d ] && ln -s /etc/init.d/monitorload /etc/rc0.d/K01monitorload
-  [ -d /etc/rc6.d ] && ln -s /etc/init.d/monitorload /etc/rc6.d/K01monitorload
+  [ -d /etc/rc3.d ] && ln -s $rcdir/monitorload /etc/rc3.d/S99monitorload
+  [ -d /etc/rc4.d ] && ln -s $rcdir/monitorload /etc/rc4.d/S99monitorload
+  [ -d /etc/rc5.d ] && ln -s $rcdir/monitorload /etc/rc5.d/S99monitorload
+  [ -d /etc/rc0.d ] && ln -s $rcdir/monitorload /etc/rc0.d/K01monitorload
+  [ -d /etc/rc6.d ] && ln -s $rcdir/monitorload /etc/rc6.d/K01monitorload
   if [ -z "$defopt" ] ; then
     echo "If you want to start the load monitoring daemon now, run:"
     echo "$rcdir/monitorload start"
