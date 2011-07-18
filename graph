@@ -189,7 +189,7 @@ rm -f ${TMPDIR}/graph.${sIP}.${metric}.dots
 mp=100
 if [ -n "$new" ] ; then
   QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
-  if [ `echo $sIP | grep -c $localip` -ne 0 ] ; then
+  if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
     sqlite3 "${spath}/sysdata" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${metric}
   else
     $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}

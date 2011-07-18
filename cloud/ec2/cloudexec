@@ -99,7 +99,7 @@ if [ "X$command" != "X" ] ; then
       echo "### Server: $server"
       echo
     fi
-    if [ `echo $IP | grep -c $localip` -ne 0 ] ; then
+    if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       eval $command
     else
       $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
