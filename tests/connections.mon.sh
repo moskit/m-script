@@ -66,6 +66,7 @@ if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; 
   echo "connections."
   echo "This is not an alert, these connections don't harm, but they make ports"
   echo "monitoring too expensive."
+  echo
 else
   $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
@@ -74,6 +75,7 @@ if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; 
   echo "connections."
   echo "This is not an alert, these connections don't harm, but they make ports"
   echo "monitoring too expensive."
+  echo
 else
   $NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
 fi
@@ -267,7 +269,7 @@ else
    echo ""
    echo 'Server is connected'
    echo "Successfully pinged: $pingedip"
-   [ -n "$failedip" ] && echo "Ping to $failedip failed though"
+   [ -n "$failedip" ] && echo "Ping to $failedip failed"
   else
    echo '<***> Server is disconnected!'
    echo "<***> IP(s) ${failedip} unavailable"

@@ -13,8 +13,8 @@ rpath=${0%/*}
 source ${rpath}/../mon.conf
 
 echo ""
-echo "Memory eaters:"
-echo "--------------"
+echo "Memory eaters (process name and process owner):"
+echo "-----------------------------------------------"
 
 IFS1=$IFS
 IFS='
