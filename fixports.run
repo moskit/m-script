@@ -36,15 +36,19 @@ testthrudp=`expr $inuseudp \* 3`
 if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; then
   echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
   echo "connections."
-  exit 1
+else
+  $NETSTATCMD -tlpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$7}' > /tmp/m_script/netstat.tmp
 fi
 if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; then
   echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
   echo "connections."
   exit 1
+else
+  $NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
 fi
-$NETSTATCMD -tlpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$7}' > /tmp/m_script/netstat.tmp
-$NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
+
+[ `cat /tmp/m_script/netstat.tmp | wc -l` -eq 0 ] || exit 0
+
 rm -f ${rpath}/ports.list
 IFS1=$IFS
 IFS='
