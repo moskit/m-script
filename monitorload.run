@@ -24,9 +24,9 @@
 tempfile=/tmp/avgload-$$
 pidfile=/var/run/monitorload.pid
 touch ${tempfile}
-trap 'rm -f $tempfile; exit' 0
-trap 'rm -f $tempfile; exit' 3
-trap 'rm -f $tempfile; exit' 15
+trap 'rm -f $tempfile; rm -f $pidfile; exit' 0
+trap 'rm -f $tempfile; rm -f $pidfile; exit' 3
+trap 'rm -f $tempfile; rm -f $pidfile; exit' 15
 
 case $1 in
 start)
