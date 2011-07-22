@@ -25,7 +25,8 @@ sockets=`cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:sp
 
 if [ `uname` == "Linux" ]; then
   [ "X$NETSTATCMD" == "X" ] && echo "Netstat utility not found! Aborting.." && exit 1
-  NETCONNS="${NETSTATCMD} -tuapn"
+  NETCONNSTCP="${NETSTATCMD} -tapn"
+  NETCONNSUDP="${NETSTATCMD} -uapn"
   SOCKCONNS="${NETSTATCMD} -xlpn"
 fi
 
@@ -66,7 +67,7 @@ if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; 
   echo "This is not an alert, these connections don't harm, but they make ports"
   echo "monitoring too expensive."
 else
-  $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.$$
+  $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
 if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; then
   echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
@@ -74,10 +75,10 @@ if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; 
   echo "This is not an alert, these connections don't harm, but they make ports"
   echo "monitoring too expensive."
 else
-  $NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.$$
+  $NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
 fi
 
-if [ -f /tmp/m_script/ports.$$ ] ; then
+if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
   while read LINE
   do
     portfound=0
@@ -114,14 +115,61 @@ if [ -f /tmp/m_script/ports.$$ ] ; then
         m=`expr length "${t}"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`${NETCONNS} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
+        printf "`${NETCONNSTCP} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
         portfound=1
         break
       fi
     done
     [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
     skip=0
-  done < /tmp/m_script/ports.$$
+  done < /tmp/m_script/ports.tcp.$$
+fi
+
+if [ -f /tmp/m_script/ports.udp.$$ ] ; then
+  while read LINE
+  do
+    portfound=0
+    t=${LINE%%%*}
+    prog=${LINE#* }
+    prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+    t=${t%% *}
+    cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
+      if [[ $exclport =~ [^[0-9-]]* ]] ; then
+        
+        [[ $prog =~ $exclport ]] && skip=1 && break
+      else
+        portif=${t%:*}
+        portnum=${t##*:}
+        port1=${exclport%-*}
+        port2=${exclport#*-}
+        ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+      fi
+    done
+    
+    # now compare ports
+    for i in ${ports}
+    do
+      if [ "X${i}" == "X${t}" ]
+      then
+        j=`expr "${i}" : '.*\(:[0-9]*\)'`
+        ports=$(echo ${ports} | sed "s|${t}||")
+        printf "$prog"
+        m=`expr length $prog`
+        l=`expr 20 - $m`
+        for ((n=1; n <= $l; n++)); do printf " "; done
+        printf "${t}"
+        # | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+        m=`expr length "${t}"`
+        l=`expr 40 - $m`
+        for ((n=1; n <= $l; n++)); do printf " "; done
+        printf "`${NETCONNSUDP} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
+        portfound=1
+        break
+      fi
+    done
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+    skip=0
+  done < /tmp/m_script/ports.udp.$$
 fi
 
 if [ "X${ports}" != "X" ]

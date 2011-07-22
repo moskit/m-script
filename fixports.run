@@ -27,6 +27,7 @@ if [ `uname` == "Linux" ]; then
     exit 1
   fi
 fi
+rm -f /tmp/m_script/netstat.tmp
 
 # PORTS
 inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
@@ -42,12 +43,11 @@ fi
 if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; then
   echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
   echo "connections."
-  exit 1
 else
   $NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
 fi
 
-[ `cat /tmp/m_script/netstat.tmp | wc -l` -eq 0 ] || exit 0
+[ -f /tmp/m_script/netstat.tmp ] || exit 0
 
 rm -f ${rpath}/ports.list
 IFS1=$IFS
