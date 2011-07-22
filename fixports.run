@@ -59,8 +59,9 @@ do
     else
       portif=${port%:*}
       portnum=${port##*:}
-      port1=${exclport%-*}
-      port2=${exclport#*-}
+      xports=${exclport%%%*}
+      port1=${xports%-*}
+      port2=${xports#*-}
       ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
     fi
   done

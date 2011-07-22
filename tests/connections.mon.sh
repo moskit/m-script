@@ -95,8 +95,9 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
       else
         portif=${t%:*}
         portnum=${t##*:}
-        port1=${exclport%-*}
-        port2=${exclport#*-}
+        xports=${exclport%%%*}
+        port1=${xports%-*}
+        port2=${xports#*-}
         ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
       fi
     done
@@ -122,7 +123,7 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored."
     skip=0
   done < /tmp/m_script/ports.tcp.$$
 fi
@@ -142,8 +143,9 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
       else
         portif=${t%:*}
         portnum=${t##*:}
-        port1=${exclport%-*}
-        port2=${exclport#*-}
+        xports=${exclport%%%*}
+        port1=${xports%-*}
+        port2=${xports#*-}
         ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
       fi
     done
@@ -169,14 +171,14 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored." | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored."
     skip=0
   done < /tmp/m_script/ports.udp.$$
 fi
 
 if [ "X${ports}" != "X" ]
 then
- echo "<***> There is no services listening on: ${ports}" | sed 's|0.0.0.0:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
+ echo "<***> There is no services listening on: ${ports}"
 fi
 
 echo
