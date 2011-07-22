@@ -89,16 +89,17 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
     cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
-      if [[ $exclport =~ [^[0-9-]]* ]] ; then
-        
-        [[ $prog =~ $exclport ]] && skip=1 && break
-      else
-        portif=${t%:*}
-        portnum=${t##*:}
-        xports=${exclport%%%*}
-        port1=${xports%-*}
-        port2=${xports#*-}
-        ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+      if [[ $exclport =~ $prog ]] ; then
+        if [[ $exclport =~ [^[0-9-]]* ]] ; then
+          skip=1 && break
+        else
+          portif=${t%:*}
+          portnum=${t##*:}
+          xports=${exclport%%%*}
+          port1=${xports%-*}
+          port2=${xports#*-}
+          ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+        fi
       fi
     done
     
@@ -137,16 +138,17 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
     cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
-      if [[ $exclport =~ [^[0-9-]]* ]] ; then
-        
-        [[ $prog =~ $exclport ]] && skip=1 && break
-      else
-        portif=${t%:*}
-        portnum=${t##*:}
-        xports=${exclport%%%*}
-        port1=${xports%-*}
-        port2=${xports#*-}
-        ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+      if [[ $exclport =~ $prog ]] ; then
+        if [[ $exclport =~ [^[0-9-]]* ]] ; then
+          skip=1 && break
+        else
+          portif=${t%:*}
+          portnum=${t##*:}
+          xports=${exclport%%%*}
+          port1=${xports%-*}
+          port2=${xports#*-}
+          ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+        fi
       fi
     done
     
