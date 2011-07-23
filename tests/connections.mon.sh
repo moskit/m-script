@@ -88,17 +88,22 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
-    cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
-      if [[ $exclport =~ $prog ]] ; then
-        if [[ $exclport =~ [^[0-9-]]* ]] ; then
+    for exclport in `cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'` ; do
+      exclportnum=${exclport%%%*}
+      exclportprog=${exclport#*%}
+      if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $prog ]] ; then
+        if [ "X$exclportnum" == "X" ] ; then
           skip=1 && break
         else
-          portif=${t%:*}
-          portnum=${t##*:}
-          xports=${exclport%%%*}
-          port1=${xports%-*}
-          port2=${xports#*-}
-          ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+          if [[ $exclportnum =~ [[0-9]]*-[[0-9]]* ]] ; then
+            portif=${t%:*}
+            portnum=${t##*:}
+            port1=${exclportnum%-*}
+            port2=${exclportnum#*-}
+            ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
+          else
+            [[ $exclportnum -eq $portnum ]] && skip=1 && break
+          fi
         fi
       fi
     done
@@ -137,17 +142,22 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
-    cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#' | while read exclport ; do
-      if [[ $exclport =~ $prog ]] ; then
-        if [[ $exclport =~ [^[0-9-]]* ]] ; then
+    for exclport in `cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'` ; do
+      exclportnum=${exclport%%%*}
+      exclportprog=${exclport#*%}
+      if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $prog ]] ; then
+        if [ "X$exclportnum" == "X" ] ; then
           skip=1 && break
         else
-          portif=${t%:*}
-          portnum=${t##*:}
-          xports=${exclport%%%*}
-          port1=${xports%-*}
-          port2=${xports#*-}
-          ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+          if [[ $exclportnum =~ [[0-9]]*-[[0-9]]* ]] ; then
+            portif=${t%:*}
+            portnum=${t##*:}
+            port1=${exclportnum%-*}
+            port2=${exclportnum#*-}
+            ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
+          else
+            [[ $exclportnum -eq $portnum ]] && skip=1 && break
+          fi
         fi
       fi
     done
