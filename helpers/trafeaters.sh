@@ -188,7 +188,7 @@ done
 
 if [ `cat ${TMPDIR}/trafeaters.report 2>/dev/null | wc -l` -gt 0 ] ; then
   cat ${TMPDIR}/trafeaters.report >> ${rpath}/../monitoring.log
-  for MLINE in `cat ${rpath}/../mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
+  for MLINE in `cat ${rpath}/../conf/mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
   do
     cat ${TMPDIR}/trafeaters.report | ${MAILX} -s "Server $(hostname -f) traffic consumers" ${MLINE}
   done

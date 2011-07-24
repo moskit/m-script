@@ -54,28 +54,28 @@ function mailreport() {
   while read RLINE
   do
     if [ -n "${RLINE}" ]; then
-      cat ${rpath}/rep.header ${rpath}/report | ${MAILX} -s "Server $(hostname -f) report" ${RLINE}
+      cat ${rpath}/conf/rep.header ${rpath}/report | ${MAILX} -s "Server $(hostname -f) report" ${RLINE}
     fi
-  done < ${rpath}/mail.admin.list
+  done < ${rpath}/conf/mail.admin.list
 }
 
 function mailalert() {
   if [ -f ${rpath}/alert1 ] && [ `cat ${rpath}/alert1 | wc -l` -ne 0 ]; then
     al='*'
-    cat ${rpath}/header.alert1 ${rpath}/alert1 >> ${rpath}/alert
+    cat ${rpath}/conf/header.alert1 ${rpath}/alert1 >> ${rpath}/alert
     echo "" >> ${rpath}/alert
   fi
   if [ -f ${rpath}/alert2 ] && [ `cat ${rpath}/alert2 | wc -l` -ne 0 ]; then
     al='**'
-    cat ${rpath}/header.alert2 ${rpath}/alert2 >> ${rpath}/alert
+    cat ${rpath}/conf/header.alert2 ${rpath}/alert2 >> ${rpath}/alert
     echo "" >> ${rpath}/alert
   fi
   if [ -f ${rpath}/alert3 ] && [ `cat ${rpath}/alert3 | wc -l` -ne 0 ]; then
     al='***'
-    cat ${rpath}/header.alert3 ${rpath}/alert3 >> ${rpath}/alert
+    cat ${rpath}/conf/header.alert3 ${rpath}/alert3 >> ${rpath}/alert
     echo "" >> ${rpath}/alert
   fi
-  for MLINE in `cat ${rpath}/mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
+  for MLINE in `cat ${rpath}/conf/mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
   do
     if [ "X$al" != "X" ]
     then
@@ -217,7 +217,7 @@ function analyzesysparams() {
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
     else
-      echo "${6} is not set correctly. Check mon.conf please."
+      echo "${6} is not set correctly. Check conf/mon.conf please."
       echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
     fi
     echo "${warnind} ${5} has been increasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
@@ -247,7 +247,7 @@ function analyzesysparams() {
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
     else
-      echo "${6} is not set correctly. Check mon.conf please."
+      echo "${6} is not set correctly. Check conf/mon.conf please."
       echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
     fi
     echo "${warnind} ${5} has been decreasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during the last $daysnum days"
@@ -260,7 +260,7 @@ function sysanalysis() {
   if [ "X$SQLITE3" != "X1" ]
   then
     echo "To use --analyze-system option, SQLite3 must be installed and SQLITE3 must"
-    echo "be set to 1 in mon.conf"
+    echo "be set to 1 in conf/mon.conf"
     exit 1
   fi
 
@@ -275,7 +275,7 @@ function sysanalysis() {
   then
 #   ------------ Database -- un -- "From" - DB column  - Human  ----- Warning level - Con
 #   ------------  column  -- it --  date  - name for   - column ----- variable name - dit
-#   ------------   name   -- s  --        - total(max) -  name  ----- (mon.conf)    - ion
+#   ------------   name   -- s  --        - total(max) -  name  ----- (conf/mon.conf)    - ion
 analyzesysparams 'freeram'   KB   $dayfirst totalram  "Free RAM"      "FREERAM"      '>='
 analyzesysparams 'activeram' KB   $dayfirst totalram  "Active RAM"    "ACTIVERAM"    '>='
 analyzesysparams 'freeswap'  KB   $dayfirst totalswap "Free swap"     "FREESWAP"     '>='
@@ -293,7 +293,7 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
   fi
 }
 
-source ${rpath}/mon.conf
+source ${rpath}/conf/mon.conf
 timeindexnow=$(date +"%s")
 echo $timeindexnow > ${tmpdir}/timeindex
 

@@ -23,10 +23,11 @@
 
 tempfile=/tmp/avgload-$$
 pidfile=/var/run/monitorload.pid
+mgpidfile=/var/run/mongoose.pid
 touch ${tempfile}
-trap 'rm -f $tempfile; rm -f $pidfile; exit' 0
-trap 'rm -f $tempfile; rm -f $pidfile; exit' 3
-trap 'rm -f $tempfile; rm -f $pidfile; exit' 15
+trap 'rm -f $tempfile; rm -f $pidfile; rm -f $mgpidfile 2>/dev/null; exit' 0
+trap 'rm -f $tempfile; rm -f $pidfile; rm -f $mgpidfile 2>/dev/null; exit' 3
+trap 'rm -f $tempfile; rm -f $pidfile; rm -f $mgpidfile 2>/dev/null; exit' 15
 
 case $1 in
 start)
@@ -36,7 +37,7 @@ start)
   rpath=${xcommand%/*}
 #*/ (this is needed to fool vi comments syntax highlighting)
 
-  source ${rpath}/mon.conf
+  source ${rpath}/conf/mon.conf
 
   UPTIME=`which uptime`
   echo $$ > $pidfile
@@ -50,47 +51,62 @@ start)
         MG="${rpath}/mongoose"
       else
         echo "Error"
-        echo "Mongoose is enabled in ${rpath}/mon.conf but not found"
+        echo "Mongoose is enabled in ${rpath}/conf/mon.conf but not found"
         exit 1
       fi
     fi
     MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
     echo "`date` -- Starting $MG ${MGOPTS}" >> ${rpath}/mongoose.log
     $MG ${MGOPTS} >> ${rpath}/mongoose.log 2>&1 &
-    echo $! > /var/run/mongoose.pid
+    echo $! > $mgpidfile
     echo "done"
   fi
   printf "Starting monitoring daemon...      "
   while true
   do
     rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
-    rload="$($UPTIME | awk -F'average: ' '{ print $2}' | sed s/,//g | awk '{ print $2}' | tee $tempfile)"
+    rload="$(cat /proc/loadavg | cut -d' ' -f2 | tee $tempfile)"
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
     if [ "X$x" == "X1" ]; then
-      ${rpath}/mon.run -ao &
+      if [[ $rload -lt $LOAD_CRIT ]] ; then
+        ${rpath}/mon.run -ao &
+      else
+        ${rpath}/mon.run mem.mon.sh &
+      fi
     fi
 
     sleep $FREQ
     
-### Add your own tests here
+### Comment this out and put your scripts or tests to the 'custom' folder to run
+### them every FREQ seconds. They must be executable.
+### Output of custom scripts is not captured, you have to care about it yourself
+### This is intended for some quick additions. If you want to add an 'official' 
+### test, put it to the 'tests' folder and symlink it to the 'rc' folder.
 
-# The example below makes services running monitored constantly
-# ${rpath}/mon.run connections.mon.sh
-# Or run it like this to prevent sending too many alerts about not running
-# and not monitored services:
-  if [ -f /tmp/m_script/conn_test_runs_count ] ; then
-    [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt 3 ] && echo > /tmp/m_script/conn_test_runs_count && ${rpath}/fixports.run
-  else
-    echo > /tmp/m_script/conn_test_runs_count
-  fi
-  ${rpath}/mon.run connections.mon.sh ; echo >> /tmp/m_script/conn_test_runs_count
+# for customscript in `find ${rpath}/custom -type f -executable` ; do $customscript ; done
+
+### But consider uncommenting this line inside the condition below instead; this
+### disables custom scripts if the system load is very high
+
+    if [[ $rload -lt $LOAD_CRIT ]] ; then
+    
+      # for customscript in `find ${rpath}/custom -type f -executable` ; do $customscript ; done
+    
+      if [ -f /tmp/m_script/conn_test_runs_count ] ; then
+        [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > /tmp/m_script/conn_test_runs_count && ${rpath}/fixports.run
+      else
+        echo > /tmp/m_script/conn_test_runs_count
+      fi
+      ${rpath}/mon.run connections.mon.sh ; echo >> /tmp/m_script/conn_test_runs_count
 # Checking running processes (services.conf)
-  ${rpath}/mon.run services.mon.sh
+      ${rpath}/mon.run services.mon.sh
 # Checking other servers (listed in servers.conf) availability
-  ${rpath}/mon.run servers.mon.sh
+      ${rpath}/mon.run servers.mon.sh
 ###
+    fi
+  
   done & 2>/dev/null
   echo $! > $pidfile
   echo "done"
@@ -103,10 +119,10 @@ stop)
   else
     echo "${pidfile} not found!"
   fi
-  if [ -f /var/run/mongoose.pid ] ; then
-    pid=`cat /var/run/mongoose.pid`
+  if [ -f $mgpidfile ] ; then
+    pid=`cat $mgpidfile|tail -1`
     printf "Stopping web interface...       "
-    kill -15 $pid && rm -f /var/run/mongoose.pid && echo "done"
+    kill -15 $pid && rm -f $mgpidfile && echo "done"
   fi
   ;;
 restart)

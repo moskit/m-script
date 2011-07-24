@@ -141,5 +141,5 @@ if [ -n "$MAILX" ] ; then
     if [ -n "${RLINE}" ]; then
       cat ${rpath}/../../ebs_backup.report | ${MAILX} -s "Server $(hostname -f) EBS volume backup report" ${RLINE}
     fi
-  done < ${rpath}/../mail.backup.list
+  done < ${rpath}/../conf/mail.backup.list
 fi

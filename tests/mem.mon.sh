@@ -31,7 +31,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
-source ${rpath}/../mon.conf
+source ${rpath}/../conf/mon.conf
 ruptime=`$UPTIME`
 if $(echo $ruptime | grep -E "min|day" >/dev/null); then
   x=$(echo $ruptime | sed 's/,//g' | awk '{print $3 " " $4}')
@@ -63,9 +63,8 @@ rtotalmemfree="$($FREE -to | grep Total: | awk '{ print $4 }')"
 mtotalmemfree=`solve "$rtotalmemfree / 1024"`
 rtotalprocess="$($PS axue | grep -vE "^USER|grep|ps" | wc -l)"
 
-rload="$($UPTIME | awk -F'average: ' '{ print $2}')"
-x="$(echo $rload | sed s/,//g | awk '{ print $2}')"
-rloadavg="$(echo $rload | sed s/,//g | awk '{ print $3}')"
+x="$(cat /proc/loadavg | cut -d' ' -f2)"
+rloadavg="$(cat /proc/loadavg | cut -d' ' -f3)"
 y1="$(echo "$x >= $LOAD_WARN_1" | bc)"
 y2="$(echo "$x >= $LOAD_WARN_2" | bc)"
 y3="$(echo "$x >= $LOAD_WARN_3" | bc)"
@@ -73,7 +72,7 @@ echo ""
 echo "System status:"
 echo "--------------"
 printf "Uptime:\t\t\t\t$ruptime\n"
-printf "Load average:\t\t\t$rload\n"
+printf "Load average:\t\t\t$rloadavg\n"
 printf "Total running processes:\t$rtotalprocess\n"
 echo "$rfs"
 echo "RAM/Swap status:"

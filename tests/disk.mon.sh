@@ -28,7 +28,7 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
 
-source ${rpath}/../mon.conf
+source ${rpath}/../conf/mon.conf
 echo ""
 echo "Disks usage:"
 echo "------------"

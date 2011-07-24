@@ -30,12 +30,12 @@ Settings
 
 There are two main scripts: backup.run and mon.run. Run these with the --help option to get further help.
 Edit the settings in the correspondent files:
-1. mon.conf - monitoring settings like alert threshold etc.
-2. backup.conf - backup settings (also read ./backup.run --configfile=help)
-3. backup.conf.list - it is the list of folders you wish to be backed up. Its name must correspond to the backup configuration file, you may have many such pairs.
-4. mail.admin.list - the list of email addresses where monitoring reports will be sent to.
-5. mail.alert.list - the list of email addresses where monitoring alerts will be sent to.
-6. mail.backup.list - the list of email addresses where backup reports and alerts will be sent to.
+1. conf/mon.conf - monitoring settings like alert threshold etc.
+2. conf/backup.conf - backup settings (also read ./backup.run --configfile=help)
+3. conf/backup.conf.list - it is the list of folders you wish to be backed up. Its name must correspond to the conf/backup.configuration file, you may have many such pairs.
+4. conf/mail.admin.list - the list of email addresses where monitoring reports will be sent to.
+5. conf/mail.alert.list - the list of email addresses where monitoring alerts will be sent to.
+6. conf/mail.backup.list - the list of email addresses where backup reports and alerts will be sent to.
 
 You may also want to edit other files not having .run and .sh extensions to customize your alerts headers etc.
 

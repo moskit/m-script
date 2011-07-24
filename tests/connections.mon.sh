@@ -40,7 +40,7 @@ fi
 [ -f ${rpath}/../conf/sockets.exclude ] || touch ${rpath}/../conf/sockets.exclude
 [ -f ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
 
-source ${rpath}/../mon.conf
+source ${rpath}/../conf/mon.conf
 
 echo
 echo "Listening ports and sockets:"
@@ -247,7 +247,7 @@ then
     $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' > /tmp/m_script/ping.tmp
   fi
   [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> /tmp/m_script/ping.tmp
-  [ -f /tmp/m_script/ping.tmp ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in mon.conf file"
+  [ -f /tmp/m_script/ping.tmp ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
   failedip=""
   pingedip=""
   while read LINE

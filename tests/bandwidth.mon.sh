@@ -26,7 +26,7 @@ PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-source ${rpath}/../mon.conf
+source ${rpath}/../conf/mon.conf
 if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
 then
 

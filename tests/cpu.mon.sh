@@ -26,7 +26,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
-source ${rpath}/../mon.conf
+source ${rpath}/../conf/mon.conf
 
 $VMSTAT -n 1 6 | grep -v "^[a-z]" | grep -v "^\ [a-z]" | awk '{ print $13}' > /tmp/m_script/cpuusage
 tail -n 5 /tmp/m_script/cpuusage > /tmp/m_script/cpuusage.1

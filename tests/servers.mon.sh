@@ -16,7 +16,7 @@
 
 
 
-### Uncomment below and put your servers list to servers.conf if you need 
+### Uncomment below and put your servers list to conf/servers.conf if you need 
 ### to monitor multiple servers.
 ### Details and examples can be found in doc/multiple_servers.txt.
 
@@ -36,7 +36,7 @@ CURL=`which curl 2>/dev/null`
 LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
-for mserver in `cat ${rpath}/../servers.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
+for mserver in `cat ${rpath}/../conf/servers.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
   serverip=`echo $mserver|awk '{print $1}'`
   servername=`echo $mserver|awk '{print $2}'`

@@ -4,7 +4,7 @@ PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-source ${rpath}/../mon.conf
+source ${rpath}/../conf/mon.conf
 
 echo ""
 echo "CPU eaters:"
