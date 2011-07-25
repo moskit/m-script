@@ -1,9 +1,9 @@
 #!/bin/bash
 
 MYSQL=`which mysql 2>/dev/null`
-MYUSER=root
-MYPASS=Sugam1234
-MYDB=cricket_production
+MYUSER=
+MYPASS=
+MYDB=
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
