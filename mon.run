@@ -302,7 +302,6 @@ case ${1} in
     runscript SQL
     runactions
     mailalert
-    ${rpath}/fixports.run
   ;;
   -dry | --dry | --dry-run)
     runscript SQL
@@ -341,7 +340,6 @@ case ${1} in
     runscript SQL
     mailreport
     mailalert
-    ${rpath}/fixports.run
   ;;
   *.mon.sh)
     runscript ${1}
