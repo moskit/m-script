@@ -38,7 +38,8 @@ start)
 #*/ (this is needed to fool vi comments syntax highlighting)
 
   source ${rpath}/conf/mon.conf
-
+  LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
+  
   UPTIME=`which uptime`
   echo $$ > $pidfile
   echo 0 > $tempfile
@@ -55,6 +56,7 @@ start)
         exit 1
       fi
     fi
+    [ -f ${rpath}/conf/htaccess ] || ($MG -A ${rpath}/conf/htaccess `hostname` admin admin && printf "access file ${rpath}/conf/htaccess not found, created with login: admin, password: admin; use $MG -A ${rpath}/conf/htaccess <realm> <user> <passwd> to change credentials  ")
     MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
     echo "`date` -- Starting $MG ${MGOPTS}" >> ${rpath}/mongoose.log
     $MG ${MGOPTS} >> ${rpath}/mongoose.log 2>&1 &
@@ -66,9 +68,11 @@ start)
   do
     rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
     rload="$(cat /proc/loadavg | cut -d' ' -f2 | tee $tempfile)"
+    rloadabs=${rload%.*} ; [ "X$rloadabs" == "X" ] && rloadabs=0
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
+    
     if [ "X$x" == "X1" ]; then
       if [[ $rload -lt $LOAD_CRIT ]] ; then
         ${rpath}/mon.run -ao &
