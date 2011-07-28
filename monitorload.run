@@ -25,9 +25,9 @@ tempfile=/tmp/avgload-$$
 pidfile=/var/run/monitorload.pid
 mgpidfile=/var/run/mongoose.pid
 touch ${tempfile}
-trap 'rm -f $tempfile; rm -f $pidfile; rm -f $mgpidfile 2>/dev/null; exit' 0
-trap 'rm -f $tempfile; rm -f $pidfile; rm -f $mgpidfile 2>/dev/null; exit' 3
-trap 'rm -f $tempfile; rm -f $pidfile; rm -f $mgpidfile 2>/dev/null; exit' 15
+trap 'rm -f $tempfile; exit' 0
+trap 'rm -f $tempfile; exit' 3
+trap 'rm -f $tempfile; exit' 15
 
 case $1 in
 start)
@@ -60,10 +60,11 @@ start)
     MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
     echo "`date` -- Starting $MG ${MGOPTS}" >> ${rpath}/mongoose.log
     $MG ${MGOPTS} >> ${rpath}/mongoose.log 2>&1 &
+    succ=$?
     echo $! > $mgpidfile
-    echo "done"
+    [[ $succ -eq 0 ]] && echo "done" || echo "error"
   fi
-  printf "Starting monitoring daemon...      "
+  printf "Starting monitorload...      "
   while true
   do
     rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
@@ -74,7 +75,7 @@ start)
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
     
     if [ "X$x" == "X1" ]; then
-      if [[ $rload -lt $LOAD_CRIT ]] ; then
+      if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
         ${rpath}/mon.run -ao &
       else
         ${rpath}/mon.run mem.mon.sh &
@@ -94,7 +95,7 @@ start)
 ### But consider uncommenting this line inside the condition below instead; this
 ### disables custom scripts if the system load is very high
 
-    if [[ $rload -lt $LOAD_CRIT ]] ; then
+    if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
     
       # for customscript in `find ${rpath}/custom -type f -executable` ; do $customscript ; done
     
@@ -112,20 +113,21 @@ start)
     fi
   
   done & 2>/dev/null
+  succ=$?
   echo $! > $pidfile
-  echo "done"
+  [[ $succ -eq 0 ]] && echo "done" || echo "error"
   ;;
 stop)
   if [ -f ${pidfile} ]; then
     pid=`cat ${pidfile}|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
-    kill -15 $pid && echo "done"
+    kill -15 $pid && rm -f $pidfile && echo "done"
   else
     echo "${pidfile} not found!"
   fi
   if [ -f $mgpidfile ] ; then
     pid=`cat $mgpidfile|tail -1`
-    printf "Stopping web interface...       "
+    printf "Stopping web interface (pid $pid)...       "
     kill -15 $pid && rm -f $mgpidfile && echo "done"
   fi
   ;;
