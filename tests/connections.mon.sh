@@ -62,22 +62,27 @@ inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
 inuseudp=`cat /proc/net/sockstat | grep ^UDP: | cut -d' ' -f3`
 testthrtcp=`expr $inusetcp \* 3`
 testthrudp=`expr $inuseudp \* 3`
+
 if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; then
-  echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
-  echo "connections."
-  echo "This is not an alert, these connections don't harm, but they make ports"
-  echo "monitoring too expensive."
-  echo
+  if [[ $testthrtcp -ne 0 ]] ; then
+    echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
+    echo "connections."
+    echo "This is not an alert, these connections don't harm, but they make ports"
+    echo "monitoring too expensive."
+    echo
+  fi
   portstcp=""
 else
   $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
 if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; then
-  echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
-  echo "connections."
-  echo "This is not an alert, these connections don't harm, but they make ports"
-  echo "monitoring too expensive."
-  echo
+  if [[ $testthrudp -ne 0 ]] ; then
+    echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
+    echo "connections."
+    echo "This is not an alert, these connections don't harm, but they make ports"
+    echo "monitoring too expensive."
+    echo
+  fi
   portsudp=""
 else
   $NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
