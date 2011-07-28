@@ -231,7 +231,7 @@ do
   [[ $socketfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored."
 done < /tmp/m_script/sockets.$$
 
-rm -f /tmp/m_script/ports.$$ /tmp/m_script/sockets.$$
+rm -f /tmp/m_script/ports.*.$$ /tmp/m_script/sockets.$$
 if [ "X${sockets}" != "X" ]
 then
  echo "<***> There is no services listening on unix sockets: ${sockets}"
@@ -295,3 +295,5 @@ else
    echo "<***> IP(s) ${failedip} unavailable"
   fi
 fi
+
+
