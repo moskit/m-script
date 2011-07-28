@@ -68,6 +68,7 @@ if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; 
   echo "This is not an alert, these connections don't harm, but they make ports"
   echo "monitoring too expensive."
   echo
+  portstcp=""
 else
   $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
@@ -77,6 +78,7 @@ if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; 
   echo "This is not an alert, these connections don't harm, but they make ports"
   echo "monitoring too expensive."
   echo
+  portsudp=""
 else
   $NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
 fi
@@ -115,7 +117,7 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
       if [ "X${i}" == "X${t}" ]
       then
         j=`expr "${i}" : '.*\(:[0-9]*\)'`
-        ports=$(echo ${portstcp} | sed "s|${t}||")
+        portstcp=$(echo ${portstcp} | sed "s|${t}||")
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
@@ -169,7 +171,7 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
       if [ "X${i}" == "X${t}" ]
       then
         j=`expr "${i}" : '.*\(:[0-9]*\)'`
-        ports=$(echo ${portsudp} | sed "s|${t}||")
+        portsudp=$(echo ${portsudp} | sed "s|${t}||")
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
