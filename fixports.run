@@ -29,21 +29,21 @@ if [ `uname` == "Linux" ]; then
 fi
 rm -f /tmp/m_script/netstat.tmp
 
-# PORTS
+# TCP and UDP PORTS
 inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
 inuseudp=`cat /proc/net/sockstat | grep ^UDP: | cut -d' ' -f3`
 testthrtcp=`expr $inusetcp \* 3`
 testthrudp=`expr $inuseudp \* 3`
 if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" != "X$testthrtcp" ] ; then
-  $NETSTATCMD -tlpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$7}' > /tmp/m_script/netstat.tmp
+  $NETSTATCMD -tlpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$7}' > /tmp/m_script/netstat.tcp.tmp
 fi
 if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" != "X$testthrudp" ] ; then
-  $NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' >> /tmp/m_script/netstat.tmp
+  $NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' > /tmp/m_script/netstat.udp.tmp
 fi
 
-[ -f /tmp/m_script/netstat.tmp ] || exit 0
+([ -f /tmp/m_script/netstat.tcp.tmp ] && [ -f /tmp/m_script/netstat.udp.tmp ]) || exit 0
 
-rm -f ${rpath}/ports.list
+rm -f ${rpath}/ports.*.list
 IFS1=$IFS
 IFS='
 '
@@ -67,10 +67,32 @@ do
       fi
     fi
   done
-  [[ $skip -eq 1 ]] && skip=0 || echo "$port" >> ${rpath}/ports.list
-done < /tmp/m_script/netstat.tmp
-# SOCKETS
-$NETSTATCMD -xlpn 2>/dev/null | grep STREAM > /tmp/m_script/netstat.tmp
+  [[ $skip -eq 1 ]] && skip=0 || echo "$port" >> ${rpath}/ports.tcp.list
+done < /tmp/m_script/netstat.tcp.tmp
+while read LINE
+do
+  prog=${LINE#* }
+  prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+  port=${LINE% *}
+  for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  do
+    if [[ $exclport =~ $prog ]] ; then
+      if [[ $exclport =~ [^[0-9]-]* ]] ; then
+        skip=1 && break
+      else
+        portif=${port%:*}
+        portnum=${port##*:}
+        xports=${exclport%%%*}
+        port1=${xports%-*}
+        port2=${xports#*-}
+        ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+      fi
+    fi
+  done
+  [[ $skip -eq 1 ]] && skip=0 || echo "$port" >> ${rpath}/ports.udp.list
+done < /tmp/m_script/netstat.udp.tmp
+# UNIX SOCKETS
+$NETSTATCMD -xlpn 2>/dev/null | grep STREAM > /tmp/m_script/netstat.sockets.tmp
 rm -f ${rpath}/sockets.list
 while read LINE
 do
@@ -79,6 +101,6 @@ do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
   [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
-done < /tmp/m_script/netstat.tmp
+done < /tmp/m_script/netstat.sockets.tmp
 IFS=$IFS1
 

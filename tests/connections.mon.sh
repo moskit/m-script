@@ -18,7 +18,8 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-ports=`cat ${rpath}/../ports.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
+portstcp=`cat ${rpath}/../ports.tcp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
+portsudp=`cat ${rpath}/../ports.udp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
 sockets=`cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
@@ -109,12 +110,12 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
     done
     
     # now compare ports
-    for i in ${ports}
+    for i in ${portstcp}
     do
       if [ "X${i}" == "X${t}" ]
       then
         j=`expr "${i}" : '.*\(:[0-9]*\)'`
-        ports=$(echo ${ports} | sed "s|${t}||")
+        ports=$(echo ${portstcp} | sed "s|${t}||")
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
@@ -163,12 +164,12 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
     done
     
     # now compare ports
-    for i in ${ports}
+    for i in ${portsudp}
     do
       if [ "X${i}" == "X${t}" ]
       then
         j=`expr "${i}" : '.*\(:[0-9]*\)'`
-        ports=$(echo ${ports} | sed "s|${t}||")
+        ports=$(echo ${portsudp} | sed "s|${t}||")
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
@@ -188,9 +189,14 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
   done < /tmp/m_script/ports.udp.$$
 fi
 
-if [ "X${ports}" != "X" ]
+if [ "X${portstcp}" != "X" ]
 then
- echo "<***> There is no services listening on: ${ports}"
+ echo "<***> There is no services listening on TCP: ${portstcp}"
+fi
+
+if [ "X${portsudp}" != "X" ]
+then
+ echo "<***> There is no services listening on UDP: ${portsudp}"
 fi
 
 echo
