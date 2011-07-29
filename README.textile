@@ -1,0 +1,31 @@
+h1. Introduction
+
+M-Script is, basically, a collection of shell scripts for various server management tasks. Each of the scripts can be run separately when/if needed, but bound together they form a well-integrated solution, still flexible because it is easy to combine/pipe/edit shell scripts to make them do exactly what you need.
+
+It is based upon the main "Unix Way principles":http://en.wikipedia.org/wiki/Unix_philosophy :
+
+* Write programs that do one thing and do it well.
+* Write programs to work together.
+* Write programs to handle text streams, because that is a universal interface.
+* And, of course, the KISS(Keep It Simple, Stupid) principle
+
+h2. Functionality
+
+M-Script is designed to help in:
+
+* Monitoring
+* Backups
+* Cloud management: auto-scalability based on monitoring
+
+h2. Features
+
+* Pluggable monitoring modules
+* 3-level alerting system
+* Easy watchdogs creation
+* Database for monitoring data (SQLite)
+* Graphs for monitoring data
+* Databases and files backups, local and/or remote
+* Remote backups: to/from, FTP, SCP, Rsync, S3, EC2 EBS snapshots
+* Cloud servers management: start, stop, save, list, load balancing (Nginx), EC2 Route53 DNS support
+* Dashboard web interface
+
