@@ -32,13 +32,25 @@ rm -f /tmp/m_script/netstat.*.tmp 2>/dev/null
 # TCP and UDP PORTS
 inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
 inuseudp=`cat /proc/net/sockstat | grep ^UDP: | cut -d' ' -f3`
-testthrtcp=`expr $inusetcp \* 3`
-testthrudp=`expr $inuseudp \* 3`
-if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" != "X$testthrtcp" ] ; then
-  $NETSTATCMD -tlpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$7}' > /tmp/m_script/netstat.tcp.tmp
+tcphead=`cat /proc/net/tcp | head -n $inusetcp | wc -l`
+udphead=`cat /proc/net/udp | head -n $inuseudp | wc -l`
+
+if [[ $tcphead -eq $inusetcp ]] ; then
+  if [[ $inusetcp -ne 0 ]] ; then
+    echo "fixports: TCP ports monitor is disabled" >> ${rpath}/monitoring.log
+  fi
+else
+  # No point in parsing of more than 100 lines of LISTENING ports, increase it
+  # if you want
+  $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/netstat.tcp.tmp
 fi
-if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" != "X$testthrudp" ] ; then
-  $NETSTATCMD -ulpn 2>/dev/null | grep -v ^Proto | grep -v ^Active | awk '{print $4" "$6}' > /tmp/m_script/netstat.udp.tmp
+
+if [[ $udphead -eq $inuseudp ]] ; then
+  if [[ $inuseudp -ne 0 ]] ; then
+    echo "fixports: UDP ports monitor is disabled" >> ${rpath}/monitoring.log
+  fi
+else
+  $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/netstat.udp.tmp
 fi
 
 rm -f ${rpath}/ports.*.list

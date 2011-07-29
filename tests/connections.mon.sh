@@ -60,14 +60,12 @@ echo
 
 inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
 inuseudp=`cat /proc/net/sockstat | grep ^UDP: | cut -d' ' -f3`
-testthrtcp=`expr $inusetcp \* 3`
-testthrudp=`expr $inuseudp \* 3`
-tcphead=`cat /proc/net/tcp | head -n $testthrtcp | wc -l`
-udphead=`cat /proc/net/udp | head -n $testthrudp | wc -l`
+tcphead=`cat /proc/net/tcp | head -n $inusetcp | wc -l`
+udphead=`cat /proc/net/udp | head -n $inuseudp | wc -l`
 
-[ "X$DEBUG" == "Xy" ] && echo "== 3xUSE: $testthrtcp | HEAD: $tcphead"
-if [[ $tcphead -eq $testthrtcp ]] ; then
-  if [[ $testthrtcp -ne 0 ]] ; then
+[ "X$DEBUG" == "Xy" ] && echo "== USE: $inusetcp | HEAD: $tcphead"
+if [[ $tcphead -eq $inusetcp ]] ; then
+  if [[ $inusetcp -ne 0 ]] ; then
     echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
     echo "connections."
     echo "This is not an alert, these connections don't harm, but they make ports"
@@ -76,11 +74,13 @@ if [[ $tcphead -eq $testthrtcp ]] ; then
   fi
   portstcp=""
 else
-  $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
+  # No point in parsing of more than 100 lines of LISTENING ports, increase it
+  # if you want
+  $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
-[ "X$DEBUG" == "Xy" ] && echo "== 3xUSE: $testthrudp | HEAD: $udphead"
-if [[ $udphead -eq $testthrudp ]] ; then
-  if [[ $testthrudp -ne 0 ]] ; then
+[ "X$DEBUG" == "Xy" ] && echo "== 3xUSE: $inuseudp | HEAD: $udphead"
+if [[ $udphead -eq $inuseudp ]] ; then
+  if [[ $inuseudp -ne 0 ]] ; then
     echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
     echo "connections."
     echo "This is not an alert, these connections don't harm, but they make ports"
@@ -89,7 +89,7 @@ if [[ $udphead -eq $testthrudp ]] ; then
   fi
   portsudp=""
 else
-  $NETSTATCMD -ulpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
+  $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
 fi
 
 if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
