@@ -54,16 +54,19 @@ echo
 ### By default it is enabled. But on loaded servers with a lot of waiting and/or
 ### keepalived connections getting their number from kernel and parsing the
 ### result may be a very expensive operation.
-### The connection counter for certail protocol is disabled automatically with
-### non-alert message if it appears that the overall number of connections for 
+### The connection counter for certain protocol is disabled automatically with
+### non-alert message if it turns out that the overall number of connections for 
 ### this protocol is 3 times higher than the number of established connections.
 
 inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
 inuseudp=`cat /proc/net/sockstat | grep ^UDP: | cut -d' ' -f3`
 testthrtcp=`expr $inusetcp \* 3`
 testthrudp=`expr $inuseudp \* 3`
+tcphead=`cat /proc/net/tcp | head -n $testthrtcp | wc -l`
+udphead=`cat /proc/net/udp | head -n $testthrudp | wc -l`
 
-if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; then
+[ "X$DEBUG" == "Xy" ] && echo "== 3xUSE: $testthrtcp | HEAD: $tcphead"
+if [[ $tcphead -eq $testthrtcp ]] ; then
   if [[ $testthrtcp -ne 0 ]] ; then
     echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
     echo "connections."
@@ -75,7 +78,8 @@ if [ "X`cat /proc/net/tcp | head -n $testthrtcp | wc -l`" == "X$testthrtcp" ] ; 
 else
   $NETSTATCMD -tlpn | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
-if [ "X`cat /proc/net/udp | head -n $testthrudp | wc -l`" == "X$testthrudp" ] ; then
+[ "X$DEBUG" == "Xy" ] && echo "== 3xUSE: $testthrudp | HEAD: $udphead"
+if [[ $udphead -eq $testthrudp ]] ; then
   if [[ $testthrudp -ne 0 ]] ; then
     echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
     echo "connections."
@@ -303,4 +307,5 @@ else
   fi
 fi
 
+unset failedip pingedip connip sockets socketfound sname i t portstcp portsudp portif portnum port1 port2 exclportnum exclportprog exclport inusetcp inuseudp testthrtcp testthrudp tcphead udphead
 

@@ -296,7 +296,7 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 source ${rpath}/conf/mon.conf
 timeindexnow=$(date +"%s")
 echo $timeindexnow > ${tmpdir}/timeindex
-
+[ "X$2" == "Xdebug" ] && DEBUG=y
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)
     runscript SQL
