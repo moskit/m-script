@@ -99,7 +99,7 @@ do
   fi
   slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
   if [ -n "$slaves" ] ; then
-    printf "Disk $disk is a logical volume built upon $slaves" | sed 's|\n| and |g' >> /tmp/m_script/disk.tmp.discovered
+    printf "Disk $disk is a logical volume built upon `echo $slaves`" >> /tmp/m_script/disk.tmp.discovered
     printf "\n" >> /tmp/m_script/disk.tmp.discovered
     for sldisk in $slaves ; do echo "/dev/$sldisk" >> /tmp/m_script/disk.tmp.ext ; done
   fi
@@ -145,8 +145,8 @@ if [ "X${DISKSTAT}" != "X" ]; then
         drspeed=0
       fi
       replinerd=`printf "/dev/${disk} read:"`
-      m=`expr length $disk`
-      l=`expr 20 - $m`
+      m=`expr length "$disk"`
+      l=`expr 22 - $m`
       for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
       replinerd=`printf "${replinerd}${drspeed}"`
       echo "${drspeed}" >> /tmp/m_script/diskiord
@@ -158,8 +158,8 @@ if [ "X${DISKSTAT}" != "X" ]; then
         dwspeed=0
       fi
       replinerw=`printf "/dev/${disk} write:"`
-      m=`expr length $disk`
-      l=`expr 19 - $m`
+      m=`expr length "$disk"`
+      l=`expr 21 - $m`
       for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
       replinerw=`printf "${replinerw}${dwspeed}"`
       echo "${dwspeed}" >> /tmp/m_script/diskiowr
@@ -177,7 +177,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       diskreads=`solve "($dr / 2048)"`
       diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from $diskname where timeindex='$lasttimeindex'"`
       drspeed=`solve "($diskreads - $diskreadslast) / $diffsec"`
-      m=`expr length $replinerd`
+      m=`expr length "$replinerd"`
       l=`expr 60 - $m`
       for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
       replinerd=`printf "${replinerd}${drspeed}\n"`
@@ -185,10 +185,10 @@ if [ "X${DISKSTAT}" != "X" ]; then
       diskwrites=`solve "($dw / 2048)"`
       diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from $diskname where timeindex='$lasttimeindex'"`
       dwspeed=`solve "($diskwrites - $diskwriteslast) / $diffsec"`
-      m=`expr length $replinerw`
+      m=`expr length "$replinerw"`
       l=`expr 60 - $m`
-      for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
-      replinerw=`printf "$replinerw                    $dwspeed\n"`
+      for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerwvim tests "`; done
+      replinerw=`printf "${replinerw}${dwspeed}\n"`
       
       sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}', diskreads='${diskreads}', drspeed='${drspeed}', diskwrites='${diskwrites}', dwspeed='${dwspeed}' where timeindex='$timeindexnow'"
       
