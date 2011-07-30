@@ -27,8 +27,15 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
+lasttimeindex=`cat /tmp/m_script/lasttimeindex`
+diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 source ${rpath}/../conf/mon.conf
+
+if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+  alltables=`sqlite3 ${rpath}/../sysdata ".tables"`
+fi
+
 echo ""
 echo "Disks usage:"
 echo "------------"
@@ -36,7 +43,7 @@ df -m | grep -v shm | grep -v tmpfs | grep -v udev | grep -v "^Filesystem" > /tm
 printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 while read LINE
 do
-  if [ -n ${LONGLINE} ]
+  if [ -n "${LONGLINE}" ]
   then
     LINE="${LONGLINE} ${LINE}"
     LONGLINE=""
@@ -75,6 +82,25 @@ do
     for ((n=1; n <= $l; n++)); do printf " "; done
   fi
   printf "$used%%\n"
+  if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+    diskname=${disk##*/}
+    tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "Xdiskname" ] && echo "yes" ; done`
+    [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table $diskname(timeindex integer primary key, diskusage real, diskreads real, diskwrites real, diskiord real, diskiowr real)"
+    [[ `sqlite3 ${rpath}/../sysdata "select count(*) from $diskname where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into $diskname (timeindex) values ('$timeindexnow')"
+    sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}' where timeindex='$timeindexnow'"
+  fi
+## Discovering what this disk really is
+  echo $disk >> /tmp/m_script/disk.tmp.ext
+  linkedto=`readlink $disk 2>/dev/null`
+  if [ -n "$linkedto" ] ; then
+    echo "Disk $disk is a symlink to $linkedto" >> /tmp/m_script/disk.tmp.discovered
+    echo "/dev/$linkedto" >> /tmp/m_script/disk.tmp.ext
+  fi
+  slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
+  if [ -n "$slaves" ] ; then
+    echo "Disk $disk is a logical volume built upon $slaves" >> /tmp/m_script/disk.tmp.discovered
+    for sldisk in $slaves ; do echo "/dev/$sldisk" >> /tmp/m_script/disk.tmp.ext
+  fi
 done < /tmp/m_script/disk.tmp
 echo ""
 echo "Average disk I/O speed:"
@@ -83,9 +109,8 @@ VMSTAT=`which vmstat 2>/dev/null`
 if [ "X${VMSTAT}" != "X" ]; then
   DISKSTAT="$VMSTAT -d"
 fi
-DMSETUP=`which dmsetup 2>/dev/null`
 if [ "X${DISKSTAT}" != "X" ]; then
-  $VMSTAT -d >/dev/null 2>&1
+  $DISKSTAT >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "Couldn't get disk stats"
     exit 0
@@ -101,60 +126,59 @@ if [ "X${DISKSTAT}" != "X" ]; then
         diskexists=1
       fi
     done
-    if [ `$DISKSTAT | grep -c "^${disk}"` -gt 0 ]; then
-      if [ $diskexists -eq 0 ]; then
-        disks="$disk ${disks}"
-        dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
-        drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
-        if [[ $drtime -gt 100 ]]; then
-          drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
-        else
-          drspeed=0
-        fi
-        printf "/dev/${disk} read:"
-        m=`expr length $disk`
-        l=`expr 29 - $m`
-        for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "${drspeed} Mbytes/sec\n"
-        echo "${drspeed}" >> /tmp/m_script/diskiord
-        dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
-        dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
-        if [[ $dwtime -gt 100 ]]; then
+
+    if [ $diskexists -eq 0 ]; then
+      disks="$disk ${disks}"
+      dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
+      drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
+      
+      if [[ $drtime -gt 100 ]]; then
+        drspeedall=`solve "($dr / 2048) / ($drtime / 1000)"`
+      else
+        drspeedall=0
+      fi
+      printf "/dev/${disk} read:"
+      m=`expr length $disk`
+      l=`expr 29 - $m`
+      for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "${drspeed} Mbytes/sec\n"
+      echo "${drspeed}" >> /tmp/m_script/diskiord
+      dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
+      dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
+      if [[ $dwtime -gt 100 ]]; then
         dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
-        else
-          dwspeed=0
-        fi
-        printf "/dev/${disk} write:"
-        m=`expr length $disk`
-        l=`expr 28 - $m`
-        for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "${dwspeed} Mbytes/sec\n"
-        echo "${dwspeed}" >> /tmp/m_script/diskiowr
+      else
+        dwspeed=0
       fi
-    else
-      if [ "X$DMSETUP" != "X" ]; then
-        dmdisk=`$DMSETUP ls | grep "^${disk}"`
-        if [ "X$dmdisk" != "X" ]; then
-          dmnode="${dmdisk#*(}"; dmnode="${dmnode%)*}"; dmnode=`echo "$dmnode" | sed 's/, /:/'`
-          for blockdev in /sys/block/*/dev; do
-            bdname="${blockdev%/*}"
-            bdname="${bdname##*/}"
-            if [ "X`cat $blockdev`" == "X$dmnode" ]; then
-              echo "$bdname" >> /tmp/m_script/disk.tmp
-              itsdm=1
-              break
-            fi
-          done
-        fi
-      fi
-      if [ "X$itsdm" != "X1" ]; then
-        disk1=${disk%[0-9]*}
-        [ "X$disk" != "X$disk1" ] && echo "$disk1" >> /tmp/m_script/disk.tmp || echo "Couldn't get statistics for disk $disk1"
-      fi
-      unset itsdm
+      printf "/dev/${disk} write:"
+      m=`expr length $disk`
+      l=`expr 28 - $m`
+      for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "${dwspeed} Mbytes/sec\n"
+      echo "${dwspeed}" >> /tmp/m_script/diskiowr
     fi
-  done < /tmp/m_script/disk.tmp
-  rm -f /tmp/m_script/disk.tmp
+
+    if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+    
+      diskname=${disk##*/}
+      
+      tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "Xdiskname" ] && echo "yes" ; done`
+      [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table $diskname(timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+      [[ `sqlite3 ${rpath}/../sysdata "select count(*) from $diskname where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into $diskname (timeindex) values ('$timeindexnow')"
+      
+      diskreads=`solve "($dr / 2048)"`
+      diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from $disk where timeindex='$lasttimeindex'"`
+      drspeed=`solve "($diskreadslast - $diskreads) / $diffsec"`
+      diskwrites=`solve "($dw / 2048)"`
+      diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from $disk where timeindex='$lasttimeindex'"`
+      dwspeed=`solve "($diskwriteslast - $diskwrites) / $diffsec"`
+      
+      sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}', diskreads='${diskreads}', drspeed='${drspeed}', diskwrites='${diskwrites}', dwspeed='${dwspeed}' where timeindex='$timeindexnow'"
+      
+    fi
+    
+  done < /tmp/m_script/disk.tmp.ext
+
 fi
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
@@ -165,16 +189,16 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
       diskusage=`solve "$diskusage + $LINE"`
     done < /tmp/m_script/diskusage
     diskusage=`solve "$diskusage / $disksnum"`
-    diskiord=0
   fi
+  diskiord=0
   if [ -f /tmp/m_script/diskiord ]; then
     disksnum=`cat /tmp/m_script/diskiord | wc -l`
     while read LINE; do
       diskiord=`solve "$diskiord + $LINE"`
     done < /tmp/m_script/diskiord
     diskiord=`solve "$diskiord / $disksnum"`
-    diskiowr=0
   fi
+  diskiowr=0
   if [ -f /tmp/m_script/diskiowr ]; then
     disksnum=`cat /tmp/m_script/diskiowr | wc -l`
     while read LINE; do
@@ -182,6 +206,8 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
     done < /tmp/m_script/diskiowr
     diskiowr=`solve "$diskiowr / $disksnum"`
   fi
+
   sqlite3 ${rpath}/../sysdata "update sysdata set diskusage='${diskusage}', diskiord='${diskiord}', diskiowr='${diskiowr}' where timeindex='$timeindexnow'"
 fi
+rm -f /tmp/m_script/disk.tmp.* >/dev/null 2>&1
 rm -f /tmp/m_script/diskiowr /tmp/m_script/diskiord /tmp/m_script/diskusage >/dev/null 2>&1
