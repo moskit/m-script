@@ -175,12 +175,12 @@ if [ "X${DISKSTAT}" != "X" ]; then
       
       diskreads=`solve "($dr / 2048)"`
       diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from $diskname where timeindex='$lasttimeindex'"`
-      drspeed=`solve "($diskreadslast - $diskreads) / $diffsec"`
+      drspeed=`solve "($diskreads - $diskreadslast) / $diffsec"`
       replinerd=`printf "$replinerd                    $drspeed\n"`
       
       diskwrites=`solve "($dw / 2048)"`
       diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from $diskname where timeindex='$lasttimeindex'"`
-      dwspeed=`solve "($diskwriteslast - $diskwrites) / $diffsec"`
+      dwspeed=`solve "($diskwrites - $diskwriteslast) / $diffsec"`
       replinerw=`printf "$replinerw                    $dwspeed\n"`
       
       sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}', diskreads='${diskreads}', drspeed='${drspeed}', diskwrites='${diskwrites}', dwspeed='${dwspeed}' where timeindex='$timeindexnow'"
