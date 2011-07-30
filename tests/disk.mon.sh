@@ -109,7 +109,7 @@ echo
 echo "Average disk I/O speed:"
 echo "-----------------------"
 echo
-echo "    Disk                    Overall                         Current"
+echo "    Disk                  Overall, Mbytes/sec             Current, Mbytes/sec"
 echo
 VMSTAT=`which vmstat 2>/dev/null`
 if [ "X${VMSTAT}" != "X" ]; then
@@ -145,9 +145,9 @@ if [ "X${DISKSTAT}" != "X" ]; then
       fi
       replinerd=`printf "/dev/${disk} read:"`
       m=`expr length $disk`
-      l=`expr 29 - $m`
+      l=`expr 20 - $m`
       for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
-      replinerd=`printf "${replinerd}${drspeed} Mbytes/sec"`
+      replinerd=`printf "${replinerd}${drspeed}"`
       echo "${drspeed}" >> /tmp/m_script/diskiord
       dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
       dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
@@ -158,9 +158,9 @@ if [ "X${DISKSTAT}" != "X" ]; then
       fi
       replinerw=`printf "/dev/${disk} write:"`
       m=`expr length $disk`
-      l=`expr 28 - $m`
+      l=`expr 20 - $m`
       for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
-      replinerw=`printf "${replinerw}${dwspeed} Mbytes/sec"`
+      replinerw=`printf "${replinerw}${dwspeed}"`
       echo "${dwspeed}" >> /tmp/m_script/diskiowr
     fi
 
@@ -174,13 +174,15 @@ if [ "X${DISKSTAT}" != "X" ]; then
       [[ `sqlite3 ${rpath}/../sysdata "select count(*) from $diskname where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into $diskname (timeindex) values ('$timeindexnow')"
       
       diskreads=`solve "($dr / 2048)"`
-      diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from $disk where timeindex='$lasttimeindex'"`
+      diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from $diskname where timeindex='$lasttimeindex'"`
       drspeed=`solve "($diskreadslast - $diskreads) / $diffsec"`
-      replinerd=`printf "$replinerd                    $drspeed Mbytes/sec\n"`
+      replinerd=`printf "$replinerd                    $drspeed\n"`
+      
       diskwrites=`solve "($dw / 2048)"`
-      diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from $disk where timeindex='$lasttimeindex'"`
+      diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from $diskname where timeindex='$lasttimeindex'"`
       dwspeed=`solve "($diskwriteslast - $diskwrites) / $diffsec"`
-      replinerw=`printf "$replinerw                    $dwspeed Mbytes/sec\n"`
+      replinerw=`printf "$replinerw                    $dwspeed\n"`
+      
       sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}', diskreads='${diskreads}', drspeed='${drspeed}', diskwrites='${diskwrites}', dwspeed='${dwspeed}' where timeindex='$timeindexnow'"
       
     fi
