@@ -102,7 +102,9 @@ do
     for sldisk in $slaves ; do echo "/dev/$sldisk" >> /tmp/m_script/disk.tmp.ext ; done
   fi
 done < /tmp/m_script/disk.tmp
-echo ""
+echo
+cat /tmp/m_script/disk.tmp.discovered 2>/dev/null
+echo
 echo "Average disk I/O speed:"
 echo "-----------------------"
 VMSTAT=`which vmstat 2>/dev/null`
