@@ -38,8 +38,8 @@ if [ `uname` == "Linux" ]; then
   ROUTE="$NETSTATCMD -rn"
 fi
 
-[ -f ${rpath}/../conf/sockets.exclude ] || touch ${rpath}/../conf/sockets.exclude
-[ -f ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
+[ -e ${rpath}/../conf/sockets.exclude ] || touch ${rpath}/../conf/sockets.exclude
+[ -e ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
 
 source ${rpath}/../conf/mon.conf
 
@@ -50,22 +50,36 @@ echo
 echo "Name                Listening on                            Connections"
 echo
 
-### Two modes are available: with connections counter enabled or disabled.
+### Two modes are available: with per socket monitor enabled or disabled.
 ### By default it is enabled. But on loaded servers with a lot of waiting and/or
-### keepalived connections getting their number from kernel and parsing the
+### keepalived connections getting listening sockets from kernel and parsing the
 ### result may be a very expensive operation.
-### The connection counter for certain protocol is disabled automatically with
-### non-alert message if it turns out that the overall number of connections for 
-### this protocol is 3 times higher than the number of established connections.
+### Per socket monitor for certain protocol is disabled automatically with
+### non-alert message if it turns out that the number of listening sockets for 
+### this protocol registered with the kernel is greater than the number of
+### current connections.
 
-inusetcp=`cat /proc/net/sockstat | grep ^TCP: | cut -d' ' -f3`
-inuseudp=`cat /proc/net/sockstat | grep ^UDP: | cut -d' ' -f3`
+inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
+inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
+inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
+inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
 tcphead=`cat /proc/net/tcp | head -n $inusetcp | wc -l`
+tcphead=`expr $tcphead + 2` # 1 for title, 1 to make it "greater than"
+tcp6head=`cat /proc/net/tcp6 | head -n $inusetcp6 | wc -l`
+tcp6head=`expr $tcp6head + 2`
 udphead=`cat /proc/net/udp | head -n $inuseudp | wc -l`
+udphead=`expr $udphead + 2`
+udp6head=`cat /proc/net/udp6 | head -n $inuseudp6 | wc -l`
+udp6head=`expr $udp6head + 2`
 
-[ "X$DEBUG" == "Xy" ] && echo "== USE: $inusetcp | HEAD: $tcphead"
-if [[ $tcphead -eq $inusetcp ]] ; then
-  if [[ $inusetcp -ne 0 ]] ; then
+### If other protocols are needed (see /etc/net/protocols), they can be added
+### easily, just follow the pattern
+
+# No point in tracking v4 and v6 separately (and netstat doesn't distinguish
+# them). If ANY of them overloaded, the monitor is disabled.
+
+if ([[ $tcphead -eq $inusetcp ]] || [[ $tcp6head -eq $inusetcp6 ]]); then
+  if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
     echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
     echo "connections."
     echo "This is not an alert, these connections don't harm, but they make ports"
@@ -74,13 +88,13 @@ if [[ $tcphead -eq $inusetcp ]] ; then
   fi
   portstcp=""
 else
-  # No point in parsing of more than 100 lines of LISTENING ports, increase it
-  # if you want
+  # No point in parsing of more than 100 lines of LISTENING ports, increase this
+  # if necessary
   $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
 fi
-[ "X$DEBUG" == "Xy" ] && echo "== 3xUSE: $inuseudp | HEAD: $udphead"
-if [[ $udphead -eq $inuseudp ]] ; then
-  if [[ $inuseudp -ne 0 ]] ; then
+
+if ([[ $udphead -eq $inuseudp ]] && [[ $udp6head -eq $inuseudp6 ]]); then
+  if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
     echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
     echo "connections."
     echo "This is not an alert, these connections don't harm, but they make ports"
