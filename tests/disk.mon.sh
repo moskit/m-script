@@ -99,7 +99,7 @@ do
   slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
   if [ -n "$slaves" ] ; then
     echo "Disk $disk is a logical volume built upon $slaves" >> /tmp/m_script/disk.tmp.discovered
-    for sldisk in $slaves ; do echo "/dev/$sldisk" >> /tmp/m_script/disk.tmp.ext
+    for sldisk in $slaves ; do echo "/dev/$sldisk" >> /tmp/m_script/disk.tmp.ext ; done
   fi
 done < /tmp/m_script/disk.tmp
 echo ""
