@@ -136,9 +136,9 @@ if [ "X${DISKSTAT}" != "X" ]; then
       drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
       
       if [[ $drtime -gt 100 ]]; then
-        drspeedall=`solve "($dr / 2048) / ($drtime / 1000)"`
+        drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
       else
-        drspeedall=0
+        drspeed=0
       fi
       printf "/dev/${disk} read:"
       m=`expr length $disk`
