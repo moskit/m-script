@@ -60,17 +60,17 @@ echo
 ### current connections.
 
 inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
+inusetcp=`expr $inusetcp + 2`
 inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
+inusetcp6=`expr $inusetcp6 + 2`
 inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
+inuseudp=`expr $inuseudp + 2`
 inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
+inuseudp6=`expr $inuseudp6 + 2`
 tcphead=`cat /proc/net/tcp | head -n $inusetcp | wc -l`
-tcphead=`expr $tcphead + 2` # 1 for title, 1 to make it "greater than"
 tcp6head=`cat /proc/net/tcp6 | head -n $inusetcp6 | wc -l`
-tcp6head=`expr $tcp6head + 2`
 udphead=`cat /proc/net/udp | head -n $inuseudp | wc -l`
-udphead=`expr $udphead + 2`
 udp6head=`cat /proc/net/udp6 | head -n $inuseudp6 | wc -l`
-udp6head=`expr $udp6head + 2`
 
 ### If other protocols are needed (see /etc/net/protocols), they can be added
 ### easily, just follow the pattern
