@@ -85,7 +85,8 @@ do
   if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
     diskname=${disk##*/}
     tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "Xdiskname" ] && echo "yes" ; done`
-    [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table $diskname(timeindex integer primary key, diskusage real, diskreads real, diskwrites real, diskiord real, diskiowr real)"
+    [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table $diskname(timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+    unset tablefound
     [[ `sqlite3 ${rpath}/../sysdata "select count(*) from $diskname where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into $diskname (timeindex) values ('$timeindexnow')"
     sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}' where timeindex='$timeindexnow'"
   fi
@@ -166,6 +167,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       
       tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "Xdiskname" ] && echo "yes" ; done`
       [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table $diskname(timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+      unset tablefound
       [[ `sqlite3 ${rpath}/../sysdata "select count(*) from $diskname where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into $diskname (timeindex) values ('$timeindexnow')"
       
       diskreads=`solve "($dr / 2048)"`
