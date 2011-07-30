@@ -187,7 +187,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       dwspeed=`solve "($diskwrites - $diskwriteslast) / $diffsec"`
       m=`expr length "$replinerw"`
       l=`expr 60 - $m`
-      for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerwvim tests "`; done
+      for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
       replinerw=`printf "${replinerw}${dwspeed}\n"`
       
       sqlite3 ${rpath}/../sysdata "update $diskname set diskusage='${used}', diskreads='${diskreads}', drspeed='${drspeed}', diskwrites='${diskwrites}', dwspeed='${dwspeed}' where timeindex='$timeindexnow'"
