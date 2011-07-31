@@ -114,7 +114,7 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
       if [ $(echo "$currlist" | grep -c "^$service") -eq 0 ] ; then
         echo "<***> Service $pcomm with pidfile $service stopped!"
       else
-        echo "<**> Service $pcomm restarted"
+        echo "<**> Service $pcomm with pidfile $service restarted"
       fi
     fi
   done
