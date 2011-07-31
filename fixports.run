@@ -49,17 +49,20 @@ rm -f /tmp/m_script/netstat.*.tmp 2>/dev/null
 # TCP and UDP PORTS
 inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
 inusetcp=`expr $inusetcp + 2`
+tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
 inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
-inusetcp6=`expr $inusetcp6 + 2`
+if [ -n "$inusetcp6" ] ; then
+  inusetcp6=`expr $inusetcp6 + 2`
+  tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
+fi
 inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
 inuseudp=`expr $inuseudp + 2`
-inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
-inuseudp6=`expr $inuseudp6 + 2`
-tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
-tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
 udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
+inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
+if [ -n "$inuseudp6" ] ; then
+inuseudp6=`expr $inuseudp6 + 2`
 udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
-
+fi
 if ([[ $tcphead -eq $inusetcp ]] || [[ $tcp6head -eq $inusetcp6 ]]); then
   if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
     echo "fixports: TCP ports monitor is disabled" >> ${rpath}/monitoring.log

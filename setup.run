@@ -326,10 +326,10 @@ printf "Adjusting some thresholds for your system...    "
 cpun=`find /sys/class/cpuid -name cpu[0-9] 2>/dev/null | wc -l`
 [[ $cpun -eq 0 ]] && cpun=`cat /proc/cpuinfo | grep '^processor[[:space:]]' | wc -l`
 if [[ $cpun -ne 0 ]] ; then
-  l1=`echo "$cpun / 2" | bc`
+  l1=`echo "scale=1;$cpun / 2" | bc`
   l2=$cpun
-  l3=`echo "$cpun * 2" | bc`
-  lcrit=`echo "$cpun * 10" | bc`
+  l3=`echo "scale=1;$cpun * 2" | bc`
+  lcrit=`echo "scale=1;$cpun * 10" | bc`
   sed -i -e "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|g" ${rpath}/conf/mon.conf
   sed -i -e "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|g" ${rpath}/conf/mon.conf
   sed -i -e "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|g" ${rpath}/conf/mon.conf

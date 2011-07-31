@@ -62,10 +62,12 @@ echo
 if [ -e ${rpath}/../ports.tcp.list ] ; then
   inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
   inusetcp=`expr $inusetcp + 2`
-  inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
-  inusetcp6=`expr $inusetcp6 + 2`
   tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
-  tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
+  inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
+  if [ -n "$inusetcp6" ] ; then
+    inusetcp6=`expr $inusetcp6 + 2`
+    tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
+  fi
   # No point in tracking v4 and v6 separately (and netstat doesn't distinguish
   # them). If ANY of them overloaded, the monitor is disabled.
   if ([[ $tcphead -eq $inusetcp ]] || [[ $tcp6head -eq $inusetcp6 ]]); then
@@ -86,10 +88,12 @@ fi
 if [ -e ${rpath}/../ports.udp.list ] ; then
   inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
   inuseudp=`expr $inuseudp + 2`
-  inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
-  inuseudp6=`expr $inuseudp6 + 2`
   udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
-  udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
+  inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
+  if [ -n "$inuseudp6" ] ; then
+    inuseudp6=`expr $inuseudp6 + 2`
+    udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
+  fi
   if ([[ $udphead -eq $inuseudp ]] && [[ $udp6head -eq $inuseudp6 ]]); then
     if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
       echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"

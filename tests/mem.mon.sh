@@ -90,7 +90,7 @@ warnind='(OK) '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-echo "${warnind} Average load is $x"
+echo "${warnind} 5 min load average is $x"
 
 totalmemused=`solve "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
 totalramused=`solve "$ractiveram / $rtotalram * 100"`
