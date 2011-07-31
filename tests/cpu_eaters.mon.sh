@@ -10,4 +10,4 @@ echo ""
 echo "CPU eaters:"
 echo "-----------"
 
-ps aux | awk '{print $3" "$11" "$12" "$13" "$14" "$15}' | grep -v ^0.0 | grep -v COMMAND | while read LINE; do a=${LINE%% *}; a=${a#*.}; if [[ $a -gt $CPU_EATERS_MIN ]]; then echo $LINE; fi | while read LINE; do echo "<**> $LINE"; done; done
+ps aux | awk '{print $3" "$11" "$12" "$13" "$14" "$15}' | grep -v ^0.0 | grep -v COMMAND | while read LINE; do a=${LINE%% *}; a=${a#*.}; if [[ $a -gt $CPU_EATERS_MIN ]]; then echo $LINE; fi | while read LINE; do echo "<**> Process \"$LINE\" is using ${a}% of CPU"; done; done
