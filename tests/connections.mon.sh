@@ -59,52 +59,53 @@ echo
 ### this protocol registered with the kernel is greater than the number of
 ### current connections.
 
-inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
-inusetcp=`expr $inusetcp + 2`
-inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
-inusetcp6=`expr $inusetcp6 + 2`
-inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
-inuseudp=`expr $inuseudp + 2`
-inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
-inuseudp6=`expr $inuseudp6 + 2`
-tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
-tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
-udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
-udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
+if [ -e ${rpath}/../ports.tcp.list ] ; then
+  inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
+  inusetcp=`expr $inusetcp + 2`
+  inusetcp6=`cat /proc/net/protocols | grep ^TCPv6[[:space:]] | awk '{print $3}'`
+  inusetcp6=`expr $inusetcp6 + 2`
+  tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
+  tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
+  # No point in tracking v4 and v6 separately (and netstat doesn't distinguish
+  # them). If ANY of them overloaded, the monitor is disabled.
+  if ([[ $tcphead -eq $inusetcp ]] || [[ $tcp6head -eq $inusetcp6 ]]); then
+    if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
+      echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
+      echo "connections."
+      echo "This is not an alert, these connections don't harm, but they make ports"
+      echo "monitoring too expensive."
+      echo
+    fi
+    portstcp=""
+  else
+    # No point in parsing of more than 100 lines of LISTENING ports, increase this
+    # if necessary
+    $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
+  fi
+fi
+if [ -e ${rpath}/../ports.udp.list ] ; then
+  inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
+  inuseudp=`expr $inuseudp + 2`
+  inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
+  inuseudp6=`expr $inuseudp6 + 2`
+  udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
+  udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
+  if ([[ $udphead -eq $inuseudp ]] && [[ $udp6head -eq $inuseudp6 ]]); then
+    if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
+      echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
+      echo "connections."
+      echo "This is not an alert, these connections don't harm, but they make ports"
+      echo "monitoring too expensive."
+      echo
+    fi
+    portsudp=""
+  else
+    $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
+  fi
+fi
 
 ### If other protocols are needed (see /etc/net/protocols), they can be added
 ### easily, just follow the pattern
-
-# No point in tracking v4 and v6 separately (and netstat doesn't distinguish
-# them). If ANY of them overloaded, the monitor is disabled.
-
-if ([[ $tcphead -eq $inusetcp ]] || [[ $tcp6head -eq $inusetcp6 ]]); then
-  if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
-    echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
-    echo "connections."
-    echo "This is not an alert, these connections don't harm, but they make ports"
-    echo "monitoring too expensive."
-    echo
-  fi
-  portstcp=""
-else
-  # No point in parsing of more than 100 lines of LISTENING ports, increase this
-  # if necessary
-  $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
-fi
-
-if ([[ $udphead -eq $inuseudp ]] && [[ $udp6head -eq $inuseudp6 ]]); then
-  if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
-    echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
-    echo "connections."
-    echo "This is not an alert, these connections don't harm, but they make ports"
-    echo "monitoring too expensive."
-    echo
-  fi
-  portsudp=""
-else
-  $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
-fi
 
 if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
   while read LINE
