@@ -123,8 +123,8 @@ if [ "X${DISKSTAT}" != "X" ]; then
     echo "Couldn't get disk stats"
     exit 0
   fi
-  df | grep '^\/dev\/' | awk '{ print $1 }' > /tmp/m_script/disk.tmp
-  cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp
+  df | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp.ext
+  cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp.ext
   disks=""
   while read LINE; do
     diskexists=0
@@ -145,7 +145,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       else
         drspeed=0
       fi
-      replinerd=`printf "/dev/${disk} read:"`
+      replinerd=`printf "$LINE read:"`
       m=`expr length "$disk"`
       l=`expr 22 - $m`
       for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
@@ -158,7 +158,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       else
         dwspeed=0
       fi
-      replinerw=`printf "/dev/${disk} write:"`
+      replinerw=`printf "$LINE write:"`
       m=`expr length "$disk"`
       l=`expr 21 - $m`
       for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
@@ -171,20 +171,22 @@ if [ "X${DISKSTAT}" != "X" ]; then
       diskname=${disk##*/}
       
       tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "X$diskname" ] && echo "yes" ; done`
-      [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+      [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)" 2>/dev/null
       unset tablefound
       [[ `sqlite3 ${rpath}/../sysdata "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into '$diskname' (timeindex) values ('$timeindexnow')"
-      
+      [ -n "$dr" ] || dr=0
       diskreads=`solve "($dr / 2048)"`
       diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
+      [ -n "$diskreadslast" ] || diskreadslast=0
       drspeed=`solve "($diskreads - $diskreadslast) / $diffsec"`
       m=`expr length "$replinerd"`
       l=`expr 60 - $m`
       for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
       replinerd=`printf "${replinerd}${drspeed}\n"`
-      
+      [ -n "$dw" ] || dw=0
       diskwrites=`solve "($dw / 2048)"`
       diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
+      [ -n "$diskwriteslast" ] || diskwriteslast=0
       dwspeed=`solve "($diskwrites - $diskwriteslast) / $diffsec"`
       m=`expr length "$replinerw"`
       l=`expr 60 - $m`
@@ -228,5 +230,5 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
 
   sqlite3 ${rpath}/../sysdata "update sysdata set diskusage='${diskusage}', diskiord='${diskiord}', diskiowr='${diskiowr}' where timeindex='$timeindexnow'"
 fi
-rm -f /tmp/m_script/disk.tmp.* >/dev/null 2>&1
+rm -f /tmp/m_script/disk.tmp* >/dev/null 2>&1
 rm -f /tmp/m_script/diskiowr /tmp/m_script/diskiord /tmp/m_script/diskusage >/dev/null 2>&1
