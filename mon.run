@@ -120,21 +120,24 @@ IFS1=$IFS; IFS='
     level=`echo $confline | cut -d'%' -f2`
     action=`echo $confline | cut -d'%' -f3`
     while read line ; do
-      [[ $line =~ $pattern ]] && echo "Action initiated: $action" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log
+      [[ $line =~ $pattern ]] && echo && echo "Action initiated: $action" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log && echo
     done<"${rpath}/alert$level"
   done
 IFS=$IFS1
 }
 
 function runactionstest() {
+IFS1=$IFS; IFS='
+'
   for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
     pattern=`echo $confline | cut -d'%' -f1`
     level=`echo $confline | cut -d'%' -f2`
     action=`echo $confline | cut -d'%' -f3`
     while read line ; do
-      [[ $line =~ $pattern ]] && echo "The alert message: \'$line\' would trigger the action: \'$action\'"
+      [[ $line =~ $pattern ]] && echo && echo "The alert message: \'$line\' would trigger the action: \'$action\'" && echo
     done<"${rpath}/alert$level"
   done
+IFS=$IFS1
 }
 
 function runsysanalyze() {

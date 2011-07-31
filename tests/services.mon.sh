@@ -97,9 +97,7 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
       else
         pcomm=`cat /proc/$pid/cmdline`
       fi
-      if [ $(echo "$prevlist" | grep -c "^$service") -ne 0 ] ; then
-        echo "<*> Service $pcomm with pidfile $service restarted"
-      else
+      if [ $(echo "$prevlist" | grep -c "^$service") -eq 0 ] ; then
         echo "<**> Service $pcomm with pidfile $service is a new service"
       fi
     fi
@@ -113,7 +111,11 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
       else
         pcomm=`cat /proc/$pid/cmdline`
       fi
-      echo "<***> Service $pcomm with pidfile $service stopped!"
+      if [ $(echo "$currlist" | grep -c "^$service") -eq 0 ] ; then
+        echo "<***> Service $pcomm with pidfile $service stopped!"
+      else
+        echo "<**> Service $pcomm restarted"
+      fi
     fi
   done
 fi
