@@ -67,10 +67,10 @@ inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
 inuseudp=`expr $inuseudp + 2`
 inuseudp6=`cat /proc/net/protocols | grep ^UDPv6[[:space:]] | awk '{print $3}'`
 inuseudp6=`expr $inuseudp6 + 2`
-tcphead=`cat /proc/net/tcp | head -n $inusetcp | wc -l`
-tcp6head=`cat /proc/net/tcp6 | head -n $inusetcp6 | wc -l`
-udphead=`cat /proc/net/udp | head -n $inuseudp | wc -l`
-udp6head=`cat /proc/net/udp6 | head -n $inuseudp6 | wc -l`
+tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
+tcp6head=`cat /proc/net/tcp6 | grep ' 0A ' | head -n $inusetcp6 | wc -l`
+udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
+udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
 
 ### If other protocols are needed (see /etc/net/protocols), they can be added
 ### easily, just follow the pattern
