@@ -125,46 +125,38 @@ if [ "X${DISKSTAT}" != "X" ]; then
   fi
   df | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp.ext
   cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp.ext
-  disks=""
-  while read LINE; do
-    diskexists=0
-    disk=${LINE##*/}
-    for d in ${disks}; do
-      if [ "X${d}" == "X${disk}" ]; then
-        diskexists=1
-      fi
-    done
 
-    if [ $diskexists -eq 0 ]; then
-      disks="$disk ${disks}"
-      dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
-      drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
-      
-      if [[ $drtime -gt 100 ]]; then
-        drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
-      else
-        drspeed=0
-      fi
-      replinerd=`printf "$LINE read:"`
-      m=`expr length "$disk"`
-      l=`expr 22 - $m`
-      for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
-      replinerd=`printf "${replinerd}${drspeed}"`
-      echo "${drspeed}" >> /tmp/m_script/diskiord
-      dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
-      dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
-      if [[ $dwtime -gt 100 ]]; then
-        dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
-      else
-        dwspeed=0
-      fi
-      replinerw=`printf "$LINE write:"`
-      m=`expr length "$disk"`
-      l=`expr 21 - $m`
-      for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
-      replinerw=`printf "${replinerw}${dwspeed}"`
-      echo "${dwspeed}" >> /tmp/m_script/diskiowr
+  for LINE in `cat /tmp/m_script/disk.tmp.ext | sort | uniq`; do
+
+    disk=${LINE##*/}
+
+    dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
+    drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
+    
+    if [[ $drtime -gt 100 ]]; then
+      drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
+    else
+      drspeed=0
     fi
+    replinerd=`printf "$LINE read:"`
+    m=`expr length "$disk"`
+    l=`expr 22 - $m`
+    for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
+    replinerd=`printf "${replinerd}${drspeed}"`
+    echo "${drspeed}" >> /tmp/m_script/diskiord
+    dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
+    dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
+    if [[ $dwtime -gt 100 ]]; then
+      dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
+    else
+      dwspeed=0
+    fi
+    replinerw=`printf "$LINE write:"`
+    m=`expr length "$disk"`
+    l=`expr 21 - $m`
+    for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
+    replinerw=`printf "${replinerw}${dwspeed}"`
+    echo "${dwspeed}" >> /tmp/m_script/diskiowr
 
     if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
     
@@ -198,7 +190,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
     fi
     echo "$replinerd"
     echo "$replinerw"
-  done < /tmp/m_script/disk.tmp.ext
+  done
 
 fi
 
