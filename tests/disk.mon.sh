@@ -139,7 +139,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       drspeed=0
     fi
     replinerd=`printf "$LINE read:"`
-    m=`expr length "$disk"`
+    m=`expr length "$LINE"`
     l=`expr 22 - $m`
     for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
     replinerd=`printf "${replinerd}${drspeed}"`
@@ -152,7 +152,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       dwspeed=0
     fi
     replinerw=`printf "$LINE write:"`
-    m=`expr length "$disk"`
+    m=`expr length "$LINE"`
     l=`expr 21 - $m`
     for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
     replinerw=`printf "${replinerw}${dwspeed}"`

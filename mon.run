@@ -113,14 +113,17 @@ function runscript() {
 }
 
 function runactions() {
+IFS1=$IFS; IFS='
+'
   for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
     pattern=`echo $confline | cut -d'%' -f1`
     level=`echo $confline | cut -d'%' -f2`
     action=`echo $confline | cut -d'%' -f3`
     while read line ; do
-      [[ $line =~ $pattern ]] && eval $action
+      [[ $line =~ $pattern ]] && echo "Action initiated: $action" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log
     done<"${rpath}/alert$level"
   done
+IFS=$IFS1
 }
 
 function runactionstest() {
