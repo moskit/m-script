@@ -39,7 +39,7 @@ fi
 echo ""
 echo "Disks usage:"
 echo "------------"
-df -m | grep -v shm | grep -v tmpfs | grep -v udev | grep -v "^Filesystem" > /tmp/m_script/disk.tmp
+df -m | grep -v ^shm | grep -v ^tmpfs | grep -v ^udev | grep -v ^none | grep -v "^Filesystem" > /tmp/m_script/disk.tmp
 printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 while read LINE
 do
@@ -105,6 +105,11 @@ do
     for sldisk in $slaves ; do echo "/dev/$sldisk" >> /tmp/m_script/disk.tmp.ext ; done
   fi
 done < /tmp/m_script/disk.tmp
+swaps=`cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }'`
+echo $swaps >> /tmp/m_script/disk.tmp.ext
+for sw in `echo $swaps` ; do
+  echo "$sw is a swap partition" >> /tmp/m_script/disk.tmp.discovered
+done
 echo
 cat /tmp/m_script/disk.tmp.discovered 2>/dev/null
 echo
@@ -123,8 +128,6 @@ if [ "X${DISKSTAT}" != "X" ]; then
     echo "Couldn't get disk stats"
     exit 0
   fi
-  df | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp.ext
-  cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }' >> /tmp/m_script/disk.tmp.ext
 
   for LINE in `cat /tmp/m_script/disk.tmp.ext | sort | uniq`; do
 
