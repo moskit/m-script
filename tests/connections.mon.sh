@@ -70,7 +70,7 @@ if [ -e ${rpath}/../ports.tcp.list ] ; then
   fi
   # No point in tracking v4 and v6 separately (and netstat doesn't distinguish
   # them). If ANY of them overloaded, the monitor is disabled.
-  if ([[ $tcphead -eq $inusetcp ]] || [[ $tcp6head -eq $inusetcp6 ]]); then
+  if ([[ $tcphead -eq $inusetcp ]] || ([ -n "$inusetcp6" ] && [[ $tcp6head -eq $inusetcp6 ]])); then
     if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
       echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
       echo "connections."
@@ -94,7 +94,7 @@ if [ -e ${rpath}/../ports.udp.list ] ; then
     inuseudp6=`expr $inuseudp6 + 2`
     udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
   fi
-  if ([[ $udphead -eq $inuseudp ]] && [[ $udp6head -eq $inuseudp6 ]]); then
+  if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $inuseudp6 ]])); then
     if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
       echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
       echo "connections."
