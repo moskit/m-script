@@ -142,4 +142,4 @@ do
   [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
 done < /tmp/m_script/netstat.sockets.tmp
 IFS=$IFS1
-
+rm -f ${rpath}/mon.run.lock

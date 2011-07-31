@@ -28,16 +28,28 @@ rpath=${0%/*}
 timeindexnow=`cat /tmp/m_script/timeindex`
 source ${rpath}/../conf/mon.conf
 
-$VMSTAT -n 1 6 | grep -v "^[a-z]" | grep -v "^\ [a-z]" | awk '{ print $13}' > /tmp/m_script/cpuusage
-tail -n 5 /tmp/m_script/cpuusage > /tmp/m_script/cpuusage.1
-mv /tmp/m_script/cpuusage.1 /tmp/m_script/cpuusage
-cputestnum=`cat /tmp/m_script/cpuusage | wc -l`
-cpuusage=0
+## Not in mon.conf, not sure it is needed there
+CPUUPERIOD=1
+CPUUSAMPLES=5
+
+$VMSTAT -n $CPUUPERIOD $CPUUSAMPLES | awk '{ print $13"|"$14"|"$16 }' | tail -5 > /tmp/m_script/cpuusage
+
+usavg=0
+syavg=0
+waavg=0
 while read LINE
 do
-  cpuusage=`solve "$cpuusage + $LINE"`
+  us=`echo $LINE | cut -d'|' -f1`
+  sy=`echo $LINE | cut -d'|' -f2`
+  wa=`echo $LINE | cut -d'|' -f3`
+  usavg=`solve "$usavg + $us"`
+  syavg=`solve "$syavg + $sy"`
+  waavg=`solve "$waavg + $wa"`
 done < /tmp/m_script/cpuusage
-cpuusage=`solve "$cpuusage / $cputestnum"`
+usavg=`solve "$usavg / $CPUUSAMPLES"`
+syavg=`solve "$syavg / $CPUUSAMPLES"`
+waavg=`solve "$waavg / $CPUUSAMPLES"`
+cpuusage=`solve "$usavg + $syavg + $waavg"`
 y1="$(echo "$cpuusage >= $CPU_USAGE_1" | bc)"
 y2="$(echo "$cpuusage >= $CPU_USAGE_2" | bc)"
 y3="$(echo "$cpuusage >= $CPU_USAGE_3" | bc)"
@@ -46,7 +58,10 @@ warnind='(OK) '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-echo "${warnind} Average CPU usage is ${cpuusage}"
+echo "${warnind} `expr $CPUUPERIOD \* $CPUUSAMPLES` sec average CPU usage is ${cpuusage}: system ${syavg}, user ${usavg}, wait ${waavg}"
+
+### Throttle
+# Old interface
 if [ -d "/proc/acpi/processor" ]
 then
   throttle=`find /proc/acpi/processor -name "throttling"`
@@ -77,34 +92,12 @@ then
     fi
   fi
 fi
-if [ -d /proc/acpi/thermal_zone ]
-then
-  if [ `ls /proc/acpi/thermal_zone | wc -l` -ne 0 ]
-  then
-    temperature=`find /proc/acpi/thermal_zone -name temperature`
-    if [ "X$temperature" != "X" ]
-    then
-      thrmnum=`ls /proc/acpi/thermal_zone | wc -l`
-      tmprt=0
-      for thrm in `ls /proc/acpi/thermal_zone`
-      do
-        tmpr=`cat /proc/acpi/thermal_zone/$thrm/temperature  | awk '{ print $2}'`
-        tmprt=`solve "$tmprt + $tmpr"`
-        y1="$(echo "$tmpr >= $CPU_TEMP_1" | bc)"
-        y2="$(echo "$tmpr >= $CPU_TEMP_2" | bc)"
-        y3="$(echo "$tmpr >= $CPU_TEMP_3" | bc)"
+# New interface
 
-        warnind='(OK) '
-        [ "$y1" == "1" ] && warnind=' <*> '
-        [ "$y2" == "1" ] && warnind='<**> '
-        [ "$y3" == "1" ] && warnind='<***>'
-        echo "${warnind} The $thrm zone temperature is ${tmpr} Centigrade"
-      done
-      tmprt=`solve "$tmprt / $thrmnum"`
-    fi
-  fi
-fi
+
+
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
 then
-  sqlite3 ${rpath}/../sysdata "update sysdata set cpuusage=$cpuusage, cpufscale='${thrt}', cputemp='${tmprt}' where timeindex='$timeindexnow'"
+  sqlite3 ${rpath}/../sysdata "update sysdata set cpuusage=$cpuusage where timeindex='$timeindexnow'"
 fi
+
