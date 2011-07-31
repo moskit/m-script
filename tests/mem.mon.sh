@@ -117,5 +117,5 @@ echo "${warnind} Active memory is ${mactiveram} MB, ${totalramused}% of total RA
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
 then
-  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime='${dbuptime}', loadavg=$rloadavg, procnum=$rtotalprocess where timeindex='$timeindexnow'"
+  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime='${dbuptime}', loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi
