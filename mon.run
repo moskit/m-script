@@ -18,13 +18,13 @@
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 MAILX=`which mail 2>/dev/null`
-SAR=`which sar 2>/dev/null`
+#SAR=`which sar 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 tmpdir=/tmp/m_script && install -d $tmpdir
-[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
+#[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
 # removing stale lock file (if older than an hour)
 find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f
 for ((i=1; i<=10; i++))
@@ -357,7 +357,7 @@ case ${1} in
   ;;
 esac
 rm -f ${rpath}/mon.run.lock
-rm -f ${tmpdir}/sar.tmp
+#rm -f ${tmpdir}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
 export LC_MESSAGES=`echo ${currentlocale}`
 
