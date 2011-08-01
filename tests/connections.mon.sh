@@ -83,7 +83,7 @@ if [ -e ${rpath}/../ports.tcp.list ] ; then
     # No point in parsing of more than 100 lines of LISTENING ports, increase this
     # if necessary
     $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
-    [ `cat /tmp/m_script/netstat.tcp.$$ | wc -l` -gt `cat /tmp/m_script/netstat.tcp.$$ | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/netstat.tcp.$$
+    [ `cat /tmp/m_script/ports.tcp.$$ | wc -l` -gt `cat /tmp/m_script/ports.tcp.$$ | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.tcp.$$
   fi
 fi
 if [ -e ${rpath}/../ports.udp.list ] ; then
@@ -106,7 +106,7 @@ if [ -e ${rpath}/../ports.udp.list ] ; then
     portsudp=""
   else
     $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
-    [ `cat /tmp/m_script/netstat.udp.$$ | wc -l` -gt `cat /tmp/m_script/netstat.udp.$$ | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/netstat.udp.$$
+    [ `cat /tmp/m_script/ports.udp.$$ | wc -l` -gt `cat /tmp/m_script/ports.udp.$$ | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.udp.$$
   fi
 fi
 
