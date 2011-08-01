@@ -104,11 +104,12 @@ start)
       else
         echo > /tmp/m_script/conn_test_runs_count
       fi
-      ${rpath}/mon.run connections.mon.sh ; echo >> /tmp/m_script/conn_test_runs_count
+      ${rpath}/mon.run connections.mon.sh &
+      echo >> /tmp/m_script/conn_test_runs_count
 # Checking running processes (services.conf)
-      ${rpath}/mon.run services.mon.sh
+      ${rpath}/mon.run services.mon.sh &
 # Checking other servers (listed in servers.conf) availability
-      ${rpath}/mon.run servers.mon.sh
+      ${rpath}/mon.run servers.mon.sh &
 ###
     fi
   
