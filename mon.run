@@ -25,15 +25,16 @@ rpath=${xcommand%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 tmpdir=/tmp/m_script && install -d $tmpdir
 #[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
-# removing stale lock file (if older than an hour)
-find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f
+# removing stale lock file
+find ${rpath} -name mon.run.lock -mmin +10 | xargs rm -f
 for ((i=1; i<=10; i++))
 do
-  if [ -f ${rpath}/mon.run.lock ] ; then
-    echo "Mon.run: Delay 10 sec, another instance is running" >> ${rpath}/monitoring.log
+  if [ -e ${rpath}/mon.run.lock ] ; then
+    printf "." >> ${rpath}/monitoring.log
     sleep 10
     continue
   else
+    echo >> ${rpath}/monitoring.log
     break
   fi
 done
