@@ -25,7 +25,7 @@ SED=`which sed 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help region force"
+possible_options="help region force verbose"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -101,10 +101,10 @@ do
     if [[ $firstline -eq 0 ]] ; then
       if [ "X$state" == "Xrunning" ] ; then
         if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
-          if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
+          if [ `echo $localip | grep -c $inIP` -ne 0 ] ; then
             sname=`hostname`
           else
-            sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+            sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
           fi
         fi
         [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../../cloud.log
@@ -138,10 +138,10 @@ done
 
 if [ "X$state" == "Xrunning" ] ; then
   if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
-    if [ `echo $inIP | grep -c $localip` -ne 0 ] ; then
+    if [ `echo $localip | grep -c $inIP` -ne 0 ] ; then
       sname=`hostname`
     else
-      sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no $inIP hostname 2>/dev/null`
+      sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
     fi
   else
     message=" (key ${rpath}/../../keys/${keypair}.pem not found)"
