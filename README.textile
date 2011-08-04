@@ -31,15 +31,15 @@ h2. Features
 
 h2. Usage Example
 
-You found out that you get the users activity peak each time it gets rainy in London. So what you want is to start one additional Amazon EC2 instance and add it to your application servers cluster.
+You found out that you get the users activity peak each time it gets rainy in London. To prevent possible servers overload and your website slowing down you want to start additional application servers automatically, depending on the current weather in London.
 
 First you need a custom monitoring plugin. In our case it is going to be a London weather monitoring plugin.
 
-All it has to do is provide output lines starting with <OK> if the weather is sunny, or one of three alert levels if not, like this:
-* <OK> Weather in London: Sunny
-* <*> Weather in London: Rainy
-* <**> Weather in London: Heavy Rain
-* <***> Weather in London: Rain / Thunder
+All it has to do is provide output lines starting with @<OK>@ if the weather is sunny, or one of three alert levels if not, like this:
+* @<OK>@ Weather in London: Sunny
+* @<*>@ Weather in London: Rainy
+* @<**>@ Weather in London: Heavy Rain
+* @<***>@ Weather in London: Rain / Thunder
 
 So here is the plugin (Shell, but you can use whatever you think is a better fit):
 
