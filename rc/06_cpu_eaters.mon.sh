@@ -1,1 +1,0 @@
-../tests/cpu_eaters.mon.sh

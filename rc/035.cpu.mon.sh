@@ -1,1 +1,0 @@
-../tests/cpu.mon.sh

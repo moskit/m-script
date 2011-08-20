@@ -70,7 +70,7 @@ do
       echo '  option.'
       echo '  Usage: --only-pickup or --only-pickup=yes or --only-pickup=/path/to/files,'
       echo '  where /path/to/files overwrites the default, which is localbackuppath/backup.tmp'
-      echo '  (see conf/backup.configuration files)'
+      echo '  (see conf/backup.conf)'
       exit 0
     elif [ "X$s_optarg" != "X" ] && [ "X$s_optarg" != "Xyes" ]; then
       if [ ! -e $s_optarg ]; then
@@ -99,19 +99,19 @@ do
   ;;
   configfile|configfiles)
     if [ "X$s_optarg" == "Xhelp" ]; then
-      echo '    You can create as many conf/backup.configuration files as you want and backup'
+      echo '    You can create as many backup configuration files as you want and backup'
       echo '  files from or to many hosts at once. But you cannot do all backups in '
       echo '  a single run if you use both transfer directions, i.e. --from-remote'
-      echo '  for some hosts and --to-remote for others. Also you may wish to run it '
+      echo '  for some hosts and --to-remote for others. Also you may wish to run '
       echo '  this program with, for example, --only-clean option for particular hosts.'
       echo ''
       echo '  Syntax is:'
       echo "  ${0} --configfile=file1,file2,file3,..."
-      echo '  All other conf/backup.configuration files will be ignored.'
+      echo '  All other configuration files will be ignored.'
       echo ''
       echo '    Note that this option also allows using any config files names. Without'
-      echo '  this option backup will use only config files having names like'
-      echo '  backup.*.conf. This option, in contrary, allows having both "usual" and'
+      echo '  this option backup will use only config files that have names like'
+      echo '  backup.*.conf. This option allows having both "usual" and'
       echo '  "special" config files, so you can create backup.*.conf'
       echo '  configuration files for most common use and "special"'
       echo '  configuration files for non-common tasks.'
@@ -123,7 +123,7 @@ do
     cfgfiles="`echo $s_optarg|sed 's|,| |g'`"
     for conf in ${cfgfiles}
     do
-      configfiles="${configfiles} ${rpath}/${conf}"
+      configfiles="${configfiles} ${rpath}/conf/${conf}"
     done
   ;;
   replace|incremental|incr)
@@ -172,7 +172,7 @@ localbackuppath=${PWD}
 if [ "X$configfiles" == "X" ]
 then
 # We use a loop to avoid possible issues caused by customized ls
-  for conf in ${rpath}/backup*.conf
+  for conf in ${rpath}/conf/backup*.conf
   do
     configfiles="${configfiles} ${conf}"
   done

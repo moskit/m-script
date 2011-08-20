@@ -39,7 +39,7 @@ do
   fi
 done
 if [ -f ${rpath}/mon.run.lock ] ; then
-  echo "Giving up..."
+  echo "Giving up..." >> ${rpath}/monitoring.log
   exit 1
 fi
 touch ${rpath}/mon.run.lock
@@ -301,8 +301,12 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 }
 
 source ${rpath}/conf/mon.conf
-timeindexnow=$(date +"%s")
-echo $timeindexnow > ${tmpdir}/timeindex
+if [ -f ${tmpdir}/timeindex ] ; then
+  timeindexnow=`cat ${tmpdir}/timeindex`
+else
+  timeindexnow=$(date +"%s")
+  echo $timeindexnow > ${tmpdir}/timeindex
+fi
 [ "X$2" == "Xdebug" ] && DEBUG=y
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)

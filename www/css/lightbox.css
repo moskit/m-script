@@ -1,0 +1,47 @@
+#lbOverlay { position: fixed; top: 0; left: 0; z-index: 99998; width: 100%; height: 500px; }
+  #lbOverlay.black { background-color: #000000; }
+#lbMain { position: absolute; left: 0; width: 100%; z-index: 99999; text-align: center; line-height: 0; }
+#lbMain a img { border: none; }
+
+#lbOuterContainer { position: relative; background-color: #000; width: 200px; height: 200px; margin: 0 auto; }
+  #lbOuterContainer.black { border: 1px solid #000000; }
+#lbDetailsContainer {	font: 10px Verdana, Helvetica, sans-serif; background-color: #000; width: 100%; line-height: 1.4em;	overflow: auto; margin: 0 auto; }
+  #lbDetailsContainer.black { border: 1px solid #000000; border-top: none; }
+#lbImageContainer, #lbIframeContainer { padding: 0px; }
+#lbLoading {
+	position: absolute; top: 45%; left: 0%; height: 32px; width: 100%; text-align: center; line-height: 0; background: url(../images/loading.gif) center no-repeat;
+}
+
+#lbHoverNav { position: absolute; top: 0; left: 0; height: 100%; width: 100%; z-index: 10; }
+#lbImageContainer>#lbHoverNav { left: 0; }
+#lbHoverNav a { outline: none; }
+
+#lbPrev { width: 49%; height: 100%; background: transparent url(../images/blank.gif) no-repeat; display: block; left: 0; float: left; }
+	#lbPrev.black:hover, #lbPrev.black:visited:hover { background: url(../images/prev_black.png) left 100% no-repeat; }
+	
+#lbNext { width: 49%; height: 100%; background: transparent url(../images/blank.gif) no-repeat; display: block; right: 0; float: right; }
+	#lbNext.black:hover, #lbNext.black:visited:hover { background: url(../images/next_black.png) right 100% no-repeat; }
+
+#lbPrev2, #lbNext2 { text-decoration: none; font-weight: bold; }
+	#lbPrev2.black, #lbNext2.black, #lbSpacer.black { color: #BBB000; }
+	
+#lbPrev2_Off, #lbNext2_Off { font-weight: bold; }
+	#lbPrev2_Off.black, #lbNext2_Off.black { color: #BBB000; }
+	
+#lbDetailsData { padding: 0 2px; }
+  #lbDetailsData.black { color: #BBB000; }
+  
+#lbDetails { width: 70%; float: left; text-align: left; color: #BBB000; }
+#lbCaption { display: block; font-weight: bold; float: right; }
+#lbNumberDisplay { float: left; display: block; padding-bottom: 1.0em; color: #BBB000; }
+#lbNavDisplay { width: 70%; float: right; text-align: center; display: block; padding-bottom: 1.0em; }
+
+#lbClose { width: 70px; height: 22px; float: right; margin-bottom: 1px; }
+  #lbClose.black { background: url(../images/close_black.png) no-repeat; }
+  
+#lbPlay { width: 64px; height: 22px; float: right; margin-bottom: 1px; }
+	#lbPlay.black { background: url(../images/play_black.png) no-repeat; }
+	
+#lbPause { width: 64px; height: 22px; float: right; margin-bottom: 1px; }
+	#lbPause.black { background: url(../images/pause_black.png) no-repeat; }
+	
