@@ -156,7 +156,11 @@ $SED -i -e "/|${EC2_REGION}|.*$/d" ${rpath}/../../servers.list
 
 while read SERVER
 do
-  inIP=`echo $SERVER | awk -F'|' '{print $1}'`
+  if [ "XNETWORK" == "Xexternal" ] ; then
+    IP=`echo $SERVER | awk -F'|' '{print $2}'`
+  else
+    IP=`echo $SERVER | awk -F'|' '{print $1}'`
+  fi
   keypair=`echo $SERVER | awk -F'|' '{print $6}'`
   sname=`echo $SERVER | awk -F'|' '{print $13}'`
   srole=`echo $SERVER | awk -F'|' '{print $14}'`
