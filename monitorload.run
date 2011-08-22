@@ -65,28 +65,43 @@ start)
     [[ $succ -eq 0 ]] && echo "done" || echo "error"
   fi
   printf "Starting monitorload...      "
+  
+##### Main loop ########################################
+
   while true
   do
+  # Checking how much the load average has changed
     rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
     rload="$(cat /proc/loadavg | cut -d' ' -f2 | tee $tempfile)"
     rloadabs=${rload%.*} ; [ "X$rloadabs" == "X" ] && rloadabs=0
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
-    
+
+##### Running tests #####
+
+### Tests that run if load has changed - we're interested in various metrics here
     if [ "X$x" == "X1" ]; then
+## If load is not too high, all tests run
       if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
         ${rpath}/mon.run -ao &
       else
-        ${rpath}/mon.run mem.mon.sh &
+## otherwise, these tests only
+        echo `date +"%s"` > ${tmpdir}/timeindex
+        ${rpath}/mon.run mem.mon &
       fi
     fi
 
     sleep $FREQ
 
-### Running tests ###
-    
-### Tests that are disabled if load average is too high
+### Tests that always run - services and availability
+### No problem if you want to run some metrics monitors here, but uncomment the
+### timeindex creation line below, it is needed for storing the results in
+### database. Also consider running such tests from cron.
+
+#   echo `date +"%s"` > ${tmpdir}/timeindex
+
+## Tests that are disabled if load average is too high
     if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
     ## Connections alerts number limit
       if [ -f /tmp/m_script/conn_test_runs_count ] ; then
@@ -100,13 +115,16 @@ start)
       # Running processes (services.conf)
       ${rpath}/mon.run services.mon &
     else
-### Tests that are always enabled
+## Tests that are always enabled
       # Other servers (listed in servers.conf) availability
       ${rpath}/mon.run servers.mon &
     fi
 ###
 
   done & 2>/dev/null
+  
+###########################################################
+
   succ=$?
   echo $! > $pidfile
   [[ $succ -eq 0 ]] && echo "done" || echo "error"

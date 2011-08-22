@@ -98,15 +98,15 @@ function runscript() {
     echo "------------------------------" >> "${rpath}/monitoring.log"
     date | tee -a "${rpath}/monitoring.log" | tee "${rpath}/report" | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/monitoring.log"  | tee -a ${rpath}/report | tee -a "${rpath}/alert" >/dev/null
-    for script in ${rpath}/rc/*.mon.sh  #*/
+    for script in ${rpath}/rc/*.mon  #*/
     do
-      $script ${1}
+      $script SQL
     done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
   elif [ "X$1" != "X" ]; then
     date | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
     echo > "${rpath}/report"
-    [ -x "${rpath}/tests/${1}" ] && ${rpath}/tests/${1} 2>&1 | tee "${rpath}/report" >/dev/null #*/
+    [ -x "${rpath}/tests/${1}" ] && ${rpath}/tests/${1} $SQL 2>&1 | tee "${rpath}/report" >/dev/null #*/
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
   grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
@@ -300,23 +300,30 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
   fi
 }
 
-source ${rpath}/conf/mon.conf
-if [ -f ${tmpdir}/timeindex ] ; then
-  timeindexnow=`cat ${tmpdir}/timeindex`
-else
+function newtimeindex() {
   timeindexnow=$(date +"%s")
   echo $timeindexnow > ${tmpdir}/timeindex
-fi
-[ "X$2" == "Xdebug" ] && DEBUG=y
+}
+
+function deltimeindex() {
+  rm -f ${tmpdir}/timeindex
+}
+
+source ${rpath}/conf/mon.conf
+[ "X$2" == "XSQL" ] && SQL=SQL
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)
+    newtimeindex
     runscript SQL
     runactions
     mailalert
+    deltimeindex
   ;;
   -dry | --dry | --dry-run)
+    newtimeindex
     runscript SQL
     runactionstest
+    deltimeindex
     cat ${rpath}/report
   ;;
   -analyze-sys | -analyze-system | --analyze-system | -as)
@@ -348,11 +355,13 @@ case ${1} in
 #    echo "       data and an unusual activity report."
   ;;
   -rep | -report | --report)
+    newtimeindex
     runscript SQL
     mailreport
     mailalert
+    deltimeindex
   ;;
-  *.mon.sh)
+  *.mon)
     runscript ${1}
     runactions
     mailalert
