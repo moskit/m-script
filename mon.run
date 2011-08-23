@@ -309,6 +309,23 @@ function deltimeindex() {
   rm -f ${tmpdir}/timeindex
 }
 
+function gendash() {
+  indic="green"
+  [ -n "`grep '<\*>' ${rpath}/report`" ] && indic="yellow"
+  [ -n "`grep '<\*\*>' ${rpath}/report`" ] && indic="orange"
+  [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="red"
+  case $DASHBOARD in
+    HTML)
+      ${rpath}/genhtml --type=dash --text=`${rpath}/lib/txt2html report` --background=$indic
+      ;;
+    JSON)
+      ${rpath}/genjson --type=dash --text=`${rpath}/lib/txt2json report` --backg
+round=$indic
+      ;;
+  esac
+
+}
+
 source ${rpath}/conf/mon.conf
 [ "X$2" == "XSQL" ] && SQL=SQL
 case ${1} in
@@ -317,6 +334,7 @@ case ${1} in
     runscript SQL
     runactions
     mailalert
+    [ -n "$DASHBOARD" ] && gendash
     deltimeindex
   ;;
   -dry | --dry | --dry-run)
@@ -359,12 +377,14 @@ case ${1} in
     runscript SQL
     mailreport
     mailalert
+    [ -n "$DASHBOARD" ] && gendash
     deltimeindex
   ;;
   *.mon)
     runscript ${1}
     runactions
     mailalert
+    [ -n "$DASHBOARD" ] && gendash
   ;;
   *)
     echo "Run mon.run --help to see available options"
