@@ -20,7 +20,7 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
-possible_options="cluster help"
+possible_options="cluster application help"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -61,9 +61,11 @@ if [ "X$help" == "Xyes" ] ; then
   echo
   echo "Options:"
   echo
-  echo "  --cluster=clustername    - syncs only this single cluster."
-  echo "                             No port number allowed here! Port(s) will"
+  echo "  --cluster=<cluster name>   - syncs only this single cluster."
+  echo "                             Port number is not needed here! Port(s) will"
   echo "                             be taken from conf/cloud.conf"
+  echo "  --application=<application name>  - syncs only this single application."
+  echo
   exit 0
 fi
 found=0
@@ -89,39 +91,54 @@ TMPDIR=/tmp/m_script/cloud/ec2
 install -d $TMPDIR
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 
+if [ -z "$application" ] ; then
+  APPS=`for APP in $APP_SERVERS; do appnames="${appnames}\n${APP##*:}"; done; printf "$appnames" | sort | uniq` ; APPS=`echo $APPS`
+else
+  APP="$application"
+fi
+
 if [ -z "$cluster" ] ; then
-  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%:*}"; done; printf "$names" | sort | uniq` ; CLUSTERS=`echo $CLUSTERS`
+  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%%:*}"; done; printf "$names" | sort | uniq` ; CLUSTERS=`echo $CLUSTERS`
 else
   CLUSTERS="$cluster"
 fi
+
 changed=0
-for cluster in "$CLUSTERS" ; do
-  cluster=${cluster#* }; cluster=${cluster% *}
-  for CLUSTER in $APP_SERVERS; do
-    if [ "X${CLUSTER%:*}" == "X$cluster" ] ; then
-      ports="$ports ${CLUSTER#*:}"
+
+[ -f $TMPDIR/servers.${EC2_REGION}.ips ] || ${rpath}/update_servers_list
+
+for app in $apps ; do
+app=${app#* }; app=${app% *}
+
+  for cluster in $CLUSTERS ; do
+    cluster=${cluster#* }; cluster=${cluster% *}
+    for CLUSTER in $APP_SERVERS; do
+      if [ "X${CLUSTER%%:*}" == "X$cluster" ] && [ "X${CLUSTER##*:}" == "X$app" ] ; then
+        port=${CLUSTER#*:}; port=${CLUSTER%:*}
+        ports="$ports $port"
+      fi
+    done
+    for IP in `cat $TMPDIR/servers.${EC2_REGION}.ips | awk -F'|' '{print $1" "$14}' | grep "$cluster" | awk '{print $1}'` ; do
+      for PORT in $ports ; do
+        PORT=${PORT#* }; PORT=${PORT% *}
+        echo "$IP:$PORT" >> $TMPDIR/${app}.servers.${EC2_REGION}.ips
+      done
+    done
+    [ -f $TMPDIR/${app}.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/${app}.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/${app}.servers.${EC2_REGION}.ips.prev $TMPDIR/${app}.servers.${EC2_REGION}.ips`" ] && continue
+    if [ `cat $TMPDIR/${app}.servers.${EC2_REGION}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
+      changed=1
+      echo "upstream $app {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+      echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+      while read IP; do
+        echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+      done<$TMPDIR/${app}.servers.${EC2_REGION}.ips
+      echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+    else
+      echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log
+      exit 1
     fi
   done
-  [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev || ${rpath}/update_servers_list
-  for IP in `cat $TMPDIR/servers.${EC2_REGION}.ips | awk -F'|' '{print $1" "$14}' | grep "$cluster" | awk '{print $1}'` ; do
-    for PORT in $ports ; do
-      PORT=${PORT#* }; PORT=${PORT% *}
-      echo "$IP:$PORT" >> $TMPDIR/${cluster}.servers.${EC2_REGION}.ips
-    done
-  done
-  [ -f $TMPDIR/${cluster}.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/${cluster}.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/${cluster}.servers.${EC2_REGION}.ips.prev $TMPDIR/${cluster}.servers.${EC2_REGION}.ips`" ] && continue
-  if [ `cat $TMPDIR/${cluster}.servers.${EC2_REGION}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
-    changed=1
-    echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-    echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-    while read IP; do
-      echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-    done<$TMPDIR/${cluster}.servers.${EC2_REGION}.ips
-    echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-  else
-    echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log
-    exit 1
-  fi
+
 done
 
 [ "X$changed" == "X1" ] && $NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND || exit 0

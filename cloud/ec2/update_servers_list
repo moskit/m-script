@@ -87,7 +87,7 @@ install -d $TMPDIR
 echo "------------------" >> ${rpath}/../../cloud.log
 
 changed=0
-[ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev
+[ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev || touch $TMPDIR/servers.${EC2_REGION}.ips.prev
 [ -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] || (echo "ec2-describe-instances binary not found! Exiting.." >> ${rpath}/../../cloud.log && exit 1)
   
 ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/servers.${EC2_REGION}.tmp
@@ -164,10 +164,10 @@ do
   keypair=`echo $SERVER | awk -F'|' '{print $6}'`
   sname=`echo $SERVER | awk -F'|' '{print $13}'`
   srole=`echo $SERVER | awk -F'|' '{print $14}'`
-  echo "${inIP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> ${rpath}/../../servers.list
+  echo "${IP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> ${rpath}/../../servers.list
 done<$TMPDIR/servers.${EC2_REGION}.ips
 
-unset inIP extIP keypair iID ami state isize secgroup started zone aki ari sname srole
+unset IP inIP extIP keypair iID ami state isize secgroup started zone aki ari sname srole
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
   ${rpath}/update_nginx_proxy
