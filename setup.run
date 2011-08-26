@@ -18,6 +18,7 @@
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
+fpath=$(cd $rpath && echo ${PWD})
 #*/ (this is needed to fool vi syntax highlighting)
 
 [ "X$1" == "Xdefault" ] && defopt=1
@@ -189,16 +190,16 @@ then
   fi
   if [ `grep -c "^g " ${rpath}/conf/mongoose.conf` -eq 0 ]
   then
-    echo "g ${rpath}/conf/htaccess" >> ${rpath}/conf/mongoose.conf
+    echo "g ${fpath}/conf/htaccess" >> ${rpath}/conf/mongoose.conf
   fi
   if [ `grep -c "^r " ${rpath}/conf/mongoose.conf` -eq 0 ]
   then
-    echo "r ${rpath}/www" >> ${rpath}/conf/mongoose.conf
+    echo "r ${fpath}/www" >> ${rpath}/conf/mongoose.conf
   fi
   echo
   echo "You may want to adjust access settings for the web interface."
   echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
-  echo "and edit ${rpath}/conf/mongoose.conf"
+  echo "and edit ${fpath}/conf/mongoose.conf"
 fi
       
 if [ "X${IPTABLES}" == "X" ]
