@@ -120,7 +120,7 @@ start)
       ${rpath}/mon.run servers.mon &
     fi
 ###
-  
+  done & 2>/dev/null
 ###########################################################
 
   succ=$?

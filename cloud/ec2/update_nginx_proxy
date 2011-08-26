@@ -107,14 +107,14 @@ changed=0
 
 [ -f $TMPDIR/servers.${EC2_REGION}.ips ] || ${rpath}/update_servers_list
 
-for app in $apps ; do
-app=${app#* }; app=${app% *}
-
+for app in $APPS ; do
+  app=${app#* }; app=${app% *}
+  rm -f $TMPDIR/${app}.servers.${EC2_REGION}.ips.prev 2>/dev/null
   for cluster in $CLUSTERS ; do
     cluster=${cluster#* }; cluster=${cluster% *}
     for CLUSTER in $APP_SERVERS; do
       if [ "X${CLUSTER%%:*}" == "X$cluster" ] && [ "X${CLUSTER##*:}" == "X$app" ] ; then
-        port=${CLUSTER#*:}; port=${CLUSTER%:*}
+        port=${CLUSTER#*:}; port=${port%:*}
         ports="$ports $port"
       fi
     done
@@ -138,7 +138,7 @@ app=${app#* }; app=${app% *}
       exit 1
     fi
   done
-
+  unset ports
 done
 
 [ "X$changed" == "X1" ] && $NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND || exit 0
