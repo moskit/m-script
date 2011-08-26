@@ -32,8 +32,12 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
     if [[ "$LINE" =~ [[:space:]]*recursive$ ]] ; then
       find "$thepath" -name "*\.pid" | while read pidfile ; do
         pid=`cat "$pidfile"|sed 's|\r||'`
-        if [ -f "/proc/$pid/comm" ] ; then
-          pcomm=`cat /proc/$pid/comm`
+        if [ -d "/proc/$pid" ] ; then
+          if [ -f "/proc/$pid/comm" ] ; then
+            pcomm=`cat /proc/$pid/comm`
+          else
+            pcomm=`cat /proc/$pid/cmdline`
+          fi
           printf "$pcomm"
           m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
           printf "PID $pid"
