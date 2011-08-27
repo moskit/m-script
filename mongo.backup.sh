@@ -73,8 +73,10 @@ do
   fi
     
   if [ "$skipdb" == "-1" ]; then
-  	FILE="$MBD/$db.$archname.gz"
-    $MONGODUMP --host $mongohost --database $db $USER $PASS 2>>${rpath}/m_backup.error | $GZIP -9 > $FILE 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+    $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+    if [ "X$compression" == "Xgzip" ] ; then
+      tar 
+    fi
   fi
 done
 
