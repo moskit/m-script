@@ -26,13 +26,24 @@ else
   source ${1}
 fi
 
-MONGO="$(which mongo)"
-MONGODUMP="$(which mongodump)"
-CHOWN="$(which chown)"
-CHMOD="$(which chmod)"
-GZIP="$(which gzip)"
+MONGO="$(which mongo 2>/dev/null)"
+MONGODUMP="$(which mongodump 2>/dev/null)"
+GZIP="$(which gzip 2>/dev/null)"
+BZIP2="$(which bzip2 2>/dev/null)"
 
-[ "X$mongohost" == "X" ] && echo "Error: database host not defined" >> ${rpath}/m_backup.error && exit 1
+if [ "X$compression" == "Xgzip" ] && [ -n "$GZIP" ] ; then
+  compress=$GZIP
+  ext="gz"
+  TAR="`which tar 2>/dev/null` czf"
+fi
+
+if [ "X$compression" == "Xbzip2" ] && [ -n "$BZIP2" ] ; then
+  compress=$BZIP2
+  ext="bz2"
+  TAR="`which tar 2>/dev/null` cjf"
+fi
+
+[ "X$mongohosts" == "X" ] && echo "Error: database host not defined" >> ${rpath}/m_backup.error && exit 1
 [ "X${localbackuppath}" != "X" ] && DEST="${localbackuppath}" || DEST=${rpath}
 
 MBD="$DEST/backup.tmp/mongo"
@@ -56,7 +67,12 @@ else
   USER="--username=$mongouser"
 fi
 
-DBHOST=$($MONGO --host $mongohost --quiet --eval "var im = rs.isMaster(); if(im.ismaster && im.hosts) { im.hosts[1] } else { '$mongohost' }" | tail -1) 2>>${rpath}/m_backup.error
+for mongohost in $mongohosts ; do
+  DBHOST=$($MONGO --host $mongohost --quiet --eval "var im = rs.isMaster(); if(im.ismaster && im.hosts) { im.hosts[1] } else { '$mongohost' }" | tail -1) 2>>${rpath}/m_backup.error
+  [ $? -eq 0 ] && break
+done
+ 
+echo "Host $DBHOST selected." >>${rpath}/m_backup.log
 
 if [ "X$mongodblist" == "X" ]; then
   mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>${rpath}/m_backup.error
@@ -68,15 +84,20 @@ do
   if [ "$mongodbexclude" != "" ]; then
   	for i in $mongodbexclude
   	do
-  	    [ "$db" == "$i" ] && skipdb=1 || :
+  	  [ "$db" == "$i" ] && skipdb=1 || :
   	done
   fi
-    
+  
   if [ "$skipdb" == "-1" ]; then
+### Works if version >= 1.7, avoids intermediate space usage by uncompressed dumps
+### Note that it doesn't dump indexes
+#    if [ -n "$compress" ] ; then
+#    for collection in `mongo $DBHOST/$db --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
+#      $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "${MBD}/${db}${archname}/${collection}.bson.${ext}"
+#    done
+#    fi
     $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
-    if [ "X$compression" == "Xgzip" ] ; then
-      tar 
-    fi
+    [ -n "$TAR" ] && $TAR "${MBD}/${db}${archname}.tar.${ext}" "${MBD}/${db}${archname}"
   fi
 done
 
