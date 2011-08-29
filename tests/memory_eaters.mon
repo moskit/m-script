@@ -12,40 +12,96 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 source ${rpath}/../conf/mon.conf
 
-echo ""
+echo
 echo "Memory eaters (process name and process owner):"
 echo "-----------------------------------------------"
 
 IFS1=$IFS
 IFS='
 '
-ps aux | tail -n +2 > /tmp/m_script/ps.list
-for LINE in `cat /tmp/m_script/ps.list | grep -v ^$`; do
+ps aux | tail -n +2 > ${TMPDIR}/ps.list
+for LINE in `cat ${TMPDIR}/ps.list | grep -v ^$`; do
   command=`echo "${LINE}" | awk '{print $11}'`
   virtual=`echo "${LINE}" | awk '{print $5}'`
   resident=`echo "${LINE}" | awk '{print $6}'`
   user=`echo "${LINE}" | awk '{print $1}'`
-  echo "${command} ${user} ${resident} ${virtual}" >> /tmp/m_script/ps.list.reordered
+  echo "${command} ${user} ${resident} ${virtual}" >> ${TMPDIR}/ps.list.reordered
 done
-for proc in `cat /tmp/m_script/ps.list.reordered | awk '{print $1" "$2}' | sort | uniq` ; do
+for proc in `cat ${TMPDIR}/ps.list.reordered | cut -d' ' -f1,2 | sort | uniq` ; do
   virtual=0
   resident=0
-  procuser=`echo $proc | awk '{print $1" "$2}'`
-  for thisproc in `cat /tmp/m_script/ps.list.reordered | grep "^${procuser}" 2>/dev/null` ; do
-    VSZ=`echo $thisproc | awk '{print $4}'`
-    RSS=`echo $thisproc | awk '{print $3}'`
-#echo "=== $VSZ $RSS $virtual $resident ==="
-    virtual=`solve "$virtual + ($VSZ / 1024)"`
-    resident=`solve "$resident + ($RSS / 1024)"`
+  procuser=`echo $proc | cut -d' ' -f1,2`
+  for thisproc in `cat ${TMPDIR}/ps.list.reordered | grep "^${procuser}" 2>/dev/null` ; do
+    VSZ=`echo $thisproc | cut -d' ' -f4`
+    RSS=`echo $thisproc | cut -d' ' -f3`
+    virtual=`expr $virtual + $VSZ`
+    resident=`expr $resident + $RSS`
   done
-  if [[ `echo "$resident > $MEM_RES_MIN"|bc` -eq 1 ]] ; then
-    echo "<**> Process \"${procuser}\" is using ${resident}MB of RAM"
-  fi
-  if [[ `echo "$virtual > $MEM_VIR_MIN"|bc` -eq 1 ]] ; then
-    echo "<**> Process \"${procuser}\" is using ${virtual}MB of virtual memory"
+  
+  echo "$resident ${procuser}" >> ${TMPDIR}/ps.list.res
+  echo "$virtual ${procuser}" >> ${TMPDIR}/ps.list.vir
+done
+
+sort -g -r ${TMPDIR}/ps.list.res | head -n $MEM_TOP_NUM > ${TMPDIR}/ps.list.res.sorted
+sort -g -r ${TMPDIR}/ps.list.vir | head -n $MEM_TOP_NUM > ${TMPDIR}/ps.list.vir.sorted
+
+totalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
+
+for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
+  unset usageprev warnind
+  procname=${proc#* }
+  usage=${proc%% *}
+  usagemb=`solve "$usage / 1024"`
+  usageperc=`solve "$usage / $totalram * 100"`
+  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
+  [ -f ${TMPDIR}/ps.prev.res ] && usageprev=`grep "${procname}" ${TMPDIR}/ps.prev.res | cut -d' ' -f1` || continue
+  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
+  if [ -n "$usageprevperc" ] ; then
+    if [[ $usageperc -gt $usageprevperc ]] ; then
+      direction="increased"
+      usagediff=`solve $usageperc - $usageprevperc`
+    else
+      direction="decreased"
+      usagediff=`solve $usageprevperc - $usageperc`
+    fi
+    y3="$(echo "$usagediff >= $MEM_RES_3" | bc)"
+    [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_RES_2" | bc)"
+    [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $MEM_RES_1" | bc)"
+    [ "$y1" == "1" ] && warnind=' <*> '
+    [ "$y2" == "1" ] && warnind='<**> '
+    [ "$y3" == "1" ] && warnind='<***>'
+    [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" RAM usage $direction by $usagediff percents"
   fi
 done
-rm -f /tmp/m_script/ps.list*
+
+for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
+  unset usageprev warnind
+  procname=${proc#* }
+  usage=${proc%% *}
+  usagemb=`solve "$usage / 1024"`
+  usageperc=`solve "$usage / $totalram * 100"`
+  [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of virtual memory"
+  [ -f ${TMPDIR}/ps.prev.vir ] && usageprev=`grep "${procname}" ${TMPDIR}/ps.prev.vir | cut -d' ' -f1` || continue
+  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
+  if [ -n "$usageprevperc" ] ; then
+    if [[ $usageperc -gt $usageprevperc ]] ; then
+      direction="increased"
+      usagediff=`solve $usageperc - $usageprevperc`
+    else
+      direction="decreased"
+      usagediff=`solve $usageprevperc - $usageperc`
+    fi
+    y3="$(echo "$usagediff >= $MEM_VIR_3" | bc)"
+    [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_VIR_2" | bc)"
+    [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $MEM_VIR_1" | bc)"
+    [ "$y1" == "1" ] && warnind=' <*> '
+    [ "$y2" == "1" ] && warnind='<**> '
+    [ "$y3" == "1" ] && warnind='<***>'
+    [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" virtual memory usage $direction by $usagediff percents"
+  fi
+done
+
+rm -f ${TMPDIR}/ps.list*
 IFS=$IFS1
 
-### for cat in applications cpanel system dotDefender http mail mysql ; do suma=0; for a in `cat mem_usage.txt | grep "${cat}$" | awk '{print $3}'`; do suma=`echo "scale=2; $suma + $a" | bc`; done; sumb=0; for b in `cat mem_usage.txt | grep "${cat}$" | awk '{print $4}'`; do sumb=`echo "scale=2; $sumb + $b" | bc`; done; echo "${cat} $suma $sumb"; done > totals
+

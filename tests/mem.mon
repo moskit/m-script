@@ -23,10 +23,10 @@ ${1}
 EOF
 }
 
-FREE=`which free`
-PS=`which ps`
-UPTIME=`which uptime`
-VMSTAT=`which vmstat`
+FREE=`which free 2>/dev/null`
+PS=`which ps 2>/dev/null`
+UPTIME=`which uptime 2>/dev/null`
+VMSTAT=`which vmstat 2>/dev/null`
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
@@ -45,23 +45,19 @@ then
 else
   dbuptime=`echo ${ruptime} | awk '{print $1}'`
 fi
-rusedram="$($FREE -to | grep Mem: | awk '{ print $3 }')"
-musedram=`solve "$rusedram / 1024"`
-rfreeram="$($FREE -to | grep Mem: | awk '{ print $4 }')"
+rfreeram=`cat /proc/meminfo | grep ^MemFree | awk '{ print $2 }'`
 mfreeram=`solve "$rfreeram / 1024"`
 ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
 mactiveram=`solve "$ractiveram / 1024"`
-rtotalram="$($FREE -to | grep Mem: | awk '{ print $2 }')"
+rtotalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
 mtotalram=`solve "$rtotalram / 1024"`
-rusedswap="$($FREE -to | grep Swap: | awk '{ print $3 }')"
-musedswap=`solve "$rusedswap / 1024"`
-rfreeswap="$($FREE -to | grep Swap: | awk '{ print $4 }')"
+rfreeswap=`cat /proc/meminfo | grep ^SwapFree | awk '{ print $2 }'`
 mfreeswap=`solve "$rfreeswap / 1024"`
-rtotalswap="$($FREE -to | grep Swap: | awk '{ print $2 }')"
+rtotalswap=`cat /proc/meminfo | grep ^SwapTotal | awk '{ print $2 }'`
 mtotalswap=`solve "$rtotalswap / 1024"`
-rtotalmemfree="$($FREE -to | grep Total: | awk '{ print $4 }')"
+rtotalmemfree=`expr $rfreeram + $rfreeswap`
 mtotalmemfree=`solve "$rtotalmemfree / 1024"`
-rtotalprocess="$($PS axue | grep -vE "^USER|grep|ps" | wc -l)"
+rtotalprocess="$($PS axu | grep -vE "^USER|grep|ps" | wc -l)"
 
 x="$(cat /proc/loadavg | cut -d' ' -f2)"
 rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
