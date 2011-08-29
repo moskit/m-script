@@ -100,7 +100,8 @@ for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
     [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" virtual memory usage $direction by $usagediff percents"
   fi
 done
-
+mv ${TMPDIR}/ps.list.res.sorted ${TMPDIR}/ps.prev.res
+mv ${TMPDIR}/ps.list.vir.sorted ${TMPDIR}/ps.prev.vir
 rm -f ${TMPDIR}/ps.list*
 IFS=$IFS1
 

@@ -51,10 +51,12 @@ ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
 mactiveram=`solve "$ractiveram / 1024"`
 rtotalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
 mtotalram=`solve "$rtotalram / 1024"`
+musedram=`solve "$mtotalram - $mfreeram"`
 rfreeswap=`cat /proc/meminfo | grep ^SwapFree | awk '{ print $2 }'`
 mfreeswap=`solve "$rfreeswap / 1024"`
 rtotalswap=`cat /proc/meminfo | grep ^SwapTotal | awk '{ print $2 }'`
 mtotalswap=`solve "$rtotalswap / 1024"`
+musedswap=`solve "$mtotalswap - $mfreeswap"`
 rtotalmemfree=`expr $rfreeram + $rfreeswap`
 mtotalmemfree=`solve "$rtotalmemfree / 1024"`
 rtotalprocess="$($PS axu | grep -vE "^USER|grep|ps" | wc -l)"
@@ -64,13 +66,13 @@ rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
 y1="$(echo "$x >= $LOAD_WARN_1" | bc)"
 y2="$(echo "$x >= $LOAD_WARN_2" | bc)"
 y3="$(echo "$x >= $LOAD_WARN_3" | bc)"
-echo ""
+echo
 echo "System status:"
 echo "--------------"
 printf "Uptime:\t\t\t\t$ruptime\n"
 printf "Load average (1 5 15 min):\t$rloadavg\n"
 printf "Total running processes:\t$rtotalprocess\n"
-echo "$rfs"
+echo
 echo "RAM/Swap status:"
 echo "----------------"
 printf "Total RAM:\t\t${mtotalram} MB\n"
