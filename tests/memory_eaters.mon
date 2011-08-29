@@ -57,7 +57,7 @@ for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
   [ -f ${TMPDIR}/ps.prev.res ] && usageprev=`grep "${procname}" ${TMPDIR}/ps.prev.res | cut -d' ' -f1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
-    if [[ $usageperc -gt $usageprevperc ]] ; then
+    if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
       usagediff=`solve $usageperc - $usageprevperc`
     else
@@ -84,7 +84,7 @@ for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
   [ -f ${TMPDIR}/ps.prev.vir ] && usageprev=`grep "${procname}" ${TMPDIR}/ps.prev.vir | cut -d' ' -f1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
-    if [[ $usageperc -gt $usageprevperc ]] ; then
+    if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
       usagediff=`solve $usageperc - $usageprevperc`
     else
