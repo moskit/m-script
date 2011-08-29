@@ -59,10 +59,10 @@ for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
-      usagediff=`solve $usageperc - $usageprevperc`
+      usagediff=`solve "$usageperc - $usageprevperc"`
     else
       direction="decreased"
-      usagediff=`solve $usageprevperc - $usageperc`
+      usagediff=`solve "$usageprevperc - $usageperc"`
     fi
     y3="$(echo "$usagediff >= $MEM_RES_3" | bc)"
     [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_RES_2" | bc)"
@@ -86,10 +86,10 @@ for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
-      usagediff=`solve $usageperc - $usageprevperc`
+      usagediff=`solve "$usageperc - $usageprevperc"`
     else
       direction="decreased"
-      usagediff=`solve $usageprevperc - $usageperc`
+      usagediff=`solve "$usageprevperc - $usageperc"`
     fi
     y3="$(echo "$usagediff >= $MEM_VIR_3" | bc)"
     [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_VIR_2" | bc)"
