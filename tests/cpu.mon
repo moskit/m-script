@@ -58,6 +58,7 @@ warnind='(OK) '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
+echo
 echo "${warnind} `expr $CPUUPERIOD \* $CPUUSAMPLES` sec average CPU usage is ${cpuusage}: system ${syavg}, user ${usavg}, wait ${waavg}"
 
 ### Throttle

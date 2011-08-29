@@ -48,12 +48,6 @@ fi
 
 MBD="$DEST/backup.tmp/mongo"
 
-if [ "X${2}" == "X" ]; then
-  archname="$(hostname -f).$(date +"%Y.%m.%d_%H.%M")"
-else
-  archname="${2}"
-fi
-
 [ ! -d $MBD ] && install -d $MBD
 if [ "X$mongopass" == "X" ]; then
   PASS=""
@@ -73,6 +67,11 @@ for mongohost in $mongohosts ; do
 done
  
 echo "Host $DBHOST selected." >>${rpath}/m_backup.log
+if [ "X${2}" == "X" ]; then
+  archname="$DBHOST.$(date +"%Y.%m.%d_%H.%M")"
+else
+  archname="${2}"
+fi
 
 if [ "X$mongodblist" == "X" ]; then
   mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>${rpath}/m_backup.error
@@ -93,11 +92,12 @@ do
 ### Note that it doesn't dump indexes
 #    if [ -n "$compress" ] ; then
 #    for collection in `mongo $DBHOST/$db --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
-#      $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "${MBD}/${db}${archname}/${collection}.bson.${ext}"
+#      $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "${MBD}/${db}.${archname}/${collection}.bson.${ext}" 2>>${rpath}/m_backup.error
 #    done
 #    fi
-    $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
-    [ -n "$TAR" ] && $TAR "${MBD}/${db}${archname}.tar.${ext}" "${MBD}/${db}${archname}"
+    $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+    [ -n "$TAR" ] && $TAR "${MBD}/${db}.${archname}.tar.${ext}" "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
+    rm -rf "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
   fi
 done
 

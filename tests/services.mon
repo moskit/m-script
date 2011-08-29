@@ -36,7 +36,8 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
           if [ -f "/proc/$pid/comm" ] ; then
             pcomm=`cat /proc/$pid/comm`
           else
-            pcomm=`cat /proc/$pid/cmdline`
+            pcomm=`cat /proc/$pid/cmdline | sed 's|[^[:print:]]| |g' | cut -d' ' -f1`
+            pcomm=${pcomm##*/}
           fi
           printf "$pcomm"
           m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
