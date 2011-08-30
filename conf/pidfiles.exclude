@@ -1,0 +1,3 @@
+# If any pattern from this file matches a pid file name, the process which
+# this pid file belongs to is excluded from being monitored
+

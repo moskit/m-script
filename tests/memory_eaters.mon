@@ -54,7 +54,7 @@ for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
   [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
-  [ -f ${TMPDIR}/ps.prev.res ] && usageprev=`grep "${procname}" ${TMPDIR}/ps.prev.res | cut -d' ' -f1` || continue
+  [ -f ${TMPDIR}/ps.prev.res ] && usageprev=`grep " ${procname}$" ${TMPDIR}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -81,7 +81,7 @@ for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
   [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of virtual memory"
-  [ -f ${TMPDIR}/ps.prev.vir ] && usageprev=`grep "${procname}" ${TMPDIR}/ps.prev.vir | cut -d' ' -f1` || continue
+  [ -f ${TMPDIR}/ps.prev.vir ] && usageprev=`grep " ${procname}$" ${TMPDIR}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
