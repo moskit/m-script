@@ -46,6 +46,8 @@ sort -g -r ${TMPDIR}/ps.list.res | head -n $MEM_TOP_NUM > ${TMPDIR}/ps.list.res.
 sort -g -r ${TMPDIR}/ps.list.vir | head -n $MEM_TOP_NUM > ${TMPDIR}/ps.list.vir.sorted
 
 totalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
+totalswap=`cat /proc/meminfo | grep ^SwapTotal | awk '{ print $2 }'`
+totalmem=`expr $totalram + $totalswap`
 
 for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
   unset usageprev warnind
@@ -79,7 +81,7 @@ for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
   procname=${proc#* }
   usage=${proc%% *}
   usagemb=`solve "$usage / 1024"`
-  usageperc=`solve "$usage / $totalram * 100"`
+  usageperc=`solve "$usage / $totalmem * 100"`
   [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of virtual memory"
   [ -f ${TMPDIR}/ps.prev.vir ] && usageprev=`grep " ${procname}$" ${TMPDIR}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
