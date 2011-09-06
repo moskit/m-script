@@ -316,11 +316,10 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="red"
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=dash --text=`${rpath}/lib/txt2html report` --background=$indic
+      ${rpath}/genhtml --type=dash --text=`${rpath}/lib/txt2html ${rpath}/report` --background=$indic
       ;;
     JSON)
-      ${rpath}/genjson --type=dash --text=`${rpath}/lib/txt2json report` --backg
-round=$indic
+      ${rpath}/genjson --type=dash --text=`${rpath}/lib/txt2json ${rpath}/report` --background=$indic
       ;;
   esac
 

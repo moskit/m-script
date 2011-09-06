@@ -111,14 +111,14 @@ start)
       fi
     ##
       ${rpath}/mon.run connections.mon &
+      sleep 1 # Needed for proper lock
       echo >> /tmp/m_script/conn_test_runs_count
       # Running processes (services.conf)
       ${rpath}/mon.run services.mon &
-    else
-## Tests that are always enabled
-      # Other servers (listed in servers.conf) availability
-      ${rpath}/mon.run servers.mon &
     fi
+## Tests that are always enabled
+    # Other servers (listed in servers.conf) availability
+    ${rpath}/mon.run servers.mon &
 ###
   done & 2>/dev/null
 ###########################################################

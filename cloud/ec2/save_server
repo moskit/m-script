@@ -81,11 +81,12 @@ else
 fi
 install -d $TMPDIR
 install -d $SAVED_FILES_PATH
+EXCLUDE_PATHS=`echo $EXCLUDE_PATHS | sed 's|,| |g'`
 for E in $EXCLUDE_PATHS
 do
   [ -e $E ] || ex=0
 done
-[ "X$ex" != "X0" ] && EXCLUDE="-e $EXCLUDE_PATHS" || EXCLUDE=""
+[ "X$ex" != "X0" ] && EXCLUDE="-e ${EXCLUDE_PATHS}/" || EXCLUDE=""
 [ "X$name" == "X" ] && echo "Name needed" && exit 1
 [ "X`which ec2-bundle-vol`" == "X" ] && echo "AMI Tools needed" && exit 1
 [ "X`which ec2-register`" == "X" ] && echo "API Tools needed" && exit 1
