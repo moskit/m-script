@@ -25,6 +25,11 @@ SED=`which sed 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
+# Normally needed for localhost only, and not always: depends on system.
+# Hostnames of remote servers are obtained via ssh which is a login shell;
+# this is why the variable below is not used for remote servers: you may
+# have different OSes there with different paths to hostname utility.
+HOSTNAME=`which hostname 2>/dev/null`
 possible_options="help region force verbose"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -102,7 +107,7 @@ do
       if [ "X$state" == "Xrunning" ] ; then
         if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
           if [ `echo $localip | grep -c $inIP` -ne 0 ] ; then
-            sname=`hostname`
+            sname=`$HOSTNAME`
           else
             sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
           fi
@@ -139,7 +144,7 @@ done
 if [ "X$state" == "Xrunning" ] ; then
   if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
     if [ `echo $localip | grep -c $inIP` -ne 0 ] ; then
-      sname=`hostname`
+      sname=`$HOSTNAME`
     else
       sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
     fi
