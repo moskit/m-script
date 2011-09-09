@@ -36,7 +36,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
         if [ -z "$skip" ] ; then
-          pid=`cat "$pidfile"|sed 's|\r||;s|[[:space:]]||g'`
+          pid=`cat "$pidfile"|sed 's|[^[0-9]]||g'|tail -1`
           if [ -n "$pid" ] ; then
             if [ -d "/proc/$pid" ] ; then
               if [ -f "/proc/$pid/comm" ] ; then

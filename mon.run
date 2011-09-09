@@ -56,7 +56,7 @@ function mailreport() {
   while read RLINE
   do
     if [ -n "${RLINE}" ]; then
-      cat ${rpath}/conf/rep.header ${rpath}/report | ${MAILX} -s "Server `$HOSTNAME -f` report" ${RLINE}
+      cat ${rpath}/conf/rep.header ${rpath}/report | ${MAILX} -s "Server `$HOSTNAME -f || $HOSTNAME` report" ${RLINE}
     fi
   done < ${rpath}/conf/mail.admin.list
 }
@@ -82,7 +82,7 @@ function mailalert() {
     if [ "X$al" != "X" ]
     then
       cat ${rpath}/alert >> ${rpath}/monitoring.log
-      cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f` alert" ${MLINE} 2>&1>>${rpath}/monitoring.log
+      cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f || $HOSTNAME` alert" ${MLINE} 2>&1>>${rpath}/monitoring.log
     fi
   done
   rm -f ${rpath}/alert* 2>/dev/null
@@ -99,15 +99,24 @@ function runscript() {
     echo "------------------------------" >> "${rpath}/monitoring.log"
     date | tee -a "${rpath}/monitoring.log" | tee "${rpath}/report" | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/monitoring.log"  | tee -a ${rpath}/report | tee -a "${rpath}/alert" >/dev/null
-    for script in ${rpath}/rc/*.mon  #*/
-    do
-      $script SQL
-    done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
+    if [ -n "$2" ] ; then
+      for script in `find ${rpath}/rc/ -maxdepth 1 -name "*.mon" | head -n $2`
+      do
+        source ${rpath}/tests/${script%.mon}.conf
+        $script SQL
+      done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
+    else
+      for script in ${rpath}/rc/*.mon  #*/
+      do
+        source ${rpath}/tests/${script%.mon}.conf
+        $script SQL
+      done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
+    fi
   elif [ "X$1" != "X" ]; then
     date | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
     echo > "${rpath}/report"
-    [ -x "${rpath}/tests/${1}" ] && ${rpath}/tests/${1} $SQL 2>&1 | tee "${rpath}/report" >/dev/null #*/
+    [ -x "${rpath}/tests/${1}" ] && source ${rpath}/tests/${1%.mon}.conf && ${rpath}/tests/${1} $SQL 2>&1 | tee "${rpath}/report" >/dev/null #*/
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
   grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
@@ -143,6 +152,7 @@ IFS=$IFS1
 }
 
 function runsysanalyze() {
+  source ${rpath}/conf/analysis.conf
   echo "------------------------------" >> ${rpath}/monitoring.log
   date | tee -a ${rpath}/monitoring.log | tee ${rpath}/report | tee ${rpath}/alert >/dev/null
   echo "------------------------------" | tee -a ${rpath}/monitoring.log  | tee -a ${rpath}/report | tee -a ${rpath}/alert >/dev/null
@@ -375,6 +385,16 @@ case ${1} in
   -rep | -report | --report)
     newtimeindex
     runscript SQL
+    mailreport
+    mailalert
+    [ -n "$DASHBOARD" ] && gendash
+    deltimeindex
+  ;;
+  --report=*)
+    limit=${1#*=}
+    [[ $limit =~ [^[0-9]] ]] && echo "Usage: --report=<number>" && exit 1
+    newtimeindex
+    runscript SQL $limit
     mailreport
     mailalert
     [ -n "$DASHBOARD" ] && gendash
