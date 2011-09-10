@@ -117,7 +117,7 @@ function runscript() {
         source ${rscript%.mon}.conf
         $rscript SQL
         time1=`date +"%s"`
-        sqlite3 "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
+        sqlite3 "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
     fi
   elif [ "X$1" != "X" ]; then
