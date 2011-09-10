@@ -104,7 +104,7 @@ if [ -e /tmp/m_script/netstat.tcp.tmp ] ; then
           xports=${exclport%%%*}
           port1=${xports%-*}
           port2=${xports#*-}
-          ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+          ([[ $portnum -lt $port1 ]] || [[ $portnum -gt $port2 ]]) && skip=1 && break
         fi
       fi
     done
@@ -128,7 +128,7 @@ if [ -e /tmp/m_script/netstat.udp.tmp ] ; then
           xports=${exclport%%%*}
           port1=${xports%-*}
           port2=${xports#*-}
-          ([[ $portnum -ge $port1 ]] || [[ $portnum -le $port2 ]]) && skip=1 && break
+          ([[ $portnum -lt $port1 ]] || [[ $portnum -gt $port2 ]]) && skip=1 && break
         fi
       fi
     done

@@ -18,9 +18,9 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-portstcp=`cat ${rpath}/../ports.tcp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
-portsudp=`cat ${rpath}/../ports.udp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
-sockets=`cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
+portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
+portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
+sockets=( `cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
 
@@ -142,22 +142,20 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
     done
     
     # now compare ports
-    for i in ${portstcp}
+    for ((i=0; i<${#portstcp[*]}; i++))
     do
-      if [ "X${i}" == "X${t}" ]
+      if [ "X${portstcp[$i]}" == "X${t}" ]
       then
-        j=`expr "${i}" : '.*\(:[0-9]*\)'`
-        portstcp=$(echo ${portstcp} | sed "s|${t}||")
+        unset portstcp[$i]
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
         printf "${t}"
-        # | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
         m=`expr length "${t}"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`${NETCONNSTCP} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
+        printf "`${NETCONNSTCP} | grep \"${t}\" | grep 'ESTABLISHED' | wc -l`\n"
         portfound=1
         break
       fi
@@ -196,22 +194,20 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
     done
     
     # now compare ports
-    for i in ${portsudp}
+    for ((i=0; i<${#portsudp[*]}; i++))
     do
-      if [ "X${i}" == "X${t}" ]
+      if [ "X${portsudp[$i]}" == "X${t}" ]
       then
-        j=`expr "${i}" : '.*\(:[0-9]*\)'`
-        portsudp=$(echo ${portsudp} | sed "s|${t}||")
+        unset portsudp[$i]
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
         printf "${t}"
-        # | sed 's|0.0.0.0:|port |g' | sed 's|127.0.0.1:|port |g' | sed 's|<\:\:\:>|port |g' | sed 's|\:\:\:|port |g'
         m=`expr length "${t}"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`${NETCONNSUDP} | grep \"${j}\" | grep 'ESTABLISHED' | wc -l`\n"
+        printf "`${NETCONNSUDP} | grep \"${t}\" | grep 'ESTABLISHED' | wc -l`\n"
         portfound=1
         break
       fi
@@ -221,19 +217,19 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
   done < /tmp/m_script/ports.udp.$$
 fi
 
-if [ "X${portstcp}" != "X" ]
+if [[ ${#portstcp[*]} -gt 0 ]]
 then
- echo "<***> There is no services listening on TCP: ${portstcp}"
+ echo "<***> There is no services listening on TCP: ${portstcp[*]}"
 fi
 
-if [ "X${portsudp}" != "X" ]
+if [[ ${#portsudp[*]} -gt 0 ]]
 then
- echo "<***> There is no services listening on UDP: ${portsudp}"
+ echo "<***> There is no services listening on UDP: ${portsudp[*]}"
 fi
 
 echo
 $SOCKCONNS | grep STREAM > /tmp/m_script/sockets.$$
-#  | awk -F'STREAM' '{print $2}' | awk '{print $3}'
+
 while read LINE
 do
   for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
@@ -246,11 +242,11 @@ do
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
   sname=${sname#*/}
   # now compare sockets
-  for i in ${sockets}
+  for ((i=0; i<${#sockets[*]}; i++))
   do
-    if [ "X${i}" == "X${t}" ]
+    if [ "X${sockets[$i]}" == "X${t}" ]
     then
-      sockets=$(echo ${sockets} | sed "s|${t}||")
+      unset sockets[$i]
       printf "$sname"
       m=`expr length $sname`
       l=`expr 20 - $m`
@@ -263,11 +259,12 @@ do
   [[ $socketfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored."
 done < /tmp/m_script/sockets.$$
 
-rm -f /tmp/m_script/ports.*.$$ /tmp/m_script/sockets.$$
-if [ "X${sockets}" != "X" ]
+if [[ ${#sockets[*]} -gt 0 ]]
 then
- echo "<***> There is no services listening on unix sockets: ${sockets}"
+ echo "<***> There is no services listening on unix sockets: ${sockets[*]}"
 fi
+
+rm -f /tmp/m_script/ports.*.$$ /tmp/m_script/sockets.$$
 # End of netstat test
 
 echo
