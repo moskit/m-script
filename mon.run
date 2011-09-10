@@ -19,6 +19,7 @@ currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 MAILX=`which mail 2>/dev/null`
 HOSTNAME=`which hostname 2>/dev/null`
+SQLITE=`which sqlite3 2>/dev/null`
 #SAR=`which sar 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
@@ -92,8 +93,8 @@ function runscript() {
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
   then
-    sqlite3 "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${tmpdir}/lasttimeindex"
-    sqlite3 "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
+    $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${tmpdir}/lasttimeindex"
+    $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
   if [ "X$1" == "XSQL" ]; then
     echo "------------------------------" >> "${rpath}/monitoring.log"
@@ -107,7 +108,7 @@ function runscript() {
         source ${rscript%.mon}.conf
         $rscript SQL
         time1=`date +"%s"`
-        sqlite3 "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
+        $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
     else
       for script in ${rpath}/rc/*.mon  #*/
@@ -117,7 +118,7 @@ function runscript() {
         source ${rscript%.mon}.conf
         $rscript SQL
         time1=`date +"%s"`
-        sqlite3 "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+        $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
     fi
   elif [ "X$1" != "X" ]; then
@@ -177,12 +178,12 @@ function analyzesysparams() {
   then
     partotal=""
   else
-    partotal=`sqlite3 ${rpath}/sysdata "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
+    partotal=`$SQLITE ${rpath}/sysdata "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
   fi
 
   for ((n=1; n <= $ANALYS_DAYS; n++))
   do
-    results[$n]=`sqlite3 ${rpath}/sysdata "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
+    results[$n]=`$SQLITE ${rpath}/sysdata "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
     #echo "== n=$n; date: $afrdatefirst; result: ${results[$n]}"
     afrdayfirst=`date -d "$afrdayfirst + 1 day" +"%Y%m%d"`
   done
@@ -285,7 +286,7 @@ function analyzesysparams() {
 function sysanalysis() {
   if [ "X$SQLITE3" != "X1" ]
   then
-    echo "To use --analyze-system option, SQLite3 must be installed and SQLITE3 must"
+    echo "To use --analyze-system option, sqlite3 must be installed and SQLITE3 must"
     echo "be set to 1 in conf/mon.conf"
     exit 1
   fi
@@ -296,7 +297,7 @@ function sysanalysis() {
     exit 1
   fi
   dayfirst=`date -d "- 7 day" +"%Y%m%d"`
-  testdays=`sqlite3 ${rpath}/sysdata "select day from sysdata where day='$dayfirst'"`
+  testdays=`$SQLITE ${rpath}/sysdata "select day from sysdata where day='$dayfirst'"`
   if [ "X$testdays" != "X" ]
   then
 #   ------------ Database -- un -- "From" - DB column  - Human  ----- Warning level - Con
