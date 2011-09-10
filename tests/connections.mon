@@ -42,6 +42,7 @@ fi
 [ -e ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
 
 source ${rpath}/../conf/mon.conf
+source ${rpath}/${0##*/}
 
 echo
 echo "Listening ports and sockets:"

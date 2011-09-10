@@ -27,6 +27,7 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
 source ${rpath}/../conf/mon.conf
+source ${rpath}/${0##*/}
 
 ## Not in mon.conf, not sure it is needed there
 CPUUPERIOD=1

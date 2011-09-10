@@ -75,15 +75,18 @@ done && echo "OK"
 printf "Running actions specific for this upgrade ... "
 if [ -f "${rpath}/../this_upgrade_actions" ] ; then
   printf "found ... "
-  echo "Running this upgrade specific actions script" >> ${rpath}/../upgrade.log
-  bash "${rpath}/../this_upgrade_actions" >> ${rpath}/../upgrade.log
+  echo "Running this upgrade specific actions script" >> "${rpath}/../upgrade.log"
+  bash "${rpath}/../this_upgrade_actions" ${rpath} >> "${rpath}/../upgrade.log"
   if [[ $? -eq 0 ]] ; then
     echo "OK"
-    rm -f "${rpath}/../this_upgrade_actions"
+    date >> "${rpath}/../upgrade_actions.list"
+    cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../upgrade_actions.list"
   else
-    mv "${rpath}/../this_upgrade_actions" "${rpath}/../this_upgrade_actions.failed"
+    date >> "${rpath}/../this_upgrade_actions.failed"
+    cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../this_upgrade_actions.failed"
     echo "Error. Check the script: this_upgrade_actions.failed"
   fi
+  rm -f "${rpath}/../this_upgrade_actions"
 else
   echo "not found"
 fi

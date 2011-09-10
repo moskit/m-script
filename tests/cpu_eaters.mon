@@ -5,6 +5,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 source ${rpath}/../conf/mon.conf
+source ${rpath}/${0##*/}
 
 echo ""
 echo "CPU eaters:"

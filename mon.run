@@ -105,7 +105,6 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        source ${rscript%.mon}.conf
         $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
@@ -115,7 +114,6 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        source ${rscript%.mon}.conf
         $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
@@ -125,7 +123,7 @@ function runscript() {
     date | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
     echo > "${rpath}/report"
-    [ -x "${rpath}/tests/${1}" ] && source ${rpath}/tests/${1%.mon}.conf && ${rpath}/tests/${1} $SQL 2>&1 | tee "${rpath}/report" >/dev/null #*/
+    [ -x "${rpath}/tests/${1}" ] && ${rpath}/tests/${1} $SQL 2>&1 | tee "${rpath}/report" >/dev/null #*/
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
   grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"

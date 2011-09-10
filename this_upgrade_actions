@@ -1,2 +1,3 @@
+rpath=$1
 sqlite3 ${rpath}/../sysdata 'create table selfmon(timeindex integer, day varchar(8), monitor varchar(64), duration integer)'
 
