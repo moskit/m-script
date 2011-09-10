@@ -116,6 +116,7 @@ fi
 if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
   while read LINE
   do
+    portstcp=( ${portstcp[*]} )
     portfound=0
     t=${LINE%%%*}
     prog=${LINE#* }
@@ -168,6 +169,7 @@ fi
 if [ -f /tmp/m_script/ports.udp.$$ ] ; then
   while read LINE
   do
+    portsudp=( ${portsudp[*]} )
     portfound=0
     t=${LINE%%%*}
     prog=${LINE#* }
@@ -232,6 +234,7 @@ $SOCKCONNS | grep STREAM > /tmp/m_script/sockets.$$
 
 while read LINE
 do
+  sockets=( ${sockets[*]} )
   for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
