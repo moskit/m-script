@@ -72,5 +72,20 @@ for newfile in `find ${rpath}/../ -name "*.new"` ; do
     rm -f $newfile && touch ${newfile%.new} && printf "."
   fi
 done && echo "OK"
+printf "Running actions specific for this upgrade ... "
+if [ -f "${rpath}/../this_upgrade_actions" ] ; then
+  printf "found ... "
+  echo "Running this upgrade specific actions script" >> ${rpath}/../upgrade.log
+  bash "${rpath}/../this_upgrade_actions" >> ${rpath}/../upgrade.log
+  if [[ $? -eq 0 ]] ; then
+    echo "OK"
+    rm -f "${rpath}/../this_upgrade_actions"
+  else
+    mv "${rpath}/../this_upgrade_actions" "${rpath}/../this_upgrade_actions.failed"
+    echo "Error. Check the script: this_upgrade_actions.failed"
+  fi
+else
+  echo "not found"
+fi
 rm -rf /tmp/m_script/.update/
 
