@@ -31,7 +31,7 @@ lasttimeindex=`cat /tmp/m_script/lasttimeindex`
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 source ${rpath}/../conf/mon.conf
-source ${rpath}/${0##*/}
+source ${0%.mon}.conf
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   alltables=`sqlite3 ${rpath}/../sysdata ".tables"`
