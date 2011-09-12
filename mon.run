@@ -310,8 +310,6 @@ analyzesysparams 'diskusage' '%'  $dayfirst   ""      "Disk usage"    "DISKUSAGE
 analyzesysparams 'diskiord' 'MB/sec' $dayfirst "" "Disk average read speed" "DISKIORD" '>='
 analyzesysparams 'diskiowr' 'MB/sec' $dayfirst "" "Disk average write speed" "DISKIOWR" '>='
 analyzesysparams 'cpuusage'  '%'  $dayfirst   ""     "CPU usage"       "CPUUSAGE"    '>='
-analyzesysparams 'cputemp'  'Celsius' $dayfirst ""    "CPU temperature" "CPUTEMP"    '>='
-analyzesysparams 'cpufscale' '%'  $dayfirst   ""   "CPU frequency scale" "CPUFSCALE" '>='
 analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"     '<'
   else
     echo "There is no data in the database for $ANALYS_DAYS days back."
