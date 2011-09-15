@@ -18,6 +18,8 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
+source ${rpath}/../conf/mon.conf
+source ${0%.mon}.conf
 portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
 portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
 sockets=( `cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
