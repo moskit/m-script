@@ -19,7 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster help region"
+possible_options="cluster help region delimiter"
 commflag=0
 for s_option in "${@}"
 do
@@ -78,8 +78,12 @@ for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep
     CLUSTER=`echo $server | cut -d'|' -f5`
     [ "X$CLUSTER" == "X$cluster" ] || continue
   fi
-  echo $IP
+  if [ -n "$delimiter" ] ; then
+    ips=`printf "${IP}${delimiter}"`
+  else
+    ips=`echo $IP`
+  fi
 done
-
 IFS=$IFS1
 
+echo "${ips}" | sed "s|${delimiter}$||"
