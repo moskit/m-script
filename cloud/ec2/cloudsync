@@ -24,7 +24,7 @@ RSYNC=`which rsync 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
-possible_options="cluster help region verbose"
+possible_options="cluster help region verbose recursive"
 commflag=0
 for s_option in "${@}"
 do
@@ -69,6 +69,7 @@ if [ "X$help" == "Xyes" ] ; then
   echo
   echo "Options:"
   echo
+  echo "  --recursive              - recursive sync of directories, implies --delete"
   echo "  --cluster=clustername    - the command will be run on all servers"
   echo "                             from this cluster."
   echo "  --region=region          - the command will be run on all servers"
@@ -78,6 +79,7 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
+[ -n "$recursive" ] && r="-r --delete"
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 IFS1=$IFS
@@ -106,7 +108,7 @@ if [ "X$command" != "X" ] ; then
     if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       echo "It's the local host"
     else
-      $RSYNC -e "$SSH -i ${rpath}/../../keys/${KEY}.pem -o StrictHostKeyChecking=no" --delete $from ${IP}:${to}
+      $RSYNC ${r}-e "$SSH -i ${rpath}/../../keys/${KEY}.pem -o StrictHostKeyChecking=no" $from ${IP}:${to}
     fi
   done
 fi
