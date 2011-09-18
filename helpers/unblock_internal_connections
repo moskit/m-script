@@ -85,8 +85,8 @@ findchain_local() {
 }
 
 findchain_remote() {
-  upperchain=`$SSH -i $3 -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | head -1 | awk '{print \\$1}'"`
-  [ -n "$upperchain" ] && $SSH -i ${rpath}/../keys/${3}.pem -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain
+  upperchain=`$SSH -i "$3" -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | head -1 | awk '{print \\$1}'"`
+  [ -n "$upperchain" ] && $SSH -i "$3" -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain
 }
 
 for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
@@ -105,27 +105,43 @@ for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v
     echo "### Server: $server"
     echo
   fi
-  for mainchain in INPUT OUTPUT ; do
-    for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
-      IP2UB=${server%%|*}
-      [ "X$mainchain" == "XINPUT" ] && target="-s $IP2UB -j ACCEPT"
-      [ "X$mainchain" == "XOUTPUT" ] && target="-d $IP2UB -j ACCEPT"
-      if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
-        [ -n "$IPT" ] || continue
-        rchain=`findchain_local $mainchain`
-        [ -n "$rchain" ] || continue
-        [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  target: $target"
-        $IPT -I "$rchain" "$target"
-      else
-        rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
-        [ -n "$rchain" ] || continue
-        [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  target: $target"
-        command="\`which iptables 2>/dev/null\` -I \"$rchain\" \"$target\""
-        $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
-      fi
-      unset rchain
-    done
+
+  for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+    IP2UB=${server%%|*}
+    # due to strangeness of how iptables accepts substituted options it is
+    # difficult to program them, so they are quite literal
+    mainchain=INPUT
+    if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+      [ -n "$IPT" ] || continue
+      rchain=`findchain_local $mainchain`
+      [ -n "$rchain" ] || continue
+      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+      $IPT -I "$rchain" -s $IP2UB -j ACCEPT
+    else
+      rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
+      [ -n "$rchain" ] || continue
+      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+      command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
+      $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+    fi
+    unset rchain
+    mainchain=OUTPUT
+    if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+      [ -n "$IPT" ] || continue
+      rchain=`findchain_local $mainchain`
+      [ -n "$rchain" ] || continue
+      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+      $IPT -I "$rchain" -d $IP2UB -j ACCEPT
+    else
+      rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
+      [ -n "$rchain" ] || continue
+      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+      command="\`which iptables 2>/dev/null\` -I \"$rchain\" -d $IP2UB -j ACCEPT"
+      $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+    fi
+    unset rchain
   done
+
 done
 
 IFS=$IFS1

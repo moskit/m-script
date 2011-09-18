@@ -18,8 +18,9 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 SSH=`which ssh 2>/dev/null`
-possible_options="help verbose cluster flavor ip cloud"
-necessary_options=""
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+possible_options="help verbose flavor ip cloud"
+necessary_options="cluster"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -57,21 +58,27 @@ if [ "X$help" == "Xyes" ] ; then
 
   exit 0
 fi
-
-[ "X$SSH" == "X" ] && echo "SSH client not found!" && exit 1
-SSH="$SSH -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
-$SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" && exit 1)
-
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
   ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
 elif [ -z "$cloud" ] ; then
   echo "Either --ip or --cloud must be defined"
   exit 1
 fi
-
 if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
   echo "Something's wrong with IP: $ip"
   exit 1
+fi
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+if [ `echo $IP | grep -c "$localip"` -eq 0 ] ; then
+  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
+  [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
+  SSH="$SSH -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
+  $SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" && exit 1)
+  
+
+
+
 fi
 
 
