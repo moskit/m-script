@@ -75,7 +75,7 @@ if [ "X$help" == "Xyes" ] ; then
   echo "                             the command."
   exit 0
 fi
-
+[ -n "$flavor" ] || flavor=common
 source "${rpath}/../conf/deployment.conf"
 source "${ROLES_ROOT}/${cluster}/role.conf"
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
@@ -85,6 +85,7 @@ IFS='
 '
 if [ "X$command" != "X" ] ; then
   from=${command%% *}
+  from="${ROLES_ROOT}/${cluster}/${flavor}/files/${from}"
   tmpfile=/tmp/m_script/deployment/`echo $from | sed 's|/|_|g'`
   rm -f "$tmpfile"
   for LINE in `cat "$from"` ; do
@@ -92,7 +93,7 @@ if [ "X$command" != "X" ] ; then
   done
   to=${command#* }
   [ -n "$verbose" ] && echo "### Deploying $from to $to"
-  for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+  for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
     IP=${server%%|*}
     KEY=`echo $server | cut -d'|' -f2`
     if [ -n "$region" ] ; then
