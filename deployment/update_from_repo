@@ -64,17 +64,17 @@ if [ "X$check" == "Xyes" ] ; then
   [ -n "$repository" ] && repository="--repository=$repository"
   [ "X$verbose" == "Xyes" ] && verbose="--verbose"
   for rname in `${rpath}/../../helpers/svncheck.sh "$cluster" "$repository" | grep -v 0$ | cut -d' ' -f1` ; do
-    repo=`cat ${rpath}/../../conf/deployment.conf|grep "^${rname}|"|tail -1`
+    repo=`cat ${rpath}/../../conf/repos.list|grep "^${rname}|"|tail -1`
     repourl=`echo "${repo}" | cut -d'|' -f3`
     repouser=`echo "${repo}" | cut -d'|' -f4`
     [ "X$repouser" == "X" ] || repouser="--username=$repouser"
     repopass=`echo "${repo}" | cut -d'|' -f5`
     [ "X$repopass" == "X" ] || repopass="--password=$repopass"
     repopath=`echo "${repo}" | cut -d'|' -f7`
-    ${rpath}/cloudexec "$cluster" "$verbose" "svn export $repouser $repopass --non-interactive $repourl $repopath"
+    ${rpath}/../cloud/cloudexec "$cluster" "$verbose" "svn export $repouser $repopass --non-interactive $repourl $repopath"
   done
 else
-  for repo in `cat ${rpath}/../../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+  for repo in `cat ${rpath}/../../conf/repos.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
     if [ -n "$repository" ] ; then
       if [ "$repository" != "$reponame" ] ; then
         continue
@@ -95,7 +95,7 @@ else
     repopath=`echo "${repo}" | cut -d'|' -f7`
     [ -n "$cluster" ] && cluster="--cluster=$cluster"
     [ "X$verbose" == "Xyes" ] && verbose="--verbose"
-    ${rpath}/cloudexec "$cluster" "$verbose" "svn export $repouser $repopass --non-interactive $repourl $repopath"
+    ${rpath}/../cloud/cloudexec "$cluster" "$verbose" "svn export $repouser $repopass --non-interactive $repourl $repopath"
   done
 fi
 

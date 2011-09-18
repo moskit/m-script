@@ -74,7 +74,7 @@ install -d $TMPDIR
 IFS1=$IFS
 IFS='
 '
-for repo in `cat ${rpath}/../conf/deployment.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+for repo in `cat ${rpath}/../conf/repos.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   reponame=`echo "${repo}" | cut -d'|' -f1`
   if [ -n "$repository" ] ; then
     if [ "$repository" != "$reponame" ] ; then
