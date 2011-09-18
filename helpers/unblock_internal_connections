@@ -80,14 +80,13 @@ IFS='
 '
 
 findchain_local() {
-  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | head -1`
-  [ -n "$upperchain" ] && $IPT -L $upperchain && echo $upperchain | awk '{print $1}'
+  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | head -1 | awk '{print $1}'`
+  [ -n "$upperchain" ] && $IPT -L $upperchain && echo $upperchain
 }
 
 findchain_remote() {
-  SSH="$SSH -i \"${rpath}/../keys/${3}.pem\" -o StrictHostKeyChecking=no"
-  upperchain=`$SSH $2 $IPT -L $1 | grep -v ^Chain | grep -v ^target | head -1`
-  [ -n "$upperchain" ] && $SSH $2 $IPT -L $upperchain && echo $upperchain | awk '{print $1}'
+  upperchain=`$SSH -i ${rpath}/../keys/${3}.pem -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | head -1 | awk '{print $1}'"`
+  [ -n "$upperchain" ] && $SSH -i ${rpath}/../keys/${3}.pem -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" && echo $upperchain
 }
 
 [ -n "$verbose" ] && echo "### Command: $command"
@@ -117,12 +116,12 @@ findchain_remote() {
         else
           rchain=`findchain_remote $mainchain $IP $KEY`
           [ -n "$rchain" ] || continue
-          command="[ -f \"/sbin/iptables\" ] && IPT=/sbin/iptables || IPT=\`which iptables 2>/dev/null\` ; \$IPT -I $rchain -s $IP2UB -j ACCEPT"
+          command="\`which iptables 2>/dev/null\` -I $rchain -s $IP2UB -j ACCEPT"
           $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
         fi
       done
     done
   done
-fi
+
 IFS=$IFS1
 
