@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+[ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
+SSH="$SSH -i \"${rpath}/../keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
+possible_options="cluster help region verbose"
+commflag=0
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options> command"
+  echo 
+  echo "Without options the command will be run on all servers from servers.list"
+  echo
+  echo "Options:"
+  echo
+  echo "  --cluster=clustername    - the command will be run on all servers"
+  echo "                             from this cluster."
+  echo "  --region=region          - the command will be run on all servers"
+  echo "                             from this region."
+  echo "  --verbose                - shows each server details before running"
+  echo "                             the command."
+  exit 0
+fi
+
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+
+IFS1=$IFS
+IFS='
+'
+
+findchain_local() {
+  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | head -1`
+  [ -n "$upperchain" ] && $IPT -L $upperchain && echo $upperchain
+}
+
+findchain_remote() {
+  upperchain=`$SSH $2 $IPT -L $1 | grep -v ^Chain | grep -v ^target | head -1`
+  [ -n "$upperchain" ] && $SSH $2 $IPT -L $upperchain && echo $upperchain
+}
+
+[ -n "$verbose" ] && echo "### Command: $command"
+if [ "X$command" != "X" ] ; then
+  for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+    IP=${server%%|*}
+    KEY=`echo $server | cut -d'|' -f2`
+    if [ -n "$region" ] ; then
+      REGION=`echo $server | cut -d'|' -f3`
+      [ "X$REGION" == "X$region" ] || continue
+    fi
+    if [ -n "$cluster" ] ; then
+      CLUSTER=`echo $server | cut -d'|' -f5`
+      [ "X$CLUSTER" == "X$cluster" ] || continue
+    fi
+    if [ "X$verbose" == "Xyes" ] ; then
+      echo
+      echo "### Server: $server"
+      echo
+    fi
+    
+    for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+      IP2UB=${server%%|*}
+      if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+        [ -n "$IPT" ] || continue
+        $IPT -I `findchain_local` -s $IP2UB -j ACCEPT
+      else
+        rchain=`findchain_remote $IP`
+        [ -n "$rchain" ] || continue
+        command="[ -f \"/sbin/iptables\" ] && IPT=/sbin/iptables || IPT=\`which iptables 2>/dev/null\` ; \$IPT -I $rchain -s $IP2UB -j ACCEPT"
+        $SSH -i "${rpath}/../../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+      fi
+    done
+  done
+fi
+IFS=$IFS1
+

@@ -17,9 +17,10 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-possible_options="help verbose cluster flavor "
+SSH=`which ssh 2>/dev/null`
+possible_options="help verbose cluster flavor ip cloud"
 necessary_options=""
-#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
   found=0
@@ -53,11 +54,27 @@ do
 done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
-  echo 
-  echo "Without options all found clusters will be synced"
-  echo
-  echo "Options:"
-  echo
-  echo "  --region=region          - syncs only servers in this region."
+
   exit 0
 fi
+
+[ "X$SSH" == "X" ] && echo "SSH client not found!" && exit 1
+SSH="$SSH -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
+$SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" && exit 1)
+
+if [ -z "$ip" ] && [ -n "$cloud" ] ; then
+  ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
+elif [ -z "$cloud" ] ; then
+  echo "Either --ip or --cloud must be defined"
+  exit 1
+fi
+
+if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
+  echo "Something's wrong with IP: $ip"
+  exit 1
+fi
+
+
+    
+    
+    
