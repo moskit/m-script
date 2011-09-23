@@ -1,0 +1,108 @@
+#!/bin/bash
+
+
+[ "X$2" == "X" ] && echo "Usage: $0 <total> <concurrency>" && exit 0
+totallimit=$1
+concurrency=$2
+
+aa=( a a b c d e e f g h i j k l m n n o o p q r s t u v w x y z )
+CURL=`which curl 2>/dev/null`
+[ "X$CURL" == "X" ] && echo "Curl not found" && exit 1
+
+function randword() {
+i=`echo $RANDOM | sed 's|.|& |g'` ; j=`expr $RANDOM / 11000 + 1`; for n in $i ; do l=`expr $n \* $j` ; printf "${aa[$l]}" ; done ; printf "\n"
+}
+
+declare -i a
+rm -f s.log e.log t.log c*.log queries.log 2>/dev/null
+cycles=`expr $totallimit / $concurrency`
+goon=1
+while true ; do
+#  [ -n "$allcycles" ] && unset goon
+  for ((n=1; n<=$cycles; n++)) ; do
+    activecycles=0
+    finished=0
+    activecycles=`ls c*.log|wc -l 2>/dev/null` || activecycles=$cycles
+    finished=`cat c*.log|wc -l 2>/dev/null` || finished=0
+    running=`expr $activecycles \* $concurrency - $finished`
+    if [[ $running -gt $concurrency ]] ; then
+      printf " ZZZ "
+      sleep 5
+    else
+      if [ -n "$allcycles" ] ; then
+        unset goon
+      else
+
+      for ((k=1; k<=$concurrency; k++)) ; do
+        # Uncomment this if you need randomly generated word for url
+        #word=`randword`
+        #echo >> queries.log
+        #echo $word  >> queries.log
+        #echo "======================" >> queries.log
+
+        t=`(time -p (curl -s "http://184.106.66.209/static/images/demo/images-1306.png" && printf "." >> s.log || printf "." >> e.log)) 2>&1 | grep 'real' | cut -d' ' -f2`
+        echo $t >> c${n}.log
+        printf "."
+      done &
+
+      fi
+    fi
+    # needed to avoid burst-like requests number growth
+    sleep 1
+    if [ -e "c1.log" ] && [ `ls c*.log|wc -l` -eq $cycles ] ; then
+      allcycles=1
+      for log in c*.log ; do
+        if [ `cat $log|wc -l` -lt $concurrency ] ; then
+          printf "*" && goon=1
+        fi
+      done
+      if [ -n "$goon" ] ; then
+        printf "=>"
+        continue
+      else
+        cat c*.log >> t.log
+        rm -f c*.log
+        break
+      fi
+    fi
+  done
+  [ -z "$goon" ] && echo "no more going on" && break
+done
+while true ; do
+  activecycles=`ls c*.log|wc -l 2>/dev/null` || activecycles=$cycles
+  finished=`cat c*.log|wc -l 2>/dev/null` || finished=0
+  running=`expr $activecycles \* $concurrency - $finished`
+  if [[ $running -gt 0 ]] ; then
+    printf "  $running    \r"
+    sleep 2
+  else
+    break
+  fi
+done
+totaltime=0
+average=0
+mintime=0
+[ -e t.log ] && mintime=`head -1 t.log`
+maxtime=$mintime
+success=0
+[ -e s.log ] && success=`cat s.log | wc -m`
+error=0
+[ -e e.log ] && error=`cat e.log | wc -m`
+number=`cat t.log|wc -l`
+while read tt ; do
+  totaltime=`scale=2; echo "$totaltime + $tt" | bc`
+  [[ `echo "$mintime >= $tt" | bc` -eq 1 ]] && mintime=$tt
+  [[ `echo "$maxtime <= $tt" | bc` -eq 1 ]] && maxtime=$tt
+done < t.log
+averagetime=`scale=2; echo "$totaltime / $number" | bc`
+persecond=`scale=2; echo "$success / ($totaltime + 0.1)" | bc`
+echo "Total queries: $number"
+echo "Successful queries: $success"
+echo "Failed queries: $error"
+echo "Total time: $totaltime"
+echo "Average query time: $averagetime"
+echo "Shortest query: $mintime"
+echo "Longest query: $maxtime"
+echo "QPS: $persecond"
+
+

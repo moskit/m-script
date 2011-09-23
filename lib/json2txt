@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+declare -i i
+i=0
+declare -a branch
+declare -a index
+
+parseline() {
+  line=$1
+echo "=== $i ::  ${line}"
+  if [ "X$line" == "X{" ] ; then
+    i+=1
+    unset noprint
+    continue
+  fi
+  if [ "X$line" == "X}" ] ; then
+    i+=-1
+    [ -z "$noprint" ] && printvar $var && unset var
+    noprint=1
+    continue
+  fi
+echo "--- $i"
+  if [ -n "$line" ] ; then
+    index[$i]="`echo $line | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+    var="`echo $line | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+  fi
+
+}
+
+printvar() {
+  for ((n=1; n<=$i; n++)) ; do
+    varname=index[$n]
+  done
+  varname=${varname%/}
+  echo "$varname $1"
+}
+
+( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; done ; done
+
+unset branch index ndcont cont i LINE node
+
