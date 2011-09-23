@@ -19,7 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster help region delimiter"
+possible_options="cluster help region delimiter limit"
 commflag=0
 for s_option in "${@}"
 do
@@ -66,7 +66,8 @@ fi
 IFS1=$IFS
 IFS='
 '
-
+declare -i n
+n=1
 for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
   IP=${server%%|*}
   KEY=`echo $server | cut -d'|' -f2`
@@ -83,6 +84,8 @@ for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep
   else
     echo $IP
   fi
+  n+=1
+  [ -n "$limit" ] && [ $n -gt $limit ] && break
 done
 IFS=$IFS1
 
