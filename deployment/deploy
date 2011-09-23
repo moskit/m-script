@@ -58,6 +58,7 @@ if [ "X$help" == "Xyes" ] ; then
 
   exit 0
 fi
+[ -n "$flavor" ] || flavor=common
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
@@ -65,6 +66,7 @@ export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/h
 role=$cluster
 export ROLE_ROOT="${ROLES_ROOT}/${role}"
 
+bash ${ROLE_ROOT}/${flavor}/scripts/${run}
 
 
 
