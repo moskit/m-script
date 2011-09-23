@@ -57,7 +57,7 @@ function mailreport() {
   while read RLINE
   do
     if [ -n "${RLINE}" ]; then
-      cat ${rpath}/conf/rep.header ${rpath}/report | ${MAILX} -s "Server `$HOSTNAME -f || $HOSTNAME` report" ${RLINE}
+      cat ${rpath}/conf/rep.header ${rpath}/report | ${MAILX} -s "Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` report" ${RLINE}
     fi
   done < ${rpath}/conf/mail.admin.list
 }
@@ -83,7 +83,7 @@ function mailalert() {
     if [ "X$al" != "X" ]
     then
       cat ${rpath}/alert >> ${rpath}/monitoring.log
-      cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f || $HOSTNAME` alert" ${MLINE} 2>&1>>${rpath}/monitoring.log
+      cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" ${MLINE} 2>&1>>${rpath}/monitoring.log
     fi
   done
   rm -f ${rpath}/alert* 2>/dev/null
