@@ -118,6 +118,7 @@ start)
     fi
 ## Tests that are always enabled
     # Other servers (listed in servers.conf) availability
+    sleep 1
     ${rpath}/mon.run servers.mon &
 ###
   done & 2>/dev/null
@@ -147,8 +148,18 @@ restart)
   sleep 3
   $0 start
   ;;
+status)
+  if [ -f ${pidfile} ]; then
+    pid=`cat ${pidfile}|tail -1`
+    echo "$0 is running (pid $pid)"
+  fi
+  if [ -f $mgpidfile ] ; then
+    pid=`cat $mgpidfile|tail -1`
+    echo "$0 is running (pid $pid)"
+  fi
+  ;;
 *)
-  echo "Usage: $0 start|stop|restart"
+  echo "Usage: $0 start|stop|restart|status"
   ;;
 esac
 
