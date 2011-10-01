@@ -76,7 +76,7 @@ if [ "X$help" == "Xyes" ] ; then
   echo "                             the command."
   exit 0
 fi
-[ -n "$flavor" ] || flavor=common
+
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}

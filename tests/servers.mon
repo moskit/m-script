@@ -71,8 +71,8 @@ do
     if [ "X$CURL" != "X" ]; then
       $CURL -m 5 -s ${serverip}:$serverport > /dev/null 2>&1
       res="$?"
-      # Remove status 52 part if you want empty reply to mean failure
-      if [ "$res" == "0" ] || [ "$res" == "28" ] || [ "$res" == "52" ]; then
+      # Checking only connection to host:port here
+      if [ "$res" != "7" ] ; then
         curltest="yes"
       fi
       if [ "x$curltest" == "xyes" ]; then

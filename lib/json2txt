@@ -17,40 +17,88 @@
 
 declare -i i
 i=0
-declare -a branch
+declare -i num
+num=0
 declare -a index
 
 parseline() {
   line=$1
-echo "=== $i ::  ${line}"
   if [ "X$line" == "X{" ] ; then
+    if [ $i -eq 0 ] ; then
+      num+=1
+    fi
     i+=1
-    unset noprint
-    continue
+    return
   fi
   if [ "X$line" == "X}" ] ; then
-    i+=-1
     [ -z "$noprint" ] && printvar $var && unset var
-    noprint=1
-    continue
+    i+=-1
+    return
   fi
-echo "--- $i"
+  if [ "X$line" == "X," ] ; then
+    [ -z "$noprint" ] && printvar $var && unset var
+    return
+  fi
   if [ -n "$line" ] ; then
-    index[$i]="`echo $line | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-    var="`echo $line | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+    #printf "== $line == "
+    f4=`echo $line | awk -F'"' '{print $4}'`
+    f3=`echo $line | awk -F'"' '{print $3}'`
+    f2=`echo $line | awk -F'"' '{print $2}'`
+    f1=`echo $line | awk -F'"' '{print $1}'`
+    # "string" : "string"
+    if [ -n "$f4" ] ; then
+      #echo '"string" : "string"'
+      if [ -n "$f2" ] ; then
+        index[$i]=$f2
+        if [[ $f3 =~ ^[[:space:]]*\:[[:space:]]*$ ]] ; then
+          var=$f4
+        else
+          var="`echo $f3 | cut -d':' -f2`\"${f4}\"`echo $line | cut -d'"' -f5`"
+        fi
+      fi
+    else
+      # either of:
+      # notstring : notstring
+      if [ -z "$f2" ] ; then
+        #echo "notstring : notstring"
+        index[$i]="`echo $line | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+        var="`echo $line | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+      else
+      # notstring : "string"
+        if [ -n "$f1" ] ; then
+          #echo 'notstring : "string"'
+          index[$i]="`echo $f1 | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+          if [ "X`echo $f1 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`" == "X" ] ; then
+            var=$f2
+          else
+            var="`echo $f1 | cut -d':' -f2`\"${f2}\"${f3}"
+          fi
+        # "string" : notstring
+        else
+          #echo '"string" : notstring'
+          index[$i]=$f2
+          var="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+        fi      
+      fi
+    
+    fi
+
+#    unset noprint
   fi
 
 }
 
 printvar() {
+  [ -z "$1" ] && return
   for ((n=1; n<=$i; n++)) ; do
-    varname=index[$n]
+    varname="${varname}/${index[$n]}"
   done
   varname=${varname%/}
-  echo "$varname $1"
+  echo "${num}$varname $1"
+  unset varname
 }
 
-( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; done ; done
-
+#( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
+cat $1|sed 's|{|\n{\n|g;s|},|\n}\n|g;s|}|\n}\n|g;s|,|\n,\n|g' | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
 unset branch index ndcont cont i LINE node
 
