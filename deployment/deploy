@@ -18,10 +18,9 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 SSH=`which ssh 2>/dev/null`
-SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help cluster verbose flavor ip"
-necessary_options="cluster flavor"
+possible_options="help cluster verbose flavor run"
+necessary_options="run"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -55,52 +54,18 @@ do
   fi
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options> <meta>"
+  echo "Usage: ${0##*/} <options>"
 
   exit 0
 fi
-
-[ -z "$s_param" ] && echo "No meta provided" && exit 1
+[ -n "$flavor" ] || flavor=common
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
 # This may change in the future
 role=$cluster
-export ROLE="${ROLES_ROOT}/${role}"
-[ -z "$ip" ] && ips=$ip || ips=`get_ips --cluster=$cluster`
-IFS1=$IFS
-IFS='
-'
-# First ensure that all hosts are accessible
-for target in $ips ; do
-  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
-  [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
-  SSH="$SSH -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
-  SCP="$SCP -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
-  $SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" && exit 1)
-done
-# If we are still here, we can do the work
-for target in $ips ; do
-  for op in `cat ${ROLE}/meta.${s_param}` ; do
-    optype=${op%% *}
-    opscript=${op#* }
-    if [ "X$optype" == "Xlocally" ] ; then
-      if [ -f "${ROLES_ROOT}/${opscript}" ] ; then
-        bash "${ROLES_ROOT}/${opscript}"
-      else
-        echo "${ROLES_ROOT}/${opscript} not found"
-      fi
-    fi
-    if [ "X$optype" == "Xremotely" ] ; then
-      if [ -f "${ROLES_ROOT}/${opscript}" ] ; then
-        for LINE in `cat "${ROLES_ROOT}/${opscript}` ; do
-          a=`echo "$L"|sed 's|\(\$[a-zA-Z0-9{}_]\+\)|%\1%|g'`
-          b=`eval echo $a | grep -c \%\%`
-          echo $b
-        done
-        $SCP "${ROLES_ROOT}/${opscript}" ${target}:${opscript#*/}.$$
-        $SSH ${target}:${opscript#*/}.$$
-    
-    
-    
+export ROLE_ROOT="${ROLES_ROOT}/${role}"
+
+bash ${ROLE_ROOT}/${flavor}/scripts/${run}
+
+

@@ -77,6 +77,7 @@ if [ "X$help" == "Xyes" ] ; then
 fi
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+[ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 
 IFS1=$IFS
 IFS='

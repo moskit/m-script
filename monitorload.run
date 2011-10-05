@@ -31,7 +31,7 @@ trap 'rm -f $tempfile; exit' 15
 
 case $1 in
 start)
-
+  [ -f ${pidfile} ] && echo "Already running (PID `cat $pidfile`)" && exit 0
   [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
   rcommand=${xcommand##*/}
   rpath=${xcommand%/*}
@@ -121,7 +121,7 @@ start)
     sleep 1
     ${rpath}/mon.run servers.mon &
 ###
-  done & 2>/dev/null
+  done </dev/null &
 ###########################################################
 
   succ=$?
