@@ -1,0 +1,151 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+declare -i cursor
+declare -a data
+declare -a datatype
+declare -a datastyle
+cursor=0
+
+format() {
+  case $2 in
+  tabletitle)
+    echo "<tr class=\"$2\"><td>${1}</td></tr>" | sed 's|[[:space:]][[:space:]]\+|</td><td>|g'
+    ;;
+  tablerow_*)
+    tdstyle=${2#*tablerow_}
+    echo "<tr class=\"tablerow ${tdstyle}\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
+    ;;
+  info)
+    echo "<div class=\"$2\"><div class=\"left\">${1}</div></div>" | sed "s|:[[:space:]][[:space:]]\+|:</div><div class=\"right\">|g;s|:\t\+|:</div><div class=\"right\">|g"
+    ;;
+  ok|w1|w2|w3)
+    echo "<div class=\"info $2\">${1}</div>"
+    ;;
+  esac
+}
+
+IFS1=$IFS
+IFS='
+'
+for LINE in `cat -E "$1"` ; do
+  LINE=${LINE%$}
+  cursor+=1
+  
+  #printf "|||${LINE}\n"
+  case "$LINE" in
+    "")
+    data[$cursor]=""
+    datatype[$cursor]="empty"
+    datastyle[$cursor]="empty"
+    ;;
+    \<OK\>*)
+    data[$cursor]="${LINE#* }"
+    datatype[$cursor]="info"
+    datastyle[$cursor]="ok"
+    ;;
+    \<\*\>*)
+    data[$cursor]="${LINE#* }"
+    datatype[$cursor]="info"
+    datastyle[$cursor]="w1"
+    ;;
+    \<\*\*\>*)
+    data[$cursor]="${LINE#* }"
+    datatype[$cursor]="info"
+    datastyle[$cursor]="w2"
+    ;;
+    \<\*\*\*\>*)
+    data[$cursor]="${LINE#* }"
+    datatype[$cursor]="info"
+    datastyle[$cursor]="w3"
+    ;;
+    [[:space:]]*[[:print:]]*)
+    data[$cursor]="`echo ${LINE} | sed 's|^[[:space:]]*||'`"
+    datatype[$cursor]="table"
+    datastyle[$cursor]="table"
+    ;;
+    -*)
+    data[$cursor]=""
+    datatype[$cursor]="dashline"
+    datastyle[$cursor]="dashline"
+    ;;
+    *)
+    data[$cursor]="$LINE"
+    datatype[$cursor]="info"
+    datastyle[$cursor]="info"
+    ;;
+  esac
+#echo "== $LINE" ; echo "-- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
+  if [ $cursor -eq 3 ] ; then
+    case ${datatype[*]} in
+      "info dashline empty")
+      echo "<h3>${data[1]}</h3>"
+      ;;
+    esac
+    cursor=0
+    unset datatype[3] datastyle[3]
+  fi
+  if [ $cursor -eq 2 ] ; then
+    case ${datatype[*]} in
+      "info info")
+        if [ -n "$tableflag" ] ; then
+          format ${data[1]} tablerow_${datastyle[1]}
+          format ${data[2]} tablerow_${datastyle[2]}
+        else
+          format ${data[1]} ${datastyle[1]}
+          format ${data[2]} ${datastyle[2]}
+        fi
+        cursor=0
+        unset datatype[2] datastyle[2]
+        ;;
+      "info empty")
+        if [ -n "$tableflag" ] ; then
+          if [ -n "$titleflag" ] ; then
+            format ${data[1]} tablerow_${datastyle[1]}
+            unset tableflag titleflag
+            echo "</table>"
+          else
+            format ${data[1]} tabletitle
+            unset titleflag
+          fi
+        else
+          format ${data[1]} ${datastyle[1]}
+        fi
+        cursor=0
+        unset datatype[2] datastyle[2]
+        ;;
+      "empty info")
+        data[1]="${data[2]}"
+        datatype[1]="${datatype[2]}"
+        cursor=1
+        if [ -n "$tableflag" ] ; then
+          echo "</table>"
+          unset tableflag
+        fi
+        ;;
+      "table empty")
+        echo "<table>"
+        format ${data[1]} tabletitle
+        tableflag=1
+        titleflag=1
+        cursor=0
+        unset datatype[2] datastyle[2]
+        ;;
+      
+    esac
+  fi
+done
+IFS=$IFS1

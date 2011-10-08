@@ -72,12 +72,14 @@ y3="$(echo "$x >= $LOAD_WARN_3" | bc)"
 echo
 echo "System status:"
 echo "--------------"
+echo
 printf "Uptime:\t\t\t\t$ruptime\n"
 printf "Load average (1 5 15 min):\t$rloadavg\n"
 printf "Total running processes:\t$rtotalprocess\n"
 echo
 echo "RAM/Swap status:"
 echo "----------------"
+echo
 printf "Total RAM:\t\t${mtotalram} MB\n"
 printf "Active RAM:\t\t${mactiveram} MB\n"
 printf "Used RAM:\t\t${musedram} MB\n" 
@@ -85,9 +87,8 @@ printf "Free RAM:\t\t${mfreeram} MB\n"
 printf "Used Swap:\t\t${musedswap} MB\n"
 printf "Free Swap:\t\t${mfreeswap} MB\n"
 printf "Total Swap:\t\t${mtotalswap} MB\n"
-echo "----------------"
-echo ""
-warnind='(OK) '
+echo
+warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
@@ -100,7 +101,7 @@ y1="$(echo "$totalmemused >= $MEM_WARN_1" | bc)"
 y2="$(echo "$totalmemused >= $MEM_WARN_2" | bc)"
 y3="$(echo "$totalmemused >= $MEM_WARN_3" | bc)"
 
-warnind='(OK) '
+warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
@@ -110,7 +111,7 @@ y1="$(echo "$totalramused >= $RAM_WARN_1" | bc)"
 y2="$(echo "$totalramused >= $RAM_WARN_2" | bc)"
 y3="$(echo "$totalramused >= $RAM_WARN_3" | bc)"
 
-warnind='(OK) '
+warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'

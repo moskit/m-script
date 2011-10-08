@@ -46,7 +46,7 @@ then
         y2="$(echo "$tmpr >= $CPU_TEMP_2" | bc)"
         y3="$(echo "$tmpr >= $CPU_TEMP_3" | bc)"
 
-        warnind='(OK) '
+        warnind='<OK> '
         [ "$y1" == "1" ] && warnind=' <*> '
         [ "$y2" == "1" ] && warnind='<**> '
         [ "$y3" == "1" ] && warnind='<***>'

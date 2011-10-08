@@ -1,0 +1,89 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+possible_options="type text background"
+commflag=0
+for s_option in "${@}"
+do
+  case ${s_option} in
+  --*=*)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
+      s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
+    fi
+    ;;
+  --*)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+      s_optarg='yes'
+    fi
+    ;;
+  *=*)
+    command="$command ${s_option}"
+    exit 1
+    ;;
+  *)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      commflag=1
+      command="${s_option}"
+    fi
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+  done
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options>"
+  echo 
+  echo "Options:"
+  echo
+  echo "  --type=<type>            - dash, report, alert"
+  echo "                             default is dash."
+  echo "  --text=<text>            - source text, will be converted to html"
+  echo "  --class=<CSS class>      - dash slot class (dash only)"
+  exit 0
+fi
+
+source "${rpath}/conf/dash.conf"
+text=`echo "$text" | sed 's|<|\&lt\;|g;s|>|\&gt\;|g'`
+case $type in
+  dash)
+    echo "<div class=\"${class}\" onclick=\"showMenu('menu_$divid','${text}')\">&nbsp;</div>" >> "${rpath}/www/servers/localhost/dash.html"
+    exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
+    exc=`expr $exc - $slotline_length`
+    if [[ $exc -gt 0 ]] ; then
+      for ((i=1; i<=${exc}; i++)) ; do
+        sed -i -e '1d' "${rpath}/www/servers/localhost/dash.html"
+      done
+    fi
+    ;;
+  report)
+    "${rpath}/lib/txt2html" "${rpath}/report" > "${rpath}/www/servers/localhost/report.html"
+    ;;
+esac
+

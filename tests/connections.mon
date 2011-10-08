@@ -50,7 +50,7 @@ echo
 echo "Listening ports and sockets:"
 echo "----------------------------"
 echo
-echo "Name                Listening on                            Connections"
+echo "  Name              Listening on                            Connections"
 echo
 
 ### Two modes are available: with per socket monitor enabled or disabled.
@@ -231,7 +231,7 @@ if [[ ${#portsudp[*]} -gt 0 ]]
 then
  echo "<***> There is no services listening on UDP: ${portsudp[*]}"
 fi
-
+echo "  Name              Socket file"
 echo
 $SOCKCONNS | grep STREAM > /tmp/m_script/sockets.$$
 
@@ -277,7 +277,7 @@ echo
 echo "Connections per protocol:"
 echo "-------------------------"
 echo
-echo "Protocol                Connections"
+echo "  Protocol               Connections"
 echo
 cat /proc/net/protocols | tail -n +2 | awk '{printf "%-24s %s\n", $1, $3}'
 

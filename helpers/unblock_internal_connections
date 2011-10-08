@@ -80,12 +80,12 @@ IFS='
 '
 
 findchain_local() {
-  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | head -1 | awk '{print $1}'`
+  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | grep -v ^ACCEPT | grep -v ^REJECT | head -1 | awk '{print $1}'`
   [ -n "$upperchain" ] && $IPT -L $upperchain >/dev/null && echo $upperchain
 }
 
 findchain_remote() {
-  upperchain=`$SSH -i "$3" -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | head -1 | awk '{print \\$1}'"`
+  upperchain=`$SSH -i "$3" -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -v ^ACCEPT | grep -v ^REJECT | head -1 | awk '{print \\$1}'"`
   [ -n "$upperchain" ] && $SSH -i "$3" -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain
 }
 

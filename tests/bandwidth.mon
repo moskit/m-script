@@ -97,9 +97,10 @@ else
   diffbwout=0
 fi
 sqlite3 ${rpath}/../sysdata "update sysdata set connections='$numconn', input='$binput', output='$boutput', bwidthin='$diffbwin', bwidthout='$diffbwout' where timeindex='$timeindexnow'"
-echo ""
+echo
 echo "Bandwidth:"
 echo "----------"
+echo
 printf "Total connections:\t\t$numconn\n"
 printf "Input bandwidth:\t\t$diffbwin GB/month\n"
 printf "Output bandwidth:\t\t$diffbwout GB/month\n"

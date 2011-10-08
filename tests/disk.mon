@@ -61,7 +61,7 @@ do
   x1="$(echo "$used >= $DISK_WARN_1" | bc)"
   x2="$(echo "$used >= $DISK_WARN_2" | bc)"
   x3="$(echo "$used >= $DISK_WARN_3" | bc)"
-  warnind='(OK) '
+  warnind='<OK> '
   [ "$x1" == "1" ] && warnind=' <*> '
   [ "$x2" == "1" ] && warnind='<**> '
   [ "$x3" == "1" ] && warnind='<***>'

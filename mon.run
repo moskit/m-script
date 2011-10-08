@@ -114,7 +114,7 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        $rscript SQL
+        [ -n "$rscript" ] && $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
@@ -327,18 +327,28 @@ function deltimeindex() {
 
 function gendash() {
   indic="green"
-  [ -n "`grep '<\*>' ${rpath}/report`" ] && indic="yellow"
-  [ -n "`grep '<\*\*>' ${rpath}/report`" ] && indic="orange"
-  [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="red"
+  [ -n "`grep '<\*>' ${rpath}/report`" ] && indic="w1"
+  [ -n "`grep '<\*\*>' ${rpath}/report`" ] && indic="w2"
+  [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=dash --text=`${rpath}/lib/txt2html ${rpath}/report` --background=$indic
+      ${rpath}/genhtml --type=dash --text=`${rpath}/lib/txt2html ${rpath}/report` --class=$indic
       ;;
     JSON)
-      ${rpath}/genjson --type=dash --text=`${rpath}/lib/txt2json ${rpath}/report` --background=$indic
+      ${rpath}/genjson --type=dash --text=`${rpath}/lib/txt2json ${rpath}/report` --class=$indic
       ;;
   esac
+}
 
+function genreport() {
+  case $DASHBOARD in
+    HTML)
+      ${rpath}/genhtml --type=report --text=`${rpath}/lib/txt2html ${rpath}/report`
+      ;;
+    JSON)
+      ${rpath}/genjson --type=report --text=`${rpath}/lib/txt2json ${rpath}/report`
+      ;;
+  esac
 }
 
 source ${rpath}/conf/mon.conf
@@ -392,7 +402,7 @@ case ${1} in
     runscript SQL
     mailreport
     mailalert
-    [ -n "$DASHBOARD" ] && gendash
+    [ -n "$DASHBOARD" ] && genreport
     deltimeindex
   ;;
   --report=*)
@@ -402,7 +412,7 @@ case ${1} in
     runscript SQL $limit
     mailreport
     mailalert
-    [ -n "$DASHBOARD" ] && gendash
+    [ -n "$DASHBOARD" ] && genreport
     deltimeindex
   ;;
   *.mon)

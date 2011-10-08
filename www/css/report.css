@@ -1,0 +1,79 @@
+body {
+  font-family: verdana, arial, helvetica, sans-serif;
+  font-size:   11px;
+  background-color: white;
+  padding: 0px;
+  margin: 0px;
+  color: #555;
+  width: 640px;
+}
+
+div {
+  padding: 1px;
+  font-size: 11px;
+  margin-left: 5px;
+  margin-right: 5px;
+  color: #555;
+  float: left;
+}
+
+h3 {
+  float: left;
+  width: 590px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+  text-align: left;
+  margin: 20px;
+}
+
+.ok {
+  color: green;
+}
+
+.w1 {
+  color: brown;
+}
+
+.w2 {
+  color: orange;
+}
+
+.w3 {
+  color: red;
+}
+
+table {
+  width: 640px;
+  float: left;
+}
+
+.tabletitle {
+  font-weight: bold;
+}
+
+td {
+  width: 200px;
+}
+
+div.info {
+  width: 640px;
+  height: 13px;
+  display: table;
+  float: left;
+}
+
+div.left {
+  width: 200px;
+  height: 13px;
+  display: table;
+}
+
+div.right {
+  width: 400px;
+  height: 13px;
+  float: right;
+  display: table;
+}
+
+

@@ -56,10 +56,10 @@ start)
         exit 1
       fi
     fi
-    [ -f ${rpath}/conf/htaccess ] || ($MG -A ${rpath}/conf/htaccess `hostname` admin admin && printf "access file ${rpath}/conf/htaccess not found, created with login: admin, password: admin; use $MG -A ${rpath}/conf/htaccess <realm> <user> <passwd> to change credentials  ")
+    [ -f ${rpath}/conf/htaccess ] || ($MG -A ${rpath}/conf/htaccess `hostname -f || hostname` admin admin && printf "access file ${rpath}/conf/htaccess not found, created with login: admin, password: admin; use $MG -A ${rpath}/conf/htaccess <realm> <user> <passwd> to change credentials  ")
     MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
     echo "`date` -- Starting $MG ${MGOPTS}" >> ${rpath}/mongoose.log
-    $MG ${MGOPTS} >> ${rpath}/mongoose.log 2>&1 &
+    $MG ${MGOPTS} >> ${rpath}/mongoose.log 2>&1 </dev/null &
     succ=$?
     echo $! > $mgpidfile
     [[ $succ -eq 0 ]] && echo "done" || echo "error"
@@ -84,11 +84,11 @@ start)
     if [ "X$x" == "X1" ]; then
 ## If load is not too high, all tests run
       if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
-        ${rpath}/mon.run -ao &
+        ${rpath}/mon.run -ao </dev/null &
       else
 ## otherwise, these tests only
         echo `date +"%s"` > ${tmpdir}/timeindex
-        ${rpath}/mon.run mem.mon &
+        ${rpath}/mon.run mem.mon </dev/null &
       fi
     fi
 
@@ -110,16 +110,16 @@ start)
         echo > /tmp/m_script/conn_test_runs_count
       fi
     ##
-      ${rpath}/mon.run connections.mon &
+      ${rpath}/mon.run connections.mon </dev/null &
       sleep 1 # Needed for proper lock
       echo >> /tmp/m_script/conn_test_runs_count
       # Running processes (services.conf)
-      ${rpath}/mon.run services.mon &
+      ${rpath}/mon.run services.mon </dev/null &
     fi
 ## Tests that are always enabled
     # Other servers (listed in servers.conf) availability
     sleep 1
-    ${rpath}/mon.run servers.mon &
+    ${rpath}/mon.run servers.mon </dev/null &
 ###
   done </dev/null &
 ###########################################################
