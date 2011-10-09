@@ -19,7 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="type text background"
+possible_options="type background"
 commflag=0
 for s_option in "${@}"
 do
@@ -58,22 +58,21 @@ do
   done
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options>"
+  echo "Usage: ${0##*/} <options> TEXT"
   echo 
   echo "Options:"
   echo
   echo "  --type=<type>            - dash, report, alert"
   echo "                             default is dash."
-  echo "  --text=<text>            - source text, will be converted to html"
   echo "  --class=<CSS class>      - dash slot class (dash only)"
   exit 0
 fi
 
 source "${rpath}/conf/dash.conf"
-text=`echo "$text" | sed 's|<|\&lt\;|g;s|>|\&gt\;|g'`
+text=`echo "$command" | sed 's|<|\&lt\;|g;s|>|\&gt\;|g'`
 case $type in
   dash)
-    echo "<div class=\"${class}\" onclick=\"showMenu('menu_`date +"%m.%d_%H:%M:S"`','${text}')\">&nbsp;</div>" >> "${rpath}/www/servers/localhost/dash.html"
+    echo "<div class=\"${class}\" onclick=\"showMenu('menu_`date +"%m.%d_%H:%M:%S"`','${text}')\">&nbsp;</div>" >> "${rpath}/www/servers/localhost/dash.html"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
     exc=`expr $exc - $slotline_length`
     if [[ $exc -gt 0 ]] ; then

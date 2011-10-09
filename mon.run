@@ -334,10 +334,10 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=dash --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\"" --class=$indic
+      ${rpath}/genhtml --type=dash --class=$indic `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
       ;;
     JSON)
-      ${rpath}/genjson --type=dash --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\"" --class=$indic
+      ${rpath}/genjson --type=dash --class=$indic `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
       ;;
   esac
 }
@@ -345,10 +345,10 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=report --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\""
+      ${rpath}/genhtml --type=report `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
       ;;
     JSON)
-      ${rpath}/genjson --type=report --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\""
+      ${rpath}/genjson --type=report `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
       ;;
   esac
 }
