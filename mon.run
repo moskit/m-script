@@ -123,7 +123,9 @@ function runscript() {
     date | tee "${rpath}/alert" >/dev/null
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
     echo > "${rpath}/report"
-    [ -x "${rpath}/tests/${1}" ] && ${rpath}/tests/${1} $SQL 2>&1 | tee "${rpath}/report" >/dev/null #*/
+    for mon in `echo ${1} | sed 's|,| |g'` ; do
+      [ -x "${rpath}/tests/${mon}" ] && ${rpath}/tests/${mon} $SQL 2>&1 | tee -a "${rpath}/report" >/dev/null #*/
+    done
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
   grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
@@ -332,10 +334,10 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=dash --text=`${rpath}/lib/txt2html ${rpath}/report` --class=$indic
+      ${rpath}/genhtml --type=dash --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\"" --class=$indic
       ;;
     JSON)
-      ${rpath}/genjson --type=dash --text=`${rpath}/lib/txt2json ${rpath}/report` --class=$indic
+      ${rpath}/genjson --type=dash --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\"" --class=$indic
       ;;
   esac
 }
@@ -343,10 +345,10 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=report --text=`${rpath}/lib/txt2html ${rpath}/report`
+      ${rpath}/genhtml --type=report --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\""
       ;;
     JSON)
-      ${rpath}/genjson --type=report --text=`${rpath}/lib/txt2json ${rpath}/report`
+      ${rpath}/genjson --type=report --text="\"`lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`\""
       ;;
   esac
 }

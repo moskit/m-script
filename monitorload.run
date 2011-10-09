@@ -109,17 +109,12 @@ start)
       else
         echo > /tmp/m_script/conn_test_runs_count
       fi
-    ##
-      ${rpath}/mon.run connections.mon </dev/null &
-      sleep 1 # Needed for proper lock
-      echo >> /tmp/m_script/conn_test_runs_count
-      # Running processes (services.conf)
-      ${rpath}/mon.run services.mon </dev/null &
-    fi
+    ## With dashboard enabled, it is necessary to run all tests in a single run
+      ${rpath}/mon.run connections.mon,services.mon,servers.mon </dev/null &
+    else
 ## Tests that are always enabled
-    # Other servers (listed in servers.conf) availability
-    sleep 1
-    ${rpath}/mon.run servers.mon </dev/null &
+      ${rpath}/mon.run servers.mon </dev/null &
+    fi
 ###
   done </dev/null &
 ###########################################################
