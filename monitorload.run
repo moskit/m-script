@@ -152,9 +152,9 @@ status)
   fi
   if [ -f $mgpidfile ] ; then
     pid=`cat $mgpidfile|tail -1`
-    echo "${0##*/} is running (pid $pid)"
+    echo "HTTP is running (pid $pid)"
   else
-    echo "${0##*/} is not running"
+    echo "HTTP is not running"
   fi
   ;;
 *)

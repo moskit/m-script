@@ -31,7 +31,7 @@ format() {
     ;;
   info)
     echo "<div class=\"$2\">"
-    echo "${1}" | sed "s|\(.*\):[[:space:]][[:space:]]\+\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g;s|\(.*\):\t\(.*\)|\1:</div><div class=\"right\">\2</div>|g"
+    echo "${1}" | sed "s|\(.*\):[[:space:]][[:space:]]\+\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g;s|\(.*\):\t\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g"
     echo "</div>"
     ;;
   ok|w1|w2|w3)
