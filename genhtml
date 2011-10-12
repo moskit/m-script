@@ -68,7 +68,7 @@ text="${s_optname}"
 case $type in
   dash)
     id=`date +"%m.%d_%H:%M:%S"`
-    echo "<div id=\"$id\" class=\"${class}\" onclick=\"showMenu('menu_${id}','${text}')\">&nbsp;</div>" >> "${rpath}/www/servers/localhost/dash.html"
+    echo "<div id=\"$id\" class=\"${class}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
     exc=`expr $exc - $slotline_length`
     if [[ $exc -gt 0 ]] ; then
