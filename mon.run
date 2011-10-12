@@ -327,16 +327,16 @@ function deltimeindex() {
 }
 
 function gendash() {
-  indic="green"
+  indic="ok"
   [ -n "`grep '<\*>' ${rpath}/report`" ] && indic="w1"
   [ -n "`grep '<\*\*>' ${rpath}/report`" ] && indic="w2"
   [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=dash --class=$indic `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
+      ${rpath}/genhtml --type=dash --class=$indic `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do echo -n "$line" ; done`
       ;;
     JSON)
-      ${rpath}/genjson --type=dash --class=$indic `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
+      ${rpath}/genjson --type=dash --class=$indic `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do echo -n "$line" ; done`
       ;;
   esac
 }

@@ -19,43 +19,42 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="type background"
-commflag=0
+possible_options="type class"
+necessary_options="type"
+[ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+IFS1=$IFS
+IFS='--'
 for s_option in "${@}"
 do
+  found=0
   case ${s_option} in
   --*=*)
-    if [ "$commflag" == "1" ] ; then
-      command="$command ${s_option}"
-    else
-      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
-      s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
-    fi
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
     ;;
   --*)
-    if [ "$commflag" == "1" ] ; then
-      command="$command ${s_option}"
-    else
-      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-      s_optarg='yes'
-    fi
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
     ;;
   *=*)
-    command="$command ${s_option}"
+    echo "Wrong syntax: options must start with a double dash"
     exit 1
     ;;
   *)
-    if [ "$commflag" == "1" ] ; then
-      command="$command ${s_option}"
-    else
-      commflag=1
-      command="${s_option}"
-    fi
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+
+  for option in `echo $possible_options | sed 's/ /--/g'`; do 
+    [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
   done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
 done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options> TEXT"
