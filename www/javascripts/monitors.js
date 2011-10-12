@@ -5,7 +5,9 @@ init = function() {
 }
 
 initMonitors = function() {
-
+  new Ajax.PeriodicalUpdater('dash', '/bin/update_dash.sh', {
+    method: 'get', frequency: 200, decay: 10
+  });
 }
 
 showData = function(theid,thetext) {
@@ -13,6 +15,10 @@ showData = function(theid,thetext) {
     $(theid).innerHTML=thetext;
     Effect.SlideDown(theid, {duration: 0.3});
 	}
+}
+
+updateMonitors = function() {
+  
 }
 
 showMenu = function(theid,thetext,action) {

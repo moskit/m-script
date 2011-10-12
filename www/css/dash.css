@@ -273,17 +273,38 @@ div.progressBar div.background {
 
 .ok {
   background-color: green;
+  width: 10px
+  height: 20px;
+  margin-right: 1px;
 }
 
 .w1 {
   background-color: brown;
+  width: 10px
+  height: 20px;
+  margin-right: 1px;
 }
 
 .w2 {
   background-color: orange;
+  width: 10px
+  height: 20px;
+  margin-right: 1px;
 }
 
 .w3 {
   background-color: red;
+  width: 10px
+  height: 20px;
+  margin-right: 1px;
 }
 
+.cluster {
+  width: 600px;
+}
+
+.server {
+  width: 600px;
+  height: 20px;
+  margin: 5px;
+}
