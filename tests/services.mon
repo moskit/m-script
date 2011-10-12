@@ -45,7 +45,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
         if [ -z "$skip" ] ; then
-          pid=`cat "$pidfile"|sed 's|[^[0-9]]||g'|tail -1`
+          pid=`cat "$pidfile"|sed 's|[^[0-9]]||g'|tail -1 2>/dev/null`
           if [ -n "$pid" ] ; then
             if [ -d "/proc/$pid" ] ; then
               getprocessname $pid

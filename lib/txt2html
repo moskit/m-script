@@ -30,7 +30,9 @@ format() {
     echo "<tr class=\"tablerow ${tdstyle}\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
     ;;
   info)
-    echo "<div class=\"$2\"><div class=\"left\">${1}</div></div>" | sed "s|:[[:space:]][[:space:]]\+|:</div><div class=\"right\">|g;s|:\t\+|:</div><div class=\"right\">|g"
+    echo "<div class=\"$2\">"
+    echo "${1}" | sed "s|\(.*\):[[:space:]][[:space:]]\+\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g;s|\(.*\):\t\(.*\)|\1:</div><div class=\"right\">\2</div>|g"
+    echo "</div>"
     ;;
   ok|w1|w2|w3)
     echo "<div class=\"info $2\">${1}</div>"

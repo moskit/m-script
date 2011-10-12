@@ -36,7 +36,6 @@ do
     sleep 10
     continue
   else
-    echo >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -345,10 +344,10 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=report `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
+      ${rpath}/genhtml --type=report
       ;;
     JSON)
-      ${rpath}/genjson --type=report `lib/txt2html report | sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\\"|g'|while read line ; do printf "$line"|sed 's|\n||g' ; done`
+      ${rpath}/genjson --type=report
       ;;
   esac
 }

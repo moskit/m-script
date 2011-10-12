@@ -40,6 +40,7 @@ fi
 echo ""
 echo "Disks usage:"
 echo "------------"
+echo
 df -m | grep -v ^shm | grep -v ^tmpfs | grep -v ^udev | grep -v ^none | grep -v "^Filesystem" > /tmp/m_script/disk.tmp
 printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 while read LINE

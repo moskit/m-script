@@ -20,8 +20,8 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
-portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
-portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
+portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | awk '{print $1}'` )
+portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | awk '{print $1}'` )
 sockets=( `cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
@@ -86,7 +86,7 @@ if [ -e ${rpath}/../ports.tcp.list ] ; then
     # No point in parsing of more than 100 lines of LISTENING ports, increase this
     # if necessary
     $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
-    [ `cat /tmp/m_script/ports.tcp.$$ | wc -l` -gt `cat /tmp/m_script/ports.tcp.$$ | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.tcp.$$
+    [ `cat /tmp/m_script/ports.tcp.$$ | wc -l` -gt `cat /tmp/m_script/ports.tcp.$$ | uniq | wc -l` ] && echo "connections.mon: TCP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.tcp.$$
   fi
 fi
 if [ -e ${rpath}/../ports.udp.list ] ; then
@@ -109,7 +109,7 @@ if [ -e ${rpath}/../ports.udp.list ] ; then
     portsudp=""
   else
     $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
-    [ `cat /tmp/m_script/ports.udp.$$ | wc -l` -gt `cat /tmp/m_script/ports.udp.$$ | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.udp.$$
+    [ `cat /tmp/m_script/ports.udp.$$ | wc -l` -gt `cat /tmp/m_script/ports.udp.$$ | uniq | wc -l` ] && echo "connections.mon: UDP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.udp.$$
   fi
 fi
 
@@ -224,12 +224,16 @@ fi
 
 if [[ ${#portstcp[*]} -gt 0 ]]
 then
- echo "<***> There is no services listening on TCP: ${portstcp[*]}"
+  for port in ${portstcp[*]} ; do
+    echo "<***> There is no service listening on TCP: $port (was `grep "^${port}[[:space:]]" ${rpath}/../ports.tcp.list`)"
+  done
 fi
 
 if [[ ${#portsudp[*]} -gt 0 ]]
 then
- echo "<***> There is no services listening on UDP: ${portsudp[*]}"
+  for port in ${portsudp[*]} ; do
+    echo "<***> There is no service listening on UDP: $port (was `grep "^${port}[[:space:]]" ${rpath}/../ports.udp.list`)"
+  done
 fi
 echo "  Name              Socket file"
 echo

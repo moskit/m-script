@@ -16,7 +16,7 @@ source ${0%.mon}.conf
 echo
 echo "Memory eaters (process name and process owner):"
 echo "-----------------------------------------------"
-
+echo
 IFS1=$IFS
 IFS='
 '

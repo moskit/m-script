@@ -82,7 +82,7 @@ case $type in
     fi
     ;;
   report)
-    cat "${rpath}/wwwtemplates/reporthead.tmpl" ; "${rpath}/lib/txt2html" "${rpath}/report" | cat ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" > "${rpath}/www/servers/localhost/report.html"
+    cat "${rpath}/wwwtemplates/reporthead.tmpl" > "${rpath}/www/servers/localhost/report.html" ; "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" >> "${rpath}/www/servers/localhost/report.html"
     ;;
 esac
 
