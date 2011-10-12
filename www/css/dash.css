@@ -273,38 +273,60 @@ div.progressBar div.background {
 
 .ok {
   background-color: green;
-  width: 10px
+  width: 10px;
   height: 20px;
   margin-right: 1px;
+  float: left;
 }
 
 .w1 {
   background-color: brown;
-  width: 10px
+  width: 10px;
   height: 20px;
   margin-right: 1px;
+  float: left;
 }
 
 .w2 {
   background-color: orange;
-  width: 10px
+  width: 10px;
   height: 20px;
   margin-right: 1px;
+  float: left;
 }
 
 .w3 {
   background-color: red;
-  width: 10px
+  width: 10px;
   height: 20px;
   margin-right: 1px;
+  float: left;
 }
 
 .cluster {
-  width: 600px;
+  width: 800px;
+
 }
 
 .server {
-  width: 600px;
+  width: 800px;
   height: 20px;
   margin: 5px;
+  display: table;
 }
+
+.clustername {
+  width: 800px;
+  height: 30px;
+  padding: 5px 0px 5px 20px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.servername {
+  height: 20px;
+  margin: 5px;
+  font-weight: bold;
+  float: left;
+}
+

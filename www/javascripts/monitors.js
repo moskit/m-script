@@ -5,7 +5,7 @@ init = function() {
 }
 
 initMonitors = function() {
-  new Ajax.PeriodicalUpdater('dash', '/bin/update_dash.sh', {
+  new Ajax.PeriodicalUpdater('dash', '/bin/update_dash.cgi', {
     method: 'get', frequency: 200, decay: 10
   });
 }

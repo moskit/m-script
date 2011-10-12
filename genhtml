@@ -36,10 +36,6 @@ do
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
     s_optarg='yes' 
     ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
   *)
     s_param=${s_option}
     s_optname=''
@@ -68,10 +64,11 @@ if [ "X$help" == "Xyes" ] ; then
 fi
 
 source "${rpath}/conf/dash.conf"
-text=`echo "$command" | sed 's|<|\&lt\;|g;s|>|\&gt\;|g'`
+text="${s_optname}"
 case $type in
   dash)
-    echo "<div class=\"${class}\" onclick=\"showMenu('menu_`date +"%m.%d_%H:%M:%S"`','${text}')\">&nbsp;</div>" >> "${rpath}/www/servers/localhost/dash.html"
+    id=`date +"%m.%d_%H:%M:%S"`
+    echo "<div id=\"$id\" class=\"${class}\" onclick=\"showMenu('menu_${id}','${text}')\">&nbsp;</div>" >> "${rpath}/www/servers/localhost/dash.html"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
     exc=`expr $exc - $slotline_length`
     if [[ $exc -gt 0 ]] ; then
