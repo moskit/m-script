@@ -15,14 +15,14 @@ do
    
     echo "<div class=\"server\" id=\"${server##*/}\">"
       echo "<span class=\"servername\">${server##*/}</span>"
-      cat "../servers/${server}/dash.html" || echo "No data"
+      cat "../servers/${server}/dash.html" 2>/dev/null || echo "No data"
     echo "</div>"
     continue
   fi
   for server in `find $cluster/* -maxdepth 0 -type d`
   do
     echo "<div class=\"server\" id=\"${server##*/}\">"
-      cat "../servers/${server}/dash.html" || echo "No data"
+      cat "../servers/${server}/dash.html" 2>/dev/null || echo "No data"
     echo "</div>"
   done
   echo "</div>"

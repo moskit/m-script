@@ -41,9 +41,17 @@ start)
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
   install -d $TMPDIR
   UPTIME=`which uptime`
+  if [ -n "$DASHBOARD_TRANSPORT" ] ; then
+    if [ "X$DASHBOARD_TRANSPORT" == "XSSH" ] ; then
+      SCP=`which scp 2>/dev/null`
+      [ -z "$SCP" ] && echo "scp utility not found, exiting" && exit 1
+    fi
+    [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+    [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+  fi
   echo $$ > $pidfile
   echo 0 > $tempfile
-
+  
   if [ "X$MONGOOSE" == "X1" ] ; then
     printf "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
@@ -120,11 +128,12 @@ start)
               [ -z "$mpath" ] && mpath="/opt/m"
               for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
                 ip=${server%%|*}
+                [ `echo $ip | grep -c "$localip"` -ne 0 ] && continue
                 key=`echo $server | cut -d'|' -f2`
                 key=${key%.pem}.pem
                 servername=`echo $server | cut -d'|' -f4`
                 install -d "${rpath}/www/servers/${cluster}/${servername}"
-                scp -i "${rpath}/keys/${key}" ${ip}:${mpath}/www/servers/localhost/* "${rpath}/www/servers/${cluster}/${servername}/" </dev/null &
+                scp -i "${rpath}/keys/${key}" ${ip}:${mpath}/www/servers/localhost/* "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
               done
             done
           ;;
@@ -147,7 +156,7 @@ start)
       ${rpath}/mon.run servers.mon </dev/null &
     fi
 ###
-  done </dev/null &
+  done >/dev/null 2>&1 </dev/null &
 ###########################################################
 
   succ=$?
@@ -159,7 +168,7 @@ stop)
   if [ -f ${pidfile} ]; then
     pid=`cat ${pidfile}|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
-    kill -15 $pid && rm -f $pidfile && echo "done"
+    kill -15 $pid && rm -f $pidfile $tempfile && echo "done"
   else
     echo "${pidfile} not found!"
   fi
