@@ -4,7 +4,7 @@ body {
   background-color: white;
   padding: 0px;
   margin: 0px;
-  color: #321;
+  color: #333;
 }
 
 p {
@@ -12,23 +12,23 @@ p {
   font-size: 11px;
   margin-left: 5px;
   margin-right: 5px;
-  color: #321;
+  color: #333;
 }
 
 h4{
   font-size: 11px;
-  color: #321;
+  color: #333;
   text-align: center;
   margin: 5px;
 }
 
 div {
-  color: #444;
+  color: #333;
 }
 
 span {
   font-size: 11px;
-  color: #221;
+  color: #666;
 }
 
 img {
@@ -333,11 +333,11 @@ div.progressBar div.background {
 .cluster {
   width: 800px;
   display: table;
-background: #eee; /* for non-css3 browsers */
-
-filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dddddd', endColorstr='#ffffff'); /* for IE */
-background: -webkit-gradient(linear, left top, left bottom, from(#ddd), to(#fff)); /* for webkit browsers */
-background: -moz-linear-gradient(top,  #ddd,  #fff); /* for firefox 3.6+ */ 
+background: #f2f2f2; /* for non-css3 browsers */
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fbfbfb', endColorstr='#f2f2f2'); /* for IE */
+  background: -webkit-gradient(linear, left bottom, left top, from(#f2f2f2), to(#fbfbfb)); /* for webkit browsers */
+  background: -moz-linear-gradient(bottom,  #f2f2f2,  #fbfbfb); /* for firefox 3.6+ */ 
+  padding: 10px 0px 10px 0px;
 }
 
 .server {
@@ -351,17 +351,18 @@ background: -moz-linear-gradient(top,  #ddd,  #fff); /* for firefox 3.6+ */
 }
 
 .clustername {
-  width: 800px;
-  height: 30px;
-  padding: 5px 0px 5px 12px;
+  width: 794px;
+  height: 26px;
+  padding: 7px 0px 5px 6px;
   font-weight: bold;
   font-size: 14px;
+  background-color: #fbfbfb;
 }
 
 .servername {
   height: 20px;
-  width: 200px;
-  margin: 0px 20px 20px 0px;
+  width: 180px;
+  margin-left: 5px;
   padding: auto;
   font-weight: bold;
   float: left;
