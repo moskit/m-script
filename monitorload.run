@@ -39,7 +39,7 @@ start)
 
   source ${rpath}/conf/mon.conf
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
-  
+  install -d $TMPDIR
   UPTIME=`which uptime`
   echo $$ > $pidfile
   echo 0 > $tempfile
@@ -111,6 +111,37 @@ start)
       fi
     ## With dashboard enabled, it is necessary to run all tests in a single run
       ${rpath}/mon.run connections.mon,services.mon,servers.mon </dev/null &
+      if [ -n "$DASHBOARD_TRANSPORT" ] ; then
+      # means that we need to fetch reports from other servers
+        case $DASHBOARD_TRANSPORT in
+          SSH)
+            for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
+              mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
+              [ -z "$mpath" ] && mpath="/opt/m"
+              for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+                ip=${server%|*}
+                key=`echo $server | cut -d'|' -f2`
+                key=${key%.pem}.pem
+                servername=`echo $server | cut -d'|' -f4`
+                install -d "${rpath}/www/servers/${cluster}/${servername}"
+                scp -i "${rpath}/keys/${key}" ${ip}:${mpath}/www/servers/localhost/* "${rpath}/www/servers/${cluster}/${servername}/" </dev/null &
+              done
+            done
+          ;;
+          JSON)
+          
+          ;;
+          XML)
+          
+          ;;
+          HTML)
+          
+          ;;
+          *)
+          echo "Fetching data with $DASHBOARD_TRANSPORT is not supported" >> "${rpath}/dashboard.log"
+          ;;
+        esac
+      fi
     else
 ## Tests that are always enabled
       ${rpath}/mon.run servers.mon </dev/null &

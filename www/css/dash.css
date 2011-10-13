@@ -313,6 +313,7 @@ div.progressBar div.background {
   height: 20px;
   margin: 5px;
   display: table;
+  cursor: pointer;
 }
 
 .clustername {

@@ -19,7 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="type class"
+possible_options="type css"
 necessary_options="type"
 [ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
@@ -59,16 +59,16 @@ if [ "X$help" == "Xyes" ] ; then
   echo
   echo "  --type=<type>            - dash, report, alert"
   echo "                             default is dash."
-  echo "  --class=<CSS class>      - dash slot class (dash only)"
+  echo "  --css=<CSS class>      - dash slot class (dash only)"
   exit 0
 fi
 
 source "${rpath}/conf/dash.conf"
-text="${s_optname}"
+text="${s_param}"
 case $type in
   dash)
     id=`date +"%m.%d_%H:%M:%S"`
-    echo "<div id=\"$id\" class=\"${class}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html"
+    echo "<div id=\"$id\" class=\"${css}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
     exc=`expr $exc - $slotline_length`
     if [[ $exc -gt 0 ]] ; then
@@ -78,7 +78,7 @@ case $type in
     fi
     ;;
   report)
-    cat "${rpath}/wwwtemplates/reporthead.tmpl" > "${rpath}/www/servers/localhost/report.html" ; "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" >> "${rpath}/www/servers/localhost/report.html"
+    cat "${rpath}/wwwtemplates/reporthead.tmpl" > "${rpath}/www/servers/localhost/report.html" ; "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"
     ;;
 esac
 
