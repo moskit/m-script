@@ -303,6 +303,10 @@ div.progressBar div.background {
   color: red;
 }
 
+.tabletitle {
+  font-weight: bold;
+}
+
 .tablerow_ok {
   color: green;
 }

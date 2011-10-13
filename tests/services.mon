@@ -33,7 +33,7 @@ echo ""
 echo "Running services"
 echo "----------------"
 echo
-echo "Process             PID                 PID file"
+echo "  Process           PID                     PID file"
 echo
 for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   LINE=`echo "$LINE" | sed 's|[[:space:]]*$||'`
