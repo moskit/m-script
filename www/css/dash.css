@@ -40,7 +40,7 @@ div.dhtmlmenu {
   font-size: 9px;
   left: 0px;
   top: 22px;
-  width: 160px;
+  width: 460px;
   text-align: left;
   border: 2px solid silver;
   padding: 2px;
@@ -287,6 +287,38 @@ div.progressBar div.background {
   background-color: red;
 }
 
+.info_ok {
+  color: green;
+}
+
+.info_w1 {
+  color: brown;
+}
+
+.info_w2 {
+  color: orange;
+}
+
+.info_w3 {
+  color: red;
+}
+
+.tablerow_ok {
+  color: green;
+}
+
+.tablerow_w1 {
+  color: brown;
+}
+
+.tablerow_w2 {
+  color: orange;
+}
+
+.tablerow_w3 {
+  color: red;
+}
+
 .chunk {
   width: 10px;
   height: 20px;
@@ -296,7 +328,8 @@ div.progressBar div.background {
 
 .cluster {
   width: 800px;
-background: #DDD; /* for non-css3 browsers */
+  display: table;
+background: #eee; /* for non-css3 browsers */
 
 filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dddddd', endColorstr='#ffffff'); /* for IE */
 background: -webkit-gradient(linear, left top, left bottom, from(#ddd), to(#fff)); /* for webkit browsers */
@@ -304,10 +337,10 @@ background: -moz-linear-gradient(top,  #ddd,  #fff); /* for firefox 3.6+ */
 }
 
 .server {
-  width: 800px;
+  width: 774px;
   height: 20px;
-  margin: 5px;
-  padding: auto;
+  margin: 3px;
+  padding-left: 20px;
   float: right;
   display: table;
   cursor: pointer;
@@ -316,16 +349,17 @@ background: -moz-linear-gradient(top,  #ddd,  #fff); /* for firefox 3.6+ */
 .clustername {
   width: 800px;
   height: 30px;
-  padding: 5px 0px 5px 20px;
+  padding: 5px 0px 5px 12px;
   font-weight: bold;
   font-size: 14px;
 }
 
 .servername {
   height: 20px;
-  margin-right: 10px;
+  width: 200px;
+  margin: 0px 20px 20px 0px;
   padding: auto;
   font-weight: bold;
-  float: right;
+  float: left;
 }
 
