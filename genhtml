@@ -68,7 +68,7 @@ text="${s_param}"
 case $type in
   dash)
     id=`date +"%m.%d_%H:%M:%S"`
-    echo "<div id=\"$id\" class=\"${css}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
+    echo "<div id=\"$id\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
     exc=`expr $exc - $slotline_length`
     if [[ $exc -gt 0 ]] ; then

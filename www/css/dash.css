@@ -273,30 +273,21 @@ div.progressBar div.background {
 
 .ok {
   background-color: green;
-  width: 10px;
-  height: 20px;
-  margin-right: 1px;
-  float: left;
 }
 
 .w1 {
   background-color: brown;
-  width: 10px;
-  height: 20px;
-  margin-right: 1px;
-  float: left;
 }
 
 .w2 {
   background-color: orange;
-  width: 10px;
-  height: 20px;
-  margin-right: 1px;
-  float: left;
 }
 
 .w3 {
   background-color: red;
+}
+
+.chunk {
   width: 10px;
   height: 20px;
   margin-right: 1px;
@@ -305,13 +296,19 @@ div.progressBar div.background {
 
 .cluster {
   width: 800px;
+background: #DDD; /* for non-css3 browsers */
 
+filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dddddd', endColorstr='#ffffff'); /* for IE */
+background: -webkit-gradient(linear, left top, left bottom, from(#ddd), to(#fff)); /* for webkit browsers */
+background: -moz-linear-gradient(top,  #ddd,  #fff); /* for firefox 3.6+ */ 
 }
 
 .server {
   width: 800px;
   height: 20px;
   margin: 5px;
+  padding: auto;
+  float: right;
   display: table;
   cursor: pointer;
 }
@@ -326,8 +323,9 @@ div.progressBar div.background {
 
 .servername {
   height: 20px;
-  margin: 5px;
+  margin-right: 10px;
+  padding: auto;
   font-weight: bold;
-  float: left;
+  float: right;
 }
 
