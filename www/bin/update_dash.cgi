@@ -6,7 +6,7 @@ echo "Content-Cache: no-cache"
 echo "Content-type: text/html"
 echo ""
 
-for cluster in `find ../servers/* -maxdepth 1 -type d`
+for cluster in `find ../servers/* -maxdepth 0 -type d`
 do
   echo "<div class=\"clustername\">${cluster##*/}</div>"
   echo "<div class=\"cluster\" id=\"${cluster##*/}\">"
@@ -15,14 +15,14 @@ do
    
     echo "<div class=\"server\" id=\"${server##*/}\">"
       echo "<span class=\"servername\">${server##*/}</span>"
-      cat "../servers/${server}/dash.html"
+      cat "../servers/${server}/dash.html" || echo "No data"
     echo "</div>"
     continue
   fi
-  for server in `find $cluster/* -maxdepth 1 -type d`
+  for server in `find $cluster/* -maxdepth 0 -type d`
   do
     echo "<div class=\"server\" id=\"${server##*/}\">"
-      cat "../servers/${server}/dash.html"
+      cat "../servers/${server}/dash.html" || echo "No data"
     echo "</div>"
   done
   echo "</div>"

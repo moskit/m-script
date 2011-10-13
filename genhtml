@@ -62,18 +62,18 @@ if [ "X$help" == "Xyes" ] ; then
   echo "  --css=<CSS class>      - dash slot class (dash only)"
   exit 0
 fi
-
+install -d "${rpath}/www/servers/localhost"
 source "${rpath}/conf/dash.conf"
 text="${s_param}"
 case $type in
   dash)
     id=`date +"%m.%d_%H:%M:%S"`
     echo "<div id=\"$id\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
-    exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l`
-    exc=`expr $exc - $slotline_length`
+    exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
+    exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
       for ((i=1; i<=${exc}; i++)) ; do
-        sed -i -e '1d' "${rpath}/www/servers/localhost/dash.html"
+        sed -i -e '1d' "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
       done
     fi
     ;;

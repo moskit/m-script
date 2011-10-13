@@ -119,7 +119,7 @@ start)
               mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
               [ -z "$mpath" ] && mpath="/opt/m"
               for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
-                ip=${server%|*}
+                ip=${server%%|*}
                 key=`echo $server | cut -d'|' -f2`
                 key=${key%.pem}.pem
                 servername=`echo $server | cut -d'|' -f4`
