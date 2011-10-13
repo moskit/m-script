@@ -20,7 +20,7 @@ do
     echo "</div>"
     continue
   fi
-  for server in `find $cluster/* -maxdepth 0 -type d`
+  for server in `find $cluster/* -maxdepth 0 -type d | sort`
   do
     echo "<div class=\"server\" id=\"${server##*/}\">"
       echo "<span class=\"servername\">${server##*/}</span>"
