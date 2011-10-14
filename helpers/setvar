@@ -1,0 +1,12 @@
+#!/bin/bash
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+s_var=`expr "X$1" : 'X\([^=]*\)'`
+s_value=`expr "X$1" : 'X[^=]*=\(.*\)'`
+
+for conf in `grep -l "${s_var}=" "${rpath}/../conf/*.conf"` ; do
+  printf "Found in $conf ...   "
+  sed -i -e "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
+done
+
