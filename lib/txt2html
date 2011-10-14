@@ -30,7 +30,7 @@ format() {
     echo "<tr class=\"tablerow ${tdstyle}\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
     ;;
   info)
-    echo "<div class=\"info_$2\">"
+    echo "<div class=\"info info_$2\">"
     echo "${1}" | sed "s|\(.*\):[[:space:]][[:space:]]\+\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g;s|\(.*\):\t\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g"
     echo "</div>"
     ;;
@@ -59,7 +59,7 @@ for LINE in `cat -E "$1"` ; do
     datatype[$cursor]="info"
     datastyle[$cursor]="ok"
     ;;
-    \<\*\>*)
+    \<\*\>*|[[:space:]]\<\*\>*)
     data[$cursor]="${LINE#* }"
     datatype[$cursor]="info"
     datastyle[$cursor]="w1"

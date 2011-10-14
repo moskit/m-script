@@ -417,10 +417,12 @@ case ${1} in
     deltimeindex
   ;;
   *.mon)
+    newtimeindex
     runscript ${1}
     runactions
     mailalert
     [ -n "$DASHBOARD" ] && gendash
+    deltimeindex
   ;;
   *)
     echo "Run mon.run --help to see available options"

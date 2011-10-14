@@ -95,19 +95,13 @@ start)
         ${rpath}/mon.run -ao </dev/null &
       else
 ## otherwise, these tests only
-        echo `date +"%s"` > ${tmpdir}/timeindex
         ${rpath}/mon.run mem.mon </dev/null &
       fi
+      sleep $FREQ
+      continue
     fi
 
     sleep $FREQ
-
-### Tests that always run - services and availability
-### No problem if you want to run some metrics monitors here, but uncomment the
-### timeindex creation line below, it is needed for storing the results in
-### database. Also consider running such tests from cron.
-
-#   echo `date +"%s"` > ${tmpdir}/timeindex
 
 ## Tests that are disabled if load average is too high
     if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
@@ -118,7 +112,7 @@ start)
         echo > /tmp/m_script/conn_test_runs_count
       fi
     ## With dashboard enabled, it is necessary to run all tests in a single run
-      ${rpath}/mon.run connections.mon,services.mon,servers.mon </dev/null &
+      ${rpath}/mon.run mem.mon,connections.mon,services.mon,servers.mon </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ] ; then
       # means that we need to fetch reports from other servers
         case $DASHBOARD_TRANSPORT in
@@ -153,7 +147,7 @@ start)
       fi
     else
 ## Tests that are always enabled
-      ${rpath}/mon.run servers.mon </dev/null &
+      ${rpath}/mon.run mem.mon,servers.mon </dev/null &
     fi
 ###
   done >/dev/null 2>&1 </dev/null &
