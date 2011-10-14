@@ -44,8 +44,8 @@ do
     fi
     ;;
   *=*)
+    commflag=1
     command="$command ${s_option}"
-    exit 1
     ;;
   *)
     if [ "$commflag" == "1" ] ; then
