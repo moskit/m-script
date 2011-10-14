@@ -20,8 +20,8 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
-portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | awk '{print $1}'` )
-portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | awk '{print $1}'` )
+portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
+portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
 sockets=( `cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
@@ -225,14 +225,14 @@ fi
 if [[ ${#portstcp[*]} -gt 0 ]]
 then
   for port in ${portstcp[*]} ; do
-    echo "<***> There is no service listening on TCP: $port (was `grep "^${port}[[:space:]]" ${rpath}/../ports.tcp.list`)"
+    echo "<***> There is no service listening on TCP: $port (was `grep "^${port}|" ${rpath}/../ports.tcp.list | cut -d'|' -f2`)"
   done
 fi
 
 if [[ ${#portsudp[*]} -gt 0 ]]
 then
   for port in ${portsudp[*]} ; do
-    echo "<***> There is no service listening on UDP: $port (was `grep "^${port}[[:space:]]" ${rpath}/../ports.udp.list`)"
+    echo "<***> There is no service listening on UDP: $port (was `grep "^${port}[[:space:]]" ${rpath}/../ports.udp.list | cut -d'|' -f2`)"
   done
 fi
 echo "  Name              Socket file"
