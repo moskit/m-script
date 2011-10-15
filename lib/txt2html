@@ -60,7 +60,7 @@ for LINE in `cat -E "$1"` ; do
     datastyle[$cursor]="ok"
     ;;
     \<\*\>*|[[:space:]]\<\*\>*)
-    data[$cursor]="${LINE#* }"
+    data[$cursor]="${LINE#*> }"
     datatype[$cursor]="info"
     datastyle[$cursor]="w1"
     ;;

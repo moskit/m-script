@@ -127,7 +127,7 @@ start)
                 key=${key%.pem}.pem
                 servername=`echo $server | cut -d'|' -f4`
                 install -d "${rpath}/www/servers/${cluster}/${servername}"
-                scp -i "${rpath}/keys/${key}" ${ip}:${mpath}/www/servers/localhost/* "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
+                $SCP -i "${rpath}/keys/${key}" ${ip}:${mpath}/www/servers/localhost/* "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
               done
             done
           ;;

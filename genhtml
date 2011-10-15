@@ -53,22 +53,24 @@ do
   fi
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options> TEXT"
+  echo "Usage: ${0##*/} <options> <textfile>"
   echo 
   echo "Options:"
   echo
   echo "  --type=<type>            - dash, report, alert"
   echo "                             default is dash."
-  echo "  --css=<CSS class>      - dash slot class (dash only)"
+  echo "  --css=<CSS class>        - dash slot class (dash only)"
   exit 0
 fi
+
 install -d "${rpath}/www/servers/localhost"
 source "${rpath}/conf/dash.conf"
 text="${s_param}"
 case $type in
   dash)
-    id=`date +"%m.%d_%H:%M:%S"`
-    echo "<div id=\"$id\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('data_${id}','${text}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
+    id="`date +"%m.%d_%H:%M:%S"`"
+    echo "<div id=\"$id\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/${id}.html"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
