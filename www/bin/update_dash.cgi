@@ -6,6 +6,27 @@ echo "Content-Cache: no-cache"
 echo "Content-type: text/html"
 echo ""
 
+source "${PWD}/../../conf/dash.conf"
+timerange=`expr $slotline_length \* $freqdef`
+oldest=`date -d "-$timerange sec"`
+hour=`date -d "$oldest" +"%H"`
+echo "<div class=\"dashtitle\">"
+echo "<div class=\"clustername\">Cluster</div>"
+echo "<div class=\"server\">"
+echo "<span class=\"servername\">Server</span>"
+for ((n=0; n<$slotline_length; n++)) ; do
+  timediff=`expr $n \* $freqdef`
+  timestamp=`date -d "$oldest +$timediff sec"`
+  hournew=`date -d "$timestamp" +"%H"`
+  if [ "X$hournew" == "X$hour" ] ; then
+    echo "<div class=\"chunk\">&nbsp;</div>"
+  else
+    echo "<div class=\"chunk hour\">${hournew}:00</div>"
+  fi
+done
+echo "</div>"
+echo "</div>"
+
 for cluster in `find ../servers/* -maxdepth 0 -type d`
 do
   echo "<div class=\"clustername\">${cluster##*/}</div>"

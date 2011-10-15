@@ -15,13 +15,16 @@ showData = function(theid) {
   cluster=$(server).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
     if (cluster == 'localhost') {
-    var the_url = '/bin/getdata?path=/servers/localhost/' + escape(theid) + '.html';
+    var the_url = '/bin/getdata.cgi?path=/servers/localhost/' + escape(theid) + '.html';
     } else {
-    var the_url = '/bin/getdata?path=/servers/' + cluster + '/' + server + '/' + escape(theid) + '.html';
+    var the_url = '/bin/getdata.cgi?path=/servers/' + cluster + '/' + server + '/' + escape(theid) + '.html';
     }
     new Ajax.Request(the_url, {
-      onComplete: function(response) {
+      onSuccess: function(response) {
         $('data_' + theid).update(response.responseText);
+      },
+      onComplete: function() {
+        Effect.SlideDown('data_' + theid, {duration: 0.3});
       }
     });
     Effect.SlideDown('data_' + theid, {duration: 0.3});

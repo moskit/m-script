@@ -333,7 +333,7 @@ div.progressBar div.background {
 .cluster {
   width: 800px;
   display: table;
-background: #f2f2f2; /* for non-css3 browsers */
+  background-color: #f2f2f2; /* for non-css3 browsers */
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fbfbfb', endColorstr='#f2f2f2'); /* for IE */
   background: -webkit-gradient(linear, left bottom, left top, from(#f2f2f2), to(#fbfbfb)); /* for webkit browsers */
   background: -moz-linear-gradient(bottom,  #f2f2f2,  #fbfbfb); /* for firefox 3.6+ */ 
@@ -390,4 +390,9 @@ div.right {
   display: table;
 }
 
+#messages {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f88;
+}
 
