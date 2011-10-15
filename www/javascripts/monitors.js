@@ -1,12 +1,24 @@
 init = function() {
   el = document.body;
   el.observe('click', hideAll);
-  initMonitors();
+  initMonitors('dash');
+  fillTabs();
 }
 
-initMonitors = function() {
-  new Ajax.PeriodicalUpdater('dash', '/bin/update_dash.cgi', {
+initMonitors = function(updater) {
+  new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
     method: 'get', frequency: 200, decay: 10
+  });
+  $$('div.tab').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+  $(updater).addClassName('active');
+}
+
+fillTabs = function() {
+  var the_url = '/bin/filltabs.cgi';
+  new Ajax.Request(the_url, {
+    onSuccess: function(response) {
+      $('tabs').update(response.responseText);
+    }
   });
 }
 
@@ -27,12 +39,7 @@ showData = function(theid) {
         Effect.SlideDown('data_' + theid, {duration: 0.3});
       }
     });
-    Effect.SlideDown('data_' + theid, {duration: 0.3});
 	}
-}
-
-updateMonitors = function() {
-  
 }
 
 showMenu = function(theid,thetext,action) {
