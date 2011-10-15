@@ -71,7 +71,7 @@ case $type in
     id="`date +"%m.%d_%H:%M:%S"`"
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
     echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}')\">&nbsp;</div><div id=\"data_${id}\" class=\"dhtmlmenu\" style=\"display: none\"></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
-    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/${id}.html"
+    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/${id}_${serverid}.html"
     exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
@@ -79,6 +79,8 @@ case $type in
         sed -i -e '1d' "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
       done
     fi
+    timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
+    find "${rpath}/www/servers/localhost/" -mmin +$timerange -exec rm {}\;
     ;;
   report)
     cat "${rpath}/wwwtemplates/reporthead.tmpl" > "${rpath}/www/servers/localhost/report.html" ; "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"

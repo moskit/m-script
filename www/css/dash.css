@@ -396,3 +396,8 @@ div.right {
   color: #f88;
 }
 
+.pageline {
+  height: 1px;
+  width: 800px;
+  background-color: silver;
+}

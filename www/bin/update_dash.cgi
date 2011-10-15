@@ -7,7 +7,7 @@ echo "Content-type: text/html"
 echo ""
 
 source "${PWD}/../../conf/dash.conf"
-timerange=`expr $slotline_length \* $freqdef`
+timerange=`expr $slotline_length \* $freqdef` || timerange=10000
 oldest=`date -d "-$timerange sec"`
 hour=`date -d "$oldest" +"%H"`
 echo "<div class=\"dashtitle\">"
@@ -22,11 +22,12 @@ for ((n=0; n<$slotline_length; n++)) ; do
     echo "<div class=\"chunk\">&nbsp;</div>"
   else
     echo "<div class=\"chunk hour\">${hournew}:00</div>"
+    hour=$hournew
   fi
 done
 echo "</div>"
 echo "</div>"
-
+echo "<div class=\"pageline\"></div>"
 for cluster in `find ../servers/* -maxdepth 0 -type d`
 do
   echo "<div class=\"clustername\">${cluster##*/}</div>"
