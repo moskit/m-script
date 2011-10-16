@@ -9,4 +9,7 @@ for conf in `grep -l "${s_var}=" ${rpath}/../conf/*.conf` ; do
   printf "Found in $conf ...   "
   sed -i -e "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
 done
-
+for conf in `grep -l "${s_var}=" ${rpath}/../tests/*.conf` ; do
+  printf "Found in $conf ...   "
+  sed -i -e "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
+done

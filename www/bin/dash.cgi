@@ -5,7 +5,8 @@ echo "Expires: 0"
 echo "Content-Cache: no-cache"
 echo "Content-type: text/html"
 echo ""
-
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 source "${PWD}/../../conf/dash.conf"
 timerange=`expr $slotline_length \* $freqdef` || timerange=10000
 oldest=`date -d "-$timerange sec"`
@@ -33,11 +34,9 @@ do
   echo "<div class=\"clustername\">${cluster##*/}</div>"
   echo "<div class=\"cluster\" id=\"${cluster##*/}\">"
   if [ "X${cluster##*/}" == "Xlocalhost" ] ; then
-    server="localhost"
-   
-    echo "<div class=\"server\" id=\"${server##*/}\">"
-      echo "<span class=\"servername\">${server##*/}</span>"
-      cat "../servers/${server}/dash.html" 2>/dev/null || echo "No data"
+    echo "<div class=\"server\" id=\"localhost\">"
+      echo "<span class=\"servername\"><a href=\"/servers/localhost\">localhost</a></span>"
+      cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
     echo "</div>"
     echo "</div>"
     continue
@@ -45,7 +44,7 @@ do
   for server in `find $cluster/* -maxdepth 0 -type d | sort`
   do
     echo "<div class=\"server\" id=\"${server##*/}\">"
-      echo "<span class=\"servername\">${server##*/}</span>"
+      echo "<span class=\"servername\"><a href=\"/servers/${cluster##*/}/${server##*/}\">${server##*/}</a></span>"
       cat "../servers/${server}/dash.html" 2>/dev/null || echo "No data"
     echo "</div>"
   done

@@ -1,8 +1,8 @@
 init = function() {
   el = document.body;
   el.observe('click', hideAll);
-  initMonitors('dash');
   fillTabs();
+  initMonitors('dash');
 }
 
 initMonitors = function(updater) {

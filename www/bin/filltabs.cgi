@@ -6,9 +6,10 @@ echo "Content-type: text/html"
 echo ""
 
 echo "<ul id=\"tabnav\">"
-echo "<li class=\"tab\" id=\"dash\"><a href=\"#\" onClick=\"initMonitors('dash')\">Servers Health</a></li>"
-for standalone in `find ${PWD}/../../${standalone}/* -maxdepth 0 -type d` ; do
-  echo "<li class=\"tab\" id=\"${standalone}\"><a href=\"#\" onClick=\"initMonitors('${standalone}')\">Servers Health</a></li>"
+echo "<li class=\"tab active\" id=\"dash\"><a href=\"#\" onClick=\"initMonitors('dash')\">Servers Health</a></li>"
+for standalone in `find ${PWD}/../../standalone/* -maxdepth 0 -type d` ; do
+  standalone=${standalone##*/}
+  echo "<li class=\"tab\" id=\"${standalone}\"><a href=\"#\" onClick=\"initMonitors('${standalone}')\">${standalone}</a></li>"
 done
 echo "</ul>"
 

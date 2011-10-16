@@ -66,34 +66,6 @@ div.menuitem {
   margin-right: 2px;
 }
 
-#header {
-  display: table;
-  width: 100%;
-  height: 100px;
-  background: #404040;
-}
-
-#menu {
-  display: table;
-  height: 77px;
-  width: 100%;
-  float: left;
-  background-color: #404040;
-}
-
-#tabs {
-  display: table;
-  height: 26px;
-  width: 100%;
-  float: left;
-}
-
-#location_bar {
-  display: table;
-  height: 26px;
-  float: left;
-}
-
 div.hormenu {
   position: absolute;
   left: 5px;
@@ -123,7 +95,7 @@ div.hormenu a {
 }
 
 #hnav a:hover {
-  color: #ff6;
+  color: #6f6;
 }
 
 #hnav li {
@@ -240,13 +212,13 @@ pre {
 }
 
 a { 
-  color: #220; 
+  color: #444; 
   text-decoration: none;
   font-weight: bold;
 }
 
-a:hover { color: #771; }
-a:active { color: #d83; }
+a:hover { color: #363; }
+a:active { color: #393; }
 
 #res:hover { background-color: #fafafa; }
 
@@ -333,11 +305,16 @@ div.progressBar div.background {
 .cluster {
   width: 800px;
   display: table;
-  background-color: #f2f2f2; /* for non-css3 browsers */
+  background-color: #fbfbfb; /* for non-css3 browsers */
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fbfbfb', endColorstr='#f2f2f2'); /* for IE */
   background: -webkit-gradient(linear, left bottom, left top, from(#f2f2f2), to(#fbfbfb)); /* for webkit browsers */
   background: -moz-linear-gradient(bottom,  #f2f2f2,  #fbfbfb); /* for firefox 3.6+ */ 
   padding: 10px 0px 10px 0px;
+}
+
+.dashtitle {
+  width: 800px;
+  display: table;
 }
 
 .server {
@@ -357,6 +334,7 @@ div.progressBar div.background {
   font-weight: bold;
   font-size: 14px;
   background-color: #fbfbfb;
+  display: table;
 }
 
 .servername {
@@ -392,8 +370,32 @@ div.right {
 
 #messages {
   font-size: 14px;
+  height: 52px;
+  width: 100%;
   font-weight: bold;
   color: #f88;
+  display: table;
+}
+#header {
+  display: table;
+  width: 100%;
+  height: 100px;
+  background: #404040;
+}
+
+#menu {
+  display: table;
+  height: 20px;
+  width: 100%;
+  float: left;
+  background-color: #404040;
+}
+
+#tabs {
+  display: table;
+  height: 28px;
+  width: 100%;
+  float: left;
 }
 
 .pageline {
@@ -404,50 +406,32 @@ div.right {
 
 .tab {
   height: 26px;
+  font-size: 14px;
   font-weight: bold;
+  background-color: #fbfbfb;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
 }
 
-/* begin css tabs */
-
-ul#tabnav { /* general settings */
-text-align: left; /* set to left, right or center */
-margin: 1em 0 1em 0; /* set margins as desired */
-font: bold 11px verdana, arial, sans-serif; /* set font as desired */
-border-bottom: 1px solid #6c6; /* set border COLOR as desired */
-list-style-type: none;
-padding: 3px 10px 3px 10px; /* THIRD number must change with respect to padding-top (X) below */
+.active {
+  background-color: #fff;
 }
 
-ul#tabnav li { /* do not change */
-display: inline;
+#tabs ul#tabnav {
+  text-align: left;
+  list-style-type: none;
+  height: 26px;
+  padding: 0px;
+  margin: 0px;
 }
 
-body#tab1 li.tab1, body#tab2 li.tab2, body#tab3 li.tab3, body#tab4 li.tab4 { /* settings for selected tab */
-border-bottom: 1px solid #fff; /* set border color to page background color */
-background-color: #fff; /* set background color to match above border color */
+#tabs ul#tabnav li {
+  display: inline-block;
+  padding: 2px 5px 0px 5px;
+  margin-left: 20px;
 }
 
-body#tab1 li.tab1 a, body#tab2 li.tab2 a, body#tab3 li.tab3 a, body#tab4 li.tab4 a { /* settings for selected tab link */
-background-color: #fff; /* set selected tab background color as desired */
-color: #000; /* set selected tab link color as desired */
-position: relative;
-top: 1px;
-padding-top: 4px; /* must change with respect to padding (X) above and below */
-}
 
-ul#tabnav li a { /* settings for all tab links */
-padding: 3px 4px; /* set padding (tab size) as desired; FIRST number must change with respect to padding-top (X) above */
-border: 1px solid #6c6; /* set border COLOR as desired; usually matches border color specified in #tabnav */
-background-color: #cfc; /* set unselected tab background color as desired */
-color: #666; /* set unselected tab link color as desired */
-margin-right: 0px; /* set additional spacing between tabs as desired */
-text-decoration: none;
-border-bottom: none;
-}
-
-ul#tabnav a:hover { /* settings for hover effect */
-background: #fff; /* set desired hover color */
-}
-
-/* end css tabs */
 

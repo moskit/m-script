@@ -13,6 +13,7 @@
 
 ### Get the shard (and chunk?) currently being written to
 currshard1=`mongo $server/config --quiet --eval "db.chunks.find( { ns : \"${db}.${collection}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d' ' -f2`
+
 # the last split shard and the server it has been split on:
 lastsplit=`mongo $server/config --quiet --eval "db.changelog.find({what:\"split\", ns:\"${db}.${collection}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)"|lib/json2txt | cut -d' ' -f2`
 lastsplitserver=`echo $lastsplit | head -1`
