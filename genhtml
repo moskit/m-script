@@ -80,7 +80,7 @@ case $type in
       done
     fi
     timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
-    find "${rpath}/www/servers/localhost/" -mmin +$timerange -exec rm {}\;
+    find "${rpath}/www/servers/localhost/" -mmin +$timerange -exec rm '{}' \;
     ;;
   report)
     cat "${rpath}/wwwtemplates/reporthead.tmpl" > "${rpath}/www/servers/localhost/report.html" ; "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"

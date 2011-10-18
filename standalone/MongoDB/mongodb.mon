@@ -1,0 +1,88 @@
+#!/bin/bash
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/
+source "${rpath}/${rcommand%.mon}.conf"
+if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
+  MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
+  for name in $MONGO_CONFIG_SERVERS ; do
+    if [ `grep -c ^${name}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+      noncluster=1
+    else
+      cluster=1
+    fi
+  done
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "X$cluster" == "X1" ] ; then
+    for name in $MONGO_CONFIG_SERVERS ; do
+      port=${name#*:}
+      [ -n "$port" ] || port=27019
+      configips="$configips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+    done
+  else
+    for name in $MONGO_CONFIG_SERVERS ; do
+      port=${name#*:}
+      [ -n "$port" ] || port=27019
+      configips="$configips ${name%:*}:$port"
+    done
+  fi
+  print_config_servers
+  
+elif [ -z "$MONGO_SERVERS" ] ; then
+  echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
+  exit 1
+else
+  MONGO_SERVERS=`echo $MONGO_SERVERS | sed 's|,| |g'`
+  for name in $MONGO_SERVERS ; do
+    if [ `grep -c ^${name%:*}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+      noncluster=1
+    else
+      cluster=1
+    fi
+  done
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "X$cluster" == "X1" ] ; then
+    for name in $MONGO_SERVERS ; do
+      port=${name#*:}
+      [ -n "$port" ] || port=27017
+      configips="$configips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+    done
+  else
+    for name in $MONGO_SERVERS ; do
+      port=${name#*:}
+      [ -n "$port" ] || port=27017
+      configips="$configips ${name%:*}:$port"
+    done
+  fi
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+mongo mongo1:27017/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '.value ' + d.sizeOnDisk ) } ); print( '=totalSize.value ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
+
+db.changelog.find({what:"moveChunk.to"}, {time:true}).sort({time:-1}).limit(1)
+
+#use dbname
+db.stats()
+
+#use admin
+db.printShardingStatus();
+
+mongo appserver10/config --quiet --eval "db.changelog.find({what : \"moveChunk.commit\"}).sort({time:-1}).limit(2).forEach(printjson)" | lib/json2txt
+
+

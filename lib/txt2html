@@ -27,7 +27,11 @@ format() {
     ;;
   tablerow_*)
     tdstyle=${2}
-    echo "<tr class=\"tablerow ${tdstyle}\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
+    if [[ $1 =~ [[:space:]][[:space:]] ]] ; then
+      echo "<tr class=\"tablerow ${tdstyle}\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
+    else
+      echo "<tr class=\"tablerow ${tdstyle}\"><td colspan=\"3\">${1}</td></tr>"
+    fi
     ;;
   info)
     echo "<div class=\"info info_$2\">"

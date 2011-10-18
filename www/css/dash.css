@@ -38,8 +38,8 @@ img {
 div.dhtmlmenu {
   position: absolute;
   font-size: 9px;
-  left: 0px;
-  top: 22px;
+  left: 10px;
+  top: 10px;
   width: 460px;
   text-align: left;
   border: 2px solid silver;
@@ -248,7 +248,7 @@ div.progressBar div.background {
 }
 
 .w1 {
-  background-color: brown;
+  background-color: #860;
 }
 
 .w2 {
@@ -264,7 +264,7 @@ div.progressBar div.background {
 }
 
 .info_w1 {
-  color: brown;
+  color: #860;
 }
 
 .info_w2 {
@@ -284,7 +284,7 @@ div.progressBar div.background {
 }
 
 .tablerow_w1 {
-  color: brown;
+  color: #860;
 }
 
 .tablerow_w2 {

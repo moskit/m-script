@@ -9,7 +9,7 @@ initMonitors = function(updater) {
   new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
     method: 'get', frequency: 200, decay: 10
   });
-  $$('div.tab').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+  $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
   $(updater).addClassName('active');
 }
 
@@ -26,7 +26,7 @@ showData = function(theid) {
   server=$(theid).parentNode.id;
   cluster=$(server).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
-    if (cluster == 'localhost') {
+    if (cluster == 'content') {
     var the_url = '/bin/getdata.cgi?path=/servers/localhost/' + escape(theid) + '.html';
     } else {
     var the_url = '/bin/getdata.cgi?path=/servers/' + cluster + '/' + server + '/' + escape(theid) + '.html';
