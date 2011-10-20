@@ -14,6 +14,12 @@ function print_mongoses() {
   done
 }
 
+function print_config_servers() {
+  for host in $@ ; do
+    echo $host
+  done
+}
+
 function find_master() {
   im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"|tail -1`
   if [ -z "$im" ] ; then
