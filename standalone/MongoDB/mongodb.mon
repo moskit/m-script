@@ -9,6 +9,10 @@ MONGO=`which mongo 2>/dev/null`
 source "${rpath}/${rcommand%.mon}.conf"
 
 function print_mongoses() {
+  echo
+  echo "MongoDB balancers"
+  echo "-----------------"
+  echo
   for host in $@ ; do
     echo $host
   done
@@ -30,7 +34,13 @@ function find_master() {
 }
 
 function print_databases() {
-  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + ' ' + d.sizeOnDisk ) } ); print( '=totalSize ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
+  echo
+  echo "Databases"
+  echo "---------"
+  echo 
+  echo " Name               Size"
+  echo
+  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + d.sizeOnDisk / 1048576 ) } ); print( '=totalSize ' + db.runCommand( { listDatabases : 1 } ).totalSize / 1048576 )" | grep ^= | sed 's|^=||g'
 }
 
 if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
@@ -87,7 +97,7 @@ else
 fi
 
 for configip in $configips ; do
-  mongoses=`($MONGO ${configip}/config --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/lib/json2txt" | awk '{print $2}' | sort -n`
+  mongoses=`($MONGO ${configip}/config --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | awk '{print $2}' | sort -n`
   [ -n "$gotit" ] && unset gotit && break
 done
 
