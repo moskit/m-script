@@ -40,7 +40,7 @@ div.dhtmlmenu {
   font-size: 9px;
   left: 10px;
   top: 10px;
-  width: 460px;
+  width: 560px;
   text-align: left;
   border: 2px solid silver;
   padding: 2px;
@@ -396,6 +396,7 @@ div.right {
   height: 28px;
   width: 100%;
   float: left;
+  padding-left: 10px;
 }
 
 .pageline {
@@ -408,7 +409,7 @@ div.right {
   height: 26px;
   font-size: 14px;
   font-weight: bold;
-  background-color: #fbfbfb;
+  background-color: #a0a0a0;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
@@ -430,8 +431,6 @@ div.right {
 #tabs ul#tabnav li {
   display: inline-block;
   padding: 2px 5px 0px 5px;
-  margin-left: 20px;
+  margin-left: 2px;
 }
-
-
 

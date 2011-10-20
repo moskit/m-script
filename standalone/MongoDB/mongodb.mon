@@ -4,7 +4,29 @@
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/
+MONGO=`which mongo 2>/dev/null`
+[ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf"
+
+function print_mongoses() {
+  for host in $@ ; do
+    echo $host
+  done
+}
+
+function find_master() {
+  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"|tail -1`
+  if [ -z "$im" ] ; then
+    im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1`
+    [ "X$im" == "Xtrue" ] && im=$1
+  fi
+  [ -n "$im" ] && echo $im || exit 1
+}
+
+function print_databases() {
+  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + ' ' + d.sizeOnDisk ) } ); print( '=totalSize ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
+}
+
 if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
   for name in $MONGO_CONFIG_SERVERS ; do
@@ -58,6 +80,23 @@ else
   fi
 fi
 
+for configip in $configips ; do
+  mongoses=`($MONGO ${configip}/config --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/lib/json2txt" | awk '{print $2}' | sort -n`
+  [ -n "$gotit" ] && unset gotit && break
+done
+
+if [ -n "$mongoses" ] ; then
+  print_mongoses $mongoses
+  for mongos in $mongoses ; do
+    print_databases $mongos && break
+  done
+  
+else
+  for configip in $configips ; do
+    master=`find_master $configip` && break
+  done
+  print_databases $master
+fi
 
 
 
@@ -67,22 +106,5 @@ fi
 
 
 
-
-
-
-
-
-
-mongo mongo1:27017/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '.value ' + d.sizeOnDisk ) } ); print( '=totalSize.value ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
-
-db.changelog.find({what:"moveChunk.to"}, {time:true}).sort({time:-1}).limit(1)
-
-#use dbname
-db.stats()
-
-#use admin
-db.printShardingStatus();
-
-mongo appserver10/config --quiet --eval "db.changelog.find({what : \"moveChunk.commit\"}).sort({time:-1}).limit(2).forEach(printjson)" | lib/json2txt
-
+#mongo appserver13/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + ' ' + d.sizeOnDisk ) } ); print( '=totalSize ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
 

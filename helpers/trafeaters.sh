@@ -45,7 +45,7 @@ unset threshold NMAP NETSTAT MAILX possible_options necessary_options s_option s
 declare -i threshold
 
 NMAP=`which nmap 2>/dev/null`
-[ "X$NMAP" == "X" ] && echo "Nmap not found. It's needed for this script to work, sorry" && exit 0
+
 NETSTAT=`which netstat 2>/dev/null`
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
 [ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
@@ -99,6 +99,10 @@ fi
 if [ -n "$ip" ] && [ -f "$if" ] ; then
   echo "Either --ip or --if option should be used, not both"
   exit 0
+fi
+# need to check this before mangling the firewall :)
+if [ "X$local_networks" == "Xyes" ] ; then
+  [ "X$NMAP" == "X" ] && echo "Nmap not found. It's needed for this script to work, sorry" && exit 0
 fi
 
 if [ -n "$threshold" ] ; then
