@@ -1,0 +1,158 @@
+#!/bin/bash
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
+MONGO=`which mongo 2>/dev/null`
+[ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
+source "${rpath}/${rcommand%.mon}.conf"
+
+[ -n "$1" ] && title=1
+
+function print_mongoses_title() {
+    echo
+    echo "MongoDB balancers"
+    echo "-----------------"
+    echo
+}
+
+function print_config_servers_title() {
+    echo
+    echo "MongoDB config servers"
+    echo "----------------------"
+    echo
+}
+
+function print_shards_title {
+    echo
+    echo "MongoDB shards"
+    echo "--------------"
+    echo
+}
+
+function print_servers() {
+  for host in $@ ; do
+    echo "$host"
+  done
+}
+
+function find_master() {
+  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"|tail -1`
+  if [ -z "$im" ] ; then
+    im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1`
+    [ "X$im" == "Xtrue" ] && im=$1
+  fi
+  [ -n "$im" ] && echo $im || exit 1
+}
+
+function ip_to_name() {
+  rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
+  [ -n "$rname1" ] && rname2=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $3}'` || rname=${1%:*}
+  [ -n "$rname2" ] && [ ${#rname2} -lt ${#rname1} ] && rname=$rname2 || rname=$rname1
+}
+
+function collect_hosts() {
+  for name in $@ ; do
+    port=${name#*:}
+    ip_to_name $name
+    [ -n "$port" ] || port=$defaultport
+    configips="$configips ${rname}:$port"
+  done
+}
+
+if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
+  defaultport=27019
+  MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
+  for name in $MONGO_CONFIG_SERVERS ; do
+    if [ `grep -c ^${name}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+      noncluster=1
+    else
+      cluster=1
+    fi
+  done
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "X$cluster" == "X1" ] ; then
+    for name in $MONGO_CONFIG_SERVERS ; do
+      port=${name#*:}
+      clusterips="$clusterips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+    done
+    collect_hosts $clusterips
+  else
+    collect_hosts $MONGO_CONFIG_SERVERS
+  fi
+  
+  [ -n "$title" ] && print_config_servers_title
+  print_servers $configips > "${TMPDIR}/mongo_config_servers.list"
+  for s in `cat "${TMPDIR}/mongo_config_servers.list"` ; do
+    master=`find_master $s` && break
+  done
+  master=`ip_to_name $master`
+  [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n `$DIFF "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"` ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
+  cat "${rpath}/mongo_config_servers.list" | sed "s_^${master}_${master} master_"
+  
+elif [ -z "$MONGO_SERVERS" ] ; then
+  echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
+  exit 1
+else
+  defaultport=27017
+  MONGO_SERVERS=`echo $MONGO_SERVERS | sed 's|,| |g'`
+  for name in $MONGO_SERVERS ; do
+    if [ `grep -c ^${name%:*}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+      noncluster=1
+    else
+      cluster=1
+    fi
+  done
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "X$cluster" == "X1" ] ; then
+    for name in $MONGO_SERVERS ; do
+      port=${name#*:}
+      clusterips="$clusterips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+    done
+    collect_hosts $clusterips
+  else
+    collect_hosts $MONGO_SERVERS
+  fi
+fi
+
+for configip in $configips ; do
+  mongoses=`($MONGO ${configip}/config --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | awk '{print $2}' | sort -n`
+  [ -n "$gotit" ] && unset gotit && break
+done
+
+if [ -n "$mongoses" ] ; then
+  [ -n "$title" ] && print_mongoses_title
+  print_servers $mongoses > "${TMPDIR}/mongo_mongos_servers.list"
+  [ -f "${TMPDIR}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n `$DIFF "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"` ] && mv "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
+  cat "${rpath}/mongo_mongos_servers.list"
+fi
+
+for configip in $configips ; do
+  shardhosts=`($MONGO ${configip}/config --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt"`
+  [ -n "$gotit" ] && unset gotit && break
+done
+
+if [ -n "$shardhosts" ] ; then
+  rm -f "${TMPDIR}/mongo_shards.list" 2>/dev/null
+  IFS1=$IFS
+  IFS='
+'
+  nmax=`echo "$shardhosts" | tail -1 | cut -d'/' -f1`
+  for ((n=1; n<=$nmax; n++)) ; do
+    shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | awk '{print $2}'`
+    shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | awk '{print $2}'`
+    shardport=${shardhost#*:}
+    shardhost=`ip_to_name ${shardhost%:*}`
+    echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list"
+  done
+  [ -n "$title" ] && print_shards_title
+  [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n `$DIFF "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"` ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
+  cat "${rpath}/mongo_shards.list"
+IFS=$IFS1
+fi
+
+#mongo appserver13/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + ' ' + d.sizeOnDisk ) } ); print( '=totalSize ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
+

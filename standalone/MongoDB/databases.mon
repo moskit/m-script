@@ -1,0 +1,23 @@
+#!/bin/bash
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/
+MONGO=`which mongo 2>/dev/null`
+[ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
+source "${rpath}/${rcommand%.mon}.conf"
+
+function print_databases() {
+  if [ -n "$2" ] ; then
+    echo
+    echo "Databases"
+    echo "---------"
+    echo 
+    echo " Name               Size"
+    echo
+  fi
+  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | sed 's|^=||g'
+}
+
+

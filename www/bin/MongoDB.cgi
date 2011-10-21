@@ -7,6 +7,8 @@ echo ""
 
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-${PWD}/../../standalone/${scriptname}/mongodb.mon | ${PWD}/../../lib/txt2html
+${PWD}/../../standalone/${scriptname}/mongodb.mon > ${PWD}/${scriptname}.tmp
+${PWD}/../../lib/txt2html ${PWD}/${scriptname}.tmp
+rm -f ${PWD}/${scriptname}.tmp
 
 

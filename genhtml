@@ -83,7 +83,7 @@ case $type in
     find "${rpath}/www/servers/localhost/" -mmin +$timerange -exec rm '{}' \;
     ;;
   report)
-    cat "${rpath}/wwwtemplates/reporthead.tmpl" > "${rpath}/www/servers/localhost/report.html" ; "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" ; cat "${rpath}/wwwtemplates/reportbottom.tmpl" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"
     ;;
 esac
 

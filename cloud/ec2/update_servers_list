@@ -19,11 +19,11 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 DIFF=`which diff 2>/dev/null`
-[ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 SED=`which sed 2>/dev/null`
-[ -z "$SED" ] && echo "Sed utility not found, exiting" && exit 1
+[ -z "$SED" ] && echo "Sed utility not found, exiting..  " && exit 1
 SSH=`which ssh 2>/dev/null`
-[ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+[ -z "$SSH" ] && echo "Ssh utility not found, exiting..  " && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
 # Normally needed for localhost only, and not always: depends on system.
 # Hostnames of remote servers are obtained via ssh which is a login shell;

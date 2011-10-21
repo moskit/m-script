@@ -5,13 +5,17 @@ init = function() {
   initMonitors('dash');
 }
 
+var pu = null;
+
 initMonitors = function(updater) {
-  new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
+  if (pu) { pu.stop(); }
+  pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
     method: 'get', frequency: 200, decay: 10
   });
   $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
-  $(updater).addClassName('active');
+  if ($(updater)) { $(updater).addClassName('active'); }
 }
+
 
 fillTabs = function() {
   var the_url = '/bin/filltabs.cgi';
