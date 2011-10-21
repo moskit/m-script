@@ -90,8 +90,8 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
     master=`find_master $s` && break
   done
   master=`ip_to_name $master`
-  [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n `$DIFF "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"` ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
-  cat "${rpath}/mongo_config_servers.list" | sed "s_^${master}_${master} master_"
+  [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
+  [ -f "${rpath}/mongo_config_servers.list" ] && cat "${rpath}/mongo_config_servers.list" | sed "s_^${master}_${master} master_"
   
 elif [ -z "$MONGO_SERVERS" ] ; then
   echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
@@ -126,8 +126,8 @@ done
 if [ -n "$mongoses" ] ; then
   [ -n "$title" ] && print_mongoses_title
   print_servers $mongoses > "${TMPDIR}/mongo_mongos_servers.list"
-  [ -f "${TMPDIR}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n `$DIFF "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"` ] && mv "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
-  cat "${rpath}/mongo_mongos_servers.list"
+  [ -f "${TMPDIR}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
+  [ -f "${rpath}/mongo_mongos_servers.list" ] && cat "${rpath}/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
@@ -149,8 +149,8 @@ if [ -n "$shardhosts" ] ; then
     echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list"
   done
   [ -n "$title" ] && print_shards_title
-  [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n `$DIFF "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"` ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
-  cat "${rpath}/mongo_shards.list"
+  [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
+  [ -f "${rpath}/mongo_shards.list" ] && cat "${rpath}/mongo_shards.list"
 IFS=$IFS1
 fi
 
