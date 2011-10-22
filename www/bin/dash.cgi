@@ -8,15 +8,16 @@ echo ""
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 source "${PWD}/../../conf/dash.conf"
-timerange=`expr $slotline_length \* $freqdef` || timerange=10000
+timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 oldest=`date -d "-$timerange sec"`
 hour=`date -d "$oldest" +"%H"`
 echo "<div class=\"dashtitle\">"
 echo "<div class=\"clustername\">Cluster</div>"
 echo "<div class=\"server\">"
 echo "<span class=\"servername\">Server</span>"
+freqdef1=`expr $freqdef + 5`
 for ((n=0; n<$slotline_length; n++)) ; do
-  timediff=`expr $n \* $freqdef`
+  timediff=`expr $n \* \( $freqdef - $timeshift \)`
   timestamp=`date -d "$oldest +$timediff sec"`
   hournew=`date -d "$timestamp" +"%H"`
   if [ "X$hournew" == "X$hour" ] ; then

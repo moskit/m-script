@@ -9,7 +9,8 @@ DIFF=`which diff 2>/dev/null`
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf"
-
+source "${rpath}/../../conf/mon.conf"
+touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" "${rpath}/mongo_shards.list"
 [ -n "$1" ] && title=1
 
 function print_mongoses_title() {
@@ -52,6 +53,7 @@ function ip_to_name() {
   rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
   [ -n "$rname1" ] && rname2=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $3}'` || rname=${1%:*}
   [ -n "$rname2" ] && [ ${#rname2} -lt ${#rname1} ] && rname=$rname2 || rname=$rname1
+  [ -n "$rname" ] || rname=${1%:*}
 }
 
 function collect_hosts() {
@@ -145,12 +147,13 @@ if [ -n "$shardhosts" ] ; then
     shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | awk '{print $2}'`
     shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | awk '{print $2}'`
     shardport=${shardhost#*:}
-    shardhost=`ip_to_name ${shardhost%:*}`
+    ip_to_name ${shardhost%:*}
+    shardhost="$rname"
     echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list"
   done
   [ -n "$title" ] && print_shards_title
   [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
-  [ -f "${rpath}/mongo_shards.list" ] && cat "${rpath}/mongo_shards.list"
+  [ -f "${rpath}/mongo_shards.list" ] && cat "${rpath}/mongo_shards.list" | sort -n
 IFS=$IFS1
 fi
 

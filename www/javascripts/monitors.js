@@ -26,14 +26,28 @@ fillTabs = function() {
   });
 }
 
+showURL = function(theid,url,scriptname) {
+  if ($('data_' + theid + '_http').style.display == "none") {
+    var the_url = '/bin/fetchurl.cgi?url=' + escape(url) + '&to=/' + scriptname + '/' + escape(theid) + '.html';
+    new Ajax.Request(the_url, {
+      onSuccess: function(response) {
+        $('data_' + theid + '_http').update(response.responseText);
+      },
+      onComplete: function() {
+        Effect.SlideDown('data_' + theid + '_http', {duration: 0.3});
+      }
+    });
+  }
+}
+
 showData = function(theid) {
   server=$(theid).parentNode.id;
   cluster=$(server).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
     if (cluster == 'content') {
-    var the_url = '/bin/getdata.cgi?path=/servers/localhost/' + escape(theid) + '.html';
+      var the_url = '/bin/getdata.cgi?path=/servers/localhost/' + escape(theid) + '.html';
     } else {
-    var the_url = '/bin/getdata.cgi?path=/servers/' + cluster + '/' + server + '/' + escape(theid) + '.html';
+      var the_url = '/bin/getdata.cgi?path=/servers/' + cluster + '/' + server + '/' + escape(theid) + '.html';
     }
     new Ajax.Request(the_url, {
       onSuccess: function(response) {

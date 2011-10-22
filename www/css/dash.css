@@ -37,6 +37,7 @@ img {
 
 div.dhtmlmenu {
   position: absolute;
+  display: table;
   font-size: 9px;
   left: 10px;
   top: 10px;

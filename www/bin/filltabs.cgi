@@ -7,7 +7,7 @@ echo ""
 
 echo "<ul id=\"tabnav\">"
 echo "<li class=\"tab active\" id=\"dash\"><a href=\"#\" onClick=\"initMonitors('dash')\">Servers Health</a></li>"
-for standalone in ${PWD}/../../standalone/rc/* ; do
+for standalone in `find ${PWD}/../../standalone/rc -type l` ; do
   standalone=`readlink $standalone`
   standalone=${standalone##*/}
   echo "<li class=\"tab\" id=\"${standalone}\"><a href=\"#\" onClick=\"initMonitors('${standalone}')\">${standalone}</a></li>"
