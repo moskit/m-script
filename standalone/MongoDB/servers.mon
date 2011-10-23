@@ -10,29 +10,10 @@ MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf"
 source "${rpath}/../../conf/mon.conf"
+SQLITE=`which sqlite3 2>/dev/null`
 touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" "${rpath}/mongo_shards.list"
-[ -n "$1" ] && title=1
-
-function print_mongoses_title() {
-    echo
-    echo "MongoDB balancers"
-    echo "-----------------"
-    echo
-}
-
-function print_config_servers_title() {
-    echo
-    echo "MongoDB config servers"
-    echo "----------------------"
-    echo
-}
-
-function print_shards_title {
-    echo
-    echo "MongoDB shards"
-    echo "--------------"
-    echo
-}
+TMPDIR="${TMPDIR}/MongoDB"
+install -d "${TMPDIR}"
 
 function print_servers() {
   for host in $@ ; do
@@ -65,6 +46,13 @@ function collect_hosts() {
   done
 }
 
+function server_to_database() {
+  for d in `cat "${rpath}/data/${1}.dat"` ; do
+    eval "`echo "$line" | sed 's_|_=_'`"
+  done      
+  $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opsTotalInsert, opsTotalQuery, opsTotalUpdate, opsTotalDelete, opsTotalGetmore, opsTotalCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, lockRatio, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values (`date +"%s"`, '`date +"%Y%m%d"`', '${cs}' ${connCurrent-0}, ${connAvailable-0}, ${netIn-0}, ${netOut-0}, ${netReqn-0}, ${opsTotalInsert-0}, ${opsTotalQuery-0}, ${opsTotalUpdate-0}, ${opsTotalDelete-0}, ${opsTotalGetmore-0}, ${opsTotalCommand-0}, ${opsShardedInsert-0}, ${opsShardedQuery-0}, ${opsShardedUpdate-0}, ${opsShardedDelete-0}, ${opsShardedGetmore-0}, ${opsShardedCommand-0}, ${opsNotShardedInsert-0}, ${opsNotShardedQuery-0}, ${opsNotShardedUpdate-0}, ${opsNotShardedDelete-0}, ${opsNotShardedGetmore-0}, ${opsNotShardedCommand-0}, ${lockRatio-0}, ${lockQueueTotal-0}, ${lockQueueReaders-0}, ${lockQueueWriters-0}, ${lockClientsTotal-0}, ${lockClientsReaders-0}, ${lockClientsWriters-0})"
+}
+
 if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   defaultport=27019
   MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
@@ -85,15 +73,9 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   else
     collect_hosts $MONGO_CONFIG_SERVERS
   fi
-  
-  [ -n "$title" ] && print_config_servers_title
+
   print_servers $configips > "${TMPDIR}/mongo_config_servers.list"
-  for s in `cat "${TMPDIR}/mongo_config_servers.list"` ; do
-    master=`find_master $s` && break
-  done
-  master=`ip_to_name $master`
   [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
-  [ -f "${rpath}/mongo_config_servers.list" ] && cat "${rpath}/mongo_config_servers.list" | sed "s_^${master}_${master} master_"
   
 elif [ -z "$MONGO_SERVERS" ] ; then
   echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
@@ -126,10 +108,8 @@ for configip in $configips ; do
 done
 
 if [ -n "$mongoses" ] ; then
-  [ -n "$title" ] && print_mongoses_title
   print_servers $mongoses > "${TMPDIR}/mongo_mongos_servers.list"
   [ -f "${TMPDIR}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
-  [ -f "${rpath}/mongo_mongos_servers.list" ] && cat "${rpath}/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
@@ -151,11 +131,37 @@ if [ -n "$shardhosts" ] ; then
     shardhost="$rname"
     echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list"
   done
-  [ -n "$title" ] && print_shards_title
   [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
-  [ -f "${rpath}/mongo_shards.list" ] && cat "${rpath}/mongo_shards.list" | sort -n
 IFS=$IFS1
 fi
 
-#mongo appserver13/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + ' ' + d.sizeOnDisk ) } ); print( '=totalSize ' + db.runCommand( { listDatabases : 1 } ).totalSize )" | grep ^= | sed 's|^=||g'
+if [ -e "${rpath}/mongo_config_servers.list" ] ; then
+  for cs in `cat "${rpath}/mongo_config_servers.list"` ; do
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    if [ "X$SQLITE3" == "X1" ] ; then
+      server_to_database "${cs}"
+    fi
+  done
+fi
+
+if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
+  for cs in `cat "${rpath}/mongo_mongos_servers.list"` ; do
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    if [ "X$SQLITE3" == "X1" ] ; then
+      server_to_database "${cs}"
+    fi
+  done
+fi
+
+if [ -e "${rpath}/mongo_shards.list" ] ; then
+  for cs in `cat "${rpath}/mongo_shards.list" | cut -d' ' -f1` ; do
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    if [ "X$SQLITE3" == "X1" ] ; then
+      server_to_database "${cs}"
+    fi
+  done
+fi
+
+
+
 

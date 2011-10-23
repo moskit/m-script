@@ -27,14 +27,14 @@ fillTabs = function() {
 }
 
 showURL = function(theid,url,scriptname) {
-  if ($('data_' + theid + '_http').style.display == "none") {
+  if ($('data_' + theid).style.display == "none") {
     var the_url = '/bin/fetchurl.cgi?url=' + escape(url) + '&to=/' + scriptname + '/' + escape(theid) + '.html';
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
-        $('data_' + theid + '_http').update(response.responseText);
+        $('data_' + theid).update(response.responseText);
       },
       onComplete: function() {
-        Effect.SlideDown('data_' + theid + '_http', {duration: 0.3});
+        Effect.SlideDown('data_' + theid, {duration: 0.3});
       }
     });
   }

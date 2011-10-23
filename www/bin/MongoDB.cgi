@@ -7,8 +7,11 @@ echo ""
 
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-#${PWD}/../../standalone/${scriptname}/mongodb.mon
-CURL=`which curl 2>/dev/null`
+
+for script in ${PWD}/../../standalone/${scriptname}/rc/*.mon ; do
+  [ -x "$script" ] && $script
+done
+
 IFS1=$IFS
 IFS='
 '
@@ -21,10 +24,9 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" ] ; th
       id=${name}_${port}
       install -d "${PWD}/../${scriptname}/configservers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      #$CURL -s "http://${name}:${wport}" > "${PWD}/../${scriptname}/configservers/${id}/${id}_name.html"
-      echo "<div class=\"servername\" id=\"${id}\">${name}:${wport}"
-        echo "<div id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">http<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
       echo "</div>"
+      echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     done
   echo "</div>"
 fi
@@ -38,10 +40,9 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
       id=${name}_${port}
       install -d "${PWD}/../${scriptname}/shardservers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      #$CURL -s "http://${name}:${wport}" > "${PWD}/../${scriptname}/shardservers/${id}/${id}_name.html"
-      echo "<div class=\"servername\" id=\"${id}\">${name}:${wport}"
-        echo "<div id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">http<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
       echo "</div>"
+      echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     done
   echo "</div>"
 fi
@@ -55,10 +56,9 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" ] ; th
       id=${name}_${port}
       install -d "${PWD}/../${scriptname}/balancers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      #$CURL -s "http://${name}:${wport}" > "${PWD}/../${scriptname}/balancers/${id}/${id}_name.html"
-      echo "<div class=\"servername\" id=\"${id}\">${name}:${wport}"
-        echo "<div id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">http<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
       echo "</div>"
+      echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     done
   echo "</div>"
 fi
