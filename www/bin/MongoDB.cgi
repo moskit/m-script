@@ -23,8 +23,8 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" ] ; th
       name=${s%:*}
       id=${name}_${port}
       [ -n "$port" ] && wport=`expr $port + 1000`
-      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
-      echo "</div>"
+      echo "<div class=\"server\">"
+      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
       if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`" == "X1" ] ; then
         echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
@@ -33,6 +33,9 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" ] ; th
       fi
       echo "<div class=\"status\" id=\"${id}_mem\">`grep ^memRes\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2` / `grep ^memVir\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`</div>"
       echo "<div class=\"status\" id=\"${id}_conn\">`grep ^connCurrent\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2` / `grep ^connAvailable\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`</div>"
+      echo "<div class=\"status\" id=\"${id}_bw\">`grep '^Bandwidth in ' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"` / `grep '^Bandwidth out ' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`</div>"
+      echo "<div class=\"status\" id=\"${id}_qps\">`grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`</div>"
+      echo "</div>"
     done
   echo "</div>"
 fi
@@ -46,8 +49,8 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
       id=${name}_${port}
       install -d "${PWD}/../${scriptname}/shardservers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
-      echo "</div>"
+      echo "<div class=\"server\">"
+      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
       if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`" == "X1" ] ; then
         echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
@@ -56,6 +59,9 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
       fi
       echo "<div class=\"status\" id=\"${id}_mem\">`grep ^memRes\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2` / `grep ^memVir\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`</div>"
       echo "<div class=\"status\" id=\"${id}_conn\">`grep ^connCurrent\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2` / `grep ^connAvailable\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`</div>"
+      echo "<div class=\"status\" id=\"${id}_bw\">`grep '^Bandwidth in ' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"` / `grep '^Bandwidth out ' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`</div>"
+      echo "<div class=\"status\" id=\"${id}_qps\">`grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`</div>"
+      echo "</div>"
     done
   echo "</div>"
 fi
@@ -69,8 +75,8 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" ] ; th
       id=${name}_${port}
       install -d "${PWD}/../${scriptname}/balancers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
-      echo "</div>"
+      echo "<div class=\"server\">"
+      echo "<div class=\"servername\" id=\"${id}\">${name}:${port}</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
       if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`" == "X1" ] ; then
         echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
@@ -79,6 +85,9 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" ] ; th
       fi
       echo "<div class=\"status\" id=\"${id}_mem\">`grep ^memRes\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2` / `grep ^memVir\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`</div>"
       echo "<div class=\"status\" id=\"${id}_conn\">`grep ^connCurrent\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2` / `grep ^connAvailable\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`</div>"
+      echo "<div class=\"status\" id=\"${id}_bw\">`grep '^Bandwidth in ' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"` / `grep '^Bandwidth out ' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`</div>"
+      echo "<div class=\"status\" id=\"${id}_qps\">`grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g' "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`</div>"
+      echo "</div>"
     done
   echo "</div>"
 fi
