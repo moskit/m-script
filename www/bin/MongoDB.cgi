@@ -22,11 +22,17 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" ] ; th
       port=${s##*:}
       name=${s%:*}
       id=${name}_${port}
-      install -d "${PWD}/../${scriptname}/configservers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
       echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
       echo "</div>"
-      echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat"`" == "X1" ] ; then
+        echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
+      else
+        echo "<div class=\"status statuserr\" id=\"${id}_status\">Error</div>"
+      fi
+      echo "<div class=\"status\" id=\"${id}_mem\">`grep ^memRes\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat" | cut -d'|' -f2` / `grep ^memVir\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat" | cut -d'|' -f2`</div>"
+      
     done
   echo "</div>"
 fi
@@ -43,6 +49,12 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
       echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
       echo "</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat"`" == "X1" ] ; then
+        echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
+      else
+        echo "<div class=\"status statuserr\" id=\"${id}_status\">Error</div>"
+      fi
+      echo "<div class=\"status\" id=\"${id}_mem\">`grep ^memRes\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat" | cut -d'|' -f2` / `grep ^memVir\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat" | cut -d'|' -f2`</div>"
     done
   echo "</div>"
 fi
@@ -59,6 +71,12 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" ] ; th
       echo "<div class=\"servername\" id=\"${id}\">${name}:${port}"
       echo "</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\"><a href='#'>HTTP</a><div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+      if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat"`" == "X1" ] ; then
+        echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
+      else
+        echo "<div class=\"status statuserr\" id=\"${id}_status\">Error</div>"
+      fi
+      echo "<div class=\"status\" id=\"${id}_mem\">`grep ^memRes\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat" | cut -d'|' -f2` / `grep ^memVir\| "${PWD}/../../standalone/${scriptname}/data/${s}.dat" | cut -d'|' -f2`</div>"
     done
   echo "</div>"
 fi

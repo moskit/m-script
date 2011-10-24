@@ -58,10 +58,12 @@ function parse_data() {
   echo "Server ${1}"
   echo "---------------------------"
   echo
+  echo " Status"
+  echo
   echo "Status:   ${status}" | sed 's|1|OK|;s|0|Error|'
   echo "Uptime:   since `date -d "-$uptime sec"`"
   echo
-  echo "Memory"
+  echo " Memory"
   echo
   echo "Resident (MB):   ${memRes-0}"
   echo "Virtual (MB):   ${memVir-0}"
@@ -69,7 +71,7 @@ function parse_data() {
   echo "Mapped with journal (MB):   ${memMappedWJournal-0}"
   echo "Heap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`"
   echo
-  echo "Network"
+  echo " Network"
   echo
   echo "Current connections:   ${connCurrent-0}"
   echo "Available connections:   ${connAvailable-0}"
@@ -83,7 +85,7 @@ function parse_data() {
   net_reqps=`echo "scale=1; ($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   echo "Network requests per second:   $net_reqps"
   echo
-  echo "Queries"
+  echo " Queries"
   echo
   echo " Query Type         Total       Sharded       Not Sharded"
   echo
@@ -163,7 +165,7 @@ function parse_data() {
   echo "Total                $ops_totalqps      $ops_totalqps_sharded      $ops_totalqps_notsharded"
   
   if [ "X$SQLITE3" == "X1" ] ; then
-    $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opsTotalInsert, opsTotalQuery, opsTotalUpdate, opsTotalDelete, opsTotalGetmore, opsTotalCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, lockRatio, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', ${status}, '$version', ${uptime-0}, ${memRes-0}, ${memVir-0}, ${memMapped-0}, ${memMappedWJournal-0}, ${infoHeapUsage-0}, ${connCurrent-0}, ${connAvailable-0}, ${netIn-0}, ${netOut-0}, ${netReqn-0}, ${opsTotalInsert-0}, ${opsTotalQuery-0}, ${opsTotalUpdate-0}, ${opsTotalDelete-0}, ${opsTotalGetmore-0}, ${opsTotalCommand-0}, ${opsShardedInsert-0}, ${opsShardedQuery-0}, ${opsShardedUpdate-0}, ${opsShardedDelete-0}, ${opsShardedGetmore-0}, ${opsShardedCommand-0}, ${opsNotShardedInsert-0}, ${opsNotShardedQuery-0}, ${opsNotShardedUpdate-0}, ${opsNotShardedDelete-0}, ${opsNotShardedGetmore-0}, ${opsNotShardedCommand-0}, ${lockRatio-0}, ${lockQueueTotal-0}, ${lockQueueReaders-0}, ${lockQueueWriters-0}, ${lockClientsTotal-0}, ${lockClientsReaders-0}, ${lockClientsWriters-0})"
+    $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opsTotalInsert, opsTotalQuery, opsTotalUpdate, opsTotalDelete, opsTotalGetmore, opsTotalCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, lockRatio, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${netIn-0}', '${netOut-0}', '${netReqn-0}', '${opsTotalInsert-0}', '${opsTotalQuery-0}', '${opsTotalUpdate-0}', '${opsTotalDelete-0}', '${opsTotalGetmore-0}', '${opsTotalCommand-0}', '${opsShardedInsert-0}', '${opsShardedQuery-0}', '${opsShardedUpdate-0}', '${opsShardedDelete-0}', '${opsShardedGetmore-0}', '${opsShardedCommand-0}', '${opsNotShardedInsert-0}', '${opsNotShardedQuery-0}', '${opsNotShardedUpdate-0}', '${opsNotShardedDelete-0}', '${opsNotShardedGetmore-0}', '${opsNotShardedCommand-0}', '${lockRatio-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}')"
   fi
   
 }
@@ -251,15 +253,11 @@ IFS=$IFS1
 fi
 
 if [ -e "${rpath}/mongo_config_servers.list" ] ; then
-  echo
-  echo "Configuration Servers"
-  echo "---------------------"
-  echo
-
   for cs in `cat "${rpath}/mongo_config_servers.list"` ; do
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
-    parse_data "${cs}"
+    parse_data "${cs}" > "${rpath}/data/${cs}.report"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/data/${cs}.html"
   done
 fi
 
@@ -267,9 +265,8 @@ if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_mongos_servers.list"` ; do
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
-    if [ "X$SQLITE3" == "X1" ] ; then
-      parse_data "${cs}"
-    fi
+    parse_data "${cs}" > "${rpath}/data/${cs}.report"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/data/${cs}.html"
   done
 fi
 
@@ -277,9 +274,8 @@ if [ -e "${rpath}/mongo_shards.list" ] ; then
   for cs in `cat "${rpath}/mongo_shards.list" | cut -d' ' -f1` ; do
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
-    if [ "X$SQLITE3" == "X1" ] ; then
-      parse_data "${cs}"
-    fi
+    parse_data "${cs}" > "${rpath}/data/${cs}.report"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/data/${cs}.html"
   done
 fi
 
