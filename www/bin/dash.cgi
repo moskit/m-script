@@ -12,7 +12,7 @@ timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10
 oldest=`date -d "-$timerange sec"`
 hour=`date -d "$oldest" +"%H"`
 echo "<div class=\"dashtitle\">"
-echo "<div class=\"clustername\">Cluster</div>"
+echo "<div class=\"clustername\"><span class=\"indent\">Cluster</span></div>"
 echo "<div class=\"server\">"
 echo "<span class=\"servername\">Server</span>"
 freqdef1=`expr $freqdef + 5`
@@ -29,10 +29,10 @@ for ((n=0; n<$slotline_length; n++)) ; do
 done
 echo "</div>"
 echo "</div>"
-echo "<div class=\"pageline\"></div>"
+
 for cluster in `find ../servers/* -maxdepth 0 -type d`
 do
-  echo "<div class=\"clustername\">${cluster##*/}</div>"
+  echo "<div class=\"clustername\"><span class=\"indent\">${cluster##*/}</span></div>"
   echo "<div class=\"cluster\" id=\"${cluster##*/}\">"
   if [ "X${cluster##*/}" == "Xlocalhost" ] ; then
     echo "<div class=\"server\" id=\"localhost\">"
