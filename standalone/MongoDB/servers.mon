@@ -257,7 +257,7 @@ if [ -e "${rpath}/mongo_config_servers.list" ] ; then
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/data/${cs}.html"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/${cs}.html"
   done
 fi
 
@@ -266,7 +266,7 @@ if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/data/${cs}.html"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/${cs}.html"
   done
 fi
 
@@ -275,7 +275,7 @@ if [ -e "${rpath}/mongo_shards.list" ] ; then
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/data/${cs}.html"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/${cs}.html"
   done
 fi
 

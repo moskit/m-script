@@ -145,6 +145,10 @@ start)
           ;;
         esac
       fi
+      # Standalone tests, if any
+      for stest in ${rpath}/standalone/rc/* ; do
+        $stest </dev/null &
+      done
     else
 ## Tests that are always enabled
       ${rpath}/mon.run mem.mon,servers.mon </dev/null &

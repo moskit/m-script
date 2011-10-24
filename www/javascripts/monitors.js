@@ -40,14 +40,14 @@ showURL = function(theid,url,scriptname) {
   }
 }
 
-showData = function(theid) {
+showData = function(theid,base) {
   server=$(theid).parentNode.id;
   cluster=$(server).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
     if (cluster == 'content') {
-      var the_url = '/bin/getdata.cgi?path=/servers/localhost/' + escape(theid) + '.html';
+      var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(theid) + '.html';
     } else {
-      var the_url = '/bin/getdata.cgi?path=/servers/' + cluster + '/' + server + '/' + escape(theid) + '.html';
+      var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(theid) + '.html';
     }
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
