@@ -28,8 +28,8 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new"
-necessary_options="metric ip"
+possible_options="metric help from to ip new database table"
+necessary_options="metric ip database table"
 
 RSYNC=`which rsync 2>/dev/null`
 
@@ -178,7 +178,7 @@ rm -f ${TMPDIR}/graph.${sIP}.${metric}.dots
 #fi
 #$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
 #if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
-#  echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
+#  echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
 #  exit 1
 #fi
 ########
@@ -188,23 +188,23 @@ rm -f ${TMPDIR}/graph.${sIP}.${metric}.dots
 # Using fixed multiplyer to avoid double querying
 mp=100
 if [ -n "$new" ] ; then
-  QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
+  QUERY="select timeindex, ${metric}*${mp} from $table where timeindex between $from and $to;"
   if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
-    sqlite3 "${spath}/sysdata" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${metric}
+    sqlite3 "${spath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${database}.${metric}
   else
-    $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
+    $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${database}.${metric}
   fi
-  if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
-    echo "Too few data for graph. Might be an ssh error." >> "${rpath}/dashboard.log"
+  if [ `cat ${TMPDIR}/graph.${sIP}.${database}.${metric} | wc -l` -le 5 ] ; then
+    echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
     exit 1
   fi
 fi
 declare -a arr
-cat ${TMPDIR}/graph.${sIP}.${metric} | awk -F'|' '{print $2}' | sort | uniq
+#cat ${TMPDIR}/graph.${sIP}.${database}.${metric} | awk -F'|' '{print $2}' | sort | uniq
 IFS1=$IFS
 IFS='
 '
-for x in `cat ${TMPDIR}/graph.${sIP}.${metric} | awk -F'|' '{print $2}' | sort | uniq`
+for x in `cat ${TMPDIR}/graph.${sIP}.${database}.${metric} | awk -F'|' '{print $2}' | sort | uniq`
 do
   arr=( ${arr[*]} ${x%.*} )
 done

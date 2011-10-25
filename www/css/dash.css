@@ -368,6 +368,13 @@ span.indent {
   background: -moz-linear-gradient(bottom,  #fffafa,  #fff0f0)
 }
 
+.details {
+  display: table;
+  width: 800px;
+  margin: 3px 0px;
+  float: left;
+}
+
 td {
   width: 25%;
 }

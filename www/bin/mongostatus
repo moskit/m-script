@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "<div class=\"server\" id=\"${server}\">"
+SQLITE=`which sqlite3 2>/dev/null`
+if [ -n "$SQLITE" ] ; then
+  $SQLITE "${PWD}/../../standalone/mongodb.sql3" "select datetime(timeindex,'unixepoch'),status from servers where hostport='${server}' order by timeindex desc limit 50" | while read res ; do
+    timestamp=`echo $res | cut -d'|' -f1`
+    status=`echo $res | cut -d'|' -f2`
+    [ "X$status" == "X1" ] && css="ok" || css="w3"
+    echo "<div id=\"${timestamp}\" title=\"${timestamp}\" class=\"chunk ${css}\">&nbsp;</div>"
+  done
+fi
+echo "</div>"
+

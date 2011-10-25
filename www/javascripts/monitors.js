@@ -3,6 +3,7 @@ init = function() {
   el.observe('click', hideAll);
   fillTabs();
   initMonitors('dash');
+  $$('div.details').each(function(value) { value.hide() });
 }
 
 var pu = null;
@@ -60,6 +61,22 @@ showData = function(theid,base) {
 	}
 }
 
+showDetails = function(theid,script) {
+  server=$(theid).parentNode.id;
+  cluster=$(server).parentNode.id;
+  if ($(server + '_details').style.display == "none") {
+    var the_url = '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
+    new Ajax.Request(the_url, {
+      onSuccess: function(response) {
+        $(server + '_details').update(response.responseText);
+      },
+      onComplete: function() {
+        Effect.SlideDown(server + '_details', {duration: 0.3});
+      }
+    });
+	}
+}
+
 showMenu = function(theid,thetext,action) {
   if ($(theid).style.display == "none") {
     $(theid).innerHTML=thetext;
@@ -99,6 +116,7 @@ hideAll = function(e) {
 //	if (targ.nodeType == 3) 
   targ = targ.parentNode.parentNode;
   $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
+  $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
 }
 
 
