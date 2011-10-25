@@ -146,8 +146,10 @@ start)
         esac
       fi
       # Standalone tests, if any
-      for stest in ${rpath}/standalone/rc/* ; do
-        $stest </dev/null &
+      for sa in ${rpath}/standalone/rc/* ; do
+        for satest in ${sa}/rc/* ; do
+          $satest >> ${rpath}/sa.log
+        done  </dev/null &
       done
     else
 ## Tests that are always enabled

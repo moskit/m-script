@@ -29,10 +29,10 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" ] ; th
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
       port=${s##*:}
       name=${s%:*}
-      id=${name}_${port}
+      id="${name}:${port}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      echo "<div class=\"server\">"
-      echo "<div class=\"servername\" id=\"${id}\" onClick=\"showData('${name}:${port}','/mongo')\">${name}:${port}</div>"
+      echo "<div class=\"server\" id=\"${id}\">"
+      echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}','/mongo')\">${id}</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
       if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`" == "X1" ] ; then
         echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
@@ -55,11 +55,11 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"` ; do
       port=`echo $s | awk '{print $1}' | cut -d':' -f2`
       name=`echo $s | awk '{print $1}' | cut -d':' -f1`
-      id=${name}_${port}
+      id="${name}:${port}"
       install -d "${PWD}/../${scriptname}/shardservers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      echo "<div class=\"server\">"
-      echo "<div class=\"servername\" id=\"${id}\" onClick=\"showData('${name}:${port}','/mongo')\">${name}:${port}</div>"
+      echo "<div class=\"server\" id=\"${id}\">"
+      echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}','/mongo')\">${id}</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
       if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`" == "X1" ] ; then
         echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"
@@ -81,11 +81,11 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" ] ; th
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
       port=${s##*:}
       name=${s%:*}
-      id=${name}_${port}
+      id="${name}:${port}"
       install -d "${PWD}/../${scriptname}/balancers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
-      echo "<div class=\"server\">"
-      echo "<div class=\"servername\" id=\"${id}\" onClick=\"showData('${name}:${port}','/mongo')\">${name}:${port}</div>"
+      echo "<div class=\"server\" id=\"${id}\">"
+      echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}','/mongo')\">${id}</div>"
       echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
       if [ "X`grep ^status\| "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat" | cut -d'|' -f2`" == "X1" ] ; then
         echo "<div class=\"status statusok\" id=\"${id}_status\">OK</div>"

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+xpath=${xcommand%/*}/
 rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
+rpath=${0%/*}/${xpath}
 #*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
@@ -254,28 +255,31 @@ fi
 
 if [ -e "${rpath}/mongo_config_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_config_servers.list"` ; do
+    install -d "${rpath}/../../www/mongo/configservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/${cs}.html"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/configservers/${cs}/${cs}.html"
   done
 fi
 
 if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_mongos_servers.list"` ; do
+    install -d "${rpath}/../../www/mongo/balancers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/${cs}.html"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/balancers/${cs}/${cs}.html"
   done
 fi
 
 if [ -e "${rpath}/mongo_shards.list" ] ; then
   for cs in `cat "${rpath}/mongo_shards.list" | cut -d' ' -f1` ; do
+    install -d "${rpath}/../../www/mongo/shardservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/${cs}.html"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/shardservers/${cs}/${cs}.html"
   done
 fi
 
