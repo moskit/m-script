@@ -443,6 +443,7 @@ div.right {
   border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
+  cursor: pointer;
 }
 
 .active {

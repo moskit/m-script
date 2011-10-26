@@ -10,7 +10,7 @@ echo "<li class=\"tab active\" id=\"dash\"><a href=\"#\" onClick=\"initMonitors(
 for standalone in `find ${PWD}/../../standalone/rc -type l` ; do
   standalone=`readlink $standalone`
   standalone=${standalone##*/}
-  echo "<li class=\"tab\" id=\"${standalone}\"><a href=\"#\" onClick=\"initMonitors('${standalone}')\">${standalone}</a></li>"
+  echo "<li class=\"tab\" id=\"${standalone}\" onClick=\"initMonitors('${standalone}')\">${standalone}</li>"
 done
 echo "</ul>"
 
