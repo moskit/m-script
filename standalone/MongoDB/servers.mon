@@ -62,7 +62,7 @@ function parse_data() {
   echo " Status"
   echo
   echo "Status:   ${status}" | sed 's|1|OK|;s|0|Error|'
-  echo "Uptime:   since `date -d "-$uptime sec"`"
+  echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo
   echo " Memory"
   echo
@@ -221,8 +221,11 @@ else
 fi
 
 for configip in $configips ; do
-  mongoses=`($MONGO ${configip}/config --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | awk '{print $2}' | sort -n`
-  [ -n "$gotit" ] && unset gotit && break
+# Despite variable name this is not necessarily config servers, so might be
+# replica sets
+  master=`find_master ${configip} || echo ${configip}`
+  mongoses=`($MONGO ${master}/config --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | awk '{print $2}' | sort -n`
+  [ -n "$gotit" ] && unset gotit master && break
 done
 
 if [ -n "$mongoses" ] ; then
@@ -231,8 +234,9 @@ if [ -n "$mongoses" ] ; then
 fi
 
 for configip in $configips ; do
-  shardhosts=`($MONGO ${configip}/config --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt"`
-  [ -n "$gotit" ] && unset gotit && break
+  master=`find_master ${configip} || echo ${configip}`
+  mongoses=`($MONGO ${master}/config --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt"`
+  [ -n "$gotit" ] && unset gotit master && break
 done
 
 if [ -n "$shardhosts" ] ; then

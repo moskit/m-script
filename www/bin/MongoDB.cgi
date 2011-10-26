@@ -24,7 +24,14 @@ IFS1=$IFS
 IFS='
 '
 if [ -f "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" ] ; then
-  echo "<div class=\"clustername\"><span class=\"indent\">Configuration servers</span></div>"
+  s=`head -1 "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"`
+  
+  MONGO=`which mongo 2>/dev/null`
+  [ if `$MONGO ${s}/admin --quiet --eval "db.runCommand('getCmdLineOpts').argv.forEach(printjson)" | grep -c '--configsvr'` -gt 0 ] ; then
+    echo "<div class=\"clustername\"><span class=\"indent\">Configuration servers</span></div>"
+  else
+    echo "<div class=\"clustername\"><span class=\"indent\">MongoDB servers</span></div>"
+  if
   echo "<div class=\"cluster\" id=\"configservers\">"
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
       port=${s##*:}
