@@ -12,7 +12,7 @@ MONGO=`which mongo 2>/dev/null`
 source "${rpath}/${rcommand%.mon}.conf"
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
-touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" "${rpath}/mongo_shards.list"
+touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" "${rpath}/mongo_shards.list" "${rpath}/mongo_servers.list"
 TMPDIR="${TMPDIR}/MongoDB"
 install -d "${TMPDIR}"
 
@@ -23,7 +23,7 @@ function print_servers() {
 }
 
 function find_master() {
-  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"|tail -1`
+  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"| grep -v arning | tail -1`
   if [ -z "$im" ] ; then
     im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1`
     [ "X$im" == "Xtrue" ] && im=$1
@@ -218,8 +218,10 @@ else
   else
     collect_hosts $MONGO_SERVERS
   fi
+  print_servers $configips > "${TMPDIR}/mongo_servers.list"
+  [ -f "${TMPDIR}/mongo_servers.list" ] && [ -f "${rpath}/mongo_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_servers.list" "${rpath}/mongo_servers.list"`" ] && mv "${TMPDIR}/mongo_servers.list" "${rpath}/mongo_servers.list"
 fi
-
+  
 for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
@@ -287,5 +289,14 @@ if [ -e "${rpath}/mongo_shards.list" ] ; then
   done
 fi
 
+if [ -e "${rpath}/mongo_servers.list" ] ; then
+  for cs in `cat "${rpath}/mongo_servers.list"` ; do
+    install -d "${rpath}/../../www/mongo/servers/${cs}"
+    mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    parse_data "${cs}" > "${rpath}/data/${cs}.report"
+    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/servers/${cs}/${cs%:*}_${cs#*:}_name.html"
+  done
+fi
 
 
