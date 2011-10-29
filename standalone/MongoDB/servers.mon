@@ -4,6 +4,7 @@
 xpath=${xcommand%/*}/
 rcommand=${xcommand##*/}
 rpath=${0%/*}/${xpath}
+rpath=${rpath%/}
 #*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
@@ -246,6 +247,7 @@ for configip in $configips ; do
 done
 
 if [ -n "$shardhosts" ] ; then
+  echo "Shard servers:" >> ${rpath}/MongoDB.log
   rm -f "${TMPDIR}/mongo_shards.list" 2>/dev/null
   IFS1=$IFS
   IFS='
@@ -257,7 +259,7 @@ if [ -n "$shardhosts" ] ; then
     shardport=${shardhost#*:}
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
-    echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list"
+    echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list" | tee -a ${rpath}/MongoDB.log
   done
   [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
 IFS=$IFS1
@@ -289,7 +291,7 @@ if [ -e "${rpath}/mongo_shards.list" ] ; then
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/shardservers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    "${rpath%/}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/shardservers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 

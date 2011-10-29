@@ -10,9 +10,12 @@ print('infoHeapUsage|' + objStatus.extra_info.heap_usage_bytes);
 
 print('connCurrent|' + objStatus.connections.current);
 print('connAvailable|' + objStatus.connections.available);
+if (objStatus.network) {
 print('netIn|' + objStatus.network.bytesIn);
 print('netOut|' + objStatus.network.bytesOut);
 print('netReqn|' + objStatus.network.numRequests);
+}
+if (objStatus.opcounters) {
 print('opsTotalInsert|' + objStatus.opcounters.insert);
 print('opsTotalQuery|' + objStatus.opcounters.query);
 print('opsTotalUpdate|' + objStatus.opcounters.update);
@@ -38,8 +41,10 @@ print('lockRatio|' + objStatus.globalLock.ratio);
 print('lockQueueTotal|' + objStatus.globalLock.currentQueue.total);
 print('lockQueueReaders|' + objStatus.globalLock.currentQueue.readers);
 print('lockQueueWriters|' + objStatus.globalLock.currentQueue.writers);
+if (objStatus.globalLock.activeClient) {
 print('lockClientsTotal|' + objStatus.globalLock.activeClients.total);
 print('lockClientsReaders|' + objStatus.globalLock.activeClients.readers);
 print('lockClientsWriters|' + objStatus.globalLock.activeClients.writers);
+}
 }
 

@@ -13,7 +13,7 @@ if [ -n "$SQLITE" ] ; then
     timestamp=`echo $res | cut -d'|' -f1`
     status=`echo $res | cut -d'|' -f2`
     [ "X$status" == "X1" ] && css="ok" || css="w3"
-    echo "<div id=\"${timestamp}\" title=\"${timestamp}\" class=\"chunk ${css}\">&nbsp;</div>"
+    echo "<div id=\"${timestamp}\" title=\"${timestamp}\" class=\"chunk ${css}\" style=\"float: right;\">&nbsp;</div>"
   done
 fi
 echo "</div>"

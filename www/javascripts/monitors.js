@@ -67,7 +67,7 @@ showDetails = function(theid,script) {
   cluster=$(server).parentNode.id;
   if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
     cursor_saved = $(theid).style.cursor
-    cursor_style($(theid),wait);
+    cursor_style($(theid),'wait');
     var the_url = '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
     new Ajax.Request(the_url, {
       onSuccess: function(response) {

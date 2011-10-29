@@ -75,7 +75,7 @@ elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` 
   echo "</div>"
 fi
 
-if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
+if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then ; then
   echo "<div class=\"clustername\"><span class=\"indent\">Shard servers</span></div>"
   echo "<div class=\"cluster\" id=\"shardservers\">"
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"` ; do
@@ -102,7 +102,7 @@ if [ -f "${PWD}/../../standalone/${scriptname}/mongo_shards.list" ] ; then
   echo "</div>"
 fi
 
-if [ -f "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" ] ; then
+if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
   echo "<div class=\"clustername\"><span class=\"indent\">Balancers</span></div>"
   echo "<div class=\"cluster\" id=\"balancers\">"
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
