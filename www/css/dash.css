@@ -269,6 +269,11 @@ span.indent {
   height: 26px;
 }
 
+.tablerow {
+  font-weight: normal;
+  height: 20px;
+}
+
 .tablerow_ok {
   color: green;
 }
@@ -341,7 +346,7 @@ span.indent {
 }
 
 .status {
-  width: 80px;
+  width: 88px;
   height: 20px;
   display: table;
   padding: auto;
@@ -369,7 +374,7 @@ span.indent {
 }
 
 .details {
-  display: table;
+  display: none;
   width: 800px;
   margin: 3px 0px;
   float: left;

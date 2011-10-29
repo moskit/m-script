@@ -64,26 +64,26 @@ function mailreport() {
 
 function mailalert() {
   if [ -f ${rpath}/alert1 ] && [ `cat ${rpath}/alert1 | wc -l` -ne 0 ]; then
-    al='*'
-    cat ${rpath}/conf/header.alert1 ${rpath}/alert1 >> ${rpath}/alert
-    echo "" >> ${rpath}/alert
+    al='*' ; aln=1
+    cat "${rpath}/conf/header.alert1" "${rpath}/alert1" >> "${rpath}/alert"
+    echo >> "${rpath}/alert"
   fi
   if [ -f ${rpath}/alert2 ] && [ `cat ${rpath}/alert2 | wc -l` -ne 0 ]; then
-    al='**'
-    cat ${rpath}/conf/header.alert2 ${rpath}/alert2 >> ${rpath}/alert
-    echo "" >> ${rpath}/alert
+    al='**' ; aln=2
+    cat "${rpath}/conf/header.alert2" "${rpath}/alert2" >> "${rpath}/alert"
+    echo >> "${rpath}/alert"
   fi
   if [ -f ${rpath}/alert3 ] && [ `cat ${rpath}/alert3 | wc -l` -ne 0 ]; then
-    al='***'
-    cat ${rpath}/conf/header.alert3 ${rpath}/alert3 >> ${rpath}/alert
-    echo "" >> ${rpath}/alert
+    al='***' ; aln=3
+    cat "${rpath}/conf/header.alert3" "${rpath}/alert3" >> "${rpath}/alert"
+    echo >> "${rpath}/alert"
   fi
-  for MLINE in `cat ${rpath}/conf/mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
+  cat ${rpath}/alert >> ${rpath}/monitoring.log
+  for MLINE in `cat "${rpath}/conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
   do
-    if [ "X$al" != "X" ]
-    then
-      cat ${rpath}/alert >> ${rpath}/monitoring.log
-      cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" ${MLINE} 2>&1>>${rpath}/monitoring.log
+    recipn=`grep "^$MLINE" ${rpath}/conf/mail.alert.list | awk '{print $2}'`
+    if ([ -z "$recipn" ] || [ "X$recipn" == "X$aln" ]) ; then
+      cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" ${MLINE} >>${rpath}/monitoring.log 2>&1
     fi
   done
   rm -f ${rpath}/alert* 2>/dev/null
