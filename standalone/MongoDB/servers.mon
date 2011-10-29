@@ -78,7 +78,7 @@ function parse_data() {
   echo "Available connections:   ${connAvailable-0}"
   netIn_prev=`grep ^netIn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
   bw_in=`echo "scale=2; (${netIn-0} - ${netIn_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576" | bc`
-  netOut_prev=`grep ^netIn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
+  netOut_prev=`grep ^netOut\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
   bw_out=`echo "scale=2; (${netOut-0} - ${netOut_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576" | bc`
   echo "Bandwidth in (MB/sec):   ${bw_in}"
   echo "Bandwidth out (MB/sec):   ${bw_out}"

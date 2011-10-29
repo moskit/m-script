@@ -30,7 +30,7 @@ done
 echo "</div>"
 echo "</div>"
 
-for cluster in `find ../servers/* -maxdepth 0 -type d`
+for cluster in `find ../servers/* -maxdepth 0 -type d 2>/dev/null`
 do
   echo "<div class=\"clustername\"><span class=\"indent\">${cluster##*/}</span></div>"
   echo "<div class=\"cluster\" id=\"${cluster##*/}\">"
@@ -42,7 +42,7 @@ do
     echo "</div>"
     continue
   fi
-  for server in `find $cluster/* -maxdepth 0 -type d | sort`
+  for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
     echo "<div class=\"server\" id=\"${server##*/}\">"
       echo "<span class=\"servername\"><a href=\"/servers/${cluster##*/}/${server##*/}\">${server##*/}</a></span>"

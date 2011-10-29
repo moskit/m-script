@@ -3,18 +3,19 @@ init = function() {
   el.observe('click', hideAll);
   fillTabs();
   initMonitors('dash');
-  $$('div.details').each(function(value) { value.hide() });
 }
 
 var pu = null;
 
 initMonitors = function(updater) {
+  document.documentElement.style.cursor = 'wait';
   if (pu) { pu.stop(); }
   pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
     method: 'get', frequency: 200, decay: 10
   });
   $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
   if ($(updater)) { $(updater).addClassName('active'); }
+  document.documentElement.style.cursor = '';
 }
 
 
@@ -64,17 +65,19 @@ showData = function(theid,base) {
 showDetails = function(theid,script) {
   server=$(theid).parentNode.id;
   cluster=$(server).parentNode.id;
-  if ($(server + '_details').style.display == "none") {
+  if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
+    cursor_saved = $(theid).style.cursor
+    cursor_style($(theid),wait);
     var the_url = '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
+      //  Effect.SlideDown(server + '_details', {duration: 0.3});
+        $(server + '_details').style.display = "table";
         $(server + '_details').update(response.responseText);
-      },
-      onComplete: function() {
-        Effect.SlideDown(server + '_details', {duration: 0.3});
       }
     });
-	}
+    cursor_style($(theid),cursor_saved);
+  }
 }
 
 showMenu = function(theid,thetext,action) {
@@ -117,6 +120,11 @@ hideAll = function(e) {
   targ = targ.parentNode.parentNode;
   $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
   $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
+}
+
+cursor_style = function(elem,type) {
+  elem.style.cursor = type;
+  document.documentElement.style.cursor = type;
 }
 
 
