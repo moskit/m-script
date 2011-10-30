@@ -50,7 +50,7 @@ if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
     b=0
     while read LINE
     do
-      if [ "X${LINE}" != "X" ] && [ `echo ${LINE} | grep -c '^Chain'` -eq 0 ] && [ `echo ${LINE} | grep -c 'ACCEPT'` -eq 1 ]
+      if [ "X${LINE}" != "X" ] && [ `echo ${LINE} | grep -c '^Chain'` -eq 0 ]
       then
         a=`echo ${LINE} | awk '{print $2}'`
         b+=`expr "$a" : '\([0-9]*\)'`
@@ -69,7 +69,7 @@ if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
     b=0
     while read LINE
     do
-      if [ "X${LINE}" != "X" ] && [ `echo ${LINE} | grep -c '^Chain'` -eq 0 ] && [ `echo ${LINE} | grep -c 'ACCEPT'` -eq 1 ]
+      if [ "X${LINE}" != "X" ] && [ `echo ${LINE} | grep -c '^Chain'` -eq 0 ]
       then
         a=`echo ${LINE} | awk '{print $2}'`
         b+=`expr "$a" : '\([0-9]*\)'`

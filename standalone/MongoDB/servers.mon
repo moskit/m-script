@@ -193,7 +193,6 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
     collect_hosts $MONGO_CONFIG_SERVERS
   fi
 
-  echo "Config servers:" >> ${rpath}/MongoDB.log
   print_servers $configips > "${TMPDIR}/mongo_config_servers.list" | tee -a ${rpath}/MongoDB.log
   [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
   
@@ -221,8 +220,33 @@ else
     collect_hosts $MONGO_SERVERS
   fi
   
-  echo "Servers:" >> ${rpath}/MongoDB.log
-  print_servers $configips > "${TMPDIR}/mongo_servers.list" | tee -a ${rpath}/MongoDB.log
+  rm -f "${TMPDIR}/mongo_servers.list"
+  for mongohost in $configips ; do
+    mongoport=${mongohost##*:}
+    ip_to_name ${mongohost}
+    mongohost="$rname"
+    if [ "X`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
+      replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
+    fi
+    echo "${mongohost}:${mongoport}|${replicaset}" >> "${TMPDIR}/mongo_servers.list"
+  done
+  
+  for rs in `cat "${TMPDIR}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
+  
+    for rshost in `cat "${TMPDIR}/mongo_servers.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf()" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
+      [ -n "$gotit" ] && unset gotit master && break
+    done
+      
+    for replicahost in $replicahosts ; do
+      [ `grep -c "^${replicahost}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
+      ip_to_name ${replicahost}
+      [ `grep -c "^${rname}:${replicahost##*:}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
+      echo "${replicahost}|${rs}" >> "${TMPDIR}/mongo_servers.list"
+    done
+
+  done
+  
   [ -f "${TMPDIR}/mongo_servers.list" ] && [ -f "${rpath}/mongo_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_servers.list" "${rpath}/mongo_servers.list"`" ] && mv "${TMPDIR}/mongo_servers.list" "${rpath}/mongo_servers.list"
 fi
   
@@ -235,8 +259,7 @@ for configip in $configips ; do
 done
 
 if [ -n "$mongoses" ] ; then
-  echo "Balancers:" >> ${rpath}/MongoDB.log
-  print_servers $mongoses > "${TMPDIR}/mongo_mongos_servers.list" | tee -a ${rpath}/MongoDB.log
+  print_servers $mongoses > "${TMPDIR}/mongo_mongos_servers.list"
   [ -f "${TMPDIR}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
 fi
 
@@ -247,7 +270,6 @@ for configip in $configips ; do
 done
 
 if [ -n "$shardhosts" ] ; then
-  echo "Shard servers:" >> ${rpath}/MongoDB.log
   rm -f "${TMPDIR}/mongo_shards.list" 2>/dev/null
   IFS1=$IFS
   IFS='
@@ -257,10 +279,30 @@ if [ -n "$shardhosts" ] ; then
     shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | awk '{print $2}'`
     shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | awk '{print $2}'`
     shardport=${shardhost#*:}
+    if [ "X`${MONGO} ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
+      replicaset=`${MONGO} ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()._id" | tail -1`
+    fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
-    echo "${shardhost%:*}:${shardport} ${shard}" >> "${TMPDIR}/mongo_shards.list" | tee -a ${rpath}/MongoDB.log
+    echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}" >> "${TMPDIR}/mongo_shards.list"
   done
+  
+  for rs in `cat "${TMPDIR}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
+  
+    for rshost in `cat "${TMPDIR}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf()" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
+      [ -n "$gotit" ] && unset gotit master && break
+    done
+      
+    for replicahost in $replicahosts ; do
+      [ `grep -c "^${replicahost}|" "${TMPDIR}/mongo_shards.list"` -gt 0 ] && continue
+      ip_to_name ${replicahost}
+      [ `grep -c "^${rname}:${replicahost##*:}|" "${TMPDIR}/mongo_shards.list"` -gt 0 ] && continue
+      echo "${replicahost}|${rs}" >> "${TMPDIR}/mongo_shards.list"
+    done
+
+  done
+  
   [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
 IFS=$IFS1
 fi
@@ -286,7 +328,7 @@ if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
 fi
 
 if [ -e "${rpath}/mongo_shards.list" ] ; then
-  for cs in `cat "${rpath}/mongo_shards.list" | cut -d' ' -f1` ; do
+  for cs in `cat "${rpath}/mongo_shards.list" | cut -d'|' -f1` ; do
     install -d "${rpath}/../../www/mongo/shardservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
@@ -296,7 +338,7 @@ if [ -e "${rpath}/mongo_shards.list" ] ; then
 fi
 
 if [ -e "${rpath}/mongo_servers.list" ] ; then
-  for cs in `cat "${rpath}/mongo_servers.list"` ; do
+  for cs in `cat "${rpath}/mongo_servers.list" | cut -d'|' -f1` ; do
     install -d "${rpath}/../../www/mongo/servers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
