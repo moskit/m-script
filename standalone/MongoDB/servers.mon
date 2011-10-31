@@ -51,7 +51,7 @@ function collect_hosts() {
 function parse_data() {
   unset timeindex day hostport status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable netIn netOut netReqn opsTotalInsert opsTotalQuery opsTotalUpdate opsTotalDelete opsTotalGetmore opsTotalCommand opsShardedInsert opsShardedQuery opsShardedUpdate opsShardedDelete opsShardedGetmore opsShardedCommand opsNotShardedInsert opsNotShardedQuery opsNotShardedUpdate opsNotShardedDelete opsNotShardedGetmore opsNotShardedCommand lockRatio lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters
   timeindexnow=`date +"%s"`
-  lasttimeindex=`cat "${TMPDIR}/${1}.lasttimeindex" 2>/dev/null` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
+  lasttimeindex=`cat "${TMPDIR}/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
   echo $timeindexnow > "${TMPDIR}/${1}.lasttimeindex"
   for d in `cat "${rpath}/data/${1}.dat"` ; do
     eval "`echo "$d" | sed 's_|_=_'`"
@@ -234,7 +234,7 @@ else
   for rs in `cat "${TMPDIR}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
   
     for rshost in `cat "${TMPDIR}/mongo_servers.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf()" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
       
@@ -290,7 +290,7 @@ if [ -n "$shardhosts" ] ; then
   for rs in `cat "${TMPDIR}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
   
     for rshost in `cat "${TMPDIR}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf()" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
       

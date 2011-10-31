@@ -85,7 +85,7 @@ fi
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then
   echo "<div class=\"clustername\"><span class=\"indent\">Shard servers</span></div>"
   echo "<div class=\"cluster\" id=\"shardservers\">"
-    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"` ; do
+    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"|cut -d'|' -f1` ; do
       port=`echo $s | awk '{print $1}' | cut -d':' -f2`
       name=`echo $s | awk '{print $1}' | cut -d':' -f1`
       id="${name}_${port}"

@@ -372,5 +372,5 @@ else
   echo "$rpath/monitorload.sh start"
 fi
 
-
+#rsync ifconfig
 

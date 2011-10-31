@@ -28,8 +28,8 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table"
-necessary_options="metric ip database table"
+possible_options="metric help from to ip new database table size"
+necessary_options="metric"
 
 RSYNC=`which rsync 2>/dev/null`
 
@@ -66,7 +66,7 @@ do
   fi
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} --metric=metric <options>"
+  echo "Usage: ${0##*/} --metric=metric <other options>"
   echo 
   echo "Without --from a graph for the default period will be generated,"
   echo "depending on the graph size and FREQ variable (see conf/dash.conf)."
@@ -76,13 +76,21 @@ if [ "X$help" == "Xyes" ] ; then
   echo "Options:"
   echo
   echo "  --ip=<IP address of the server to get data from>"
+  echo "           Server must be present in servers.list"
+  echo "           If empty, means localhost"
   echo "  --from=<start time in any format acceptable by the 'date' utility>"
   echo "  --to=<end time in any format acceptable by the 'date' utility>"
   echo "  --metric=<check sqlite3 sysdata '.schema sysdata' to see all metrics>"
+  echo "           Multiple metrics accepted, separated by comma, no spaces"
   echo "  --new  - forces getting the latest data from the server. Without this"
   echo "           option a new graph is generated using the data received by"
   echo "           the dashboard update daemon. Option --from always invokes"
   echo "           this option"
+  echo "  --database=<path to database file, relative to M-Script root folder>"
+  echo "           The default is sysdata"
+  echo "  --table=<table name>  The default is sysdata"
+  echo "  --size=<small|thumbnail>  If not defined, it's the default big graph"
+  echo
   exit 0
 fi
 found=0
@@ -100,15 +108,50 @@ if [ -z "$new" ] && [ $RSYNC == "" ] ; then
   echo "Rsync is required if neither --new nor --from is present" >> "${rpath}/dashboard.log"
   exit 1
 fi
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
+if [ -n "$ip" ] ; then
+  if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
+    localip="yes"
+  else
+    unset localip
+  fi
+else
+  localip="yes"
+fi
+
 source ${rpath}/conf/dash.conf
 TMPDIR=/tmp/m_script/dash
 install -d $TMPDIR
+declare -a colors
+colors=( "#00ff00" "#0000ff" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
 [ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size in conf/dash.conf please >> "${rpath}/dashboard.log"" && exit 1)
 [ -n "$padding" ] || padding=20
 [ -n "$legend" ] || legend=60
+[ -n "$fontsize" ] || fontsize=10
+[ -n "$strokewidth" ] || strokewidth=2
+[ -n "$pointsize" ] || pointsize=12
+if [ "X$size" == "Xsmall" ] ; then
+  graphH=`expr $graphH / 2`
+  graphV=`expr $graphV / 2`
+  padding=`expr $padding / 2`
+  legend=`expr $legend / 2`
+  fontsize=`expr $fontsize - 2`
+  strokewidth=1
+  pointsize=`expr $pointsize / 2`
+fi
+if [ "Xsize" == "Xthumbnail" ] ; then
+  graphH=`expr $graphH / 4`
+  graphV=`expr $graphV / 4`
+  padding=`expr $padding / 4`
+  legend=`expr $legend / 4`
+  fontsize=`expr $fontsize - 4`
+  strokewidth=1
+  pointsize=`expr $pointsize / 4`
+fi
 areaH=`expr $graphH - 2 \* $padding - $legend`
 areaV=`expr $graphV - 2 \* $padding - $legend`
+
 if [ -n "$from" ] ; then
   tfrom=`date -u -d "$from"`
   from=`date -u -d "$from" +"%s"`
@@ -136,19 +179,26 @@ if [ ! -f "${rpath}/conf/clusters.conf" ] ; then
   echo "Create ${rpath}/conf/clusters.conf please"  >> "${rpath}/dashboard.log"
   exit 1
 fi
-server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
-if [ -z "$server" ] ; then
-  echo "Server with IP ${ip} not found in ${rpath}/servers.list" >> "${rpath}/dashboard.log"
-  exit 1
+if [ -z "$localip" ] ; then
+  server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
+  if [ -z "$server" ] ; then
+    echo "Server with IP ${ip} not found in ${rpath}/servers.list" >> "${rpath}/dashboard.log"
+    exit 1
+  fi
+  sIP=`echo $server | cut -d'|' -f1`
+  skey=`echo $server | cut -d'|' -f2`
+  scluster=`echo $server | cut -d'|' -f5`
+  spath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
+  if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
+    thekey="-i ${rpath}/keys/${skey}.pem"
+  fi
+else
+  sIP="localhost"
 fi
-sIP=`echo $server | cut -d'|' -f1`
-skey=`echo $server | cut -d'|' -f2`
-scluster=`echo $server | cut -d'|' -f5`
-spath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
-if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
-  thekey="-i ${rpath}/keys/${skey}.pem"
-fi
-rm -f ${TMPDIR}/graph.${sIP}.${metric}.dots
+
+[ -z "$database" ] && database="sysdata"
+dbname=`echo "$database" | tr '/' '_'`
+[ -z "$table" ] && table="sysdata"
 
 ######     Getting min and max values from database
 
@@ -176,38 +226,45 @@ rm -f ${TMPDIR}/graph.${sIP}.${metric}.dots
 #else
 #  QUERY="select timeindex, $metric from sysdata where timeindex between $from and #$to;"
 #fi
-#$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${metric}
-#if [ `cat ${TMPDIR}/graph.${sIP}.${metric} | wc -l` -le 5 ] ; then
+#$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+#if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
 #  echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
 #  exit 1
 #fi
 ########
 
 ########    The part above, but with getting min and max from the file
-
-# Using fixed multiplyer to avoid double querying
-mp=100
-if [ -n "$new" ] ; then
-  QUERY="select timeindex, ${metric}*${mp} from $table where timeindex between $from and $to;"
-  if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
-    sqlite3 "${spath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${database}.${metric}
-  else
-    $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${database}.${metric}
-  fi
-  if [ `cat ${TMPDIR}/graph.${sIP}.${database}.${metric} | wc -l` -le 5 ] ; then
-    echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
-    exit 1
-  fi
-fi
 declare -a arr
-#cat ${TMPDIR}/graph.${sIP}.${database}.${metric} | awk -F'|' '{print $2}' | sort | uniq
+
+for smetric in `echo $metric | tr ',' ' '` ; do
+  rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
+  # Using fixed multiplyer to avoid double querying
+  mp=100
+  if [ -n "$new" ] ; then
+    QUERY="select timeindex, ${metric}*${mp} from $table where timeindex between $from and $to;"
+    if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
+      sqlite3 "${spath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+    else
+      $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+    fi
+    if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
+      echo "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
+      exit 1
+    fi
+  fi
+
+  #cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | awk -F'|' '{print $2}' | sort | uniq
+
+  for x in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | awk -F'|' '{print $2}' | sort | uniq`
+  do
+    arr=( ${arr[*]} ${x%.*} )
+  done
+done
+
 IFS1=$IFS
 IFS='
 '
-for x in `cat ${TMPDIR}/graph.${sIP}.${database}.${metric} | awk -F'|' '{print $2}' | sort | uniq`
-do
-  arr=( ${arr[*]} ${x%.*} )
-done
+
 for ((i=0; i<${#arr[*]}; i++)) ; do
   [[ $i -eq 0 ]] && metricmin=${arr[$i]}
   [[ ${arr[$i]} -lt $metricmin ]] && metricmin=${arr[$i]}
@@ -217,6 +274,7 @@ for ((i=0; i<${#arr[*]}; i++)) ; do
   [[ ${arr[$i]} -gt $metricmax ]] && metricmax=${arr[$i]}
 done
 unset arr
+
 IFS=$IFS1
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
@@ -400,37 +458,41 @@ do
     textY="$textY`printf "text $mYT1,$irev \'$imark\' "`"
   fi
 done
-
+i=0
+for smetric in `echo $metric | tr ',' ' '` ; do
 firstdot=1
 
-while read LINE
-do
-  X=`echo $LINE | cut -d'|' -f1`
-  Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-  if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
-  X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
-  Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin + $shiftY \) / $perdotY`
-  [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
-  [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${metric}.dots
-  firstdot=0
-done<${TMPDIR}/graph.${sIP}.${metric}
-printf "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${metric}.dots
+  while read LINE
+  do
+    X=`echo $LINE | cut -d'|' -f1`
+    Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+    if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
+    X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
+    Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin + $shiftY \) / $perdotY`
+    [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
+    [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
+    firstdot=0
+  done<${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+  printf "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
 
-datalines=`cat ${TMPDIR}/graph.${sIP}.${metric}.dots`
+  datalines="\"stroke \'${colors[$i]}\' `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots` \""
+  i+=1
+  name="${name}.${smetric}"
+done
 
-convert -size ${graphH}x${graphV} xc:white -family arial -pointsize 10 \
-  -strokewidth 2 \
+convert -size ${graphH}x${graphV} xc:white -family arial -pointsize $fontsize \
+  -strokewidth $strokewidth \
   -draw "stroke black line $startX,$startY $mY2,$startY" \
   -draw "stroke black line $startX,$startY $startX,$mX2" \
   -strokewidth 1 \
   -draw "stroke gray $marksX " -draw "stroke gray $marksY " \
   -draw "$textY " -draw "$textX " \
-  -draw "stroke green $datalines " \
+  -draw "${datalines}" \
   -draw "text $axisXX,$axisXY `printf "\'$axisX\'"`" \
   -draw "text $axisYX,$axisYY `printf "\'$metric\'"`" \
-  -pointsize 12 \
+  -pointsize $pointsize \
   -draw "text $titleX,$titleY `printf "\'$title\'"`" \
-  "${rpath}/www/graphs/${sIP}.${metric}.png"
+  "${rpath}/www/graphs/${sIP}.${dbname}${name}.png"
 
 
 
