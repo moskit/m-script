@@ -22,7 +22,7 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="cluster help region verbose"
+possible_options="cluster help region verbose limit"
 commflag=0
 for s_option in "${@}"
 do
@@ -68,24 +68,32 @@ if [ "X$help" == "Xyes" ] ; then
   echo "Options:"
   echo
   echo "  --cluster=clustername    - the command will be run on all servers"
-  echo "                             from this cluster."
-  echo "  --region=region          - the command will be run on all servers"
-  echo "                             from this region."
-  echo "  --verbose                - shows each server details before running"
-  echo "                             the command."
+  echo "                             from this cluster. Multiple clusters are"
+  echo "                             allowed, separated by comma (no spaces!)."
+  echo "                             Without this option the command will be"
+  echo "                             run on all clusters mentioned in servers.list."
+  echo "  --region=region          - the command will be run on all servers from"
+  echo "                             this region."
+  echo "  --verbose                - shows each server details before running the"
+  echo "                             command."
+  echo "  --limit=N                - runs the command on first N servers of each"
+  echo "                             cluster defined by the --cluster option"
+  echo
   exit 0
 fi
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 [ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
-
+declare -i n
 IFS1=$IFS
 IFS='
 '
 [ -n "$verbose" ] && echo "### Command: $command"
 if [ "X$command" != "X" ] ; then
   for cluster in `printf "${cluster}\n"|sed 's|,|\n|g'` ; do
+    n=0
     for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+      [ -n "$limit" ] && [[ $n -gt $limit ]] && break
       IP=${server%%|*}
       KEY=`echo $server | cut -d'|' -f2`
       if [ -n "$region" ] ; then

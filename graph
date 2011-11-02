@@ -188,7 +188,7 @@ if [ -z "$localip" ] ; then
   sIP=`echo $server | cut -d'|' -f1`
   skey=`echo $server | cut -d'|' -f2`
   scluster=`echo $server | cut -d'|' -f5`
-  spath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
+  rpath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
   if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
     thekey="-i ${rpath}/keys/${skey}.pem"
   fi
@@ -202,7 +202,7 @@ dbname=`echo "$database" | tr '/' '_'`
 
 ######     Getting min and max values from database
 
-#minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
+#minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${rpath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
 #metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
 #metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
 #if [ -z "$metricminfp" ] || [ -z "$metricmaxfp" ] ; then
@@ -226,7 +226,7 @@ dbname=`echo "$database" | tr '/' '_'`
 #else
 #  QUERY="select timeindex, $metric from sysdata where timeindex between $from and #$to;"
 #fi
-#$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+#$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${rpath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
 #if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
 #  echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
 #  exit 1
@@ -237,15 +237,15 @@ dbname=`echo "$database" | tr '/' '_'`
 declare -a arr
 
 for smetric in `echo $metric | tr ',' ' '` ; do
-  rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
+  rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots 2>/dev/null
   # Using fixed multiplyer to avoid double querying
   mp=100
   if [ -n "$new" ] ; then
     QUERY="select timeindex, ${metric}*${mp} from $table where timeindex between $from and $to;"
-    if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
-      sqlite3 "${spath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+    if [ "X$sIP" == "Xlocalhost" ] ; then
+      sqlite3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
     else
-      $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${spath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+      $SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${rpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
     fi
     if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
       echo "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
@@ -479,8 +479,9 @@ firstdot=1
   i+=1
   name="${name}.${smetric}"
 done
+## TODO: MVG files must be concatenated
 
-convert -size ${graphH}x${graphV} xc:white -family arial -pointsize $fontsize \
+convert -size ${graphH}x${graphV} xc:white -family $fontfamily -pointsize $fontsize \
   -strokewidth $strokewidth \
   -draw "stroke black line $startX,$startY $mY2,$startY" \
   -draw "stroke black line $startX,$startY $startX,$mX2" \
