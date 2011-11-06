@@ -6,7 +6,7 @@ rpath=${xcommand%/*}
 #*/
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
-source "${rpath}/${rcommand%.mon}.conf"
+source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
 
 function print_databases() {
   if [ -n "$2" ] ; then

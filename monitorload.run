@@ -168,7 +168,8 @@ stop)
   if [ -f ${pidfile} ]; then
     pid=`cat ${pidfile}|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
-    kill -15 $pid && rm -f $pidfile $tempfile && echo "done"
+    rm -f $pidfile
+    kill -15 $pid && rm -f $tempfile && echo "done"
   else
     echo "${pidfile} not found!"
   fi

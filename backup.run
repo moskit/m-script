@@ -106,7 +106,7 @@ do
       echo '  this program with, for example, --only-clean option for particular hosts.'
       echo ''
       echo '  Syntax is:'
-      echo "  ${0} --configfile=file1,file2,file3,..."
+      echo "  ${0} --configfiles=file1,file2,file3,..."
       echo '  All other configuration files will be ignored.'
       echo ''
       echo '    Note that this option also allows using any config files names. Without'
@@ -117,7 +117,7 @@ do
       echo '  configuration files for non-common tasks.'
       exit 0
     elif [ "X$s_optarg" == "X" ] || [ "X$s_optarg" == "Xyes" ]; then
-      echo 'Wrong syntax! Use --configfile=help to get more help' >> ${rpath}/m_backup.error
+      echo 'Wrong syntax! Use --configfiles=help to get more help' >> ${rpath}/m_backup.error
       exit 1
     fi
     cfgfiles="`echo $s_optarg|sed 's|,| |g'`"

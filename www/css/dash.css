@@ -248,6 +248,34 @@ span.indent {
   background-color: red;
 }
 
+.okmarked {
+  background-color: green;
+  width: 8px !important;
+  height: 18px !important;
+  border: 1px solid blue;
+}
+
+.w1marked {
+  background-color: #860;
+  width: 8px !important;
+  height: 18px !important;
+  border: 1px solid blue;
+}
+
+.w2marked {
+  background-color: orange;
+  width: 8px !important;
+  height: 18px !important;
+  border: 1px solid blue;
+}
+
+.w3marked {
+  background-color: red;
+  width: 8px !important;
+  height: 18px !important;
+  border: 1px solid blue;
+}
+
 .info_ok {
   color: green;
 }
