@@ -479,6 +479,14 @@ div.right {
   cursor: pointer;
 }
 
+.tab:hover {
+  color: #363;
+}
+
+.tab:active {
+  color: #393;
+}
+
 .active {
   background-color: #fff;
 }

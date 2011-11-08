@@ -341,7 +341,7 @@ if [[ $hourX -lt $countminX ]] ; then
           theyear=`date -d "1970/01/01 +$currpoint" +"%Y"`
           themark=`date -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
-          marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+          marksX="$marksX`echo "<line x1=\"$themark\" y1=\"$mX1\" x2=\"$themark\" y2=\"$mX2\" />"`"
           textX="$textX`printf "text $themark,$mXT1 \'$themonth\' "`"
         done
         unset nextmonth res monthX
@@ -357,7 +357,7 @@ if [[ $hourX -lt $countminX ]] ; then
           theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
           themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
-          marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+          marksX="$marksX`echo "<line x1=\"$themark\" y1=\"$mX1\" x2=\"$themark\" y2=\"$mX2\" />"`"
           textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
         done
         unset nextday
@@ -373,7 +373,7 @@ if [[ $hourX -lt $countminX ]] ; then
         theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
         themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
-        marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+        marksX="$marksX`echo "<line x1=\"$themark\" y1=\"$mX1\" x2=\"$themark\" y2=\"$mX2\" />"`"
         textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
       done
     fi
@@ -390,7 +390,7 @@ if [[ $hourX -lt $countminX ]] ; then
       theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
       themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
-      marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+      marksX="$marksX`echo "<line x1=\"$themark\" y1=\"$mX1\" x2=\"$themark\" y2=\"$mX2\" />"`"
       textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
     done
   fi
@@ -409,7 +409,7 @@ else
     theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
     themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
-    marksX="$marksX`echo "line $themark,$mX1 $themark,$mX2 "`"
+    marksX="$marksX`echo "<line x1=\"$themark\" y1=\"$mX1\" x2=\"$themark\" y2=\"$mX2\" />"`"
     textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
   done
 fi
@@ -450,7 +450,7 @@ do
   # Freeing some room for axis Y title
   [[ `expr $i + $ires` -gt $imax ]] && unset imark imarkfp
   irev=`expr ${graphV} - $i`
-  marksY="$marksY`echo "line $mY1,$irev $mY2,$irev "`"
+  marksY="$marksY`echo "<line x1=\"$mY1\" y1=\"$irev\" x2=\"$mY2\" y2=\"$irev\" />"`"
   if [ -n "$mp" ] ; then
     [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
     textY="$textY`printf "text $mYT1,$irev \'$imarkfp\' "`"
@@ -458,10 +458,30 @@ do
     textY="$textY`printf "text $mYT1,$irev \'$imark\' "`"
   fi
 done
-i=0
-for smetric in `echo $metric | tr ',' ' '` ; do
-firstdot=1
+name=`echo $metric | tr ',' '_'`
+cat "${rpath}/wwwtemplates/graph.head.svg.tmpl" > "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
+# Axis
+echo "<g id=\"axis\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf " $startX,$startY $startX,$mX2" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf " $startX,$startY $mY2,$startY" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+
+# Marks
+echo "<g id=\"marks\" style=\"fill:none;stroke:#999;stroke-width:$strokewidth\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+
+# Graphs
+i=0
+echo "<g id=\"graph\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+for smetric in `echo $metric | tr ',' ' '` ; do
+  printf "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:1\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   while read LINE
   do
     X=`echo $LINE | cut -d'|' -f1`
@@ -469,17 +489,14 @@ firstdot=1
     if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
     X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
     Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin + $shiftY \) / $perdotY`
-    [ "X$firstdot" == "X1" ] && printf "line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
-    [ "X$firstdot" != "X1" ] && printf "$X,$Y line $X,$Y " >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
-    firstdot=0
+    printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   done<${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
-  printf "$X,$Y" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots
-
-  datalines="\"stroke \'${colors[$i]}\' `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.dots` \""
+  echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   i+=1
-  name="${name}.${smetric}"
 done
-## TODO: MVG files must be concatenated
+echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+
+echo "</svg>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 convert -size ${graphH}x${graphV} xc:white -family $fontfamily -pointsize $fontsize \
   -strokewidth $strokewidth \

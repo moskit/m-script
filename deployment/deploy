@@ -65,7 +65,7 @@ export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/h
 # This may change in the future
 role=$cluster
 export ROLE_ROOT="${ROLES_ROOT}/${role}"
-
+while read LINE ; do export "${LINE}" ; done<${ROLE_ROOT}/role.conf
 bash ${ROLE_ROOT}/${flavor}/scripts/${run}
 
 

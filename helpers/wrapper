@@ -1,0 +1,118 @@
+#!/bin/bash
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+xpath=${xcommand%/*}/
+rcommand=${xcommand##*/}
+rpath=${0%/*}/${xpath}
+rpath=${rpath%/}
+#*/ (this is needed to fix vi syntax highlighting)
+abspath=$(cd ${rpath} && pwd)
+
+command_options="host port username password channel input output"
+wrapper_options="config command logfile pidfile fg user group help"
+necessary_options=""
+[ $# -eq 0 ] && ${0} --help && exit 0
+IFS1=$IFS
+IFS='--'
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  possible_options="$command_options $wrapper_options"
+  
+  for option in `echo $possible_options | sed 's/ /--/g'`; do 
+    [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options> start|stop|restart|status"
+  echo 
+  echo "Options: $possible_options"
+  echo
+  exit 0
+fi
+
+[ -n "$config" ] || config="/etc/${rcommand##*/}.conf"
+[ -n "$logfile" ] || logfile="/var/log/${rcommand##*/}.log"
+[ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
+
+trap 'exit' 0
+trap 'exit' 3
+trap 'exit' 15
+if [ -e "$config" ] ; then
+  source $config
+fi
+
+case $s_param in
+  start)
+    [ -f ${pidfile} ] && echo "Already running (PID `cat $pidfile`)" && exit 0
+    printf "Starting ${0##*/}...   "
+    if [ $UID -eq 0 ] ; then
+      if [ -n "$user" ] ; then
+        su - $user -c exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
+        succ=$?
+        echo $! > $pidfile
+      elif [ -n "$group" ] ; then
+        sg - $group -c exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
+        succ=$?
+        echo $! > $pidfile
+      else
+        exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
+        succ=$?
+        echo $! > $pidfile
+      fi
+    else
+      exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
+      succ=$?
+      echo $! > $pidfile
+    fi
+    [[ $succ -eq 0 ]] && echo "done (PID ${pid})" || echo "error"
+    ;;
+  stop)
+    if [ -f ${pidfile} ]; then
+      pid=`cat ${pidfile}|tail -1`
+      printf "Stopping ${0##*/} (pid $pid)...      "
+      rm -f $pidfile
+      kill -15 $pid && echo "done"
+    else
+      echo "${pidfile} not found!"
+    fi
+    ;;
+  restart)
+    $0 stop
+    sleep 3
+    $0 start
+    ;;
+  status)
+    if [ -f ${pidfile} ]; then
+      pid=`cat ${pidfile}|tail -1`
+      echo "${0##*/} is running (pid $pid)"
+    else
+      echo "${0##*/} is not running"
+    fi
+    ;;
+  *)
+    ${0} --help && exit 0
+    ;;
+esac
