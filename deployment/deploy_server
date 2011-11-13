@@ -86,7 +86,13 @@ if [ `echo $IP | grep -c "$localip"` -eq 0 ] ; then
 
 fi
 
-
+echo "Preparing the keys"
+if [ -f /root/.ssh/id_rsa.pub ] ; then
+  echo "Using existing key"
+else
+  printf "Generating a new key..  "
+  ssh-keygen -q -f /root/.ssh/id_rsa -N '' && printf "done\n" || printf "error\n"
+fi
     
     
     

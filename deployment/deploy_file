@@ -92,7 +92,7 @@ if [ "X$command" != "X" ] ; then
   [ -f "${ROLES_ROOT}/${cluster}/${flavor}/files/$from" ] || (echo "${ROLES_ROOT}/${cluster}/${flavor}/files/$from is not a file or file not found" && exit 1)
   fullfrom="${ROLES_ROOT}/${cluster}/${flavor}/files/${from}"
   tmpfile=/tmp/m_script/deployment/`echo $fullfrom | sed 's|/|_|g'`
-  rm -f "$tmpfile"
+  rm -f "$tmpfile" 2>/dev/null
   for LINE in `cat "$fullfrom"` ; do
     eval echo $LINE | sed "s|\%\(.*\)\%|\1|" >> "$tmpfile"
   done

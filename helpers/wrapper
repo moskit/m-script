@@ -87,7 +87,7 @@ case $s_param in
       succ=$?
       echo $! > $pidfile
     fi
-    [[ $succ -eq 0 ]] && echo "done (PID ${pid})" || echo "error"
+    [[ $succ -eq 0 ]] && echo "done (PID `cat $pidfile`)" || echo "error"
     ;;
   stop)
     if [ -f ${pidfile} ]; then

@@ -98,8 +98,8 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
       m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
       printf "PID $pid"
       m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "$pidfile\n"
-      echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
+      printf "$thepath\n"
+      echo "$thepath|$pid" >> /tmp/m_script/services.tmp
     else
       echo "<***> Stale pidfile found: $thepath. Process with ID $pid doesn't exist!"
     fi
