@@ -43,8 +43,8 @@ showURL = function(theid,url,scriptname) {
 }
 
 showData = function(theid,base) {
+  cluster=$(theid).parentNode.parentNode.id;
   server=$(theid).parentNode.id;
-  cluster=$(server).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
     if (cluster == 'content') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(theid) + '.html';
@@ -63,8 +63,8 @@ showData = function(theid,base) {
 }
 
 showDetails = function(theid,script) {
+  cluster=$(theid).parentNode.parentNode.id;
   server=$(theid).parentNode.id;
-  cluster=$(server).parentNode.id;
   if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
     cursor_saved = $(theid).style.cursor
     cursor_style($(theid),'wait');

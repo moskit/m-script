@@ -45,6 +45,7 @@ start)
     if [ "X$DASHBOARD_TRANSPORT" == "XSSH" ] ; then
       SCP=`which scp 2>/dev/null`
       [ -z "$SCP" ] && echo "scp utility not found, exiting" && exit 1
+      SSH=`which ssh 2>/dev/null`
     fi
     [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
     [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
@@ -124,19 +125,22 @@ start)
                 ip=${server%%|*}
                 [ `echo $ip | grep -c "$localip"` -ne 0 ] && continue
                 key=`echo $server | cut -d'|' -f2`
-                key=${key%.pem}.pem
+                [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
+                [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
                 servername=`echo $server | cut -d'|' -f4`
                 install -d "${rpath}/www/servers/${cluster}/${servername}"
                 $SSH -i "${rpath}/keys/${key}" ${ip} find ${mpath}/www/servers/localhost -type f -printf \"%f\\n\" | sort > ${TMPDIR}/${ip}.remote.dash.list
                 find "${rpath}/www/servers/${cluster}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.local.dash.list
                 nd=`diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\< | sed 's|^< ||'`
                 if [ -n "$nd" ] ; then
+                  nd="$nd dash.html report.html"
                   for dashfile in $nd ; do
                     $SCP -i "${rpath}/keys/${key}" ${ip}:${mpath}/www/servers/localhost/$dashfile "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
                   done
                   [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
                   [ -e "${rpath}/www/servers/${cluster}/${servername}/stopped" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/stopped"
                 else
+                  echo "No data received from server ${servername}, cluster ${cluster}" >> "${rpath}/monitoring.log"
                   if [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] ; then
                     rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
                     touch "${rpath}/www/servers/${cluster}/${servername}/stopped"
@@ -148,8 +152,8 @@ start)
                   rm -f "${rpath}/www/servers/${cluster}/${servername}/${dashfile}"
                 done
               done
-              for server in `find "${rpath}/www/servers/$cluster/*" -maxdepth 0 -type d 2>/dev/null` ; do
-                [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server}|"` -eq 0 ] && rm -rf "${rpath}/www/servers/$cluster/${server}"
+              for server in `find ${rpath}/www/servers/$cluster/* -maxdepth 0 -type d 2>/dev/null` ; do
+                [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/servers/$cluster/${server##*/}"
               done
             done
           ;;

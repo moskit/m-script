@@ -31,12 +31,12 @@ parseline() {
     return
   fi
   if [ "X$line" == "X}" ] ; then
-    [ -z "$noprint" ] && printvar $var && unset var
+    [ -z "$noprint" ] && printvar "$var" && unset var
     i+=-1
     return
   fi
   if [ "X$line" == "X," ] ; then
-    [ -z "$noprint" ] && printvar $var && unset var
+    [ -z "$noprint" ] && printvar "$var" && unset var
     return
   fi
   if [ -n "$line" ] ; then
@@ -49,11 +49,11 @@ parseline() {
     if [ -n "$f4" ] ; then
       #echo '"string" : "string"'
       if [ -n "$f2" ] ; then
-        index[$i]=$f2
+        index[$i]="$f2"
         if [[ $f3 =~ ^[[:space:]]*\:[[:space:]]*$ ]] ; then
-          var=$f4
+          var="$f4"
         else
-          var="`echo $f3 | cut -d':' -f2`\"${f4}\"`echo $line | cut -d'"' -f5`"
+          var="`echo "$f3" | cut -d':' -f2`\"${f4}\"`echo "$line" | cut -d'"' -f5`"
         fi
       fi
     else
@@ -61,17 +61,17 @@ parseline() {
       # notstring : notstring
       if [ -z "$f2" ] ; then
         #echo "notstring : notstring"
-        index[$i]="`echo $line | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-        var="`echo $line | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+        index[$i]="`echo "$line" | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+        var="`echo "$line" | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
       else
       # notstring : "string"
         if [ -n "$f1" ] ; then
           #echo 'notstring : "string"'
-          index[$i]="`echo $f1 | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+          index[$i]="`echo "$f1" | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
           if [ "X`echo $f1 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`" == "X" ] ; then
-            var=$f2
+            var="$f2"
           else
-            var="`echo $f1 | cut -d':' -f2`\"${f2}\"${f3}"
+            var="`echo "$f1" | cut -d':' -f2`\"${f2}\"${f3}"
           fi
         # "string" : notstring
         else

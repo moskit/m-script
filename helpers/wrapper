@@ -100,9 +100,9 @@ case $s_param in
     fi
     ;;
   restart)
-    $0 stop
+    $0 $wrapper_options stop
     sleep 3
-    $0 start
+    $0 $wrapper_options $command_options start
     ;;
   status)
     if [ -f ${pidfile} ]; then

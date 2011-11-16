@@ -47,8 +47,8 @@ do
     echo "<div class=\"server\" id=\"${server##*/}\">"
       echo "<span class=\"servername\"><a href=\"/servers/${cluster##*/}/${server##*/}\">${server##*/}</a></span>"
       cat "../servers/${server}/dash.html" 2>/dev/null || echo "No data"
-      [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] && echo "<div class=\"chunk\"><div style=\"margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
-      [ -e "${rpath}/www/servers/${cluster}/${servername}/stopped" ] && echo "<div class=\"chunk\"><div style=\"margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
+      [ -e "../servers/${server}/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
+      [ -e "../servers/${server}/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
     echo "</div>"
   done
   echo "</div>"
