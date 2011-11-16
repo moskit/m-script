@@ -99,6 +99,6 @@ printvar() {
 }
 
 #( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
-cat $1|sed 's|{|\n{\n|g;s|},|\n}\n|g;s|}|\n}\n|g;s|,|\n,\n|g' | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
+cat $1|sed 's|{|\n{\n|g;s|},|\n}\n|g;s|}|\n}\n|g;s|",|"\n,\n|g;s|,"|\n,\n"|g;s|,$|\n,|g' | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
 unset branch index ndcont cont i LINE node
 
