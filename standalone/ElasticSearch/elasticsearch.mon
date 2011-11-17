@@ -1,2 +1,11 @@
-declare -i open ; open=0 ; curl "http://elastic1:9200/_cluster/nodes/stats" | sed 's|{|\n{\n|g;s|}|\n}\n|g' | while read LINE ; do [ "X$LINE" == "X{" ] && open+=1 ; a=`for ((i=0; i<$open; i++)) ; do printf "  " ; done` ; printf "$a" ; [ "X$LINE" == "X}" ] && open+=-1 ; echo $LINE | sed "s|^,||;s|,|\n$a|g" ; done
+#!/bin/bash
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+xpath=${xcommand%/*}/
+rcommand=${xcommand##*/}
+rpath=${0%/*}/${xpath}
+rpath=${rpath%/}
+#*/
+
+
 

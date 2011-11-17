@@ -172,6 +172,8 @@ function parse_data() {
   
 }
 
+### The script begins here :)
+
 if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   defaultport=27019
   MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
@@ -200,6 +202,9 @@ elif [ -z "$MONGO_SERVERS" ] ; then
   echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
   exit 1
 else
+
+## Config servers are not defined
+
   defaultport=27017
   MONGO_SERVERS=`echo $MONGO_SERVERS | sed 's|,| |g'`
   for name in $MONGO_SERVERS ; do
@@ -220,24 +225,28 @@ else
     collect_hosts $MONGO_SERVERS
   fi
   
+  ## Collecting servers list
   rm -f "${TMPDIR}/mongo_servers.list"
+  # For hosts from servers.conf
   for mongohost in $configips ; do
     mongoport=${mongohost##*:}
     ip_to_name ${mongohost}
     mongohost="$rname"
+    # Is it a part of replica set?
     if [ "X`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
       replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
     fi
+    # Writing it down as a host|replica pair
     echo "${mongohost}:${mongoport}|${replicaset}" >> "${TMPDIR}/mongo_servers.list"
   done
   
+  # Getting hosts list for every found replica set
   for rs in `cat "${TMPDIR}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
-  
     for rshost in `cat "${TMPDIR}/mongo_servers.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
       replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
-      
+
     for replicahost in $replicahosts ; do
       [ `grep -c "^${replicahost}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
