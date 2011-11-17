@@ -28,7 +28,7 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size width height"
+possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
 necessary_options="metric"
 
 RSYNC=`which rsync 2>/dev/null`
@@ -125,15 +125,17 @@ TMPDIR=/tmp/m_script/dash
 install -d $TMPDIR
 install -d ${rpath}/www/graphs
 declare -a colors
-colors=( "#00ff00" "#0000ff" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
-[ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size in conf/dash.conf please >> "${rpath}/dashboard.log"" && exit 1)
+colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
+
 [ -n "$padding" ] || padding=20
 [ -n "$legend" ] || legend=60
 [ -n "$fontsize" ] || fontsize=10
 [ -n "$strokewidth" ] || strokewidth=2
 [ -n "$pointsize" ] || pointsize=12
 [ -n "$width" ] && graphH=$width
-[ -n "$height" ] && graphH=$height
+[ -n "$height" ] && graphV=$height
+
+[ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size in conf/dash.conf or as command-line options >> "${rpath}/dashboard.log"" && exit 1)
 if [ "X$size" == "Xsmall" ] ; then
   graphH=`expr $graphH / 2`
   graphV=`expr $graphV / 2`
@@ -266,15 +268,20 @@ for smetric in `echo $metric | tr ',' ' '` ; do
 done
 
 if [ "X$scale" == "Xyes" ] ; then
+  sn=`echo $metric | tr ',' ' ' | wc -w`
+  sadd=`solve "($metricmax - $metricmin) / $sn"`
+  snadd=0
   for smetric in `echo $metric | tr ',' ' '` ; do
+    rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
     smax=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | cut -d'|' -f2 | sort -n | tail -1`
-    sratio=`solve "$metrixmax / $smax"`
+    sratio=`solve "$metricmax / $smax / $sn / 1.1"`
     for LINE in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}` ; do
       st=`echo $LINE | cut -d'|' -f1`
       sd=`echo $LINE | cut -d'|' -f2`
-      sds=`solve "$sd * $sratio"`
+      sds=`solve "$sd * $sratio + $snadd"`
       echo "${st}|${sds}" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled
     done
+    snadd=`solve "$snadd + $sadd"`
   done
 fi
 
@@ -344,7 +351,11 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-          textX="$textX`printf "text $themark,$mXT1 \'$themonth\' "`"
+          #<text x="250" y="150" 
+          #font-family="Verdana" font-size="55" fill="blue" >
+          #Hello, out there
+          #</text>
+          textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$themonth</text>"`"
         done
         unset nextmonth res monthX
       else
@@ -361,7 +372,7 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break 
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-          textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
+          textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
         done
         unset nextday
       fi
@@ -378,7 +389,7 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         [[ $themark -gt $mY2 ]] && break
         marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-        textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
+        textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
       done
     fi
     unset dayN
@@ -396,7 +407,7 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
       marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-      textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
+      textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
     done
   fi
   unset hourN
@@ -416,7 +427,7 @@ else
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
     marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-    textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
+    textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
   done
 fi
 
