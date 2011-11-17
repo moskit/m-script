@@ -117,7 +117,7 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        [ -n "$rscript" ] && $rscript SQL
+        [ -f "$rscript" ] && $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null

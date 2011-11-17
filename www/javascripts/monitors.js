@@ -46,7 +46,7 @@ showData = function(theid,base) {
   cluster=$(theid).parentNode.parentNode.id;
   server=$(theid).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
-    if (cluster == 'content') {
+    if (cluster == 'localhost') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(theid) + '.html';
     } else {
       var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(theid) + '.html';

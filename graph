@@ -28,7 +28,7 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size"
+possible_options="metric help from to ip new database table size width height"
 necessary_options="metric"
 
 RSYNC=`which rsync 2>/dev/null`
@@ -132,6 +132,8 @@ colors=( "#00ff00" "#0000ff" "#999900" "#660000" "#990099" "#009999" "#666600" "
 [ -n "$fontsize" ] || fontsize=10
 [ -n "$strokewidth" ] || strokewidth=2
 [ -n "$pointsize" ] || pointsize=12
+[ -n "$width" ] && graphH=$width
+[ -n "$height" ] && graphH=$height
 if [ "X$size" == "Xsmall" ] ; then
   graphH=`expr $graphH / 2`
   graphV=`expr $graphV / 2`
@@ -235,7 +237,9 @@ dbname=`echo "$database" | tr '/' '_'`
 ########
 
 ########    The part above, but with getting min and max from the file
-declare -a arr
+
+metricmin=0
+metricmax=0
 
 for smetric in `echo $metric | tr ',' ' '` ; do
   rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
@@ -253,30 +257,26 @@ for smetric in `echo $metric | tr ',' ' '` ; do
       exit 1
     fi
   fi
+  
+  smax=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | cut -d'|' -f2 | sort -n | tail -1` ; smax=${smax%.*}
+  smin=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | cut -d'|' -f2 | sort -n | head -1` ; smin=${smin%.*}
+  [[ $metricmax -eq 0 ]] && metricmin=$smax
+  [[ $smax -gt $metricmax ]] && metricmax=$smax
+  [[ $smin -lt $metricmin ]] && metricmin=$smin
+done
 
-  #cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | awk -F'|' '{print $2}' | sort | uniq
-
-  for x in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | awk -F'|' '{print $2}' | sort | uniq`
-  do
-    arr=( ${arr[*]} ${x%.*} )
+if [ "X$scale" == "Xyes" ] ; then
+  for smetric in `echo $metric | tr ',' ' '` ; do
+    smax=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | cut -d'|' -f2 | sort -n | tail -1`
+    sratio=`solve "$metrixmax / $smax"`
+    for LINE in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}` ; do
+      st=`echo $LINE | cut -d'|' -f1`
+      sd=`echo $LINE | cut -d'|' -f2`
+      sds=`solve "$sd * $sratio"`
+      echo "${st}|${sds}" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled
+    done
   done
-done
-
-IFS1=$IFS
-IFS='
-'
-
-for ((i=0; i<${#arr[*]}; i++)) ; do
-  [[ $i -eq 0 ]] && metricmin=${arr[$i]}
-  [[ ${arr[$i]} -lt $metricmin ]] && metricmin=${arr[$i]}
-done
-for ((i=0; i<${#arr[*]}; i++)) ; do
-  [[ $i -eq 0 ]] && metricmax=${arr[$i]}
-  [[ ${arr[$i]} -gt $metricmax ]] && metricmax=${arr[$i]}
-done
-unset arr
-
-IFS=$IFS1
+fi
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
 [[ $perdotY -lt 1 ]] && perdotY=1
@@ -342,6 +342,7 @@ if [[ $hourX -lt $countminX ]] ; then
           theyear=`date -d "1970/01/01 +$currpoint" +"%Y"`
           themark=`date -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
+          [[ $themark -gt $mY2 ]] && break
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
           textX="$textX`printf "text $themark,$mXT1 \'$themonth\' "`"
         done
@@ -358,6 +359,7 @@ if [[ $hourX -lt $countminX ]] ; then
           theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
           themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
+          [[ $themark -gt $mY2 ]] && break 
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
           textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
         done
@@ -374,6 +376,7 @@ if [[ $hourX -lt $countminX ]] ; then
         theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
         themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
+        [[ $themark -gt $mY2 ]] && break
         marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
         textX="$textX`printf "text $themark,$mXT1 \'$theday\' "`"
       done
@@ -391,6 +394,7 @@ if [[ $hourX -lt $countminX ]] ; then
       theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
       themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
+      [[ $themark -gt $mY2 ]] && break
       marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
       textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
     done
@@ -410,6 +414,7 @@ else
     theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
     themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
+    [[ $themark -gt $mY2 ]] && break
     marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
     textX="$textX`printf "text $themark,$mXT1 \'$thehour\' "`"
   done
@@ -464,10 +469,10 @@ cat "${rpath}/wwwtemplates/graph.head.svg.tmpl" > "${rpath}/www/graphs/${sIP}.${
 
 # Axis
 echo "<g id=\"axis\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 printf " $startX,$startY $startX,$mX2" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-printf "<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 printf " $startX,$startY $mY2,$startY" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
@@ -482,6 +487,11 @@ echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 i=0
 echo "<g id=\"graph\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 for smetric in `echo $metric | tr ',' ' '` ; do
+  if [ "X$scale" == "Xyes" ] ; then
+    datafile=${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled
+  else
+    datafile=${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+  fi
   printf "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:1\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   while read LINE
   do
@@ -491,7 +501,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
     Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin + $shiftY \) / $perdotY`
     printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-  done<${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+  done<$datafile
   echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   i+=1
 done
