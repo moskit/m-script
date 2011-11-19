@@ -94,7 +94,7 @@ function mailalert() {
 
 function runscript() {
   daynow=$(date +"%Y%m%d")
-  if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
+  if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
     $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${tmpdir}/lasttimeindex"
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
@@ -423,7 +423,7 @@ case ${1} in
   ;;
   *.mon)
     newtimeindex
-    runscript ${1}
+    runscript ${1} $SQL
     runactions
     mailalert
     [ -n "$DASHBOARD" ] && gendash
