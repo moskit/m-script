@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source "${PWD}/../../conf/dash.conf"
+timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
+
+ip=`cat "${PWD}/../../servers.list" | grep "\|${2}\|${1}$" | cut -d'|' -f1`
+[ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "\|${2}\|${1}[[:space:]]$" | cut -d'|' -f1`
+[ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "\|${2}\|${1}\|$" | cut -d'|' -f1`
+[ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "\|${2}\|${1}\|[[:space:]]$" | cut -d'|' -f1`
+[ -n "$ip" ] && sip="--ip=$ip" || ip="localhost"
+${PWD}/../../graph --metric=loadavg,activeram,freeswap,procnum,diskusage,cpuusage,connections,bwidthin,bwidthout --new --scale --width=650 --height=300 --from=-${timerange}sec $sip
+cat "${PWD}/../graphs/${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg"
+
+

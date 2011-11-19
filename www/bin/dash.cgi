@@ -36,20 +36,24 @@ do
   echo "<div class=\"cluster\" id=\"${cluster##*/}\">"
   if [ "X${cluster##*/}" == "Xlocalhost" ] ; then
     echo "<div class=\"server\" id=\"localhost\">"
-      echo "<span class=\"servername\"><a href=\"/servers/localhost\">localhost</a></span>"
+    
+      echo "<span class=\"servername\" onclick=\"showDetails('localhost','serverdetails')\">localhost</span>"
+      
       cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
     echo "</div>"
+    echo "<div class=\"details\" id=\"localhost_details\"></div>"
     echo "</div>"
     continue
   fi
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
     echo "<div class=\"server\" id=\"${server##*/}\">"
-      echo "<span class=\"servername\"><a href=\"/servers/${cluster##*/}/${server##*/}\">${server##*/}</a></span>"
+      echo "<span class=\"servername\" onclick=\"showDetails('${server##*/','serverdetails')\">${server##*/}</span>"
       cat "../servers/${server}/dash.html" 2>/dev/null || echo "No data"
       [ -e "../servers/${server}/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
       [ -e "../servers/${server}/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
     echo "</div>"
+    echo "<div class=\"details\" id=\"${server##*/}_details\"></div>"
   done
   echo "</div>"
 done
