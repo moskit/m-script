@@ -531,7 +531,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   i+=1
 done
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<g id=\"legend\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"legend\" text-rendering=\"optimizeSpeed\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "$slegend" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</svg>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
