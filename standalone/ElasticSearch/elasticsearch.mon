@@ -6,6 +6,59 @@ rcommand=${xcommand##*/}
 rpath=${0%/*}/${xpath}
 rpath=${rpath%/}
 #*/
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found, exiting..  " && exit 1
+source "${rpath}/${rcommand%.mon}.conf"
+source "${rpath}/../../conf/mon.conf"
+SQLITE=`which sqlite3 2>/dev/null`
+touch "${rpath}/es_servers.list"
+TMPDIR="${TMPDIR}/elasticsearch"
+install -d "${TMPDIR}"
+
+
+function print_servers() {
+  for host in $@ ; do
+    echo "$host"
+  done
+}
+
+function collect_hosts() {
+  for name in $@ ; do
+    port=${name#*:}
+    ip_to_name $name
+    [ -n "$port" ] || port=$defaultport
+    configips="$configips ${rname}:$port"
+  done
+}
+
+if [ -n "$ES_SERVERS" ] ; then
+  defaultport=9200
+  ES_SERVERS=`echo $ES_SERVERS | sed 's|,| |g'`
+  for name in $ES_SERVERS ; do
+    if [ `grep -c ^${name}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+      noncluster=1
+    else
+      cluster=1
+    fi
+  done
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "X$cluster" == "X1" ] ; then
+    for name in $ES_SERVERS ; do
+      port=${name#*:}
+      clusterips="$clusterips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+    done
+    collect_hosts $clusterips
+  else
+    collect_hosts $ES_SERVERS
+  fi
+else
+  echo "ES_SERVERS variable is not defined, check ${rcommand}.conf" >> ${rpath}/../../logs/elasticsearch.log
+fi
+
+print_servers $configips > "${TMPDIR}/es_servers.list" | tee -a ${rpath}/../../logs/elasticsearch.log
+[ -f "${TMPDIR}/es_servers.list" ] && [ -f "${rpath}/es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/es_servers.list" "${rpath}/es_servers.list"`" ] && mv "${TMPDIR}/es_servers.list" "${rpath}/es_servers.list"
 
 
 

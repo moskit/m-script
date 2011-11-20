@@ -24,12 +24,12 @@ function print_servers() {
 }
 
 function find_master() {
-  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"| grep -v arning | tail -1 2>>${rpath}/MongoDB.log`
+  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"| grep -v arning | tail -1 2>>${rpath}/../../logs/MongoDB.log`
   if [ -z "$im" ] ; then
-    im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1 2>>${rpath}/MongoDB.log`
+    im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1 2>>${rpath}/../../logs/MongoDB.log`
     [ "X$im" == "Xtrue" ] && im=$1
   fi
-  [ -n "$im" ] && echo $im || (echo "Unable to find master for replica set (asked ${1})" >> ${rpath}/MongoDB.log && exit 1)
+  [ -n "$im" ] && echo $im || (echo "Unable to find master for replica set (asked ${1})" >> ${rpath}/../../logs/MongoDB.log && exit 1)
 }
 
 function ip_to_name() {
@@ -195,11 +195,11 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
     collect_hosts $MONGO_CONFIG_SERVERS
   fi
 
-  print_servers $configips > "${TMPDIR}/mongo_config_servers.list" | tee -a ${rpath}/MongoDB.log
+  print_servers $configips > "${TMPDIR}/mongo_config_servers.list" | tee -a ${rpath}/../../logs/MongoDB.log
   [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
   
 elif [ -z "$MONGO_SERVERS" ] ; then
-  echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
+  echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting" >> ${rpath}/../../logs/MongoDB.log
   exit 1
 else
 

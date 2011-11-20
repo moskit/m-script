@@ -113,7 +113,7 @@ start)
         echo > /tmp/m_script/conn_test_runs_count
       fi
     ## With dashboard enabled, it is necessary to run all tests in a single run
-      ${rpath}/mon.run mem.mon,connections.mon,services.mon,servers.mon SQL </dev/null &
+      ${rpath}/mon.run connections.mon,bandwidth.mon,services.mon,mem.mon,servers.mon SQL </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ] ; then
       # means that we need to fetch reports from other servers
         case $DASHBOARD_TRANSPORT in

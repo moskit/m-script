@@ -129,8 +129,10 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
           fi
         else
           format ${data[1]} ${datastyle[1]}
+          format ${data[2]} ${datastyle[2]}
         fi
         cursor=0
+        unset datatype[1] datastyle[1]
         unset datatype[2] datastyle[2]
         ;;
       "empty info")
@@ -141,6 +143,7 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
           echo "</table>"
           unset tableflag
         fi
+        format ${data[1]} ${datastyle[2]}
         ;;
       "table empty")
         echo "<table>"
