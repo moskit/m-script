@@ -129,7 +129,7 @@ colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "
 
 [ -n "$padding" ] || padding=20
 [ -n "$legend" ] || legend=60
-[ -n "$fontsize" ] || fontsize=8
+[ -n "$fontsize" ] || fontsize=10
 [ -n "$strokewidth" ] || strokewidth=3
 [ -n "$pointsize" ] || pointsize=12
 [ -n "$width" ] && graphH=$width
@@ -494,7 +494,7 @@ echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Marks
-echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" text-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:0.4;font-size:${fontsize};\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" text-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:0.4;font-size:${fontsize}px;\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $textX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
