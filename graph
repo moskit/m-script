@@ -30,7 +30,7 @@ SSH=`which ssh 2>/dev/null`
 IFCFG=`which ifconfig 2>/dev/null`
 possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
 necessary_options="metric"
-
+source ${rpath}/conf/dash.conf
 RSYNC=`which rsync 2>/dev/null`
 
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -120,7 +120,6 @@ else
   localip="yes"
 fi
 
-source ${rpath}/conf/dash.conf
 TMPDIR=/tmp/m_script/dash
 install -d $TMPDIR
 install -d ${rpath}/www/graphs
@@ -290,9 +289,9 @@ if [ "X$scale" == "Xyes" ] ; then
   done
 fi
 
-perdotY=`expr \( $metricmax - $metricmin \) / $areaV`
+perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
 [[ $perdotY -lt 1 ]] && perdotY=1
-perdotX=`expr \( $to - $from \) / $areaH`
+perdotX=`expr \( $to - $from \) / $areaH + 1`
 [[ $perdotX -lt 1 ]] && perdotX=1
 
 # 20 to 40 pixels
@@ -306,18 +305,23 @@ hourX=`expr 3600 / $perdotX`
 # Variable looping across all X marks
 currpoint=$from
 # Various coordinates
+# 0:0 coordinate
 startX=`expr $legend + $padding`
 startY=`expr $graphV - $legend - $padding`
+# Vertical grid lines
 mX1=`expr $startY + 2`
 mXT1=`expr $mX1 + 14`
 mX2=$padding
+# Horisontal grid lines
 mY1=`expr $startX - 2`
 mYT1=`expr $mY1 - 50`
 mY2=`expr $graphH - $padding`
+# Axis names coordinates
 axisXX=`expr $graphH - $padding - 60`
 axisXY=`expr $graphV - $legend + 20`
 axisYX=$padding
 axisYY=$padding
+
 #titleX=`expr \( $graphH - $tlength \) / 2`
 titleX=`expr $padding + $legend + 20`
 titleY=`expr $graphV - $padding`
@@ -360,7 +364,7 @@ if [[ $hourX -lt $countminX ]] ; then
           #font-family="Verdana" font-size="55" fill="blue" >
           #Hello, out there
           #</text>
-          textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$themonth</text>"`"
+          textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$themonth</text>"`"
         done
         unset nextmonth res monthX
       else
@@ -377,7 +381,7 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break 
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-          textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
+          textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
         done
         unset nextday
       fi
@@ -394,7 +398,7 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         [[ $themark -gt $mY2 ]] && break
         marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-        textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
+        textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
       done
     fi
     unset dayN
@@ -412,7 +416,7 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
       marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-      textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
+      textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
     done
   fi
   unset hourN
@@ -432,7 +436,7 @@ else
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
     marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-    textX="${textX}`echo "<text x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
+    textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
   done
 fi
 
@@ -473,9 +477,9 @@ do
   if [ "X$scale" != "Xyes" ] ; then
     if [ -n "$mp" ] ; then
       [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
-      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
+      textY="${textY}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
     else
-      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
+      textY="${textY}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
     fi
   fi
 done
@@ -494,13 +498,16 @@ echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Marks
-echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" text-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:0.4;font-size:${fontsize}px;\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks\" style=\"fill:none;stroke:#999;stroke-width:1;\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks_text\" text-rendering=\"optimizeSpeed\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+font-size:${fontsize}px;
 echo $textX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 [ "X$scale" == "Xyes" ] || echo $textY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<text x=\"$axisXX\" y=\"$axisXY\" font-family=\"Verdana\" font-size=\"${fontsize}\" stroke-width=\"1\">$axisX</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"${fontsize}\" stroke-width=\"1\">$axisY</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\">$axisY</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Graphs

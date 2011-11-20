@@ -10,10 +10,10 @@ ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}$" | cut -d'|' -f1`
 [ -n "$ip" ] && sip="--ip=$ip" || ip="localhost"
 ex=`find ${PWD}/../graphs -mmin -$(expr 2 \* ${freqdef} / 60 ) -name ${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg`
 if [ -z "$ex" ] ; then
-${PWD}/../../graph --metric=loadavg,activeram,freeswap,procnum,diskusage,cpuusage,connections,bwidthin,bwidthout --new --scale --width=800 --height=300 --from=-${timerange}sec $sip --padding=50 --legend=150
+${PWD}/../../graph --metric=loadavg,activeram,freeswap,procnum,diskusage,cpuusage,connections,bwidthin,bwidthout --new --scale --width=800 --height=450 --from=-${timerange}sec $sip --padding=20 --legend=200
 fi
-echo "<div class=\"combinedgraph_left\">&nbsp</div>"
+
 echo "<div class=\"combinedgraph\">"
-echo "<object data=\"/graphs/${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg\" type=\"image/svg+xml\" width=\"650\" height=\"300\" style=\"float:right\"></object>"
+echo "<object data=\"/graphs/${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg\" type=\"image/svg+xml\" width=\"800\" height=\"450\" style=\"float:left\"></object>"
 echo "</div>"
 
