@@ -364,7 +364,7 @@ if [[ $hourX -lt $countminX ]] ; then
           #font-family="Verdana" font-size="55" fill="blue" >
           #Hello, out there
           #</text>
-          textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$themonth</text>"`"
+          textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$themonth</text>"`"
         done
         unset nextmonth res monthX
       else
@@ -381,7 +381,7 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break 
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-          textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
+          textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
         done
         unset nextday
       fi
@@ -398,7 +398,7 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         [[ $themark -gt $mY2 ]] && break
         marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-        textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
+        textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
       done
     fi
     unset dayN
@@ -416,7 +416,7 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
       marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-      textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
+      textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
     done
   fi
   unset hourN
@@ -436,7 +436,7 @@ else
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
     marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-    textX="${textX}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
+    textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
   done
 fi
 
@@ -477,9 +477,9 @@ do
   if [ "X$scale" != "Xyes" ] ; then
     if [ -n "$mp" ] ; then
       [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
-      textY="${textY}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
+      textY="${textY}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
     else
-      textY="${textY}`echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
+      textY="${textY}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
     fi
   fi
 done
