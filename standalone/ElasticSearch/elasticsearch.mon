@@ -42,23 +42,45 @@ if [ -n "$ES_SERVERS" ] ; then
     else
       cluster=1
     fi
+    # In case some server has the same name as cluster
+    if [ `grep -c "|${name}|${name}" "${rpath}/../../servers.list"` -gt 0 ] ; then
+      unset cluster
+    fi
   done
-  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
-  if [ "X$cluster" == "X1" ] ; then
+  
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in ES_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "X$noncluster" == "X1" ] ; then
+  # ES_SERVERS contains hosts
+    for server in $ES_SERVERS ; do
+      port=${server#*:}
+      host=${server%:*}
+      clustername=`cat "${rpath}/../../servers.list" | grep -E "\|${host}\||^${host}\|" | cut -d'|' -f5`
+      [ "X$clustername" == "X$clusternameprev" ] && continue
+      clusterips=`"${rpath}/../../cloud/ec2/get_ips" --cluster="${clustername}"|sed "s|$|$port|g"`
+      clusternameprev=$clustername
+      clusternames="$clusternames $clustername"
+      collect_hosts $clusterips
+      print_servers $configips > "${TMPDIR}/${clustername%:*}.es_servers.list" | tee -a ${rpath}/../../logs/elasticsearch.log
+    done
+  else
+  # ES_SERVERS contains clusters
     for name in $ES_SERVERS ; do
       port=${name#*:}
-      clusterips="$clusterips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+      clusterips=`"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`
+      collect_hosts $clusterips
+      print_servers $configips > "${TMPDIR}/${name%:*}.es_servers.list" | tee -a ${rpath}/../../logs/elasticsearch.log
     done
-    collect_hosts $clusterips
-  else
-    collect_hosts $ES_SERVERS
+    clusternames=$ES_SERVERS
   fi
 else
   echo "ES_SERVERS variable is not defined, check ${rcommand}.conf" >> ${rpath}/../../logs/elasticsearch.log
 fi
 
-print_servers $configips > "${TMPDIR}/es_servers.list" | tee -a ${rpath}/../../logs/elasticsearch.log
-[ -f "${TMPDIR}/es_servers.list" ] && [ -f "${rpath}/es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/es_servers.list" "${rpath}/es_servers.list"`" ] && mv "${TMPDIR}/es_servers.list" "${rpath}/es_servers.list"
+for cluster in $clusternames ; do
+  [ -f "${TMPDIR}/${cluster}.es_servers.list" ] && [ -f "${rpath}/${cluster}.es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"`" ] && mv "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"
+done
+
+
 
 
 

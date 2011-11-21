@@ -503,7 +503,6 @@ echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "<g id=\"marks_text\" text-rendering=\"optimizeSpeed\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-font-size:${fontsize}px;
 echo $textX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 [ "X$scale" == "Xyes" ] || echo $textY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
