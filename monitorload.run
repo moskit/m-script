@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 ### Daemon control
 # This allows to start this script on boot
 # Just create a symlink like this:

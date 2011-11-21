@@ -135,8 +135,8 @@ if [ "X${DISKSTAT}" != "X" ]; then
 
     disk=${LINE##*/}
 
-    dr=$($DISKSTAT | grep "^${disk}" | awk '{ print $4 }')
-    drtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $5 }')
+    dr=$($DISKSTAT | grep "^${disk} " | awk '{ print $4 }')
+    drtime=$($DISKSTAT | grep "^${disk} " | awk '{ print $5 }')
     
     if [[ $drtime -gt 100 ]]; then
       drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
@@ -149,8 +149,8 @@ if [ "X${DISKSTAT}" != "X" ]; then
     for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
     replinerd=`printf "${replinerd}${drspeed}"`
     echo "${drspeed}" >> /tmp/m_script/diskiord
-    dw=$($DISKSTAT | grep "^${disk}" | awk '{ print $8 }')
-    dwtime=$($DISKSTAT | grep "^${disk}" | awk '{ print $9 }')
+    dw=$($DISKSTAT | grep "^${disk} " | awk '{ print $8 }')
+    dwtime=$($DISKSTAT | grep "^${disk} " | awk '{ print $9 }')
     if [[ $dwtime -gt 100 ]]; then
       dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
     else
