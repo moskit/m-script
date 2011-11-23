@@ -81,7 +81,7 @@ then
   then
     case $OS in
     debian)
-      `which apt-get` install bc
+      `which apt-get` install bc -y
       ;;
     gentoo)
       `which emerge` bc
@@ -118,7 +118,7 @@ then
     case $OS in
     debian)
       `which apt-get` install mailx
-      [[ $? -eq 100 ]] && `which apt-get` install bsd-mailx
+      [[ $? -eq 100 ]] && `which apt-get` install bsd-mailx -y
       ;;
     gentoo)
       `which emerge` mailx
@@ -279,7 +279,7 @@ then
     then
       case $OS in
       debian)
-        `which apt-get` install sqlite3
+        `which apt-get` install sqlite3 -y
         ;;
       gentoo)
         `which emerge` sqlite

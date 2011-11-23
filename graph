@@ -156,20 +156,26 @@ fi
 areaH=`expr $graphH - 2 \* $padding - $legend`
 areaV=`expr $graphV - 2 \* $padding - $legend`
 
+# the idea is to work entirely in UTC (timestamps in the db is UTC as well)
+# only X axis marks are converted to server local time
 if [ -n "$from" ] ; then
+# whatever you provide as --from, it is supposed to be UTC unless you provided
+# the time zone. In this latter case it will be converted to UTC, not just
+# considered to be UTC
   tfrom=`date -u -d "$from"`
   from=`date -u -d "$from" +"%s"`
   if [ -n "$to" ] ; then
     tto=`date -u -d "$to"`
-    to=`date -u -d "$to" +"%s"`
+    to=`date -d "$to" +"%s"`
   else
-    to=`date -u +"%s"`
+    to=`date +"%s"`
     tto=`date -u`
   fi
 else
-  from=`date -u +"%s"` ; from=`expr $from - $areaH \* $freqdef`
-  tfrom=`date -d "1970/01/01 +$from sec"`
-  to=`date -u +"%s"`
+  from=`date +"%s"` # this is always UTC
+  from=`expr $from - $areaH \* $freqdef`
+  tfrom=`date -u -d "1970/01/01 +$from sec"`
+  to=`date +"%s"`
   tto=`date -u`
 fi
 title="Graph: $metric from $tfrom to $tto"
@@ -353,10 +359,10 @@ if [[ $hourX -lt $countminX ]] ; then
         # Finding the next month beginning
         while [[ $currpoint -lt $to ]]
         do
-          currpoint=`date -d "1970/01/01 +$currpoint sec +$res month" +"%s"`
-          themonth=`date -d "1970/01/01 +$currpoint" +"%m"`
-          theyear=`date -d "1970/01/01 +$currpoint" +"%Y"`
-          themark=`date -d "${theyear}/${themonth}/1" +"%s"`
+          currpoint=`date -u -d "1970/01/01 +$currpoint sec +$res month" +"%s"`
+          themonth=`date -u -d "1970/01/01 +$currpoint" +"%m"`
+          theyear=`date -u -d "1970/01/01 +$currpoint" +"%Y"`
+          themark=`date -u -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
@@ -373,11 +379,11 @@ if [[ $hourX -lt $countminX ]] ; then
         [[ $dayN -eq 0 ]] && dayN=1  # just in case
         while [[ $currpoint -lt $to ]]
         do
-          currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
-          theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
-          themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
-          theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
-          themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
+          currpoint=`date -u -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
+          theday=`date -u -d "1970/01/01 +$currpoint sec" +"%d"`
+          themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
+          theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
+          themark=`date -u -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break 
           marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
@@ -390,11 +396,11 @@ if [[ $hourX -lt $countminX ]] ; then
       axisX="days"
       while [[ $currpoint -lt $to ]]
       do
-        currpoint=`date -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
-        theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
-        themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
-        theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
-        themark=`date -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
+        currpoint=`date -u -d "1970/01/01 +$currpoint sec +$dayN day" +"%s"`
+        theday=`date -u -d "1970/01/01 +$currpoint sec" +"%d"`
+        themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
+        theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
+        themark=`date -u -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         [[ $themark -gt $mY2 ]] && break
         marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
@@ -407,12 +413,12 @@ if [[ $hourX -lt $countminX ]] ; then
     [[ $hourN -eq 0 ]] && hourN=1
     while [[ $currpoint -lt $to ]]
     do
-      currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
-      thehour=`date -d "1970/01/01 +$currpoint sec" +"%H"`
-      theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
-      themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
-      theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
-      themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
+      currpoint=`date -u -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
+      thehour=`date -u -d "1970/01/01 +$currpoint sec" +"%H"`
+      theday=`date -u -d "1970/01/01 +$currpoint sec" +"%d"`
+      themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
+      theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
+      themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
       marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
@@ -427,12 +433,12 @@ else
   axisX="hours"
   while [[ $currpoint -lt $to ]]
   do
-    currpoint=`date -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
-    thehour=`date -d "1970/01/01 +$currpoint sec" +"%H"`
-    theday=`date -d "1970/01/01 +$currpoint sec" +"%d"`
-    themonth=`date -d "1970/01/01 +$currpoint sec" +"%m"`
-    theyear=`date -d "1970/01/01 +$currpoint sec" +"%Y"`
-    themark=`date -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
+    currpoint=`date -u -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
+    thehour=`date -u -d "1970/01/01 +$currpoint sec" +"%H"`
+    theday=`date -u -d "1970/01/01 +$currpoint sec" +"%d"`
+    themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
+    theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
+    themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
     marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
