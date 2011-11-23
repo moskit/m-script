@@ -21,6 +21,11 @@ ${1}
 EOF
 }
 
+addxmarks() {
+  marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mX1\\" x2=\\"$1\\" y2=\\"$mX2\\" />"`"
+  textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
+}
+
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
@@ -365,12 +370,9 @@ if [[ $hourX -lt $countminX ]] ; then
           themark=`date -u -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break
-          marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-          #<text x="250" y="150" 
-          #font-family="Verdana" font-size="55" fill="blue" >
-          #Hello, out there
-          #</text>
-          textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$themonth</text>"`"
+          textmark=`date -u -d "1970/01/01 +$currpoint sec"`
+          textmark=`date -d "$textmark" +"%m"`
+          addxmarks $themark $textmark
         done
         unset nextmonth res monthX
       else
@@ -385,9 +387,10 @@ if [[ $hourX -lt $countminX ]] ; then
           theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
           themark=`date -u -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
-          [[ $themark -gt $mY2 ]] && break 
-          marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-          textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
+          [[ $themark -gt $mY2 ]] && break
+          textmark=`date -u -d "1970/01/01 +$currpoint sec"`
+          textmark=`date -d "$textmark" +"%d"`
+          addxmarks $themark $textmark
         done
         unset nextday
       fi
@@ -403,8 +406,9 @@ if [[ $hourX -lt $countminX ]] ; then
         themark=`date -u -d "${theyear}/${themonth}/${theday} 00:00" +"%s"`
         themark=`expr \( $themark - $from \) / $perdotX + $startX`
         [[ $themark -gt $mY2 ]] && break
-        marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-        textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$theday</text>"`"
+        textmark=`date -u -d "1970/01/01 +$currpoint sec"`
+        textmark=`date -d "$textmark" +"%d"`
+        addxmarks $themark $textmark
       done
     fi
     unset dayN
@@ -421,8 +425,9 @@ if [[ $hourX -lt $countminX ]] ; then
       themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
-      marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-      textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
+      textmark=`date -u -d "1970/01/01 +$currpoint sec"`
+    textmark=`date -d "$textmark" +"%H"`
+      addxmarks $themark $textmark
     done
   fi
   unset hourN
@@ -441,8 +446,9 @@ else
     themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
-    marksX="$marksX`echo "<line x1=\\"$themark\\" y1=\\"$mX1\\" x2=\\"$themark\\" y2=\\"$mX2\\" />"`"
-    textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$themark\\" y=\\"$mXT1\\" >$thehour</text>"`"
+    textmark=`date -u -d "1970/01/01 +$currpoint sec"`
+    textmark=`date -d "$textmark" +"%H"`
+    addxmarks $themark $textmark
   done
 fi
 
