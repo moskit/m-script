@@ -24,6 +24,7 @@ RSYNC=`which rsync 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
+[ -n "$SSHPORT" ] && SSHPORT="-p $SSHPORT"
 possible_options="cluster help region verbose recursive"
 commflag=0
 for s_option in "${@}"
@@ -108,7 +109,7 @@ if [ "X$command" != "X" ] ; then
     if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       cp -up $from $to
     else
-      $RSYNC ${r} -e "$SSH -i ${rpath}/../../keys/${KEY}.pem -o StrictHostKeyChecking=no" $from ${IP}:${to}
+      $RSYNC ${r} -e "$SSH -i ${rpath}/../../keys/${KEY}.pem -o StrictHostKeyChecking=no" "$SSHPORT" $from ${IP}:${to}
     fi
   done
 fi

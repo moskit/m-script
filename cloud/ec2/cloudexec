@@ -21,7 +21,7 @@ rpath=${0%/*}
 source "${rpath}/../../conf/cloud.conf"
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
-[ -n "$SSHPORT" ] && SSH="$SSH -p $SSHPORT"
+[ -n "$SSHPORT" ] && SSHPORT="-p $SSHPORT"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="cluster help region verbose limit"
 commflag=0

@@ -169,6 +169,7 @@ SED=`which sed 2>/dev/null`
 [ -z "$SED" ] && echo "Sed utility not found, exiting" && exit 1
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+[ -n "$SSHPORT" ] && SSHPORT="-p $SSHPORT"
 IFCFG=`which ifconfig 2>/dev/null`
 
 possible_options="cluster help region"
