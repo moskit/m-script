@@ -68,17 +68,42 @@ showDetails = function(theid,script) {
   if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
     cursor_saved = $(theid).style.cursor
     cursor_style($(theid),'wait');
+    waitingEffect($(theid),'start');
     var the_url = '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
-      //  Effect.SlideDown(server + '_details', {duration: 0.3});
+     // new Effect.SlideDown(server + '_details', {duration: 0.3});
         $(server + '_details').style.display = "table";
         $(server + '_details').update(response.responseText);
+        cursor_style($(theid),cursor_saved);
+        waitingEffect($(theid),'stop');
       }
     });
-    cursor_style($(theid),cursor_saved);
   }
 }
+
+waitingEffect = function(theid,action) {
+  element = $(theid);
+  if (action == 'start') {
+    var options    = { },
+    oldOpacity = element.getInlineOpacity(),
+    transition = Effect.Transitions.linear,
+    reverser   = function(pos){
+      return 1 - transition((-Math.cos((pos*50*2)*Math.PI)/2) + .5);
+    };
+
+    waitingE = new Effect.Opacity(element,
+      Object.extend(Object.extend({  duration: 20, from: 0,
+        afterFinishInternal: function(effect) { effect.element.setStyle({opacity: oldOpacity}); }
+      }, options), {transition: reverser}));
+        Object.extend(window.waitingE,{ duration: 0 });
+  }
+  if (action == 'stop') {
+    waitingE.cancel();             
+    element.setStyle({opacity: 1.0});
+  }
+}
+
 
 showMenu = function(theid,thetext,action) {
   if ($(theid).style.display == "none") {
