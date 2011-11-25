@@ -21,7 +21,7 @@ rpath=${0%/*}
 source "${rpath}/../../conf/cloud.conf"
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
-[ -n "$SSHPORT" ] && SSHPORT="-p $SSHPORT"
+[ -n "$SSHPORT" ] || SSHPORT=22
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="cluster help region verbose limit"
 commflag=0
@@ -113,7 +113,7 @@ if [ "X$command" != "X" ] ; then
       if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
         eval $command
       else
-        $SSH -i "${rpath}/../../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+        $SSH -i "${rpath}/../../keys/${KEY}.pem" -p $SSHPORT -o StrictHostKeyChecking=no $IP "$command"
       fi
     done
     n+=1

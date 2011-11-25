@@ -10,6 +10,7 @@ DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found, exiting..  " && exit 1
+CURL="$CURL -s"
 source "${rpath}/${rcommand%.mon}.conf"
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
@@ -89,6 +90,11 @@ fi
 for cluster in $clusternames ; do
   touch "${rpath}/${cluster}.es_servers.list"
   [ -f "${TMPDIR}/${cluster}.es_servers.list" ] && [ -f "${rpath}/${cluster}.es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"`" ] && mv "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"
+  
+  node=`tail -1 "${rpath}/${cluster}.es_servers.list"`
+  #$CURL "http://${node}/_cluster/nodes" | lib/json2txt > "${rpath}/data/${cluster}.nodes"
+  $CURL "http://${node}/_cluster/nodes/stats" | lib/json2txt > "${rpath}/data/${cluster}.nodes_stats"
+  #$CURL "http://${node}/_cluster/state" | lib/json2txt > "${rpath}/data/${cluster}.state"
 done
 
 

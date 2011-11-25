@@ -349,10 +349,10 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=report 2>${rpath}/dashboard.log
+      ${rpath}/genhtml --type=report 2>>${rpath}/dashboard.log
       ;;
     JSON)
-      ${rpath}/genjson --type=report 2>${rpath}/dashboard.log
+      ${rpath}/genjson --type=report 2>>${rpath}/dashboard.log
       ;;
   esac
 }

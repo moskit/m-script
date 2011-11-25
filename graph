@@ -32,6 +32,8 @@ rpath=${0%/*}
 
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
+source "${rpath}/conf/cloud.conf"
+[ -n "$SSHPORT" ] || SSHPORT=22
 IFCFG=`which ifconfig 2>/dev/null`
 possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
 necessary_options="metric"
@@ -268,7 +270,7 @@ if [ -n "$new" ] ; then
     sqlite3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
   else
   # -o StrictHostKeyChecking=no 
-    $SSH $thekey $sIP "sqlite3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+    $SSH $thekey -p $SSHPORT $sIP "sqlite3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
   fi
   if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
     echo "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
@@ -295,15 +297,17 @@ if [ "X$scale" == "Xyes" ] ; then
   for smetric in `echo $metric | tr ',' ' '` ; do
     rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
     smax=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
-    [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve "$metricmax / $smax / $sn / 1.2"` || sratio=1
-    for LINE in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
-      st=`echo $LINE | cut -d'|' -f1`
-      [ -z "$st" ] && continue
-      sd=`echo $LINE | cut -d'|' -f2`
-      [ -z "$sd" ] && continue
-      sds=`solve "$sd * $sratio + $snadd"`
-      echo "${st}|${sds}" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled
-    done
+    if [ -n "$smax" ] ; then
+      [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve "$metricmax / $smax / $sn / 1.2"` || sratio=1
+      for LINE in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
+        st=`echo $LINE | cut -d'|' -f1`
+        [ -z "$st" ] && continue
+        sd=`echo $LINE | cut -d'|' -f2`
+        [ -z "$sd" ] && continue
+        sds=`solve "$sd * $sratio + $snadd"`
+        echo "${st}|${sds}" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled
+      done
+    fi
     snadd=`solve "$snadd + $sadd"`
     n+=1
   done
