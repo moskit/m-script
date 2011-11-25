@@ -18,9 +18,10 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-
+source "${rpath}/../../conf/cloud.conf"
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+[ -n "$SSHPORT" ] && SSH="$SSH -p $SSHPORT"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="cluster help region verbose limit"
 commflag=0

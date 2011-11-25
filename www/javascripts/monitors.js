@@ -104,7 +104,6 @@ waitingEffect = function(theid,action) {
   }
 }
 
-
 showMenu = function(theid,thetext,action) {
   if ($(theid).style.display == "none") {
     $(theid).innerHTML=thetext;
