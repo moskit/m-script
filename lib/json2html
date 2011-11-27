@@ -1,0 +1,14 @@
+ | sed 's|{|<div class="json"><span class="json name">|g;s|"},"|</span></div></div><div class="json"><span class="json name">|g;s|},"|</div></div><div class="json"><span class="json name">|g;s|},|</div>|g;s|}|</div>|g;s|,|</div><div class="json"><span class="json name">|g;s|<div class="json"><span class="json name">"|<div class="json"><span class="json name">|g;s|"</div>|</span></div>|g;s|":"|</span><span class="json value">|g;s|":|</span>|g;'
+ 
+div.json {
+  margin-left: 20px;
+}
+span.json {
+  margin-right: 20px;
+}
+span.name {
+  font-weight: bold;
+}
+span.value {
+  color: blue;
+}

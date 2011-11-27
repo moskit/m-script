@@ -94,10 +94,24 @@ for cluster in $clusternames ; do
   node=`tail -1 "${rpath}/${cluster}.es_servers.list"`
   #$CURL "http://${node}/_cluster/nodes" | lib/json2txt > "${rpath}/data/${cluster}.nodes"
   $CURL "http://${node}/_cluster/nodes/stats" | lib/json2txt > "${rpath}/data/${cluster}.nodes_stats"
-  #$CURL "http://${node}/_cluster/state" | lib/json2txt > "${rpath}/data/${cluster}.state"
+  $CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_metadata=true&filter_blocks=true&filter_indices=true" | lib/json2txt > "${rpath}/data/${cluster}.nodes"
+  
 done
 
+for node in `cat "${PWD}/../../standalone/${scriptname}/*.es_servers.list"` ; do
+  allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${PWD}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk "{print \\"${node}|\\" \\$2}"`"
+done
 
+for cluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
+  clusterhost=`echo $allclusters | sed 's| |\n|g' | grep "|${cluster}$"`
+  echo "<div class=\"clustername\"><span class=\"indent\">${cluster}</span></div>"
+  echo "<div class=\"cluster\" id=\"${cluster}\">"
+  $CURL "http://${clusterhost}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true"|${PWD}/../../lib/json2txt > 
+    # This clusternode is a name assigned by ES like 2dsOVGfwR5GjTpyA-jbbGw
+    
+
+  
+done
 
 
 
