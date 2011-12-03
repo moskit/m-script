@@ -1,10 +1,8 @@
 #!/bin/bash
 
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-xpath=${xcommand%/*}/
+rpath=$(cd ${xcommand%/*}/ && pwd)
 rcommand=${xcommand##*/}
-rpath=${0%/*}/${xpath}
-rpath=${rpath%/}
 #*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
@@ -91,27 +89,32 @@ for cluster in $clusternames ; do
   touch "${rpath}/${cluster}.es_servers.list"
   [ -f "${TMPDIR}/${cluster}.es_servers.list" ] && [ -f "${rpath}/${cluster}.es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"`" ] && mv "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"
   
-  node=`tail -1 "${rpath}/${cluster}.es_servers.list"`
+  #node=`tail -1 "${rpath}/${cluster}.es_servers.list"`
   #$CURL "http://${node}/_cluster/nodes" | lib/json2txt > "${rpath}/data/${cluster}.nodes"
-  $CURL "http://${node}/_cluster/nodes/stats" | lib/json2txt > "${rpath}/data/${cluster}.nodes_stats"
-  $CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_metadata=true&filter_blocks=true&filter_indices=true" | lib/json2txt > "${rpath}/data/${cluster}.nodes"
+  #$CURL "http://${node}/_cluster/nodes/stats" | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.nodes_stats"
+  #$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_metadata=true&filter_blocks=true&filter_indices=true" | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.nodes"
   
 done
 
-for node in `cat "${PWD}/../../standalone/${scriptname}/*.es_servers.list"` ; do
-  allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${PWD}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk "{print \\"${node}|\\" \\$2}"`"
+for node in `cat "${rpath}"/*.es_servers.list` ; do
+  allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk "{print \\"${node}|\\" \\$2}"`"
 done
 
 for cluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
-  clusterhost=`echo $allclusters | sed 's| |\n|g' | grep "|${cluster}$"`
-  echo "<div class=\"clustername\"><span class=\"indent\">${cluster}</span></div>"
-  echo "<div class=\"cluster\" id=\"${cluster}\">"
-  $CURL "http://${clusterhost}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true"|${PWD}/../../lib/json2txt > 
+  clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${cluster}$" | tail -1` ; clusterhost1=${clusterhost1%|*}
+  clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${cluster}$" | head -1` ; clusterhost2=${clusterhost2%|*}
+  ($CURL "http://${clusterhost1}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL "http://${clusterhost2}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.nodes"
+  for clusternode in `cat "${rpath}/data/${cluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
     # This clusternode is a name assigned by ES like 2dsOVGfwR5GjTpyA-jbbGw
+    ismaster=`grep ^1\/master_node "${rpath}/data/${cluster}.nodes" | grep -c "$clusternode"`
+    nodename=`grep "${clusternode}\/name " "${rpath}/data/${cluster}.nodes"`
+    nodename=${nodename#/name }
+    nodehost=`grep "${clusternode}\/transport_address " "${rpath}/data/${cluster}.nodes"`
+    nodehost=${nodehost#/transport_address }
+    nodehost=${nodehost%:*}
+    nodehost=${nodehost#*/}
+    nodehost=`ip_to_name "$nodehost"`
     
-
-  
+  done
 done
-
-
 

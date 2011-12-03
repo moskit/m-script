@@ -72,6 +72,7 @@ do
     exit 1
   fi
 done
+# "metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} --metric=metric <other options>"
   echo 
@@ -97,6 +98,17 @@ if [ "X$help" == "Xyes" ] ; then
   echo "           The default is sysdata"
   echo "  --table=<table name>  The default is sysdata"
   echo "  --size=<small|thumbnail>  If not defined, it's the default big graph"
+  echo "  --scale  Used to create combined graphs with multiple metrics."
+  echo "           This options scales graphs so that changes become visible"
+  echo "           and places graphs one under another."
+  echo "  --where=<field:value>  Additional WHERE clause for SQL query."
+  echo "           Add escaped quotes to value if needed: field:\'value\'"
+  echo
+  echo "Graph format options:"
+  echo
+  echo "  --width, --height, --padding, --legend,"
+  echo "  --fontsize, --strokewidth, --pointsize"
+  echo "  These options can be used to overwrites those from conf/dash.conf."
   echo
   exit 0
 fi
@@ -265,7 +277,12 @@ for smetric in `echo $metric | tr ',' ' '` ; do
 done
   
 if [ -n "$new" ] ; then
-  QUERY="select $qmetric from $table where timeindex between $from and $to;"
+  QUERY="SELECT $qmetric FROM $table WHERE timeindex BETWEEN $from AND $to"
+  if [ -n "$where" ] ; then
+    field=${where%%:*}
+    value=${where#*:}
+    QUERY="$QUERY AND $field=$value" 
+  fi
   if [ "X$sIP" == "Xlocalhost" ] ; then
     sqlite3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
   else
