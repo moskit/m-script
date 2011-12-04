@@ -201,11 +201,11 @@ title="Graph: $metric from $tfrom to $tto"
 #tlength=`expr length $title`
 echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
 if [ ! -f "${rpath}/servers.list" ] ; then
-  echo "Create ${rpath}/servers.list please"  >> "${rpath}/dashboard.log"
+  echo "Create ${rpath}/servers.list please" >> "${rpath}/dashboard.log"
   exit 1
 fi
 if [ ! -f "${rpath}/conf/clusters.conf" ] ; then
-  echo "Create ${rpath}/conf/clusters.conf please"  >> "${rpath}/dashboard.log"
+  echo "Create ${rpath}/conf/clusters.conf please" >> "${rpath}/dashboard.log"
   exit 1
 fi
 if [ -z "$localip" ] ; then

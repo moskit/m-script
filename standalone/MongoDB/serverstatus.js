@@ -16,12 +16,12 @@ if (objStatus.network) {
   print('netReqn|' + objStatus.network.numRequests);
 }
 if (objStatus.opcounters) {
-  print('opsTotalInsert|' + objStatus.opcounters.insert);
-  print('opsTotalQuery|' + objStatus.opcounters.query);
-  print('opsTotalUpdate|' + objStatus.opcounters.update);
-  print('opsTotalDelete|' + objStatus.opcounters.delete);
-  print('opsTotalGetmore|' + objStatus.opcounters.getmore);
-  print('opsTotalCommand|' + objStatus.opcounters.command);
+  print('opcountersInsert|' + objStatus.opcounters.insert);
+  print('opcountersQuery|' + objStatus.opcounters.query);
+  print('opcountersUpdate|' + objStatus.opcounters.update);
+  print('opcountersDelete|' + objStatus.opcounters.delete);
+  print('opcountersGetmore|' + objStatus.opcounters.getmore);
+  print('opcountersCommand|' + objStatus.opcounters.command);
 }
 if (objStatus.ops) {
   print('opsShardedInsert|' + objStatus.ops.sharded.insert);
