@@ -1,16 +1,16 @@
 #!/bin/bash
 
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-xpath=${xcommand%/*}/
+rpath=$(cd ${xcommand%/*}/ && pwd)
 rcommand=${xcommand##*/}
-rpath=${0%/*}/${xpath}
-rpath=${rpath%/}
-#*/ (this is needed to fix vi syntax highlighting)
-abspath=$(cd ${rpath} && pwd)
-
-command_options="host port username password channel input output"
+#*/
 wrapper_options="config command logfile pidfile fg user group help"
-necessary_options=""
+# All possible options for the wrapped command must be listed here
+# (only long options are supported: --option=value)
+command_options=""
+# This list is for those options (both command and wrapper) that must be
+# present, otherwise it won't start
+necessary_options="command"
 [ $# -eq 0 ] && ${0} --help && exit 0
 IFS1=$IFS
 IFS='--'
@@ -53,61 +53,96 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-[ -n "$config" ] || config="/etc/${rcommand##*/}.conf"
-[ -n "$logfile" ] || logfile="/var/log/${rcommand##*/}.log"
-[ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
-
 trap 'exit' 0
 trap 'exit' 3
 trap 'exit' 15
+
+[ -n "$config" ] || config="${rpath}/${rcommand##*/}.conf"
+[ -e "$config" ] || config="/etc/${rcommand##*/}.conf"
 if [ -e "$config" ] ; then
   source $config
+fi
+[ -n "$logfile" ] || logfile="/var/log/${rcommand##*/}.log"
+[ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
+
+if [ -n "$user" ] ; then
+  touch "$logfile" "$pidfile" && chown $user "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
+fi
+if [ -n "$group" ] ; then
+  touch "$logfile" "$pidfile" && chown $group "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
 fi
 
 case $s_param in
   start)
-    [ -f ${pidfile} ] && echo "Already running (PID `cat $pidfile`)" && exit 0
-    printf "Starting ${0##*/}...   "
-    if [ $UID -eq 0 ] ; then
-      if [ -n "$user" ] ; then
-        su - $user -c exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
-        succ=$?
-        echo $! > $pidfile
-      elif [ -n "$group" ] ; then
-        sg - $group -c exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
-        succ=$?
-        echo $! > $pidfile
-      else
-        exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
-        succ=$?
-        echo $! > $pidfile
-      fi
+    [ -f "$pidfile" ] && [ -n "`cat $pidfile`" ] && echo "Already running (PID `cat $pidfile`, file $pidfile)" && rm "$pidfile" && exit 0
+    printf "Starting ${0##*/}...   " | tee -a $logfile
+    if [ -e "$config" ] ; then
+      echo "Using configuration file $config" >>"$logfile"
     else
-      exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
+      echo "No configuration file" >>"$logfile"
+    fi
+    if [ -n "$user" ] ; then
+      su -l $user -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null" &
+      succ=$?
+      echo $! > $pidfile
+    elif [ -n "$group" ] ; then
+      sg -l $group -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null" &
+      succ=$?
+      echo $! > $pidfile
+    else
+      exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null &
       succ=$?
       echo $! > $pidfile
     fi
-    [[ $succ -eq 0 ]] && echo "done (PID `cat $pidfile`)" || echo "error"
+
+    [[ $succ -eq 0 ]] && [ -n "`cat $pidfile`" ] && echo "done (PID `cat $pidfile`)" || echo "error" | tee -a $logfile
     ;;
   stop)
-    if [ -f ${pidfile} ]; then
-      pid=`cat ${pidfile}|tail -1`
-      printf "Stopping ${0##*/} (pid $pid)...      "
-      rm -f $pidfile
-      kill -15 $pid && echo "done"
+    if [ -z "$config" ] ; then
+      echo "Configuration file is not defined, guessing PID file... "
+      config="${rpath}/${rcommand##*/}.conf"
+      [ -e "$config" ] || config="/etc/${rcommand##*/}.conf"
+      [ -e "$config" ] && echo "Using configuration file $config" && source $config
+      [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
+      [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
+      if [ -e "$pidfile" ] ; then
+        echo "Using PID file $pidfile"
+      else
+        echo "Unable to stop ${rcommand}, PID file not found"
+      fi
     else
-      echo "${pidfile} not found!"
+      [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
+      [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
+      if [ -f ${pidfile} ]; then
+        pid=`cat ${pidfile}|tail -1`
+        if [ -n "$pid" ] ; then
+          printf "Stopping $rcommand (pid $pid)...      "
+          rm -f $pidfile
+          kill -15 $pid && echo "done"
+        else
+          echo "Unable to stop ${rcommand}, PID file is empty"
+        fi
+      else
+        echo "${pidfile} not found!"
+      fi
     fi
     ;;
   restart)
+    
     $0 $wrapper_options stop
     sleep 3
     $0 $wrapper_options $command_options start
     ;;
   status)
+    [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
+    [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
     if [ -f ${pidfile} ]; then
       pid=`cat ${pidfile}|tail -1`
-      echo "${0##*/} is running (pid $pid)"
+      if [ -n "$pid" ] ; then
+        echo "${0##*/} is running (pid $pid)"
+      else
+        echo "${0##*/} is not running"
+      fi
     else
       echo "${0##*/} is not running"
     fi

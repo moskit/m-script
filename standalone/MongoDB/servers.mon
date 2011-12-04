@@ -1,10 +1,8 @@
 #!/bin/bash
 
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-xpath=${xcommand%/*}/
+rpath=$(cd ${xcommand%/*}/ && pwd)
 rcommand=${xcommand##*/}
-rpath=${0%/*}/${xpath}
-rpath=${rpath%/}
 #*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
@@ -49,7 +47,7 @@ function collect_hosts() {
 }
 
 function parse_data() {
-  unset timeindex day hostport status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable netIn netOut netReqn opsTotalInsert opsTotalQuery opsTotalUpdate opsTotalDelete opsTotalGetmore opsTotalCommand opsShardedInsert opsShardedQuery opsShardedUpdate opsShardedDelete opsShardedGetmore opsShardedCommand opsNotShardedInsert opsNotShardedQuery opsNotShardedUpdate opsNotShardedDelete opsNotShardedGetmore opsNotShardedCommand lockRatio lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters ops_queriesps ops_queriesps_sharded ops_queriesps_notsharded ops_insertsps ops_insertsps_sharded ops_insertsps_notsharded ops_updatesps ops_updatesps_sharded ops_updatesps_notsharded ops_deletesps ops_deletesps_sharded ops_deletesps_notsharded ops_getmoresps ops_getmoresps_sharded ops_getmoresps_notsharded ops_commandsps ops_commandsps_sharded  ops_commandsps_notsharded ops_totalqps ops_totalqps_sharded ops_totalqps_notsharded
+  unset timeindex day hostport status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable netIn netOut netReqn opcountersInsert opcountersQuery opcountersUpdate opcountersDelete opcountersGetmore opcountersCommand opsShardedInsert opsShardedQuery opsShardedUpdate opsShardedDelete opsShardedGetmore opsShardedCommand opsNotShardedInsert opsNotShardedQuery opsNotShardedUpdate opsNotShardedDelete opsNotShardedGetmore opsNotShardedCommand lockRatio lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters ops_queriesps ops_queriesps_sharded ops_queriesps_notsharded ops_insertsps ops_insertsps_sharded ops_insertsps_notsharded ops_updatesps ops_updatesps_sharded ops_updatesps_notsharded ops_deletesps ops_deletesps_sharded ops_deletesps_notsharded ops_getmoresps ops_getmoresps_sharded ops_getmoresps_notsharded ops_commandsps ops_commandsps_sharded  ops_commandsps_notsharded ops_totalqps ops_totalqps_sharded ops_totalqps_notsharded
   timeindexnow=`date +"%s"`
   lasttimeindex=`cat "${TMPDIR}/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
   echo $timeindexnow > "${TMPDIR}/${1}.lasttimeindex"
@@ -94,25 +92,25 @@ function parse_data() {
   
   # Total
   
-  opsTotalQuery_prev=`grep ^opsTotalQuery\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsTotalQuery_prev=$opsTotalQuery
-  [ -n "$opsTotalQuery" ] && ops_queriesps=`echo "scale=1; ($opsTotalQuery - $opsTotalQuery_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  opcountersQuery_prev=`grep ^opcountersQuery\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersQuery_prev=$opcountersQuery
+  [ -n "$opcountersQuery" ] && ops_queriesps=`echo "scale=1; ($opcountersQuery - $opcountersQuery_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   
-  opsTotalInsert_prev=`grep ^opsTotalInsert\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsTotalInsert_prev=$opsTotalInsert
-  [ -n "$opsTotalInsert" ] && ops_insertsps=`echo "scale=1; ($opsTotalInsert - $opsTotalInsert_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  opcountersInsert_prev=`grep ^opcountersInsert\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersInsert_prev=$opcountersInsert
+  [ -n "$opcountersInsert" ] && ops_insertsps=`echo "scale=1; ($opcountersInsert - $opcountersInsert_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   
-  opsTotalUpdate_prev=`grep ^opsTotalUpdate\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsTotalUpdate_prev=$opsTotalUpdate
-  [ -n "$opsTotalUpdate" ] && ops_updatesps=`echo "scale=1; ($opsTotalUpdate - $opsTotalUpdate_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  opcountersUpdate_prev=`grep ^opcountersUpdate\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersUpdate_prev=$opcountersUpdate
+  [ -n "$opcountersUpdate" ] && ops_updatesps=`echo "scale=1; ($opcountersUpdate - $opcountersUpdate_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   
-  opsTotalDelete_prev=`grep ^opsTotalDelete\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsTotalDelete_prev=$opsTotalDelete
-  [ -n "$opsTotalDelete" ] && ops_deletesps=`echo "scale=1; ($opsTotalDelete - $opsTotalDelete_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  opcountersDelete_prev=`grep ^opcountersDelete\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersDelete_prev=$opcountersDelete
+  [ -n "$opcountersDelete" ] && ops_deletesps=`echo "scale=1; ($opcountersDelete - $opcountersDelete_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   
-  opsTotalGetmore_prev=`grep ^opsTotalGetmore\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsTotalGetmore_prev=$opsTotalGetmore
-  [ -n "$opsTotalGetmore" ] && ops_getmoresps=`echo "scale=1; ($opsTotalGetmore - $opsTotalGetmore_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  opcountersGetmore_prev=`grep ^opcountersGetmore\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersGetmore_prev=$opcountersGetmore
+  [ -n "$opcountersGetmore" ] && ops_getmoresps=`echo "scale=1; ($opcountersGetmore - $opcountersGetmore_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   
-  opsTotalCommand_prev=`grep ^opsTotalCommand\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsTotalCommand_prev=$opsTotalCommand
-  [ -n "$opsTotalCommand" ] && ops_commandsps=`echo "scale=1; ($opsTotalCommand - $opsTotalCommand_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  opcountersCommand_prev=`grep ^opcountersCommand\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersCommand_prev=$opcountersCommand
+  [ -n "$opcountersCommand" ] && ops_commandsps=`echo "scale=1; ($opcountersCommand - $opcountersCommand_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   
-  [ -n "$opsTotalQuery" ] && ops_totalqps=`echo "scale=1; $ops_queriesps + $ops_insertsps + $ops_updatesps + $ops_deletesps + $ops_getmoresps + $ops_commandsps" | bc`
+  [ -n "$opcountersQuery" ] && ops_totalqps=`echo "scale=1; $ops_queriesps + $ops_insertsps + $ops_updatesps + $ops_deletesps + $ops_getmoresps + $ops_commandsps" | bc`
   
   # Sharded
   
@@ -167,7 +165,7 @@ function parse_data() {
   echo "Total                $ops_totalqps      $ops_totalqps_sharded      $ops_totalqps_notsharded"
   
   if [ "X$SQLITE3" == "X1" ] ; then
-    $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}')"
+    $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}')" 2>>${rpath}/MongoDB.log
   fi
   
 }
