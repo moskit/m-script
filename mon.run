@@ -29,7 +29,11 @@ tmpdir=/tmp/m_script && install -d $tmpdir
 #[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
-find ${rpath} -name mon.run.lock -mmin +$MAXLOCK | xargs rm -f && echo "Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
+lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
+if [ -f $lockfile ] ; then
+  echo "Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
+  rm -f $lockfile
+fi
 for ((i=1; i<=10; i++))
 do
   if [ -e ${rpath}/mon.run.lock ] ; then

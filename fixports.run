@@ -19,7 +19,11 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 install -d /tmp/m_script
 
-find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f && echo "Lock file is older than 60 minutes, removing" >> ${rpath}/monitoring.log
+lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +60`
+if [ -f $lockfile ] ; then
+  echo "Fixports.run: Lock file is older than 60 minutes, removing" >> ${rpath}/monitoring.log
+  rm -f $lockfile
+fi
 for ((i=1; i<=10; i++))
 do
   if [ -f ${rpath}/mon.run.lock ] ; then
