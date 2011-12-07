@@ -35,7 +35,7 @@ SSH=`which ssh 2>/dev/null`
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
+possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos"
 necessary_options="metric"
 source ${rpath}/conf/dash.conf
 RSYNC=`which rsync 2>/dev/null`
@@ -103,6 +103,9 @@ if [ "X$help" == "Xyes" ] ; then
   echo "           and places graphs one under another."
   echo "  --where=<field:value>  Additional WHERE clause for SQL query."
   echo "           Add escaped quotes to value if needed: field:\'value\'"
+  echo "  --as=<name>  New name for metric. Especially useful if metric is an" 
+  echo "           ariphmetic expression like: --metric=\"\(metric1+metric2\)\""
+  echo "  --legendpos=<left|below>"
   echo
   echo "Graph format options:"
   echo
@@ -148,7 +151,7 @@ colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "
 [ -n "$padding" ] || padding=20
 [ -n "$legend" ] || legend=60
 [ -n "$fontsize" ] || fontsize=10
-[ -n "$strokewidth" ] || strokewidth=3
+[ -n "$strokewidth" ] || strokewidth=2
 [ -n "$pointsize" ] || pointsize=12
 [ -n "$width" ] && graphH=$width
 [ -n "$height" ] && graphV=$height
@@ -269,7 +272,11 @@ metricmin=0
 metricmax=0
 # Using fixed multiplyer to avoid double querying
 mp=100
-name=`echo $metric | tr ',' '_'`
+if [ -n "$as" ] ; then
+  name=$as
+else
+  name=`echo $metric | tr ',' '_'`
+fi
 qmetric="timeindex"
 for smetric in `echo $metric | tr ',' ' '` ; do
   rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
@@ -305,9 +312,8 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   [[ $smin -lt $metricmin ]] && metricmin=$smin
   n+=1
 done
-
+sn=`echo $metric | tr ',' ' ' | wc -w`
 if [ "X$scale" == "Xyes" ] ; then
-  sn=`echo $metric | tr ',' ' ' | wc -w`
   sadd=`solve "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve "$metricmax / $sn"` 2>/dev/null || sadd=10
   snadd=0
   n=2

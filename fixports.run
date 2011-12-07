@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 install -d /tmp/m_script
 
-find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f
+find ${rpath} -name mon.run.lock -mmin +60 | xargs rm -f && echo "Lock file is older than 60 minutes, removing" >> ${rpath}/monitoring.log
 for ((i=1; i<=10; i++))
 do
   if [ -f ${rpath}/mon.run.lock ] ; then
@@ -27,6 +27,7 @@ do
     sleep 60
     continue
   else
+    echo "Fixports.run: unlocked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -34,7 +35,7 @@ if [ -f ${rpath}/mon.run.lock ] ; then
   echo "Giving up..."
   exit 1
 fi
-touch ${rpath}/mon.run.lock
+touch ${rpath}/mon.run.lock && echo "Lock file touched" >> ${rpath}/monitoring.log
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
@@ -147,4 +148,4 @@ do
   [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
 done < /tmp/m_script/netstat.sockets.tmp
 IFS=$IFS1
-rm -f ${rpath}/mon.run.lock
+rm -f ${rpath}/mon.run.lock && echo "Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
