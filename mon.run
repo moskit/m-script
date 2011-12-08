@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 MAILX=`which mail 2>/dev/null`
@@ -24,6 +23,7 @@ SQLITE=`which sqlite3 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
+echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
 #*/ (this is needed to fool vi syntax highlighting)
 tmpdir=/tmp/m_script && install -d $tmpdir
 #[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
@@ -42,7 +42,7 @@ do
     sleep 10
     continue
   else
-    echo "`date +"%H:%M:%S"` <<< unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` <<< is unlocked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -52,7 +52,7 @@ if [ -f ${rpath}/mon.run.lock ] ; then
   exit 1
 fi
 
-touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> locked" >> ${rpath}/monitoring.log
+touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> locking" >> ${rpath}/monitoring.log
 # bc workaround to make it work with floating point numbers
 solve() {
 bc << EOF
@@ -442,7 +442,8 @@ case ${1} in
     echo "Run mon.run --help to see available options"
   ;;
 esac
-rm -f ${rpath}/mon.run.lock && echo "Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
+rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
+echo  >> ${rpath}/monitoring.log
 #rm -f ${tmpdir}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
 export LC_MESSAGES=`echo ${currentlocale}`
