@@ -30,8 +30,9 @@ tmpdir=/tmp/m_script && install -d $tmpdir
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
 lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
-if [ -f $lockfile ] ; then
-  echo "Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
+if [ -n "$lockfile" ] ; then
+  ls -l $lockfile
+  echo "`date +"%H:%M:%S"` Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
   rm -f $lockfile
 fi
 for ((i=1; i<=10; i++))
@@ -41,7 +42,7 @@ do
     sleep 10
     continue
   else
-    echo " unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"`  unlocked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -50,8 +51,8 @@ if [ -f ${rpath}/mon.run.lock ] ; then
   echo "Giving up..." >> ${rpath}/monitoring.log
   exit 1
 fi
-echo "== Running $0 $* ==" >> ${rpath}/monitoring.log
-touch ${rpath}/mon.run.lock && echo "Lock file touched" >> ${rpath}/monitoring.log
+echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
+touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` Lock file touched" >> ${rpath}/monitoring.log
 # bc workaround to make it work with floating point numbers
 solve() {
 bc << EOF
@@ -115,6 +116,7 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
+        echo "`date +"%H:%M:%S"` $rscript"
         $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
@@ -124,7 +126,7 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        [ -f "$rscript" ] && $rscript SQL
+        [ -f "$rscript" ] && echo "`date +"%H:%M:%S"` $rscript" && $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
@@ -134,7 +136,7 @@ function runscript() {
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
     echo > "${rpath}/report"
     for mon in `echo ${1} | sed 's|,| |g'` ; do
-      [ -x "${rpath}/tests/${mon}" ] && ${rpath}/tests/${mon} $SQL 2>&1 | tee -a "${rpath}/report" >/dev/null #*/
+      [ -x "${rpath}/tests/${mon}" ] && echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log" && ${rpath}/tests/${mon} $SQL 2>&1 | tee -a "${rpath}/report" >/dev/null #*/
     done
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
