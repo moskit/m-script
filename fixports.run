@@ -32,7 +32,7 @@ do
     sleep 60
     continue
   else
-    echo "`date +"%H:%M:%S"` <<< Fixports.run: is unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` Fixports.run: is unlocked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -153,5 +153,5 @@ do
   [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
 done < /tmp/m_script/netstat.sockets.tmp
 IFS=$IFS1
-rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
+rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` <<< Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
 echo  >> ${rpath}/monitoring.log

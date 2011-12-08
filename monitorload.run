@@ -78,7 +78,7 @@ start)
 
   while true
   do
-  # Checking how much the load average has changed
+  # Checking how much load average has changed
     rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
     rload="$(cat /proc/loadavg | cut -d' ' -f2 | tee $tempfile)"
     rloadabs=${rload%.*} ; [ "X$rloadabs" == "X" ] && rloadabs=0
@@ -90,6 +90,11 @@ start)
 
 ### Tests that run if load has changed - we're interested in various metrics here
     if [ "X$x" == "X1" ]; then
+## A pause is necessary here, because it is practically the same moment as test
+## at line 114 from the previous run, so lock file doesn't really work.
+## But the full cycle is not a good idea because we want to know what caused
+## the load. So we need just some delay to secure the lock.
+      sleep 10
 ## If load is not too high, all tests run
       if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
         ${rpath}/mon.run -ao </dev/null &
@@ -97,8 +102,6 @@ start)
 ## otherwise, these tests only
         ${rpath}/mon.run mem.mon </dev/null &
       fi
-      sleep $FREQ
-      continue
     fi
 
     sleep $FREQ

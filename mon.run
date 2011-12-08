@@ -42,7 +42,7 @@ do
     sleep 10
     continue
   else
-    echo "`date +"%H:%M:%S"` <<< is unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` is unlocked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -442,7 +442,7 @@ case ${1} in
     echo "Run mon.run --help to see available options"
   ;;
 esac
-rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
+rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` << Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
 echo  >> ${rpath}/monitoring.log
 #rm -f ${tmpdir}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
