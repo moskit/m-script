@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 MAILX=`which mail 2>/dev/null`
@@ -31,8 +31,8 @@ tmpdir=/tmp/m_script && install -d $tmpdir
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
 lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
 if [ -n "$lockfile" ] ; then
-  ls -l $lockfile
-  echo "`date +"%H:%M:%S"` Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
+  ls -l $lockfile >> ${rpath}/monitoring.log
+  echo "`date +"%H:%M:%S"` *** Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
   rm -f $lockfile
 fi
 for ((i=1; i<=10; i++))
@@ -42,7 +42,7 @@ do
     sleep 10
     continue
   else
-    echo "`date +"%H:%M:%S"`  unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` <<< unlocked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -51,8 +51,8 @@ if [ -f ${rpath}/mon.run.lock ] ; then
   echo "Giving up..." >> ${rpath}/monitoring.log
   exit 1
 fi
-echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
-touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` Lock file touched" >> ${rpath}/monitoring.log
+
+touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> locked" >> ${rpath}/monitoring.log
 # bc workaround to make it work with floating point numbers
 solve() {
 bc << EOF
