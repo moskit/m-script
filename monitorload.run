@@ -178,7 +178,7 @@ start)
       # Standalone tests, if any
       for sa in ${rpath}/standalone/rc/* ; do
         for satest in ${sa}/rc/* ; do
-          $satest >> ${rpath}/sa.log
+          $satest >> ${rpath}/sa.log 2>&1
         done  </dev/null &
       done
     else

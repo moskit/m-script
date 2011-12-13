@@ -73,32 +73,37 @@ else
   archname="${2}"
 fi
 
-if [ "X$mongodblist" == "X" ]; then
-  mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>${rpath}/m_backup.error
-fi
-
-for db in $mongodblist
-do
-  skipdb=-1
-  if [ "$mongodbexclude" != "" ]; then
-  	for i in $mongodbexclude
-  	do
-  	  [ "$db" == "$i" ] && skipdb=1 || :
-  	done
-  fi
+if [ -n "$mongodbpertableconf" ] ; then
   
-  if [ "$skipdb" == "-1" ]; then
-### Works if version >= 1.7, avoids intermediate space usage by uncompressed dumps
-### Note that it doesn't dump indexes
-#    if [ -n "$compress" ] ; then
-#    for collection in `mongo $DBHOST/$db --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
-#      $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "${MBD}/${db}.${archname}/${collection}.bson.${ext}" 2>>${rpath}/m_backup.error
-#    done
-#    fi
-    $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
-    [ -n "$TAR" ] && $TAR "${MBD}/${db}.${archname}.tar.${ext}" "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
-    rm -rf "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
+else
+  if [ "X$mongodblist" == "X" ]; then
+    mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>${rpath}/m_backup.error
   fi
-done
 
+  for db in $mongodblist
+  do
+    skipdb=-1
+    if [ "$mongodbexclude" != "" ]; then
+    	for i in $mongodbexclude
+    	do
+    	  [ "$db" == "$i" ] && skipdb=1 || :
+    	done
+    fi
+    
+    if [ "$skipdb" == "-1" ]; then
+  ### Works if version >= 1.7, avoids intermediate space usage by uncompressed dumps
+  ### Note that it doesn't dump indexes
+  #    if [ -n "$compress" ] ; then
+  #    for collection in `mongo $DBHOST/$db --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
+  #      $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "${MBD}/${db}.${archname}/${collection}.bson.${ext}" 2>>${rpath}/m_backup.error
+  #    done
+  #    fi
+  # --------------------
+  # 
+      $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+      [ -n "$TAR" ] && $TAR "${MBD}/${db}.${archname}.tar.${ext}" "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
+      rm -rf "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
+    fi
+  done
+fi
 

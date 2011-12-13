@@ -18,9 +18,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 SSH=`which ssh 2>/dev/null`
-[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task"
-necessary_options="cluster task"
+possible_options="help verbose ip cluster type file key"
+necessary_options="file type"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -58,46 +57,38 @@ if [ "X$help" == "Xyes" ] ; then
 
   exit 0
 fi
+date >> "${rpath}/../deploy.log"
+echo "-------------------" >> "${rpath}/../deploy.log"
+echo "${0} $*" >> "${rpath}/../deploy.log"
+echo >> "${rpath}/../deploy.log"
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
-# This may change in the future
-role=$cluster
-if [ -z "$ip" ] && [ -n "$cloud" ] ; then
-  ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
-elif [ -z "$cloud" ] ; then
-  echo "Either --ip or --cloud must be defined"
-  exit 1
-fi
-if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
-  echo "Something's wrong with IP: $ip"
-  exit 1
-fi
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-if [ `echo $IP | grep -c "$localip"` -eq 0 ] ; then
-  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
-  [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
-  [ -f "${rpath}/keys/${KEY}" ] || KEY=${KEY}.pem
-  [ -f "${rpath}/keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
-  SSH="$SSH -i \"${rpath}/keys/${KEY}\" -o StrictHostKeyChecking=no"
-  $SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
-  [ -z "$SCP" ] && echo "SCP not found!" && exit 1
-  while read meta ; do
-    metatype=`echo $meta | awk '{print $1}'`
-    metascript=`echo $meta | awk '{print $2}'`
-    deploy.run --type=$metatype --file=$metascript --ip=$IP --key="$KEY" --cluster="$cluster"
-  done<${ROLES_ROOT}/${role}/meta.${task}
-
+if [ "$type" == "$remote" ] ; then
+  if [ -z "$cluster" ] && [ -n "$ip" ] ; then
+    cluster=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f5`
+    [ -z "$cluster" ] && echo "Unable to find cluster name" && exit 1
+  fi
+  M_ROOT_REMOTE=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f8`
+  [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
+  [ -n "$key" ] || key=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  if [ -n "$ip" ] && [ -z "$key" ] ; then
+    key=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f2`
+  fi
+  [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
+  [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" ; exit 1)
+  while read LINE ; do
+    echo "`date +"%H:%M:%S"` $LINE" >> "${rpath}/../deploy.log"
+    $SSH -i ${rpath}/../keys/${key} ${ip} "$LINE" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  done<$file
+else # type == local
+  while read LINE ; do
+    echo "`date +"%H:%M:%S"` $LINE" >> "${rpath}/../deploy.log"
+    eval "$LINE" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  done<$file
 fi
 
-#echo "Preparing the keys"
-#if [ -f /root/.ssh/id_rsa.pub ] ; then
-#  echo "Using existing key"
-#else
-#  printf "Generating a new key..  "
-#  ssh-keygen -q -f /root/.ssh/id_rsa -N '' && printf "done\n" || printf "error\n"
-#fi
-    
-    
-    
+
+
+
+

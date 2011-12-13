@@ -479,7 +479,7 @@ bconf=`basename ${backupconf}`
       S3OPTS="${s3options}"
       [ "X$remotepath" == "X" ] || remotepath="${remotepath%/}/"
 #      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && S3OPTS="${S3OPTS} -v" && echo "S3 options are: ${S3OPTS}" >> ${rpath}/m_backup.log
-      s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${remotehost}/${remotepath}" 2>/tmp/m_script/$archname.s3.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${remotehost}/${remotepath%/}/" 2>/tmp/m_script/$archname.s3.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       s3time=`expr $s3time + 1`
       if [ "X$debugflag" != "X" ]
@@ -860,7 +860,7 @@ bconf=`basename ${backupconf}`
   fi
   cat ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
   cat ${rpath}/m_backup.log >> ${locallogpath}/logs/m_backup.log
-  rm -f ${rpath}/m_backup.*
+  rm -f ${rpath}/m_backup.{error,log}
   rm -f /tmp/m_script/$archname*log
 ### Now it's time to restore some environment variables
   export RSYNC_RSH="${RSYNC_RSH_BK}"

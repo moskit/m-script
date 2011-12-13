@@ -1,8 +1,18 @@
 #!/bin/bash
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rpath=$(cd ${xcommand%/*}/ && pwd)
-rcommand=${xcommand##*/}
+[[ $0 =~ ^\/ ]] && rroot='/'
+for step in `echo ${0} | tr '/' ' '` ; do
+  rlink=`readlink "${rroot}${rpath}${step}"`
+  if [ -n "$rlink" ] ; then
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" || rpath="${rpath}${rlink}/"
+  else
+    rpath="${rpath}${step}/"
+  fi
+done
+rpath=${rpath%/}
+rcommand=${rpath##*/}
+rpath="${rroot}${rpath%/*}"
+echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 #*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
@@ -30,6 +40,16 @@ function find_master() {
   [ -n "$im" ] && echo $im || (echo "Unable to find master for replica set (asked ${1})" >> ${rpath}/../../logs/MongoDB.log && exit 1)
 }
 
+function find_rsmemberrole() {
+  rsmemberrole='|slave'
+  members=`mongo ${1}/config --quiet --eval "rs.conf().members.forEach(printjson)" | lib/json2txt`
+  membernum=`echo "$members"|grep "${1}" | cut -d'/' -f1`
+  arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
+  [ $arbiter -eq 1 ] && rsmemberrole='|arbiter'
+  master=`find_master "${1}"`
+  [ -n "$master" ] && [ "$master" == "${1}" ] && rsmemberrole='|master'
+}
+
 function ip_to_name() {
   rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
   [ -n "$rname1" ] && rname2=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $3}'` || rname=${1%:*}
@@ -51,12 +71,11 @@ function parse_data() {
   timeindexnow=`date +"%s"`
   lasttimeindex=`cat "${TMPDIR}/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
   echo $timeindexnow > "${TMPDIR}/${1}.lasttimeindex"
-  for d in `cat "${rpath}/data/${1}.dat"` ; do
+  for d in `cat "${rpath}/data/${1}.dat" | grep \|` ; do
     eval "`echo "$d" | sed 's_|_=_'`"
   done
-  echo
-  echo "Server ${1}"
-  echo "---------------------------"
+  echo "Server ${1} ** `date`"
+  echo "-----------------------------------------"
   echo
   echo " Status"
   echo
@@ -233,9 +252,9 @@ else
     # Is it a part of replica set?
     if [ "X`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
       replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
+      find_rsmemberrole "${mongohost}:${mongoport}"
     fi
-    # Writing it down as a host|replica pair
-    echo "${mongohost}:${mongoport}|${replicaset}" >> "${TMPDIR}/mongo_servers.list"
+    echo "${mongohost}:${mongoport}|${replicaset}${rsmemberrole}" >> "${TMPDIR}/mongo_servers.list"
   done
   
   # Getting hosts list for every found replica set

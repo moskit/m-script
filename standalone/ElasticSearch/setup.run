@@ -1,0 +1,10 @@
+#!/bin/bash
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/
+
+source "${rpath}/../../conf/mon.conf"
+[ -n "$SQLITE3" ] && [ "X$SQLITE3" == "X1" ] && `which sqlite3 2>/dev/null` "${rpath}/elasticsearch.sql3" "CREATE TABLE servers(timeindex integer, day varchar(8), hostport text, status integer, version varchar(8), uptime integer, memRes integer, memVir integer, memMapped integer, memMappedWJournal integer, infoHeapUsage integer, connCurrent integer, connAvailable integer, netIn integer, netOut integer, netReqn integer, opsTotalInsert integer, opsTotalQuery integer, opsTotalUpdate integer, opsTotalDelete integer, opsTotalGetmore integer, opsTotalCommand integer, opsShardedInsert integer, opsShardedQuery integer, opsShardedUpdate integer, opsShardedDelete integer, opsShardedGetmore integer, opsShardedCommand integer, opsNotShardedInsert integer, opsNotShardedQuery integer, opsNotShardedUpdate integer, opsNotShardedDelete integer, opsNotShardedGetmore integer, opsNotShardedCommand integer, lockRatio integer, lockQueueTotal integer, lockQueueReaders integer, lockQueueWriters integer, lockClientsTotal integer, lockClientsReaders integer, lockClientsWriters integer, PRIMARY KEY(timeindex, hostport))"
+
