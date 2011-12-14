@@ -17,7 +17,11 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+
+source "${rpath}/../conf/cloud.conf"
+[ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
+SCP=`which scp 2>/dev/null`
 possible_options="help verbose ip cluster type file key"
 necessary_options="file type"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -64,6 +68,7 @@ echo >> "${rpath}/../deploy.log"
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
+timestamp=`date +"%y_%m_%d_%H_%M"`
 if [ "$type" == "$remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
     cluster=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f5`
@@ -77,15 +82,15 @@ if [ "$type" == "$remote" ] ; then
   fi
   [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
   [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" ; exit 1)
-  while read LINE ; do
-    echo "`date +"%H:%M:%S"` $LINE" >> "${rpath}/../deploy.log"
-    $SSH -i ${rpath}/../keys/${key} ${ip} "$LINE" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  done<$file
+  echo "`date +"%H:%M:%S"` $file" >> "${rpath}/../deploy.log"
+  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d /root/server.deploy.tmp/${file}.${timestamp}
+  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${file}" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/"
+  [ -f "${ROLES_ROOT}/${cluster}/role.conf" ] && $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${cluster}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
+  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/})" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 else # type == local
-  while read LINE ; do
-    echo "`date +"%H:%M:%S"` $LINE" >> "${rpath}/../deploy.log"
-    eval "$LINE" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  done<$file
+  install -d /root/server.deploy.tmp/${file}.${timestamp}
+  cp "${ROLES_ROOT}/${cluster}/role.conf" "/root/server.deploy.tmp/${file}.${timestamp}/"
+  (source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/}) >> "${rpath}/../deploy.log" 2>&1
 fi
 
 
