@@ -32,7 +32,8 @@ source "${rpath}/../../conf/cloud.conf"
 RSYNC=`which rsync 2>/dev/null`
 [ -z "$RSYNC" ] && echo "Rsync utility not found, trying scp"
 SCP=`which scp 2>/dev/null`
-[ -n "$SCP" ] && [ -z "$RSYNC" ] && echo "Using scp" || (echo "Neither rsync nor scp is found. Exiting" && exit 1)
+[ -n "$SCP" ] && [ -z "$RSYNC" ] && echo "Using scp"
+[ -z "$SCP" ] && [ -z "$RSYNC" ] && echo "Neither rsync nor scp is found. Exiting" && exit 1
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
@@ -122,8 +123,8 @@ if [ "X$command" != "X" ] ; then
       echo "### Server: $server"
       echo
     fi
-    [ -f "$KEY" ] || KEY="${KEY}.pem"
-    [ -f "$KEY" ] || (echo "Key not found for IP $IP" && continue)
+    [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
+    [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
     if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       cp -up $from $to
     else
