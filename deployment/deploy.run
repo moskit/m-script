@@ -86,11 +86,11 @@ if [ "$type" == "$remote" ] ; then
   $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d /root/server.deploy.tmp/${file}.${timestamp}
   $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${file}" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/"
   [ -f "${ROLES_ROOT}/${cluster}/role.conf" ] && $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${cluster}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
-  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/})" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE=\"$cluster\" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/})" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 else # type == local
   install -d /root/server.deploy.tmp/${file}.${timestamp}
   cp "${ROLES_ROOT}/${cluster}/role.conf" "/root/server.deploy.tmp/${file}.${timestamp}/"
-  (source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/}) >> "${rpath}/../deploy.log" 2>&1
+  (source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE="$cluster" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/}) >> "${rpath}/../deploy.log" 2>&1
 fi
 
 
