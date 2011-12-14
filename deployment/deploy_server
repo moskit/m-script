@@ -78,20 +78,21 @@ if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
   exit 1
 fi
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-if [ `echo $IP | grep -c "$localip"` -eq 0 ] ; then
+if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
   [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
   [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
   [ -f "${rpath}/../keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
-  SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
-  $SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
+  #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
+  $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
   [ -z "$SCP" ] && echo "SCP not found!" && exit 1
   while read meta ; do
     metatype=`echo $meta | awk '{print $1}'`
     metascript=`echo $meta | awk '{print $2}'`
+    metascript=`eval "echo $metascript"`
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$IP --key="$KEY" --cluster="$cluster" --role="$role"
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role"
     fi
   done<${ROLES_ROOT}/${role}/meta.${task}
 
