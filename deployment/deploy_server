@@ -18,6 +18,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 SSH=`which ssh 2>/dev/null`
+SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="help verbose flavor ip cloud run cluster task role"
 necessary_options="cluster task"
@@ -66,10 +67,12 @@ export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/h
 
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
   ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
-elif [ -z "$cloud" ] ; then
+fi
+if [ -z "$cloud" ] && [ -z "$ip" ] ; then
   echo "Either --ip or --cloud must be defined"
   exit 1
 fi
+
 if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
   echo "Something's wrong with IP: $ip"
   exit 1
@@ -79,16 +82,16 @@ if [ `echo $IP | grep -c "$localip"` -eq 0 ] ; then
   KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
   [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
   [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
-  [ -f "${rpath}/keys/${KEY}" ] || KEY=${KEY}.pem
-  [ -f "${rpath}/keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
-  SSH="$SSH -i \"${rpath}/keys/${KEY}\" -o StrictHostKeyChecking=no"
+  [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
+  [ -f "${rpath}/../keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
+  SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
   $SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
   [ -z "$SCP" ] && echo "SCP not found!" && exit 1
   while read meta ; do
     metatype=`echo $meta | awk '{print $1}'`
     metascript=`echo $meta | awk '{print $2}'`
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$IP --key="$KEY" --cluster="$cluster"
+      deploy.run --type=$metatype --file=$metascript --ip=$IP --key="$KEY" --cluster="$cluster" --role="$role"
     fi
   done<${ROLES_ROOT}/${role}/meta.${task}
 

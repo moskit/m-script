@@ -22,7 +22,7 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose ip cluster type file key"
+possible_options="help verbose ip cluster type file key role"
 necessary_options="file type"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -85,11 +85,11 @@ if [ "$type" == "$remote" ] ; then
   echo "`date +"%H:%M:%S"` $file" >> "${rpath}/../deploy.log"
   $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d /root/server.deploy.tmp/${file}.${timestamp}
   $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${file}" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/"
-  [ -f "${ROLES_ROOT}/${cluster}/role.conf" ] && $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${cluster}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
+  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${role}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
   $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE=\"$cluster\" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/})" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 else # type == local
   install -d /root/server.deploy.tmp/${file}.${timestamp}
-  cp "${ROLES_ROOT}/${cluster}/role.conf" "/root/server.deploy.tmp/${file}.${timestamp}/"
+  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && cp "${ROLES_ROOT}/${role}/role.conf" "/root/server.deploy.tmp/${file}.${timestamp}/"
   (source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE="$cluster" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/}) >> "${rpath}/../deploy.log" 2>&1
 fi
 
