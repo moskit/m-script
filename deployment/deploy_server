@@ -92,7 +92,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     metascript=`echo $meta | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor"
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" || exit 1
     fi
   done<${ROLES_ROOT}/${role}/meta.${task}
 
