@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 SSH=`which ssh 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task"
+possible_options="help verbose flavor ip cloud run cluster task role"
 necessary_options="cluster task"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -61,8 +61,9 @@ fi
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
-# This may change in the future
-role=$cluster
+
+[ -z "$role" ] && role=$cluster
+
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
   ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
 elif [ -z "$cloud" ] ; then
