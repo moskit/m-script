@@ -84,7 +84,8 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
             printf "$pidfile\n"
             echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
           else
-            echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist!"
+            echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist! Removing"
+            rm -f $pidfile
           fi
         fi
         unset skip
@@ -101,7 +102,8 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
       printf "$thepath\n"
       echo "$thepath|$pid" >> /tmp/m_script/services.tmp
     else
-      echo "<***> Stale pidfile found: $thepath. Process with ID $pid doesn't exist!"
+      echo "<***> Stale pidfile found: $thepath. Process with ID $pid doesn't exist! Removing"
+      rm -f $pidfile
     fi
   else
     echo "<***> Path $thepath doesn't exist!"
