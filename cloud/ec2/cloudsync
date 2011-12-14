@@ -32,7 +32,7 @@ source "${rpath}/../../conf/cloud.conf"
 RSYNC=`which rsync 2>/dev/null`
 [ -z "$RSYNC" ] && echo "Rsync utility not found, trying scp"
 SCP=`which scp 2>/dev/null`
-[ -n "$SCP" ] && echo "Using scp" || (echo "Neither rsync nor scp is found. Exiting" && exit 1)
+[ -n "$SCP" ] && [ -z "$RSYNC" ] && echo "Using scp" || (echo "Neither rsync nor scp is found. Exiting" && exit 1)
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
@@ -128,7 +128,7 @@ if [ "X$command" != "X" ] ; then
       cp -up $from $to
     else
       if [ -n "$RSYNC" ] ; then
-        $RSYNC ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "$from" "${IP}:${to}"
+        $RSYNC ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "$from" "${IP}:${to}" || $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT ${r} "$from" "${IP}:${to}"
       else
         $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT ${r} "$from" "${IP}:${to}"
       fi

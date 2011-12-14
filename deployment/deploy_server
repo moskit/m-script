@@ -94,7 +94,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" || exit 1
     fi
-  done<${ROLES_ROOT}/${role}/meta.${task}
+  done < ${ROLES_ROOT}/${role}/meta.${task}
 
 fi
 
