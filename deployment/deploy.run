@@ -22,7 +22,7 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose ip cluster type file key role"
+possible_options="help verbose ip cluster type file key role flavor"
 necessary_options="file type"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -84,13 +84,18 @@ if [ "$type" == "$remote" ] ; then
   [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" ; exit 1)
   echo "`date +"%H:%M:%S"` $file" >> "${rpath}/../deploy.log"
   $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d /root/server.deploy.tmp/${file}.${timestamp} >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${file}" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${file}" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1 || exit 1
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${role}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
-  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE=\"$cluster\" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/})" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  result=$($SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE=\"$cluster\" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)")
+  printf "$result" >> "${rpath}/../deploy.log"
+  [ `printf "$result" | grep -c ERROR` -gt 0 ] && exit 1
 else # type == local
   install -d /root/server.deploy.tmp/${file}.${timestamp}
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && cp "${ROLES_ROOT}/${role}/role.conf" "/root/server.deploy.tmp/${file}.${timestamp}/"  >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  (source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE="$cluster" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/}) >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  cp "${ROLES_ROOT}/${file}" "/root/server.deploy.tmp/${file}.${timestamp}/"  >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  result=$((source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export ROLE="$cluster" && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR))
+  printf "$result" >> "${rpath}/../deploy.log"
+  [ `printf "$result" | grep -c ERROR` -gt 0 ] && exit 1
 fi
 
 
