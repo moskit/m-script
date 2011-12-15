@@ -116,7 +116,7 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        echo "`date +"%H:%M:%S"` $rscript"
+        echo "`date +"%H:%M:%S"` $rscript" >> "${rpath}/monitoring.log"
         $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
@@ -126,7 +126,7 @@ function runscript() {
       do
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
-        [ -f "$rscript" ] && echo "`date +"%H:%M:%S"` $rscript" && $rscript SQL
+        [ -f "$rscript" ] && echo "`date +"%H:%M:%S"` $rscript" >> "${rpath}/monitoring.log" && $rscript SQL
         time1=`date +"%s"`
         $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null

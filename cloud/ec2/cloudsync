@@ -130,9 +130,9 @@ if [ "X$command" != "X" ] ; then
     else
       if [ -n "$RSYNC" ] ; then
         $RSYNC ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "$from" "${IP}:${to}"
-        [ $? -eq 0 ] || (echo "Rsync failed, trying scp" && $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT ${r} "$from" "${IP}:${to}" || echo "ERROR: Unable to cloudsync")
+        [ $? -eq 0 ] || (printf "Rsync failed, trying scp ...  " && $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT ${r} "$from" "${IP}:${to}" && echo "Success" || echo "ERROR: Unable to cloudsync")
       else
-        $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT ${r} "$from" "${IP}:${to}" || echo "ERROR: Unable to cloudsync"
+        $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT ${r} "$from" "${IP}:${to}"  && echo "Success" || echo "ERROR: Unable to cloudsync"
       fi
     fi
   done
