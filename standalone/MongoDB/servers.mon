@@ -42,11 +42,11 @@ function find_master() {
 
 function find_rsmemberrole() {
   rsmemberrole='|slave'
-  members=`mongo ${1}/config --quiet --eval "rs.conf().members.forEach(printjson)" | lib/json2txt`
+  master=`find_master "${1}"`
+  members=`mongo ${master}/config --quiet --eval "rs.conf().members.forEach(printjson)" | "${rpath}/../../lib/json2txt"`
   membernum=`echo "$members"|grep "${1}" | cut -d'/' -f1`
   arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
   [ $arbiter -eq 1 ] && rsmemberrole='|arbiter'
-  master=`find_master "${1}"`
   [ -n "$master" ] && [ "$master" == "${1}" ] && rsmemberrole='|master'
 }
 
@@ -60,6 +60,7 @@ function ip_to_name() {
 function collect_hosts() {
   for name in $@ ; do
     port=${name#*:}
+    [ "X$port" == "X$name" ] && port=""
     ip_to_name $name
     [ -n "$port" ] || port=$defaultport
     configips="$configips ${rname}:$port"
@@ -247,8 +248,7 @@ else
   # For hosts from servers.conf
   for mongohost in $configips ; do
     mongoport=${mongohost##*:}
-    ip_to_name ${mongohost}
-    mongohost="$rname"
+    mongohost="${mongohost%:*}"
     # Is it a part of replica set?
     if [ "X`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
       replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
@@ -259,7 +259,7 @@ else
   
   # Getting hosts list for every found replica set
   for rs in `cat "${TMPDIR}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
-    for rshost in `cat "${TMPDIR}/mongo_servers.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
+    for rshost in `cat "${TMPDIR}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
       replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
@@ -268,7 +268,8 @@ else
       [ `grep -c "^${replicahost}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
       [ `grep -c "^${rname}:${replicahost##*:}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
-      echo "${replicahost}|${rs}" >> "${TMPDIR}/mongo_servers.list"
+      find_rsmemberrole "${replicahost}"
+      echo "${rname}:${replicahost##*:}|${rs}" >> "${TMPDIR}/mongo_servers.list"
     done
 
   done
