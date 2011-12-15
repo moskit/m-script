@@ -105,7 +105,7 @@ function parse_data() {
   net_reqps=`echo "scale=1; ($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   echo "Network requests per second:   $net_reqps"
   echo
-  echo " Queries"
+  echo " Queries / second"
   echo
   echo " Query Type         Total       Sharded       Not Sharded"
   echo
@@ -269,7 +269,7 @@ else
       ip_to_name ${replicahost}
       [ `grep -c "^${rname}:${replicahost##*:}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
       find_rsmemberrole "${replicahost}"
-      echo "${rname}:${replicahost##*:}|${rs}" >> "${TMPDIR}/mongo_servers.list"
+      echo "${rname}:${replicahost##*:}|${rs}${rsmemberrole}" >> "${TMPDIR}/mongo_servers.list"
     done
 
   done

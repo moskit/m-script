@@ -519,5 +519,17 @@ div.right {
   margin-left: 2px;
 }
 
+.master {
+  color: red;
+  float: right;
+}
 
+.slave {
+  color: blue;
+  float: right;
+}
 
+.arbiter {
+  color: gray;
+  float: right;
+}
