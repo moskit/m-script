@@ -74,7 +74,16 @@ else
 fi
 
 if [ -n "$mongodbpertableconf" ] ; then
-  
+  IFS1=$IFS
+  IFS='
+'
+  for table in `cat "$mongodbpertableconf" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+    db=`echo $table | cut -d'|' -f1`
+    coll=`echo $table | cut -d'|' -f2`
+    bktype=`echo $table | cut -d'|' -f3`
+    
+  done
+  IFS=$IFS1
 else
   if [ "X$mongodblist" == "X" ]; then
     mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>${rpath}/m_backup.error

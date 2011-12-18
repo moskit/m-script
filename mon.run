@@ -346,11 +346,11 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=dash --css=${indic}${1} ${rpath}/report 2>${rpath}/dashboard.log
+      ${rpath}/genhtml --type=dash --css=${indic}${1} ${rpath}/report 2>>${rpath}/dashboard.log
 # sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\&quot\;|g'|while read line ; do echo -n "$line" ; done
       ;;
     JSON)
-      ${rpath}/genjson --type=dash --css=${indic}${1} "`${rpath}/lib/txt2html ${rpath}/report`" 2>${rpath}/dashboard.log
+      ${rpath}/genjson --type=dash --css=${indic}${1} "`${rpath}/lib/txt2html ${rpath}/report`" 2>>${rpath}/dashboard.log
       ;;
   esac
 }
