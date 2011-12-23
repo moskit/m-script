@@ -231,7 +231,8 @@ fi
 
 [ -z "$database" ] && database="sysdata"
 dbname=`echo "$database" | tr '/' '_'`
-[ -z "$table" ] && table="sysdata"
+[ -z "$table" ] && table="sysdata" || dbname="${dbname}_${table}"
+[ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
 
 ######     Getting min and max values from database
 

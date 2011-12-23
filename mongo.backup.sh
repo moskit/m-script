@@ -81,7 +81,29 @@ if [ -n "$mongodbpertableconf" ] ; then
     db=`echo $table | cut -d'|' -f1`
     coll=`echo $table | cut -d'|' -f2`
     bktype=`echo $table | cut -d'|' -f3`
-    
+    case bktype in
+      full)
+        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+        [ -n "$TAR" ] && $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error
+        rm -rf "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error
+        ;;
+      periodic)
+        install -d "${rpath}/var/mongodb"
+        if [ -f "${rpath}/var/mongodb/${table}.lastid" ] ; then
+          lastid=`cat "${rpath}/var/mongodb/${table}.lastid"`
+          if [ -n "$lastid" ] ; then
+            
+          else
+            echo "File ${rpath}/var/mongodb/${table}.lastid exists but empty. Collection $table is not backuped!" >> ${rpath}/m_backup.error
+          fi
+        else
+          echo "File ${rpath}/var/mongodb/${table}.lastid doesn't exist. Collection $table is not backuped!" >> ${rpath}/m_backup.error
+        fi
+        ;;
+      *)
+        echo "Don't know how to do $bktype backup" >> ${rpath}/m_backup.error
+      ;;
+    esac
   done
   IFS=$IFS1
 else
