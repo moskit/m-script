@@ -90,7 +90,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   IFS1=$IFS
   IFS='
 '
-  for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do
+  for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     echo "*** META: $meta"
     metatype=`echo $meta | awk '{print $1}'`
     metascript=`echo $meta | awk '{print $2}'`
