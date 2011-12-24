@@ -152,7 +152,7 @@ IFS1=$IFS; IFS='
     level=`echo $confline | cut -d'%' -f2`
     action=`echo $confline | cut -d'%' -f3`
     while read line ; do
-      [[ $line =~ $pattern ]] && echo && echo "Action initiated: $action" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log && echo
+      [[ $line =~ $pattern ]] && echo && echo "Action initiated: $action" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
     done<"${rpath}/alert$level"
   done
 IFS=$IFS1

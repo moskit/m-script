@@ -99,7 +99,7 @@ if [ "$type" == "remote" ] ; then
     $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "/root/server.deploy.tmp/${file}.${timestamp}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
   fi
   # run the script, catch the output, exit if non-zero status
-  result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)"`
+  result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export cluster=$cluster && export type=$type && export file=$file && export role=$role && export flavor=$flavor && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)"`
   printf "${result}\n" >> "${rpath}/../deploy.log"
   [ `printf "${result}\n" | grep -c ERROR` -gt 0 ] && exit 1
 elif [ "$type" == "local" ] ; then
@@ -112,7 +112,7 @@ elif [ "$type" == "local" ] ; then
 ' ; for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; eval "echo $ELINE" >> /root/server.deploy.tmp/${file}.${timestamp}/role.conf; done ; IFS=$IFS1
   fi
   cp "${ROLES_ROOT}/${file}" "/root/server.deploy.tmp/${file}.${timestamp}/"  >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  result=`(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)`
+  result=`(source "${rpath}/../conf/deployment.conf" && source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export cluster=$cluster && export type=$type && export file=$file && export role=$role && export flavor=$flavor && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)`
   printf "${result}\n" >> "${rpath}/../deploy.log"
   [ `printf "${result}\n" | grep -c ERROR` -gt 0 ] && exit 1
 else
