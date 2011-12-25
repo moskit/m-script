@@ -20,8 +20,8 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role"
-necessary_options="cluster task"
+possible_options="help verbose flavor ip cloud run cluster task role timestamp"
+necessary_options="cluster role task"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -63,8 +63,6 @@ source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
 
-[ -z "$role" ] && role=$cluster
-
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
   ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
 fi
@@ -72,11 +70,11 @@ if [ -z "$cloud" ] && [ -z "$ip" ] ; then
   echo "Either --ip or --cloud must be defined"
   exit 1
 fi
-
 if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
   echo "Something's wrong with IP: $ip"
   exit 1
 fi
+
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
@@ -87,21 +85,31 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
   $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
   [ -z "$SCP" ] && echo "SCP not found!" && exit 1
+
+  ${rpath}/test_meta --flavor=$flavor --task=$task --role=$role || exit 1
+  
+  [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
+  [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
+  install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
+
   IFS1=$IFS
   IFS='
 '
   for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+    [ `grep -c "^${meta}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $meta" >> "${rpath}/../deploy.log" && continue
     echo "*** META: $meta"
     metatype=`echo $meta | awk '{print $1}'`
     metascript=`echo $meta | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
     printf "== type: $metatype  script: $metascript  ..  "
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" && echo "OK" || (echo "ERROR" ; exit 1)
-      [ $? -ne 0 ] && exit 1
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" && echo "OK" || (echo "ERROR" ; exit 1)
+      [ $? -ne 0 ] && exit 1 || echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log"
     fi
   done
   IFS=$IFS1
+else
+  echo "Setting up self is not supported"
 fi
 
 #echo "Preparing the keys"

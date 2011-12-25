@@ -22,7 +22,7 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose ip cluster type file key role flavor"
+possible_options="help verbose ip cluster type file key role flavor timestamp task"
 necessary_options="file type"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -69,7 +69,23 @@ echo >> "${rpath}/../deploy.log"
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
-timestamp=`date +"%y_%m_%d_%H_%M"`
+
+[ -z "$task" ] && task="notask"
+[ -z "$role" ] && role="norole"
+[ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
+[ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
+install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
+
+IFS1=$IFS; IFS='
+'
+# prepare the role config
+if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
+  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; eval "echo $ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" ; done
+  for option in `echo $possible_options | sed 's/,//g'`; do
+    echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf"
+  done
+fi
+  
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
     cluster=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f5`
@@ -84,43 +100,31 @@ if [ "$type" == "remote" ] ; then
   [ -f "${rpath}/../keys/${key}" ] || key=${key}.pem
   [ -f "${rpath}/../keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/../deploy.log" ; exit 1)
   echo "`date +"%H:%M:%S"` REMOTE $file" >> "${rpath}/../deploy.log"
-  # install remote dir
-  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d /root/server.deploy.tmp/${file}.${timestamp} >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  # install remote workdir
+  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  # prepare the script
+  for LINE in `cat "${ROLES_ROOT}/${file}"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; a=`eval "echo $ELINE"` ; [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" ; done
   # copy the script
-  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${ROLES_ROOT}/${file}" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  
-  if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-    install -d /root/server.deploy.tmp/${file}.${timestamp}
-    # eval each line of config file on this server, everything should be hardcoded
-    # before sending config to another server
-    IFS1=$IFS; IFS='
-' ; for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; eval "echo $ELINE" >> /root/server.deploy.tmp/${file}.${timestamp}/role.conf; done ; IFS=$IFS1
-    # copy config to remote server
-    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "/root/server.deploy.tmp/${file}.${timestamp}/role.conf" "${ip}:/root/server.deploy.tmp/${file}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
-  fi
+  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${ip}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+  # copy config to remote server
+  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" "${ip}:${WORK_DIR}/${role}.${task}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
   # run the script, catch the output, exit if non-zero status
-  result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export cluster=$cluster && export type=$type && export file=$file && export role=$role && export flavor=$flavor && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)"`
-  printf "${result}\n" >> "${rpath}/../deploy.log"
-  [ `printf "${result}\n" | grep -c ERROR` -gt 0 ] && exit 1
+  result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ERROR)"`
+  
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../deploy.log"
-  install -d /root/server.deploy.tmp/${file}.${timestamp}
+  # running the script
+  result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ERROR)`
 
-  if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-    install -d /root/server.deploy.tmp/${file}.${timestamp}
-    IFS1=$IFS; IFS='
-' ; for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; eval "echo $ELINE" >> /root/server.deploy.tmp/${file}.${timestamp}/role.conf; done ; IFS=$IFS1
-  fi
-  cp "${ROLES_ROOT}/${file}" "/root/server.deploy.tmp/${file}.${timestamp}/"  >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  result=`(source "${rpath}/../conf/deployment.conf" && source /root/server.deploy.tmp/${file}.${timestamp}/role.conf && export IP=$ip && export cluster=$cluster && export type=$type && export file=$file && export role=$role && export flavor=$flavor && /root/server.deploy.tmp/${file}.${timestamp}/${file##*/} 2>&1 || echo ERROR)`
-  printf "${result}\n" >> "${rpath}/../deploy.log"
-  [ `printf "${result}\n" | grep -c ERROR` -gt 0 ] && exit 1
 else
   echo "type: \"$type\" not supported"
   exit 1
 fi
-
-exit 0
+IFS=$IFS1
+printf "${result}\n" >> "${rpath}/../deploy.log"
+[ `printf "${result}\n" | grep -c ERROR` -gt 0 ] && RETVAL=1 || RETVAL=0
+unset ip cluster type file key role flavor result
+exit $RETVAL
 
 
 
