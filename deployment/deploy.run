@@ -79,7 +79,7 @@ IFS1=$IFS; IFS='
 '
 # prepare the role config
 if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; eval "$LINE" ; eval "echo $ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" ; done
+  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo $ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" ; done
   IFS2=$IFS ; IFS=$' \t\n'
   for option in `echo $possible_options | sed 's/,/ /g'`; do
     echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf"
@@ -88,7 +88,7 @@ if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
 fi
 # prepare the script
 install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-for LINE in `cat "${ROLES_ROOT}/${file}"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g"` ; a=`eval "echo $ELINE"` ; [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" ; done
+for LINE in `cat "${ROLES_ROOT}/${file}"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; a=`eval "echo $ELINE"` ; [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" ; done
   
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
