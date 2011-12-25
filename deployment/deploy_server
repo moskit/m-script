@@ -103,8 +103,8 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     metascript=`eval "echo $metascript"`
     printf "== type: $metatype  script: $metascript  ..  "
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" && echo "OK" || (echo "ERROR" ; exit 1)
-      [ $? -ne 0 ] && exit 1 || echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log"
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task"
+      [ $? -eq 0 ] && echo "OK" && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || echo "ERROR"
     fi
   done
   IFS=$IFS1

@@ -123,8 +123,8 @@ else
   exit 1
 fi
 IFS=$IFS1
-printf "${result}\n" >> "${rpath}/../deploy.log"
-[ `printf "${result}\n" | grep -c ERROR` -gt 0 ] && RETVAL=1 || RETVAL=0
+echo "${result}" >> "${rpath}/../deploy.log"
+[ `echo "${result}" | grep -c ERROR` -gt 0 ] && RETVAL=1 || RETVAL=0
 unset ip cluster type file key role flavor result
 exit $RETVAL
 
