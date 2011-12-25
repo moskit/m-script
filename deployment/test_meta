@@ -20,8 +20,8 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role timestamp"
-necessary_options="cluster role task"
+possible_options="help verbose flavor cluster task role"
+necessary_options="role task"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -62,6 +62,7 @@ fi
 source "${rpath}/../conf/deployment.conf"
 source "${ROLES_ROOT}/${role}/role.conf"
 RETVAL=0
+[ -n "$flavor" ] || flavor="common"
 IFS1=$IFS
 IFS='
 '
@@ -85,6 +86,7 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     echo "ERROR :: line $n :: wrong syntax"
     RETVAL=1
   fi
+  echo
 done
 IFS=$IFS1
 exit $RETVAL
