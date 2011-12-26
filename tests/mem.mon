@@ -49,7 +49,11 @@ fi
 rfreeram=`cat /proc/meminfo | grep ^MemFree | awk '{ print $2 }'`
 mfreeram=`solve "$rfreeram / 1024"`
 ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
+if [ -n "$ractiveram" ] ; then
 mactiveram=`solve "$ractiveram / 1024"`
+else
+mactiveram=0
+fi
 rtotalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
 mtotalram=`solve "$rtotalram / 1024"`
 rusedram=`expr $rtotalram - $rfreeram`
