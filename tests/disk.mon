@@ -27,7 +27,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
-lasttimeindex=`cat /tmp/m_script/lasttimeindex`
+lasttimeindex=`cat /tmp/m_script/lasttimeindex.disk`
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 source ${rpath}/../conf/mon.conf
@@ -227,5 +227,6 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
 
   sqlite3 ${rpath}/../sysdata "update sysdata set diskusage='${diskusage}', diskiord='${diskiord}', diskiowr='${diskiowr}' where timeindex='$timeindexnow'"
 fi
+cp /tmp/m_script/timeindex /tmp/m_script/lasttimeindex.disk
 rm -f /tmp/m_script/disk.tmp* >/dev/null 2>&1
 rm -f /tmp/m_script/diskiowr /tmp/m_script/diskiord /tmp/m_script/diskusage >/dev/null 2>&1

@@ -52,6 +52,7 @@ ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
 if [ -n "$ractiveram" ] ; then
 mactiveram=`solve "$ractiveram / 1024"`
 else
+ractiveram=0
 mactiveram=0
 fi
 rtotalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`

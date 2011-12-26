@@ -321,8 +321,10 @@ fi
 
 chmod 755 ${rpath}/*.run ${rpath}/*.sh
 chmod 600 ${rpath}/conf/backup.conf
+chown -R root:root ${rpath}
 install -d ${rpath}/standalone/rc
 install -m 700 -d ${rpath}/keys
+
 ${rpath}/fixports.run
 
 printf "Adjusting some thresholds for your system...    "
