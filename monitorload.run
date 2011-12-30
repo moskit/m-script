@@ -40,15 +40,7 @@ start)
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
   install -d $TMPDIR
   UPTIME=`which uptime`
-  if [ -n "$DASHBOARD_TRANSPORT" ] ; then
-    if [ "X$DASHBOARD_TRANSPORT" == "XSSH" ] ; then
-      SCP=`which scp 2>/dev/null`
-      [ -z "$SCP" ] && echo "scp utility not found, exiting" && exit 1
-      SSH=`which ssh 2>/dev/null`
-    fi
-    [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-    [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-  fi
+
   echo $$ > $pidfile
   echo 0 > $tempfile
   

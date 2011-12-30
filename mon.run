@@ -25,8 +25,8 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
 #*/ (this is needed to fool vi syntax highlighting)
-tmpdir=/tmp/m_script && install -d $tmpdir
-#[ "X$SAR" == "X" ] || $SAR -o $tmpdir/sar.tmp 1 5 >/dev/null
+install -d $TMPDIR
+#[ "X$SAR" == "X" ] || $SAR -o $TMPDIR/sar.tmp 1 5 >/dev/null
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
 lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
@@ -104,7 +104,7 @@ function runscript() {
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
-    $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${tmpdir}/lasttimeindex"
+    $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${TMPDIR}/lasttimeindex"
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
   if [ "X$1" == "XSQL" ]; then
@@ -332,11 +332,11 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 
 function newtimeindex() {
   timeindexnow=$(date +"%s")
-  echo $timeindexnow > ${tmpdir}/timeindex
+  echo $timeindexnow > ${TMPDIR}/timeindex
 }
 
 function deltimeindex() {
-  rm -f ${tmpdir}/timeindex
+  rm -f ${TMPDIR}/timeindex
 }
 
 function gendash() {
@@ -444,7 +444,7 @@ case ${1} in
 esac
 rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` << Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
 echo  >> ${rpath}/monitoring.log
-#rm -f ${tmpdir}/sar.tmp
+#rm -f ${TMPDIR}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
 export LC_MESSAGES=`echo ${currentlocale}`
 
