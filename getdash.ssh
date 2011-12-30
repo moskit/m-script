@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
+rcommand=${xcommand##*/}
+rpath=${xcommand%/*}
+#*/ (this is needed to fool vi comments syntax highlighting)
+
+source "${rpath}/conf/mon.conf"
+source "${rpath}/conf/cloud.conf"
+[ -n "$SSHPORT" ] || SSHPORT=22
+        
+for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
+  mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
+  [ -z "$mpath" ] && mpath="/opt/m"
+  for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+    ip=${server%%|*}
+    [ `echo $ip | grep -c "$localip"` -ne 0 ] && continue
+    key=`echo $server | cut -d'|' -f2`
+    [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
+    [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
+    servername=`echo $server | cut -d'|' -f4`
+    install -d "${rpath}/www/servers/${cluster}/${servername}"
+    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find ${mpath}/www/servers/localhost -type f -printf \"%f\\n\" | sort > ${TMPDIR}/${ip}.remote.dash.list
+    find "${rpath}/www/servers/${cluster}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.local.dash.list
+    nd=`diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\< | sed 's|^< ||'`
+    if [ -n "$nd" ] ; then
+      nd="$nd dash.html report.html"
+      for dashfile in $nd ; do
+        $SCP -i "${rpath}/keys/${key}" -P $SSHPORT ${ip}:${mpath}/www/servers/localhost/$dashfile "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
+      done
+      [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
+      [ -e "${rpath}/www/servers/${cluster}/${servername}/stopped" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/stopped"
+    else
+      echo "No data received from server ${servername}, cluster ${cluster}" >> "${rpath}/monitoring.log"
+      if [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] ; then
+        rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
+        touch "${rpath}/www/servers/${cluster}/${servername}/stopped"
+      else
+        touch "${rpath}/www/servers/${cluster}/${servername}/notfound"
+      fi
+    fi
+    for dashfile in `diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
+      rm -f "${rpath}/www/servers/${cluster}/${servername}/${dashfile}"
+    done
+  done
+  for server in `find ${rpath}/www/servers/$cluster/* -maxdepth 0 -type d 2>/dev/null` ; do
+    [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/servers/$cluster/${server##*/}"
+  done
+done
+

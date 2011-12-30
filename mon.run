@@ -377,7 +377,7 @@ case ${1} in
     [ -n "$DASHBOARD" ] && gendash marked
     deltimeindex
   ;;
-  -dry | --dry | --dry-run)
+  -dry | --dry | --dry-run | -test | --test)
     newtimeindex
     runscript SQL
     runactionstest

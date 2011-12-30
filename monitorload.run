@@ -118,48 +118,10 @@ start)
       ${rpath}/mon.run connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,servers.mon SQL </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ] ; then
       # means that we need to fetch reports from other servers
-        source "${rpath}/conf/cloud.conf"
-        [ -n "$SSHPORT" ] || SSHPORT=22
+        
         case $DASHBOARD_TRANSPORT in
           SSH)
-            for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
-              mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
-              [ -z "$mpath" ] && mpath="/opt/m"
-              for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
-                ip=${server%%|*}
-                [ `echo $ip | grep -c "$localip"` -ne 0 ] && continue
-                key=`echo $server | cut -d'|' -f2`
-                [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
-                [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
-                servername=`echo $server | cut -d'|' -f4`
-                install -d "${rpath}/www/servers/${cluster}/${servername}"
-                $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find ${mpath}/www/servers/localhost -type f -printf \"%f\\n\" | sort > ${TMPDIR}/${ip}.remote.dash.list
-                find "${rpath}/www/servers/${cluster}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.local.dash.list
-                nd=`diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\< | sed 's|^< ||'`
-                if [ -n "$nd" ] ; then
-                  nd="$nd dash.html report.html"
-                  for dashfile in $nd ; do
-                    $SCP -i "${rpath}/keys/${key}" -P $SSHPORT ${ip}:${mpath}/www/servers/localhost/$dashfile "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
-                  done
-                  [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
-                  [ -e "${rpath}/www/servers/${cluster}/${servername}/stopped" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/stopped"
-                else
-                  echo "No data received from server ${servername}, cluster ${cluster}" >> "${rpath}/monitoring.log"
-                  if [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] ; then
-                    rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
-                    touch "${rpath}/www/servers/${cluster}/${servername}/stopped"
-                  else
-                    touch "${rpath}/www/servers/${cluster}/${servername}/notfound"
-                  fi
-                fi
-                for dashfile in `diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
-                  rm -f "${rpath}/www/servers/${cluster}/${servername}/${dashfile}"
-                done
-              done
-              for server in `find ${rpath}/www/servers/$cluster/* -maxdepth 0 -type d 2>/dev/null` ; do
-                [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/servers/$cluster/${server##*/}"
-              done
-            done
+            ${rpath}/getdash.ssh
           ;;
           JSON)
           

@@ -92,13 +92,13 @@ for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^# | gre
       [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
       [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
       [ -n "$SSH" ] && rname=`$SSH -i "${rpath}/../../keys/$KEY" $IP hostname`
-      [ -n "$rname" ] && IP=$rname
     fi
+    [ -n "$rname" ] && IP=$rname
   fi
   if [ -n "$delimiter" ] ; then
     [ -n "$spaces" ] && delimiter="$delimiter "
     if [ -n "$quoted" ] ; then
-      ips="${ips}`printf "\"${IP}\"${delimiter}"`"
+      ips="${ips}`printf "\\"${IP}\\"${delimiter}"`"
     else
       ips="${ips}`printf "${IP}${delimiter}"`"
     fi

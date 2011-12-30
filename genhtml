@@ -86,4 +86,5 @@ case $type in
     "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"
     ;;
 esac
+IFS=$IFS1
 
