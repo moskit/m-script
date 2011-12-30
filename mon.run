@@ -114,6 +114,7 @@ function runscript() {
     if [ -n "$2" ] ; then
       for script in `find ${rpath}/rc/ -maxdepth 1 -name "*.mon" | head -n $2`
       do
+        [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
         echo "`date +"%H:%M:%S"` $rscript" >> "${rpath}/monitoring.log"
@@ -124,6 +125,7 @@ function runscript() {
     else
       for script in ${rpath}/rc/*.mon  #*/
       do
+        [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         time0=`date +"%s"`
         rscript=${rpath}/rc/`readlink $script`
         [ -f "$rscript" ] && echo "`date +"%H:%M:%S"` $rscript" >> "${rpath}/monitoring.log" && $rscript SQL
@@ -136,6 +138,7 @@ function runscript() {
     echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
     echo > "${rpath}/report"
     for mon in `echo ${1} | sed 's|,| |g'` ; do
+      [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       [ -x "${rpath}/tests/${mon}" ] && echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log" && ${rpath}/tests/${mon} $SQL 2>&1 | tee -a "${rpath}/report" >/dev/null #*/
     done
   fi

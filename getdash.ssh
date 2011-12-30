@@ -33,6 +33,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
   mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath="/opt/m"
   for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+    [ -n "$RUNDELAY" ] && sleep $RUNDELAY
     time0=`date +"%s"`
     ip=${server%%|*}
     [ `echo $ip | grep -c "$localip"` -ne 0 ] && continue
