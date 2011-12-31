@@ -477,7 +477,7 @@ bconf=`basename ${backupconf}`
       [ "X$bwlimit" != "X" ] && S3OPTS="${S3OPTS}"
       [ "X$xfercompression" != "Xyes" ] || S3OPTS="${S3OPTS}"
       S3OPTS="${s3options}"
-      s3target=`echo "${remotehost%/}/${remotepath%/}/" | sed 's|//|/|g'`
+      s3target="s3://`echo "${remotehost%/}/${remotepath%/}/" | sed 's|s3://||;s|//|/|g'`"
 #      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && S3OPTS="${S3OPTS} -v" && echo "S3 options are: ${S3OPTS}" >> ${rpath}/m_backup.log
       s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${s3target}" 2>/tmp/m_script/$archname.s3.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
