@@ -22,8 +22,8 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose ip cluster type file key role flavor timestamp task"
-necessary_options="file type"
+possible_options="help verbose ip cluster type file key role flavor timestamp task dry"
+necessary_options="file type task role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
 do
@@ -110,14 +110,20 @@ if [ "$type" == "remote" ] ; then
   $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${ip}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
   # copy config to remote server
   $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" "${ip}:${WORK_DIR}/${role}.${task}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
-  # run the script, catch the output, exit if non-zero status
-  result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ERROR)"`
-  
+  if [ -n "$dry" ] ; then
+    result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+  else
+    # run the script, catch the output, exit if non-zero status
+    result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ERROR)"`
+  fi
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../deploy.log"
-  # running the script
-  result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ERROR)`
-
+  if [ -n "$dry" ] ; then
+    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
+  else
+    # running the script
+    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ERROR)`
+  fi
 else
   echo "type: \"$type\" not supported"
   exit 1
