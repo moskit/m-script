@@ -25,7 +25,7 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
 #*/ (this is needed to fool vi syntax highlighting)
-install -d $TMPDIR
+
 #[ "X$SAR" == "X" ] || $SAR -o $TMPDIR/sar.tmp 1 5 >/dev/null
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
@@ -371,6 +371,7 @@ function genreport() {
 
 source ${rpath}/conf/mon.conf
 [ "X$2" == "XSQL" ] && SQL=SQL
+install -d $TMPDIR
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex

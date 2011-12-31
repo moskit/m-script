@@ -477,14 +477,14 @@ bconf=`basename ${backupconf}`
       [ "X$bwlimit" != "X" ] && S3OPTS="${S3OPTS}"
       [ "X$xfercompression" != "Xyes" ] || S3OPTS="${S3OPTS}"
       S3OPTS="${s3options}"
-      [ "X$remotepath" == "X" ] || remotepath="${remotepath%/}/"
+      s3target=`echo "${remotehost%/}/${remotepath%/}/" | sed 's|//|/|g'`
 #      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && S3OPTS="${S3OPTS} -v" && echo "S3 options are: ${S3OPTS}" >> ${rpath}/m_backup.log
-      s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${remotehost}/${remotepath%/}/" 2>/tmp/m_script/$archname.s3.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${s3target}" 2>/tmp/m_script/$archname.s3.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       s3time=`expr $s3time + 1`
       if [ "X$debugflag" != "X" ]
       then
-        echo "COMMAND: ${S3} ${S3OPTS} sync ${localbackuppath}/ ${remotehost}/${remotepath}" >> ${rpath}/m_backup.log
+        echo "COMMAND: ${S3} ${S3OPTS} sync ${localbackuppath}/ ${s3target}" >> ${rpath}/m_backup.log
         echo "s3time = $s3time" >> ${rpath}/m_backup.log
         echo "arcsize = $arcsize" >> ${rpath}/m_backup.log
       fi
@@ -755,17 +755,17 @@ bconf=`basename ${backupconf}`
       echo "Removing remote files via FTP is not (yet) supported." | tee -a ${rpath}/m_backup.error | tee -a ${rpath}/m_backup.log
     ;;
     s3)
-      remotepath1="${remotehost}/${remotepath}"
+      remotepath1="${s3target}"
       while true; do
         `which s3cmd` ls "${remotepath1}" > /tmp/m_script/s3list.$$
         if [ "X$debugflag" != "X" ]; then
           echo "=== In ${remotepath1} `cat /tmp/m_script/s3list.$$|wc -l` objects found" >> ${rpath}/m_backup.log
         fi
-        grep DIR /tmp/m_script/s3list.$$ | awk '{print $2}' >> /tmp/m_script/s3dirs.$$
+        grep DIR /tmp/m_script/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> /tmp/m_script/s3dirs.$$
         if [ "X$debugflag" != "X" ]; then
           echo "=== `cat /tmp/m_script/s3dirs.$$|wc -l` are directories" >> ${rpath}/m_backup.log
         fi
-        grep -v DIR /tmp/m_script/s3list.$$ >> /tmp/m_script/s3files.$$
+        grep -v ^[[:space:]]*DIR[[:space:]]* /tmp/m_script/s3list.$$ >> /tmp/m_script/s3files.$$
         if [ "X$debugflag" != "X" ]; then
           echo "=== `cat /tmp/m_script/s3files.$$|wc -l` are files" >> ${rpath}/m_backup.log
         fi
@@ -776,10 +776,10 @@ bconf=`basename ${backupconf}`
         if [ "X$debugflag" != "X" ]; then
           echo "=== `cat /tmp/m_script/s3files.$$|wc -l` files have been marked for removal" >> ${rpath}/m_backup.log
         fi
-        for s3file in `cat /tmp/m_script/s3files.$$ | awk '{print $4}'`; do
-          `which s3cmd` del "${s3file}" 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
+        for s3file in `cat /tmp/m_script/s3files.$$ | awk -F's3://' '{print $2}'`; do
+          `which s3cmd` del "s3://${s3file}" 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
         done
-        if [ `cat /tmp/m_script/s3dirs.$$ | wc -l` -gt 0 ]; then
+        if [ `cat /tmp/m_script/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
           remotepath1="`head -1 /tmp/m_script/s3dirs.$$`"
           sed -i -e '1d' /tmp/m_script/s3dirs.$$ 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
           if [ "X$debugflag" != "X" ]; then

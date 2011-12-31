@@ -20,9 +20,11 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role timestamp"
-necessary_options="cluster role task"
+possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry testmeta"
+necessary_options="role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+IFS1=$IFS
+IFS='--'
 for s_option in "${@}"
 do
   found=0
@@ -54,26 +56,32 @@ do
     exit 1
   fi
 done
+IFS=$IFS1
+
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
 
   exit 0
 fi
-source "${rpath}/../conf/deployment.conf"
-M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
-
+if [ -n "$task" -a -n "$command" ] ; then
+  echo "Both command and task can't be executed"
+  exit 1
+fi
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
   ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
 fi
-if [ -z "$cloud" ] && [ -z "$ip" ] ; then
-  echo "Either --ip or --cloud must be defined"
+if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
+  echo "One of ip, cloud or cluster must be defined"
   exit 1
 fi
 if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
   echo "Something's wrong with IP: $ip"
   exit 1
 fi
+
+source "${rpath}/../conf/deployment.conf"
+M_ROOT=$(cd "${rpath}/../" && pwd)
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
@@ -93,6 +101,9 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
   install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
   touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
+  
+  if 
+  
   IFS1=$IFS
   IFS='
 '
@@ -109,6 +120,9 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     fi
   done
   IFS=$IFS1
+  
+  
+  
 else
   echo "Setting up self is not supported"
 fi
