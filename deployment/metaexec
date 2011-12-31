@@ -60,7 +60,7 @@ IFS=$IFS1
 
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
-
+  echo "  --command  variables should be escaped"
   exit 0
 fi
 if [ -n "$task" -a -n "$command" ] ; then
