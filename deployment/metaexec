@@ -47,8 +47,8 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  for option in `echo $possible_options | sed 's/ /--/g'`; do 
+    [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ found -ne 1 ]]; then 
@@ -67,6 +67,18 @@ if [ -n "$task" -a -n "$command" ] ; then
   echo "Both command and task can't be executed"
   exit 1
 fi
+if [ -n "$ip" ] ; then
+  if [[ $ip =~ [^[0-9.]]* ]] ; then
+    echo "Something's wrong with IP: $ip"
+    exit 1
+  fi
+  ipcluster=`grep "^$ip|" "${rpath}/../servers.list" | cut -d'|' -f5`
+  if [ -n "$cluster" ] ; then
+    [ "$cluster" != "$ipcluster" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
+  else
+    cluster=$ipcluster
+  fi
+fi
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
   ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
 fi
@@ -74,10 +86,7 @@ if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
   echo "One of ip, cloud or cluster must be defined"
   exit 1
 fi
-if [ -n "$ip" ] && [[ $ip =~ [^[0-9.]]* ]] ; then
-  echo "Something's wrong with IP: $ip"
-  exit 1
-fi
+
 
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
