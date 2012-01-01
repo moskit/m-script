@@ -101,8 +101,9 @@ if [ "X$command" != "X" ] ; then
   tmpfile=/tmp/m_script/deployment/`echo $fullfrom | sed 's|/|_|g'`
   rm -f "$tmpfile" 2>/dev/null
   for LINE in `cat "$fullfrom"` ; do
-    eval echo $LINE | sed "s|\%\(.*\)\%|\1|" >> "$tmpfile"
+    echo $LINE | sed "s|\%\(.*\)\%|\1|" >> "${tmpfile}.orig"
   done
+  for LINE in `cat "${tmpfile}.orig"` ; do ELINE=$(echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g' | sed 's|`|\\\`|g') ; a=`eval "echo $ELINE"` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
   to=${command#* }
   if [ -d "$to" ] ; then
     to=${to%/}/${from##*/}
@@ -130,8 +131,8 @@ if [ "X$command" != "X" ] ; then
     if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       cp -up $tmpfile $to
     else
-      [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
-      [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
+      [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
+      [ -f "${rpath}/../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
       cloudsync --ip=$IP "$tmpfile" "${to}"
     fi
   done
