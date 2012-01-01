@@ -89,8 +89,15 @@ IFS='
 '
 if [ "X$command" != "X" ] ; then
   from=${command%% *}
-  [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] || (echo "${ROLES_ROOT}/${role}/${flavor}/files/$from is not a file or file not found" && exit 1)
-  fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
+  # doing my best to assume what options meant
+  if [ -f "$from" ] ; then
+    fullfrom=$from
+  else
+    [ -n "$flavor" ] || flavor="common"
+    if [ -z "$role" ] && [ -n "$cluster" ] ; then role="$cluster" ; fi
+    [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] || (echo "Neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is not a file or file not found" && exit 1)
+    fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
+  fi
   tmpfile=/tmp/m_script/deployment/`echo $fullfrom | sed 's|/|_|g'`
   rm -f "$tmpfile" 2>/dev/null
   for LINE in `cat "$fullfrom"` ; do
