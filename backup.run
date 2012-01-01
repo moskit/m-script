@@ -163,10 +163,8 @@ fi
 # Main loop. Runs as many times as many backup.*.conf files used  #
 ###################################################################
 
-# If no backup paths found in conf file, use current path
-# TODO: is this the best solution? 
-localbackuppath=${PWD}
-`which install` -d "/tmp/m_script" 2>&1>>${rpath}/m_backup.error
+localbackuppath=${rpath}
+install -d "/tmp/m_script" 2>&1>>${rpath}/m_backup.error
 # If config files collection is not set by option, we use all files having names
 # like backup*.conf
 if [ "X$configfiles" == "X" ]
@@ -181,7 +179,7 @@ fi
 #### Well, lets go
 for backupconf in ${configfiles}
 do
-bconf=`basename ${backupconf}`
+bconf=${backupconf##*/}
 # Here we store environment variables that might be replaced by variables
 # from current conf/backup.configuration file. When the main loop finishes, we
 # restore them back (look for this somewhere closer to bottom)
