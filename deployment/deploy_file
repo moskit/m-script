@@ -100,7 +100,7 @@ if [ "X$command" != "X" ] ; then
   fi
   tmpfile=/tmp/m_script/deployment/`echo $fullfrom | sed 's|/|_|g'`
   rm -f "$tmpfile" 2>/dev/null
-  for LINE in `cat "$fullfrom"` ; do
+  for LINE in `cat "$fullfrom | sed 's|$| |g'"` ; do
     echo $LINE | sed "s|\%\(.*\)\%|\`echo \$\1\`|" >> "${tmpfile}.orig"
   done
   for LINE in `cat "${tmpfile}.orig"` ; do ELINE=$(echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g' | sed 's|`|\\\`|g') ; a=`eval "echo $ELINE"` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
@@ -108,7 +108,7 @@ if [ "X$command" != "X" ] ; then
   if [ -d "$to" ] ; then
     to=${to%/}/${from##*/}
   fi
-  [ -n "$verbose" ] && echo "### Deploying $from to $to"
+  [ -n "$verbose" ] && echo "### Deploying file $from to $to"
   for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
     IP=${server%%|*}
     if [ -n "$ip" ] ; then

@@ -102,7 +102,7 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
       ;;
     esac
     cursor=0
-    unset datatype[3] datastyle[3]
+    unset datatype[3] datastyle[3] datatype[2] datastyle[2]
   fi
   if [ $cursor -eq 2 ] ; then
     case ${datatype[*]} in
@@ -144,6 +144,7 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
           unset tableflag
         fi
         format ${data[1]} ${datastyle[2]}
+        cursor=0
         ;;
       "table empty")
         echo "<table>"
@@ -156,6 +157,13 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
       "empty empty")
         cursor=0
         unset datatype[2] datastyle[2]
+        ;;
+    esac
+  fi
+  if [ $cursor -eq 1 ] ; then
+    case ${datatype[*]} in
+      "empty")
+        cursor=0
         ;;
     esac
   fi
