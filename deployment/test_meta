@@ -60,6 +60,8 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 source "${rpath}/../conf/deployment.conf"
+M_ROOT=$(cd "${rpath}/../" && pwd)
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
 source "${ROLES_ROOT}/${role}/role.conf"
 RETVAL=0
 [ -n "$flavor" ] || flavor="common"
@@ -71,17 +73,21 @@ n=0
 for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
   n+=1
   ([[ $meta =~ ^# ]] || [[ $meta =~ ^$ ]] || [[ $meta =~ ^[[:space:]]*# ]]) && continue
-  echo "*** META: $meta"
+  echo "*** META: \"$meta\""
   metatype=`echo $meta | awk '{print $1}'`
   metascript=`echo $meta | awk '{print $2}'`
   metascript=`eval "echo $metascript"`
-  printf "== type: $metatype  script: $metascript  ..  "
+  echo "== type: $metatype  script: $metascript"
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-    if [ -e "$metascript" ] ; then
-      echo "  ERROR :: line $n :: $metascript doesn't exist"
+    if [ ! -e "${ROLES_ROOT}/$metascript" ] ; then
+      echo "  ERROR :: line $n :: ${ROLES_ROOT}/$metascript doesn't exist"
       RETVAL=1
     fi
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do a=`eval "echo \$var"` ; if [ -z "$a" ] ; then echo "ERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL=1 ; fi ; done
+    ### Variant with subshells extraction
+    ### IFS1=$IFS ; IFS='
+    ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
+    printf "Variables found: "
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL=1 ; fi ; done
   else
     echo "ERROR :: line $n :: wrong syntax"
     RETVAL=1
