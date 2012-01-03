@@ -88,7 +88,15 @@ if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
 fi
 # prepare the script
 install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-for LINE in `cat "${ROLES_ROOT}/${file}"` ; do ELINE=$(echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g' | sed 's|`|\\\`|g') ; a=`eval "echo $ELINE"` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$LINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" ; done
+for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
+  ELINE=$(echo "$LINE" | \
+  sed 's|"|\\\"|g;s|&|\\\&|g;s|<|\\\<|g;s|>|\\\>|g' | \
+  sed "s|'|\\\'|g" | \
+  sed 's_|_\\\|_g' | \
+  sed 's|`|\\\`|g')
+  a=`eval "echo $ELINE"`
+  [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$LINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}"
+done
   
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
