@@ -1,8 +1,18 @@
 #!/bin/bash
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rpath=$(cd ${xcommand%/*}/ && pwd)
-rcommand=${xcommand##*/}
+[[ $0 =~ ^\/ ]] && rroot='/'
+for step in `echo ${0} | tr '/' ' '` ; do
+  rlink=`readlink "${rroot}${rpath}${step}"`
+  if [ -n "$rlink" ] ; then
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" || rpath="${rpath}${rlink}/"
+  else
+    rpath="${rpath}${step}/"
+  fi
+done
+rpath=${rpath%/}
+rcommand=${rpath##*/}
+rpath="${rroot}${rpath%/*}"
+echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 #*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1

@@ -402,8 +402,8 @@ if [[ $hourX -lt $countminX ]] ; then
         while [[ $currpoint -lt $to ]]
         do
           currpoint=`date -u -d "1970/01/01 +$currpoint sec +$res month" +"%s"`
-          themonth=`date -u -d "1970/01/01 +$currpoint" +"%m"`
-          theyear=`date -u -d "1970/01/01 +$currpoint" +"%Y"`
+          themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
+          theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
           themark=`date -u -d "${theyear}/${themonth}/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break
