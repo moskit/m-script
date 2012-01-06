@@ -13,12 +13,12 @@ CURL="$CURL -s"
 echo "<div class=\"dashtitle\">"
   echo "<div class=\"server\">"
     echo "<div class=\"servername\" id=\"title1\">ID</div>"
-    echo "<div class=\"status\" id=\"title2\">&nbsp;</div>"
-    echo "<div class=\"status\" id=\"title3\"><b>Status</b></div>"
-    echo "<div class=\"status\" id=\"title4\"><b>Memory Res/Virt</b></div>"
-    echo "<div class=\"status\" id=\"title5\"><b>Conn Curr/Avail</b></div>"
-    echo "<div class=\"status\" id=\"title6\"><b>Bandwidth In/Out</b></div>"
-    echo "<div class=\"status\" id=\"title7\"><b>Requests / sec</b></div>"
+    echo "<div class=\"status\" id=\"title2\"><b>Status / Host</b></div>"
+    echo "<div class=\"status\" id=\"title3\"><b>Heap used / committed</b></div>"
+    echo "<div class=\"status\" id=\"title4\"><b>Indices size</b></div>"
+    echo "<div class=\"status\" id=\"title5\"><b>Indices docs number</b></div>"
+    echo "<div class=\"status\" id=\"title6\"><b>Open file descriptors</b></div>"
+    echo "<div class=\"status\" id=\"title7\"><b>Conn http / transport</b></div>"
   echo "</div>"
 echo "</div>"
 
@@ -26,17 +26,23 @@ echo "<div class=\"clustername\"><span class=\"indent\">Clusters and nodes</span
 
 for cluster in ${PWD}/../../standalone/${scriptname}/data/*.nodes ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
-  
+  eshost=`head -1 ${PWD}/../../standalone/${scriptname}/${clustername}.es_servers.list`
   echo "<div class=\"cluster\" id=\"${clustername}\">"
-  
-  echo "<div class=\"server\" id=\"${clustername}_status\">"
-  echo "<div class=\"servername\" id=\"${clustername}_name\">Cluster: ${clustername}</div>"
-  echo "</div>"
-
-  echo "<div class=\"status\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
-
-
-
+    echo "<div class=\"server\" id=\"${clustername}_status\">"
+      echo "<div class=\"servername\" id=\"${clustername}_name\">Cluster: ${clustername}</div>"
+      echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showURL('${clustername}_http','http://${eshost}/_cluster/health','${scriptname}')\">HTTP<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+    echo "</div>"
+    for esserver in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.es_servers.list` ; do
+      echo "<div class=\"server\" id=\"${esserver}\">"
+        echo "<div class=\"servername\" id=\"${esserver}_name\" onClick=\"showData('${esserver}_name','/${scriptname}')\">`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat"|grep ^name\||cut -d'|' -f2`<div id=\"data_${esserver}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+        echo "<div class=\"status\" id=\"${esserver}_host\">${esserver%:*}</div>"
+        echo "<div class=\"status\" id=\"${esserver}_mem\">`grep ^jvm\/mem\/heap_used\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2` / `grep ^jvm\/mem\/heap_committed\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${esserver}_size\">`grep ^indices/size\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${esserver}_docs\">`grep ^indices/docs/num_docs\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${esserver}_files\">`grep ^process/open_file_descriptors\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${esserver}_conn\">`grep ^http/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2` / `grep ^transport/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat" | cut -d'|' -f2`</div>"
+      echo "</div>"
+    done
 
 done
 

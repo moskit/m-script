@@ -120,11 +120,11 @@ for cluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq
     nodehost=`grep "${clusternode}\/transport_address " "${rpath}/data/${cluster}.nodes"`
     nodehost=${nodehost#/transport_address }
     nodehost=${nodehost%:*}
-    nodehost=${nodehost#*/}
-    nodehost=`ip_to_name "$nodehost"`
-    mv "${rpath}/data/${cluster}.${nodehost}.dat" "${rpath}/data/${cluster}.${nodehost}.dat.prev"
-    echo -e "clusternode_id|${clusternode}\nmaster|${ismaster}\n" > "${rpath}/data/${cluster}.${nodehost}.dat"
-    $CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats"|lib/json2txt | awk -F"${clusternode}/" '{print $2}' | sed 's_^\([^[:space:]]*\) _\1|_g' >> "${rpath}/data/${cluster}.${nodehost}.dat"
+    nodehost=${nodehost##*/}
+    ip_to_name "$nodehost"
+    mv "${rpath}/data/${cluster}.${rname}.dat" "${rpath}/data/${cluster}.${rname}.dat.prev"
+    echo -e "clusternode_id|${clusternode}\nip|${nodehost}\nmaster|${ismaster}" > "${rpath}/data/${cluster}.${rname}.dat"
+    $CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats"|lib/json2txt | awk -F"${clusternode}/" '{print $2}' | sed 's_^\([^[:space:]]*\) _\1|_g' >> "${rpath}/data/${cluster}.${rname}.dat"
   done
 done
 

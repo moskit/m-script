@@ -12,10 +12,10 @@ fetch=`which curl 2>/dev/null` || fetch=`which links 2>/dev/null` || fetch=`whic
 [ -z "$fetch" ] && echo "Found nothing to fetch with. Please install one of: curl, links, lynx" >> "${PWD}/../../dashboard.log" && exit 1
 case ${fetch##*/} in
   curl)
-    $fetch -s "$url" > "${PWD}/../$to"
+    $fetch -s "$url" > "${PWD}/..$to"
     ;;
   links|lynx)
-    $fetch -dump "$url" > "${PWD}/../$to"
+    $fetch -dump "$url" > "${PWD}/..$to"
     ;;
 esac
 
