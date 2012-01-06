@@ -115,16 +115,16 @@ for cluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq
   clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${cluster}$" | head -1` ; clusterhost2=${clusterhost2%|*}
   ($CURL "http://${clusterhost1}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL "http://${clusterhost2}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.nodes"
   for clusternode in `cat "${rpath}/data/${cluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
-    # This clusternode is a name assigned by ES like 2dsOVGfwR5GjTpyA-jbbGw
+    # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^1\/master_node "${rpath}/data/${cluster}.nodes" | grep -c "$clusternode"`
-    nodename=`grep "${clusternode}\/name " "${rpath}/data/${cluster}.nodes"`
-    nodename=${nodename#/name }
     nodehost=`grep "${clusternode}\/transport_address " "${rpath}/data/${cluster}.nodes"`
     nodehost=${nodehost#/transport_address }
     nodehost=${nodehost%:*}
     nodehost=${nodehost#*/}
     nodehost=`ip_to_name "$nodehost"`
-    
+    mv "${rpath}/data/${cluster}.${nodehost}.dat" "${rpath}/data/${cluster}.${nodehost}.dat.prev"
+    echo -e "clusternode_id|${clusternode}\nmaster|${ismaster}\n" > "${rpath}/data/${cluster}.${nodehost}.dat"
+    $CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats"|lib/json2txt | awk -F"${clusternode}/" '{print $2}' | sed 's_^\([^[:space:]]*\) _\1|_g' >> "${rpath}/data/${cluster}.${nodehost}.dat"
   done
 done
 
