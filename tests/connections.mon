@@ -46,6 +46,28 @@ fi
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
 
+chk_portexclusions() {
+  for exclport in `cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'` ; do
+    exclportnum=${exclport%%%*}
+    exclportprog=${exclport#*%}
+    if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $2 ]] ; then
+      if [ "X$exclportnum" == "X" ] ; then
+        skip=1 && break
+      else
+        if [[ $exclportnum =~ [[0-9]]*-[[0-9]]* ]] ; then
+          portif=${1%:*}
+          portnum=${1##*:}
+          port1=${exclportnum%-*}
+          port2=${exclportnum#*-}
+          ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
+        else
+          [[ $exclportnum -eq $portnum ]] && skip=1 && break
+        fi
+      fi
+    fi
+  done
+}
+
 echo
 echo "Listening ports and sockets:"
 echo "----------------------------"
@@ -125,25 +147,7 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
-    for exclport in `cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'` ; do
-      exclportnum=${exclport%%%*}
-      exclportprog=${exclport#*%}
-      if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $prog ]] ; then
-        if [ "X$exclportnum" == "X" ] ; then
-          skip=1 && break
-        else
-          if [[ $exclportnum =~ [[0-9]]*-[[0-9]]* ]] ; then
-            portif=${t%:*}
-            portnum=${t##*:}
-            port1=${exclportnum%-*}
-            port2=${exclportnum#*-}
-            ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
-          else
-            [[ $exclportnum -eq $portnum ]] && skip=1 && break
-          fi
-        fi
-      fi
-    done
+    chk_portexclusions $t $prog
     
     # now compare ports
     for ((i=0; i<${#portstcp[*]}; i++))
@@ -169,6 +173,16 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
   done < /tmp/m_script/ports.tcp.$$
 fi
 
+if [[ ${#portstcp[*]} -gt 0 ]]
+then
+  for t in ${portstcp[*]} ; do
+    prog=`grep "^${t}|" ${rpath}/../ports.tcp.list | cut -d'|' -f2`
+    chk_portexclusions $t $prog
+    [[ $skip -ne 1 ]] && echo "<***> There is no service listening on TCP: $t (was $prog)"
+    skip=0
+  done
+fi
+
 if [ -f /tmp/m_script/ports.udp.$$ ] ; then
   while read LINE
   do
@@ -178,25 +192,7 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
-    for exclport in `cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'` ; do
-      exclportnum=${exclport%%%*}
-      exclportprog=${exclport#*%}
-      if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $prog ]] ; then
-        if [ "X$exclportnum" == "X" ] ; then
-          skip=1 && break
-        else
-          if [[ $exclportnum =~ [[0-9]]*-[[0-9]]* ]] ; then
-            portif=${t%:*}
-            portnum=${t##*:}
-            port1=${exclportnum%-*}
-            port2=${exclportnum#*-}
-            ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
-          else
-            [[ $exclportnum -eq $portnum ]] && skip=1 && break
-          fi
-        fi
-      fi
-    done
+    chk_portexclusions $t $prog
     
     # now compare ports
     for ((i=0; i<${#portsudp[*]}; i++))
@@ -222,19 +218,16 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
   done < /tmp/m_script/ports.udp.$$
 fi
 
-if [[ ${#portstcp[*]} -gt 0 ]]
+if [[ ${#portsudp[*]} -gt 0 ]]
 then
-  for port in ${portstcp[*]} ; do
-    echo "<***> There is no service listening on TCP: $port (was `grep "^${port}|" ${rpath}/../ports.tcp.list | cut -d'|' -f2`)"
+  for t in ${portsudp[*]} ; do
+    prog=`grep "^${t}|" ${rpath}/../ports.udp.list | cut -d'|' -f2`
+    chk_portexclusions $t $prog
+    [[ $skip -ne 1 ]] && echo "<***> There is no service listening on UDP: $t (was $prog)"
+    skip=0
   done
 fi
 
-if [[ ${#portsudp[*]} -gt 0 ]]
-then
-  for port in ${portsudp[*]} ; do
-    echo "<***> There is no service listening on UDP: $port (was `grep "^${port}[[:space:]]" ${rpath}/../ports.udp.list | cut -d'|' -f2`)"
-  done
-fi
 echo "  Name              Socket file"
 echo
 $SOCKCONNS | grep STREAM > /tmp/m_script/sockets.$$
