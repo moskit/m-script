@@ -43,6 +43,8 @@ do
   us=`echo $LINE | cut -d'|' -f1`
   sy=`echo $LINE | cut -d'|' -f2`
   wa=`echo $LINE | cut -d'|' -f3`
+  # if anything > 100, it's an error
+  [ $us -gt 100 -o $sy -gt 100 -o $wa -gt 100 ] && exit 0
   usavg=`solve "$usavg + $us"`
   syavg=`solve "$syavg + $sy"`
   waavg=`solve "$waavg + $wa"`
@@ -51,6 +53,7 @@ usavg=`solve "$usavg / $CPUUSAMPLES"`
 syavg=`solve "$syavg / $CPUUSAMPLES"`
 waavg=`solve "$waavg / $CPUUSAMPLES"`
 cpuusage=`solve "$usavg + $syavg + $waavg"`
+
 y1="$(echo "$cpuusage >= $CPU_USAGE_1" | bc)"
 y2="$(echo "$cpuusage >= $CPU_USAGE_2" | bc)"
 y3="$(echo "$cpuusage >= $CPU_USAGE_3" | bc)"
