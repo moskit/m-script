@@ -1,0 +1,33 @@
+#!/bin/bash
+
+source "${PWD}/../../conf/dash.conf"
+timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
+oldest=`date -d "-$timerange sec" +"%H:%M"`
+
+echo "<div class=\"server\" id=\"${2}\">"
+echo "<span class=\"servername\">Status data since $oldest</span>"
+
+SQLITE=`which sqlite3 2>/dev/null`
+if [ -n "$SQLITE" ] ; then
+  $SQLITE "${PWD}/../../standalone/ElasticSearch/elasticsearch.sql3" "select datetime(timeindex,'unixepoch'),status from servers where hostport='${2}' order by timeindex desc limit $slotline_length" | while read res ; do
+    timestamp=`echo $res | cut -d'|' -f1`
+    status=`echo $res | cut -d'|' -f2`
+    case status in
+      green)
+        css="ok"
+        ;;
+      yellow)
+        css="w2"
+        ;;
+      red)
+        css="w3"
+        ;;
+      *)
+        css="w1"
+        ;;
+    esac
+    echo "<div id=\"${timestamp}\" title=\"${timestamp}\" class=\"chunk ${css}\" style=\"float: right;\">&nbsp;</div>"
+  done
+fi
+echo "</div>"
+
