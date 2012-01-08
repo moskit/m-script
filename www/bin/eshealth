@@ -1,5 +1,5 @@
 #!/bin/bash
 CURL=`which curl 2>/dev/null`
-echo "<div class=\"server\" id=\"${1}\">"
+echo "<div class=\"server\" id=\"${2}\">"
 [ -n "$CURL" ] && $CURL -s `head -1 "${PWD}/../../standalone/ElasticSearch/${2}.es_servers.list"`/_cluster/health | "${PWD}/../../lib/json2html"
 echo "</div>"
