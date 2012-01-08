@@ -33,9 +33,9 @@ for cluster in ${PWD}/../../standalone/${scriptname}/data/*.nodes ; do
     
       echo "<div class=\"servername\" id=\"${clustername}_name\" onclick=\"showDetails('${clustername}_status','eshealth')\">Cluster: ${clustername}</div>"
       
-      echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" color=\"$esstatus\">$esstatus</div>"
+      echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" style=\"color: $esstatus ; font-weight; bold ;\">$esstatus</div>"
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
-      echo "<div id=\"${clustername}_details\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
+      echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
     echo "</div>"
     for esserver in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.es_servers.list` ; do
       echo "<div class=\"server\" id=\"${esserver}\">"
