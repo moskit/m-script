@@ -533,3 +533,16 @@ div.right {
   color: gray;
   float: right;
 }
+
+div.json {
+  margin-left: 20px;
+}
+span.json {
+  margin-right: 20px;
+}
+span.name {
+  font-weight: bold;
+}
+span.value {
+  color: blue;
+}

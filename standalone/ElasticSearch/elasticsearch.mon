@@ -125,6 +125,11 @@ for cluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq
     mv "${rpath}/data/${cluster}.${rname}.dat" "${rpath}/data/${cluster}.${rname}.dat.prev"
     echo -e "clusternode_id|${clusternode}\nip|${nodehost}\nmaster|${ismaster}" > "${rpath}/data/${cluster}.${rname}.dat"
     ($CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats" || $CURL "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' | sed 's_^\([^[:space:]]*\) _\1|_g' >> "${rpath}/data/${cluster}.${rname}.dat"
+    if [ "X$SQLITE3" == "X1" ] ; then
+    $SQLITE "${rpath}/elasticsearch.sql3" "INSERT INTO nodes (timeindex, day, hostport,
+    
+    
+    fi
   done
   ($CURL "http://${clusterhost1}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL "http://${clusterhost2}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.routing"
   for shard in `cat "${rpath}/data/${cluster}.routing" | grep '1/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
