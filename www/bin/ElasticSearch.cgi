@@ -13,7 +13,7 @@ CURL="$CURL -s"
 echo "<div class=\"dashtitle\">"
   echo "<div class=\"server\">"
     echo "<div class=\"servername\" id=\"title1\">ID</div>"
-    echo "<div class=\"status\" id=\"title2\"><b>Status / Host</b></div>"
+    echo "<div class=\"status\" id=\"title2\"><b>Status<br />Host</b></div>"
     echo "<div class=\"status\" id=\"title3\"><b>Heap used / committed</b></div>"
     echo "<div class=\"status\" id=\"title4\"><b>Indices size</b></div>"
     echo "<div class=\"status\" id=\"title5\"><b>Indices docs number</b></div>"
@@ -33,10 +33,10 @@ for cluster in ${PWD}/../../standalone/${scriptname}/data/*.nodes ; do
     
       echo "<div class=\"servername\" id=\"${clustername}_name\" onclick=\"showDetails('${clustername}_status','eshealth')\">Cluster: ${clustername}</div>"
       
-      echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" style=\"color: $esstatus ; font-weight; bold ;\">$esstatus</div>"
+      echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" style=\"color: $esstatus ; font-weight: bold ;\">$esstatus</div>"
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
-      echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
     echo "</div>"
+    echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
     for esserver in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.es_servers.list` ; do
       echo "<div class=\"server\" id=\"${esserver}\">"
         echo "<div class=\"servername\" id=\"${esserver}_name\" onClick=\"showData('${esserver}_name','/${scriptname}')\">`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat"|grep ^name\||cut -d'|' -f2`<div id=\"data_${esserver}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
