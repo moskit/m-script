@@ -9,7 +9,7 @@ echo "<span class=\"servername\">Status data since $oldest</span>"
 
 SQLITE=`which sqlite3 2>/dev/null`
 if [ -n "$SQLITE" ] ; then
-  $SQLITE "${PWD}/../../standalone/ElasticSearch/elasticsearch.sql3" "select datetime(timeindex,'unixepoch'),status from servers where hostport='${2}' order by timeindex desc limit $slotline_length" | while read res ; do
+  $SQLITE "${PWD}/../../standalone/ElasticSearch/elasticsearch.sql3" "select datetime(timeindex,'unixepoch'),status from cluster where name='${2}' order by timeindex desc limit $slotline_length" | while read res ; do
     timestamp=`echo $res | cut -d'|' -f1`
     status=`echo $res | cut -d'|' -f2`
     case status in
