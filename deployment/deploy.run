@@ -79,7 +79,7 @@ IFS1=$IFS; IFS='
 '
 # prepare the role config
 if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo $ELINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" ; done
+  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" ; done
   IFS2=$IFS ; IFS=$' \t\n'
   for option in `echo $possible_options | sed 's/,/ /g'`; do
     echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf"
@@ -93,8 +93,8 @@ for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
   sed 's|"|\\\"|g;s|&|\\\&|g;s|<|\\\<|g;s|>|\\\>|g;s|(|\\\(|g;s|)|\\\)|g' | \
   sed "s|'|\\\'|g" | \
   sed 's_|_\\\|_g' | \
-  sed 's|`|\\\`|g;s|\;|\\\;|g')
-  a=`eval "echo $ELINE" 2>/dev/null`
+  sed 's|`|\\\`|g')
+  a=`eval "echo \"$ELINE\"" 2>/dev/null`
   [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$LINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}"
 done
   
