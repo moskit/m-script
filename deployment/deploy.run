@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 
 store_vars() {
-  for LINE in `cat "${ROLES_ROOT}/${1}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${1}.${task}.${timestamp}/${file}.var" ; done
+  for LINE in `cat "${ROLES_ROOT}/${1}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" ; done
 }
 
 source "${rpath}/../conf/cloud.conf"
@@ -96,7 +96,7 @@ fi
 # command-line options (variables from this script) should be saved too
 IFS2=$IFS ; IFS=$' \t\n'
 for option in `echo $possible_options | sed 's/,/ /g'`; do
-  echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${1}.${task}.${timestamp}/${file}.var"
+  echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
 done
 IFS=$IFS2
 # now prepare the script
