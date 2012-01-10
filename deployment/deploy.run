@@ -69,12 +69,14 @@ echo >> "${rpath}/../deploy.log"
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
-
+[ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip found" >> "${rpath}/../deploy.log" && exit 1
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
 [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
 install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
+declare -i RETVAL
+RETVAL=0
 IFS1=$IFS; IFS='
 '
 # prepare the role config
@@ -100,7 +102,7 @@ done
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
     cluster=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f5`
-    [ -z "$cluster" ] && echo "Unable to find cluster name" && exit 1
+    [ -z "$cluster" ] && echo "Unable to find cluster name" >> "${rpath}/../deploy.log" && exit 1
   fi
   M_ROOT_REMOTE=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f8`
   [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
@@ -111,18 +113,28 @@ if [ "$type" == "remote" ] ; then
   [ -f "${rpath}/../keys/${key}" ] || key=${key}.pem
   [ -f "${rpath}/../keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/../deploy.log" ; exit 1)
   echo "`date +"%H:%M:%S"` REMOTE $file" >> "${rpath}/../deploy.log"
-  # install remote workdir
-  $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  # copy the script
-  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${ip}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-  # copy config to remote server
-  $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" "${ip}:${WORK_DIR}/${role}.${task}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
-  if [ -n "$dry" ] ; then
-    result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+  if [ -z "$ip" ] ; then
+    ips=`get_ips --cluster="${cluster}"`
   else
-    # run the script, catch the output, exit if non-zero status
-    result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${ip} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+    ips=$ip
   fi
+  for IP in $ips ; do
+    # install remote workdir
+    $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+    # copy the script
+    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+    # copy config to remote server
+    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
+
+    if [ -n "$dry" ] ; then
+      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+    else
+      # run the script, catch the output, exit if non-zero status
+      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+    fi
+    echo "${result}" >> "${rpath}/../deploy.log"
+    [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1 && break
+  done
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../deploy.log"
   if [ -n "$dry" ] ; then
@@ -131,13 +143,13 @@ elif [ "$type" == "local" ] ; then
     # running the script
     result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`
   fi
+  [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1
 else
   echo "type: \"$type\" not supported"
   exit 1
 fi
 IFS=$IFS1
-echo "${result}" >> "${rpath}/../deploy.log"
-[ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL=1 || RETVAL=0
+
 unset ip cluster type file key role flavor result
 exit $RETVAL
 
