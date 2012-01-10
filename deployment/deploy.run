@@ -90,8 +90,7 @@ fi
 install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
   ELINE=$(echo "$LINE" | \
-  sed 's|"|\\\"|g;s|&|\\\&|g;s|<|\\\<|g;s|>|\\\>|g;s|(|\\\(|g;s|)|\\\)|g' | \
-  sed "s|'|\\\'|g" | \
+  sed 's|"|\\\"|g;s|&|\\\&|g' | \
   sed 's_|_\\\|_g' | \
   sed 's|`|\\\`|g')
   a=`eval "echo \"$ELINE\"" 2>/dev/null`

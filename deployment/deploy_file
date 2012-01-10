@@ -101,9 +101,8 @@ if [ "X$command" != "X" ] ; then
   tmpfile=/tmp/m_script/deployment/`echo $fullfrom | sed 's|/|_|g'`
   rm -f "$tmpfile" 2>/dev/null
 
-  cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%\(.*\)\%|$\1|g" | \
-  sed 's|"|\\\"|g;s|&|\\\&|g;s|<|\\\<|g;s|>|\\\>|g;s|(|\\\(|g;s|)|\\\)|g' | \
-  sed "s|'|\\\'|g" | \
+  cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%\(.*\)\%|$\{\1\}|g" | \
+  sed 's|"|\\\"|g;s|&|\\\&|g' | \
   sed 's_|_\\\|_g' | \
   sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
