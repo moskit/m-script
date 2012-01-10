@@ -18,6 +18,10 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
+store_vars() {
+  for LINE in `cat "${ROLES_ROOT}/${1}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${1}.${task}.${timestamp}/${file}.var" ; done
+}
+
 source "${rpath}/../conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
@@ -79,16 +83,23 @@ declare -i RETVAL
 RETVAL=0
 IFS1=$IFS; IFS='
 '
-# prepare the role config
+# save variables to a file
 if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" ; done
-  IFS2=$IFS ; IFS=$' \t\n'
-  for option in `echo $possible_options | sed 's/,/ /g'`; do
-    echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf"
-  done
-  IFS=$IFS2
+  store_vars $role
 fi
-# prepare the script
+# if some other role's script is included in meta script, source its variables
+# too. Variables with same names would be overwritten.
+roleincluded=${file%%/*}
+if [ "X$roleincluded" != "X$role" ] ; then
+  store_vars $roleincluded
+fi
+# command-line options (variables from this script) should be saved too
+IFS2=$IFS ; IFS=$' \t\n'
+for option in `echo $possible_options | sed 's/,/ /g'`; do
+  echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${1}.${task}.${timestamp}/${file}.var"
+done
+IFS=$IFS2
+# now prepare the script
 install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
   ELINE=$(echo "$LINE" | \
@@ -123,13 +134,13 @@ if [ "$type" == "remote" ] ; then
     # copy the script
     $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
     # copy config to remote server
-    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/role.conf" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/" >> "${rpath}/../deploy.log" 2>&1
+    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../deploy.log" 2>&1
 
     if [ -n "$dry" ] ; then
-      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
     else
       # run the script, catch the output, exit if non-zero status
-      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
     fi
     echo "${result}" >> "${rpath}/../deploy.log"
     [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1 && break
@@ -137,10 +148,10 @@ if [ "$type" == "remote" ] ; then
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../deploy.log"
   if [ -n "$dry" ] ; then
-    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
+    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
   else
     # running the script
-    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/role.conf && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`
+    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`
   fi
   echo "${result}" >> "${rpath}/../deploy.log"
   [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1
