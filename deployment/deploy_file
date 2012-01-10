@@ -102,8 +102,7 @@ if [ "X$command" != "X" ] ; then
   rm -f "$tmpfile" 2>/dev/null
 
   cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%\(.*\)\%|$\{\1\}|g" | \
-  sed 's|"|\\\"|g;s|&|\\\&|g' | \
-  sed 's_|_\\\|_g' | \
+  sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
   for LINE in `cat "${tmpfile}.orig"` ; do a=`eval "echo \"$LINE\""` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
