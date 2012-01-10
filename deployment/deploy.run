@@ -78,7 +78,7 @@ export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/h
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
 [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
-install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
+install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 declare -i RETVAL
 RETVAL=0
 IFS1=$IFS; IFS='
@@ -100,7 +100,6 @@ for option in `echo $possible_options | sed 's/,/ /g'`; do
 done
 IFS=$IFS2
 # now prepare the script
-install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
 for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
   ELINE=$(echo "$LINE" | \
   sed 's|"|\\\"|g' | \
