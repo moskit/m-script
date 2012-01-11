@@ -26,7 +26,7 @@ run_meta() {
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
     if [ -n "$verbose" ] ; then
-      printf "\n  type: $metatype  script: $metascript  ..  "
+      printf "\n  type: $metatype  script: $metascript\n"
       V='--verbose'
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
@@ -37,6 +37,9 @@ run_meta() {
       else
         [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
       fi
+      echo
+    else
+      echo "Error parsing the meta: $meta"
     fi
   else
     printf "META: $1"
@@ -44,10 +47,9 @@ run_meta() {
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
     if [ -n "$verbose" ] ; then
-      printf "\n  type: $metatype  script: $metascript  ..  "
+      printf "\n  type: $metatype  script: $metascript\n"
       V='--verbose'
     fi
-    printf "== type: $metatype  script: $metascript  ..  "
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" $V
       res=$?
@@ -56,6 +58,9 @@ run_meta() {
       else
         [ $res -eq 0 ] && echo "  ..  Success" && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || echo "  ..  ERROR"
       fi
+      echo
+    else
+      echo "Error parsing the meta: $meta"
     fi
   fi
 }
