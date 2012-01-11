@@ -141,7 +141,13 @@ if [ "$type" == "remote" ] ; then
       # run the script, catch the output, exit if non-zero status
       result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
     fi
-    echo "${result}" >> "${rpath}/../deploy.log"
+    if [ -n "$verbose" ] ; then
+      echo "--------------------------------------------------------------------------------"
+      echo "${result}" | tee -a "${rpath}/../deploy.log"
+      echo "--------------------------------------------------------------------------------"
+    else
+      echo "${result}" >> "${rpath}/../deploy.log"
+    fi
     [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1 && break
   done
 elif [ "$type" == "local" ] ; then
@@ -152,7 +158,13 @@ elif [ "$type" == "local" ] ; then
     # running the script
     result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`
   fi
-  echo "${result}" >> "${rpath}/../deploy.log"
+  if [ -n "$verbose" ] ; then
+      echo "--------------------------------------------------------------------------------"
+      echo "${result}" | tee -a "${rpath}/../deploy.log"
+      echo "--------------------------------------------------------------------------------"
+    else
+      echo "${result}" >> "${rpath}/../deploy.log"
+    fi
   [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1
 else
   echo "type: \"$type\" not supported"

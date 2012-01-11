@@ -17,10 +17,53 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+
+run_meta() {
+  [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" >> "${rpath}/../deploy.log" && exit 0
+  if [ -n "$test" -o -n "$dry" ] ; then
+    printf "META: $1"
+    metatype=`echo $1 | awk '{print $1}'`
+    metascript=`echo $1 | awk '{print $2}'`
+    metascript=`eval "echo $metascript"`
+    if [ -n "$verbose" ] ; then
+      printf "\n  type: $metatype  script: $metascript  ..  "
+      V='--verbose'
+    fi
+    if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V
+      res=$?
+      if [ -n "$verbose" ] ; then
+        [ $res -eq 0 ] && echo "Success" || echo "ERROR"
+      else
+        [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
+      fi
+    fi
+  else
+    printf "META: $1"
+    metatype=`echo $1 | awk '{print $1}'`
+    metascript=`echo $1 | awk '{print $2}'`
+    metascript=`eval "echo $metascript"`
+    if [ -n "$verbose" ] ; then
+      printf "\n  type: $metatype  script: $metascript  ..  "
+      V='--verbose'
+    fi
+    printf "== type: $metatype  script: $metascript  ..  "
+    if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" $V
+      res=$?
+      if [ -n "$verbose" ] ; then
+        [ $res -eq 0 ] && echo "Success" && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || echo "ERROR"
+      else
+        [ $res -eq 0 ] && echo "  ..  Success" && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || echo "  ..  ERROR"
+      fi
+    fi
+  fi
+}
+
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command"
+possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output"
 necessary_options="role task"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
@@ -100,7 +143,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
   [ -f "${rpath}/../keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
   #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
-  $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
+  #$SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
   [ -z "$SCP" ] && echo "SCP not found!" && exit 1
 
   #${rpath}/test_meta --flavor=$flavor --task=$task --role=$role || exit 1
@@ -109,63 +152,19 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
   install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
   touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
-  
+  echo
   if [ -n "$command" ] ; then
     meta="$command"
-    [ `grep -c "^${meta}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $meta" >> "${rpath}/../deploy.log" && exit 0
-    if [ -n "$test" -o -n "$dry" ] ; then
-      echo "*** META: $meta"
-      metatype=`echo $meta | awk '{print $1}'`
-      metascript=`echo $meta | awk '{print $2}'`
-      metascript=`eval "echo $metascript"`
-      printf "== type: $metatype  script: $metascript  ..  "
-      if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry
-        [ $? -eq 0 ] && echo "OK" || echo "ERROR"
-      fi
-    else
-      echo "*** META: $meta"
-      metatype=`echo $meta | awk '{print $1}'`
-      metascript=`echo $meta | awk '{print $2}'`
-      metascript=`eval "echo $metascript"`
-      printf "== type: $metatype  script: $metascript  ..  "
-      if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task"
-        [ $? -eq 0 ] && echo "OK" && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || echo "ERROR"
-      fi
-    fi
+    run_meta "${meta}"
   else
-  
     IFS1=$IFS
     IFS='
 '
     for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
-      if [ -n "$test" -o -n "$dry" ] ; then
-        echo "*** META: $meta"
-        metatype=`echo $meta | awk '{print $1}'`
-        metascript=`echo $meta | awk '{print $2}'`
-        metascript=`eval "echo $metascript"`
-        printf "== type: $metatype  script: $metascript  ..  "
-        if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-          deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry
-          [ $? -eq 0 ] && echo "OK" || echo "ERROR"
-        fi
-      else
-        [ `grep -c "^${meta}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $meta" >> "${rpath}/../deploy.log" && continue
-        echo "*** META: $meta"
-        metatype=`echo $meta | awk '{print $1}'`
-        metascript=`echo $meta | awk '{print $2}'`
-        metascript=`eval "echo $metascript"`
-        printf "== type: $metatype  script: $metascript  ..  "
-        if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-          deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task"
-          [ $? -eq 0 ] && echo "OK" && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || exit 1
-        fi
-      fi
+      run_meta "${meta}"
     done
     IFS=$IFS1
   fi
-  
 else
   echo "Setting up self is not supported"
 fi
