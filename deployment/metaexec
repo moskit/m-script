@@ -21,7 +21,7 @@ rpath=${0%/*}
 run_meta() {
   [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" >> "${rpath}/../deploy.log" && exit 0
   if [ -n "$test" -o -n "$dry" ] ; then
-    [ -n "$use_color" ] && printf "\033[01;32mMETA: $1\033[00;39m" || printf "META: $1"
+    [ -n "$use_color" ] && printf "\033[01;36mMETA: $1\033[00;39m" || printf "META: $1"
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
@@ -34,13 +34,13 @@ run_meta() {
       res=$?
       if [ -n "$verbose" ] ; then
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m" || printf "\033[01;31mError\033[00;39m"
+          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m\n" || printf "\033[01;31mError\033[00;39m\n"
         else
           [ $res -eq 0 ] && echo "Success" || echo "ERROR"
         fi
       else
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "\033[01;32m  ..  Success\033[00;39m" || printf "\033[01;31m  ..  Error\033[00;39m"
+          [ $res -eq 0 ] && printf "\033[01;32m  ..  Success\033[00;39m\n" || printf "\033[01;31m  ..  Error\033[00;39m\n"
         else
           [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
         fi
@@ -50,7 +50,7 @@ run_meta() {
       echo "Error parsing the meta: $meta"
     fi
   else
-    [ -n "$use_color" ] && printf "\033[01;32mMETA: $1\033[00;39m" || printf "META: $1"
+    [ -n "$use_color" ] && printf "\033[01;36mMETA: $1\033[00;39m" || printf "META: $1"
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
