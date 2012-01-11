@@ -21,7 +21,7 @@ rpath=${0%/*}
 run_meta() {
   [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" >> "${rpath}/../deploy.log" && exit 0
   if [ -n "$test" -o -n "$dry" ] ; then
-    [ -n "$use_color" ] && printf "\033[01;36mMETA: $1\033[00;39m" || printf "META: $1"
+    [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[00;39m" || printf "META: $1"
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
@@ -40,17 +40,17 @@ run_meta() {
         fi
       else
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "\033[01;32m  ..  Success\033[00;39m\n" || printf "\033[01;31m  ..  Error\033[00;39m\n"
+          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n" || printf "  ..  \033[01;31mError\033[00;39m\n"
         else
           [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
         fi
       fi
-      echo
+      [ -n "$verbose" ] && echo
     else
       echo "Error parsing the meta: $meta"
     fi
   else
-    [ -n "$use_color" ] && printf "\033[01;36mMETA: $1\033[00;39m" || printf "META: $1"
+    [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[00;39m" || printf "META: $1"
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
@@ -77,7 +77,6 @@ SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output"
-necessary_options="role task"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
 IFS='--'
@@ -142,15 +141,26 @@ if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
   echo "One of ip, cloud or cluster must be defined"
   exit 1
 fi
-
-safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
-match_lhs=""
-[[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
-[[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
-[[ -z ${match_lhs}    ]] \
-	&& type -P dircolors >/dev/null \
-	&& match_lhs=$(dircolors --print-database)
-[[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
+if [ -z "$role" ] ; then
+  role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
+  [ -z "$role" ] && echo "Unable to find the role for this cluster/server" && exit 1
+fi
+if [ -z "$flavor" ] ; then
+  flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
+  [ -z "$flavor" ] && echo "Unable to find the flavor for this cluster/server OS" && exit 1
+fi
+# Default output is console, colored if colors are supported
+if [ -z "$output" ] ; then
+# Thanks to Gentoo guys for this part, I couldn't do better
+  safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
+  match_lhs=""
+  [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
+  [[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
+  [[ -z ${match_lhs}    ]] \
+	  && type -P dircolors >/dev/null \
+	  && match_lhs=$(dircolors --print-database)
+  [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
+fi
 
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
