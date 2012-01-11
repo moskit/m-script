@@ -21,7 +21,7 @@ rpath=${0%/*}
 run_meta() {
   [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" >> "${rpath}/../deploy.log" && exit 0
   if [ -n "$test" -o -n "$dry" ] ; then
-    printf "META: $1"
+    [ -n "$use_color" ] && printf "\033[01;32mMETA: $1\033[00;39m" || printf "META: $1"
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
@@ -33,16 +33,24 @@ run_meta() {
       deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V
       res=$?
       if [ -n "$verbose" ] ; then
-        [ $res -eq 0 ] && echo "Success" || echo "ERROR"
+        if [ -n "$use_color" ] ; then
+          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m" || printf "\033[01;31mError\033[00;39m"
+        else
+          [ $res -eq 0 ] && echo "Success" || echo "ERROR"
+        fi
       else
-        [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
+        if [ -n "$use_color" ] ; then
+          [ $res -eq 0 ] && printf "\033[01;32m  ..  Success\033[00;39m" || printf "\033[01;31m  ..  Error\033[00;39m"
+        else
+          [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
+        fi
       fi
       echo
     else
       echo "Error parsing the meta: $meta"
     fi
   else
-    printf "META: $1"
+    [ -n "$use_color" ] && printf "\033[01;32mMETA: $1\033[00;39m" || printf "META: $1"
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
@@ -134,6 +142,15 @@ if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
   echo "One of ip, cloud or cluster must be defined"
   exit 1
 fi
+
+safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
+match_lhs=""
+[[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
+[[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
+[[ -z ${match_lhs}    ]] \
+	&& type -P dircolors >/dev/null \
+	&& match_lhs=$(dircolors --print-database)
+[[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
