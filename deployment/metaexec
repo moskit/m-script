@@ -46,6 +46,7 @@ run_meta() {
         fi
       fi
       [ -n "$verbose" ] && echo
+      [ $res -eq 0 ] && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || exit 1
     else
       echo "Error parsing the meta: $meta"
     fi
@@ -84,7 +85,7 @@ run_meta() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output"
+possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output repeat"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
 IFS='--'
@@ -157,6 +158,7 @@ if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
   [ -z "$flavor" ] && echo "Unable to find the flavor for this cluster/server OS" && exit 1
 fi
+[ -n "$repeat" ] && timestamp=repeat
 # Default output is console, colored if colors are supported
 if [ -z "$output" ] ; then
 # Thanks to Gentoo guys for this part, I couldn't do better
