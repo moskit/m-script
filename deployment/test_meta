@@ -124,12 +124,14 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     RETVAL+=1
   fi
   echo
+  if [ -n "$use_color" ] ; then
+    [ $good ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n"
+  else
+    [ $good ] && printf "  ..  Success\n"
+  fi
+  echo
 done
-if [ -n "$use_color" ] ; then
-  [ $good ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n"
-else
-  [ $good ] && printf "  ..  Success\n"
-fi
+
 echo
 IFS=$IFS1
 exit $RETVAL
