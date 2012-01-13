@@ -153,11 +153,11 @@ if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
 fi
 if [ -z "$role" ] ; then
   role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
-  [ -z "$role" ] && echo "Unable to find the role for this cluster/server" && exit 1
+  [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
 fi
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
-  [ -z "$flavor" ] && echo "Unable to find the flavor for this cluster/server OS" && exit 1
+  [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
 [ -n "$repeat" ] && timestamp=repeat
 # Default output is console, colored if colors are supported
