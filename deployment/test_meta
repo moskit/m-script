@@ -59,10 +59,24 @@ if [ "X$help" == "Xyes" ] ; then
 
   exit 0
 fi
+
+# Default output is console, colored if colors are supported
+if [ -z "$output" ] ; then
+# Thanks to Gentoo guys for this part, I couldn't do better
+  safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
+  match_lhs=""
+  [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
+  [[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
+  [[ -z ${match_lhs}    ]] \
+	  && type -P dircolors >/dev/null \
+	  && match_lhs=$(dircolors --print-database)
+  [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
+fi
+
 source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
-source "${ROLES_ROOT}/${role}/role.conf"
+
 [ -z "$cluster" -a -z "$ip" ] && echo "One of --cluster or --ip options is necessary (ip should be present in servers.list if cluster is not defined)" && exit 1
 [ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "${rpath}/../servers.list" | cut -d'|' -f5`
 [ -n "$cluster" -a -z "$ip" ] && ip="127.0.0.1"
@@ -75,6 +89,7 @@ if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS. Define it or check if this cluster has a default role set in conf/cluster.conf" && exit 1
 fi
+source "${ROLES_ROOT}/${role}/role.conf"
 IFS1=$IFS
 IFS='
 '
@@ -83,11 +98,11 @@ n=0
 for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
   n+=1
   ([[ $meta =~ ^# ]] || [[ $meta =~ ^$ ]] || [[ $meta =~ ^[[:space:]]*# ]]) && continue
-  echo "*** META: \"$meta\""
+  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$meta\033[00;39m" || printf "META: $meta"
   metatype=`echo $meta | awk '{print $1}'`
   metascript=`echo $meta | awk '{print $2}'`
   metascript=`eval "echo $metascript"`
-  echo "== type: $metatype  script: $metascript"
+  echo -e "\n type: $metatype  script: $metascript\n"
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "${ROLES_ROOT}/$metascript" ] ; then
       echo "  ERROR :: line $n :: ${ROLES_ROOT}/$metascript doesn't exist"
@@ -96,10 +111,12 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     ### Variant with subshells extraction
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
-    printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL=1 ; fi ; done
+    [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then [ -n "$use_color" ] && printf "\033[01;32m" ; echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL=1 ; [ -n "$use_color" ] && printf "\033[00;39m" ; fi ; done
   else
+    [ -n "$use_color" ] && printf "\033[01;32m"
     echo "ERROR :: line $n :: wrong syntax"
+    [ -n "$use_color" ] && printf "\033[00;39m"
     RETVAL=1
   fi
   echo
