@@ -107,9 +107,11 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
   echo -e "\n type: $metatype  script: $metascript\n"
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "${ROLES_ROOT}/$metascript" ] ; then
+      [ -n "$use_color" ] && printf "\033[01;32m"
       echo "  ERROR :: line $n :: ${ROLES_ROOT}/$metascript doesn't exist"
+      [ -n "$use_color" ] && printf "\033[00;39m"
       RETVAL+=1
-      good=false
+      continue
     fi
     ### Variant with subshells extraction
     ### IFS1=$IFS ; IFS='
@@ -123,7 +125,6 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     [ -n "$use_color" ] && printf "\033[00;39m"
     RETVAL+=1
   fi
-  echo
   if [ -n "$use_color" ] ; then
     [ $good ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n"
   else
