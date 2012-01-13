@@ -118,7 +118,7 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do
       printf "$var :: "
       a=`eval "echo \$var"`
       if [ -z "$a" ] ; then
@@ -130,7 +130,7 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
           [ -n "$use_color" ] && printf "\033[00;39m"
         else
           [ -n "$use_color" ] && printf "\033[01;33m"
-          printf "internal "
+          printf "internal  "
           [ -n "$use_color" ] && printf "\033[00;39m"
         fi
       fi
@@ -152,6 +152,14 @@ done
 
 echo
 IFS=$IFS1
+if [ $RETVAL -gt 0 ] ; then
+  if [ -n "$use_color" ] ; then
+    printf "\033[01;31mFound $RETVAL errors\033[00;39m\n"
+  else
+    echo "Found $RETVAL errors"
+  fi
+  echo
+fi
 exit $RETVAL
 
 
