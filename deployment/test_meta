@@ -80,7 +80,9 @@ export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/h
 [ -z "$cluster" -a -z "$ip" ] && echo "One of --cluster or --ip options is necessary (ip should be present in servers.list if cluster is not defined)" && exit 1
 [ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "${rpath}/../servers.list" | cut -d'|' -f5`
 [ -n "$cluster" -a -z "$ip" ] && ip="127.0.0.1"
+declare -i RETVAL
 RETVAL=0
+good=true
 if [ -z "$role" ] ; then
   role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
   [ -z "$role" ] && echo "Unable to find the role of this cluster/server. Define one of role, cluster, ip or check if you have a default role defined for this cluster in conf/clusters.conf" && exit 1
@@ -106,21 +108,29 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "${ROLES_ROOT}/$metascript" ] ; then
       echo "  ERROR :: line $n :: ${ROLES_ROOT}/$metascript doesn't exist"
-      RETVAL=1
+      RETVAL+=1
+      good=false
     fi
     ### Variant with subshells extraction
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then [ -n "$use_color" ] && printf "\033[01;32m" ; echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL=1 ; [ -n "$use_color" ] && printf "\033[00;39m" ; fi ; done
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then [ -n "$use_color" ] && printf "\033[01;32m" ; echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL+=1 ; good=false ; [ -n "$use_color" ] && printf "\033[00;39m" ; fi ; done
   else
     [ -n "$use_color" ] && printf "\033[01;32m"
     echo "ERROR :: line $n :: wrong syntax"
+    good=false
     [ -n "$use_color" ] && printf "\033[00;39m"
-    RETVAL=1
+    RETVAL+=1
   fi
   echo
 done
+if [ -n "$use_color" ] ; then
+  [ $good ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n"
+else
+  [ $good ] && printf "  ..  Success\n"
+fi
+echo
 IFS=$IFS1
 exit $RETVAL
 
