@@ -107,7 +107,7 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
   echo -e "\n type: $metatype  script: $metascript\n"
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "${ROLES_ROOT}/$metascript" ] ; then
-      [ -n "$use_color" ] && printf "\033[01;32m"
+      [ -n "$use_color" ] && printf "\033[01;31m"
       echo "  ERROR :: line $n :: ${ROLES_ROOT}/$metascript doesn't exist"
       [ -n "$use_color" ] && printf "\033[00;39m"
       RETVAL+=1
@@ -117,9 +117,9 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then [ -n "$use_color" ] && printf "\033[01;32m" ; echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL+=1 ; good=false ; [ -n "$use_color" ] && printf "\033[00;39m" ; fi ; done
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\|%|g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do printf "$var :: " ; a=`eval "echo \$var"` ; if [ -z "$a" ] ; then [ -n "$use_color" ] && printf "\033[01;31m" ; echo -e "\nERROR :: line $n :: $metascript :: variable $var is null" ; RETVAL+=1 ; good=false ; [ -n "$use_color" ] && printf "\033[00;39m" ; fi ; done
   else
-    [ -n "$use_color" ] && printf "\033[01;32m"
+    [ -n "$use_color" ] && printf "\033[01;31m"
     echo "ERROR :: line $n :: wrong syntax"
     good=false
     [ -n "$use_color" ] && printf "\033[00;39m"
