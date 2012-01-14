@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 
 store_vars() {
-  for LINE in `cat "${ROLES_ROOT}/${1}/role.conf"` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" ; done
+  for LINE in `cat "${ROLES_ROOT}/${1}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" ; done
 }
 
 source "${rpath}/../conf/cloud.conf"
