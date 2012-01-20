@@ -1,15 +1,8 @@
 #!/bin/bash
 
-# while true ; do currshard=`mongo appserver10/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.speech_act\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d' ' -f2` ; echo "Current shard: $currshard" ; oneforbackup=`mongo appserver10/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.speech_act\", shard : { \\$ne : \"$currshard\" }}, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt` ; chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d' ' -f2` ; chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | cut -d' ' -f2` ; chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | cut -d' ' -f2` ; chkidmin=${chkidmin#*\"} ; chkidmin=${chkidmin%\"*} ; chkidmax=${chkidmax#*\"} ; chkidmax=${chkidmax%\"*} ; echo "$chkshard : $chkidmin - $chkidmax" ; sleep 600 ; echo ; done
+sharded="speechact post channeltermstats"
+while true ; do for coll in $sharded ; do currshard=`mongo mongo3:27019/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.$coll\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d' ' -f2` ; echo "$coll current shard: $currshard" ; oneforbackup=`mongo mongo3:27019/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.$coll\", shard : { \\$ne : \"$currshard\" }}, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt` ; chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d' ' -f2` ; chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | awk '{print $2}'` ; chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | awk '{print $2}'` ; chkidmin=${chkidmin#*\"} ; chkidmin=${chkidmin%\"*} ; chkidmax=${chkidmax#*\"} ; chkidmax=${chkidmax%\"*} ; echo "$chkshard : $chkidmin - $chkidmax" ; done ; sleep 300 ; echo ; done
 
-### what moveChunk.start | server: one it is located on
-### what moveChunk.to | server: new destination
-### what moveChunk.commit | server: one it is located on
-### what moveChunk.from | server: one it is located on
-
-
-### Backuping a sharded collection (that is, we know for sure it's sharded)
-### Get "db|collection|shardkey|shards" table
 
 ### Get the shard (and chunk?) currently being written to
 currshard1=`mongo $server/config --quiet --eval "db.chunks.find( { ns : \"${db}.${collection}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d' ' -f2`

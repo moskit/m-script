@@ -344,7 +344,7 @@ if [ -e "${rpath}/mongo_config_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_config_servers.list"` ; do
     install -d "${rpath}/../../www/mongo/configservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_config_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
     "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/configservers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
@@ -354,7 +354,7 @@ if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_mongos_servers.list"` ; do
     install -d "${rpath}/../../www/mongo/balancers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_mongos_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
     "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/balancers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
@@ -364,7 +364,7 @@ if [ -e "${rpath}/mongo_shards.list" ] ; then
   for cs in `cat "${rpath}/mongo_shards.list" | cut -d'|' -f1` ; do
     install -d "${rpath}/../../www/mongo/shardservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_shards.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
     "${rpath%/}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/shardservers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
@@ -374,7 +374,7 @@ if [ -e "${rpath}/mongo_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_servers.list" | cut -d'|' -f1` ; do
     install -d "${rpath}/../../www/mongo/servers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat"
+    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
     "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/mongo/servers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done

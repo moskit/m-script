@@ -74,7 +74,7 @@ fi
 
 case $s_param in
   start)
-    [ -f "$pidfile" ] && [ -n "`cat $pidfile`" ] && echo "Already running (PID `cat $pidfile`, file $pidfile)" && rm "$pidfile" && exit 0
+    [ -f "$pidfile" ] && [ -n "`cat $pidfile`" ] && echo "Already running (PID `cat $pidfile`, file $pidfile). If you are sure it is a stale pidfile, either remove it manually or do restart." && exit 0
     printf "Starting ${0##*/}...   " | tee -a $logfile
     if [ -e "$config" ] ; then
       echo "Using configuration file $config" >>"$logfile"
@@ -103,28 +103,28 @@ case $s_param in
       config="${rpath}/${rcommand##*/}.conf"
       [ -e "$config" ] || config="/etc/${rcommand##*/}.conf"
       [ -e "$config" ] && echo "Using configuration file $config" && source $config
-      [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
       [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
       if [ -e "$pidfile" ] ; then
         echo "Using PID file $pidfile"
       else
         echo "Unable to stop ${rcommand}, PID file not found"
+        exit 1
       fi
     else
       [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
       [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
-      if [ -f ${pidfile} ]; then
-        pid=`cat ${pidfile}|tail -1`
-        if [ -n "$pid" ] ; then
-          printf "Stopping $rcommand (pid $pid)...      "
-          rm -f $pidfile
-          kill -15 $pid && echo "done"
-        else
-          echo "Unable to stop ${rcommand}, PID file is empty"
-        fi
+    fi
+    if [ -f ${pidfile} ]; then
+      pid=`cat ${pidfile}|grep -v ^$|tail -1`
+      if [ -n "$pid" ] ; then
+        printf "Stopping $rcommand (pid $pid)...      "
+        rm -f $pidfile
+        kill -15 $pid && echo "done"
       else
-        echo "${pidfile} not found!"
+        echo "Unable to stop ${rcommand}, PID file is empty"
       fi
+    else
+      echo "${pidfile} not found!"
     fi
     ;;
   restart)
