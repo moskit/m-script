@@ -10,7 +10,7 @@ echo "<li class=\"tab active\" id=\"dash\" onClick=\"initMonitors('dash')\">Serv
 for standalone in `find ${PWD}/../../standalone/rc -type l` ; do
   standalone=`readlink $standalone`
   standalone=${standalone##*/}
-  echo "<li class=\"tab\" id=\"${standalone}\" onClick=\"initMonitors('${standalone}')\">${standalone}</li>"
+  echo "<li class=\"tab\" id=\"${standalone}\" onClick=\"initMonitors('${standalone}', 0)\">${standalone}</li>"
 done
 echo "</ul>"
 

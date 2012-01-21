@@ -42,8 +42,7 @@ if (objStatus.globalLock) {
   print('lockQueueTotal|' + objStatus.globalLock.currentQueue.total);
   print('lockQueueReaders|' + objStatus.globalLock.currentQueue.readers);
   print('lockQueueWriters|' + objStatus.globalLock.currentQueue.writers);
-}
-if (objStatus.globalLock.activeClient) {
+
   print('lockClientsTotal|' + objStatus.globalLock.activeClients.total);
   print('lockClientsReaders|' + objStatus.globalLock.activeClients.readers);
   print('lockClientsWriters|' + objStatus.globalLock.activeClients.writers);

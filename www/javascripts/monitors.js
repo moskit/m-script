@@ -2,22 +2,65 @@ init = function() {
   el = document.body;
   el.observe('click', hideAll);
   fillTabs();
-  initMonitors('dash');
+  initMonitors('dash', 0);
 }
 
 var pu = null;
+var updater = null;
+var updaterstopped = 1;
+var updaterlevel = 0;
+var hideblocked = 1;
 
-initMonitors = function(updater) {
+initMonitors = function(upd,updlevel) {
+  hideblocked = 1;
+  stopUpdater();
   document.documentElement.style.cursor = 'wait';
-  if (pu) { pu.stop(); }
-  pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
-    method: 'get', frequency: 200, decay: 10
-  });
-  $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
-  if ($(updater)) { $(updater).addClassName('active'); }
+  updater = upd;
+  startUpdater(updater);
+  if (updlevel == 0) {
+    $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+    if ($(updater)) { $(updater).addClassName('active'); }
+  }
   document.documentElement.style.cursor = '';
 }
 
+startUpdater = function(updater) {
+  if (updaterstopped == 1) {
+    if (!updater) updater = window.updater;
+    //showVars($('messages'), updater + ' stopped');
+    pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
+      method: 'get', frequency: 200, decay: 10
+    });
+    updaterstopped = 0;
+    //showVars($('messages'), updater + ' started');
+  }
+}
+
+stopUpdater = function() {
+  if (updaterstopped == 0) {
+    if (pu) { pu.stop(); pu = undefined; }
+    //showVars($('messages'), updater + ' stopped');
+    updaterstopped = 1;
+  }
+}
+
+showVars = function(result_div,newvar) {
+  if (!newvar == '') {
+//    result_div.appendChild(document.createTextNode(newvar));  
+//    result_div.appendChild(document.createElement('br'));  
+
+    var result_wrap, line_index, line;  
+
+    result_wrap = document.createElement('div');  
+    line = document.createTextNode(newvar);  
+    result_wrap.appendChild(line);  
+    result_div.appendChild(result_wrap);
+    result_div.appendChild(line);
+    result_div.appendChild(document.createElement('br'));  
+
+    //result_div.scrollTop = result_div.scrollHeight;
+  }
+}
 
 fillTabs = function() {
   var the_url = '/bin/filltabs.cgi';
@@ -30,6 +73,7 @@ fillTabs = function() {
 
 showURL = function(theid,url,scriptname) {
   if ($('data_' + theid).style.display == "none") {
+    hideblocked = 1;
     var the_url = '/bin/fetchurl.cgi?url=' + escape(url) + '&to=/' + scriptname + '/' + escape(theid) + '.html';
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
@@ -46,6 +90,8 @@ showData = function(theid,base) {
   cluster=$(theid).parentNode.parentNode.id;
   server=$(theid).parentNode.id;
   if ($('data_' + theid).style.display == "none") {
+    hideblocked = 1;
+    stopUpdater(updater);
     if (cluster == 'localhost') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(theid) + '.html';
     } else {
@@ -66,6 +112,8 @@ showDetails = function(theid,script) {
   cluster=$(theid).parentNode.parentNode.id;
   server=$(theid).parentNode.id;
   if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
+    hideblocked = 1;
+    stopUpdater(updater);
     cursor_saved = $(theid).style.cursor
     cursor_style($(theid),'wait');
     waitingEffect($(theid),'start');
@@ -105,6 +153,8 @@ waitingEffect = function(theid,action) {
 }
 
 showMenu = function(theid,thetext,action) {
+  hideblocked = 1;
+  stopUpdater(updater);
   if ($(theid).style.display == "none") {
     $(theid).innerHTML=thetext;
     Effect.SlideDown(theid, {duration: 0.3});
@@ -136,14 +186,19 @@ showMenu = function(theid,thetext,action) {
 }
 
 hideAll = function(e) {
-  var targ;
-	if (!e) var e = this.event;
-	if (e.target) targ = e.target;
-	else if (e.srcElement) targ = e.srcElement;
-//	if (targ.nodeType == 3) 
-  targ = targ.parentNode.parentNode;
-  $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
-  $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
+  if (hideblocked == 0) {
+    var targ;
+    if (!e) var e = this.event;
+    if (e.target) targ = e.target;
+    else if (e.srcElement) targ = e.srcElement;
+//  if (targ.nodeType == 3) 
+    targ = targ.parentNode.parentNode;
+    $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
+    $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
+  if (updaterstopped == 1) startUpdater();
+  } else {
+    hideblocked = 0;
+  }
 }
 
 cursor_style = function(elem,type) {
