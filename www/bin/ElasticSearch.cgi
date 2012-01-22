@@ -27,7 +27,8 @@ echo "<div class=\"clustername\"><span class=\"indent\">Clusters and nodes</span
 for cluster in ${PWD}/../../standalone/${scriptname}/data/*.nodes ; do
   eshost=`grep transport_address $cluster | awk '{print $2}'`
   eshost=${eshost#*/} ; eshost=${eshost%:*}
-  eshost=`grep "^${eshost}:" ${PWD}/../../standalone/${scriptname}/*.es_servers.list`
+  servercluster=`grep -l "^${eshost}:" ${PWD}/../../standalone/${scriptname}/*.es_servers.list`
+  eshost=`grep "^${eshost}:" ${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list`
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
   esstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status ' | cut -d' ' -f2`
   echo "<div class=\"cluster\" id=\"${clustername}\">"
@@ -39,7 +40,7 @@ for cluster in ${PWD}/../../standalone/${scriptname}/data/*.nodes ; do
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
     echo "</div>"
     echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
-    for esserver in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.es_servers.list` ; do
+    for esserver in `cat ${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list` ; do
       echo "<div class=\"server\" id=\"${esserver}\">"
         echo "<div class=\"servername\" id=\"${esserver}_name\" onClick=\"showData('${esserver}_name','/${scriptname}')\">`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${esserver%:*}.dat"|grep ^name\||cut -d'|' -f2`<div id=\"data_${esserver}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
         echo "<div class=\"status\" id=\"${esserver}_host\">${esserver%:*}</div>"
