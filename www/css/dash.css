@@ -342,29 +342,34 @@ span.indent {
   border-bottom: 1px solid silver;
 }
 
-.views {
+#views {
   width: 800px;
   display: table;
-  height: 40px;
+  height: 30px;
   margin-top: 5px;
-  background-color: #bbb;
-  border: 1px solid #bbb;
+  background-color: #ddd;
+  border: 1px solid #ddd;
   -webkit-border-radius: 3px;
-	-moz-border-radius: 3px;
+  -moz-border-radius: 3px;
+}
+
+#views ul#viewsnav {
+  text-align: left;
+  list-style-type: none;
 }
 
 .viewsbutton {
-  border: 1px solid #404040;
+  border: 1px solid #888;
   -webkit-border-radius: 3px;
-	-moz-border-radius: 3px;
-	background-color: #ccc;
-	margin: 3px 5px 3px 5px;
-	float: left;
+  -moz-border-radius: 3px;
+  background-color: #ddd;
+  margin: 3px 0px 3px 8px;
+  float: left;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 6px 3px 6px;
 }
 
-.viewsbutton .active {
-	background-color: #fff;
-}
 
 .server {
   display: table;
