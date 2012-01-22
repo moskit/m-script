@@ -28,8 +28,8 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
   clusterdat=`ls -1tr "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat | head -1`
   esip=`grep ^ip\| "$clusterdat" | awk -F'|' '{print $2}'`
-  eshostname=`grep ^ip\| "${PWD}/../../servers.list" | awk -F'|' '{print $4}'`
-  servercluster=`grep ^ip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
+  eshostname=`grep ^$esip\| "${PWD}/../../servers.list" | awk -F'|' '{print $4}'`
+  servercluster=`grep ^$esip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
   
   eshost=`grep "^${esip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
   [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
