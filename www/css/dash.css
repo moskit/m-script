@@ -345,7 +345,7 @@ span.indent {
 #views {
   width: 800px;
   display: table;
-  height: 30px;
+  height: 40px;
   margin-top: 5px;
   background-color: #ddd;
   border: 1px solid #ddd;
@@ -356,7 +356,11 @@ span.indent {
 #views ul#viewsnav {
   text-align: left;
   list-style-type: none;
+  height: 30px;
+  margin: 5px;
+  padding: 0px;
 }
+
 
 .viewsbutton {
   border: 1px solid #888;

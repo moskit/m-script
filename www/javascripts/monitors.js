@@ -19,7 +19,7 @@ initMonitors = function(upd,updlevel) {
   startUpdater(updater);
   if (updlevel == 0) {
     $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
-    $('view0').addClassName('active');
+    if ($('view0')) { $('view0').addClassName('active'); }
   } else {
     $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
   }

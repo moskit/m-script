@@ -180,8 +180,8 @@ then
   if [ `grep -c "^p " ${rpath}/conf/mongoose.conf` -eq 0 ]
   then
     echo
-    read -p "Enter a port number for the web interface: [8080] " mongooseport
-    [ -n "$mongooseport" ] || mongooseport=8080
+    read -p "Enter a port number for the web interface: [8989] " mongooseport
+    [ -n "$mongooseport" ] || mongooseport=8989
     echo "p $mongooseport" >> ${rpath}/conf/mongoose.conf
   fi
   if [ `grep -c "^d " ${rpath}/conf/mongoose.conf` -eq 0 ]

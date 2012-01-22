@@ -8,7 +8,7 @@ echo ""
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 
-echo "<div class=\"views\">"
+echo "<div id=\"views\">"
   echo "<ul id=\"viewsnav\">"
   # view0 is a special ID indicating updaterlevel = 0 in monitors.js
   # that is, clicking it is the same as clicking the corresponding upper tab
