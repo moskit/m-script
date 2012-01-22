@@ -25,8 +25,10 @@ echo "</div>"
 echo "<div class=\"clustername\"><span class=\"indent\">Clusters and nodes</span></div>"
 
 for cluster in ${PWD}/../../standalone/${scriptname}/data/*.nodes ; do
+  eshost=`grep transport_address $cluster | awk '{print $2}'`
+  eshost=${eshost#*/} ; eshost=${eshost%:*}
+  eshost=`grep "^${eshost}:" ${PWD}/../../standalone/${scriptname}/*.es_servers.list`
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
-  eshost=`head -1 ${PWD}/../../standalone/${scriptname}/${clustername}.es_servers.list`
   esstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status ' | cut -d' ' -f2`
   echo "<div class=\"cluster\" id=\"${clustername}\">"
     echo "<div class=\"server\" id=\"${clustername}_status\">"
