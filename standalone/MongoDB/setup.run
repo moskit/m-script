@@ -5,6 +5,7 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/
 
+install -d "${rpath}/data"
 source "${rpath}/../../conf/mon.conf"
 [ -n "$SQLITE3" ] && [ "X$SQLITE3" == "X1" ] && `which sqlite3 2>/dev/null` "${rpath}/mongodb.sql3" "CREATE TABLE servers(timeindex integer, day varchar(8), hostport text, status integer, version varchar(8), uptime integer, memRes integer, memVir integer, memMapped integer, memMappedWJournal integer, infoHeapUsage integer, connCurrent integer, connAvailable integer, netIn integer, netOut integer, netReqn integer, opcountersInsert integer, opcountersQuery integer, opcountersUpdate integer, opcountersDelete integer, opcountersGetmore integer, opcountersCommand integer, opsShardedInsert integer, opsShardedQuery integer, opsShardedUpdate integer, opsShardedDelete integer, opsShardedGetmore integer, opsShardedCommand integer, opsNotShardedInsert integer, opsNotShardedQuery integer, opsNotShardedUpdate integer, opsNotShardedDelete integer, opsNotShardedGetmore integer, opsNotShardedCommand integer, opsTotalQPS integer, opsShardedTotalQPS integer, opsNotShardedTotalQPS integer, lockRatio integer, lockQueueTotal integer, lockQueueReaders integer, lockQueueWriters integer, lockClientsTotal integer, lockClientsReaders integer, lockClientsWriters integer, PRIMARY KEY(timeindex, hostport))"
 

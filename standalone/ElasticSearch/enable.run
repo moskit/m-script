@@ -16,6 +16,6 @@ n=`ls -1 "${rpath}/rc" | grep ^[0-9]*\. | cut -d'.' -f1 | tail -1`
 for mon in ${fpath}/*.mon ; do
   n=`expr $n + 1`
   [ ${#n} -eq 1 ] && m="0$n"
-  ln -s "${mon}" "${rpath}/${n}.${mon##*/}"
+  ln -s "${mon}" "${rpath}/rc/${m}.${mon##*/}"
 done
 
