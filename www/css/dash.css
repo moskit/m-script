@@ -338,7 +338,32 @@ span.indent {
 .dashtitle {
   width: 800px;
   display: table;
+  margin-top: 5px;
   border-bottom: 1px solid silver;
+}
+
+.views {
+  width: 800px;
+  display: table;
+  height: 40px;
+  margin-top: 5px;
+  background-color: #bbb;
+  border: 1px solid #bbb;
+  -webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+}
+
+.viewsbutton {
+  border: 1px solid #404040;
+  -webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	background-color: #ccc;
+	margin: 3px 5px 3px 5px;
+	float: left;
+}
+
+.viewsbutton .active {
+	background-color: #fff;
 }
 
 .server {
@@ -445,7 +470,7 @@ div.right {
 }
 
 #messages {
-  font-size: 14px;
+  font-size: 10px;
   height: 52px;
   width: 100%;
   font-weight: bold;

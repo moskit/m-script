@@ -8,6 +8,12 @@ echo ""
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 
+echo "<div class=\"views\">"
+  echo "<div class=\"viewsbutton active\">Servers</div>"
+  echo "<div class=\"viewsbutton\">Sharding</div>"
+  echo "<div class=\"viewsbutton\">Collections</div>"
+echo "</div>"
+
 echo "<div class=\"dashtitle\">"
   echo "<div class=\"server\">"
     echo "<div class=\"servername\" id=\"title1\">host:port</div>"
