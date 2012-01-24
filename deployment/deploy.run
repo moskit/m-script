@@ -91,7 +91,9 @@ fi
 # too. Variables with same names would be overwritten.
 roleincluded=${file%%/*}
 if [ "X$roleincluded" != "X$role" ] ; then
-  store_vars $roleincluded
+  if [ -e "${ROLES_ROOT}/${roleincluded}/role.conf" ] ; then
+    store_vars $roleincluded
+  fi
 fi
 # command-line options (variables from this script) should be saved too
 IFS2=$IFS ; IFS=$' \t\n'

@@ -374,6 +374,14 @@ span.indent {
   padding: 3px 6px 3px 6px;
 }
 
+.viewsbutton:hover {
+  color: #363;
+  cursor: pointer;
+}
+
+.viewsbutton:active {
+  color: #393;
+}
 
 .server {
   display: table;

@@ -30,8 +30,13 @@ run_meta() {
       V='--verbose'
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V
-      res=$?
+      if [ -e "${ROLES_ROOT}/$metascript" ] ; then
+        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V
+        res=$?
+      else
+        echo "${ROLES_ROOT}/$metascript not found"
+        res=1
+      fi
       if [ -n "$verbose" ] ; then
         if [ -n "$use_color" ] ; then
           [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m\n" || printf "\033[01;31mError\033[00;39m\n"
@@ -62,8 +67,13 @@ run_meta() {
       V='--verbose'
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" $V
-      res=$?
+      if [ -e "${ROLES_ROOT}/$metascript" ] ; then
+        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" $V
+        res=$?
+      else
+        echo "${ROLES_ROOT}/$metascript not found"
+        res=1
+      fi
       if [ -n "$verbose" ] ; then
         if [ -n "$use_color" ] ; then
           [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m\n" || printf "\033[01;31mError\033[00;39m\n"

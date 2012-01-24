@@ -99,7 +99,17 @@ declare -i RETVAL
 RETVAL=0
 [ -n "$recursive" ] && r="-r"
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-[ -n "$ip" ] && cluster= && region=
+if [ -n "$ip" ] ; then
+  cluster= && region=
+  if [ `grep -c "^$ip\|" "${rpath}/../../servers.list"` -eq 0 ] ; then
+    if [ `cat "${rpath}/../../servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+      echo "Unable to find $ip in servers.list"
+      exit 1
+    else
+      ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep "\|${ip}$" | cut -d'|' -f1`
+    fi
+  fi
+fi
 [ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 [ -z "$cluster" ] && echo "No clusters found" && exit 1
 
