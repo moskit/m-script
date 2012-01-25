@@ -23,7 +23,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="cluster help region verbose limit ip"
+possible_options="cluster help region verbose limit ip nolocalhost"
 commflag=0
 for s_option in "${@}"
 do
@@ -130,7 +130,7 @@ if [ "X$command" != "X" ] ; then
         echo "===== Server: $server"
       fi
       if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
-        eval $command
+        [ -z "$nolocalhost" ] && eval $command
       else
         [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
         [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)

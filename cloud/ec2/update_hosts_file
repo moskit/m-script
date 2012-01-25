@@ -40,18 +40,23 @@ do
 done
 IFS=$IFS1
 [ -n "$error" ] && echo "$error" && exit 1
-if [ -n $1 ] ; then
+if [ -n "$1" ] ; then
   if [ "$1" == "everywhere" ] ; then
     echo "Syncing servers.list to all clusters"
     for cluster in `cat "${rpath}/../../conf/clusters.conf" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*#` ; do
-    clustername=`echo $cluster | cut -d'|' -f1`
-    mpath=`echo $cluster | cut -d'|' -f8`
-    ${rpath}/cloudsync --cluster=$clustername ${rpath}/../../servers.list ${mpath}/
-    ${rpath}/cloudexec --cluster=$clustername ${mpath}/cloud/ec2/${rcommand}
+      clustername=`echo $cluster | cut -d'|' -f1`
+      mpath=`echo $cluster | cut -d'|' -f8`
+      if [ -n "$mpath" ] ; then
+        ${rpath}/cloudsync --cluster=$clustername ${rpath}/../../servers.list ${mpath}/
+        ${rpath}/cloudexec --cluster=$clustername ${mpath}/cloud/ec2/${rcommand}
+      fi
+    done
   else
     mpath=`grep ^$1\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f8`
-    ${rpath}/cloudsync --cluster=$1 ${rpath}/../../servers.list ${mpath}/
-    ${rpath}/cloudexec --cluster=$1 ${mpath}/cloud/ec2/${rcommand}
+    if [ -n "$mpath" ] ; then
+      ${rpath}/cloudsync --nolocalhost --cluster=$1 ${rpath}/../../servers.list ${mpath}/
+      ${rpath}/cloudexec --nolocalhost --cluster=$1 ${mpath}/cloud/ec2/${rcommand}
+    fi
   fi
 fi
 
