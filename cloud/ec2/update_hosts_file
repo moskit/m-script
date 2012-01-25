@@ -20,11 +20,11 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 IFS1=$IFS
 IFS='|'
-cat ${rpath}/../../servers.list | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | awk -F'|' '{print $1" "$4}' | while read HOST
+cat "${rpath}/../../servers.list" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | cut -d'|' -f1,4 | while read HOST
 do
-  ip=`echo $HOST | awk '{print $1}'`
-  hname=`echo $HOST | awk '{print $2}'`
-  [ -z "$hname" ] && error=1 && continue
+  ip=`echo $HOST | cut -d'|' -f1`
+  hname=`echo $HOST | cut -d'|' -f2`
+  [ -z "$hname" ] && error="Server $ip has no name" && continue
   if [ `grep -c "$ip[[:space:]]*$hname" /etc/hosts` -eq 0 ] ; then
     if [ `grep -c "$ip " /etc/hosts` -eq 1 ] ; then
       sed -i -e "/$ip/d" /etc/hosts
@@ -35,8 +35,23 @@ do
     if [ `grep -c " $hname$" /etc/hosts` -eq 1 ] ; then
       sed -i -e "/ $hname$/d" /etc/hosts
     fi
-    echo "$ip $hname" >> /etc/hosts
+    echo -e "\n$ip $hname" >> /etc/hosts
   fi
 done
 IFS=$IFS1
-[ -n "$error" ] && echo "Error adding to hosts file! Server without name" && exit 1
+[ -n "$error" ] && echo "$error" && exit 1
+if [ -n $1 ] ; then
+  if [ "$1" == "everywhere" ] ; then
+    echo "Syncing servers.list to all clusters"
+    for cluster in `cat "${rpath}/../../conf/clusters.conf" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*#` ; do
+    clustername=`echo $cluster | cut -d'|' -f1`
+    mpath=`echo $cluster | cut -d'|' -f8`
+    ${rpath}/cloudsync --cluster=$clustername ${rpath}/../../servers.list ${mpath}/
+    ${rpath}/cloudexec --cluster=$clustername ${mpath}/cloud/ec2/${rcommand}
+  else
+    mpath=`grep ^$1\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f8`
+    ${rpath}/cloudsync --cluster=$1 ${rpath}/../../servers.list ${mpath}/
+    ${rpath}/cloudexec --cluster=$1 ${mpath}/cloud/ec2/${rcommand}
+  fi
+fi
+
