@@ -165,10 +165,12 @@ if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
 fi
 if [ -z "$role" ] ; then
   role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
+  echo "Using role ${role}, default for cluster ${cluster}"
   [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
 fi
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
+  echo "Using flavor ${flavor}, default for cluster ${cluster}"
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
 [ -n "$repeat" ] && timestamp=repeat
@@ -224,6 +226,9 @@ else
   echo "Setting up self is not supported"
 fi
 
+echo "Timestamp: $timestamp"
+echo "Work directory: ${WORK_DIR}/${role}.${task}.${timestamp}"
+echo
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then
 #  echo "Using existing key"
