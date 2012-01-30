@@ -104,23 +104,27 @@ function parse_data() {
   netReqn_prev=`grep ^netReqn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netReqn_prev=$netReqn
   net_reqps=`echo "scale=1; ($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   echo "Network requests per second:   $net_reqps"
+  if [ -n "$lockTime" ] ; then
+    echo
+    echo " Global lock"
+    echo
+    lockTime_prev=`grep ^lockTime\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
+    lockTime=`echo "scale=4; (${lockTime} - ${lockTime_prev}) / ($timeindexnow - $lasttimeindex) / 10000" | bc`
+    echo "Lock time current, percents:   $lockTime"
+    echo "Lock time overall, percents:   `echo "scale=4; $lockRatio * 100" | bc`"
+    echo "Lock queue total:   $lockQueueTotal"
+    echo "Lock queue readers:   $lockQueueReaders"
+    echo "Lock queue writers:   $lockQueueWriters"
+    echo "Lock clients total:   $lockClientsTotal"
+    echo "Lock clients readers:   $lockClientsReaders"
+    echo "Lock clients writers:   $lockClientsWriters"
+  else
+    lockTime=0
+  fi
   echo
-  echo " Global lock"
+  echo " Operations / second"
   echo
-  lockTime_prev=`grep ^lockTime\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
-  lockTime=`echo "scale=4; (${lockTime-0} - ${lockTime_prev-0}) / ($timeindexnow - $lasttimeindex) / 10000" | bc`
-  echo "Lock time current, percents:   $lockTime"
-  echo "Lock time total, percents:   `echo "scale=4; $lockRatio" | bc`"
-  echo "Lock queue total:   $lockQueueTotal"
-  echo "Lock queue readers:   $lockQueueReaders"
-  echo "Lock queue writers:   $lockQueueWriters"
-  echo "Lock clients total:   $lockClientsTotal"
-  echo "Lock clients readers:   $lockClientsReaders"
-  echo "Lock clients writers:   $lockClientsWriters"
-  echo
-  echo " Queries / second"
-  echo
-  echo " Query Type         Total       Sharded       Not Sharded"
+  echo " Operation Type         Total       Sharded       Not Sharded"
   echo
   
   # Total

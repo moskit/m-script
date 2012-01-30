@@ -38,8 +38,9 @@ if (objStatus.ops) {
   print('opsNotShardedCommand|' + objStatus.ops.notSharded.command);
 }
 if (objStatus.globalLock) {
-  print('lockRatio|' + objStatus.globalLock.ratio);
+  print('totalTime|' + objStatus.globalLock.totalTime);
   print('lockTime|' + objStatus.globalLock.lockTime);
+  print('lockRatio|' + objStatus.globalLock.ratio);
   print('lockQueueTotal|' + objStatus.globalLock.currentQueue.total);
   print('lockQueueReaders|' + objStatus.globalLock.currentQueue.readers);
   print('lockQueueWriters|' + objStatus.globalLock.currentQueue.writers);
