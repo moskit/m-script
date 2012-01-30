@@ -39,10 +39,10 @@ if (objStatus.ops) {
 }
 if (objStatus.globalLock) {
   print('lockRatio|' + objStatus.globalLock.ratio);
+  print('lockTime|' + objStatus.globalLock.lockTime);
   print('lockQueueTotal|' + objStatus.globalLock.currentQueue.total);
   print('lockQueueReaders|' + objStatus.globalLock.currentQueue.readers);
   print('lockQueueWriters|' + objStatus.globalLock.currentQueue.writers);
-
   print('lockClientsTotal|' + objStatus.globalLock.activeClients.total);
   print('lockClientsReaders|' + objStatus.globalLock.activeClients.readers);
   print('lockClientsWriters|' + objStatus.globalLock.activeClients.writers);
