@@ -8,35 +8,25 @@ echo ""
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 
-echo "<div id=\"views\">"
-  echo "<ul id=\"viewsnav\">"
-  # view0 is a special ID indicating updaterlevel = 0 in monitors.js
-  # that is, clicking it is the same as clicking the corresponding upper tab
-  # other buttons IDs become CGI scripts names (with .cgi extension)
-    echo "<li class=\"viewsbutton active\" id=\"view0\" onClick=\"initMonitors('MongoDB', 0)\">Servers</li>"
-    echo "<li class=\"viewsbutton\" id=\"sharding\" onClick=\"initMonitors('sharding', 1)\">Sharding</li>"
-    echo "<li class=\"viewsbutton\" id=\"collections\" onClick=\"initMonitors('collections', 1)\">Collections</li>"
-  echo "</ul>"
-echo "</div>"
+cat "${PWD}/../../standalone/${scriptname}/views_nav_bar.html"
+cat "${PWD}/../../standalone/${scriptname}/servers_title.html"
 
-echo "<div class=\"dashtitle\">"
-  echo "<div class=\"server\">"
-    echo "<div class=\"servername\" id=\"title1\">host:port</div>"
-    echo "<div class=\"status\" id=\"title2\">&nbsp;</div>"
-    echo "<div class=\"status\" id=\"title3\"><b>Status</b></div>"
-    echo "<div class=\"status\" id=\"title4\"><b>Memory Res/Virt</b></div>"
-    echo "<div class=\"status\" id=\"title5\"><b>Conn Curr/Avail</b></div>"
-    echo "<div class=\"status\" id=\"title6\"><b>Bandwidth In/Out</b></div>"
-    echo "<div class=\"status\" id=\"title7\"><b>Requests / sec</b></div>"
+function cluster_header() {
+  echo "<div class=\"clustername\"><span class=\"indent\">$*</span></div>"
+  echo "<div class=\"cluster\" id=\"`echo "$*" | tr ' ' '_'`\">"
+}
+
+function cluster_bottom() {
   echo "</div>"
-echo "</div>"
+}
 
 IFS1=$IFS
 IFS='
 '
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc -l` -gt 0 ] ; then
-  echo "<div class=\"clustername\"><span class=\"indent\">Configuration servers</span></div>"
-  echo "<div class=\"cluster\" id=\"configservers\">"
+
+  cluster_header Configuration servers
+  
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
       port=${s##*:}
       name=${s%:*}
@@ -58,11 +48,14 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc
       echo "</div>"
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
-  echo "</div>"
+    
+  cluster_bottom
+  
 # Standalone servers
 elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` -gt 0 ] ; then
-  echo "<div class=\"clustername\"><span class=\"indent\">MongoDB servers</span></div>"
-  echo "<div class=\"cluster\" id=\"servers\">"
+  
+  cluster_header MongoDB servers
+  
     for rs in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server\" id=\"${rs}\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
@@ -119,12 +112,15 @@ elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` 
       echo "</div>"
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
-  echo "</div>"
+    
+  cluster_bottom
+  
 fi
 
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then
-  echo "<div class=\"clustername\"><span class=\"indent\">Shard servers</span></div>"
-  echo "<div class=\"cluster\" id=\"shardservers\">"
+
+  cluster_header Shard servers
+  
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"|cut -d'|' -f1` ; do
       port=`echo $s | awk '{print $1}' | cut -d':' -f2`
       name=`echo $s | awk '{print $1}' | cut -d':' -f1`
@@ -148,12 +144,15 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt
       echo "</div>"
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
-  echo "</div>"
+    
+  cluster_bottom
+  
 fi
 
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
-  echo "<div class=\"clustername\"><span class=\"indent\">Balancers</span></div>"
-  echo "<div class=\"cluster\" id=\"balancers\">"
+
+  cluster_header Balancers
+  
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
       port=${s##*:}
       name=${s%:*}
@@ -177,7 +176,9 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc
       echo "</div>"
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
-  echo "</div>"
+    
+  cluster_bottom
+  
 fi
 IFS=$IFS1
 

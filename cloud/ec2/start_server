@@ -20,7 +20,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="cluster ami number aki region zone type"
+possible_options="cluster ami number aki region zone type return"
 necessary_options=""
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -89,8 +89,35 @@ else
   amiID=$ami
 fi
 instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
-echo $instances
+
 [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} 2>/dev/null
 
-
+for ((i=0; i<30; i++)) ; do
+  sleep 10
+  for instance in $instances ; do
+    istate=`"${rpath}"/show_servers --id=$instance --filter=istate`
+    if [ "X$state" == "Xrunning" ] ; then
+      if [ -n "$return" ] ; then
+        case $return in
+          id|ids)
+            echo $instance
+            ;;
+          ip|ips)
+            if [ "X$NETWORK" == "Xexternal" ] ; then
+              "${rpath}"/show_servers --id=$instance --filter=extIP
+            else
+              "${rpath}"/show_servers --id=$instance --filter=inIP
+            fi
+            ;;
+          *)
+            "${rpath}"/show_servers --id=$instance
+            ;;
+        esac
+      else
+        "${rpath}"/show_servers --id=$instance
+      fi
+      instances=`echo $instances | sed "s|$instance ||"`
+    fi
+  done
+done
 
