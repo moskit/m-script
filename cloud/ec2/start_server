@@ -89,8 +89,8 @@ if [ -n "$cluster" ] ; then
   [ -n "$zone" ] || zone=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f3`
   [ -n "$type" ] || type=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f5`
 fi
-placement=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f4`
-[ -n "$placement" ] || placement="default"
+secgroup=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f4`
+[ -n "$secgroup" ] || secgroup="default"
 
 [ -n "$amiID" ] && echo "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (echo "No AMI found" && exit 1)
 
@@ -99,7 +99,8 @@ placement=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' 
 [ "X$zone" == "X" ] || zone="-z $zone"
 [ "X$type" == "X" ] || type="-t $type"
 
-instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $amiID --placement-group $placement | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
+instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g' || echo "ERROR"`
+[ "X$instances" == "XERROR" ] && echo "Error starting instances" && exit 1
 
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} 2>/dev/null
