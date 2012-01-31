@@ -84,15 +84,16 @@ if [ "X$ami" == "X" ] ; then
   if [ -n "$cluster" ] ; then
     amiID=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f6`
   fi
-  
 else
   amiID=$ami
 fi
+
 [ -n "$amiID" ] && echo "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (echo "No AMI found" && exit 1)
 [ "X$aki" == "X" ] || aki="--kernel $aki"
 [ "X$number" == "X" ] || number="-n $number"
 [ "X$zone" == "X" ] || zone="-z $zone"
 [ "X$type" == "X" ] || type="-t $type"
+
 instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
 
 for instance in $instances ; do
@@ -103,6 +104,7 @@ for ((i=0; i<30; i++)) ; do
   sleep 10
   for instance in $instances ; do
     istate=`"${rpath}"/show_servers --id=$instance --filter=istate`
+    echo "instance $instance state: $istate"
     if [ "X$istate" == "Xrunning" ] ; then
       echo
       if [ -n "$return" ] ; then
