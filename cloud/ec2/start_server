@@ -125,6 +125,5 @@ for ((i=0; i<30; i++)) ; do
       instances=`echo $instances | sed "s|$instance ||"`
     fi
   done
-  printf "."
 done
 
