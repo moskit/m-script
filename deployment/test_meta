@@ -91,7 +91,7 @@ if [ -z "$role" ] ; then
 fi
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
-  [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS. Define it or check if this cluster has a default flavor set in conf/cluster.conf" && exit 1
+  [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS. Define it as a command-line option or check if this cluster has a default flavor set in conf/cluster.conf" && exit 1
 fi
 source "${ROLES_ROOT}/${role}/role.conf"
 IFS1=$IFS
@@ -99,6 +99,7 @@ IFS='
 '
 declare -i n
 n=0
+[ -e "${ROLES_ROOT}/${role}/meta.${task}" ] || RETVAL=255
 for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
   n+=1
   ([[ $meta =~ ^# ]] || [[ $meta =~ ^$ ]] || [[ $meta =~ ^[[:space:]]*# ]]) && continue

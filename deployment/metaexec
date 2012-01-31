@@ -157,10 +157,11 @@ if [ -n "$ip" ] ; then
   fi
 fi
 if [ -z "$ip" ] && [ -n "$cloud" ] ; then
-  ip=`"${rpath}/cloud/${cloud}/start_server --cluster=${cluster} --return=ip"`
+  ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip`
+  [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && exit 1
 fi
-if [ -z "$cloud" -a -z "$ip" -a -z "$cluster" ] ; then
-  echo "One of ip, cloud or cluster must be defined"
+if [ -z "$cloud" -a -z "$ip" ] ; then
+  echo "One of ip or cloud must be defined"
   exit 1
 fi
 if [ -z "$role" ] ; then
