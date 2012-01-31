@@ -78,10 +78,7 @@ install -d $TMPDIR
 [ -n "$region" ] && EC2_REGION=$region
 
 [ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
-[ "X$aki" == "X" ] || aki="--kernel $aki"
-[ "X$number" == "X" ] || number="-n $number"
-[ "X$zone" == "X" ] || zone="-z $zone"
-[ "X$type" == "X" ] || type="-t $type"
+
 if [ "X$ami" == "X" ] ; then
   #amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${cluster}" | head -1 | awk '{print $1}'`
   if [ -n "$cluster" ] ; then
@@ -92,6 +89,10 @@ else
   amiID=$ami
 fi
 [ -n "$amiID" ] && echo "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (echo "No AMI found" && exit 1)
+[ "X$aki" == "X" ] || aki="--kernel $aki"
+[ "X$number" == "X" ] || number="-n $number"
+[ "X$zone" == "X" ] || zone="-z $zone"
+[ "X$type" == "X" ] || type="-t $type"
 instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
 
 for instance in $instances ; do
