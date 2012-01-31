@@ -92,7 +92,7 @@ fi
 secgroup=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f4`
 [ -n "$secgroup" ] || secgroup="default"
 
-[ -n "$amiID" ] && echo "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (echo "No AMI found" && exit 1)
+[ -n "$amiID" ] && echo "`date +"%H:%M:%S"`:Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (echo "No AMI found" && exit 1)
 
 [ "X$aki" == "X" ] || aki="--kernel $aki"
 [ "X$number" == "X" ] || number="-n $number"
@@ -110,7 +110,7 @@ for ((i=0; i<30; i++)) ; do
   sleep 10
   for instance in $instances ; do
     istate=`"${rpath}"/show_servers --id=$instance --filter=istate`
-    [ -n "$verbose" ] && echo "instance $instance state: $istate"
+    [ -n "$verbose" ] && echo "`date +"%H:%M:%S"`: instance $instance state: $istate"
     if [ "X$istate" == "Xrunning" ] ; then
       echo
       if [ -n "$return" ] ; then

@@ -98,7 +98,7 @@ run_meta() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output repeat"
+possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output repeat newserver"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
 IFS='--'
@@ -156,7 +156,7 @@ if [ -n "$ip" ] ; then
     cluster=$ipcluster
   fi
 fi
-if [ -z "$ip" ] && [ -n "$cloud" ] ; then
+if [ -z "$ip" ] && [ -n "$cloud" ] && [ -n "$newserver" ]; then
   echo "*** Bringing up a new server in the cloud $cloud"
   ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip | tail -1`
   if [[ $ip =~ [^[0-9.]]* ]] ; then
@@ -164,9 +164,10 @@ if [ -z "$ip" ] && [ -n "$cloud" ] ; then
     exit 1
   fi
   [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && exit 1
+  ${rpath}/../cloud/${cloud}/update_servers_list
 fi
-if [ -z "$cloud" -a -z "$ip" ] ; then
-  echo "One of ip or cloud must be defined"
+if [ -z "$ip" -a -z "$newserver" ] ; then
+  echo "If ip is not defined, both cloud and newserver options must be defined."
   exit 1
 fi
 if [ -z "$role" ] ; then
