@@ -111,7 +111,7 @@ print_server() {
         [ "X$a" == "X$s" ] && line="${line}${b} "
       done
     done
-    echo $line
+    echo $line | sed 's| $||'
     unset line
   fi
   IFS=$IFS1
