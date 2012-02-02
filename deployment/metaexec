@@ -166,10 +166,7 @@ if [ -z "$ip" ] && [ -n "$cloud" ] && [ -n "$newserver" ]; then
   [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && exit 1
   ${rpath}/../cloud/${cloud}/update_servers_list
 fi
-if [ -z "$ip" -a -z "$newserver" ] ; then
-  echo "If ip is not defined, both cloud and newserver options must be defined."
-  exit 1
-fi
+
 if [ -z "$role" ] ; then
   role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
   echo "Using role ${role}, default for cluster ${cluster}"
