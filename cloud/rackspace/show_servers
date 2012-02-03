@@ -28,8 +28,8 @@ install -d $TMPDIR
 CURL="$CURL -s"
 
 source "${rpath}/../../conf/cloud.conf"
-[ -f "${TMPDIR}/auth" ] || ${rpath}/auth
-URL=`grep ^X-Server-Management-Url: "${TMPDIR}/auth" | cut -d' ' -f2`
-TOKEN=`grep ^X-Auth-Token: "${TMPDIR}/auth" | cut -d' ' -f2`
+[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
+URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/publicURL "${TMPDIR}/auth.resp" | cut -d' ' -f2`
+TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d' ' -f2`
 $CURL -X POST -D "${TMPDIR}/req.$$" -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/xml" -H "X-Auth-Token: $TOKEN" "$URL" | "${rpath}/../../lib/json2txt"
 

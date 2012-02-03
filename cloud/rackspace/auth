@@ -26,8 +26,10 @@ SSLEX=`which openssl 2>/dev/null`
 TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
-
-source "${rpath}/../../conf/cloud.conf
-
-$CURL -D $TMPDIR/auth -H "X-Auth-Key: $RS_AUTH_KEY" -H "X-Auth-User: $RS_AUTH_USER" "https://${RS_APIURL#https://}"
+V="v1.1"
+source "${rpath}/../../conf/cloud.conf"
+cat "${rpath}/auth.$V.json" | sed "s|RS_AUTH_USER|$RS_AUTH_USER|;s|RS_AUTH_KEY|$RS_AUTH_KEY|" > "$TMPDIR/auth.req"
+$CURL -X POST -T "$TMPDIR/auth.req" -H "Content-Type: application/json" -H "Accept: application/json" "https://${RS_APIURL#https://}/$V/auth" | "${rpath}/../../lib/json2txt" > "$TMPDIR/auth.resp"
+[ `grep -c ^1\/auth\/token\/id "$TMPDIR/auth.resp"` -eq 1 ] || exit 1
+exit 0
 
