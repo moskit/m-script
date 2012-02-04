@@ -27,9 +27,26 @@ TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-source "${rpath}/../../conf/cloud.conf"
-[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
+[ "X$1" == "Xdetail" ] && req='/servers/detail' || req='/servers'
+
+request() {
 URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/publicURL "${TMPDIR}/auth.resp" | cut -d' ' -f2`
 TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d' ' -f2`
-$CURL -X POST -D "${TMPDIR}/req.$$" -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/xml" -H "X-Auth-Token: $TOKEN" "$URL" | "${rpath}/../../lib/json2txt"
+$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/req.resp"
+}
+
+list_servers() {
+cat "${TMPDIR}/req.resp"
+}
+
+source "${rpath}/../../conf/cloud.conf"
+
+[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
+request
+if [ `grep -c ^1\/unauthorized\/code\ 401$ "${TMPDIR}/req.resp"` -eq 1 ] ; then
+  ${rpath}/auth
+  request
+fi
+
+list_servers
 
