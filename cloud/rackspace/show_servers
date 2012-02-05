@@ -70,24 +70,36 @@ $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: appl
 }
 
 list_servers() {
+  IFS1=$IFS
+  IFS='
+'
   if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
-    while read LINE ; do
-      [[ $LINE =~ ^1\/servers\/progress ]] && continue
-      [[ $LINE =~ ^1\/servers\/id ]] && printf "\n${LINE#*|} "
-      [[ $LINE =~ ^1\/servers\/imageId ]] && printf "`imageId ${LINE#*|}` "
-      [[ $LINE =~ ^1\/servers\/flavorId ]] && printf "`flavorId ${LINE#*|}` "
-      [[ $LINE =~ ^1\/servers\/hostId ]] && continue
-      
-      printf "${LINE#*|} "
-
-    done < "${TMPDIR}/${rcommand}.resp"
+    for n in `cat "${TMPDIR}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
+      for LINE in `grep \/servers\/${n}\/ "${TMPDIR}/${rcommand}.resp"` ; do
+        [[ $LINE =~ \/servers\/progress ]] && continue
+        [[ $LINE =~ \/servers\/id ]] && printf "\n${LINE#*|} "
+        [[ $LINE =~ \/servers\/imageId ]] && printf "`imageId ${LINE#*|}` "
+        [[ $LINE =~ \/servers\/flavorId ]] && printf "`flavorId ${LINE#*|}` "
+        [[ $LINE =~ \/servers\/hostId ]] && continue
+        
+        printf "${LINE#*|} "
+      done
+      echo
+    done
   else
     echo "No data. Run without --noupdate"
   fi
+  IFS=$IFS1
 }
 
 imageId() {
-  echo 
+  imagenum=`grep \/id\|$1 "${TMPDIR}/images.resp" | cut -d'/' -f3`
+  grep \/$imagenum\/name\| "${TMPDIR}/images.resp" | cut -d'|' -f2
+}
+
+flavorId() {
+  imagenum=`grep \/id\|$1 "${TMPDIR}/flavors.resp" | cut -d'/' -f3`
+  grep \/$imagenum\/name\| "${TMPDIR}/flavors.resp" | cut -d'|' -f2
 }
 
 source "${rpath}/../../conf/cloud.conf"
