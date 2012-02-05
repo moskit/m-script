@@ -27,7 +27,7 @@ TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-possible_options="region short noupdate"
+possible_options="region short noupdate view"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -76,15 +76,44 @@ list_servers() {
   if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
     for n in `cat "${TMPDIR}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       for LINE in `grep \/servers\/${n}\/ "${TMPDIR}/${rcommand}.resp"` ; do
-        [[ $LINE =~ \/servers\/progress ]] && continue
-        [[ $LINE =~ \/servers\/id ]] && printf "\n${LINE#*|} "
-        [[ $LINE =~ \/servers\/imageId ]] && printf "`imageId ${LINE#*|}` "
-        [[ $LINE =~ \/servers\/flavorId ]] && printf "`flavorId ${LINE#*|}` "
-        [[ $LINE =~ \/servers\/hostId ]] && continue
-        
-        printf "${LINE#*|} "
+        LINE=`echo $LINE | awk -F"servers/${n}/" '{print $2}'`
+        lvar=`echo $LINE | cut -d'|' -f1`
+        lvalue=`echo $LINE | cut -d'|' -f2`
+        case $lvar in
+          imageId)
+            imageId=`imageId $lvalue`
+            ;;
+          flavorId)
+            flavorId=`flavorId $lvalue`
+            ;;
+          addresses/public/*)
+            extIP="$extIP $lvalue"
+            ;;
+          addresses/private/*)
+            intIP="$intIP $lvalue"
+            ;;
+          *)
+            eval "$lvar=\"$lvalue\""
+            ;;
+        esac
       done
-      echo
+      case $view in
+        list)
+          echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
+          ;;
+        column)
+          echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+          ;;
+        *)
+          echo "------------------------------------------------------------------------------"
+          echo "Server ID: $id    Name: $name    Status: $status"
+          echo "Public IP: $extIP"
+          echo "Private IP: $intIP"
+          echo "Server image: $imageId"
+          echo "Server size: $flavorId"
+          ;;
+      esac
+      unset id name status extIP intIP imageId flavorId
     done
   else
     echo "No data. Run without --noupdate"
@@ -93,12 +122,12 @@ list_servers() {
 }
 
 imageId() {
-  imagenum=`grep \/id\|$1 "${TMPDIR}/images.resp" | cut -d'/' -f3`
+  imagenum=`grep \/id\|${1}$ "${TMPDIR}/images.resp" | cut -d'/' -f3`
   grep \/$imagenum\/name\| "${TMPDIR}/images.resp" | cut -d'|' -f2
 }
 
 flavorId() {
-  imagenum=`grep \/id\|$1 "${TMPDIR}/flavors.resp" | cut -d'/' -f3`
+  imagenum=`grep \/id\|${1}$ "${TMPDIR}/flavors.resp" | cut -d'/' -f3`
   grep \/$imagenum\/name\| "${TMPDIR}/flavors.resp" | cut -d'|' -f2
 }
 
