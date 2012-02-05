@@ -27,7 +27,7 @@ TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-possible_options="region short noupdate view"
+possible_options="region short noupdate view update_servers_list"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -92,28 +92,47 @@ list_servers() {
           addresses/private/*)
             intIP="$intIP $lvalue"
             ;;
+          metadata/cluster)
+            cluster="$lvalue"
+            ;;
           *)
             eval "$lvar=\"$lvalue\""
             ;;
         esac
       done
-      case $view in
-        list)
-          echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
-          ;;
-        column)
-          echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
-          ;;
-        *)
-          echo "------------------------------------------------------------------------------"
-          echo "Server ID: $id    Name: $name    Status: $status"
-          echo "Public IP: $extIP"
-          echo "Private IP: $intIP"
-          echo "Server image: $imageId"
-          echo "Server size: $flavorId"
-          ;;
-      esac
-      unset id name status extIP intIP imageId flavorId
+      if [ "X$NETWORK" == "Xexternal" ] ; then
+        IP=$extIP
+      else
+        IP=$intIP
+      fi
+      [ -n "$cluster" ] || cluster=`grep ^$IP\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+      if [ -z "$update_servers_list" ] ; then
+        case $view in
+          list)
+            echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
+            ;;
+          column)
+            echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+            ;;
+          *)
+            echo "------------------------------------------------------------------------------"
+            echo "Server ID: $id    Name: $name    Cluster: $cluster"
+            echo "Public IP: $extIP"
+            echo "Private IP: $intIP"
+            echo "Server image: $imageId"
+            echo "Server size: $flavorId    Status: $status"
+            ;;
+        esac
+      else
+        if [ -n "$cluster" ] ; then
+          key=`grep ^${cluster}\| "${rpath}/../../conf/clusters.conf | cut -d'|' -f2`
+        fi
+        if [ `grep -c ^$IP\| "${rpath}/../../servers.list"` -ne 0 ] ; then
+          sed -i "/^$IP\|/d" "${rpath}/../../servers.list"
+          echo "${IP}|${key}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
+        fi
+      fi
+      unset id name status extIP intIP imageId flavorId region cluster
     done
   else
     echo "No data. Run without --noupdate"
