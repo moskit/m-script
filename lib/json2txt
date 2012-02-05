@@ -32,9 +32,8 @@ parseline() {
     echo "  WAS: emptyobj = $emptyobj"
   fi
   if [ "X$line" == "X{" ] ; then
-    if [ -z "$value" ] ; then
-      $emptyobj && emptyobj=false && index[$i]=`expr ${index[$i]} + 1`
-    else
+    $emptyobj && emptyobj=false && index[$i]=`expr ${index[$i]} + 1`
+    if [ -n "$value" ] ; then
       printvalue "$value" && unset value
     fi
     i+=1
@@ -47,9 +46,8 @@ parseline() {
     return
   fi
   if [ "X$line" == "X}" ] ; then
-    if [ -z "$value" ] ; then
-      emptyobj=true
-    else
+    emptyobj=true
+    if [ -n "$value" ] ; then
       printvalue "$value" && unset value
     fi
     i+=-1
