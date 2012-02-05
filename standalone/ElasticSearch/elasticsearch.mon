@@ -120,9 +120,9 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     unset name status timed_out number_of_nodes number_of_data_nodes active_primary_shards active_shards relocating_shards initializing_shards unassigned_shards
   fi
   ($CURL "http://${clusterhost1}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL "http://${clusterhost2}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.nodes"
-  for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
+  for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep \/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
-    ismaster=`grep ^1\/master_node "${rpath}/data/${escluster}.nodes" | grep -c "$clusternode"`
+    ismaster=`grep \/master_node "${rpath}/data/${escluster}.nodes" | grep -c "$clusternode"`
     nodehost=`grep "${clusternode}\/transport_address " "${rpath}/data/${escluster}.nodes"`
     nodehost=${nodehost#/transport_address }
     nodehost=${nodehost%:*}
@@ -169,7 +169,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   declare -i m
   for shard in `cat "${rpath}/data/${escluster}.routing" | grep '1/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
     rm -f "${rpath}/data/${escluster}.${shard}.routing"
-    m=0 ; cat "${rpath}/data/${escluster}.routing"  | grep "1/routing_table/indices/streams/shards/${shard}/" | sed 's|^1/routing_table/indices/streams/shards/||g' | grep -v "^${shard}/shard " | while read routline ; do routlines=( ${routlines[*]} "${routline%%|*}" ) ; [[ "${routline%%|*}" == "${routlines[0]}" ]] && m+=1; echo "${m}/${routline#*/}" >> "${rpath}/data/${escluster}.${shard}.routing" ; done
+    m=0 ; cat "${rpath}/data/${escluster}.routing"  | grep "1/routing_table/indices/streams/shards/${shard}/" | sed 's|/routing_table/indices/streams/shards/||g' | grep -v "^${shard}/shard " | while read routline ; do routlines=( ${routlines[*]} "${routline%%|*}" ) ; [[ "${routline%%|*}" == "${routlines[0]}" ]] && m+=1; echo "${m}/${routline#*/}" >> "${rpath}/data/${escluster}.${shard}.routing" ; done
     unset routlines
   done
 done

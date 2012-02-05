@@ -29,7 +29,6 @@ CURL="$CURL -s"
 
 possible_options="region short noupdate"
 necessary_options=""
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 
@@ -63,11 +62,11 @@ fi
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
 
 request() {
-URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+URL=`grep ^/auth\/serviceCatalog\/cloudServers\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+TOKEN=`grep ^/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
 $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
-[ -n "`find "${TMPDIR}" -mmin -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
-[ -n "`find "${TMPDIR}" -mmin -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
+[ -n "`find "${TMPDIR}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
+[ -n "`find "${TMPDIR}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
 }
 
 list_servers() {
@@ -88,7 +87,7 @@ list_servers() {
 }
 
 imageId() {
-
+  echo 
 }
 
 source "${rpath}/../../conf/cloud.conf"
@@ -96,7 +95,7 @@ source "${rpath}/../../conf/cloud.conf"
 if [ -z "$noupdate" ] ; then
   [ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
   request
-  if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
+  if [ `grep -c \/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
     ${rpath}/auth
     request
   fi

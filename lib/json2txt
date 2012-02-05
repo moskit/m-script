@@ -18,7 +18,8 @@
 declare -i i
 i=0
 declare -a index
-
+index[$i]=0
+emptyobj=true
 #d=1
 
 parseline() {
@@ -161,6 +162,7 @@ parseline() {
 
 printvalue() {
   [ -z "$1" ] && return
+  valuename="${index[0]}"
   for ((n=1; n<=$i; n++)) ; do
     valuename="${valuename}/${index[$n]}"
   done

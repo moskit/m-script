@@ -337,7 +337,7 @@ if [ -n "$shardhosts" ] ; then
   for rs in `cat "${TMPDIR}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
   
     for rshost in `cat "${TMPDIR}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2`
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep \/host | cut -d'|' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
       
