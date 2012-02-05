@@ -17,29 +17,88 @@
 
 declare -i i
 i=0
-declare -i num
-num=0
 declare -a index
+
+#d=1
 
 parseline() {
   line=$1
+  if [ -n "$d" ] ; then
+    echo "Parsing line = $line"
+    echo "  WAS: index = $i"
+    echo "  WAS: var[$i] = ${index[$i]}"
+    echo "  WAS: value = $value"
+    echo "  WAS: emptyobj = $emptyobj"
+  fi
   if [ "X$line" == "X{" ] ; then
-    if [ $i -eq 0 ] ; then
-      num+=1
+    if [ -z "$value" ] ; then
+      $emptyobj && emptyobj=false && index[$i]=`expr ${index[$i]} + 1`
+    else
+      printvalue "$value" && unset value
     fi
     i+=1
+    if [ -n "$d" ] ; then
+      echo "  NOW: index = $i"
+      echo "  NOW: var[$i] = ${index[$i]}"
+      echo "  NOW: value = $value"
+      echo "  NOW: emptyobj = $emptyobj"
+    fi
     return
   fi
   if [ "X$line" == "X}" ] ; then
-    [ -z "$noprint" ] && printvar "$var" && unset var
+    if [ -z "$value" ] ; then
+      emptyobj=true
+    else
+      printvalue "$value" && unset value
+    fi
     i+=-1
+    if [ -n "$d" ] ; then
+      echo "  NOW: index = $i"
+      echo "  NOW: var[$i] = ${index[$i]}"
+      echo "  NOW: value = $value"
+      echo "  NOW: emptyobj = $emptyobj"
+    fi
+    return
+  fi
+  if [ "X$line" == "X[" ] ; then
+    #isarray=true
+    printvalue "$value" && unset value
+    i+=1
+    index[$i]=0
+    if [ -n "$d" ] ; then
+      echo "  NOW: index = $i"
+      echo "  NOW: var[$i] = ${index[$i]}"
+      echo "  NOW: value = $value"
+      echo "  NOW: emptyobj = $emptyobj"
+    fi
+    return
+  fi
+  if [ "X$line" == "X]" ] ; then
+    #isarray=false
+    printvalue "$value" && unset value
+    i+=-1
+    if [ -n "$d" ] ; then
+      echo "  NOW: index = $i"
+      echo "  NOW: var[$i] = ${index[$i]}"
+      echo "  NOW: value = $value"
+      echo "  NOW: emptyobj = $emptyobj"
+    fi
     return
   fi
   if [ "X$line" == "X," ] ; then
-    [ -z "$noprint" ] && printvar "$var" && unset var
+    #emptystr=true
+    printvalue "$value" && unset value
+    if [ -n "$d" ] ; then
+      echo "  NOW: index = $i"
+      echo "  NOW: var[$i] = ${index[$i]}"
+      echo "  NOW: value = $value"
+      echo "  NOW: emptyobj = $emptyobj"
+    fi
     return
   fi
   if [ -n "$line" ] ; then
+    $emptyobj && emptyobj=false
+    #$emptystr && $isarray && emptystring=false && index[$i]=`expr ${index[$i]} + 1`
     #printf "== $line == "
     f4=`echo $line | awk -F'"' '{print $4}'`
     f3=`echo $line | awk -F'"' '{print $3}'`
@@ -51,9 +110,9 @@ parseline() {
       if [ -n "$f2" ] ; then
         index[$i]="$f2"
         if [[ $f3 =~ ^[[:space:]]*\:[[:space:]]*$ ]] ; then
-          var="$f4"
+          value="$f4"
         else
-          var="`echo "$f3" | cut -d':' -f2`\"${f4}\"`echo "$line" | cut -d'"' -f5`"
+          value="`echo "$f3" | cut -d':' -f2`\"${f4}\"`echo "$line" | cut -d'"' -f5`"
         fi
       fi
     else
@@ -62,43 +121,55 @@ parseline() {
       if [ -z "$f2" ] ; then
         #echo "notstring : notstring"
         index[$i]="`echo "$line" | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-        var="`echo "$line" | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+        value="`echo "$line" | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
       else
       # notstring : "string"
         if [ -n "$f1" ] ; then
           #echo 'notstring : "string"'
           index[$i]="`echo "$f1" | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
           if [ "X`echo $f1 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`" == "X" ] ; then
-            var="$f2"
+            value="$f2"
           else
-            var="`echo "$f1" | cut -d':' -f2`\"${f2}\"${f3}"
+            value="`echo "$f1" | cut -d':' -f2`\"${f2}\"${f3}"
           fi
+          
         # "string" : notstring
         else
           #echo '"string" : notstring'
-          index[$i]=$f2
-          var="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+          # might be array, so no f3
+          if [ -z "$f3" ] ; then
+            value=$f2
+          else
+            index[$i]=$f2
+            value="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
+          fi
         fi      
       fi
     
     fi
-
+    if [ -n "$d" ] ; then
+      echo "  = it's a data line"
+      echo "  NOW: index = $i"
+      echo "  NOW: var[$i] = ${index[$i]}"
+      echo "  NOW: value = $value"
+      echo "  NOW: emptyobj = $emptyobj"
+    fi
 #    unset noprint
   fi
 
 }
 
-printvar() {
+printvalue() {
   [ -z "$1" ] && return
   for ((n=1; n<=$i; n++)) ; do
-    varname="${varname}/${index[$n]}"
+    valuename="${valuename}/${index[$n]}"
   done
-  varname=${varname%/}
-  echo "${num}$varname $1"
-  unset varname
+  valuename=${valuename%/}
+  echo "${valuename}|${1}"
+  unset valuename
 }
 
 #( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
-cat $1|sed 's|{|\n{\n|g;s|},|\n}\n|g;s|}|\n}\n|g;s|",|"\n,\n|g;s|,"|\n,\n"|g;s|,$|\n,|g;s|,[[:space:]]"|\n,\n"|g' | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
+cat $1|sed 's|{|\n{\n|g;s|},|\n}\n|g;s|}|\n}\n|g;s|",|"\n,\n|g;s|,"|\n,\n"|g;s|,$|\n,|g;s|,[[:space:]]"|\n,\n"|g;s|\[|\n\[\n|g;s|\],|\n\]\n|g' | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
 unset branch index ndcont cont i LINE node
 

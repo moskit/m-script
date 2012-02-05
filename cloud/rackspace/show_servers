@@ -27,26 +27,79 @@ TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-[ "X$1" == "Xdetail" ] && req='/servers/detail' || req='/servers'
+possible_options="region short noupdate"
+necessary_options=""
+[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: ${missing_options} not found"
+  exit 1
+fi
+
+[ -n "$short" ] && req='/servers' || req='/servers/detail'
 
 request() {
-URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/publicURL "${TMPDIR}/auth.resp" | cut -d' ' -f2`
-TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d' ' -f2`
-$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/req.resp"
+URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+[ -n "`find "${TMPDIR}" -mmin -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
+[ -n "`find "${TMPDIR}" -mmin -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
 }
 
 list_servers() {
-cat "${TMPDIR}/req.resp"
+  if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
+    while read LINE ; do
+      [[ $LINE =~ ^1\/servers\/progress ]] && continue
+      [[ $LINE =~ ^1\/servers\/id ]] && printf "\n${LINE#*|} "
+      [[ $LINE =~ ^1\/servers\/imageId ]] && printf "`imageId ${LINE#*|}` "
+      [[ $LINE =~ ^1\/servers\/flavorId ]] && printf "`flavorId ${LINE#*|}` "
+      [[ $LINE =~ ^1\/servers\/hostId ]] && continue
+      
+      printf "${LINE#*|} "
+
+    done < "${TMPDIR}/${rcommand}.resp"
+  else
+    echo "No data. Run without --noupdate"
+  fi
+}
+
+imageId() {
+
 }
 
 source "${rpath}/../../conf/cloud.conf"
 
-[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
-request
-if [ `grep -c ^1\/unauthorized\/code\ 401$ "${TMPDIR}/req.resp"` -eq 1 ] ; then
-  ${rpath}/auth
+if [ -z "$noupdate" ] ; then
+  [ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
   request
+  if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
+    ${rpath}/auth
+    request
+  fi
 fi
-
 list_servers
 
