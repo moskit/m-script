@@ -312,7 +312,7 @@ fi
 
 for configip in $configips ; do
   master=`find_master ${configip} || echo ${configip}`
-  shardhosts=`($MONGO ${master}/config --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt"`
+  shardhosts=`($MONGO ${master}/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt"`
   [ -n "$gotit" ] && unset gotit master && break
 done
 

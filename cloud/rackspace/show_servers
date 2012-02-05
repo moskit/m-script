@@ -27,7 +27,7 @@ TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-possible_options="region short noupdate view update_servers_list"
+possible_options="region short noupdate view update_servers_list forceupdate"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -60,7 +60,7 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
-
+[ -n "$forceupdate" ] && rm -f "${TMPDIR}"/*.resp
 request() {
 URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
 TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
@@ -105,8 +105,12 @@ list_servers() {
       else
         IP=$intIP
       fi
-      [ -n "$cluster" ] || cluster=`grep ^$IP\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+      IP=`echo $IP | tr -d '^ ' | tr -d ' $'`
+      for ip in $IP ; do
+      [ -n "$cluster" ] || cluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+      done
       if [ -z "$update_servers_list" ] ; then
+        if [ -n "$cluster" ] ; then
         case $view in
           list)
             echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
@@ -123,13 +127,17 @@ list_servers() {
             echo "Server size: $flavorId    Status: $status"
             ;;
         esac
+        fi
       else
         if [ -n "$cluster" ] ; then
-          key=`grep ^${cluster}\| "${rpath}/../../conf/clusters.conf | cut -d'|' -f2`
-        fi
-        if [ `grep -c ^$IP\| "${rpath}/../../servers.list"` -ne 0 ] ; then
-          sed -i "/^$IP\|/d" "${rpath}/../../servers.list"
-          echo "${IP}|${key}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
+          if [ `grep -c ^${cluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${cluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+
+            if [ `grep -c ^$IP\| "${rpath}/../../servers.list"` -ne 0 ] ; then
+              sed -i "/^$IP\|/d" "${rpath}/../../servers.list"
+              echo "${IP}|${key}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
+            fi
+          fi
         fi
       fi
       unset id name status extIP intIP imageId flavorId region cluster
