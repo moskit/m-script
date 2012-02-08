@@ -127,7 +127,7 @@ parseline() {
       # "string" : "string"
 
       if [ -n "$f4" ] ; then
-        isclosed=`expr "$line" : '.*"$'`
+        isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
         #echo '"string" : "string"'
         if [ -n "$f2" ] ; then
           index[$i]="$f2"
@@ -167,6 +167,8 @@ parseline() {
             if [ -z "$f3" ] ; then
               value=$f2
             else
+              # "string" :   - f3 still present, but empty
+              isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
               index[$i]=$f2
               value="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
             fi
