@@ -108,7 +108,7 @@ for cluster in $clusternames ; do
 done
 
 for node in `cat "${rpath}"/*.es_servers.list` ; do
-  allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk "{print \\"${node}|\\" \\$2}"`"
+  allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}"`"
 done
 
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
@@ -123,8 +123,8 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^1\/master_node "${rpath}/data/${escluster}.nodes" | grep -c "$clusternode"`
-    nodehost=`grep "${clusternode}\/transport_address " "${rpath}/data/${escluster}.nodes"`
-    nodehost=${nodehost#/transport_address }
+    nodehost=`grep "${clusternode}\/transport_address|" "${rpath}/data/${escluster}.nodes"`
+    nodehost=${nodehost#/transport_address|}
     nodehost=${nodehost%:*}
     nodehost=${nodehost##*/}
     ip_to_name "$nodehost"
