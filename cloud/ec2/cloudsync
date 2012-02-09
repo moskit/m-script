@@ -30,10 +30,18 @@ rpath="${rroot}${rpath%/*}"
 #*/ (this is needed to fix vi syntax highlighting)
 source "${rpath}/../../conf/cloud.conf"
 RSYNC=`which rsync 2>/dev/null`
-[ -z "$RSYNC" ] && echo "Rsync utility not found, trying scp"
-SCP=`which scp 2>/dev/null`
-[ -n "$SCP" ] && [ -z "$RSYNC" ] && echo "Using scp"
-[ -z "$SCP" ] && [ -z "$RSYNC" ] && echo "Neither rsync nor scp is found. Exiting" && exit 1
+if [ -z "$RSYNC" ] ; then
+  echo "Rsync utility not found, trying scp"
+  SCP=`which scp 2>/dev/null`
+  if [ -n "$SCP" ] ; then
+    echo "Using scp"
+    SCP="$SCP -p"
+  else
+    echo "Neither rsync nor scp is found. Exiting" && exit 1
+  fi
+else
+  RSYNC="$RSYNC -l"
+fi
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
