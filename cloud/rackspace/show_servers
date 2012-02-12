@@ -27,7 +27,7 @@ TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-possible_options="region short noupdate view update_servers_list forceupdate"
+possible_options="region short noupdate view update_servers_list forceupdate all"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -110,7 +110,7 @@ list_servers() {
       [ -n "$cluster" ] || cluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5`
       done
       if [ -z "$update_servers_list" ] ; then
-        if [ -n "$cluster" ] ; then
+        if [ -n "$cluster" -o -n "$all" ] ; then
         case $view in
           list)
             echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
