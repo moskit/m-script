@@ -30,9 +30,9 @@ rpath="${rroot}${rpath%/*}"
 #*/ (this is needed to fix vi syntax highlighting)
 source "${rpath}/../../conf/cloud.conf"
 RSYNC=`which rsync 2>/dev/null`
+SCP=`which scp 2>/dev/null`
 if [ -z "$RSYNC" ] ; then
   echo "Rsync utility not found, trying scp"
-  SCP=`which scp 2>/dev/null`
   if [ -n "$SCP" ] ; then
     echo "Using scp"
   else

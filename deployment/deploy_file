@@ -23,6 +23,7 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 RSYNC=`which rsync 2>/dev/null`
+
 possible_options="cluster help region verbose flavor role ip test dry"
 commflag=0
 for s_option in "${@}"
@@ -81,7 +82,7 @@ source "${rpath}/../conf/deployment.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
 source "${rpath}/../conf/deployment.conf"
-source "${ROLES_ROOT}/${role}/role.conf"
+
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 install -d /tmp/m_script/deployment/
 IFS1=$IFS
@@ -95,8 +96,13 @@ if [ "X$command" != "X" ] ; then
   else
     [ -n "$flavor" ] || flavor="common"
     if [ -z "$role" ] && [ -n "$cluster" ] ; then role="$cluster" ; fi
-    [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] || (echo "Neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is not a file or file not found" && exit 1)
-    fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
+    [ -d "${ROLES_ROOT}/${role}/role.conf" ] && source "${ROLES_ROOT}/${role}/role.conf"
+    if [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] ; then
+      fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
+    else
+      echo "Neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is not a file or file not found"
+      exit 1
+    fi
   fi
   tmpfile=/tmp/m_script/deployment/`echo $fullfrom | sed 's|/|_|g'`
   rm -f "$tmpfile" 2>/dev/null

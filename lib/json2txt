@@ -85,10 +85,11 @@ parseline() {
     #isarray=false
     if [[ $isclosed -ne 0 ]] ; then
       printvalue "$value" && unset value
-      i+=-1
+      
     else
       value="${value}${line}"
     fi
+    i+=-1
     if [ -n "$d" ] ; then
       echo "  NOW: index = $i"
       echo "  NOW: var[$i] = ${index[$i]}"
