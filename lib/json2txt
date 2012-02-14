@@ -21,6 +21,7 @@ declare -a index
 index[$i]=0
 emptyobj=true
 #d=1
+isarray=false
 
 parseline() {
   line=$1
@@ -63,9 +64,9 @@ parseline() {
     return
   fi
   if [ "X$line" == "X[" ] ; then
-    #isarray=true
-    
+    # it is an array only if it's a beginning of a new value
     if [[ $isclosed -ne 0 ]] ; then
+      isarray=true
       printvalue "$value" && unset value
       i+=1
       index[$i]=0
@@ -85,11 +86,16 @@ parseline() {
     #isarray=false
     if [[ $isclosed -ne 0 ]] ; then
       printvalue "$value" && unset value
-      
+      if $isarray ; then
+        i+=-2
+        isarray=false
+      else
+        i+=-1
+      fi
     else
       value="${value}${line}"
     fi
-    i+=-1
+    
     if [ -n "$d" ] ; then
       echo "  NOW: index = $i"
       echo "  NOW: var[$i] = ${index[$i]}"
