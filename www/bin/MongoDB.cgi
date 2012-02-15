@@ -18,7 +18,7 @@ shardservers="Shard Servers"
 balancers="Balancers"
 
 function cluster_header() {
-  title=`eval echo $1`
+  title=`eval "echo \\$$1"`
   install -d "${PWD}/../${scriptname}/$1"
   echo "<div class=\"clustername\"><span class=\"indent\">${title}</span></div>"
   echo "<div class=\"cluster\" id=\"${1}\">"

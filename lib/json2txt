@@ -65,7 +65,7 @@ parseline() {
   fi
   if [ "X$line" == "X[" ] ; then
     # it is an array only if it's a beginning of a new value
-    if [[ $isclosed -ne 0 ]] ; then
+    if [[ $isclosed -ne 0 ]] || [ -z "$value" ] ; then
       isarray=true
       printvalue "$value" && unset value
       i+=1
