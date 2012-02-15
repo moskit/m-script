@@ -13,7 +13,7 @@ cat "${PWD}/../../standalone/${scriptname}/servers_title.html"
 
 function cluster_header() {
   echo "<div class=\"clustername\"><span class=\"indent\">$*</span></div>"
-  echo "<div class=\"cluster\" id=\"`echo "$*" | tr ' ' '_'`\">"
+  echo "<div class=\"cluster\" id=\"`echo "$*" | sed 's|[[:space:]]||g;s|\(.*\)|\l&|g'`\">"
 }
 
 function cluster_bottom() {
