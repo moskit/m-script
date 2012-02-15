@@ -169,13 +169,15 @@ parseline() {
             
           # "string" : notstring
           else
-            #echo '"string" : notstring'
-            # might be array, so no f3
+            # f4 empty, f1 empty, f2 not empty
+            # echo '"string" : notstring'
+            # no f3: might be an array
             if [ -z "$f3" ] ; then
               value=$f2
             else
-              # "string" :   - f3 still present, but empty
-              isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
+              # "string" :   - f3 still present, but no value, not closed
+              # "string" : notstring   - closed
+              isclosed=`expr "$line" : '.*"[[:space:]]*:[^[:space:]]'`
               index[$i]=$f2
               value="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
             fi
