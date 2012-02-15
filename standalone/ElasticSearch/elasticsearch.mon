@@ -144,23 +144,23 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
       ind_cache_filter_size=`grep ^indices\/cache\/filter_size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_merges=$(expr `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
       ind_merges_time=$(expr \( `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 )
-      open_file_descriptors=`grep ^process\/open_file_descriptors\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_cpu_sys=$(expr \( `grep ^process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000)
-      proc_cpu_user=$(expr \( `grep ^process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000)
-      proc_mem_res=`grep ^process\/mem\/resident_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_mem_share=`grep ^process\/mem\/share_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_mem_virt=`grep ^process\/mem\/total_virtual_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_uptime=$(expr `grep ^jvm\/uptime_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` / 1000)
-      jvm_mem_heap_used=`grep ^jvm\/mem\/heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_mem_heap_committed=`grep ^jvm\/mem\/heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_mem_nonheap_used=`grep ^jvm\/mem\/non_heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_mem_nonheap_committed=`grep ^jvm\/mem\/non_heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_threads=`grep ^jvm\/threads\/count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      network_active_opens=$(expr `grep ^network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
-      network_passive_opens=$(expr `grep ^network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
-      network_curr_estab=`grep ^network\/tcp\/curr_estab\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      transport_server_open=`grep ^transport\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      http_server_open=`grep ^http\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      open_file_descriptors=`grep ^os/process\/open_file_descriptors\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      proc_cpu_sys=$(expr \( `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000)
+      proc_cpu_user=$(expr \( `grep ^os/process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000)
+      proc_mem_res=`grep ^os/process\/mem\/resident_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      proc_mem_share=`grep ^os/process\/mem\/share_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      proc_mem_virt=`grep ^os/process\/mem\/total_virtual_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      jvm_uptime=$(expr `grep ^os/jvm\/uptime_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` / 1000)
+      jvm_mem_heap_used=`grep ^os/jvm\/mem\/heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      jvm_mem_heap_committed=`grep ^os/jvm\/mem\/heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      jvm_mem_nonheap_used=`grep ^os/jvm\/mem\/non_heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      jvm_mem_nonheap_committed=`grep ^os/jvm\/mem\/non_heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      jvm_threads=`grep ^os/jvm\/threads\/count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      network_active_opens=$(expr `grep ^os/network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
+      network_passive_opens=$(expr `grep ^os/network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
+      network_curr_estab=`grep ^os/network\/tcp\/curr_estab\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      transport_server_open=`grep ^os/transport\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      http_server_open=`grep ^os/http\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       $SQLITE "${rpath}/elasticsearch.sql3" "INSERT INTO nodes (timeindex, day, hostport, master, ind_size, ind_docsnum, ind_cache_field_evictions, ind_cache_field_size, ind_cache_filter_count, ind_cache_filter_evictions, ind_cache_filter_size, ind_merges, ind_merges_time, open_file_descriptors, proc_cpu_sys, proc_cpu_user, proc_mem_res, proc_mem_share, proc_mem_virt, jvm_uptime, jvm_mem_heap_used, jvm_mem_heap_committed, jvm_mem_nonheap_used, jvm_mem_nonheap_committed, jvm_threads, network_active_opens, network_passive_opens, network_curr_estab, transport_server_open, http_server_open) values ($timeindexnow, '`date +"%Y%m%d"`', '${hostport}', $master, $ind_size, $ind_docsnum, $ind_cache_field_evictions, $ind_cache_field_size, $ind_cache_filter_count, $ind_cache_filter_evictions, $ind_cache_filter_size, $ind_merges, $ind_merges_time, $open_file_descriptors, $proc_cpu_sys, $proc_cpu_user, $proc_mem_res, $proc_mem_share, $proc_mem_virt, $jvm_uptime, $jvm_mem_heap_used, $jvm_mem_heap_committed, $jvm_mem_nonheap_used, $jvm_mem_nonheap_committed, $jvm_threads, $network_active_opens, $network_passive_opens, $network_curr_estab, $transport_server_open, $http_server_open)"
     unset hostport master ind_size ind_docsnum ind_cache_field_evictions ind_cache_field_size ind_cache_filter_count ind_cache_filter_evictions ind_cache_filter_size ind_merges ind_merges_time open_file_descriptors proc_cpu_sys proc_cpu_user proc_mem_res proc_mem_share proc_mem_virt jvm_uptime jvm_mem_heap_used jvm_mem_heap_committed jvm_mem_nonheap_used jvm_mem_nonheap_committed jvm_threads network_active_opens network_passive_opens network_curr_estab transport_server_open http_server_open
     fi
