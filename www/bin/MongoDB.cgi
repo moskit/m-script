@@ -11,9 +11,17 @@ scriptname=${scriptname##*/}
 cat "${PWD}/../../standalone/${scriptname}/views_nav_bar.html"
 cat "${PWD}/../../standalone/${scriptname}/servers_title.html"
 
+# Naming table (see MongoDB/servers.mon)
+mongoservers="MongoDB Servers"
+configservers="Configuration Servers"
+shardservers="Shard Servers"
+balancers="Balancers"
+
 function cluster_header() {
-  echo "<div class=\"clustername\"><span class=\"indent\">$*</span></div>"
-  echo "<div class=\"cluster\" id=\"`echo "$*" | sed 's|[[:space:]]||g;s|\(.*\)|\l&|g'`\">"
+  title=`eval echo $1`
+  install -d "${PWD}/../${scriptname}/$1"
+  echo "<div class=\"clustername\"><span class=\"indent\">${title}</span></div>"
+  echo "<div class=\"cluster\" id=\"${1}\">"
 }
 
 function cluster_bottom() {
@@ -25,7 +33,7 @@ IFS='
 '
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc -l` -gt 0 ] ; then
 
-  cluster_header Configuration servers
+  cluster_header configservers
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
       port=${s##*:}
@@ -54,7 +62,7 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc
 # Standalone servers
 elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` -gt 0 ] ; then
   
-  cluster_header MongoDB servers
+  cluster_header mongoservers
   
     for rs in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server\" id=\"${rs}\">"
@@ -119,13 +127,12 @@ fi
 
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then
 
-  cluster_header Shard servers
+  cluster_header shardservers
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"|cut -d'|' -f1` ; do
       port=`echo $s | awk '{print $1}' | cut -d':' -f2`
       name=`echo $s | awk '{print $1}' | cut -d':' -f1`
       id="${name}_${port}"
-      install -d "${PWD}/../${scriptname}/shardservers/${id}"
       [ -n "$port" ] && wport=`expr $port + 1000`
       echo "<div class=\"server\" id=\"${name}:${port}\">"
         echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}_name','/${scriptname}')\">${name}:${port}<div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
@@ -151,7 +158,7 @@ fi
 
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
 
-  cluster_header Balancers
+  cluster_header balancers
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
       port=${s##*:}
