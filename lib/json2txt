@@ -21,17 +21,15 @@ declare -a index
 index[$i]=0
 emptyobj=true
 #d=1
-isarray=false
+declare -a arrayi
+declare -i ai
 
 parseline() {
   line=$1
   if [ -n "$d" ] ; then
     echo "Parsing line = $line"
-    echo "  WAS: index = $i"
-    echo "  WAS: var[$i] = ${index[$i]}"
-    echo "  WAS: value = $value"
-    echo "  WAS: emptyobj = $emptyobj"
-    echo "  WAS: isclosed = $isclosed"
+    echo "  WAS: index = $i    var[$i] = ${index[$i]}    value = $value"
+    echo "  WAS: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
   fi
   if [ "X$line" == "X{" ] ; then
     $emptyobj && emptyobj=false && index[$i]=`expr ${index[$i]} + 1`
@@ -40,11 +38,8 @@ parseline() {
     fi
     i+=1
     if [ -n "$d" ] ; then
-      echo "  NOW: index = $i"
-      echo "  NOW: var[$i] = ${index[$i]}"
-      echo "  NOW: value = $value"
-      echo "  NOW: emptyobj = $emptyobj"
-      echo "  NOW: isclosed = $isclosed"
+      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
+      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
     fi
     return
   fi
@@ -55,40 +50,35 @@ parseline() {
     fi
     i+=-1
     if [ -n "$d" ] ; then
-      echo "  NOW: index = $i"
-      echo "  NOW: var[$i] = ${index[$i]}"
-      echo "  NOW: value = $value"
-      echo "  NOW: emptyobj = $emptyobj"
-      echo "  NOW: isclosed = $isclosed"
+      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
+      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
     fi
     return
   fi
   if [ "X$line" == "X[" ] ; then
     # it is an array only if it's a beginning of a new value
     if [[ $isclosed -ne 0 ]] || [ -z "$value" ] ; then
-      isarray=true
       printvalue "$value" && unset value
       i+=1
+      arrayi=( ${arrayi[*]} $i )
       index[$i]=0
     else
       value="${value}${line}"
     fi
     if [ -n "$d" ] ; then
-      echo "  NOW: index = $i"
-      echo "  NOW: var[$i] = ${index[$i]}"
-      echo "  NOW: value = $value"
-      echo "  NOW: emptyobj = $emptyobj"
-      echo "  NOW: isclosed = $isclosed"
+      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
+      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
     fi
     return
   fi
   if [ "X$line" == "X]" ] ; then
-    #isarray=false
+    #arrayi=false
     if [[ $isclosed -ne 0 ]] ; then
       printvalue "$value" && unset value
-      if $isarray ; then
-        i+=-2
-        isarray=false
+      ai=${#arrayi[*]} ; ai+=-1
+      if [[ ${arrayi[$ai]} -eq $i ]] ; then
+        i+=-1
+        unset arrayi[$ai]
       else
         i+=-1
       fi
@@ -97,11 +87,8 @@ parseline() {
     fi
     
     if [ -n "$d" ] ; then
-      echo "  NOW: index = $i"
-      echo "  NOW: var[$i] = ${index[$i]}"
-      echo "  NOW: value = $value"
-      echo "  NOW: emptyobj = $emptyobj"
-      echo "  NOW: isclosed = $isclosed"
+      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
+      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
     fi
     return
   fi
@@ -109,21 +96,24 @@ parseline() {
     #emptystr=true
     if [[ $isclosed -ne 0 ]] ; then
       printvalue "$value" && unset value
+      ai=${#arrayi[*]} ; ai+=-1
+      if [ $ai -ge 0 ] ; then
+        if [[ ${arrayi[$ai]} -eq $i ]] ; then
+          index[$i]=`expr ${index[$i]} + 1`
+        fi
+      fi
     else
       value="${value}${line}"
     fi
     if [ -n "$d" ] ; then
-      echo "  NOW: index = $i"
-      echo "  NOW: var[$i] = ${index[$i]}"
-      echo "  NOW: value = $value"
-      echo "  NOW: emptyobj = $emptyobj"
-      echo "  NOW: isclosed = $isclosed"
+      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
+      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
     fi
     return
   fi
   if [ -n "$line" ] ; then
     $emptyobj && emptyobj=false
-    #$emptystr && $isarray && emptystring=false && index[$i]=`expr ${index[$i]} + 1`
+    #$emptystr && ${arrayi[*]} && emptystring=false && index[$i]=`expr ${index[$i]} + 1`
     #printf "== $line == "
     quotes=`expr "$line" : '.*".*'`
     if [[ $quotes -ne 0 ]] ; then
@@ -174,10 +164,11 @@ parseline() {
             # no f3: might be an array
             if [ -z "$f3" ] ; then
               value=$f2
+              isclosed=1
             else
               # "string" :   - f3 still present, but no value, not closed
               # "string" : notstring   - closed
-              isclosed=`expr "$line" : '.*"[[:space:]]*:[^[:space:]]'`
+              isclosed=`expr "$line" : '.*"[[:space:]]*:.*[^[:space:]]'`
               index[$i]=$f2
               value="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
             fi
@@ -191,11 +182,8 @@ parseline() {
     fi
     if [ -n "$d" ] ; then
       echo "  = it's a data line"
-      echo "  NOW: index = $i"
-      echo "  NOW: var[$i] = ${index[$i]}"
-      echo "  NOW: value = $value"
-      echo "  NOW: emptyobj = $emptyobj"
-      echo "  NOW: isclosed = $isclosed"
+      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
+      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
     fi
 #    unset noprint
   fi

@@ -106,10 +106,9 @@ for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v
     echo
   fi
 
-  for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+  for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
     IP2UB=${server%%|*}
-    # due to strangeness of how iptables accepts substituted options it is
-    # difficult to program them, so they are quite literal
+
     mainchain=INPUT
     if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       [ -n "$IPT" ] || continue
@@ -125,6 +124,7 @@ for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v
       $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
     fi
     unset rchain
+
     mainchain=OUTPUT
     if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
       [ -n "$IPT" ] || continue
@@ -140,6 +140,7 @@ for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v
       $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
     fi
     unset rchain
+
   done
 
 done
