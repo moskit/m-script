@@ -81,10 +81,10 @@ list_servers() {
         lvalue=`echo $LINE | cut -d'|' -f2`
         case $lvar in
           imageId)
-            imageId=`imageId $lvalue`
+            imageId=`imageid $lvalue`
             ;;
           flavorId)
-            flavorId=`flavorId $lvalue`
+            flavorId=`flavorid $lvalue`
             ;;
           addresses/public/*)
             extIP="$extIP $lvalue"
@@ -134,7 +134,7 @@ list_servers() {
             key=`grep ^${cluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
 
             if [ `grep -c ^$IP\| "${rpath}/../../servers.list"` -ne 0 ] ; then
-              sed -i "/^$IP\|/d" "${rpath}/../../servers.list"
+              sed -i /^$IP\|/d "${rpath}/../../servers.list"
               echo "${IP}|${key}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
             fi
           fi
@@ -148,12 +148,12 @@ list_servers() {
   IFS=$IFS1
 }
 
-imageId() {
+imageid() {
   imagenum=`grep \/id\|${1}$ "${TMPDIR}/images.resp" | cut -d'/' -f3`
   grep \/$imagenum\/name\| "${TMPDIR}/images.resp" | cut -d'|' -f2
 }
 
-flavorId() {
+flavorid() {
   imagenum=`grep \/id\|${1}$ "${TMPDIR}/flavors.resp" | cut -d'/' -f3`
   grep \/$imagenum\/name\| "${TMPDIR}/flavors.resp" | cut -d'|' -f2
 }
