@@ -177,7 +177,7 @@ if [ -z "$flavor" ] ; then
   echo "Using flavor ${flavor}, default for cluster ${cluster}"
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
-[ -n "$task" ] && task=notask
+[ -n "$task" ] || task=notask
 [ -n "$repeat" ] && timestamp=repeat
 # Default output is console, colored if colors are supported
 if [ -z "$output" ] ; then
