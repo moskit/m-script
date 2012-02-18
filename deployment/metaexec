@@ -195,7 +195,7 @@ fi
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
 M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/${CLOUD}:${M_ROOT}/helpers:${PATH}
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
