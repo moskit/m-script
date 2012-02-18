@@ -98,7 +98,7 @@ if [ "X$command" != "X" ] ; then
     # TODO: get all these from the parent process
     [ -n "$flavor" ] || flavor="common"
     if [ -z "$role" ] && [ -n "$cluster" ] ; then role="$cluster" ; fi
-    [ -d "${ROLES_ROOT}/${role}/role.conf" ] && source "${ROLES_ROOT}/${role}/role.conf"
+    [ -f "${ROLES_ROOT}/${role}/role.conf" ] && source "${ROLES_ROOT}/${role}/role.conf"
     if [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] ; then
       fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
     else
