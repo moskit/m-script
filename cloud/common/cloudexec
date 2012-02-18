@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+source "${rpath}/../../conf/cloud.conf"
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
+[ -n "$SSHPORT" ] || SSHPORT=22
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+possible_options="cluster help region verbose limit ip nolocalhost"
+commflag=0
+for s_option in "${@}"
+do
+  case ${s_option} in
+  --*=*)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
+      s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
+    fi
+    ;;
+  --*)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+      s_optarg='yes'
+    fi
+    ;;
+  *=*)
+    commflag=1
+    command="$command ${s_option}"
+    ;;
+  *)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      commflag=1
+      command="${s_option}"
+    fi
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+  done
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options> command"
+  echo 
+  echo "Without options the command will be run on all servers from servers.list"
+  echo
+  echo "Options:"
+  echo
+  echo "  --cluster=clustername    - the command will be run on all servers"
+  echo "                             from this cluster. Multiple clusters are"
+  echo "                             allowed, separated by comma (no spaces!)."
+  echo "                             Without this option the command will be"
+  echo "                             run on all clusters mentioned in servers.list."
+  echo "  --region=region          - the command will be run on all servers from"
+  echo "                             this region."
+  echo "  --ip=IP                  - runs the command on a single server. This"
+  echo "                             allows other scripts to include this one the"
+  echo "                             way that makes possible to apply it to a single"
+  echo "                             server or multiple servers depending on which"
+  echo "                             variables are defined. With this option non-"
+  echo "                             empty, cluster and region are ignored."
+  echo "  --verbose                - shows each server details before running the"
+  echo "                             command."
+  echo "  --limit=N                - runs the command on first N servers of each"
+  echo "                             cluster defined by the --cluster option"
+  echo
+  exit 0
+fi
+
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+if [ -n "$ip" ] ; then
+  cluster= && region=
+  if [ `grep -c "^$ip|" "${rpath}/../../servers.list"` -eq 0 ] ; then
+    if [ `cat "${rpath}/../../servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+      echo "Unable to find $ip in servers.list"
+      exit 1
+    else
+      ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+    fi
+  fi
+fi
+[ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
+declare -i n
+IFS1=$IFS
+IFS='
+'
+[ -n "$verbose" ] && echo "### Command: $command"
+if [ "X$command" != "X" ] ; then
+  for cluster in `printf "${cluster}\n"|sed 's|,|\n|g'` ; do
+    n=0
+    for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+      [ -n "$limit" ] && [[ $n -ge $limit ]] && break
+      IP=${server%%|*}
+      if [ -n "$ip" ] ; then
+        [ "X$ip" == "X$IP" ] || continue
+      fi
+      KEY=`echo $server | cut -d'|' -f2`
+      if [ -n "$region" ] ; then
+        REGION=`echo $server | cut -d'|' -f3`
+        [ "X$REGION" == "X$region" ] || continue
+      fi
+      if [ -n "$cluster" ] ; then
+        CLUSTER=`echo $server | cut -d'|' -f5`
+        [ "X$CLUSTER" == "X$cluster" ] || continue
+      fi
+      if [ "X$verbose" == "Xyes" ] ; then
+        echo
+        echo "===== Server: $server"
+      fi
+      if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+        [ -z "$nolocalhost" ] && eval $command
+      else
+        [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
+        [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
+        $SSH -i "${rpath}/../../keys/${KEY}" -p $SSHPORT $IP "$command"
+      fi
+    done
+    n+=1
+  done
+fi
+IFS=$IFS1
+
