@@ -66,6 +66,12 @@ for script in `find "/tmp/m_script/.update" -type f`; do
     echo "not copying this file"
   fi
 done
+echo "Checking symlinks:"
+for symlink in `find "/tmp/m_script/.update" -type l`; do
+  printf " -- ${symlink##*/} ... "
+  oldsymlink=`echo "$symlink" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
+  cp --preserve=all --update "${symlink}" "$oldsymlink" && chown `id -un`:`id -gn` "$oldsymlink" && echo "OK"
+done
 printf "Removing .new files that have zero difference with the local files ..."
 for newfile in `find ${rpath}/../ -name "*.new"` ; do
   if [ `diff $newfile ${newfile%.new} | wc -l` -eq 0 ] ; then
