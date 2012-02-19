@@ -24,7 +24,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 RSYNC=`which rsync 2>/dev/null`
 
-possible_options="cluster help region verbose flavor role ip test dry"
+possible_options="cluster help region verbose flavor role ip test dry cloud"
 commflag=0
 for s_option in "${@}"
 do
@@ -80,9 +80,10 @@ fi
 
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
+[ -n "$cloud" ] || cloud=$CLOUD
+[ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
-source "${rpath}/../conf/mon.conf"
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 install -d ${TMPDIR}/deployment/

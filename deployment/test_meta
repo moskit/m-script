@@ -20,7 +20,7 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor cluster task role ip"
+possible_options="help verbose flavor cluster task role ip cloud"
 necessary_options="task"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -74,8 +74,11 @@ if [ -z "$output" ] ; then
 fi
 
 source "${rpath}/../conf/deployment.conf"
+source "${rpath}/../conf/cloud.conf"
+[ -n "$cloud" ] || cloud=$CLOUD
+[ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 if [ -z "$role" -o -z "$flavor" ] ; then
   [ -z "$cluster" -a -z "$ip" ] && echo "Either role or flavor is not defined. In this case either ip or cluster is necessary." && exit 1
