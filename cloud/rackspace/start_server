@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+CURL=`which curl 2>/dev/null`
+LYNX=`which lynx 2>/dev/null`
+LINKS=`which links 2>/dev/null`
+WGET=`which wget 2>/dev/null`
+
+TMPDIR=/tmp/m_script/cloud/rackspace
+install -d $TMPDIR
+CURL="$CURL -s"
+
+possible_options="region flavor cluster image name"
+necessary_options="cluster"
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: ${missing_options} not found"
+  exit 1
+fi
+
+source "${rpath}/../../conf/cloud.conf"
+
+generate_name() {
+  nam=$(cat "${rpath}/../../servers.list" | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
+  am=0 ; lm=0
+  num=$(cat "${rpath}/../../servers.list" | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do a=`expr "X$name" : 'X.*[^0-9]\([0-9]*\)'` ; l=${#a} ; [ `expr $l \> ${lm}` -gt 0 ] && lm=$l ; [ `expr $a \> ${am}` -gt 0 ] && am=$a ; echo "$am|$lm" ; done | tail -1)
+  am=${num%|*} ; lm=${num#*|}
+  [ -n "$am" ] && am=`expr $am + 1` || am=1
+  [ -n "$lm" ] || lm=3
+  echo "$nam`until [[ ${#am} -eq $lm ]] ; do am="0$am" ; m0="0$m0" ; echo $m0 ; done | tail -1`$am"
+}
+
+#find_image() {
+#
+#}
+
+#find_flavor() {
+#
+#}
+
+request() {
+  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+  $CURL -X POST -T "$TMPDIR/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" "${URL}/servers" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+  [ -n "`find "${TMPDIR}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
+  [ -n "`find "${TMPDIR}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
+}
+
+check_cluster_limit || exit 1
+[ -z "$name" ] && generate_name
+[ -z "$image" ] && exit 1 #find_image
+[ -z "$flavor" ] && exit 1 #find_flavor
+thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
+[ -f "${rpath}/../../keys/${thekey}.pub" ] && thekey=${thekey}.pem
+PUBLIC_KEY=`cat $thekey 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No key found" && exit 1
+cat "${rpath}/create_server.$V.json" | sed "s|NAME|$name|;s|IMAGE_ID|$image|;s|FLAVOR_ID|$flavor|;s|CLUSTER|$cluster|;s|PUBLIC_KEY|$PUBLIC_KEY|" > "$TMPDIR/${rcommand}.req"
+
+[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
+request
+if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
+  ${rpath}/auth
+  request
+fi
+

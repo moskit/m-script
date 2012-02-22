@@ -360,8 +360,7 @@ fi
 if [ `echo $bootmon | grep -c -i "^y"` -ne 0 ]
 then
 if [ -n "`which insserv 2>/dev/null`" ] ; then
-  echo "insserv is found, assuming LSB."
-  echo "Putting override to /etc/insserv/overrides/monitorload.run"
+  echo "insserv is found, putting LSB headers override to /etc/insserv/overrides/monitorload.run"
   echo "If you see insserv errors below, you'll have to setup boot script manually, sorry."
   cat > /etc/insserv/overrides/monitorload.run << "EOF"
 ### BEGIN INIT INFO

@@ -1,10 +1,34 @@
 #!/bin/bash
 
+# Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# For the case this script is used as LSB init script
+### BEGIN INIT INFO
+# Provides:          wrapper
+# Default-Start:     2 3 5
+# Default-Stop:      0 1 6
+# Required-Start:
+# Required-Stop:
+### END INIT INFO
+
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rpath=$(cd ${xcommand%/*}/ && pwd)
 rcommand=${xcommand##*/}
 #*/
-wrapper_options="config command logfile pidfile fg user group help"
+wrapper_options="config command logfile errlogfile pidfile fg user group help wait kill"
 # All possible options for the wrapped command must be listed here
 # (only long options are supported: --option=value)
 command_options=""
@@ -63,18 +87,19 @@ if [ -e "$config" ] ; then
   source $config
 fi
 [ -n "$logfile" ] || logfile="/var/log/${rcommand##*/}.log"
+[ -n "$errlogfile" ] || errlogfile=$logfile
 [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
 
 if [ -n "$user" ] ; then
   touch "$logfile" "$pidfile" && chown $user "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
 fi
 if [ -n "$group" ] ; then
-  touch "$logfile" "$pidfile" && chown $group "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
+  touch "$logfile" "$pidfile" && chgrp $group "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
 fi
 
 case $s_param in
   start)
-    [ -f "$pidfile" ] && [ -n "`cat $pidfile`" ] && echo "Already running (PID `cat $pidfile`, file $pidfile). If you are sure it is a stale pidfile, either remove it manually or do restart." && exit 0
+    [ -f "$pidfile" ] && [ -n "`cat ${pidfile}|grep -v ^$|tail -1`" ] && [ -d "/proc/`cat ${pidfile}|grep -v ^$|tail -1`" ] &&  echo "Already running (PID `cat ${pidfile}|grep -v ^$|tail -1`, file $pidfile)." && exit 0
     printf "Starting ${0##*/}...   " | tee -a $logfile
     if [ -e "$config" ] ; then
       echo "Using configuration file $config" >>"$logfile"
@@ -82,11 +107,11 @@ case $s_param in
       echo "No configuration file" >>"$logfile"
     fi
     if [ -n "$user" ] ; then
-      su -l $user -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null" &
+      su -l $user -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
       succ=$?
       echo $! > $pidfile
     elif [ -n "$group" ] ; then
-      sg -l $group -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null" &
+      sg -l $group -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
       succ=$?
       echo $! > $pidfile
     else
@@ -95,7 +120,7 @@ case $s_param in
       echo $! > $pidfile
     fi
 
-    [[ $succ -eq 0 ]] && [ -n "`cat $pidfile`" ] && echo "done (PID `cat $pidfile`)" || echo "error" | tee -a $logfile
+    [[ $succ -eq 0 ]] && [ -n "`cat ${pidfile}|grep -v ^$|tail -1`" ] && echo "done (PID `cat ${pidfile}|grep -v ^$|tail -1`)" || echo "error" | tee -a $logfile
     ;;
   stop)
     if [ -z "$config" ] ; then
@@ -118,8 +143,25 @@ case $s_param in
       pid=`cat ${pidfile}|grep -v ^$|tail -1`
       if [ -n "$pid" ] ; then
         printf "Stopping $rcommand (pid $pid)...      "
-        rm -f $pidfile
-        kill -15 $pid && echo "done"
+        kill -15 $pid
+        sleep 1
+        if [ -d "/proc/$pid" ] ; then
+          wait=`expr $wait / 2`
+          for ((i=1; i<=$wait; i++)) ; do
+            [ -d "/proc/$pid" ] || break
+            sleep 2
+          done
+        fi
+        if [ -d "/proc/$pid" ] ; then
+          if [ -n "$kill" ] ; then
+            kill -9 $pid
+          else
+            echo "error"
+          fi
+        else
+          rm -f $pidfile
+          echo "done"
+        fi
       else
         echo "Unable to stop ${rcommand}, PID file is empty"
       fi
@@ -128,7 +170,6 @@ case $s_param in
     fi
     ;;
   restart)
-    
     $0 $wrapper_options stop
     sleep 3
     $0 $wrapper_options $command_options start
@@ -137,14 +178,14 @@ case $s_param in
     [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
     [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
     if [ -f ${pidfile} ]; then
-      pid=`cat ${pidfile}|tail -1`
+      pid=`cat ${pidfile}|grep -v ^$|tail -1`
       if [ -n "$pid" ] ; then
-        echo "${0##*/} is running (pid $pid)"
+        [ -d "/proc/$pid" ] && echo "${0##*/} is running (pid $pid)" || echo "pidfile exists, but process $pid is not running"
       else
-        echo "${0##*/} is not running"
+        echo "pidfile exists, but is empty"
       fi
     else
-      echo "${0##*/} is not running"
+      echo "${0##*/} is not running (no pidfile)"
     fi
     ;;
   *)

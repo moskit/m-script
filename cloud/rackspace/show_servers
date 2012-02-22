@@ -22,12 +22,13 @@ CURL=`which curl 2>/dev/null`
 LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
-SSLEX=`which openssl 2>/dev/null`
-TMPDIR=/tmp/m_script/cloud/rackspace
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+source "${rpath}/../../conf/mon.conf"
+TMPDIR=$TMPDIR/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
 
-possible_options="region short noupdate view update_servers_list forceupdate all"
+possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -62,11 +63,11 @@ fi
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && rm -f "${TMPDIR}"/*.resp
 request() {
-URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
-[ -n "`find "${TMPDIR}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
-[ -n "`find "${TMPDIR}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
+  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+  [ -n "`find "${TMPDIR}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
+  [ -n "`find "${TMPDIR}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
 }
 
 list_servers() {

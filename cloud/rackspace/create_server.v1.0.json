@@ -1,0 +1,16 @@
+{
+    "server" : {
+        "name" : "NAME",
+        "imageId" : IMAGE_ID,
+        "flavorId" : FLAVOR_ID,
+        "metadata" : {
+            "cluster" : "CLUSTER" 
+        },
+        "personality" : [
+            {
+                "path" : "/root/.ssh/authorized_keys",
+                "contents" : "PUBLIC_KEY" 
+            } 
+        ] 
+    }
+}

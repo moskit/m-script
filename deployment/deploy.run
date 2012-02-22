@@ -22,7 +22,6 @@ store_vars() {
   for LINE in `cat "${ROLES_ROOT}/${1}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" ; done
 }
 
-[ -n "$SSHPORT" ] || SSHPORT=22
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 possible_options="help verbose ip cluster type file key role flavor timestamp task dry cloud"
@@ -72,6 +71,7 @@ echo >> "${rpath}/../deploy.log"
 
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
+[ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "${rpath}/../" && pwd)
