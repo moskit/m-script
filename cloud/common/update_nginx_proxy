@@ -20,7 +20,7 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
-possible_options="cluster application help"
+possible_options="cluster application cloud help"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -85,54 +85,53 @@ for var in APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 
-PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
-export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
+[ -z "$cloud" ] && cloud=$CLOUD
+[ -z "$cloud" ] && cloud=common
 
-TMPDIR=/tmp/m_script/cloud/$CLOUD
+if [ "X$cloud" == "Xec2" ] ; then
+  PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
+  export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
+fi
+
+TMPDIR=/tmp/m_script/cloud/$cloud
 install -d $TMPDIR
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 
 if [ -z "$application" ] ; then
-  APPS=`for APP in $APP_SERVERS; do appnames="${appnames}\n${APP##*:}"; done; printf "$appnames" | sort | uniq` ; APPS=`echo $APPS`
+  APPS=`for APP in $APP_SERVERS; do appnames="${appnames}\n${APP##*:}"; done; echo -e "$appnames" | sort | uniq`
 else
   APPS="$application"
 fi
 
 if [ -z "$cluster" ] ; then
-  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%%:*}"; done; printf "$names" | sort | uniq` ; CLUSTERS=`echo $CLUSTERS`
+  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%%:*}"; done; echo -e "$names" | sort | uniq`
 else
   CLUSTERS="$cluster"
 fi
 
 changed=0
 
-[ -f $TMPDIR/servers.${EC2_REGION}.ips ] || ${rpath}/update_servers_list
-
 for app in $APPS ; do
-  app=${app#* }; app=${app% *}
-  rm -f $TMPDIR/${app}.servers.${EC2_REGION}.ips.prev 2>/dev/null
   for cluster in $CLUSTERS ; do
-    cluster=${cluster#* }; cluster=${cluster% *}
     for CLUSTER in $APP_SERVERS; do
       if [ "X${CLUSTER%%:*}" == "X$cluster" ] && [ "X${CLUSTER##*:}" == "X$app" ] ; then
         port=${CLUSTER#*:}; port=${port%:*}
         ports="$ports $port"
       fi
     done
-    for IP in `cat $TMPDIR/servers.${EC2_REGION}.ips | awk -F'|' '{print $1" "$14}' | grep "$cluster" | awk '{print $1}'` ; do
+    for IP in `cat "${rpath}/../../servers.list" | grep \|${cluster}[[:space:]]* | cut -d'|' -f1` ; do
       for PORT in $ports ; do
-        PORT=${PORT#* }; PORT=${PORT% *}
-        echo "$IP:$PORT" >> $TMPDIR/${app}.servers.${EC2_REGION}.ips
+        echo "$IP:$PORT" >> $TMPDIR/${app}.${cluster}.ips
       done
     done
-    [ -f $TMPDIR/${app}.servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/${app}.servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/${app}.servers.${EC2_REGION}.ips.prev $TMPDIR/${app}.servers.${EC2_REGION}.ips`" ] && continue
-    if [ `cat $TMPDIR/${app}.servers.${EC2_REGION}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
+    [ -f $TMPDIR/${app}.${cluster}.ips.prev ] && [ -f $TMPDIR/${app}.${cluster}.ips ] && [ -z "`$DIFF -q $TMPDIR/${app}.${cluster}.ips.prev $TMPDIR/${app}.${cluster}.ips`" ] && continue
+    if [ `cat $TMPDIR/${app}.${cluster}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
       changed=1
       echo "upstream $app {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
       echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
       while read IP; do
         echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-      done<$TMPDIR/${app}.servers.${EC2_REGION}.ips
+      done<$TMPDIR/${app}.${cluster}.ips
       echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
     else
       echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log

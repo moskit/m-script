@@ -62,6 +62,7 @@ fi
 
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && rm -f "${TMPDIR}"/*.resp
+
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
@@ -94,7 +95,7 @@ list_servers() {
             intIP="$intIP $lvalue"
             ;;
           metadata/cluster)
-            cluster="$lvalue"
+            icluster="$lvalue"
             ;;
           *)
             eval "$lvar=\"$lvalue\""
@@ -112,22 +113,22 @@ list_servers() {
       done
       if [ -z "$update_servers_list" ] ; then
         if [ -n "$cluster" -o -n "$all" ] ; then
-        case $view in
-          list)
-            echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
-            ;;
-          column)
-            echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
-            ;;
-          *)
-            echo "------------------------------------------------------------------------------"
-            echo "Server ID: $id    Name: $name    Cluster: $cluster"
-            echo "Public IP: $extIP"
-            echo "Private IP: $intIP"
-            echo "Server image: $imageId"
-            echo "Server size: $flavorId    Status: $status"
-            ;;
-        esac
+          case $view in
+            list)
+              echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
+              ;;
+            column)
+              echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+              ;;
+            *)
+              echo "------------------------------------------------------------------------------"
+              echo "Server ID: $id    Name: $name    Cluster: $icluster"
+              echo "Public IP: $extIP"
+              echo "Private IP: $intIP"
+              echo "Server image: $imageId"
+              echo "Server size: $flavorId    Status: $status"
+              ;;
+          esac
         fi
       else
         if [ -n "$cluster" ] ; then

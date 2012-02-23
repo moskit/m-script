@@ -78,6 +78,13 @@ generate_name() {
 #find_flavor() {
 #
 #}
+check_cluster_limit() {
+  limit=`cat ${rpath}/../../conf/clusters.conf | grep ^${cluster}\| | cut -d'|' -f7`
+  [ -z "$limit" ] && return 0
+  limit=${limit#*:}
+  [ "$limit" == "0" ] && return 0
+  
+}
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
