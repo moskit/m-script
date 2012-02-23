@@ -74,7 +74,9 @@ if [ -n "$ES_SERVERS" ] ; then
       [ "X$port" == "X:$host" ] && unset port
       clustername=`cat "${rpath}/../../servers.list" | grep -E "\|${host}\||^${host}\|" | cut -d'|' -f5`
       [ "X$clustername" == "X$clusternameprev" ] && continue
+      
       clusterips=`"${rpath}/../../cloud/ec2/get_ips" --cluster="${clustername}"|sed "s|$|$port|g"`
+      
       clusternameprev=$clustername
       clusternames="$clusternames $clustername"
       collect_hosts $clusterips
@@ -96,24 +98,26 @@ else
   echo "ES_SERVERS variable is not defined, check ${rcommand}.conf" >> ${rpath}/../../logs/elasticsearch.log
 fi
 
+# These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
   touch "${rpath}/${cluster}.es_servers.list"
   [ -f "${TMPDIR}/${cluster}.es_servers.list" ] && [ -f "${rpath}/${cluster}.es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"`" ] && mv "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"
-  
-  #node=`tail -1 "${rpath}/${cluster}.es_servers.list"`
-  #$CURL "http://${node}/_cluster/nodes" | lib/json2txt > "${rpath}/data/${cluster}.nodes"
-  #$CURL "http://${node}/_cluster/nodes/stats" | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.nodes_stats"
-  #$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_metadata=true&filter_blocks=true&filter_indices=true" | ${rpath}/../../lib/json2txt > "${rpath}/data/${cluster}.nodes"
-  
 done
 
+echo > "${rpath}/${escluster}.nodes.list"
 for node in `cat "${rpath}"/*.es_servers.list` ; do
   allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}"`"
 done
 
+### allclusters and escluster mean ES cluster, not servers cluster!
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
-  clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | tail -1` ; clusterhost1=${clusterhost1%|*}
-  clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | head -1` ; clusterhost2=${clusterhost2%|*}
+  clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
+  clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
+  clusterport1=${clusterhost1#*:}
+  clusterport2=${clusterhost2#*:}
+  [[ "$clusterport1" == "$clusterport2" ]] || echo "Different port numbers for cluster ${escluster}: $clusterport1 $clusterport2"
+  echo "Please keep your enironment sane!"
+  [ -n "$clusterport1" ] && clusterport="$clusterport1" || clusterport="$clusterport2"
   if [ "X$SQLITE3" == "X1" ] ; then
     for LINE in `($CURL "http://${clusterhost1}/_cluster/health" || $CURL "http://${clusterhost2}/_cluster/health") | ${rpath}/../../lib/json2txt  | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
     $SQLITE "${rpath}/elasticsearch.sql3" "INSERT INTO cluster (timeindex, day, name, status, timed_out, number_of_nodes, number_of_data_nodes, active_primary_shards, active_shards, relocating_shards, initializing_shards, unassigned_shards) values ($timeindexnow, '`date +"%Y%m%d"`', '$cluster_name', '$status', '$timed_out', $number_of_nodes, $number_of_data_nodes, $active_primary_shards, $active_shards, $relocating_shards, $initializing_shards, $unassigned_shards)"
@@ -128,12 +132,15 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     nodehost=${nodehost%:*}
     nodehost=${nodehost##*/}
     ip_to_name "$nodehost"
+    # at last, the list of nodes for ES cluster (might be scattered across
+    # different servers clusters)
+    echo "${rname}:${clusterport}" >> "${rpath}/${escluster}.nodes.list"
     mv "${rpath}/data/${escluster}.${rname}.dat" "${rpath}/data/${escluster}.${rname}.dat.prev"
     echo -e "clusternode_id|${clusternode}\nip|${nodehost}\nmaster|${ismaster}" > "${rpath}/data/${escluster}.${rname}.dat"
     ($CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats" || $CURL "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
     if [ "X$SQLITE3" == "X1" ] ; then
-      hostport=`grep ^$nodehost\: "${rpath}"/${cluster}.es_servers.list | tail -1`
-      [ -n "$hostport" ] || hostport=`grep ^$rname\: "${rpath}"/${cluster}.es_servers.list | tail -1`
+      hostport=`grep ^$nodehost\: "${rpath}/${escluster}.nodes.list" | tail -1`
+      [ -n "$hostport" ] || hostport=`grep ^$rname\: "${rpath}/${escluster}.es_servers.list" | tail -1`
       master=`grep ^master\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_size=`grep ^indices\/size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_docsnum=`grep ^indices\/docs\/num_docs\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
@@ -142,22 +149,22 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
       ind_cache_filter_count=`grep ^indices\/cache\/filter_count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_cache_filter_evictions=`grep ^indices\/cache\/filter_evictions\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_cache_filter_size=`grep ^indices\/cache\/filter_size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_merges=$(expr `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
-      ind_merges_time=$(expr \( `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 )
+      ind_merges=$(expr `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`) || ind_merges=0
+      ind_merges_time=$(expr \( `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || ind_merges_time=0
       open_file_descriptors=`grep ^os/process\/open_file_descriptors\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_cpu_sys=$(expr \( `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000)
-      proc_cpu_user=$(expr \( `grep ^os/process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000)
+      proc_cpu_sys=$(expr \( `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_sys=0
+      proc_cpu_user=$(expr \( `grep ^os/process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_user=0
       proc_mem_res=`grep ^os/process\/mem\/resident_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       proc_mem_share=`grep ^os/process\/mem\/share_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       proc_mem_virt=`grep ^os/process\/mem\/total_virtual_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_uptime=$(expr `grep ^os/jvm\/uptime_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` / 1000)
+      jvm_uptime=$(expr `grep ^os/jvm\/uptime_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` / 1000 2>/dev/null) || jvm_uptime=0
       jvm_mem_heap_used=`grep ^os/jvm\/mem\/heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       jvm_mem_heap_committed=`grep ^os/jvm\/mem\/heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       jvm_mem_nonheap_used=`grep ^os/jvm\/mem\/non_heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       jvm_mem_nonheap_committed=`grep ^os/jvm\/mem\/non_heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       jvm_threads=`grep ^os/jvm\/threads\/count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      network_active_opens=$(expr `grep ^os/network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
-      network_passive_opens=$(expr `grep ^os/network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`)
+      network_active_opens=$(expr `grep ^os/network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` 2>/dev/null) ||network_active_opens=0
+      network_passive_opens=$(expr `grep ^os/network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` 2>/dev/null) || network_passive_opens=0
       network_curr_estab=`grep ^os/network\/tcp\/curr_estab\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       transport_server_open=`grep ^os/transport\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       http_server_open=`grep ^os/http\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
