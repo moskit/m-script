@@ -113,6 +113,7 @@ changed=0
 
 for app in $APPS ; do
   for cluster in $CLUSTERS ; do
+    mv $TMPDIR/${app}.${cluster}.ips $TMPDIR/${app}.${cluster}.ips.prev
     for CLUSTER in $APP_SERVERS; do
       if [ "X${CLUSTER%%:*}" == "X$cluster" ] && [ "X${CLUSTER##*:}" == "X$app" ] ; then
         port=${CLUSTER#*:}; port=${port%:*}
