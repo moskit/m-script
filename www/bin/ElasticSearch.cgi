@@ -34,15 +34,16 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
     
     eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
     [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-    esstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
-  
+    thisesstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
+    [ -n "$esstatus" ] && [ "X$esstatus" != "X$thisesstatus" ] && esstatus="$esstatus $thisesstatus"
   done
   echo "<div class=\"cluster\" id=\"${clustername}\">"
     echo "<div class=\"server\" id=\"${clustername}_status\">"
     
       echo "<div class=\"servername\" id=\"${clustername}_name\" onclick=\"showDetails('${clustername}_status','eshealth')\">Cluster: ${clustername}</div>"
-      
-      echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" style=\"color: $esstatus ; font-weight: bold ;\">$esstatus</div>"
+      for esst in $esstatus ; do
+        echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
+      done
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
     echo "</div>"
     echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
