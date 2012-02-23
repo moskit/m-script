@@ -144,7 +144,7 @@ echo >> "${rpath}/report"
 
 ### allclusters and escluster mean ES cluster, not servers cluster!
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
-  echo > "${rpath}/${escluster}.nodes.list"
+  rm -f "${rpath}/${escluster}.nodes.list"
   clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
   clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
   clusterport1=${clusterhost1#*:}
