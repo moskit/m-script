@@ -145,6 +145,7 @@ echo >> "${rpath}/report"
 ### allclusters and escluster mean ES cluster, not servers cluster!
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
   rm -f "${rpath}/${escluster}.nodes.list"
+  mv "${rpath}/${escluster}.report" "${rpath}/${escluster}.report.prev"
   clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
   clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
   clusterport1=${clusterhost1#*:}
@@ -252,5 +253,7 @@ grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
 grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
 grep '<\*>' "${rpath}/report" | sed 's|<\*>||g' > "${rpath}/alert1"
 
+mailalert
 
+exit 0
 
