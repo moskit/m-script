@@ -134,7 +134,6 @@ for cluster in $clusternames ; do
   [ -f "${TMPDIR}/${cluster}.es_servers.list" ] && [ -f "${rpath}/${cluster}.es_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"`" ] && mv "${TMPDIR}/${cluster}.es_servers.list" "${rpath}/${cluster}.es_servers.list"
 done
 
-echo > "${rpath}/${escluster}.nodes.list"
 for node in `cat "${rpath}"/*.es_servers.list` ; do
   allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}"`"
 done
@@ -145,6 +144,7 @@ echo >> "${rpath}/report"
 
 ### allclusters and escluster mean ES cluster, not servers cluster!
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
+  echo > "${rpath}/${escluster}.nodes.list"
   clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
   clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
   clusterport1=${clusterhost1#*:}
@@ -170,7 +170,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   fi
   echo "${warnind} Cluster status: $status" >> "${rpath}/${escluster}.report"
   [ "X$timed_out" == "Xfalse" ] && warnind='<OK> ' || warnind='<***>'
-  echo "${warnind} Timed out? $timed_out" >> "${rpath}/${escluster}.report"
+  echo "${warnind} Timed out: $timed_out" >> "${rpath}/${escluster}.report"
   [ "X$number_of_nodes" == "X$number_of_nodes_was" ] && warnind='<OK> ' || warnind=' <*> '
   echo "${warnind} Number of nodes: $number_of_nodes" >> "${rpath}/${escluster}.report"
   [ "X$number_of_data_nodes" == "X$number_of_data_nodes_was" ] && warnind='<OK> ' || warnind=' <*> '
