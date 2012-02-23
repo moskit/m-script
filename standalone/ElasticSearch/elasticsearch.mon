@@ -115,8 +115,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
   clusterport1=${clusterhost1#*:}
   clusterport2=${clusterhost2#*:}
-  [[ "$clusterport1" == "$clusterport2" ]] || echo "Different port numbers for cluster ${escluster}: $clusterport1 $clusterport2"
-  echo "Please keep your enironment sane!"
+  [[ "$clusterport1" == "$clusterport2" ]] || echo "Different port numbers for cluster ${escluster}: $clusterport1 $clusterport2  - please keep your enironment sane!"
   [ -n "$clusterport1" ] && clusterport="$clusterport1" || clusterport="$clusterport2"
   if [ "X$SQLITE3" == "X1" ] ; then
     for LINE in `($CURL "http://${clusterhost1}/_cluster/health" || $CURL "http://${clusterhost2}/_cluster/health") | ${rpath}/../../lib/json2txt  | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
@@ -140,7 +139,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     ($CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats" || $CURL "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
     if [ "X$SQLITE3" == "X1" ] ; then
       hostport=`grep ^$nodehost\: "${rpath}/${escluster}.nodes.list" | tail -1`
-      [ -n "$hostport" ] || hostport=`grep ^$rname\: "${rpath}/${escluster}.es_servers.list" | tail -1`
+      [ -n "$hostport" ] || hostport=`grep ^$rname\: "${rpath}/${escluster}.nodes.list" | tail -1`
       master=`grep ^master\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_size=`grep ^indices\/size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_docsnum=`grep ^indices\/docs\/num_docs\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
@@ -149,7 +148,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
       ind_cache_filter_count=`grep ^indices\/cache\/filter_count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_cache_filter_evictions=`grep ^indices\/cache\/filter_evictions\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       ind_cache_filter_size=`grep ^indices\/cache\/filter_size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_merges=$(expr `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2`) || ind_merges=0
+      ind_merges=$(expr `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` 2>/dev/null) || ind_merges=0
       ind_merges_time=$(expr \( `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || ind_merges_time=0
       open_file_descriptors=`grep ^os/process\/open_file_descriptors\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       proc_cpu_sys=$(expr \( `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^os/process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_sys=0
