@@ -26,14 +26,17 @@ echo "<div class=\"clustername\"><span class=\"indent\">Clusters and nodes</span
 
 for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
-  clusterdat=`ls -1t "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat | head -1`
-  esip=`grep ^ip\| "$clusterdat" | awk -F'|' '{print $2}'`
-  eshostname=`grep ^$esip\| "${PWD}/../../servers.list" | awk -F'|' '{print $4}'`
-  servercluster=`grep ^$esip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
+  clusterdat=`ls -1t "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat`
+  esip=`cat $clusterdat | grep ^ip\| | awk -F'|' '{print $2}' | sort | uniq`
+  for eshostip in $esip ; do
+    eshostname=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $4}'`
+    servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
+    
+    eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+    [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+    esstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
   
-  eshost=`grep "^${esip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-  [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-  esstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
+  done
   echo "<div class=\"cluster\" id=\"${clustername}\">"
     echo "<div class=\"server\" id=\"${clustername}_status\">"
     
