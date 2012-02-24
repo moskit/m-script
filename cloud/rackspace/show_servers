@@ -113,6 +113,7 @@ list_servers() {
       done
       if [ -z "$update_servers_list" ] ; then
         if [ -n "$cluster" -o -n "$all" ] ; then
+          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
