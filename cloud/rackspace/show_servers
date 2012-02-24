@@ -146,14 +146,16 @@ list_servers() {
           icount+=1
         fi
       else
-        if [ -n "$cluster" ] ; then
-          if [ `grep -c ^${cluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
-            key=`grep ^${cluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
-
-            if [ `grep -c ^$IP\| "${rpath}/../../servers.list"` -ne 0 ] ; then
-              sed -i /^$IP\|/d "${rpath}/../../servers.list"
-              echo "${IP}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
-            fi
+        if [ -n "$icluster" ] ; then
+          if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+            for ip in $IP ; do
+              ip=${ip#* } ; ip=${ip% *}
+              if [ `grep -c ^$ip\| "${rpath}/../../servers.list"` -ne 0 ] ; then
+                sed -i /^$ip\|/d "${rpath}/../../servers.list"
+              fi
+              echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+            done
           fi
         fi
       fi
