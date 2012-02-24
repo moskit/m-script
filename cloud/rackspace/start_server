@@ -26,6 +26,7 @@ WGET=`which wget 2>/dev/null`
 TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
+V="v1.0"
 
 possible_options="region flavor cluster image name"
 necessary_options="cluster"
@@ -78,12 +79,14 @@ generate_name() {
 #find_flavor() {
 #
 #}
+
 check_cluster_limit() {
   limit=`cat ${rpath}/../../conf/clusters.conf | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
   n=`${rpath}/show_servers --view=none --count --cluster=$cluster`
+  [ -z "$n" ] && return 1
   [ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \> $n` -gt 0 ] && return 0
   return 1
@@ -97,8 +100,8 @@ request() {
   [ -n "`find "${TMPDIR}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
 }
 
-check_cluster_limit || exit 1
-[ -z "$name" ] && generate_name
+check_cluster_limit || exit 5
+[ -z "$name" ] && name=`generate_name`
 [ -z "$image" ] && exit 1 #find_image
 [ -z "$flavor" ] && exit 1 #find_flavor
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`

@@ -123,8 +123,8 @@ list_servers() {
         # Note: don't use same cluster names for different projects within the
         # same cloud!
         if [ -n "$icluster" -o -n "$all" ] ; then
-          [ -n "$cluster" -a "$cluster" != "$icluster" ] && break
-          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && break
+          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
@@ -140,7 +140,7 @@ list_servers() {
               echo "Public IP: $extIP"
               echo "Private IP: $intIP"
               echo "Server image: $imageId"
-              echo "Server size: $flavorId    Status: $status"
+              echo "Server size: $flavorId    Status: $istatus"
               ;;
           esac
           icount+=1
