@@ -83,7 +83,10 @@ check_cluster_limit() {
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
-  
+  n=`${rpath}/show_servers --view=none --count --cluster=$cluster`
+  [ `expr $n \>= 0` -gt 0 ] || return 1
+  [ `expr $limit \> $n` -gt 0 ] && return 0
+  return 1
 }
 
 request() {
