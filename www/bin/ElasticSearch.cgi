@@ -30,10 +30,14 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
   esip=`cat $clusterdat | grep ^ip\| | awk -F'|' '{print $2}' | sort | uniq`
   for eshostip in $esip ; do
     eshostname=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $4}'`
-    servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
-    
-    eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-    [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+    if [ -n "$eshostname" ] ; then
+      servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
+      
+      eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+      [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+    else
+      eshost=$eshostip
+    fi
     thisesstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
     [ -n "$esstatus" ] && [ "X$esstatus" != "X$thisesstatus" ] && esstatus="$esstatus $thisesstatus" || esstatus="$thisesstatus"
   done
