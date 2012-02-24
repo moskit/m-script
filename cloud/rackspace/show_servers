@@ -79,7 +79,7 @@ list_servers() {
 '
   if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
     for n in `cat "${TMPDIR}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
-      unset id name status extIP intIP IP imageId flavorId region icluster
+      unset id name istatus extIP intIP IP imageId flavorId region icluster
       for LINE in `grep \/servers\/${n}\/ "${TMPDIR}/${rcommand}.resp"` ; do
         LINE=`echo $LINE | awk -F"servers/${n}/" '{print $2}'`
         lvar=`echo $LINE | cut -d'|' -f1`
