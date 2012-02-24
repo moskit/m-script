@@ -27,8 +27,9 @@ source "${rpath}/../../conf/mon.conf"
 TMPDIR=$TMPDIR/cloud/rackspace
 install -d $TMPDIR
 CURL="$CURL -s"
+declare -i icount
 
-possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all"
+possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -62,6 +63,7 @@ fi
 
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && rm -f "${TMPDIR}"/*.resp
+[ -z "$status" ] && status=active
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
@@ -77,6 +79,7 @@ list_servers() {
 '
   if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
     for n in `cat "${TMPDIR}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
+      unset id name status extIP intIP IP imageId flavorId region icluster
       for LINE in `grep \/servers\/${n}\/ "${TMPDIR}/${rcommand}.resp"` ; do
         LINE=`echo $LINE | awk -F"servers/${n}/" '{print $2}'`
         lvar=`echo $LINE | cut -d'|' -f1`
@@ -87,6 +90,9 @@ list_servers() {
             ;;
           flavorId)
             flavorId=`flavorid $lvalue`
+            ;;
+          status)
+            istatus=`echo $lvalue | sed 's|.|\l&|g'`
             ;;
           addresses/public/*)
             extIP="$extIP $lvalue"
@@ -107,19 +113,26 @@ list_servers() {
       else
         IP=$intIP
       fi
-      IP=`echo $IP | tr -d '^ ' | tr -d ' $'`
       for ip in $IP ; do
-      [ -n "$cluster" ] || cluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+        ip=${ip#* } ; ip=${ip% *}
+        [ -z "$icluster" ] && icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
       done
       if [ -z "$update_servers_list" ] ; then
-        if [ -n "$cluster" -o -n "$all" ] ; then
-          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+        # icluster existence condition is needed for the case there are multiple
+        # projects (cluster groups) in the same cloud
+        # Note: don't use same cluster names for different projects within the
+        # same cloud!
+        if [ -n "$icluster" -o -n "$all" ] ; then
+          [ -n "$cluster" -a "$cluster" != "$icluster" ] && break
+          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && break
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
               ;;
             column)
               echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+              ;;
+            none)
               ;;
             *)
               echo "------------------------------------------------------------------------------"
@@ -130,6 +143,7 @@ list_servers() {
               echo "Server size: $flavorId    Status: $status"
               ;;
           esac
+          icount+=1
         fi
       else
         if [ -n "$cluster" ] ; then
@@ -138,12 +152,12 @@ list_servers() {
 
             if [ `grep -c ^$IP\| "${rpath}/../../servers.list"` -ne 0 ] ; then
               sed -i /^$IP\|/d "${rpath}/../../servers.list"
-              echo "${IP}|${key}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
+              echo "${IP}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
             fi
           fi
         fi
       fi
-      unset id name status extIP intIP imageId flavorId region cluster
+      
     done
   else
     echo "No data. Run without --noupdate"
@@ -173,3 +187,4 @@ if [ -z "$noupdate" ] ; then
 fi
 list_servers
 
+[ -n "$count" ] && echo $icount
