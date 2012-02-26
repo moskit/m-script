@@ -160,9 +160,10 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   for LINE in `cat "${rpath}/${escluster}.dat"  | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
   IFS=$IFS1
   
-  number_of_nodes_was=`grep 'Number of nodes:' "${rpath}/${escluster}.dat.prev" | cut -d' ' -f2`
-  number_of_data_nodes_was=`grep 'Number of data nodes:' "${rpath}/${escluster}.dat.prev" | cut -d' ' -f2`
-  active_primary_shards_was=`grep 'Active primary shards:' "${rpath}/${escluster}.dat.prev" | cut -d' ' -f2`
+  number_of_nodes_was=`grep 'number_of_nodes|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
+  number_of_data_nodes_was=`grep 'number_of_data_nodes|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
+  active_primary_shards_was=`grep 'active_primary_shards|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
+  active_shards_was=`grep 'active_shards|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
 
   echo "Cluster: $escluster" > "${rpath}/${escluster}.report"
   echo "-------------------" >> "${rpath}/${escluster}.report"

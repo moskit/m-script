@@ -113,7 +113,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
 done
 [ -f "${rpath}/../services.list" ] && prevlist=`cat "${rpath}/../services.list" 2>/dev/null` || echo "services.list not found" >> "${rpath}/../monitoring.log"
 [ -f "${TMPDIR}/services.tmp" ] && currlist=`cat ${TMPDIR}/services.tmp 2>/dev/null` || echo "services.tmp not found" >> "${rpath}/../monitoring.log"
-if [ -n $prevlist -a -n $currlist ] ; then
+if [ -n "$prevlist" -a -n "$currlist" ] ; then
   for LINE in $currlist ; do
     if [ `echo "$prevlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
       service=`echo $LINE | cut -d'|' -f1`
