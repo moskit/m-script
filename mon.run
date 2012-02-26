@@ -155,7 +155,14 @@ IFS1=$IFS; IFS='
     level=`echo $confline | cut -d'|' -f2`
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
-    [ -n "$nalerts" ] && calerts=`cat "${TMPDIR}/consequent_alerts.tmp" | grep ^$pattern\|$level\| | cut -d'|' -f3`
+    if [ -n "$nalerts" ] ; then
+      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" | grep ^$pattern\|$level\|`
+      if [ -n "$calerts" ] ; then
+        calerts=`echo "$calerts" | cut -d'|' -f3`
+      else
+        echo "$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
+      fi
+    fi
     [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> ${rpath}/monitoring.log && continue
     [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> ${rpath}/monitoring.log && continue
     for ((i=$level; i<=3; i++)) ; do
