@@ -18,6 +18,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
+source "${rpath}/../conf/mon.conf"
+
 getprocessname() {
   if [ -f "/proc/$1/comm" ] ; then
     pcomm=`cat /proc/$1/comm`
@@ -109,9 +111,9 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
     echo "<***> Path $thepath doesn't exist!"
   fi
 done
-prevlist=`cat "${rpath}/../services.list" 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
-currlist=`cat /tmp/m_script/services.tmp 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'`
-if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; then
+[ -f "${rpath}/../services.list" ] && prevlist=`cat "${rpath}/../services.list" 2>/dev/null` || echo "services.list not found" >> "${rpath}/../monitoring.log"
+[ -f "${TMPDIR}/services.tmp" ] && currlist=`cat ${TMPDIR}/services.tmp 2>/dev/null` || echo "services.tmp not found" >> "${rpath}/../monitoring.log"
+if [ -n $prevlist -a -n $currlist ] ; then
   for LINE in $currlist ; do
     if [ `echo "$prevlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
       service=`echo $LINE | cut -d'|' -f1`
@@ -134,8 +136,10 @@ if [ `echo $prevlist | wc -l` -ne 0 ] && [ `echo $currlist | wc -l` -ne 0 ] ; th
       fi
     fi
   done
+else
+  echo "${rcommand} failed to compare services lists: one of the lists is empty" >> "${rpath}/../monitoring.log"
 fi
-cat /tmp/m_script/services.tmp > "${rpath}/../services.list"
-rm -f /tmp/m_script/services.tmp
+[ -f "${TMPDIR}/services.tmp" ] && cat ${TMPDIR}/services.tmp > "${rpath}/../services.list"
+rm -f ${TMPDIR}/services.tmp 2>&1
 IFS=$IFS1
 
