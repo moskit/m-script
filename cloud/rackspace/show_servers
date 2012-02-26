@@ -62,8 +62,8 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
-[ -n "$forceupdate" ] && rm -f "${TMPDIR}"/*.resp
-[ -z "$status" ] && status=active
+[ -n "$forceupdate" ] && rm -f "${TMPDIR}"/${rcommand}.resp
+[ -z "$status" ] && status="active"
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`

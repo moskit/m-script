@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+SSH=`which ssh 2>/dev/null`
+SCP=`which scp 2>/dev/null`
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+possible_options="help cluster verbose flavor ip"
+necessary_options="cluster flavor"
+[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options> <meta>"
+
+  exit 0
+fi
+
+[ -z "$s_param" ] && echo "No meta provided" && exit 1
+source "${rpath}/../conf/deployment.conf"
+M_ROOT=$(cd "${rpath}/../" && pwd)
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud:${M_ROOT}/cloud/ec2:${M_ROOT}/helpers:${PATH}
+# This may change in the future
+role=$cluster
+export ROLE="${ROLES_ROOT}/${role}"
+[ -z "$ip" ] && ips=$ip || ips=`get_ips --cluster=$cluster`
+IFS1=$IFS
+IFS='
+'
+# First ensure that all hosts are accessible
+for target in $ips ; do
+  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
+  [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
+  SSH="$SSH -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
+  SCP="$SCP -i \"${rpath}/keys/${KEY}.pem\" -o StrictHostKeyChecking=no"
+  $SSH $ip pwd >/dev/null || (echo "Unable to connect to $ip" && exit 1)
+done
+# If we are still here, we can do the work
+for target in $ips ; do
+  for op in `cat ${ROLE}/meta.${s_param}` ; do
+    optype=${op%% *}
+    opscript=${op#* }
+    if [ "X$optype" == "Xlocally" ] ; then
+      if [ -f "${ROLES_ROOT}/${opscript}" ] ; then
+        bash "${ROLES_ROOT}/${opscript}"
+      else
+        echo "${ROLES_ROOT}/${opscript} not found"
+      fi
+    fi
+    if [ "X$optype" == "Xremotely" ] ; then
+      if [ -f "${ROLES_ROOT}/${opscript}" ] ; then
+        for LINE in `cat "${ROLES_ROOT}/${opscript}` ; do
+          a=`echo "$L"|sed 's|\(\$[a-zA-Z0-9{}_]\+\)|%\1%|g'`
+          b=`eval echo $a | grep -c \%\%`
+          echo $b
+        done
+        $SCP "${ROLES_ROOT}/${opscript}" ${target}:${opscript#*/}.$$
+        $SSH ${target}:${opscript#*/}.$$
+    
+    
+    

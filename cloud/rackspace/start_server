@@ -23,12 +23,10 @@ LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 
-TMPDIR=/tmp/m_script/cloud/rackspace
-install -d $TMPDIR
 CURL="$CURL -s"
 V="v1.0"
 
-possible_options="region flavor cluster image name"
+possible_options="region flavor cluster image name return verbose"
 necessary_options="cluster"
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -60,6 +58,9 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+source "${rpath}/../../conf/mon.conf"
+TMPDIR="$TMPDIR"/cloud/rackspace
+install -d "$TMPDIR"
 source "${rpath}/../../conf/cloud.conf"
 
 generate_name() {
@@ -72,16 +73,16 @@ generate_name() {
   echo "$nam`until [[ ${#am} -eq $lm ]] ; do am="0$am" ; m0="0$m0" ; echo $m0 ; done | tail -1`$am"
 }
 
-#find_image() {
-#
-#}
+find_image() {
+  image=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
+}
 
-#find_flavor() {
-#
-#}
+find_flavor() {
+  flavor=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
+}
 
 check_cluster_limit() {
-  limit=`cat ${rpath}/../../conf/clusters.conf | grep ^${cluster}\| | cut -d'|' -f7`
+  limit=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
@@ -100,10 +101,62 @@ request() {
   #[ -n "`find "${TMPDIR}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
 }
 
+save_details() {
+  echo -e "\n`date`\n\nCluster|$cluster\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public\||\/addresses\/private\|" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
+  chmod 600 "${rpath}/../rackspace.log"
+}
+
+wait_ready() {
+  waittimeout=600
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  sleep $waitperiod
+  for ((i=1; i<$checks; i++)) ; do
+    "$rpath"/get_server_details $newid >/dev/null 2>&1
+    if [ -n "$1" ] ; then
+      printf "Progress: `grep \/progress\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`     \r"
+    fi
+    if [ "X`grep \/status\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`" == "XACTIVE" ] ; then
+      echo
+      return 0
+    fi
+  done
+  return 1
+}
+
+printreturn() {
+  for res in `echo $return | tr ',' ' '` ; do
+    case $res in
+      ip)
+        if [ "X$NETWORK" == "Xexternal" ] ; then
+          grep \/addresses\/public\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2
+        else
+          grep \/addresses\/private\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2
+        fi
+        ;;
+      ipext)
+        grep \/addresses\/public\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2
+        ;;
+      ipint)
+        grep \/addresses\/private\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2
+        ;;
+      id)
+        grep \/id\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2
+        ;;
+      pass|password)
+        grep \/adminPass\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2
+        ;;
+    esac
+  done
+}
+
 check_cluster_limit || exit 5
 [ -z "$name" ] && name=`generate_name`
-[ -z "$image" ] && exit 1 #find_image
-[ -z "$flavor" ] && exit 1 #find_flavor
+[ -z "$name" ] && exit 6
+[ -z "$image" ] && find_image
+[ -z "$image" ] && exit 7
+[ -z "$flavor" ] && find_flavor
+[ -z "$flavor" ] && exit 8
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
 [ -f "${rpath}/../../keys/${thekey}.pub" ] && thekey=${thekey}.pem
 PUBLIC_KEY=`cat $thekey 2>/dev/null`
@@ -112,14 +165,14 @@ PUBLIC_KEY=`cat $thekey 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No key found" && exit 1
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$image|;s|FLAVOR_ID|$flavor|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
-echo "        \"personality\" : [" >> "$TMPDIR/${rcommand}.req"
+echo -e "        \"personality\" : [\n" >> "$TMPDIR/${rcommand}.req"
 echo "            {" >> "$TMPDIR/${rcommand}.req"
-echo -n "                \"path\" : " >> "$TMPDIR/${rcommand}.req"
-echo "                \"/root/.ssh/authorized_keys\"," >> "$TMPDIR/${rcommand}.req"
-echo -n "                \"contents\" : " >> "$TMPDIR/${rcommand}.req"
-echo -n "                \"" >> "$TMPDIR/${rcommand}.req"
+echo -e "\n                \"path\" : " >> "$TMPDIR/${rcommand}.req"
+echo -e "                \"/root/.ssh/authorized_keys\",\n" >> "$TMPDIR/${rcommand}.req"
+echo -e "\n                \"contents\" : " >> "$TMPDIR/${rcommand}.req"
+echo -e " \"" >> "$TMPDIR/${rcommand}.req"
 echo -n ${PUBLIC_KEY} >> "$TMPDIR/${rcommand}.req"
-echo -n "\"" >> "$TMPDIR/${rcommand}.req"
+echo -e "\"\n" >> "$TMPDIR/${rcommand}.req"
 echo "            }" >> "$TMPDIR/${rcommand}.req"
 echo "        ]" >> "$TMPDIR/${rcommand}.req"
 echo "    }" >> "$TMPDIR/${rcommand}.req"
@@ -131,4 +184,14 @@ if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
+
+newid=`grep \/id\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`
+if [ -n "$newid" ] ; then
+  save_details
+  wait_ready $verbose
+  [ -n "$return" ] && printreturn $return
+else
+  exit 1
+fi
+
 
