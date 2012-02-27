@@ -19,7 +19,9 @@ rpath=${0%/*}
 #*/
 
 store_vars() {
-  for LINE in `cat "${ROLES_ROOT}/${1}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" ; done
+  varfile="${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
+  local role="${1}"
+  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "$varfile" ; done
 }
 
 SSH=`which ssh 2>/dev/null`

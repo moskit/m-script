@@ -26,6 +26,9 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s"
 V="v1.0"
 req="/servers/$1"
+source "${rpath}/../../conf/mon.conf"
+source "${rpath}/../../conf/cloud.conf"
+TMPDIR="$TMPDIR/cloud/$CLOUD"
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`

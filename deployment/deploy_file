@@ -99,7 +99,9 @@ if [ "X$command" != "X" ] ; then
   # doing my best to assume what do options mean
   # TODO: get all these from the parent process
   [ -n "$flavor" ] || flavor="common"
-  if [ -z "$role" ] && [ -n "$cluster" ] ; then role="$cluster" ; fi
+  [ -z "$role" ] && [ -n "$cluster" ] && role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
+  [ -z "$role" ] && [ -n "$cluster" ] && role="$cluster"
+  [ -z "$role" ] && echo "Unable to find a role to use" && exit 1
   [ -n "$verbose" ] && echo "### Reading configuration from ${ROLES_ROOT}/${role}/role.conf"
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
   if [ -f "$from" ] ; then
