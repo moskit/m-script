@@ -1,5 +1,21 @@
 #!/bin/bash
 
+[[ $0 =~ ^\/ ]] && rroot='/'
+for step in `echo ${0} | tr '/' ' '` ; do
+  rlink=`readlink "${rroot}${rpath}${step}"`
+  if [ -n "$rlink" ] ; then
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
+  else
+    rpath="${rpath}${step}/"
+  fi
+done
+rpath=${rpath%/}
+[ -h "$rpath" ] && rpath=`readlink "$rpath"`
+rcommand=${rpath##*/}
+rpath="${rroot}${rpath%/*}"
+echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+#*/
+
 sharded="speechact post channeltermstats"
 while true ; do for coll in $sharded ; do currshard=`mongo mongo3:27019/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.$coll\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2` ; echo "$coll current shard: $currshard" ; oneforbackup=`mongo mongo3:27019/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.$coll\", shard : { \\$ne : \"$currshard\" }}, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt` ; chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d'|' -f2` ; chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | awk '{print $2}'` ; chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | awk '{print $2}'` ; chkidmin=${chkidmin#*\"} ; chkidmin=${chkidmin%\"*} ; chkidmax=${chkidmax#*\"} ; chkidmax=${chkidmax%\"*} ; echo "$chkshard : $chkidmin - $chkidmax" ; done ; sleep 300 ; echo ; done
 

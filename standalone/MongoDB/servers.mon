@@ -4,16 +4,18 @@
 for step in `echo ${0} | tr '/' ' '` ; do
   rlink=`readlink "${rroot}${rpath}${step}"`
   if [ -n "$rlink" ] ; then
-    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" || rpath="${rpath}${rlink}/"
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
   else
     rpath="${rpath}${step}/"
   fi
 done
 rpath=${rpath%/}
+[ -h "$rpath" ] && rpath=`readlink "$rpath"`
 rcommand=${rpath##*/}
 rpath="${rroot}${rpath%/*}"
 echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 #*/
+
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`

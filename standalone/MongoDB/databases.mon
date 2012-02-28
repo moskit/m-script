@@ -1,9 +1,21 @@
 #!/bin/bash
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
+[[ $0 =~ ^\/ ]] && rroot='/'
+for step in `echo ${0} | tr '/' ' '` ; do
+  rlink=`readlink "${rroot}${rpath}${step}"`
+  if [ -n "$rlink" ] ; then
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
+  else
+    rpath="${rpath}${step}/"
+  fi
+done
+rpath=${rpath%/}
+[ -h "$rpath" ] && rpath=`readlink "$rpath"`
+rcommand=${rpath##*/}
+rpath="${rroot}${rpath%/*}"
+echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 #*/
+
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null

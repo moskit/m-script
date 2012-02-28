@@ -46,7 +46,7 @@ start)
   rpath="${rroot}${rpath%/*}"
   #*/
 
-  source ${rpath}/conf/mon.conf
+  [ -f "${rpath}/conf/mon.conf" ] && source "${rpath}/conf/mon.conf" || exit 1
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
   install -d $TMPDIR
   UPTIME=`which uptime`
