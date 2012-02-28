@@ -115,13 +115,17 @@ list_servers() {
       fi
       for ip in $IP ; do
         ip=${ip#* } ; ip=${ip% *}
-        [ -z "$icluster" ] && icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+        if [ -z "$icluster" ] ; then
+          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+        else
+          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] && unset icluster
+        fi
       done
       if [ -z "$update_servers_list" ] ; then
         # icluster existence condition is needed for the case there are multiple
-        # projects (cluster groups) in the same cloud
-        # Note: don't use same cluster names for different projects within the
-        # same cloud!
+        # projects (cluster groups) in the same cloud.
+        # Note that if you use same names for clusters in different cluster
+        # groups, you'll get them mixed here.
         if [ -n "$icluster" -o -n "$all" ] ; then
           [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
           [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue

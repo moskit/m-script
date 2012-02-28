@@ -166,7 +166,7 @@ PUBLIC_KEY=`cat $thekey 2>/dev/null`
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$image|;s|FLAVOR_ID|$flavor|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
 echo "        \"personality\" : [" >> "$TMPDIR/${rcommand}.req"
-echo -n "            {" >> "$TMPDIR/${rcommand}.req"
+echo "            {" >> "$TMPDIR/${rcommand}.req"
 echo -n "                \"path\" : " >> "$TMPDIR/${rcommand}.req"
 echo "\"/root/.ssh/authorized_keys\"," >> "$TMPDIR/${rcommand}.req"
 echo -n "                \"contents\" : " >> "$TMPDIR/${rcommand}.req"
