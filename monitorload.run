@@ -30,11 +30,21 @@ trap "rm -f $tempfile; exit" 15
 
 case $1 in
 start)
-  [ -f ${pidfile} ] && echo "Already running (PID `cat $pidfile`)" && exit 0
-  [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-  rcommand=${xcommand##*/}
-  rpath=${xcommand%/*}
-#*/ (this is needed to fool vi comments syntax highlighting)
+  [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" && exit 0
+  [[ $0 =~ ^\/ ]] && rroot='/'
+  for step in `echo ${0} | tr '/' ' '` ; do
+    rlink=`readlink "${rroot}${rpath}${step}"`
+    if [ -n "$rlink" ] ; then
+      [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
+    else
+      rpath="${rpath}${step}/"
+    fi
+  done
+  rpath=${rpath%/}
+  [ -h "$rpath" ] && rpath=`readlink "$rpath"`
+  rcommand=${rpath##*/}
+  rpath="${rroot}${rpath%/*}"
+  #*/
 
   source ${rpath}/conf/mon.conf
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
