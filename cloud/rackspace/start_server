@@ -102,16 +102,17 @@ request() {
 }
 
 save_details() {
-  echo -e "\n`date`\n\nCluster|$cluster\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public\||\/addresses\/private\|" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
+  echo -e "\n`date`\n\nCluster|$cluster\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
 }
 
 wait_ready() {
+  echo
   waittimeout=600
   waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
-  sleep $waitperiod
   for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
     "$rpath"/get_server_details $newid >/dev/null 2>&1
     if [ -n "$1" ] ; then
       printf "Progress: `grep \/progress\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`     \r"
