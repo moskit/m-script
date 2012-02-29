@@ -111,7 +111,7 @@ if [ -n "$ES_SERVERS" ] ; then
       clusternameprev=$clustername
       clusternames="$clusternames $clustername"
       collect_hosts $clusterips
-      print_servers $configips > "${TMPDIR}/${clustername}.es_servers.list" | tee -a ${rpath}/../../logs/elasticsearch.log
+      print_servers $configips > "${TMPDIR}/${clustername}.es_servers.list"
     done
   else
   # ES_SERVERS contains clusters
@@ -121,9 +121,10 @@ if [ -n "$ES_SERVERS" ] ; then
       [ "X$port" == "X:$clustername" ] && unset port
       clusterips=`"${rpath}/../../cloud/ec2/get_ips" --cluster="${clustername}"|sed "s|$|${port}|g"`
       collect_hosts $clusterips
-      print_servers $configips > "${TMPDIR}/${clustername}.es_servers.list" | tee -a ${rpath}/../../logs/elasticsearch.log
+      print_servers $configips > "${TMPDIR}/${clustername}.es_servers.list"
+      unset clusterips configips
+      clusternames="$clusternames $clustername"
     done
-    clusternames="$clusternames $clustername"
   fi
 else
   echo "ES_SERVERS variable is not defined, check ${rcommand}.conf" >> ${rpath}/../../logs/elasticsearch.log

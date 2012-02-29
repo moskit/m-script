@@ -58,7 +58,6 @@ parseline() {
   if [ "X$line" == "X[" ] ; then
     # it is an array only if it's a beginning of a new value
     if [[ $isclosed -ne 0 ]] || [ -z "$value" ] ; then
-      printvalue "$value" && unset value
       i+=1
       arrayi=( ${arrayi[*]} $i )
       index[$i]=0
@@ -73,17 +72,19 @@ parseline() {
   fi
   if [ "X$line" == "X]" ] ; then
     #arrayi=false
-    if [[ $isclosed -ne 0 ]] ; then
+    if [ "X$openedby" == "Xquo" ] ; then
+      value="${value}${line}"
+    else
       printvalue "$value" && unset value
       ai=${#arrayi[*]} ; ai+=-1
-      if [[ ${arrayi[$ai]} -eq $i ]] ; then
-        i+=-1
-        unset arrayi[$ai]
-      else
-        i+=-1
+      if [ -n "$ai" ] ; then
+        if [[ ${arrayi[$ai]} -eq $i ]] ; then
+          i+=-1
+          unset arrayi[$ai]
+        else
+          i+=-1
+        fi
       fi
-    else
-      value="${value}${line}"
     fi
     
     if [ -n "$d" ] ; then
@@ -125,6 +126,7 @@ parseline() {
 
       if [ -n "$f4" ] ; then
         isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
+        [ $isclosed -eq 0 ] && openedby=quo
         #echo '"string" : "string"'
         if [ -n "$f2" ] ; then
           index[$i]="$f2"
@@ -178,7 +180,7 @@ parseline() {
       fi
     
     else
-      value="${value}${line}"
+      [ "X$openedby" == "Xquo" ] && value="${value}${line}" || isclosed=1
     fi
     if [ -n "$d" ] ; then
       echo "  = it's a data line"
@@ -198,7 +200,7 @@ printvalue() {
   done
   valuename=${valuename%/}
   echo "${valuename}|${1}"
-  unset valuename
+  unset valuename openedby
 }
 
 #( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
