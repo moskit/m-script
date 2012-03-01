@@ -43,6 +43,6 @@ if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
-
+sleep 5
 cat "${TMPDIR}/${rcommand}.resp"
 

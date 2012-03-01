@@ -160,6 +160,9 @@ if [ -z "$ip" ] && [ -n "$cloud" ] && [ -n "$newserver" ]; then
   echo "*** Bringing up a new server in the cloud $cloud"
   ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip | tail -1`
   [ $? -eq 5 ] && echo "Maximum servers number for cluster $cluster has been reached, unable to add another server" && exit 1
+  [ $? -eq 6 ] && echo "Failed to generate a name for the new server" && exit 1
+  [ $? -eq 7 ] && echo "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && exit 1
+  [ $? -eq 8 ] && echo "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && exit 1
   [ $? -eq 1 ] && echo "Something went wrong, unable to add a server to cluster $cluster" && exit 1
   [[ $ip =~ [^[0-9.]]* ]] && echo "Something's wrong with IP: $ip" && exit 1
   [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && exit 1
@@ -212,7 +215,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
 
   #${rpath}/test_meta --flavor=$flavor --task=$task --role=$role || exit 1
   
-  [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}"/${role}.${task}.* | tail -1` && timestamp=${timestamp##*.}
+  [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}"/${role}.${task}.* | tail -1` && timestamp=${timestamp##*.} && echo "Restoring the process with timestamp $timestamp"
   [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M_%S"`
   install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
   touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
