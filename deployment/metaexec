@@ -137,7 +137,7 @@ IFS=$IFS1
 
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
-  echo "  --command  variables should be escaped"
+  echo "  The --command option arguments should be escaped"
   exit 0
 fi
 if [ -n "$task" -a -n "$command" ] ; then
@@ -156,9 +156,11 @@ if [ -n "$ip" ] ; then
     cluster=$ipcluster
   fi
 fi
+[ -n "$verbose" ] && V='--verbose'
 if [ -z "$ip" ] && [ -n "$cloud" ] && [ -n "$newserver" ]; then
   echo "*** Bringing up a new server in the cloud $cloud"
-  ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip | tail -1`
+  ${rpath}/../cloud/${cloud}/update_servers_list
+  ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" | tail -1`
   [ $? -eq 5 ] && echo "Maximum servers number for cluster $cluster has been reached, unable to add another server" && exit 1
   [ $? -eq 6 ] && echo "Failed to generate a name for the new server" && exit 1
   [ $? -eq 7 ] && echo "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && exit 1

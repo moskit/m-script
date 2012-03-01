@@ -103,8 +103,14 @@ request() {
 }
 
 save_details() {
-  echo -e "\n`date`\n\nCluster|$cluster\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
+  if [ "X$NETWORK" == "Xexternal" ] ; then
+    slip=`grep \/addresses\/public "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`
+  else
+    slip=`grep \/addresses\/private "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`
+  fi
+  echo "${slip}|${thekey}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
 }
 
 wait_ready() {
