@@ -114,7 +114,6 @@ save_details() {
 }
 
 wait_ready() {
-  echo
   waittimeout=600
   waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
@@ -133,7 +132,7 @@ wait_ready() {
 }
 
 printreturn() {
-  for res in `echo $return | tr ',' ' '` ; do
+  for res in `echo $1 | tr ',' ' '` ; do
     case $res in
       ip)
         if [ "X$NETWORK" == "Xexternal" ] ; then
