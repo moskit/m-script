@@ -21,6 +21,8 @@ rpath=${0%/*}
 IFS1=$IFS
 IFS='
 '
+# in case the file doesn't end correctly
+echo >> /etc/hosts
 cat "${rpath}/../../servers.list" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | cut -d'|' -f1,4 | while read HOST
 do
   ip=`echo $HOST | cut -d'|' -f1`
@@ -36,7 +38,6 @@ do
     if [ `grep -c " $hname$" /etc/hosts` -eq 1 ] ; then
       sed -i -e "/ $hname$/d" /etc/hosts
     fi
-    echo >> /etc/hosts
     echo "$ip $hname" >> /etc/hosts
   fi
 done

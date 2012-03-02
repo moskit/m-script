@@ -98,13 +98,13 @@ install -d $TMPDIR
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 
 if [ -z "$application" ] ; then
-  APPS=`for APP in $APP_SERVERS; do appnames="${appnames}\n${APP##*:}"; done; echo -e "$appnames" | sort | uniq`
+  APPS=`echo $APP_SERVERS | cut -d'|' -f3 | sort | uniq`
 else
   APPS="$application"
 fi
 
 if [ -z "$cluster" ] ; then
-  CLUSTERS=`for CLUSTER in $APP_SERVERS; do names="${names}\n${CLUSTER%%:*}"; done; echo -e "$names" | sort | uniq`
+  CLUSTERS=`echo $APP_SERVERS | cut -d'|' -f1 | sort | uniq`
 else
   CLUSTERS="$cluster"
 fi
@@ -113,14 +113,18 @@ changed=0
 
 for app in $APPS ; do
   for cluster in $CLUSTERS ; do
-    mv $TMPDIR/${app}.${cluster}.ips $TMPDIR/${app}.${cluster}.ips.prev
-    for CLUSTER in $APP_SERVERS; do
-      if [ "X${CLUSTER%%:*}" == "X$cluster" ] && [ "X${CLUSTER##*:}" == "X$app" ] ; then
-        port=${CLUSTER#*:}; port=${port%:*}
+    mv $TMPDIR/${app}.${cluster}.ips $TMPDIR/${app}.${cluster}.ips.prev 2>/dev/null
+    for APPCLUSTER in $APP_SERVERS; do
+      if [ "X${APPCLUSTER%%|*}" == "X$cluster" ] && [ "X`echo ${APPCLUSTER} | cut -d'|' -f3`" == "X$app" ] ; then
+        port=`echo ${APPCLUSTER} | cut -d'|' -f2`
         ports="$ports $port"
+        method=`echo ${APPCLUSTER} | cut -d'|' -f4`
+        if [ -z "$balance_method" ] ; then
+          [ -n "$method" ] && balance_method="$method"
+        fi
       fi
     done
-    for IP in `cat "${rpath}/../../servers.list" | grep \|${cluster}[[:space:]]* | cut -d'|' -f1` ; do
+    for IP in `cat "${rpath}/../../servers.list" | grep \|${cluster}[[:space:]]*$ | cut -d'|' -f1` ; do
       for PORT in $ports ; do
         echo "$IP:$PORT" >> $TMPDIR/${app}.${cluster}.ips
       done
@@ -128,8 +132,16 @@ for app in $APPS ; do
     [ -f $TMPDIR/${app}.${cluster}.ips.prev ] && [ -f $TMPDIR/${app}.${cluster}.ips ] && [ -z "`$DIFF -q $TMPDIR/${app}.${cluster}.ips.prev $TMPDIR/${app}.${cluster}.ips`" ] && continue
     if [ `cat $TMPDIR/${app}.${cluster}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
       changed=1
+      case $balance_method in
+        sticky|ip_hash)
+          balance_method="ip_hash"
+          ;;
+        *)
+          unset balance_method
+          ;;
+      esac
       echo "upstream $app {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-      echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+      [ -n "$balance_method" ] && echo "  ${balance_method};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
       while read IP; do
         echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
       done<$TMPDIR/${app}.${cluster}.ips

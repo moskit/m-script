@@ -31,6 +31,8 @@ run_meta() {
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       if [ -e "${ROLES_ROOT}/$metascript" ] ; then
+        [ -e "${WORK_DIR}/${role}.${task}.${timestamp}/$metascript" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestamp}/$metascript"
+        [ -e "${WORK_DIR}/${role}.${task}.${timestamp}/${metascript}.var" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestamp}/${metascript}.var"
         deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V
         res=$?
       else
