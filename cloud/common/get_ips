@@ -48,7 +48,7 @@ do
     [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
-  if [[ found -ne 1 ]]; then 
+  if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi

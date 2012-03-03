@@ -41,7 +41,7 @@ do
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
     [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
-   if [[ found -ne 1 ]]; then 
+   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
@@ -165,7 +165,8 @@ check_cluster_limit || exit 5
 [ -z "$flavor" ] && find_flavor
 [ -z "$flavor" ] && exit 8
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "${rpath}/../../keys/${thekey}.pub" ] && thekey=${thekey}.pem
+[ -f "${rpath}/../../keys/${thekey}.pub" ] && thekey=${thekey}.pub
+[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && thekey=${thekey}.pem.pub
 PUBLIC_KEY=`cat $thekey 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`

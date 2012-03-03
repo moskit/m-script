@@ -37,6 +37,9 @@ request() {
   $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
 }
 
+# Cleaning first
+
+
 [ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
 request
 if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
@@ -45,4 +48,7 @@ if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ]
 fi
 sleep 5
 cat "${TMPDIR}/${rcommand}.resp"
+
+#ssh-keygen -f "/root/.ssh/known_hosts" -R 10.179.35.32
+
 

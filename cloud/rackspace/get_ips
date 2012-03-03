@@ -1,1 +1,118 @@
-../common/get_ips
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+SSH=`which ssh 2>/dev/null`
+possible_options="cluster help region delimiter limit names quoted spaces"
+commflag=0
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options>"
+  echo 
+  echo "Without options all found clusters will be synced"
+  echo
+  echo "Options:"
+  echo
+  echo "  --region=region          - syncs only servers in this region."
+  exit 0
+fi
+
+function ip_to_name() {
+  rname1=`grep "^${1}[[:space:]]" /etc/hosts | awk '{print $2}'`
+  [ -n "$rname1" ] && rname2=`grep "^${1}[[:space:]]" /etc/hosts | awk '{print $3}'` || rname=${1}
+  [ -n "$rname2" ] && [ ${#rname2} -lt ${#rname1} ] && rname=$rname2 || rname=$rname1
+}
+
+IFS1=$IFS
+IFS='
+'
+declare -i n
+n=1
+[ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
+cluster=`echo $cluster | tr ',' '\n'`
+for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+  list=false
+  IP=${server%%|*}
+  if [ -n "$region" ] ; then
+    REGION=`echo $server | cut -d'|' -f3`
+    [ "X$REGION" == "X$region" ] || continue
+  fi
+  if [ -n "$cluster" ] ; then
+    for cl in $cluster ; do
+      CLUSTER=`echo $server | cut -d'|' -f5`
+      [ "X$CLUSTER" == "X$cl" ] && list=true && break
+    done
+    $list || continue
+  fi
+  if [ -n "$names" ] ; then
+    ip_to_name $IP
+    if [ -z "$rname" ] ; then
+      KEY=`echo $server | cut -d'|' -f2`
+      [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
+      [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
+      [ -n "$SSH" ] && rname=`$SSH -i "${rpath}/../../keys/$KEY" $IP hostname`
+    fi
+    [ -n "$rname" ] && IP=$rname
+  fi
+  if [ -n "$delimiter" ] ; then
+    if [ -n "$quoted" ] ; then
+      ips="${ips}`printf "\\"${IP}\\"${delimiter}"`"
+    else
+      ips="${ips}`printf "${IP}${delimiter}"`"
+    fi
+  else
+    echo $IP
+  fi
+  n+=1
+  [ -n "$limit" ] && [ $n -gt $limit ] && break
+done
+IFS=$IFS1
+
+[ -n "$ips" ] && echo "${ips}" | sed "s|${delimiter}$||" || exit 0
