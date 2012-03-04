@@ -102,7 +102,7 @@ if [ -n "$ip" ] && [ -f "$if" ] ; then
 fi
 # need to check this before mangling the firewall :)
 if [ "X$local_networks" == "Xyes" ] ; then
-  [ "X$NMAP" == "X" ] && echo "Nmap not found. It's needed for this script to work, sorry" && exit 0
+  [ "X$NMAP" == "X" ] && echo "Nmap not found. It's required for this script, sorry" && exit 0
 fi
 
 if [ -n "$threshold" ] ; then

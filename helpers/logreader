@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+# timeformat='%b %e %H:%M'
+# tail -1000 mail.log| grep -n ^"`date -d "-5 min" +"$timeformat"`"
+
+### NOTES:
+# timestamp is assumed to be at the beginning of the line
+
+possible_options="file maxlines period timeformat"
+necessary_options="file"
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+
+source "${rpath}/../conf/mon.conf"
+# defaults
+[ -z "$maxlines" ] && maxlines=1000
+[ -z "$period" ] && period="$FREQ sec"
+[ -z "$timeformat" ] && timeformat='%b %e %H:%M'
+
+timepattern=`date -d "-${period}" +"$df"`
+ln=`tail -n $maxlines "$file" | grep -n -m 1 -h ^"$timepattern" | cut -d':' -f1`
+tail -n $maxlines "$file" | tail -n +$ln
+
+

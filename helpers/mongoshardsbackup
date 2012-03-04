@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# while true ; do currshard=`mongo appserver10/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.speech_act\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d' ' -f2` ; echo "Current shard: $currshard" ; oneforbackup=`mongo appserver10/config --quiet --eval "db.chunks.find( { ns : \"solariat_flask.speech_act\", shard : { \\$ne : \"$currshard\" }}, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt` ; chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d' ' -f2` ; chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | cut -d' ' -f2` ; chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | cut -d' ' -f2` ; chkidmin=${chkidmin#*\"} ; chkidmin=${chkidmin%\"*} ; chkidmax=${chkidmax#*\"} ; chkidmax=${chkidmax%\"*} ; echo "$chkshard : $chkidmin - $chkidmax" ; sleep 600 ; echo ; done
+
+### what moveChunk.start | server: one it is located on
+### what moveChunk.to | server: new destination
+### what moveChunk.commit | server: one it is located on
+### what moveChunk.from | server: one it is located on
+
+
+### Backuping a sharded collection (that is, we know for sure it's sharded)
+### Get "db|collection|shardkey|shards" table
+#mongodump -d solariat_flask -c speech_act -q "{   }"
+### Get the shard (and chunk?) currently being written to
+currshard1=`mongo $server/config --quiet --eval "db.chunks.find( { ns : \"${db}.${collection}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | lib/json2txt | grep ^[0-9]*\/shard | cut -d' ' -f2`
+# the last split shard and the server it has been split on:
+lastsplit=`mongo $server/config --quiet --eval "db.changelog.find({what:\"split\", ns:\"${db}.${collection}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)"|lib/json2txt | cut -d' ' -f2`
+lastsplitserver=`echo $lastsplit | head -1`
+lastsplitchunk=`echo $lastsplit | tail -1 | cut -d'"' -f2`
+# chunk could be moved after split:
+chunkmovedto=`mongo appserver10/config --quiet --eval "db.changelog.find({\"details.min._id\":ObjectId(\"$lastsplitchunk\"), what:\"moveChunk.start\"},{\"details.to\":1, _id:0}).sort({time:1}).forEach(printjson)"|lib/json2txt | cut -d' ' -f2`
+if [ -n "$chunkmovedto" ] ; then
+  currshard2=$chunkmovedto
+else
+  currshard2=`mongo appserver10/config --quiet --eval "db."
+fi
+
+### Find the latest of chunks located neither on the current shard nor on the primary shard
+possible=`mongo $server/config --quiet --eval "db.chunks.find( { ns : \"${db}.${collection}\", shard : { \\$ne : \"$currshard\" }}, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit($depth).forEach(printjson)" | lib/json2txt`
+
+### Check if it is backuped already
+for n in `echo "$possible" | cut -d'/' -f1 | sort | uniq` ; do
+
+done
+

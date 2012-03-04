@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+
+cleanup() {
+
+$IPT -F M_IPBLOCK_TMP
+$IPT -F M_IPBLOCK_CONST
+$IPT -X M_IPBLOCK_TMP
+$IPT -X M_IPBLOCK_CONST
+
+}
+
+[ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
+[ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
+
+possible_options="method cleanup block_forever_after"
+necessary_options=""
+[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param="$s_option $s_param"
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+found=0
+
+source "${rpath}/../conf/mon.conf"
+
+[ -n "$cleanup" ] && cleanup && exit $?
+
+$IPT -L M_IPBLOCK_CONST >/dev/null 2>&1
+[[ $? -eq 1 ]] && $IPT -N M_IPBLOCK_CONST && $IPT -A INPUT -j M_IPBLOCK_CONST
+$IPT -L M_IPBLOCK_TMP >/dev/null 2>&1
+if [[ $? -eq 1 ]] ; then
+  $IPT -N M_IPBLOCK_TMP
+  $IPT -A INPUT -j M_IPBLOCK_TMP
+else
+  $IPT -F M_IPBLOCK_TMP
+fi
+
+if [ -n "$s_param" ] ; then
+  ips=`echo $s_param | sort | uniq`
+  for ip in $ips ; do
+    # Never block own IPs! :)
+    if [[ `grep -c ^${ip}\| "${rpath}/../servers.list"` -eq 0 ]] ; then
+      if [[ `grep -c "^${ip}$" "${TMPDIR}/ip_block.tmp"` -gt $block_forever_after ]] ; then
+        $IPT -A M_IPBLOCK_CONST -s $ip -j $method
+      else
+        $IPT -A M_IPBLOCK_TMP -s $ip -j $method
+      fi
+    fi
+  done
+fi
+
