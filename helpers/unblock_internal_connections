@@ -23,6 +23,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
+[ -f "/sbin/iptables-save" ] && IPTS=/sbin/iptables-save || IPTS=`which iptables-save 2>/dev/null`
 
 possible_options="cluster help region verbose"
 commflag=0
@@ -109,38 +110,50 @@ for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v
   for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
     IP2UB=${server%%|*}
 
-    mainchain=INPUT
-    if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
-      [ -n "$IPT" ] || continue
-      rchain=`findchain_local $mainchain`
-      [ -n "$rchain" ] || continue
-      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-      $IPT -I "$rchain" -s $IP2UB -j ACCEPT
-    else
-      rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
-      [ -n "$rchain" ] || continue
-      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-      command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
-      $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
-    fi
-    unset rchain
-
-    mainchain=OUTPUT
-    if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
-      [ -n "$IPT" ] || continue
-      rchain=`findchain_local $mainchain`
-      [ -n "$rchain" ] || continue
-      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-      $IPT -I "$rchain" -d $IP2UB -j ACCEPT
-    else
-      rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
-      [ -n "$rchain" ] || continue
-      [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-      command="\`which iptables 2>/dev/null\` -I \"$rchain\" -d $IP2UB -j ACCEPT"
-      $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
-    fi
-    unset rchain
-
+    for mainchain in INPUT OUTPUT ; do
+      if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+        [ -n "$IPT" ] || continue
+        rchain=`findchain_local $mainchain`
+        [ -n "$rchain" ] || continue
+        [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+        existing=`$IPTS | grep "-A $rchain -s $IP2UB -j ACCEPT" | wc -l`
+        if [[ $existing -eq 0 ]] ; then
+          $IPT -I "$rchain" -s $IP2UB -j ACCEPT
+        else
+          dupes=`expr $existing - 1`
+          if [[ $dupes -gt 0 ]] ; then
+            echo -n "  removing duplicates"
+            for ((n=0; n<$dupes; n++)) ; do
+              printf "."
+              $IPT -D "$rchain" -s $IP2UB -j ACCEPT
+            done
+            echo
+          fi
+        fi
+      else
+        rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
+        [ -n "$rchain" ] || continue
+        [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+        command="\`which iptables-save 2>/dev/null\` \| grep \"-A $rchain -s $IP2UB -j ACCEPT\" \| wc -l\`"
+        existing=`$SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"`
+        if [[ $existing -eq 0 ]] ; then
+          command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
+          $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+        else
+          dupes=`expr $existing - 1`
+          if [[ $dupes -gt 0 ]] ; then
+            echo -n "  removing duplicates"
+            for ((n=0; n<$dupes; n++)) ; do
+              printf "."
+              command="\`which iptables 2>/dev/null\` -D \"$rchain\" -s $IP2UB -j ACCEPT"
+              $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+            done
+            echo
+          fi
+        fi
+      fi
+      unset rchain
+    done
   done
 
 done
