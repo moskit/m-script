@@ -54,7 +54,7 @@ source "${rpath}/../conf/mon.conf"
 [ -z "$period" ] && period="$FREQ sec"
 [ -z "$timeformat" ] && timeformat='%b %e %H:%M'
 
-timepattern=`date -d "-${period}" +"$df"`
+timepattern=`date -d "-${period}" +"$timeformat"`
 ln=`tail -n $maxlines "$file" | grep -n -m 1 -h ^"$timepattern" | cut -d':' -f1`
 tail -n $maxlines "$file" | tail -n +$ln
 
