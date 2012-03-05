@@ -133,6 +133,9 @@ list_servers() {
             list)
               echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
               ;;
+            table)
+              echo "${id}|${name}|${status}|${extIP}|${intIP}|${imageId}|${flavorId}"
+              ;;
             column)
               echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
               ;;

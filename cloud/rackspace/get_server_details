@@ -30,7 +30,7 @@ possible_options="id name ip return verbose"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
-[ -z "$ARGV" ] && echo "Stop server? Which one?" && exit 1
+[ -z "$ARGV" ] && echo "Show server? Which one?" && exit 1
 IFS1=$IFS
 IFS='|'
 for s_option in $ARGV
@@ -47,6 +47,16 @@ do
   fi
 done
 IFS=$IFS1
+
+find_by_ip() {
+  if [ -f "${TMPDIR}/show_servers.resp" ] ; then
+    sn=`grep addresses "${TMPDIR}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    id=`grep \/$sn\/id\| "${TMPDIR}/show_servers.resp" | cut -d'|' -f2`
+  fi
+  if [ -z "$id" ] ; then
+    id=`${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
+  fi
+}
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
@@ -70,24 +80,18 @@ if [ -z "$id" ] ; then
     else
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       if [ -n "$ip" ] ; then
-        if [ -f "${TMPDIR}/show_servers.resp" ] ; then
-          sn=`grep addresses "${TMPDIR}/show_servers.resp" | grep "${ip}$"
-        else
-        
-        fi
+        find_by_ip $ip
       else
-      
+        id=`${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
-  
+    find_by_ip $ip
   fi
-
 fi
+[ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
 
 req="/servers/$id"
-
-
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
