@@ -27,19 +27,24 @@ echo "<div class=\"clustername\"><span class=\"indent\">Clusters and nodes</span
 for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
   clusterdat=`ls -1t "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat`
-  esip=`cat $clusterdat | grep ^ip\| | awk -F'|' '{print $2}' | sort | uniq`
+  esip=`cat $clusterdat | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do
-    eshostname=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $4}'`
+    eshostname=`grep ^$eshostip\| "${PWD}/../../servers.list" | cut -d'|' -f4`
     if [ -n "$eshostname" ] ; then
-      servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | awk -F'|' '{print $5}'`
+      servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | cut -d'|' -f5`
       
-      eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-      [ -n "$eshost" ] || eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+      eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+      [ -n "$eshost" ] || eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
     else
-      eshost=$eshostip
+      eshost="${eshostip}:9200"
     fi
     thisesstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
-    [ -n "$esstatus" ] && [ "X$esstatus" != "X$thisesstatus" ] && esstatus="$esstatus $thisesstatus" || esstatus="$thisesstatus"
+    if [ -n "$prevstatus" ] ; then
+      [ "X$prevstatus" != "X$thisesstatus" ] && esstatus="$esstatus $thisesstatus"
+    else
+      esstatus="$thisesstatus"
+    fi
+    prevstatus=$thisesstatus
   done
   echo "<div class=\"cluster\" id=\"${clustername}\">"
     echo "<div class=\"server\" id=\"${clustername}_status\">"
