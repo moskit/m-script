@@ -69,9 +69,16 @@ generate_name() {
   am=0 ; lm=0
   num=$(cat "${rpath}/../../servers.list" | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do a=`expr "X$name" : 'X.*[^0-9]\([0-9]*\)'` ; l=${#a} ; [ `expr $l \> ${lm}` -gt 0 ] && lm=$l ; [ `expr $a \> ${am}` -gt 0 ] && am=$a ; echo "$am|$lm" ; done | tail -1)
   am=${num%|*} ; lm=${num#*|}
-  [ -n "$am" ] && am=`expr $am + 1` || am=1
-  [ -n "$lm" ] || lm=3
-  echo "$nam`until [[ ${#am} -eq $lm ]] ; do am="0$am" ; m0="0$m0" ; echo $m0 ; done | tail -1`$am"
+  if [ -n "$am" ] ; then
+    am=`expr $am + 1`
+    # length might change
+    lnew=${#a}
+    [[ $lnew -gt $lm ]] && lm=$lnew
+  else
+    am=1
+  fi
+  [ -n "$lm" ] || lm=$NAME_INDEX_LENGTH
+  echo "$nam`until [[ ${#am} -eq $lm ]] ; do am="0$am" ; m0="0$m0" ; [[ ${#am} -gt $lm ]] && exit 1 ; echo $m0 ; done | tail -1`$am"
 }
 
 find_image() {
