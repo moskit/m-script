@@ -129,6 +129,8 @@ list_servers() {
         if [ -n "$icluster" -o -n "$all" ] ; then
           [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
           [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
+          extIP=${extIP#* } ; extIP=${extIP% *}
+          intIP=${intIP#* } ; intIP=${intIP% *}
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"

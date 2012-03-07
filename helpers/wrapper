@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# For the case this script is used as LSB init script
 ### BEGIN INIT INFO
 # Provides:          wrapper
 # Default-Start:     2 3 5
@@ -25,15 +24,15 @@
 ### END INIT INFO
 
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rpath=$(cd ${xcommand%/*}/ && pwd)
+[ -n "${xcommand%/*}" ] && rpath=$(cd ${xcommand%/*}/ && pwd) || rpath=$PWD
 rcommand=${xcommand##*/}
 #*/
-wrapper_options="config command logfile errlogfile pidfile fg user group help wait kill"
+wrapper_options="config command logfile errlogfile pidfile fg user group help wait kill chdir"
 # All possible options for the wrapped command must be listed here
 # (only long options are supported: --option=value)
 command_options=""
 # This list is for those options (both command and wrapper) that must be
-# present, otherwise it won't start
+# present, otherwise it won't run
 necessary_options="command"
 [ $# -eq 0 ] && ${0} --help && exit 0
 IFS1=$IFS
@@ -90,13 +89,15 @@ fi
 [ -n "$errlogfile" ] || errlogfile=$logfile
 [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
 
+[ -n "$chdir" ] && cdback=$PWD
+
 if [ -n "$user" ] ; then
   touch "$logfile" "$pidfile" && chown $user "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
 fi
 if [ -n "$group" ] ; then
   touch "$logfile" "$pidfile" && chgrp $group "$logfile" "$pidfile" || (echo "Unable to write to either $logfile or $pidfile or both" && rm -f "$logfile" "$pidfile" 2>/dev/null && exit 1)
 fi
-
+[ -n "$wait" ] || wait=0
 case $s_param in
   start)
     [ -f "$pidfile" ] && [ -n "`cat ${pidfile}|grep -v ^$|tail -1`" ] && [ -d "/proc/`cat ${pidfile}|grep -v ^$|tail -1`" ] &&  echo "Already running (PID `cat ${pidfile}|grep -v ^$|tail -1`, file $pidfile)." && exit 0
@@ -106,21 +107,23 @@ case $s_param in
     else
       echo "No configuration file" >>"$logfile"
     fi
-    if [ -n "$user" ] ; then
-      su -l $user -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
+    [ -n "$chdir" ] && cd "$chdir"
+    if [ -n "$user" -a "$UID" == "0" ] ; then
+      su $user -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
       succ=$?
       echo $! > $pidfile
-    elif [ -n "$group" ] ; then
-      sg -l $group -c "exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
+    elif [ -n "$group" -a "$UID" == "0" ] ; then
+      sg $group -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
       succ=$?
       echo $! > $pidfile
     else
-      exec $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null &
+      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null &
       succ=$?
       echo $! > $pidfile
     fi
 
     [[ $succ -eq 0 ]] && [ -n "`cat ${pidfile}|grep -v ^$|tail -1`" ] && echo "done (PID `cat ${pidfile}|grep -v ^$|tail -1`)" || echo "error" | tee -a $logfile
+    [ -n "$cdback" ] && cd "$cdback"
     ;;
   stop)
     if [ -z "$config" ] ; then

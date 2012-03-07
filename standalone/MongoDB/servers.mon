@@ -327,6 +327,10 @@ if [ -n "$shardhosts" ] ; then
   for ((n=1; n<=$nmax; n++)) ; do
     shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | awk -F'|' '{print $2}'`
     shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | awk -F'|' '{print $2}'`
+    ifreplicaset=${shardhost%%/*}
+    shardhost=${shardhost#*/}
+    # might be multiple hosts here, not needed now, it'll be dealt with later
+    shardhost=${shardhost%%,*}
     shardport=${shardhost#*:}
     if [ "X`${MONGO} ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
       replicaset=`${MONGO} ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()._id" | tail -1`

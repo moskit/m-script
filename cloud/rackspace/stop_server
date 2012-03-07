@@ -25,7 +25,6 @@ WGET=`which wget 2>/dev/null`
 
 CURL="$CURL -s"
 V="v1.0"
-req="/servers/$1"
 
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
@@ -70,6 +69,7 @@ if [ -z "$id" ] ; then
       exit 1
     else
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
+      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
@@ -94,6 +94,7 @@ else
   fi
 fi
 [ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
+req="/servers/$id"
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
@@ -107,10 +108,12 @@ if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
-SSHK=`which ssh-keygen 2>/dev/null`
-[ -n "$name" ] && $SSHK -R "$name"
-[ -n "$ipint" ] && $SSHK -R "$ipint"
-[ -n "$ipext" ] && $SSHK -R "$ipext"
-
+cat "${TMPDIR}/${rcommand}.resp"
+if [ `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
+  SSHK=`which ssh-keygen 2>/dev/null`
+  [ -n "$name" ] && $SSHK -q -R "$name"
+  [ -n "$ipint" ] && $SSHK -q -R "$ipint"
+  [ -n "$ipext" ] && $SSHK -q -R "$ipext"
+fi
 
 

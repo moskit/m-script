@@ -192,7 +192,8 @@ if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
-
+echo -n "`grep \/code\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`: "
+grep \/message\| "${TMPDIR}/${rcommand}.resp"
 newid=`grep \/id\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then
   save_details
