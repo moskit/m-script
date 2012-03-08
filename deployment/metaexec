@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 
 run_meta() {
-  [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" >> "${rpath}/../deploy.log" && return 0
+  [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "${rpath}/../deploy.log" && return 0
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[00;39m" || printf "META: $1"
   if [ -n "$test" -o -n "$dry" ] ; then
     metatype=`echo $1 | awk '{print $1}'`
@@ -100,7 +100,7 @@ run_meta() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output repeat newserver"
+possible_options="help verbose flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
 IFS='--'
@@ -231,8 +231,24 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     IFS1=$IFS
     IFS='
 '
+    declare -i metan
+    metan=1
     for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
-      run_meta "${meta}"
+      meta=`eval "echo ${meta}"`
+      if [ -n "$list" ] ; then
+        echo "$metan ${meta}"
+      else
+        if [ -n "$skip" ] ; then
+          for skipn in `echo $skip | tr ',' ' '` ; do
+            [[ $skipn -eq $metan ]] && skipthis=true
+          done
+          $skipthis || run_meta "${meta}"
+          skipthis=false
+        else
+          run_meta "${meta}"
+        fi
+      fi
+      metan+=1
     done
     IFS=$IFS1
   fi
