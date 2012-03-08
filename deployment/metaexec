@@ -219,10 +219,12 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
 
   #${rpath}/test_meta --flavor=$flavor --task=$task --role=$role || exit 1
   
-  [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}" | grep ^${role}.${task} | tail -1` && timestamp=${timestamp##*.} && echo "Restoring the process with timestamp $timestamp"
-  [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M_%S"`
-  install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
-  touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
+  if [ -z "$list" ] ; then
+    [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}" | grep ^${role}.${task} | tail -1` && timestamp=${timestamp##*.} && echo "Restoring the process with timestamp $timestamp"
+    [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M_%S"`
+    install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
+    touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
+  fi
   echo
   if [ -n "$command" ] ; then
     meta="$command"
@@ -239,7 +241,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
         echo "$metan ${meta}"
       else
         if [ -n "$skip" ] ; then
-          for skipn in `echo $skip | tr ',' ' '` ; do
+          for skipn in `echo -e $skip | tr ',' '\n'` ; do
             [[ $skipn -eq $metan ]] && skipthis=true
           done
           $skipthis || run_meta "${meta}"
