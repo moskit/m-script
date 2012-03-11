@@ -73,6 +73,9 @@ echo >> "${rpath}/../deploy.log"
 
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
+# These must exist
+[ -z "$WORK_DIR" ] && echo "WORK_DIR is not set, check deployment.conf" && exit 1
+[ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT is not set, check deployment.conf" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common

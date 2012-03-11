@@ -26,12 +26,12 @@ EOF
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-timeindexnow=`cat $TMPDIR/timeindex`
-lasttimeindex=`cat $TMPDIR/lasttimeindex.disk`
-diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
+timeindexnow=`cat $TMPDIR/timeindex`
+lasttimeindex=`cat $TMPDIR/lasttimeindex.disk`
+diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   alltables=`sqlite3 ${rpath}/../sysdata ".tables"`
@@ -51,7 +51,7 @@ do
     LONGLINE=""
   fi
   # Sometimes df breaks a line, if it is much longer than 80 symbols
-  if [ x$(echo $LINE | awk '{ print $6}') == "x" ] && [ -z ${LONGLINE} ]
+  if [ x$(echo $LINE | awk '{ print $6}') == "x" ] && [ -z "${LONGLINE}" ]
   then
     LONGLINE="${LINE}"
     continue
