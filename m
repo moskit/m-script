@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rcommand=${0##*/}
-rpath=${0%/*}
+[ -z "$1" ] && exit 1
+rpath=${PWD}/${1%/*}
 #*/
 
 source "${rpath}/conf/mon.conf"
@@ -48,6 +48,6 @@ else
 	PROMPT_COMMAND='echo -ne "[${HOSTNAME%%.*}:${M_ROLE}"'
 	PS1=']# '
 fi
-
+export PROMPT_COMMAND PS1
 unset use_color safe_term match_lhs
 
