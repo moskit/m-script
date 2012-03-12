@@ -79,9 +79,10 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
-
+[ -z "$role" ] && role=$M_ROLE
+[ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
 if [ -z "$role" -o -z "$flavor" ] ; then
-  [ -z "$cluster" -a -z "$ip" ] && echo "Either role or flavor is not defined. In this case either ip or cluster is necessary." && exit 1
+  [ -z "$cluster" -a -z "$ip" ] && echo "Either role or flavor not found. In this case either ip or cluster is necessary." && exit 1
 fi
 [ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "${rpath}/../servers.list" | cut -d'|' -f5`
 [ -n "$cluster" -a -z "$ip" ] && ip="127.0.0.1"

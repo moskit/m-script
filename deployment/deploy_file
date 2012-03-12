@@ -86,7 +86,7 @@ source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-M_ROOT=$(cd "${rpath}/../" && pwd)
+[ -n "$M_ROOT" ] || M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
@@ -96,12 +96,24 @@ IFS='
 '
 if [ "X$command" != "X" ] ; then
   from=${command%% *}
-  # doing my best to assume what do options mean
-  # TODO: get all these from the parent process
-  [ -n "$flavor" ] || flavor="common"
   [ -z "$role" ] && [ -n "$cluster" ] && role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
-  [ -z "$role" ] && [ -n "$cluster" ] && role="$cluster"
-  [ -z "$role" ] && echo "Unable to find a role to use" && exit 1
+  if [ -z "$cluster" ] ; then
+    if [ -z "$role" ] ; then
+      if [ -n "$M_ROLE" ] ; then
+        role=$M_ROLE
+        cluster=$M_CLUSTER
+      fi
+      # Still no cluster??
+      if [ -z "$cluster" ] ; then
+        echo "None of ip, role, cluster is defined."
+        exit 1
+      fi
+    else
+      cluster=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      [ -z "$cluster" ] && echo "Cluster not defined for role $role" && exit 1
+    fi
+  fi
+  [ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
   [ -n "$verbose" ] && echo "### Reading configuration from ${ROLES_ROOT}/${role}/role.conf"
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
   if [ -f "$from" ] ; then

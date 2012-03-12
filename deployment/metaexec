@@ -152,10 +152,26 @@ if [ -n "$ip" ] ; then
     exit 1
   fi
   ipcluster=`grep "^$ip|" "${rpath}/../servers.list" | cut -d'|' -f5`
+  [ -z "$ipcluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ] ; then
     [ "$cluster" != "$ipcluster" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
   else
     cluster=$ipcluster
+  fi
+else
+  # Cluster must be defined! If it is still not, we'll find it using role
+  if [ -z "$cluster" ] ; then
+    if [ -z "$role" ] ; then
+      if [ -n "$M_ROLE" ] ; then
+        role=$M_ROLE
+        cluster=$M_CLUSTER
+      fi
+      # Still no cluster??
+      if [ -z "$cluster" ] ; then
+        echo "None of ip, role, cluster is defined."
+        exit 1
+      fi
+    fi
   fi
 fi
 [ -n "$verbose" ] && V='--verbose'

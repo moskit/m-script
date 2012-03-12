@@ -14,8 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-[ -z "$1" ] && exit 1
-rpath=${PWD}/${1%/*}
+[[ $1 =~ ^\/ ]] && rroot='/'
+for step in `echo ${1} | tr '/' ' '` ; do
+  rlink=`readlink "${rroot}${rpath}${step}"`
+  if [ -n "$rlink" ] ; then
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
+  else
+    rpath="${rpath}${step}/"
+  fi
+done
+rpath=${rpath%/}
+[ -h "$rpath" ] && rpath=`readlink "$rpath"`
+rcommand=${rpath##*/}
+rpath="${rroot}${rpath%/*}"
 #*/
 
 source "${rpath}/conf/mon.conf"
@@ -27,8 +38,10 @@ export CLOUD ROLES_ROOT M_ROOT
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 
 cr() {
+  [ -z "$1" ] && ls "$ROLES_ROOT" && return
   cd "$ROLES_ROOT/$1"
   export M_ROLE="$1"
+  M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
 }
 
 use_color=false

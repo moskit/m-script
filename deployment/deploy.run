@@ -79,7 +79,7 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-M_ROOT=$(cd "${rpath}/../" && pwd)
+[ -z "$M_ROOT" ] && M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "${rpath}/../deploy.log" && exit 1
