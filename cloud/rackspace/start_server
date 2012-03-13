@@ -110,6 +110,7 @@ request() {
 }
 
 save_details() {
+  [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
   if [ "X$NETWORK" == "Xexternal" ] ; then
@@ -118,9 +119,11 @@ save_details() {
     slip=`grep \/addresses\/private "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`
   fi
   echo "${slip}|${thekey}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
+  return 0
 }
 
 wait_ready() {
+  [ -n "$1" ] && echo "Waiting..."
   waittimeout=600
   waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
@@ -203,11 +206,12 @@ echo -n "`grep \/code\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`: "
 grep \/message\| "${TMPDIR}/${rcommand}.resp"
 newid=`grep \/id\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then
-  save_details
+  save_details $verbose || true
   wait_ready $verbose
   [ -n "$return" ] && printreturn $return
 else
   exit 1
 fi
 
+exit 0
 

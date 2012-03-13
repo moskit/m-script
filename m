@@ -33,10 +33,11 @@ cr() {
   cd "$ROLES_ROOT/$1"
   export M_ROLE="$1"
   M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
+  export M_CLUSTER
   if ${use_color} ; then
-    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\033[00;37m]# \[\033[0m\]"
+    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\]]# \[\033[0m\]"
   else
-	  PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
+    PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
   fi
 }
 
@@ -58,9 +59,9 @@ match_lhs=""
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 export use_color
 if ${use_color} ; then
-  PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\033[00;37m]# \[\033[0m\]"
+  PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\]]# \[\033[0m\]"
 else
-	PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
+  PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
 fi
 export PS1
 unset use_color safe_term match_lhs
