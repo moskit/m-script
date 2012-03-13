@@ -20,7 +20,7 @@ rpath=${0%/*}
 
 run_meta() {
   [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "${rpath}/../deploy.log" && return 0
-  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[00;39m" || printf "META: $1"
+  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[0m" || printf "META: $1"
   if [ -n "$test" -o -n "$dry" ] ; then
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
@@ -41,13 +41,13 @@ run_meta() {
       fi
       if [ -n "$verbose" ] ; then
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m\n" || printf "\033[01;31mError\033[00;39m\n"
+          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[0m\n" || printf "\033[01;31mError\033[0m\n"
         else
           [ $res -eq 0 ] && echo "Success" || echo "ERROR"
         fi
       else
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n" || printf "  ..  \033[01;31mError\033[00;39m\n"
+          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[0m\n" || printf "  ..  \033[01;31mError\033[0m\n"
         else
           [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
         fi
@@ -57,7 +57,7 @@ run_meta() {
     else
       [ -n "$use_color" ] && printf "\033[01;31m"
       echo "Error parsing the meta: $meta"
-      [ -n "$use_color" ] && printf "\033[00;39m"
+      [ -n "$use_color" ] && printf "\033[0m"
     fi
   else
     
@@ -78,13 +78,13 @@ run_meta() {
       fi
       if [ -n "$verbose" ] ; then
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[00;39m\n" || printf "\033[01;31mError\033[00;39m\n"
+          [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[0m\n" || printf "\033[01;31mError\033[0m\n"
         else
           [ $res -eq 0 ] && echo "Success" || echo "ERROR"
         fi
       else
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[00;39m\n" || printf "  ..  \033[01;31mError\033[00;39m\n"
+          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[0m\n" || printf "  ..  \033[01;31mError\033[0m\n"
         else
           [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
         fi

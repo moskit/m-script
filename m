@@ -14,26 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-[[ $1 =~ ^\/ ]] && rroot='/'
-for step in `echo ${1} | tr '/' ' '` ; do
-  rlink=`readlink "${rroot}${rpath}${step}"`
-  if [ -n "$rlink" ] ; then
-    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
-  else
-    rpath="${rpath}${step}/"
-  fi
-done
-rpath=${rpath%/}
-[ -h "$rpath" ] && rpath=`readlink "$rpath"`
+[ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
+while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
 rcommand=${rpath##*/}
-rpath="${rroot}${rpath%/*}"
+rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/cloud.conf"
 source "${rpath}/conf/deployment.conf"
 
-M_ROOT=$(cd "${rpath}" && pwd)
+M_ROOT="$rpath"
 export CLOUD ROLES_ROOT M_ROOT
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 
@@ -44,6 +35,13 @@ cr() {
   M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
 }
 
+exit() {
+  export PS1=$OLDPS1
+  unset M_ROLE M_CLUSTER ROLES_ROOT
+  unset cr exit
+}
+
+OLDPS1=$PS1
 use_color=false
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
 match_lhs=""
@@ -55,12 +53,10 @@ match_lhs=""
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 
 if ${use_color} ; then
-  PROMPT_COMMAND='echo -ne "\033[00;37m[\033[01;31m${HOSTNAME%%.*}\033[00;39m:\033[01;36m${M_ROLE}\033[00;39m"'
-  PS1='\033[00;37m]#\033[00;39m '
+  PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\033[00;37m]# \[\033[0m\]"
 else
-	PROMPT_COMMAND='echo -ne "[${HOSTNAME%%.*}:${M_ROLE}"'
-	PS1=']# '
+	PS1="[${HOSTNAME%%.*}:${M_ROLE}# "
 fi
-export PROMPT_COMMAND PS1
+export PS1
 unset use_color safe_term match_lhs
 
