@@ -230,10 +230,11 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
   [ -f "${rpath}/../keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
   #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
-  #$SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null || (echo "Unable to connect to $ip" ; exit 1)
-  [ -z "$SCP" ] && echo "SCP not found!" && exit 1
+  $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null
+  [ $? -ne 0 ] && echo "Unable to login to the server $ip" && exit 1
+  #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
 
-  #${rpath}/test_meta --flavor=$flavor --task=$task --role=$role || exit 1
+  #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
   
   if [ -z "$list" ] ; then
     [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}" | grep ^${role}.${task} | tail -1` && timestamp=${timestamp##*.} && echo "Restoring the process with timestamp $timestamp"

@@ -23,24 +23,24 @@ LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
-TMPDIR=/tmp/m_script/cloud/ec2
-install -d $TMPDIR
+source "$rpath/../../conf/cloud.conf"
+source "$rpath/../../conf/mon.conf"
+TMPDIR="$TMPDIR/cloud/$CLOUD"
+install -d "$TMPDIR"
 CURL="$CURL -s"
 
 possible_options="region action id zone name type value items wholezone noupdate comment hostedzoneid dnsname"
 necessary_options="action"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
-
 IFS1=$IFS
-IFS='|'
-for s_option in $ARGV
+IFS='--'
+for s_option in "${@}"
 do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
   [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
-  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+  for option in `echo $possible_options | sed 's/ /--/g'`; do 
     [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
    if [[ $found -ne 1 ]]; then 
@@ -63,7 +63,6 @@ fi
 [ "X$action" == "Xlistzone" ] && [ -z "$type" ] && type="SOA"
 [ "X$action" == "Xlistzone" ] && [ -z "$name" ] && name=$zone
 [ "X$action" == "Xlistzone" ] && [ -z "$items" ] && items=1
-source ${rpath}/../../conf/cloud.conf
 
 request=$TMPDIR/r53query.$$
 

@@ -37,7 +37,7 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   alltables=`sqlite3 ${rpath}/../sysdata ".tables"`
 fi
 
-echo ""
+echo
 echo "Disks usage:"
 echo "------------"
 echo
