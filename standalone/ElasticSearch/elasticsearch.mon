@@ -2,6 +2,7 @@
 
 rpath=${BASH_SOURCE[0]}
 while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
+rcommand=${rpath##*/}
 rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"

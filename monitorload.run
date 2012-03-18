@@ -33,6 +33,7 @@ start)
   [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" && exit 0
   rpath=${BASH_SOURCE[0]}
   while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
+  rcommand=${rpath##*/}
   rpath="$(cd -P "${rpath%/*}" && pwd)"
   #*/
 
