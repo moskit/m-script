@@ -42,15 +42,15 @@ for coll in $sharded ; do
   #echo "$coll current shard: $currshard"
   database=${coll%%.*}
   mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
-  echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut-d'|' -f1`"
-  echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut-d'|' -f1`"
+  echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`"
+  echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`"
   echo
   rm -f "${rpath}/data/shards.${coll}"
   shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"${coll}\" , \"shard\" : c }).count() ) } )"`
   for shard in $shards ; do
     shname=`echo $shard | cut -d'|' -f1`
     shchunks=`echo $shard | cut -d'|' -f2`
-    shhost=`grep \|$shname\| "${rpath}"/mongo_shards.list 2>/dev/null | cut-d'|' -f1`
+    shhost=`grep \|$shname\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`
     shdatasize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()"`
     shindexsize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()"`
     echo "${shname}|${shhost}|${shchunks}|${shdatasize}|${shindexsize}" >> "${rpath}/data/shards.${coll}"
@@ -71,9 +71,10 @@ for coll in $sharded ; do
   echo
   echo " Shard                Key min               Key max"
   for chn in `cat "$TMPDIR/${coll}.chunks" | cut -d '/' -f1 | uniq` ; do
-    echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/shard | cut -d'|' -f2`  "
+    echo -n -e "$(grep \|`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/shard | cut -d'|' -f2`\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1)  "
     echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/min | cut -d'|' -f2`  "
     echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/max | cut -d'|' -f2`  "
+    echo
   done
 done
 

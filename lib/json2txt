@@ -20,7 +20,7 @@ i=0
 declare -a index
 index[$i]=0
 emptyobj=true
-#d=1
+d=1
 declare -a arrayi
 declare -i ai
 
@@ -125,7 +125,7 @@ parseline() {
       # "string" : "string"
 
       if [ -n "$f4" ] ; then
-        isclosed=`expr "$line" : '.*"[[:space:]]*:[[:space:]]*$'`
+        isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
         [ $isclosed -eq 0 ] && openedby=quo
         #echo '"string" : "string"'
         if [ -n "$f2" ] ; then
