@@ -1,27 +1,19 @@
 #!/bin/bash
 
-[[ $0 =~ ^\/ ]] && rroot='/'
-for step in `echo ${0} | tr '/' ' '` ; do
-  rlink=`readlink "${rroot}${rpath}${step}"`
-  if [ -n "$rlink" ] ; then
-    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
-  else
-    rpath="${rpath}${step}/"
-  fi
-done
-rpath=${rpath%/}
-[ -h "$rpath" ] && rpath=`readlink "$rpath"`
-rcommand=${rpath##*/}
-rpath="${rroot}${rpath%/*}"
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+rpath=${BASH_SOURCE[0]}
+while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
+rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
+echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found, exiting..  " && exit 1
 CURL="$CURL -s"
+source "${rpath}/../../conf/mon.conf" || exit 1
 source "${rpath}/${rcommand%.mon}.conf"
-source "${rpath}/../../conf/mon.conf"
+
 SQLITE=`which sqlite3 2>/dev/null`
 MAILX=`which mail 2>/dev/null`
 TMPDIR="${TMPDIR}/elasticsearch"

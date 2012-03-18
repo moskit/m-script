@@ -1,8 +1,7 @@
 #!/bin/bash
 
-[ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
-while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
-rcommand=${rpath##*/}
+rpath=${BASH_SOURCE[0]}
+while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
 rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 

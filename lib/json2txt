@@ -20,7 +20,7 @@ i=0
 declare -a index
 index[$i]=0
 emptyobj=true
-d=1
+#d=1
 declare -a arrayi
 declare -i ai
 
