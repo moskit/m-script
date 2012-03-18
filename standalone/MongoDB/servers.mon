@@ -1,10 +1,10 @@
 #!/bin/bash
 
-rpath=${BASH_SOURCE[0]}
-while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
+rpath=$(readlink -m "$BASH_SOURCE")
 rcommand=${rpath##*/}
-rpath="$(cd -P "${rpath%/*}" && pwd)"
+rpath=${rpath%/*}
 #*/
+echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1

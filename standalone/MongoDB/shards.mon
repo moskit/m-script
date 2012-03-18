@@ -1,11 +1,9 @@
 #!/bin/bash
 
-rpath=${BASH_SOURCE[0]}
-while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
+rpath=$(readlink -m "$BASH_SOURCE")
 rcommand=${rpath##*/}
-rpath="$(cd -P "${rpath%/*}" && pwd)"
+rpath=${rpath%/*}
 #*/
-
 echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 
 MONGO=`which mongo 2>/dev/null`

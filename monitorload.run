@@ -31,10 +31,9 @@ trap "rm -f $tempfile; exit" 15
 case $1 in
 start)
   [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" && exit 0
-  rpath=${BASH_SOURCE[0]}
-  while [ -h "$rpath" ] ; do newpath=$(readlink "$rpath") ; rpath="$(cd -P "${rpath%/*}" && cd "${newpath%/*}" && pwd)/${newpath##*/}"; done
+  rpath=$(readlink -m "$BASH_SOURCE")
   rcommand=${rpath##*/}
-  rpath="$(cd -P "${rpath%/*}" && pwd)"
+  rpath=${rpath%/*}
   #*/
 
   [ -f "${rpath}/conf/mon.conf" ] && source "${rpath}/conf/mon.conf" || exit 1
