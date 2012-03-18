@@ -1,19 +1,9 @@
 #!/bin/bash
 
-[[ $0 =~ ^\/ ]] && rroot='/'
-for step in `echo ${0} | tr '/' ' '` ; do
-  rlink=`readlink "${rroot}${rpath}${step}"`
-  if [ -n "$rlink" ] ; then
-    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
-  else
-    rpath="${rpath}${step}/"
-  fi
-done
-rpath=${rpath%/}
-[ -h "$rpath" ] && rpath=`readlink "$rpath"`
+[ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
+while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
 rcommand=${rpath##*/}
-rpath="${rroot}${rpath%/*}"
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 
 MONGO=`which mongo 2>/dev/null`
@@ -32,4 +22,4 @@ function print_databases() {
   ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | sed 's|^=||g'
 }
 
-
+#mongo localhost/solariat_flask --quiet --eval "db.printCollectionStats()" | /opt/m/lib/json2txt | grep -E "\/ns\||\/size\||\/indexSizes\/|\/totalIndexSize\|" | grep -v \/shards\/ | while read LINE ; do if [[ $LINE =~ ^0\/ns ]] ; then echo ; echo "\"`echo $LINE | cut -d'|' -f2`\"" ; else echo "\"`echo $LINE | cut -d'|' -f1 | sed 's|0/||'`\",\"$(echo "scale=2; `echo $LINE | cut -d'|' -f2` / 1024 / 1024" | bc)\"" ; fi ; done > coll_stats1.csv

@@ -125,16 +125,19 @@ parseline() {
       # "string" : "string"
 
       if [ -n "$f4" ] ; then
-        isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
+        isclosed=`expr "$line" : '.*"[[:space:]]*:[[:space:]]*$'`
         [ $isclosed -eq 0 ] && openedby=quo
         #echo '"string" : "string"'
         if [ -n "$f2" ] ; then
           index[$i]="$f2"
           if [[ $f3 =~ ^[[:space:]]*\:[[:space:]]*$ ]] ; then
+            # if nothing but space after colon
             value="$f4"
           else
-            # why is this?
-            value="`echo "$f3" | cut -d':' -f2`\"${f4}\"`echo "$line" | cut -d'"' -f5`"
+            # there's colon and something; given that f4 is present, this means
+            # that value is not quoted, but contains a quoted part.
+            # so it needs putting quoted and non-quoted parts together
+            value="`echo "$f3" | cut -d':' -f2 | tr -d '^ *'`\"${f4}\"`echo "$line" | cut -d'"' -f5`"
           fi
         fi
       else

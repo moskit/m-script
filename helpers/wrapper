@@ -23,9 +23,10 @@
 # Required-Stop:
 ### END INIT INFO
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-[ -n "${xcommand%/*}" ] && rpath=$(cd ${xcommand%/*}/ && pwd) || rpath=$PWD
-rcommand=${xcommand##*/}
+[ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
+while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
+rcommand=${rpath##*/}
+rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 wrapper_options="config command logfile errlogfile pidfile fg user group help wait kill chdir"
 # All possible options for the wrapped command must be listed here

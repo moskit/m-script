@@ -159,7 +159,7 @@ if [ -n "$ip" ] ; then
     cluster=$ipcluster
   fi
 else
-  # Cluster must be defined! If it is still not, we'll find it using role
+  # Cluster must be defined! If it is still not, we'll find it using the role
   if [ -z "$cluster" ] ; then
     if [ -z "$role" ] ; then
       if [ -n "$M_ROLE" ] ; then
@@ -168,7 +168,7 @@ else
       fi
       # Still no cluster??
       if [ -z "$cluster" ] ; then
-        echo "None of ip, role, cluster is defined."
+        echo "Unable to find what cluster to use."
         exit 1
       fi
     fi
@@ -228,10 +228,12 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
   [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
-  [ -f "${rpath}/../keys/${KEY}" ] || (echo "Key $KEY not found" ; exit 1)
+  [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && exit 1
   #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
-  $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null
-  [ $? -ne 0 ] && echo "Unable to login to the server $ip" && exit 1
+  if [ -z "$test" -a -z "$list" ] ; then
+    $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null
+    [ $? -ne 0 ] && echo "Unable to login to the server $ip" && exit 1
+  fi
   #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
 
   #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1

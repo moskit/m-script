@@ -1,19 +1,9 @@
 #!/bin/bash
 
-[[ $0 =~ ^\/ ]] && rroot='/'
-for step in `echo ${0} | tr '/' ' '` ; do
-  rlink=`readlink "${rroot}${rpath}${step}"`
-  if [ -n "$rlink" ] ; then
-    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" && unset rroot || rpath="${rpath}${rlink}/"
-  else
-    rpath="${rpath}${step}/"
-  fi
-done
-rpath=${rpath%/}
-[ -h "$rpath" ] && rpath=`readlink "$rpath"`
+[ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
+while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
 rcommand=${rpath##*/}
-rpath="${rroot}${rpath%/*}"
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 
 DIFF=`which diff 2>/dev/null`

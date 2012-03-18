@@ -20,32 +20,40 @@ rcommand=${rpath##*/}
 rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 
-source "${rpath}/conf/mon.conf"
-source "${rpath}/conf/cloud.conf"
-source "${rpath}/conf/deployment.conf"
-
 M_ROOT="$rpath"
-export CLOUD ROLES_ROOT M_ROOT
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
+
+setup_env() {
+  source "${rpath}/conf/mon.conf"
+  source "${rpath}/conf/cloud.conf"
+  source "${rpath}/conf/deployment.conf"
+  export CLOUD ROLES_ROOT M_ROOT
+  export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
+}
 
 cr() {
   [ -z "$1" ] && ls "$ROLES_ROOT" && return
   cd "$ROLES_ROOT/$1"
   export M_ROLE="$1"
+  export role="$1"
   M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
   export M_CLUSTER
+  flavor=`grep ^$M_CLUSTER\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
+  export flavor
   if ${use_color} ; then
     PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\]]# \[\033[0m\]"
   else
     PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
   fi
+  source role.conf
 }
 
 exit() {
   export PS1=$OLDPS1
-  unset M_ROLE M_CLUSTER ROLES_ROOT
+  unset M_ROLE M_CLUSTER ROLES_ROOT role flavor
   unset cr exit
 }
+
+setup_env
 
 OLDPS1=$PS1
 use_color=false

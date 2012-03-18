@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 [ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
 while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
 rcommand=${rpath##*/}
@@ -7,54 +8,86 @@ rpath="$(cd -P "${rpath%/*}" && pwd)"
 #*/
 echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 
+MONGO=`which mongo 2>/dev/null`
+[ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
+
+source "${rpath}/${rcommand}.conf" 2>/dev/null
+[ -z "$depth" ] && depth=5
+
+source "${rpath}/../../conf/mon.conf"
+SQLITE=`which sqlite3 2>/dev/null`
+TMPDIR="${TMPDIR}/MongoDB"
+install -d "${TMPDIR}"
+
 a=`cat "${rpath}/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && a=1
 b=`expr \( $RANDOM / $a \) + 1`
 confserver=`head -n $b "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1`
 [ -z "$confserver" ] && echo "No configuration servers found" && exit 1
 
-masters=`a=0 ; mongo "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
+masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
 
-sharded=`mongo "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
+sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
 
+echo
 echo "Sharded collections"
 echo "-------------------"
-echo
 for coll in $sharded ; do
+  echo
   echo "$coll"
   echo "-------------------"
   echo
-  echo " Shard            Chunk: from ID                to ID"
-  currshard=`mongo "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
-  echo "$coll current shard: $currshard"
+  #echo " Shard            Chunk: from ID                to ID"
+  currshard=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
+  #echo "$coll current shard: $currshard"
   database=${coll%%.*}
   mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
-  oneforbackup=`mongo "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"$coll\", shard : \\$and : [ { \\$ne : \"$currshard\" }, { \\$ne : \"$mastershard\" } ] }, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt`
+  echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut-d'|' -f1`"
+  echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut-d'|' -f1`"
+  echo
+  rm -f "${rpath}/data/shards.${coll}"
+  shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"${coll}\" , \"shard\" : c }).count() ) } )"`
+  for shard in $shards ; do
+    shname=`echo $shard | cut -d'|' -f1`
+    shchunks=`echo $shard | cut -d'|' -f2`
+    shhost=`grep \|$shname\| "${rpath}"/mongo_shards.list 2>/dev/null | cut-d'|' -f1`
+    shdatasize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()"`
+    shindexsize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()"`
+    echo "${shname}|${shhost}|${shchunks}|${shdatasize}|${shindexsize}" >> "${rpath}/data/shards.${coll}"
+  done
+  oneforbackup=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"$coll\", \\$and : [ { \"shard\" : { \\$ne : \"$currshard\" } }, { \"shard\" : { \\$ne : \"$mastershard\" } } ] }, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt`
   chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d'|' -f2`
-  chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | cut -d'|' -f2`
-  chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | cut -d'|' -f2`
-  chkidmin=${chkidmin#*\"}
-  chkidmin=${chkidmin%\"*}
-  chkidmax=${chkidmax#*\"}
-  chkidmax=${chkidmax%\"*}
-  echo "$chkshard   $chkidmin   $chkidmax"
+  chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | cut -d'|' -f2 | tr '\n' '_'`
+  chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | cut -d'|' -f2 | tr '\n' '_'`
+  chkidmin=${chkidmin%_}
+  chkidmax=${chkidmax%_}
+  #echo "$chkshard   $chkidmin   $chkidmax"
+
+  # latest chunks of this collection
+  $MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" }, { _id : 0, shard : 1, min : 1, max : 1 } ).sort({_id:-1}).limit(${depth}).forEach(printjson)" | "${rpath}"/../../lib/json2txt > "$TMPDIR/${coll}.chunks"
+  echo
+  echo "Last $depth chunks"
+  echo "-----------------"
+  echo
+  echo " Shard                Key min               Key max"
+  for chn in `cat "$TMPDIR/${coll}.chunks" | cut -d '/' -f1 | uniq` ; do
+    echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/shard | cut -d'|' -f2`  "
+    echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/min | cut -d'|' -f2`  "
+    echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/max | cut -d'|' -f2`  "
+  done
 done
 
-
-### Get the shard (and chunk?) currently being written to
-#currshard1=`mongo "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
-
-# the last split shard and the server it has been splitted on:
-#lastsplit=`mongo "$confserver"/config --quiet --eval "db.changelog.find({what:\"split\", ns:\"${coll}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
-#lastsplitserver=`echo $lastsplit | head -1`
-#lastsplitchunk=`echo $lastsplit | tail -1 | cut -d'"' -f2`
-# chunk could be moved after split:
-#chunkmovedto=`mongo "$confserver"/config --quiet --eval "db.changelog.find({\"details.min._id\":ObjectId(\"$lastsplitchunk\"), what:\"moveChunk.start\"},{\"details.to\":1, _id:0}).sort({time:1}).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
-#if [ -n "$chunkmovedto" ] ; then
-#  currshard2=$chunkmovedto
-#else
-#  currshard2=`mongo "$confserver"/config --quiet --eval "db."`
-#fi
+  # the last split chunk and the server it has been splitted on:
+#  lastsplit=`$MONGO "$confserver"/config --quiet --eval "db.changelog.find({what:\"split\", ns:\"${coll}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
+#  lastsplitserver=`echo $lastsplit | head -1`
+#  lastsplitchunk=`echo $lastsplit | tail -1 | cut -d'"' -f2`
+  # chunk could be moved after split:
+#  chunkmovedto=`$MONGO "$confserver"/config --quiet --eval "db.changelog.find({\"details.min._id\":ObjectId(\"$lastsplitchunk\"), what:\"moveChunk.start\"},{\"details.to\":1, _id:0}).sort({time:1}).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
+#  if [ -n "$chunkmovedto" ] ; then
+#    currshard2=$chunkmovedto
+#  else
+#    currshard2=`$MONGO "$confserver"/config --quiet --eval "db."`
+#  fi
 
 #depth=5
 

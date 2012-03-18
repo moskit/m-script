@@ -115,19 +115,26 @@ if [ "X$command" != "X" ] ; then
   fi
   [ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
   [ -n "$verbose" ] && echo "### Reading configuration from ${ROLES_ROOT}/${role}/role.conf"
-  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
   if [ -f "$from" ] ; then
     fullfrom=$from
   else
     if [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] ; then
       fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
     else
-      echo "Neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is not a file or file not found"
-      exit 1
+      echo -n "Neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is found, guessing flavor=$DEFAULT_ROLE ... "
+      if [ -f "${ROLES_ROOT}/${role}/${DEFAULT_ROLE}/files/$from" ] ; then
+        echo "found"
+        fullfrom="${ROLES_ROOT}/${role}/${DEFAULT_ROLE}/files/${from}"
+      else
+        echo "not found, exiting"
+        exit 1
+      fi
     fi
   fi
   tmpfile=${TMPDIR}/deployment/`echo $fullfrom | sed 's|/|_|g'`
   rm -f "$tmpfile" 2>/dev/null
+  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
+  
 
   cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%\(.*\)\%|$\{\1\}|g" | \
   sed 's|"|\\\"|g' | \
