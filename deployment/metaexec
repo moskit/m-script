@@ -230,7 +230,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
   [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && exit 1
   #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
-  if [ -z "$test" -a -z "$list" ] ; then
+  if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
     $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null
     [ $? -ne 0 ] && echo "Unable to login to the server $ip" && exit 1
   fi

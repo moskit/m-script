@@ -33,7 +33,7 @@ echo "-------------------"
 for coll in $sharded ; do
   echo
   echo "$coll"
-  echo "-------------------"
+  echo "--------------------------------------------"
   echo
   #echo " Shard            Chunk: from ID                to ID"
   currshard=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
@@ -65,13 +65,15 @@ for coll in $sharded ; do
   $MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" }, { _id : 0, shard : 1, min : 1, max : 1 } ).sort({_id:-1}).limit(${depth}).forEach(printjson)" | "${rpath}"/../../lib/json2txt > "$TMPDIR/${coll}.chunks"
   echo
   echo "Last $depth chunks"
-  echo "-----------------"
+  echo "--------------"
   echo
   echo " Shard                Key min               Key max"
   for chn in `cat "$TMPDIR/${coll}.chunks" | cut -d '/' -f1 | uniq` ; do
     echo -n -e "$(grep \|`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/shard | cut -d'|' -f2`\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1)  "
-    echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/min | cut -d'|' -f2`  "
-    echo -n -e "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/max | cut -d'|' -f2`  "
+    echo -n "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/min | cut -d'|' -f2 | tr '\n' '::'`    "
+    maxid=`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/max | cut -d'|' -f2 | tr '\n' '::'`
+    [ -z "$maxid" ] && maxid="current"
+    echo -n "$maxid"
     echo
   done
 done

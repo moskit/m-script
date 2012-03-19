@@ -22,7 +22,7 @@ rpath=${rpath%/*}
 M_ROOT="$rpath"
 
 setup_env() {
-  source "~/.bashrc"
+  source ~/.bashrc
   source "${rpath}/conf/mon.conf"
   source "${rpath}/conf/cloud.conf"
   source "${rpath}/conf/deployment.conf"
@@ -32,13 +32,13 @@ setup_env() {
 }
 
 cr() {
-  [ -z "$1" ] && ls "$ROLES_ROOT" && return
+  [ -z "$1" -o "X$1" == "Xlist" ] && ls "$ROLES_ROOT" && return
   cd "$ROLES_ROOT/$1"
   export M_ROLE="$1"
   export role="$1"
   M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
   export M_CLUSTER
-  flavor=`grep ^$M_CLUSTER\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
+  flavor=`grep ^$M_CLUSTER\| "${rpath}/conf/clusters.conf" | cut -d'|' -f11`
   export flavor
   if ${use_color} ; then
     PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
@@ -48,13 +48,20 @@ cr() {
   source role.conf
 }
 
-exit() {
-  export PS1=$OLDPS1
-  unset M_ROLE M_CLUSTER ROLES_ROOT role flavor
-  unset cr exit
+exitrole() {
+  unset M_ROLE M_CLUSTER ROLES_ROOT role flavor cr
+  set_default_ps
 }
 
-OLDPS1=$PS1
+set_default_ps() {
+  if ${use_color} ; then
+    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
+  else
+    PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
+  fi
+  export PS1
+}
+
 use_color=false
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
 match_lhs=""
@@ -66,15 +73,10 @@ match_lhs=""
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 export use_color
 
-bash
 setup_env
+set_default_ps
 cd
 
-if ${use_color} ; then
-  PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
-else
-  PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
-fi
-export PS1
+
 unset use_color safe_term match_lhs
 
