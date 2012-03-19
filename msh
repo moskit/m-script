@@ -1,0 +1,7 @@
+#!/bin/sh
+rpath=$(readlink -m "$BASH_SOURCE")
+rpath=${rpath%/*}
+#*/
+ba=`which bash` ; [ $? -ne 0 ] && exit 1
+$ba --rcfile "$rpath"/m.rc
+
