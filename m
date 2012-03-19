@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-[ -n "`expr "${BASH_SOURCE[0]}" : '\(\/\)'`" ] && rpath="${BASH_SOURCE[0]}" || rpath="./${BASH_SOURCE[0]}"
-while [ -h "$rpath" ] ; do rpath=`readlink "$rpath"` ; done
+rpath=$(readlink -m "$BASH_SOURCE")
 rcommand=${rpath##*/}
-rpath="$(cd -P "${rpath%/*}" && pwd)"
+rpath=${rpath%/*}
 #*/
 
 M_ROOT="$rpath"
@@ -26,7 +25,8 @@ setup_env() {
   source "${rpath}/conf/mon.conf"
   source "${rpath}/conf/cloud.conf"
   source "${rpath}/conf/deployment.conf"
-  export CLOUD ROLES_ROOT M_ROOT
+  HOME=$M_ROOT
+  export CLOUD ROLES_ROOT M_ROOT HOME
   export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 }
 
@@ -40,7 +40,7 @@ cr() {
   flavor=`grep ^$M_CLUSTER\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
   export flavor
   if ${use_color} ; then
-    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\]]# \[\033[0m\]"
+    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
   else
     PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
   fi
@@ -53,7 +53,9 @@ exit() {
   unset cr exit
 }
 
+bash
 setup_env
+cd
 
 OLDPS1=$PS1
 use_color=false
@@ -67,7 +69,7 @@ match_lhs=""
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 export use_color
 if ${use_color} ; then
-  PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\]]# \[\033[0m\]"
+  PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
 else
   PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
 fi
