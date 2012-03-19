@@ -1,0 +1,6 @@
+rpath=$1
+${rpath}/../monitorload stop
+sqlite3 ${rpath}/../sysdata 'drop table sysdata'
+sqlite3 ${rpath}/../sysdata 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime integer, loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
+${rpath}/../monitorload start
+

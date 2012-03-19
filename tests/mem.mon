@@ -33,19 +33,7 @@ rpath=${0%/*}
 timeindexnow=`cat /tmp/m_script/timeindex`
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
-ruptime=`$UPTIME`
-if $(echo $ruptime | grep -E "min|day" >/dev/null); then
-  x=$(echo $ruptime | sed 's/,//g' | awk '{print $3 " " $4}')
-else
-  x=$(echo $ruptime | sed 's/,//g' | awk '{print $3 " (hh:mm)"}')
-fi
-ruptime="$x"
-if [ `echo ${ruptime} | grep -c 'hh'` -eq 1 ]
-then
-  dbuptime=0
-else
-  dbuptime=`echo ${ruptime} | awk '{print $1}'`
-fi
+ruptime=`cat /proc/uptime | cut -d'.' -f1`
 rfreeram=`cat /proc/meminfo | grep ^MemFree | awk '{ print $2 }'`
 mfreeram=`solve "$rfreeram / 1024"`
 ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
@@ -68,17 +56,13 @@ musedswap=`solve "$mtotalswap - $mfreeswap"`
 rtotalmemfree=`expr $rfreeram + $rfreeswap`
 mtotalmemfree=`solve "$rtotalmemfree / 1024"`
 rtotalprocess="$($PS axu | grep -vE "^USER|grep|ps" | wc -l)"
-
-x="$(cat /proc/loadavg | cut -d' ' -f2)"
 rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
-y1="$(echo "$x >= $LOAD_WARN_1" | bc)"
-y2="$(echo "$x >= $LOAD_WARN_2" | bc)"
-y3="$(echo "$x >= $LOAD_WARN_3" | bc)"
+
 echo
 echo "System status:"
 echo "--------------"
 echo
-printf "Uptime:\t\t\t\t$ruptime\n"
+printf "Uptime:\t\t\t\t`expr $ruptime / 86400` days `expr \( $ruptime % 86400 \) / 3600`:`expr $ruptime % 86400 % 3600 / 60`\n"
 printf "Load average (1 5 15 min):\t$rloadavg\n"
 printf "Total running processes:\t$rtotalprocess\n"
 echo
@@ -93,6 +77,13 @@ printf "Used Swap:\t\t${musedswap} MB\n"
 printf "Free Swap:\t\t${mfreeswap} MB\n"
 printf "Total Swap:\t\t${mtotalswap} MB\n"
 echo
+
+[[ $ruptime -lt `expr $FREQ \* 4` ]] && echo "<***> The system booted up `expr $ruptime / 60` minutes ago"
+
+x="$(cat /proc/loadavg | cut -d' ' -f2)"
+y1="$(echo "$x >= $LOAD_WARN_1" | bc)"
+y2="$(echo "$x >= $LOAD_WARN_2" | bc)"
+y3="$(echo "$x >= $LOAD_WARN_3" | bc)"
 warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
@@ -124,5 +115,5 @@ echo "${warnind} Active memory is ${mactiveram} MB, ${totalramused}% of total RA
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
 then
-  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime='${dbuptime}', loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
+  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime=$ruptime, loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi

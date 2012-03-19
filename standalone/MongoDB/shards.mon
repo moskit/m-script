@@ -27,22 +27,20 @@ masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { 
 
 sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
 
-echo
-echo "Sharded collections"
-echo "-------------------"
+date > "${rpath}/sharding.report"
+echo -e "---------------------------\n\nSharded collections\n-------------------" >> "${rpath}/sharding.report"
+
 for coll in $sharded ; do
-  echo
-  echo "$coll"
-  echo "--------------------------------------------"
-  echo
-  #echo " Shard            Chunk: from ID                to ID"
+  echo -e "\n$coll\n--------------------------------------------\n\n" >> "${rpath}/sharding.report"
+
   currshard=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
-  #echo "$coll current shard: $currshard"
+
   database=${coll%%.*}
   mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
-  echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`"
-  echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`"
-  echo
+  echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
+  echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
+  echo >> "${rpath}/sharding.report"
+  
   rm -f "${rpath}/data/shards.${coll}"
   shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"${coll}\" , \"shard\" : c }).count() ) } )"`
   for shard in $shards ; do
@@ -52,13 +50,22 @@ for coll in $sharded ; do
     shdatasize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()"`
     shindexsize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()"`
     echo "${shname}|${shhost}|${shchunks}|${shdatasize}|${shindexsize}" >> "${rpath}/data/shards.${coll}"
+    if [ "X$SQLITE3" == "X1" ] ; then
+    
+    fi
   done
-  oneforbackup=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"$coll\", \\$and : [ { \"shard\" : { \\$ne : \"$currshard\" } }, { \"shard\" : { \\$ne : \"$mastershard\" } } ] }, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt`
-  chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d'|' -f2`
-  chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | cut -d'|' -f2 | tr '\n' '_'`
-  chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | cut -d'|' -f2 | tr '\n' '_'`
-  chkidmin=${chkidmin%_}
-  chkidmax=${chkidmax%_}
+
+  
+  
+  
+  
+  
+  #oneforbackup=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"$coll\", \\$and : [ { \"shard\" : { \\$ne : \"$currshard\" } }, { \"shard\" : { \\$ne : \"$mastershard\" } } ] }, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt`
+  #chkshard=`echo "$oneforbackup" | grep ^[0-9]*\/shard | cut -d'|' -f2`
+  #chkidmin=`echo "$oneforbackup" | grep ^[0-9]*\/min | cut -d'|' -f2 | tr '\n' '_'`
+  #chkidmax=`echo "$oneforbackup" | grep ^[0-9]*\/max | cut -d'|' -f2 | tr '\n' '_'`
+  #chkidmin=${chkidmin%_}
+  #chkidmax=${chkidmax%_}
   #echo "$chkshard   $chkidmin   $chkidmax"
 
   # latest chunks of this collection
@@ -77,6 +84,10 @@ for coll in $sharded ; do
     echo
   done
 done
+
+# changelog stats
+
+# db.changelog.distinct("what").forEach( function(c) {print(c + ' : ' + db.changelog.find( { "what" : c } ).count() ) } )
 
   # the last split chunk and the server it has been splitted on:
 #  lastsplit=`$MONGO "$confserver"/config --quiet --eval "db.changelog.find({what:\"split\", ns:\"${coll}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`

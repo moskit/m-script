@@ -1,12 +1,13 @@
 #!/bin/bash
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
 #*/
-
+SQLITE=`which sqlite3 2>/dev/null`
 install -d "${rpath}/data"
 source "${rpath}/../../conf/mon.conf"
-[ -n "$SQLITE3" ] && [ "X$SQLITE3" == "X1" ] && `which sqlite3 2>/dev/null` "${rpath}/mongodb.sql3" "CREATE TABLE servers(timeindex integer, day varchar(8), hostport text, status integer, version varchar(8), uptime integer, memRes integer, memVir integer, memMapped integer, memMappedWJournal integer, infoHeapUsage integer, connCurrent integer, connAvailable integer, netIn real, netOut real, netReqn real, opcountersInsert real, opcountersQuery real, opcountersUpdate real, opcountersDelete real, opcountersGetmore real, opcountersCommand real, opsShardedInsert real, opsShardedQuery real, opsShardedUpdate real, opsShardedDelete real, opsShardedGetmore real, opsShardedCommand real, opsNotShardedInsert real, opsNotShardedQuery real, opsNotShardedUpdate real, opsNotShardedDelete real, opsNotShardedGetmore real, opsNotShardedCommand real, opsTotalQPS real, opsShardedTotalQPS real, opsNotShardedTotalQPS real, lockRatio real, lockTime real, lockQueueTotal integer, lockQueueReaders integer, lockQueueWriters integer, lockClientsTotal integer, lockClientsReaders integer, lockClientsWriters integer, PRIMARY KEY(timeindex, hostport))"
-
+if [ "X$SQLITE3" == "X1" ] ; then
+  $SQLITE "${rpath}/mongodb.sql3" "CREATE TABLE servers (timeindex integer, day varchar(8), hostport text, status integer, version varchar(8), uptime integer, memRes integer, memVir integer, memMapped integer, memMappedWJournal integer, infoHeapUsage integer, connCurrent integer, connAvailable integer, netIn real, netOut real, netReqn real, opcountersInsert real, opcountersQuery real, opcountersUpdate real, opcountersDelete real, opcountersGetmore real, opcountersCommand real, opsShardedInsert real, opsShardedQuery real, opsShardedUpdate real, opsShardedDelete real, opsShardedGetmore real, opsShardedCommand real, opsNotShardedInsert real, opsNotShardedQuery real, opsNotShardedUpdate real, opsNotShardedDelete real, opsNotShardedGetmore real, opsNotShardedCommand real, opsTotalQPS real, opsShardedTotalQPS real, opsNotShardedTotalQPS real, lockRatio real, lockTime real, lockQueueTotal integer, lockQueueReaders integer, lockQueueWriters integer, lockClientsTotal integer, lockClientsReaders integer, lockClientsWriters integer, PRIMARY KEY(timeindex, hostport))"
+  $SQLITE "${rpath}/mongodb.sql3" "CREATE TABLE shards (timeindex integer, day varchar(8), hostport text, database varchar(64), collection varchar(64), chunks integer, datasize integer, indexsize integer, PRIMARY KEY(timeindex, hostport))"
 
