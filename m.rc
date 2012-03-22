@@ -33,6 +33,10 @@ setup_env() {
 
 cr() {
   [ -z "$1" -o "X$1" == "Xlist" ] && ls "$ROLES_ROOT" && return
+  if [ ! -d "$ROLES_ROOT/$1" ] ; then
+    echo "Role $1 doesn't exist. Use cr --list to get the list of roles available."
+    return
+  fi
   cd "$ROLES_ROOT/$1"
   export M_ROLE="$1"
   export role="$1"

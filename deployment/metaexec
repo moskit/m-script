@@ -166,11 +166,22 @@ else
         role=$M_ROLE
         cluster=$M_CLUSTER
       fi
-      # Still no cluster??
-      if [ -z "$cluster" ] ; then
-        echo "Unable to find what cluster to use."
-        exit 1
-      fi
+    else
+      cluster=$M_CLUSTER
+      [ -z "$cluster" ] && cluster=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      echo "Using cluster ${cluster}, default for role ${role}"
+    fi
+    # Still no cluster??
+    if [ -z "$cluster" ] ; then
+      echo "Unable to find what cluster to use."
+      exit 1
+    fi
+  else
+    # role by cluster
+    if [ -z "$role" ] ; then
+      role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
+      echo "Using role ${role}, default for cluster ${cluster}"
+      [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
     fi
   fi
 fi
@@ -189,11 +200,6 @@ if [ -z "$ip" ] && [ -n "$cloud" ] && [ -n "$newserver" ]; then
   [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && exit 1
 fi
 
-if [ -z "$role" ] ; then
-  role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
-  echo "Using role ${role}, default for cluster ${cluster}"
-  [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
-fi
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
   echo "Using flavor ${flavor}, default for cluster ${cluster}"
@@ -276,9 +282,10 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
 else
   echo "Setting up self is not supported"
 fi
-
-echo "Timestamp: $timestamp"
-echo "Work directory: ${WORK_DIR}/${role}.${task}.${timestamp}"
+if [ -z "$list" -a -z "$test" ] ; then
+  echo "Timestamp: $timestamp"
+  echo "Work directory: ${WORK_DIR}/${role}.${task}.${timestamp}"
+fi
 echo
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then
