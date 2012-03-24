@@ -135,12 +135,13 @@ if [ "X$command" != "X" ] ; then
   rm -f "$tmpfile" 2>/dev/null
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
   
-
-  cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%\(.*\)\%|$\{\1\}|g" | \
+  cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
+  sed 's|\\"|\\\\"|g' | \
   sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
-  for LINE in `cat "${tmpfile}.orig"` ; do a=`eval "echo \"$LINE\""` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
+  for LINE in `cat -E "${tmpfile}.orig"` ; do LINE=`echo $LINE | tr -d '$$'` ; a=`eval "echo \"$LINE\""` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
+  
   to=${command#* }
   if [ -d "$to" ] ; then
     to=${to%/}/${from##*/}

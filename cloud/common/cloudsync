@@ -141,8 +141,9 @@ if [ "X$command" != "X" ] ; then
         [ "X$CLUSTER" == "X$cluster" ] || continue
       fi
       if [ "X$verbose" == "Xyes" ] ; then
+        NAME=`echo $server | cut -d'|' -f4`
         echo
-        echo "===== Server: $server"
+        echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
       fi
       if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
         [ -z "$nolocalhost" ] && cp -up $from $to

@@ -22,7 +22,7 @@ rpath=${rpath%/*}
 M_ROOT="$rpath"
 
 setup_env() {
-  source ~/.bashrc
+  [ -f $HOME/.bashrc ] && source $HOME/.bashrc
   source "${rpath}/conf/mon.conf"
   source "${rpath}/conf/cloud.conf"
   source "${rpath}/conf/deployment.conf"

@@ -140,17 +140,17 @@ if [ "$type" == "remote" ] ; then
   fi
   for IP in $ips ; do
     # install remote workdir
-    $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-    # copy the script
+    $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+    # copy the script to remote server
     $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
     # copy config to remote server
     $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../deploy.log" 2>&1
-
+     $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP echo "ip=$IP" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
     if [ -n "$dry" ] ; then
-      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
     else
       # run the script, catch the output, exit if non-zero status
-      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" ${IP} "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
     fi
     if [ -n "$verbose" ] ; then
       echo "--------------------------------------------------------------------------------"

@@ -90,7 +90,7 @@ done
 
 echo -e "\n\nChangelog stats\n\n---------------\n\n" >> "${rpath}/sharding.report"
 
-$MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c } ).count() ) } )" >> "${rpath}/data/sharding.changelog.dat"
+$MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c } ).count() ) } )" > "${rpath}/data/sharding.changelog.dat"
 $MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c } ).count() ) } )" >> "${rpath}/data/sharding.changelog.dat"
 
 
