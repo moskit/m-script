@@ -131,7 +131,7 @@ if [ "X$command" != "X" ] ; then
       fi
     fi
   fi
-  tmpfile=${TMPDIR}/deployment/`echo $fullfrom | sed 's|/|_|g'`
+  tmpfile=${TMPDIR}/deployment/`echo $fullfrom | tr -d '/' '_'`
   rm -f "$tmpfile" 2>/dev/null
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
   
@@ -140,7 +140,7 @@ if [ "X$command" != "X" ] ; then
   sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
-  for LINE in `cat -E "${tmpfile}.orig"` ; do LINE=`echo $LINE | tr -d '$$'` ; a=`eval "echo \"$LINE\""` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
+  for LINE in `cat -E "${tmpfile}.orig"` ; do LINE=`echo $LINE | sed 's|\$$||'` ; a=`eval "echo \"$LINE\""` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
   
   to=${command#* }
   if [ -d "$to" ] ; then

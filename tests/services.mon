@@ -28,6 +28,27 @@ getprocessname() {
   fi
 }
 
+checkpidfile() {
+  pid=`cat "$1"|grep -v ^$|sed 's|[^[0-9]]||g'|tail -1 2>/dev/null`
+  if [ -n "$pid" ] ; then
+    if [ -d "/proc/$pid" ] ; then
+      getprocessname $pid
+      printf "$pcomm"
+      m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "PID $pid"
+      m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
+      printf "${1}\n"
+      echo "${1}|$pid" >> /tmp/m_script/services.tmp
+    else
+      echo "<***> Stale pidfile found: $1. Process with ID $pid doesn't exist. Removing."
+      rm -f "$1"
+    fi
+  else
+    echo "<***> Empty pidfile found: $1. Removing."
+    rm -f "$1"
+  fi
+}
+
 IFS1=$IFS
 IFS='
 '
@@ -48,24 +69,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
         if [ -z "$skip" ] ; then
-          pid=`cat "$pidfile"|sed 's|[^[0-9]]||g'|tail -1 2>/dev/null`
-          if [ -n "$pid" ] ; then
-            if [ -d "/proc/$pid" ] ; then
-              getprocessname $pid
-              printf "$pcomm"
-              m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-              printf "PID $pid"
-              m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-              printf "$pidfile\n"
-              echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
-            else
-              echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist. Removing."
-              rm -f $pidfile
-            fi
-          else
-            echo "<***> Empty pidfile found: $pidfile. Removing."
-            rm -f $pidfile
-          fi
+          checkpidfile "$pidfile"
         fi
         unset skip
       done
@@ -76,37 +80,13 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
         if [ -z "$skip" ] ; then
-          pid=`cat "$pidfile"|sed 's|\r||'`
-          if [ -d "/proc/$pid" ] ; then
-            getprocessname $pid
-            printf "$pcomm"
-            m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-            printf "PID $pid"
-            m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-            printf "$pidfile\n"
-            echo "$pidfile|$pid" >> /tmp/m_script/services.tmp
-          else
-            echo "<***> Stale pidfile found: $pidfile. Process with ID $pid doesn't exist! Removing"
-            rm -f $pidfile
-          fi
+          checkpidfile "$pidfile"
         fi
         unset skip
       done
     fi
   elif [ -f "$thepath" ] ; then
-    pid=`cat "$thepath"|sed 's|\r||'`
-    if [ -d "/proc/$pid" ] ; then
-      getprocessname $pid
-      printf "$pcomm"
-      m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "PID $pid"
-      m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "$thepath\n"
-      echo "$thepath|$pid" >> /tmp/m_script/services.tmp
-    else
-      echo "<***> Stale pidfile found: $thepath. Process with ID $pid doesn't exist! Removing"
-      rm -f $pidfile
-    fi
+    checkpidfile "$thepath"
   else
     echo "<***> Path $thepath doesn't exist!"
   fi
