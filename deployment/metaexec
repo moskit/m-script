@@ -186,7 +186,9 @@ else
   fi
 fi
 [ -n "$verbose" ] && V='--verbose'
-if [ -z "$ip" ] && [ -n "$cloud" ] && [ -n "$newserver" ]; then
+if [ -n "$newserver" ]; then
+  [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
+  [ -n "$ip" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
   echo "*** Bringing up a new server in the cloud $cloud"
   ${rpath}/../cloud/${cloud}/update_servers_list
   ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" | tail -1`
