@@ -129,7 +129,7 @@ wait_ready() {
   checks=`expr $waittimeout / $waitperiod`
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
-    "$rpath"/get_server_details $newid >/dev/null 2>&1
+    "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
     if [ -n "$1" ] ; then
       printf "Progress: `grep \/progress\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`     \r"
     fi
@@ -177,10 +177,10 @@ check_cluster_limit || exit 5
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
 [ -f "${rpath}/../../keys/${thekey}.pub" ] && thekey=${thekey}.pub
 [ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && thekey=${thekey}.pem.pub
-PUBLIC_KEY=`cat $thekey 2>/dev/null`
+PUBLIC_KEY=`"${rpath}/../../keys/$thekey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No key found" && exit 1
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found" && exit 1
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$image|;s|FLAVOR_ID|$flavor|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
 echo "        \"personality\" : [" >> "$TMPDIR/${rcommand}.req"

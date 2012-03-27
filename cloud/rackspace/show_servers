@@ -199,4 +199,5 @@ if [ -z "$noupdate" ] ; then
 fi
 list_servers
 
-[ -n "$count" ] && echo $icount
+[ -n "$count" ] && echo $icount || exit 0
+
