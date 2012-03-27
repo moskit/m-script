@@ -190,8 +190,8 @@ if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
   [ -n "$ip" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
   echo "*** Bringing up a new server in the cloud $cloud"
-  ${rpath}/../cloud/${cloud}/update_servers_list
-  ip=`${rpath}/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" | tail -1`
+  "${rpath}"/../cloud/${cloud}/update_servers_list
+  ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" 2>>"${rpath}"/../logs/cloud.log | tail -1`
   # update_servers_list isn't required here, successful start_server updates it
   [ $? -eq 5 ] && echo "Maximum servers number for cluster $cluster has been reached, unable to add another server" && exit 1
   [ $? -eq 6 ] && echo "Failed to generate a name for the new server" && exit 1

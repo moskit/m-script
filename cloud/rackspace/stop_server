@@ -111,9 +111,9 @@ fi
 cat "${TMPDIR}/${rcommand}.resp"
 if [ `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
   SSHK=`which ssh-keygen 2>/dev/null`
-  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null
-  [ -n "$ipint" ] && $SSHK -q -R "$ipint" >/dev/null
-  [ -n "$ipext" ] && $SSHK -q -R "$ipext" >/dev/null
+  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1
+  [ -n "$ipint" ] && $SSHK -q -R "$ipint" >/dev/null 2>&1
+  [ -n "$ipext" ] && $SSHK -q -R "$ipext" >/dev/null 2>&1
 fi
 
 ${rpath}/update_servers_list
