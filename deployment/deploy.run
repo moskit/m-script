@@ -145,7 +145,7 @@ if [ "$type" == "remote" ] ; then
     $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
     # copy config to remote server
     $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../deploy.log" 2>&1
-     $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP echo "ip=$IP" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
+    $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP echo "ip=$IP" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
     if [ -n "$dry" ] ; then
       result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
     else

@@ -168,8 +168,8 @@ else
       fi
     else
       cluster=$M_CLUSTER
-      [ -z "$cluster" ] && cluster=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
-      echo "Using cluster ${cluster}, default for role ${role}"
+      [ -z "$cluster" ] && cluster=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      [ -n "$cluster" ] && echo "Using cluster ${cluster}, default for role ${role}"
     fi
     # Still no cluster??
     if [ -z "$cluster" ] ; then
