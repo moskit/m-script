@@ -175,12 +175,12 @@ check_cluster_limit || exit 5
 [ -z "$flavor" ] && find_flavor
 [ -z "$flavor" ] && exit 8
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "${rpath}/../../keys/${thekey}.pub" ] && thekey=${thekey}.pub
-[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && thekey=${thekey}.pem.pub
-PUBLIC_KEY=`"${rpath}/../../keys/$thekey" 2>/dev/null`
+[ -f "${rpath}/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
+[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
+PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found" && exit 1
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/$pubkey and public keys from ${HOME}/.ssh" && exit 1
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$image|;s|FLAVOR_ID|$flavor|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
 echo "        \"personality\" : [" >> "$TMPDIR/${rcommand}.req"
