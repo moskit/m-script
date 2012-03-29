@@ -82,11 +82,11 @@ generate_name() {
 }
 
 find_image() {
-  image=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
+  imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
 }
 
 find_flavor() {
-  flavor=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
+  flavorid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
 }
 
 check_cluster_limit() {
@@ -182,7 +182,7 @@ PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/$pubkey and public keys from ${HOME}/.ssh" && exit 1
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
-cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$image|;s|FLAVOR_ID|$flavor|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
+cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
 echo "        \"personality\" : [" >> "$TMPDIR/${rcommand}.req"
 echo "            {" >> "$TMPDIR/${rcommand}.req"
 echo -n "                \"path\" : " >> "$TMPDIR/${rcommand}.req"
