@@ -82,10 +82,12 @@ generate_name() {
 }
 
 find_image() {
+  [ -f "${TMPDIR}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$` -gt 0 ] && imageid=$image && return
   imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
 }
 
 find_flavor() {
+  [ -f "${TMPDIR}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$` -gt 0 ] && flavorid=$flavor && return
   flavorid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
 }
 
@@ -170,10 +172,10 @@ printreturn() {
 check_cluster_limit || exit 5
 [ -z "$name" ] && name=`generate_name`
 [ -z "$name" ] && exit 6
-[ -z "$image" ] && find_image
-[ -z "$image" ] && exit 7
-[ -z "$flavor" ] && find_flavor
-[ -z "$flavor" ] && exit 8
+find_image
+[ -z "$imageid" ] && exit 7
+find_flavor
+[ -z "$flavorid" ] && exit 8
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
 [ -f "${rpath}/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
 [ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
