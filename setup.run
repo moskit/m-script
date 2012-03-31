@@ -81,6 +81,7 @@ then
   then
     case $OS in
     debian)
+      export DEBIAN_FRONTEND=noninteractive
       `which apt-get` install bc -y
       ;;
     gentoo)
@@ -117,6 +118,7 @@ then
   then
     case $OS in
     debian)
+      export DEBIAN_FRONTEND=noninteractive
       `which apt-get` install mailx
       [[ $? -eq 100 ]] && `which apt-get` install bsd-mailx -y
       ;;
@@ -279,6 +281,7 @@ then
     then
       case $OS in
       debian)
+        export DEBIAN_FRONTEND=noninteractive
         `which apt-get` install sqlite3 -y
         ;;
       gentoo)
@@ -324,6 +327,7 @@ chmod 600 ${rpath}/conf/backup.conf
 chown -R root:root ${rpath}
 install -d ${rpath}/standalone/rc
 install -m 700 -d ${rpath}/keys
+install -d ${rpath}/logs
 
 ${rpath}/fixports.run
 

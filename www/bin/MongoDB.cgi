@@ -8,7 +8,7 @@ echo ""
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 
-cat "${PWD}/../../standalone/${scriptname}/views_nav_bar.html"
+cat "${PWD}/../../standalone/${scriptname}/views_nav_bar.html" | sed '/\"view0\"/s/\"viewsbutton\"/\"viewsbutton active\"/'
 cat "${PWD}/../../standalone/${scriptname}/servers_title.html"
 
 # Naming table (see MongoDB/servers.mon)

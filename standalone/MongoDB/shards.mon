@@ -20,8 +20,8 @@ timeindexnow=`date +"%s"`
 
 a=`cat "${rpath}/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && a=1
-b=`expr \( $RANDOM / $a \) + 1`
-confserver=`head -n $b "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1`
+
+confserver=`head -n $((RANDOM%$a)) "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1`
 [ -z "$confserver" ] && echo "No configuration servers found" && exit 1
 
 masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
@@ -34,7 +34,7 @@ echo -e "---------------------------\n\nSharded collections\n-------------------
 for coll in $sharded ; do
   echo -e "\n$coll\n--------------------------------------------\n\n" >> "${rpath}/sharding.report"
 
-  currshard=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
+  #currshard=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
 
   database=${coll%%.*}
   mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
@@ -56,7 +56,9 @@ for coll in $sharded ; do
     fi
   done
 
-  
+  [ -f "${rpath}/data/sharding.changelog.${coll}.dat" ] && mv "${rpath}/data/sharding.changelog.${coll}.dat" "${rpath}/data/sharding.changelog.${coll}.dat.prev"
+  $MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c, \"ns\" : \"${coll}\" } ).count() ) } )" > "${rpath}/data/sharding.changelog.${coll}.dat"
+  $MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c, \"ns\" : \"${coll}\" } ).count() ) } )" >> "${rpath}/data/sharding.changelog.${coll}.dat"
   
   
   
@@ -90,8 +92,7 @@ done
 
 echo -e "\n\nChangelog stats\n\n---------------\n\n" >> "${rpath}/sharding.report"
 
-$MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c } ).count() ) } )" > "${rpath}/data/sharding.changelog.dat"
-$MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c } ).count() ) } )" >> "${rpath}/data/sharding.changelog.dat"
+
 
 
   # the last split chunk and the server it has been splitted on:

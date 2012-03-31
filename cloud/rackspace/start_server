@@ -82,12 +82,12 @@ generate_name() {
 }
 
 find_image() {
-  [ -f "${TMPDIR}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$` -gt 0 ] && imageid=$image && return
+  [ -f "${TMPDIR}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${TMPDIR}/images.resp"` -gt 0 ] && imageid=$image && return
   imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
 }
 
 find_flavor() {
-  [ -f "${TMPDIR}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$` -gt 0 ] && flavorid=$flavor && return
+  [ -f "${TMPDIR}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "${TMPDIR}/flavors.resp"` -gt 0 ] && flavorid=$flavor && return
   flavorid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
 }
 
