@@ -15,12 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 rm -rf /tmp/m_script/.update/
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
-#*/ (this is needed to fool vi syntax highlighting)
-GIT=`which git`
-WGET=`which wget`
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+timeindex=`date -u +"%s"`
+GIT=`which git 2>/dev/null`
+WGET=`which wget 2>/dev/null`
 if [ "X$GIT" == "X" ]; then
   echo "Git not found! Fetching tarball..."
   if [ "X$WGET" == "X" ]; then
@@ -35,7 +36,7 @@ if [ "X$GIT" == "X" ]; then
   fi
 else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
-  updateid=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
+  gitts=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
 fi
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
@@ -82,20 +83,32 @@ done && echo "OK"
 printf "Running actions specific for this upgrade ... "
 if [ -f "${rpath}/../this_upgrade_actions" ] ; then
   printf "found ... "
-  echo "Running this upgrade specific actions script" >> "${rpath}/../upgrade.log"
-  bash "${rpath}/../this_upgrade_actions" ${rpath} >> "${rpath}/../upgrade.log"
-  if [[ $? -eq 0 ]] ; then
-    echo "OK"
-    date >> "${rpath}/../upgrade_actions.list"
-    cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../upgrade_actions.list"
+  thists=`head -1 "${rpath}/../this_upgrade_actions" | sed 's|#||;s|[[:space:]]||'`
+  if [[ $thists =~ [^[0-9]] ]] ; then
+    echo "Timestamp not found or has wrong format, 1st line of the script must be: # <epoch>"
   else
-    date >> "${rpath}/../this_upgrade_actions.failed"
-    cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../this_upgrade_actions.failed"
-    echo "Error. Check the script: this_upgrade_actions.failed"
+    lastts=`tail -1 "${rpath}/../upgrade.log"`
+    if [[ $lastts =~ [^[0-9]] ]] ; then
+      echo "Unable to find last upgrade time, using file VERSION creation time"
+      lastts=$(date -d "$(`which stat` -c %y VERSION | cut -d'.' -f1)" +"%s")
+    fi
+    if [ `expr $thists \> $lastts` -eq 1 ] ; then
+      echo "`date` Running this upgrade specific actions script" >> "${rpath}/../upgrade_actions.log"
+      echo "timestamps: now $timeindex, last $lastts, this $thists, git $gitts" >> "${rpath}/../upgrade_actions.log"
+      bash "${rpath}/../this_upgrade_actions" ${rpath} >> "${rpath}/../upgrade_actions.log"
+      if [[ $? -eq 0 ]] ; then
+        echo "OK"
+        date >> "${rpath}/../upgrade_actions.log"
+        cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../upgrade_actions.log"
+      else
+        date >> "${rpath}/../this_upgrade_actions.failed"
+        cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../this_upgrade_actions.failed"
+        echo "Error. Check the script: this_upgrade_actions.failed"
+      fi
   fi
   rm -f "${rpath}/../this_upgrade_actions"
 else
   echo "not found"
 fi
 rm -rf /tmp/m_script/.update/
-
+echo $timeindex >> "${rpath}/../upgrade.log"
