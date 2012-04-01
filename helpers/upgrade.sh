@@ -50,7 +50,7 @@ for script in `find "/tmp/m_script/.update" -type d`; do
 done
 echo "Checking files:"
 for script in `find "/tmp/m_script/.update" -type f`; do
-  printf " -- ${script##*/} ... "
+  echo -n " -- ${script##*/} ... "
   oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
   if [ -x "${oldscript}" ]; then
     if [ "${script}" -nt "$oldscript" ]; then
@@ -70,7 +70,7 @@ for script in `find "/tmp/m_script/.update" -type f`; do
 done
 echo "Checking symlinks:"
 for symlink in `find "/tmp/m_script/.update" -type l`; do
-  printf " -- ${symlink##*/} ... "
+  echo -n " -- ${symlink##*/} ... "
   oldsymlink=`echo "$symlink" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
   cp --preserve=all --update "${symlink}" "$oldsymlink" && chown `id -un`:`id -gn` "$oldsymlink" && echo "OK"
 done
@@ -98,11 +98,11 @@ if [ -f "${rpath}/../this_upgrade_actions" ] ; then
       bash "${rpath}/../this_upgrade_actions" ${rpath} >> "${rpath}/../upgrade_actions.log"
       if [[ $? -eq 0 ]] ; then
         echo "OK"
-        date >> "${rpath}/../upgrade_actions.log"
-        cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../upgrade_actions.log"
+        install -d "${rpath}/../upgrade_actions"
+        mv "${rpath}/../this_upgrade_actions" "${rpath}/../upgrade_actions/${thists}.success"
       else
-        date >> "${rpath}/../this_upgrade_actions.failed"
-        cat "${rpath}/../this_upgrade_actions" >> "${rpath}/../this_upgrade_actions.failed"
+        install -d "${rpath}/../upgrade_actions"
+        mv "${rpath}/../this_upgrade_actions" "${rpath}/../upgrade_actions/${thists}.failed"
         echo "Error. Check the script: this_upgrade_actions.failed"
       fi
   fi
