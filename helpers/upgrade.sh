@@ -105,6 +105,8 @@ if [ -f "${rpath}/../this_upgrade_actions" ] ; then
         mv "${rpath}/../this_upgrade_actions" "${rpath}/../upgrade_actions/${thists}.failed"
         echo "Error. Check the script: this_upgrade_actions.failed"
       fi
+    else
+      echo "outdated, not applying"
     fi
   fi
   rm -f "${rpath}/../this_upgrade_actions"
