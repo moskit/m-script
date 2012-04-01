@@ -35,6 +35,7 @@ if [ "X$GIT" == "X" ]; then
   fi
 else
   $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
+  updateid=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
 fi
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"

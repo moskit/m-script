@@ -8,12 +8,14 @@ echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
-
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 source "${rpath}/${rcommand}.conf" 2>/dev/null
 [ -z "$depth" ] && depth=5
 
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
+[ "X$SQLITE3" == "X1" ] && [ -z "$SQLITE" ] && echo "Sqlite3 not found, exiting..  " && exit 1
 TMPDIR="${TMPDIR}/MongoDB"
 install -d "${TMPDIR}"
 timeindexnow=`date +"%s"`
@@ -39,7 +41,7 @@ for coll in $sharded ; do
   database=${coll%%.*}
   mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
   echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
-  echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
+  #echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
   echo >> "${rpath}/sharding.report"
   
   rm -f "${rpath}/data/shards.${coll}"
@@ -60,7 +62,14 @@ for coll in $sharded ; do
   $MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c, \"ns\" : \"${coll}\" } ).count() ) } )" > "${rpath}/data/sharding.changelog.${coll}.dat"
   $MONGO "$confserver"/config --quiet --eval "db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c, \"ns\" : \"${coll}\" } ).count() ) } )" >> "${rpath}/data/sharding.changelog.${coll}.dat"
   
-  
+  cldiff=`$DIFF "${rpath}/data/sharding.changelog.${coll}.dat" "${rpath}/data/sharding.changelog.${coll}.dat.prev"`
+  if [ -n "$cldiff" ] ; then
+    timeindex=`date +"%s"`
+    
+    leftdiff=`echo "$cldiff" | grep ^\< | tr -d '^\< '`
+    rightdiff=`echo "$cldiff" | grep ^\> | tr -d '^\> '`
+    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "${rpath}/sharding.report" ; [ "X$SQLITE3" == "X1" ] && $SQLITE "${rpath}/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
+  fi
   
   
   #oneforbackup=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"$coll\", \\$and : [ { \"shard\" : { \\$ne : \"$currshard\" } }, { \"shard\" : { \\$ne : \"$mastershard\" } } ] }, { shard : 1, min : 1, max : 1, _id : 0 } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt`
@@ -87,13 +96,6 @@ for coll in $sharded ; do
   #  echo
   #done
 done
-
-# changelog stats
-
-echo -e "\n\nChangelog stats\n\n---------------\n\n" >> "${rpath}/sharding.report"
-
-
-
 
   # the last split chunk and the server it has been splitted on:
 #  lastsplit=`$MONGO "$confserver"/config --quiet --eval "db.changelog.find({what:\"split\", ns:\"${coll}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`

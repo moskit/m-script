@@ -156,7 +156,7 @@ IFS1=$IFS; IFS='
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
     if [ -n "$nalerts" ] ; then
-      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" | grep ^$pattern\|$level\|`
+      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" | grep ^"$pattern"\|$level\| 2>/dev/null | tail -1`
       if [ -n "$calerts" ] ; then
         calerts=`echo "$calerts" | cut -d'|' -f3`
       else
