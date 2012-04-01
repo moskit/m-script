@@ -1,0 +1,4 @@
+# 1333298928
+`which sqlite3` $1/../standalone/MongoDB/mongodb.sql3 "create table changelog (timeindex integer, database varchar(64), collection varchar(64), event varchar(64), value integer)"
+`which sqlite3` $1/../standalone/MongoDB/mongodb.sql3 "create index tdc on changelog (timeindex, database, collection)"
+
