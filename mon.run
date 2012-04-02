@@ -43,7 +43,7 @@ do
     sleep 10
     continue
   else
-    echo "`date +"%H:%M:%S"` is unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` not locked" >> ${rpath}/monitoring.log
     break
   fi
 done
@@ -53,7 +53,7 @@ if [ -f ${rpath}/mon.run.lock ] ; then
   exit 1
 fi
 
-touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> locking" >> ${rpath}/monitoring.log
+touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> locking by ${commline}" >> ${rpath}/monitoring.log
 # bc workaround to make it work with floating point numbers
 solve() {
 bc << EOF
@@ -169,6 +169,7 @@ IFS1=$IFS; IFS='
     [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> ${rpath}/monitoring.log && continue
     for ((i=$level; i<=3; i++)) ; do
       while read line ; do
+        line=`echo $line | tr -d ' '`
         if [ -z "$nalerts" ] ; then
           [[ $line =~ $pattern ]] && action_alert_found=1 && echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
         else
@@ -482,7 +483,7 @@ case ${1} in
     echo "Run mon.run --help to see available options"
   ;;
 esac
-rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` << Lock file removed by the process called as ${commline}" >> ${rpath}/monitoring.log
+rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` <<< unlocking by ${commline}" >> ${rpath}/monitoring.log
 echo  >> ${rpath}/monitoring.log
 #rm -f ${TMPDIR}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
