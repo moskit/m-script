@@ -181,7 +181,7 @@ IFS1=$IFS; IFS='
               echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
               sed -i "s%^${commlinesan}\|${pattern}\|${level}\|.*%${commlinesan}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
             else
-              sed -i "s!^${commlinesan}\|${pattern}\|${level}\|.*!${commlinesan}|${pattern}|${level}|${calerts}!" "${TMPDIR}/consequent_alerts.tmp"
+              sed -i "s%^${commlinesan}\|${pattern}\|${level}\|.*%${commlinesan}|${pattern}|${level}|${calerts}%" "${TMPDIR}/consequent_alerts.tmp"
             fi
           fi
         fi
@@ -190,7 +190,7 @@ IFS1=$IFS; IFS='
     if [ -f "${TMPDIR}/consequent_alerts.tmp" ] ; then
       if [ `grep -c ^$commlinesan "${TMPDIR}/consequent_alerts.tmp"` -ne 0 ] ; then
         if [ -z "$action_alert_found" ] ; then
-          sed -i "s!^${commlinesan}\|${pattern}\|${level}\|.*!${commlinesan}|${pattern}|${level}|0!" "${TMPDIR}/consequent_alerts.tmp"
+          sed -i "s%^${commlinesan}\|${pattern}\|${level}\|.*%${commlinesan}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
         fi
       fi
     fi
