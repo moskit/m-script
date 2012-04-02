@@ -23,7 +23,8 @@ SQLITE=`which sqlite3 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
-echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
+commline="$0 $*"
+echo "`date +"%H:%M:%S"` == Running ${commline} ==" >> ${rpath}/monitoring.log
 #*/ (this is needed to fool vi syntax highlighting)
 
 #[ "X$SAR" == "X" ] || $SAR -o $TMPDIR/sar.tmp 1 5 >/dev/null
@@ -156,11 +157,11 @@ IFS1=$IFS; IFS='
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
     if [ -n "$nalerts" ] ; then
-      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"$0 $*"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
+      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"${commline}"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
       if [ -n "$calerts" ] ; then
         calerts=`echo "$calerts" | cut -d'|' -f4`
       else
-        echo "$0 $*|$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
+        echo "${commline}|$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
       fi
     fi
     [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> ${rpath}/monitoring.log && continue
@@ -174,15 +175,15 @@ IFS1=$IFS; IFS='
             action_alert_found=1
             [ -z "$calerts" ] && calerts=0
             calerts=`expr $calerts + 1`
-            sed -i "s_^$0\ $*\|${pattern}\|${level}\|.*_$0 $*|${pattern}|${level}|${calerts}_" "${TMPDIR}/consequent_alerts.tmp"
+            sed -i "s_^${commline}\|${pattern}\|${level}\|.*_${commline}|${pattern}|${level}|${calerts}_" "${TMPDIR}/consequent_alerts.tmp"
           fi
         fi
       done <"${rpath}/alert$i"
     done
     if [ -f "${TMPDIR}/consequent_alerts.tmp" ] ; then
-      if [ `grep -c ^$0\ $* "${TMPDIR}/consequent_alerts.tmp"` -ne 0 ] ; then
+      if [ `grep -c ^$commline "${TMPDIR}/consequent_alerts.tmp"` -ne 0 ] ; then
         if [ -z "$action_alert_found" ] ; then
-          sed -i "s_^$0 $*\|${pattern}\|${level}\|.*_$0 $*|${pattern}|${level}|0_" "${TMPDIR}/consequent_alerts.tmp"
+          sed -i "s_^${commline}\|${pattern}\|${level}\|.*_${commline}|${pattern}|${level}|0_" "${TMPDIR}/consequent_alerts.tmp"
         fi
       fi
     fi
@@ -475,7 +476,7 @@ case ${1} in
     echo "Run mon.run --help to see available options"
   ;;
 esac
-rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` << Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
+rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` << Lock file removed by the process called as ${commline}" >> ${rpath}/monitoring.log
 echo  >> ${rpath}/monitoring.log
 #rm -f ${TMPDIR}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
