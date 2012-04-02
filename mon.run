@@ -156,9 +156,9 @@ IFS1=$IFS; IFS='
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
     if [ -n "$nalerts" ] ; then
-      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"$pattern"\|$level\| 2>/dev/null | tail -1`
+      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"$0 $*"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
       if [ -n "$calerts" ] ; then
-        calerts=`echo "$calerts" | cut -d'|' -f3`
+        calerts=`echo "$calerts" | cut -d'|' -f4`
       else
         echo "$0 $*|$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
       fi
@@ -174,7 +174,7 @@ IFS1=$IFS; IFS='
             action_alert_found=1
             [ -z "$calerts" ] && calerts=0
             calerts=`expr $calerts + 1`
-            sed -i "s_^$0 $*\|${pattern}\|${level}\|.*_$0 $*|${pattern}|${level}|${calerts}_" "${TMPDIR}/consequent_alerts.tmp"
+            sed -i "s_^$0\ $*\|${pattern}\|${level}\|.*_$0 $*|${pattern}|${level}|${calerts}_" "${TMPDIR}/consequent_alerts.tmp"
           fi
         fi
       done <"${rpath}/alert$i"
