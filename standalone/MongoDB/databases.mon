@@ -19,7 +19,11 @@ function print_databases() {
     echo " Name               Size"
     echo
   fi
-  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | sed 's|^=||g'
+  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | tr -d '^='
 }
+
+${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "${rpath}/data/databases.dat"
+
+
 
 #mongo localhost/solariat_flask --quiet --eval "db.printCollectionStats()" | /opt/m/lib/json2txt | grep -E "\/ns\||\/size\||\/indexSizes\/|\/totalIndexSize\|" | grep -v \/shards\/ | while read LINE ; do if [[ $LINE =~ ^0\/ns ]] ; then echo ; echo "\"`echo $LINE | cut -d'|' -f2`\"" ; else echo "\"`echo $LINE | cut -d'|' -f1 | sed 's|0/||'`\",\"$(echo "scale=2; `echo $LINE | cut -d'|' -f2` / 1024 / 1024" | bc)\"" ; fi ; done > coll_stats1.csv

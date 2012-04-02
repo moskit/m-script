@@ -26,23 +26,23 @@ a=`cat "${rpath}/mongo_config_servers.list" 2>/dev/null | wc -l`
 confserver=`head -n $((RANDOM%$a)) "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1`
 [ -z "$confserver" ] && echo "No configuration servers found" && exit 1
 
-masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
+#masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
 
 sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
 
-date > "${rpath}/sharding.report"
-echo -e "---------------------------\n\nSharded collections\n-------------------" >> "${rpath}/sharding.report"
+#date > "${rpath}/sharding.report"
+#echo -e "---------------------------\n\nSharded collections\n-------------------" >> "${rpath}/sharding.report"
 
 for coll in $sharded ; do
-  echo -e "\n$coll\n--------------------------------------------\n\n" >> "${rpath}/sharding.report"
+  #echo -e "\n$coll\n--------------------------------------------\n\n" >> "${rpath}/sharding.report"
 
   #currshard=`$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" } ).sort({_id:-1}).limit(1).forEach(printjson)" | "${rpath}"/../../lib/json2txt | grep ^[0-9]*\/shard | cut -d'|' -f2`
 
   database=${coll%%.*}
-  mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
-  echo "Primary shard: `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
-  #echo "Current shard: `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
-  echo >> "${rpath}/sharding.report"
+  #mastershard=`echo $masters | grep ^$database\| | cut -d'|' -f2`
+  #echo "Primary shard:  `grep \|$mastershard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
+  #echo "Current shard:  `grep \|$currshard\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1`" >> "${rpath}/sharding.report"
+  #echo >> "${rpath}/sharding.report"
   
   rm -f "${rpath}/data/shards.${coll}"
   shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"${coll}\" , \"shard\" : c }).count() ) } )"`

@@ -18,11 +18,11 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
-portstcp=( `cat ${rpath}/../ports.tcp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
-portsudp=( `cat ${rpath}/../ports.udp.list 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
-sockets=( `cat ${rpath}/../sockets.list 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
+source "${rpath}/../conf/mon.conf"
+source "${0%.mon}.conf"
+portstcp=( `cat "${rpath}/../ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
+portsudp=( `cat "${rpath}/../ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
+sockets=( `cat "${rpath}/../sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
 
@@ -40,14 +40,11 @@ if [ `uname` == "Linux" ]; then
   ROUTE="$NETSTATCMD -rn"
 fi
 
-[ -e ${rpath}/../conf/sockets.exclude ] || touch ${rpath}/../conf/sockets.exclude
-[ -e ${rpath}/../conf/ports.exclude ] || touch ${rpath}/../conf/ports.exclude
-
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+[ -e "${rpath}/../conf/sockets.exclude" ] || touch "${rpath}/../conf/sockets.exclude"
+[ -e "${rpath}/../conf/ports.exclude" ] || touch "${rpath}/../conf/ports.exclude"
 
 chk_portexclusions() {
-  for exclport in `cat ${rpath}/../conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'` ; do
+  for exclport in `cat "${rpath}/../conf/ports.exclude" | grep -v '^#' | grep -v '^[:space:]*#'` ; do
     exclportnum=${exclport%%%*}
     exclportprog=${exclport#*%}
     if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $2 ]] ; then
@@ -84,7 +81,7 @@ echo
 ### this protocol registered with the kernel is greater than the number of
 ### current connections.
 
-if [ -e ${rpath}/../ports.tcp.list ] ; then
+if [ -e "${rpath}/../ports.tcp.list" ] ; then
   inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
   inusetcp=`expr $inusetcp + 2`
   tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
@@ -107,11 +104,11 @@ if [ -e ${rpath}/../ports.tcp.list ] ; then
   else
     # No point in parsing of more than 100 lines of LISTENING ports, increase this
     # if necessary
-    $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/ports.tcp.$$
-    [ `cat /tmp/m_script/ports.tcp.$$ | wc -l` -gt `cat /tmp/m_script/ports.tcp.$$ | uniq | wc -l` ] && echo "connections.mon: TCP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.tcp.$$
+    $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > "${TMPDIR}/ports.tcp.$$"
+    [ `cat "${TMPDIR}/ports.tcp.$$" | wc -l` -gt `cat "${TMPDIR}/ports.tcp.$$" | uniq | wc -l` ] && echo "connections.mon: TCP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/../monitoring.log" && rm -f "${TMPDIR}/ports.tcp.$$"
   fi
 fi
-if [ -e ${rpath}/../ports.udp.list ] ; then
+if [ -e "${rpath}/../ports.udp.list" ] ; then
   inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
   inuseudp=`expr $inuseudp + 2`
   udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
@@ -130,15 +127,15 @@ if [ -e ${rpath}/../ports.udp.list ] ; then
     fi
     portsudp=""
   else
-    $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/ports.udp.$$
-    [ `cat /tmp/m_script/ports.udp.$$ | wc -l` -gt `cat /tmp/m_script/ports.udp.$$ | uniq | wc -l` ] && echo "connections.mon: UDP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/ports.udp.$$
+    $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> "${TMPDIR}/ports.udp.$$"
+    [ `cat "${TMPDIR}/ports.udp.$$" | wc -l` -gt `cat "${TMPDIR}/ports.udp.$$" | uniq | wc -l` ] && echo "connections.mon: UDP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/../monitoring.log" && rm -f "${TMPDIR}/ports.udp.$$"
   fi
 fi
 
 ### If other protocols are needed (see /etc/net/protocols), they can be added
 ### easily, just follow the pattern
 
-if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
+if [ -f "${TMPDIR}/ports.tcp.$$" ] ; then
   while read LINE
   do
     portstcp=( ${portstcp[*]} )
@@ -170,20 +167,20 @@ if [ -f /tmp/m_script/ports.tcp.$$ ] ; then
     done
     [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored."
     skip=0
-  done < /tmp/m_script/ports.tcp.$$
+  done < "${TMPDIR}/ports.tcp.$$"
+
+  if [[ ${#portstcp[*]} -gt 0 ]]
+  then
+    for t in ${portstcp[*]} ; do
+      prog=`grep "^${t}|" "${rpath}/../ports.tcp.list" | cut -d'|' -f2`
+      chk_portexclusions $t $prog
+      [[ $skip -ne 1 ]] && echo "<***> There is no service listening on TCP: $t (was $prog)"
+      skip=0
+    done
+  fi
 fi
 
-if [[ ${#portstcp[*]} -gt 0 ]]
-then
-  for t in ${portstcp[*]} ; do
-    prog=`grep "^${t}|" ${rpath}/../ports.tcp.list | cut -d'|' -f2`
-    chk_portexclusions $t $prog
-    [[ $skip -ne 1 ]] && echo "<***> There is no service listening on TCP: $t (was $prog)"
-    skip=0
-  done
-fi
-
-if [ -f /tmp/m_script/ports.udp.$$ ] ; then
+if [ -f "${TMPDIR}/ports.udp.$$" ] ; then
   while read LINE
   do
     portsudp=( ${portsudp[*]} )
@@ -215,27 +212,29 @@ if [ -f /tmp/m_script/ports.udp.$$ ] ; then
     done
     [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored."
     skip=0
-  done < /tmp/m_script/ports.udp.$$
-fi
+  done < "${TMPDIR}/ports.udp.$$"
 
-if [[ ${#portsudp[*]} -gt 0 ]]
-then
-  for t in ${portsudp[*]} ; do
-    prog=`grep "^${t}|" ${rpath}/../ports.udp.list | cut -d'|' -f2`
-    chk_portexclusions $t $prog
-    [[ $skip -ne 1 ]] && echo "<***> There is no service listening on UDP: $t (was $prog)"
-    skip=0
-  done
+  if [[ ${#portsudp[*]} -gt 0 ]]
+  then
+    for t in ${portsudp[*]} ; do
+      prog=`grep "^${t}|" "${rpath}/../ports.udp.list" | cut -d'|' -f2`
+      chk_portexclusions $t $prog
+      [[ $skip -ne 1 ]] && echo "<***> There is no service listening on UDP: $t (was $prog)"
+      skip=0
+    done
+  fi
+else
+  echo "Not testing UDP ports: failed to read the currently open ports list"
 fi
 
 echo "  Name              Socket file"
 echo
-$SOCKCONNS | grep STREAM > /tmp/m_script/sockets.$$
+$SOCKCONNS | grep STREAM > "${TMPDIR}/sockets.$$"
 
 while read LINE
 do
   sockets=( ${sockets[*]} )
-  for exclsocket in `cat ${rpath}/../conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  for exclsocket in `cat "${rpath}/../conf/sockets.exclude" | grep -v '^#' | grep -v '^[:space:]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
@@ -260,14 +259,14 @@ do
     fi
   done
   [[ $socketfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored."
-done < /tmp/m_script/sockets.$$
+done < "${TMPDIR}/sockets.$$"
 
 if [[ ${#sockets[*]} -gt 0 ]]
 then
  echo "<***> There is no services listening on unix sockets: ${sockets[*]}"
 fi
 
-rm -f /tmp/m_script/ports.*.$$ /tmp/m_script/sockets.$$
+rm -f "${TMPDIR}"/ports.*.$$ "${TMPDIR}"/sockets.$$
 # End of netstat test
 
 echo
@@ -282,10 +281,10 @@ cat /proc/net/protocols | tail -n +2 | awk '{printf "%-24s %s\n", $1, $3}'
 if [ "X$CONNTEST_IP" == "X" ]
 then
   if [ "X$ROUTE" != "X" ]; then
-    $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' > /tmp/m_script/ping.tmp
+    $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' > "${TMPDIR}/ping.tmp"
   fi
-  [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> /tmp/m_script/ping.tmp
-  [ -f /tmp/m_script/ping.tmp ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
+  [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> "${TMPDIR}/ping.tmp"
+  [ -f "${TMPDIR}/ping.tmp" ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
   failedip=""
   pingedip=""
   while read LINE
@@ -296,7 +295,7 @@ then
    else
     pingedip="${pingedip} ${LINE}"
    fi
-  done < /tmp/m_script/ping.tmp
+  done < "${TMPDIR}/ping.tmp"
 else
   for connip in ${CONNTEST_IP}
   do
@@ -308,7 +307,7 @@ else
     fi
   done
 fi
-rm -f /tmp/m_script/ping.tmp
+rm -f "${TMPDIR}/ping.tmp"
 if [ "X$CONNTEST_IP" == "X127.0.0.1" ] || [ "X$CONNTEST_IP" == "Xlocalhost" ]; then
   if [ -n "$pingedip" ]; then
    echo ""

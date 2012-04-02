@@ -92,9 +92,10 @@ if [ -f "${rpath}/../this_upgrade_actions" ] ; then
       echo "Unable to find last upgrade time, using file VERSION creation time"
       lastts=$(date -d "$(`which stat` -c %y VERSION | cut -d'.' -f1)" +"%s")
     fi
+    echo "timestamps: now $timeindex, last $lastts, this $thists, git $gitts" >> "${rpath}/../upgrade_actions.log"
     if [ `expr $thists \> $lastts` -eq 1 ] ; then
       echo "`date` Running this upgrade specific actions script" >> "${rpath}/../upgrade_actions.log"
-      echo "timestamps: now $timeindex, last $lastts, this $thists, git $gitts" >> "${rpath}/../upgrade_actions.log"
+      
       bash "${rpath}/../this_upgrade_actions" ${rpath} >> "${rpath}/../upgrade_actions.log"
       if [[ $? -eq 0 ]] ; then
         echo "OK"
