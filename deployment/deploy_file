@@ -138,11 +138,11 @@ if [ "X$command" != "X" ] ; then
           if [ -f "${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from"
             echo "the file is found in included role ${ROLEINCL} ... good"
-            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
+            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${ROLEINCL}/role.conf"
           elif [ -f "${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from"
             echo "the file is found in included role ${ROLEINCL} ... good"
-            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
+            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${ROLEINCL}/role.conf"
           else
             echo "not found, giving up"
             exit 1
