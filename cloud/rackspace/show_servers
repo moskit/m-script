@@ -29,7 +29,7 @@ install -d $TMPDIR
 CURL="$CURL -s"
 declare -i icount
 
-possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count"
+possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolve-ids"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -39,6 +39,7 @@ IFS='|'
 for s_option in $ARGV
 do
   s_optname=${s_option%%=*}
+  s_optname=`echo $s_optname | tr -d '-'`
   s_optarg=${s_option##*=}
   [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
@@ -83,13 +84,18 @@ list_servers() {
       for LINE in `grep \/servers\/${n}\/ "${TMPDIR}/${rcommand}.resp"` ; do
         LINE=`echo $LINE | awk -F"servers/${n}/" '{print $2}'`
         lvar=`echo $LINE | cut -d'|' -f1`
+        if [ -n "$filter" ] ; then
+          if [ `echo -e "$filter" | tr ',' '\n' | grep -c ^$lvar$` -eq 0 ] ; then
+            continue
+          fi
+        fi
         lvalue=`echo $LINE | cut -d'|' -f2`
         case $lvar in
           imageId)
-            imageId=`imageid $lvalue`
+            [ -n "$resolveids" ] && imageId=`imageid $lvalue` || imageId=$lvalue
             ;;
           flavorId)
-            flavorId=`flavorid $lvalue`
+            [ -n "$resolveids" ] && flavorId=`flavorid $lvalue` || flavorId=$lvalue
             ;;
           status)
             istatus=`echo $lvalue | sed 's|.|\l&|g'`
