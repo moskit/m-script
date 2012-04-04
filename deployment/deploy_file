@@ -123,10 +123,10 @@ if [ "X$command" != "X" ] ; then
       fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
     else
       echo -n "${rcommand}: neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is found, "
-      if [[ "$flavor" != "$M_FLAVOR" ]] ; then echo -n "guessing flavor=$M_FLAVOR ... "
-        if [ -f "${ROLES_ROOT}/${role}/${M_FLAVOR}/files/$from" ] ; then
+      if [[ "$flavor" != "common" ]] ; then echo -n "guessing flavor=common ... "
+        if [ -f "${ROLES_ROOT}/${role}/common/files/$from" ] ; then
           echo "found"
-          fullfrom="${ROLES_ROOT}/${role}/${M_FLAVOR}/files/${from}"
+          fullfrom="${ROLES_ROOT}/${role}/common/files/${from}"
         else
           echo -n "not found ... "
           notfound=1
@@ -137,10 +137,12 @@ if [ "X$command" != "X" ] ; then
         if [[ "$role" != "$ROLEINCL" ]] ; then
           if [ -f "${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from"
-            echo "found"
+            echo "the file is found in included role ${ROLEINCL} ... good"
+            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
           elif [ -f "${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from"
-            echo "found"
+            echo "the file is found in included role ${ROLEINCL} ... good"
+            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
           else
             echo "not found, giving up"
             exit 1
@@ -152,7 +154,9 @@ if [ "X$command" != "X" ] ; then
   fi
   tmpfile=${TMPDIR}/deployment/`echo $fullfrom | tr '/' '_'`
   rm -f "$tmpfile" 2>/dev/null
-  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf" && source "${tmpfile}.var"
+  
+  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
+  source "${tmpfile}.var"
   
   cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
   sed 's|\\"|\\\\"|g' | \
