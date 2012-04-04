@@ -151,25 +151,23 @@ function runscript() {
 function runactions() {
 IFS1=$IFS; IFS='
 '
-  commlinesan=`echo $commline | tr -d ' '`
   for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
-    pattern=`echo $confline | cut -d'|' -f1 | tr -d ' '`
+    pattern=`echo $confline | cut -d'|' -f1`
     level=`echo $confline | cut -d'|' -f2`
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
     if [ -n "$nalerts" ] ; then
-      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"${commlinesan}"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
+      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"${commline}"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
       if [ -n "$calerts" ] ; then
         calerts=`echo "$calerts" | cut -d'|' -f4`
       else
-        echo "${commlinesan}|$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
+        echo "${commline}|$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
       fi
     fi
     [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> ${rpath}/monitoring.log && continue
     [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> ${rpath}/monitoring.log && continue
     for ((i=$level; i<=3; i++)) ; do
       while read line ; do
-        line=`echo $line | tr -d ' '`
         if [ -z "$nalerts" ] ; then
           [[ $line =~ $pattern ]] && action_alert_found=1 && echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
         else
@@ -179,18 +177,18 @@ IFS1=$IFS; IFS='
             calerts=`expr $calerts + 1`
             if [[ $calerts -ge $nalerts ]] ; then
               echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
-              sed -i "s%^${commlinesan}\|${pattern}\|${level}\|.*%${commlinesan}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
+              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
             else
-              sed -i "s%^${commlinesan}\|${pattern}\|${level}\|.*%${commlinesan}|${pattern}|${level}|${calerts}%" "${TMPDIR}/consequent_alerts.tmp"
+              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${TMPDIR}/consequent_alerts.tmp"
             fi
           fi
         fi
       done <"${rpath}/alert$i"
     done
     if [ -f "${TMPDIR}/consequent_alerts.tmp" ] ; then
-      if [ `grep -c ^$commlinesan "${TMPDIR}/consequent_alerts.tmp"` -ne 0 ] ; then
+      if [ `grep -c ^$commline "${TMPDIR}/consequent_alerts.tmp"` -ne 0 ] ; then
         if [ -z "$action_alert_found" ] ; then
-          sed -i "s%^${commlinesan}\|${pattern}\|${level}\|.*%${commlinesan}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
+          sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
         fi
       fi
     fi

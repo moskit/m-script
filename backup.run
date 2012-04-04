@@ -15,11 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
-#*/ (this is needed to fool vi syntax highlighting)
-rm -f ${rpath}/m_backup.log
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+rm -f "${rpath}/m_backup.log"
+source "${rpath}/../m.rc"
 
 for s_option in $@
 do
@@ -133,7 +134,7 @@ do
     debugflag=1
   ;;
   help|*)
-    echo '  Possible options are:'
+    echo '  Possible options:'
     echo '  --from-remote=method or --to-remote=method (use help instead of a method'
     echo '  to see methods available)'
     echo '  --only-pickup (use --only-pickup=help to get more help)'
