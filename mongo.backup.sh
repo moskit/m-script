@@ -31,6 +31,9 @@ MONGODUMP="$(which mongodump 2>/dev/null)"
 GZIP="$(which gzip 2>/dev/null)"
 BZIP2="$(which bzip2 2>/dev/null)"
 
+[ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
+[ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1
+
 if [ "X$compression" == "Xgzip" ] && [ -n "$GZIP" ] ; then
   compress=$GZIP
   ext="gz"

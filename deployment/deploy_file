@@ -110,10 +110,10 @@ if [ "X$command" != "X" ] ; then
       fi
     else
       cluster=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
-      [ -z "$cluster" ] && echo "Cluster not defined for role $role" && exit 1
+      [ -z "$cluster" ] && echo "${rcommand}: cluster not defined for role $role" && exit 1
     fi
   fi
-  [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && echo "No servers found in cluster $cluster" && exit 1
+  [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && echo "${rcommand}: no servers found in cluster $cluster" && exit 1
   [ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
   [ -n "$verbose" ] && echo "### Reading configuration from ${ROLES_ROOT}/${role}/role.conf"
   if [ -f "$from" ] ; then
@@ -122,13 +122,31 @@ if [ "X$command" != "X" ] ; then
     if [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] ; then
       fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
     else
-      echo -n "Neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is found, guessing flavor=$DEFAULT_ROLE ... "
-      if [ -f "${ROLES_ROOT}/${role}/${DEFAULT_ROLE}/files/$from" ] ; then
-        echo "found"
-        fullfrom="${ROLES_ROOT}/${role}/${DEFAULT_ROLE}/files/${from}"
-      else
-        echo "not found, exiting"
-        exit 1
+      echo -n "${rcommand}: neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is found, "
+      if [[ "$flavor" != "$M_FLAVOR" ]] ; then echo -n "guessing flavor=$M_FLAVOR ... "
+        if [ -f "${ROLES_ROOT}/${role}/${M_FLAVOR}/files/$from" ] ; then
+          echo "found"
+          fullfrom="${ROLES_ROOT}/${role}/${M_FLAVOR}/files/${from}"
+        else
+          echo -n "not found ... "
+          notfound=1
+        fi
+      fi
+      if [ -n "$notfound" ] ; then
+        echo -n "checking if another role is included ... "
+        if [[ "$role" != "$ROLEINCL" ]] ; then
+          if [ -f "${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from" ] ; then
+            fullfrom="${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from"
+            echo "found"
+          elif [ -f "${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from" ] ; then
+            fullfrom="${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from"
+            echo "found"
+          else
+            echo "not found, giving up"
+            exit 1
+          fi
+        fi
+        unset notfound
       fi
     fi
   fi
@@ -175,7 +193,7 @@ if [ "X$command" != "X" ] ; then
           cp -up $tmpfile $to
         else
           [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
-          [ -f "${rpath}/../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
+          [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $IP" && continue)
           cloudsync --ip=$IP "$tmpfile" "${to}"
         fi
       done

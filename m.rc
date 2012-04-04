@@ -26,8 +26,9 @@ setup_env() {
   source "${rpath}/conf/mon.conf"
   source "${rpath}/conf/cloud.conf"
   source "${rpath}/conf/deployment.conf"
+  HOME_ORIG=$HOME
   HOME=$M_ROOT
-  export CLOUD ROLES_ROOT M_ROOT HOME
+  export CLOUD ROLES_ROOT M_ROOT HOME HOME_ORIG
   export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 }
 

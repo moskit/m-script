@@ -103,6 +103,7 @@ roleincluded=${file%%/*}
 if [ "X$roleincluded" != "X$role" ] ; then
   if [ -e "${ROLES_ROOT}/${roleincluded}/role.conf" ] ; then
     store_vars $roleincluded
+    export ROLEINCL=$roleincluded
   fi
 fi
 # command-line options (variables from this script) should be saved too

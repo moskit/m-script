@@ -182,7 +182,9 @@ thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -
 PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/$pubkey and public keys from ${HOME}/.ssh" && exit 1
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$TMPDIR/${rcommand}.req"
 echo "        \"personality\" : [" >> "$TMPDIR/${rcommand}.req"
