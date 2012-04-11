@@ -37,7 +37,7 @@ echo "URL: $URL"
 
 if [ -n "$WGET" ] ; then
   [ -n "$2" ] && DEST="-P ${2}"
-  $WGET -nH $DEST "${PROTO}://${URL}"
+  $WGET -nH -N $DEST "${PROTO}://${URL}"
 fi
 if [ $? -eq 0 ] ; then
   exit 0
