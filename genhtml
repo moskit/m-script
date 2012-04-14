@@ -65,6 +65,9 @@ fi
 
 install -d "${rpath}/www/servers/localhost"
 source "${rpath}/conf/dash.conf"
+source "${rpath}/conf/mon.conf"
+[ -z "$freqdef" ] && freqdef=$FREQ
+
 text="${s_param}"
 case $type in
   dash)
@@ -76,7 +79,7 @@ case $type in
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
       for ((i=1; i<=${exc}; i++)) ; do
-        sed -i -e '1d' "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
+        sed -i '1d' "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
       done
     fi
     timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166

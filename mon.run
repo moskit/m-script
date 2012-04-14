@@ -396,12 +396,26 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      ${rpath}/genhtml --type=report 2>>${rpath}/dashboard.log
+      ${rpath}/genhtml --type=report 2>>"${rpath}/dashboard.log"
       ;;
     JSON)
-      ${rpath}/genjson --type=report 2>>${rpath}/dashboard.log
+      ${rpath}/genjson --type=report 2>>"${rpath}/dashboard.log"
       ;;
   esac
+}
+
+function timeshift() {
+  fintime=$(date +"%s")
+  if [ -n "$timeshift" ]; then
+    timeshift=$(expr \( $fintime - $timeindexnow + $timeshift \) / 2)
+  else
+    timeshift=$(expr $fintime - $timeindexnow)
+  fi
+  export timeshift
+  for l in 1 2 3 ; do
+    MAINSEQ_EXECTIME=`eval "echo \$MAINSEQ_EXECTIME_$i"`
+    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${0##*/} $* execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
+  done
 }
 
 source ${rpath}/conf/mon.conf
@@ -474,6 +488,7 @@ case ${1} in
     runscript ${1} $SQL
     runactions
     mailalert
+    timeshift
     [ -n "$DASHBOARD" ] && gendash
     deltimeindex
   ;;
