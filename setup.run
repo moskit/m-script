@@ -313,7 +313,7 @@ then
 else
   if [ `grep -c "^SQLITE3=" ${rpath}/conf/mon.conf` -ne 0 ]
   then
-    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" ${rpath}/conf/mon.conf
+    sed -i "s|SQLITE3=.*|SQLITE3=1|g" ${rpath}/conf/mon.conf
   else    
     echo "SQLITE3=1" >> ${rpath}/conf/mon.conf
   fi

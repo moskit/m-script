@@ -99,7 +99,7 @@ if [ -e /tmp/m_script/netstat.tcp.tmp ] ; then
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
-    for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+    for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
       if [[ $exclport =~ $prog ]] ; then
         if [[ $exclport =~ [^[0-9]-]* ]] ; then
@@ -123,7 +123,7 @@ if [ -e /tmp/m_script/netstat.udp.tmp ] ; then
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
-    for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+    for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
       if [[ $exclport =~ $prog ]] ; then
         if [[ $exclport =~ [^[0-9]-]* ]] ; then
@@ -146,7 +146,7 @@ $NETSTATCMD -xlpn 2>/dev/null | grep STREAM > /tmp/m_script/netstat.sockets.tmp
 rm -f ${rpath}/sockets.list
 while read LINE
 do
-  for exclsocket in `cat ${rpath}/conf/sockets.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+  for exclsocket in `cat ${rpath}/conf/sockets.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done

@@ -20,9 +20,9 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 source "${rpath}/../conf/mon.conf"
 source "${0%.mon}.conf"
-portstcp=( `cat "${rpath}/../ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
-portsudp=( `cat "${rpath}/../ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[:space:]*#' | cut -d'|' -f1` )
-sockets=( `cat "${rpath}/../sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[:space:]*#'` )
+portstcp=( `cat "${rpath}/../ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
+portsudp=( `cat "${rpath}/../ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
+sockets=( `cat "${rpath}/../sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[[:space:]]*#'` )
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
 
@@ -44,7 +44,7 @@ fi
 [ -e "${rpath}/../conf/ports.exclude" ] || touch "${rpath}/../conf/ports.exclude"
 
 chk_portexclusions() {
-  for exclport in `cat "${rpath}/../conf/ports.exclude" | grep -v '^#' | grep -v '^[:space:]*#'` ; do
+  for exclport in `cat "${rpath}/../conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
     exclportnum=${exclport%%%*}
     exclportprog=${exclport#*%}
     if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $2 ]] ; then
@@ -234,7 +234,7 @@ $SOCKCONNS | grep STREAM > "${TMPDIR}/sockets.$$"
 while read LINE
 do
   sockets=( ${sockets[*]} )
-  for exclsocket in `cat "${rpath}/../conf/sockets.exclude" | grep -v '^#' | grep -v '^[:space:]*#'`
+  for exclsocket in `cat "${rpath}/../conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done

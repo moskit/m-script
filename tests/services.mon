@@ -64,7 +64,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
   if [ -d "$thepath" ] ; then
     if [[ "$LINE" =~ [[:space:]]*recursive$ ]] ; then
       find "$thepath" -name "*\.pid" | while read pidfile ; do
-        for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+        for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
         do
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
@@ -75,7 +75,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
       done
     else
       find "$thepath" -maxdepth 1 -name "*\.pid" | while read pidfile ; do
-        for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[:space:]*#'`
+        for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
         do
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done

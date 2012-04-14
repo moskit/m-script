@@ -22,12 +22,13 @@ IFS1=$IFS
 IFS='
 '
 # in case the file doesn't end correctly
-echo >> /etc/hosts
+[ `cat -E /etc/hosts | tail -1 | grep -c \$$` -eq 0 ] && echo >> /etc/hosts
+[ `cat -E /etc/hosts | tail -1 | grep -c ^$` -eq 1 ] && sed -i '$d' /etc/hosts
 cat "${rpath}/../../servers.list" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | cut -d'|' -f1,4 | while read HOST
 do
   ip=`echo $HOST | cut -d'|' -f1`
   hname=`echo $HOST | cut -d'|' -f2`
-  [ -z "$hname" ] && error="Server $ip has no name" && continue
+  [ -z "$hname" ] && error+=("Server $ip has no name") && continue
   if [ `grep -c "$ip[[:space:]]*$hname" /etc/hosts` -eq 0 ] ; then
     if [ `grep -c "$ip " /etc/hosts` -eq 1 ] ; then
       sed -i -e "/$ip /d" /etc/hosts
@@ -42,7 +43,8 @@ do
   fi
 done
 IFS=$IFS1
-[ -n "$error" ] && echo "$error" && exit 1
+
+[ -n "$error" ] && echo "${error[*]}" && exit 1
 if [ -n "$1" ] ; then
   if [ "$1" == "everywhere" ] ; then
     echo "Syncing servers.list to all clusters"
