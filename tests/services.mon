@@ -61,6 +61,9 @@ echo
 for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   LINE=`echo "$LINE" | sed 's|[[:space:]]*$||'`
   thepath=`echo "$LINE" | sed 's|[[:space:]]*recursive||'`
+  # to workaround the weird idea of some OS packagers to have /var/run in
+  # non-standard location, symlinked
+  thepath="${thepath%/}/"
   if [ -d "$thepath" ] ; then
     if [[ "$LINE" =~ [[:space:]]*recursive$ ]] ; then
       find "$thepath" -name "*\.pid" | while read pidfile ; do

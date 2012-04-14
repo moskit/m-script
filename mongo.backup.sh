@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
-#*/ (this is needed to fool vi syntax highlighting)
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
 
-if [ "X${1}" == "X" ]; then
+if [ -n $1 ]; then
   echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
   exit 1
 else
@@ -33,6 +33,8 @@ BZIP2="$(which bzip2 2>/dev/null)"
 
 [ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
 [ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1
+
+[ -n $debugflag ] && stdinto="${rpath}/m_backup.log" || stdinto=/dev/null
 
 if [ "X$compression" == "Xgzip" ] && [ -n "$GZIP" ] ; then
   compress=$GZIP
@@ -86,7 +88,7 @@ if [ -n "$mongodbpertableconf" ] ; then
     bktype=`echo $table | cut -d'|' -f3`
     case bktype in
       full)
-        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
         [ -n "$TAR" ] && $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error
         rm -rf "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error
         ;;
@@ -95,7 +97,7 @@ if [ -n "$mongodbpertableconf" ] ; then
         if [ -f "${rpath}/var/mongodb/${table}.lastid" ] ; then
           lastid=`cat "${rpath}/var/mongodb/${table}.lastid"`
           if [ -n "$lastid" ] ; then
-            
+            echo "no op yet"
           else
             echo "File ${rpath}/var/mongodb/${table}.lastid exists but empty. Collection $table is not backuped!" >> ${rpath}/m_backup.error
           fi
@@ -134,7 +136,7 @@ else
   #    fi
   # --------------------
   # 
-      $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped OK" >>${rpath}/m_backup.log
+      $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 1>>"$stdinto" 2>>${rpath}/m_backup.error && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
       [ -n "$TAR" ] && $TAR "${MBD}/${db}.${archname}.tar.${ext}" "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
       rm -rf "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
     fi
