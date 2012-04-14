@@ -8,6 +8,7 @@ echo ""
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 source "${PWD}/../../conf/dash.conf"
+[ -n "$timeshift" ] || timeshift="$TMPDIR"/timeshift
 timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 oldest=`date -d "-$timerange sec"`
 hour=`date -d "$oldest" +"%H"`

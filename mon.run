@@ -412,6 +412,7 @@ function timeshift() {
     timeshift=$(expr $fintime - $timeindexnow)
   fi
   export timeshift
+  echo $timeshift > "$TMPDIR"/timeshift
   for l in 1 2 3 ; do
     MAINSEQ_EXECTIME=`eval "echo \$MAINSEQ_EXECTIME_$i"`
     [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${0##*/} $* execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
