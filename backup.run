@@ -21,7 +21,13 @@ rpath=${rpath%/*}
 #*/
 rm -f "${rpath}/m_backup.log"
 source "${rpath}/m.rc"
-stdinto="/dev/null"
+
+splitfile() {
+  if [ -n "$split_size" ]; then
+    split -b $split_size -d $1 $1 2>>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+    rm -f ${localbackuppath}/$archname.$linetoname.tar.bz2
+  fi
+}
 
 for s_option in $@
 do
@@ -54,10 +60,12 @@ do
     local)  r_proto='local' ;;
     s3) r_proto='s3' ;;
     help | *)
-      echo '  Files transfer method.'
-      echo '  Usage: --from-remote=method or --to-remote=method'
-      echo '  Supported methods are:'
-      echo '  ftp scp rsync s3 local'
+      cat <<"EOF"
+  Files transfer method.
+  Usage: --from-remote=method or --to-remote=method
+  Supported methods are:
+  ftp scp rsync s3 local
+EOF
       exit 0
     ;;
     esac
@@ -66,13 +74,15 @@ do
     nonbackup='yes'
     onlypickup='yes'
     if [ X$s_optarg == 'Xhelp' ]; then
-      echo '    This option tells program not to try to create backups, but only pick up'
-      echo '  backup files already created and transfer them to (from) another host.'
-      echo "    This option doesn't make sense without --to-remote or --from-remote"
-      echo '  option.'
-      echo '  Usage: --only-pickup or --only-pickup=yes or --only-pickup=/path/to/files,'
-      echo '  where /path/to/files overwrites the default, which is localbackuppath/backup.tmp'
-      echo '  (see conf/backup.conf)'
+      cat <<"EOF"
+    This option tells program not to try to create backups, but only pick up
+  backup files already created and transfer them to (from) another host.
+    This option doesn't make sense without --to-remote or --from-remote
+  option.
+  Usage: --only-pickup or --only-pickup=yes or --only-pickup=/path/to/files,
+  where /path/to/files overwrites the default, which is localbackuppath/backup.tmp
+  (see conf/backup.conf)
+EOF
       exit 0
     elif [ "X$s_optarg" != "X" ] && [ "X$s_optarg" != "Xyes" ]; then
       if [ ! -e $s_optarg ]; then
@@ -88,11 +98,13 @@ do
     nonbackup='yes'
     onlyclean='yes'
     if [ "X$s_optarg" == "Xhelp" ]; then
-      echo '    This option is useful for cleaning up disk space. It only removes'
-      echo '  outdated backups, if finds any. '
-      echo '  It also can be used for cleaning any folders from old files, e.g. backup'
-      echo '  folders, created by another backup script.'
-      echo '  Usage: --only-clean or --only-clean=yes'
+      cat <<"EOF"
+    This option is useful for cleaning up disk space. It only removes
+  outdated backups, if finds any. 
+  It also can be used for cleaning any folders from old files, e.g. backup
+  folders, created by another backup script.
+  Usage: --only-clean or --only-clean=yes
+EOF
       exit 0
     elif [ "X$s_optarg" != "X" ] && [ "X$s_optarg" != "Xyes" ]; then
       echo 'Wrong syntax! Use --only-clean=help to get more help' | tee -a ${rpath}/m_backup.error
@@ -101,22 +113,24 @@ do
   ;;
   configfile|configfiles)
     if [ "X$s_optarg" == "Xhelp" ]; then
-      echo '    You can create as many backup configuration files as you want and backup'
-      echo '  files from or to many hosts at once. But you cannot do all backups in '
-      echo '  a single run if you use both transfer directions, i.e. --from-remote'
-      echo '  for some hosts and --to-remote for others. Also you may wish to run '
-      echo '  this program with, for example, --only-clean option for particular hosts.'
-      echo ''
-      echo '  Syntax is:'
-      echo "  ${0} --configfiles=file1,file2,file3,..."
-      echo '  All other configuration files will be ignored.'
-      echo ''
-      echo '    Note that this option also allows using any config files names. Without'
-      echo '  this option backup will use only config files that have names like'
-      echo '  backup.*.conf. This option allows having both "usual" and'
-      echo '  "special" config files, so you can create backup.*.conf'
-      echo '  configuration files for most common use and "special"'
-      echo '  configuration files for non-common tasks.'
+      cat <<"EOF"
+    You can create as many backup configuration files as you want and backup
+  files from or to many hosts at once. But you cannot do all backups in 
+  a single run if you use both transfer directions, i.e. --from-remote
+  for some hosts and --to-remote for others. Also you may wish to run 
+  this program with, for example, --only-clean option for particular hosts.
+
+  Syntax is:
+  ${0} --configfiles=file1,file2,file3,...
+  All other configuration files will be ignored.
+
+    Note that this option also allows to use any config files names. Without
+  this option backup will use only config files that have names like
+  backup.*.conf. This option allows having both "usual" and
+  "special" config files, so you can create backup.*.conf
+  configuration files for most common use and "special"
+  configuration files for non-common tasks.
+EOF
       exit 0
     elif [ "X$s_optarg" == "X" ] || [ "X$s_optarg" == "Xyes" ]; then
       echo 'Wrong syntax! Use --configfiles=help to get more help' >> ${rpath}/m_backup.error
@@ -134,34 +148,33 @@ do
   debug|verbose|v)
     debugflag=1
     export debugflag
-    stdinto="${rpath}/m_backup.log"
   ;;
   help|*)
-    echo '  Possible options:'
-    echo '  --from-remote=method or --to-remote=method (use help instead of a method'
-    echo '  to see methods available)'
-    echo '  --only-pickup (use --only-pickup=help to get more help)'
-    echo '  --only-clean (use --only-clean=help to get more help)'
-    echo '  --configfiles (use --configfiles=help to get more help)'
-    echo '  --replace (replaces the previous backup; makes incremental backup when'
-    echo '    used with the rsync method)'
-    echo '  --verbose (increases logs verbosity)'
+    cat <<"EOF"
+  Possible options:
+  --from-remote=method or --to-remote=method (use help instead of a method
+  to see methods available)
+  --only-pickup (use --only-pickup=help to get more help)
+  --only-clean (use --only-clean=help to get more help)
+  --configfiles (use --configfiles=help to get more help)
+  --replace (replaces the previous backup; makes incremental backup when
+    used with the rsync method)
+  --verbose (increases logs verbosity)
+EOF
     exit 0
   ;;
   esac
 done
 
-if [ "X$debugflag" != "X" ]
+if [ -n "$debugflag" ]
 then
-  echo "OPTIONS:" >> ${rpath}/m_backup.log
-  echo "xferdirection = ${xferdirection}" >> ${rpath}/m_backup.log
-  echo "r_proto = ${r_proto}" >> ${rpath}/m_backup.log
-  echo "nonbackup = ${nonbackup}" >> ${rpath}/m_backup.log
-  echo "onlypickup = ${onlypickup}" >> ${rpath}/m_backup.log
-  echo "onlyclean = ${onlyclean}" >> ${rpath}/m_backup.log
-  echo "configfiles = ${configfiles}" >> ${rpath}/m_backup.log
-  echo "replaceflag = ${replaceflag}" >> ${rpath}/m_backup.log
+  stdinto="${rpath}/m_backup.log"
+  echo -e "OPTIONS:\nxferdirection = ${xferdirection}\nr_proto = ${r_proto}\nnonbackup = ${nonbackup}\nonlypickup = ${onlypickup}\nonlyclean = ${onlyclean}\nconfigfiles = ${configfiles}\nreplaceflag = ${replaceflag}\n" >> ${rpath}/m_backup.log
+else
+  stdinto="/dev/null"
 fi
+export stdinto
+RSYNC_RSH_BK=$RSYNC_RSH
 
 ###################################################################
 # Main loop. Runs as many times as many backup.*.conf files used  #
@@ -169,28 +182,25 @@ fi
 
 source ${rpath}/conf/mon.conf
 export $TMPDIR
+declare -i res
 
 localbackuppath=${rpath}
 install -d "$TMPDIR" 2>&1>>${rpath}/m_backup.error
 # If config files collection is not set by option, we use all files having names
 # like backup*.conf
-if [ "X$configfiles" == "X" ]
+if [ -z "$configfiles" ]
 then
-# We use a loop to avoid possible issues caused by customized ls
+  configfiles=( )
   for conf in ${rpath}/conf/backup*.conf
   do
-    configfiles="${configfiles} ${conf}"
+    configfiles+=("${conf}")
   done
-  [ "X$debugflag" != "X" ] && echo "configfiles not set, using default: ${configfiles}" >> ${rpath}/m_backup.log
+  [ -n "$debugflag" ] && echo "configfiles not set, using default: ${configfiles[*]}" >> ${rpath}/m_backup.log
 fi
 #### Well, lets go
-for backupconf in ${configfiles}
+for backupconf in ${configfiles[*]}
 do
 bconf=${backupconf##*/}
-# Here we store environment variables that might be replaced by variables
-# from current conf/backup.configuration file. When the main loop finishes, we
-# restore them back (look for this somewhere closer to bottom)
-  RSYNC_RSH_BK="${RSYNC_RSH}"
   
   source ${backupconf}
 
@@ -211,7 +221,7 @@ bconf=${backupconf##*/}
     then
       echo "No scp command found! Is OpenSSH installed?" >> ${rpath}/m_backup.error
       exit 1
-    elif [ "X$debugflag" != "X" ]
+    elif [ -n "$debugflag" ]
     then
       echo "SCP command is ${SCP}" >> ${rpath}/m_backup.log
     fi
@@ -223,7 +233,7 @@ bconf=${backupconf##*/}
     then
       echo 'No rsync command found!' >> ${rpath}/m_backup.error
       exit 1
-    elif [ "X$debugflag" != "X" ]
+    elif [ -n "$debugflag" ]
     then
       echo "RSYNC command is ${RSYNC}" >> ${rpath}/m_backup.log
     fi
@@ -235,36 +245,27 @@ bconf=${backupconf##*/}
     then
       echo 'No s3cmd command found!' >> ${rpath}/m_backup.error
       exit 1
-    elif [ "X$debugflag" != "X" ]
+    elif [ -n "$debugflag" ]
     then
       echo "S3 command is ${S3}" >> ${rpath}/m_backup.log
     fi
   fi
 
-  [ "X$remoteuser" == "X" ] && remoteuser=$USER
-  
-  export RSYNC_RSH="${RSYNC_RSH}"
+  [ -z "$remoteuser" ] && remoteuser=$USER
   
   locallogpath=${localbackuppath}
-  if [ "X$onlyclean" == "Xyes" ]
-  then
+  if [ "X$onlyclean" == "Xyes" ]; then
     localrmpath="${localbackuppath}"
     [ "X${0%/*}" == "X${localrmpath}" ] && localrmpath="${localbackuppath}/backup.local"
   else
     localrmpath=${localbackuppath}/backup.local
   fi
-  if [ "X$debugflag" != "X" ]
-  then
-    echo "localbackuppath = ${localbackuppath}" >> ${rpath}/m_backup.log
-    echo "SET locallogpath = ${locallogpath}" >> ${rpath}/m_backup.log
-    echo "SET localrmpath = ${localrmpath}" >> ${rpath}/m_backup.log
-  fi
+  [ -n "$debugflag" ] && echo -e "localbackuppath = ${localbackuppath}\nSET locallogpath = ${locallogpath}\nSET localrmpath = ${localrmpath}\n" >> ${rpath}/m_backup.log
+
   echo "Using configuration file ${backupconf}..." >> ${rpath}/m_backup.log
-  if [ "X${remoteuser}" == "X" ] && [ "X${remotehost}" == "X" ]
-  then
+  if [ -z "${remotehost}" ]; then
     r_proto="local"
-    echo "Connection to remote host isn't setup in ${backupconf}" >> ${rpath}/m_backup.log
-    echo "Transfer method has been forced to 'local'" >> ${rpath}/m_backup.log
+    echo -e "Connection to remote host isn't setup in ${backupconf}\nTransfer method has been forced to 'local'\n" >> ${rpath}/m_backup.log
   fi
   ARCOPTS=""
   
@@ -272,17 +273,15 @@ bconf=${backupconf##*/}
   [ "X$numericids" != "Xyes" ] || ARCOPTS="${ARCOPTS} --numeric-owner"
   [ "X$preserveperm" != "Xyes" ] || ARCOPTS="${ARCOPTS} -p"
   [ "X$samefs" != "Xyes" ] || ARCOPTS="${ARCOPTS} --one-file-system"
-  [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && ARCOPTS="${ARCOPTS} -v" && echo "TAR options are: ${ARCOPTS}" >> ${rpath}/m_backup.log
+  [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && ARCOPTS="${ARCOPTS} -v" && echo "TAR options are: ${ARCOPTS}" >> ${rpath}/m_backup.log
   
-  if [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ]
-  then
-    install -d "${localbackuppath}/backup.local" 2>&1>>${rpath}/m_backup.error
-    install -d "${localbackuppath}/backup.tmp" 2>&1>>${rpath}/m_backup.error
+  if [ -z "$nonbackup" -a -z "$onlyclean" ]; then
+    install -d "${localbackuppath}/backup.local"
+    install -d "${localbackuppath}/backup.tmp"
   fi
-  install -d "${locallogpath}/logs" 2>&1>>${rpath}/m_backup.error
+  install -d "${locallogpath}/logs"
 
-  if [ -f ${rpath}/${backupconf}.exclude ]
-  then
+  if [ -f ${rpath}/${backupconf}.exclude ]; then
     echo "Excluding files matching patterns from ${rpath}/${backupconf}.exclude" >> ${rpath}/m_backup.log
     ARCOPTS="${ARCOPTS} --totals -X ${rpath}/${backupconf}.exclude"
   else
@@ -292,27 +291,37 @@ bconf=${backupconf##*/}
   then
   # if pickuppath is not defined (might be defined as command-line option),
   # the reasonable default is the place where the last backups are located
-    if [ "X$pickuppath" != "X" ]
-    then
+    if [ -n "$pickuppath" ]; then
       localbackuppath=$pickuppath
     else
       localbackuppath=$localbackuppath/backup.tmp
     fi
   fi
-  if [ "$xferdirection" == "from-remote" ]
-  then
-    if [ "X$pickuppath" != "X" ]
-    then
+  if [ "$xferdirection" == "from-remote" ]; then
+    if [ -n "$pickuppath" ]; then
       remotebackuppath=$pickuppath
     else
       remotebackuppath=$remotebackuppath/backup.tmp
     fi
   fi
   
-  if [ "X$debugflag" != "X" ]
-  then
+  if [ -n "$debugflag" ]; then
     echo "SET localbackuppath = ${localbackuppath}" >> ${rpath}/m_backup.log
-    [ "X$remotebackuppath" == "X" ] || echo "SET remotebackuppath = ${remotebackuppath}" >> ${rpath}/m_backup.log
+    [ -n "$remotebackuppath" ] && echo "SET remotebackuppath = ${remotebackuppath}" >> ${rpath}/m_backup.log
+  fi
+# If no direction is set..
+  if [ -z "$xferdirection" ]; then
+# ..it means that no --from-remote nor --to-remote options are set either
+# Here is the place where other possible options go to.
+# Tests for other options are inverted, i.e. if some options ARE set, we do NOT
+# make local backups, which should run only if no options set at all.
+    if [ -z "$nonbackup" ]; then
+# If no options set at all, we make local backup:
+      archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
+      echo -e "Neither --from-remote nor --to-remote option is set, so this is a local backup.\nMaking local backup to ${localbackuppath}/backup.local...\n" >> ${rpath}/m_backup.log
+      xferdirection="to-remote"
+      r_proto="local"
+    fi
   fi
   
 ###############################
@@ -323,54 +332,42 @@ bconf=${backupconf##*/}
   if [ "$xferdirection" == "to-remote" ]
   then
 # --- Starting nonbackup condition inverted
-    if [ "X$nonbackup" == "X" ]
-    then
+    if [ -z "$nonbackup" ]; then
 # Removing tmp files created during the previous run
       [ -d ${localbackuppath} ] && rm -rf ${localbackuppath}/*  #*/
-      if [ "X$replaceflag" == "X" ] || [ ! -f ${rpath}/lastbackup.${bconf}.archname ]
-      then
+      if [ -z "$replaceflag" ] || [ ! -f ${rpath}/lastbackup.${bconf}.archname ]; then
         archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
         echo "${archname}" > ${rpath}/lastbackup.${bconf}.archname
       else
         archname=`cat ${rpath}/lastbackup.${bconf}.archname`
       fi
-      [ "X$debugflag" != "X" ] && echo "SET archname = ${archname}" >> ${rpath}/m_backup.log
+      [ -n "$debugflag" ] && echo "SET archname = ${archname}" >> ${rpath}/m_backup.log
   # Saving folders from backup.sources.list
       while read LINE
       do
-        if [ "x${LINE}" != "x" ]
-        then
+        if [ -n "${LINE}" ]; then
           linetoname=`echo ${LINE} | sed 's|/|_|g'`
-          if [ "X${compression}" == "Xgzip" ]
-          then
-            [ "X$debugflag" != "X" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> ${rpath}/m_backup.log
+          if [ "X${compression}" == "Xgzip" ]; then
+            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> ${rpath}/m_backup.log
             tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-            if [ "X$split_size" != "X" ]; then
-              split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar.gz ${localbackuppath}/$archname.$linetoname.tar.gz 2>>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-              rm -f ${localbackuppath}/$archname.$linetoname.tar.gz
-            fi
+            splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
           fi
           if [ "X${compression}" == "Xbzip2" ]
           then
-            [ "X$debugflag" != "X" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> ${rpath}/m_backup.log
+            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> ${rpath}/m_backup.log
             tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-            if [ "X$split_size" != "X" ]; then
-              split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar.bz2 ${localbackuppath}/$archname.$linetoname.tar.bz2 2>>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-              rm -f ${localbackuppath}/$archname.$linetoname.tar.bz2
-            fi
+            splitfile ${localbackuppath}/$archname.$linetoname.tar.bz2
           fi
           if [ "X${compression}" == "X" ]
           then
-            [ "X$debugflag" != "X" ] && echo "Creating archive $archname.$linetoname.tar" >> ${rpath}/m_backup.log
+            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> ${rpath}/m_backup.log
           	tar ${ARCOPTS} -c -f ${localbackuppath}/$archname.$linetoname.tar ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-            if [ "X$split_size" != "X" ]; then
-              split -b $split_size -d ${localbackuppath}/$archname.$linetoname.tar ${localbackuppath}/$archname.$linetoname.tar 2>>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-              rm -f ${localbackuppath}/$archname.$linetoname.tar
-            fi
+            splitfile ${localbackuppath}/$archname.$linetoname.tar
           fi
-          if [ -f $TMPDIR/$archname.$linetoname.tar.log ] && [ $(grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' | wc -l) -gt 0 ]
-          then
-            grep '^tar:' "$TMPDIR/$archname.$linetoname.tar.log" | grep -v 'Removing leading' | grep -v 'as we read' >> "${rpath}/m_backup.error"
+          
+          if [ -f $TMPDIR/$archname.$linetoname.tar.log ]; then
+            tarerr=$(grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
+            [ -n "$tarerr" ] && echo "$tarerr" >> "${rpath}/m_backup.error"
             echo "Tar: ${LINE} copied with some errors, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
             echo "Tar: ${LINE} copied `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
           else
@@ -398,21 +395,16 @@ bconf=${backupconf##*/}
       [ "X$preserveperm" != "Xyes" ] || FTPOPTS="${FTPOPTS}"
       [ "X$samefs" != "Xyes" ] || FTPOPTS="${FTPOPTS}"
       FTPOPTS="${ftpoptions}"
-      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && FTPOPTS="${FTPOPTS} -d ${rpath}/m_backup.log" && echo "FTP options are: ${FTPOPTS}" >> ${rpath}/m_backup.log
+      [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && FTPOPTS="${FTPOPTS} -d ${rpath}/m_backup.log" && echo "FTP options are: ${FTPOPTS}" >> ${rpath}/m_backup.log
       ftptime=`(time -p ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}/* 2>$TMPDIR/$archname.ftp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       ftptime=`expr $ftptime + 1`
-      if [ "X$debugflag" != "X" ]
-      then
-        echo "COMMAND: ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}\/\*" >> ${rpath}/m_backup.log
-        echo "ftptime = $ftptime" >> ${rpath}/m_backup.log
-        echo "arcsize = $arcsize" >> ${rpath}/m_backup.log
+      if [ -n "$debugflag" ]; then
+        echo -e "COMMAND: ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}\/\*\nftptime = $ftptime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.ftp.log ] && [ `cat $TMPDIR/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]
-      then
+      if [ -f $TMPDIR/$archname.ftp.log ] && [ `cat $TMPDIR/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.ftp.log >> ${rpath}/m_backup.error
-        echo "FTP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-        echo "FTP: Files transferred (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
+        echo -e "FTP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nFTP: Files transferred (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "FTP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -426,21 +418,16 @@ bconf=${backupconf##*/}
       [ "X$bwlimit" != "X" ] && SCPOPTS="${SCPOPTS} -l $bwlimit"
       [ "X$xfercompression" != "Xyes" ] || SCPOPTS="${SCPOPTS} -C"
       SCPOPTS="${scpoptions}"
-      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && SCPOPTS="${SCPOPTS} -v" && echo "SCP options are: ${SCPOPTS}" >> ${rpath}/m_backup.log
+      [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && SCPOPTS="${SCPOPTS} -v" && echo "SCP options are: ${SCPOPTS}" >> ${rpath}/m_backup.log
       scptime=`(time -p ${SCP} ${SCPOPTS} ${localbackuppath}/* "${remoteuser}"@"${remotehost}:${remotepath}" 2>$TMPDIR/$archname.scp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       scptime=`expr $scptime + 1`
-      if [ "X$debugflag" != "X" ]
-      then
-        echo "COMMAND: ${SCP} ${SCPOPTS} ${localbackuppath}/* ${remoteuser}@${remotehost}:${remotepath}" >> ${rpath}/m_backup.log
-        echo "scptime = $scptime" >> ${rpath}/m_backup.log
-        echo "arcsize = $arcsize" >> ${rpath}/m_backup.log
+      if [ -n "$debugflag" ]; then
+        echo -e "COMMAND: ${SCP} ${SCPOPTS} ${localbackuppath}/* ${remoteuser}@${remotehost}:${remotepath}\nscptime = $scptime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.scp.log ] && [ `cat $TMPDIR/$archname.scp.log | wc -l` -gt 0 ]
-      then
+      if [ -f $TMPDIR/$archname.scp.log ] && [ `cat $TMPDIR/$archname.scp.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.scp.log >> ${rpath}/m_backup.error
-        echo "SCP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-        echo "SCP: Files transferred (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
+        echo -e "SCP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nSCP: Files transferred (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "SCP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -454,21 +441,16 @@ bconf=${backupconf##*/}
       [ "X$bwlimit" != "X" ] && RSYNCOPTS="${SCPOPTS} --bwlimit=`expr $bwlimit / 8`"
       [ "X$xfercompression" != "Xyes" ] || RSYNCOPTS="${RSYNCOPTS} -z"
       RSYNCOPTS="${rsyncoptions} -rt "
-      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && RSYNCOPTS="${RSYNCOPTS} -v" && echo "Rsync options are: ${RSYNCOPTS}" >> ${rpath}/m_backup.log
+      [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && RSYNCOPTS="${RSYNCOPTS} -v" && echo "Rsync options are: ${RSYNCOPTS}" >> ${rpath}/m_backup.log
       rsynctime=`(time -p ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}" 1>>${rpath}/m_backup.log 2>$TMPDIR/$archname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       rsynctime=`expr $rsynctime + 1`
-      if [ "X$debugflag" != "X" ]
-      then
-        echo "COMMAND: ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e \"ssh -l ${remoteuser}\" \"${remoteuser}\"@\"${remotehost}:${remotepath}\"" >> ${rpath}/m_backup.log
-        echo "rsynctime = $rsynctime" >> ${rpath}/m_backup.log
-        echo "arcsize = $arcsize" >> ${rpath}/m_backup.log
+      if [ -n "$debugflag" ]; then
+        echo -e "COMMAND: ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e \"ssh -l ${remoteuser}\" \"${remoteuser}\"@\"${remotehost}:${remotepath}\"\nrsynctime = $rsynctime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.rsync.log ] && [ `cat $TMPDIR/$archname.rsync.log | wc -l` -gt 0 ]
-      then
+      if [ -f $TMPDIR/$archname.rsync.log ] && [ `cat $TMPDIR/$archname.rsync.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.rsync.log >> ${rpath}/m_backup.error
-        echo "RSYNC: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-        echo "RSYNC: Files transferred (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
+        echo -e "RSYNC: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nRSYNC: Files transferred (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -484,21 +466,16 @@ bconf=${backupconf##*/}
       S3OPTS="${s3options}"
       remotepath=${remotepath#/}
       s3target="s3://`echo "${remotehost%/}/${remotepath%/}/" | sed 's|s3://||;s|//|/|g'`"
-#      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && S3OPTS="${S3OPTS} -v" && echo "S3 options are: ${S3OPTS}" >> ${rpath}/m_backup.log
+#      [ -n "$debugflag" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && S3OPTS="${S3OPTS} -v" && echo "S3 options are: ${S3OPTS}" >> ${rpath}/m_backup.log
       s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${s3target}" 2>$TMPDIR/$archname.s3.log 1>>$stdinto) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       s3time=`expr $s3time + 1`
-      if [ "X$debugflag" != "X" ]
-      then
-        echo "COMMAND: ${S3} ${S3OPTS} sync ${localbackuppath}/ ${s3target}" >> ${rpath}/m_backup.log
-        echo "s3time = $s3time" >> ${rpath}/m_backup.log
-        echo "arcsize = $arcsize" >> ${rpath}/m_backup.log
+      if [ -n "$debugflag" ]; then
+        echo -e "COMMAND: ${S3} ${S3OPTS} sync ${localbackuppath}/ ${s3target}\ns3time = $s3time\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.s3.log ] && [ `cat $TMPDIR/$archname.s3.log | wc -l` -gt 0 ]
-      then
+      if [ -f $TMPDIR/$archname.s3.log ] && [ `cat $TMPDIR/$archname.s3.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.s3.log >> ${rpath}/m_backup.error
-        echo "S3: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-        echo "S3: Files transferred (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)" >> ${rpath}/m_backup.log
+        echo -e "S3: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nS3: Files transferred (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "S3: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -509,21 +486,16 @@ bconf=${backupconf##*/}
       [ "X$preserveperm" != "Xyes" ] || CPOPTS="${CPOPTS} --preserve=all"
       [ "X$samefs" != "Xyes" ] || CPOPTS="${CPOPTS} --one-file-system"
       CPOPTS="${cpoptions}"
-      [ "X$debugflag" != "X" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && CPOPTS="${CPOPTS} -v" && echo "CP options are: ${CPOPTS}" >> ${rpath}/m_backup.log
+      [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && CPOPTS="${CPOPTS} -v" && echo "CP options are: ${CPOPTS}" >> ${rpath}/m_backup.log
       ltime=`(time -p cp ${CPOPTS} -r ${localbackuppath}/* ${remotepath} 2>$TMPDIR/$archname.local.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       ltime=`expr $ltime + 1`
-      if [ "X$debugflag" != "X" ]
-      then
-        echo "COMMAND: cp ${CPOPTS} -r ${localbackuppath}\/\* ${remotepath}" >> ${rpath}/m_backup.log
-        echo "ltime = $ltime" >> ${rpath}/m_backup.log
-        echo "arcsize = $arcsize" >> ${rpath}/m_backup.log
+      if [ -n "$debugflag" ]; then
+        echo -e "COMMAND: cp ${CPOPTS} -r ${localbackuppath}\/\* ${remotepath}\nltime = $ltime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.local.log ] && [ `cat $TMPDIR/$archname.local.log | wc -l` -gt 0 ]
-      then
+      if [ -f $TMPDIR/$archname.local.log ] && [ `cat $TMPDIR/$archname.local.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.local.log >> ${rpath}/m_backup.error
-        echo "CP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-        echo "CP: Files transferred (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
+        echo -e "CP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nCP: Files transferred (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "CP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -549,70 +521,55 @@ bconf=${backupconf##*/}
         exit 1
       fi
       echo "install -d ${remotepath}/backup.local && install -d ${remotepath}/backup.tmp && install -d $TMPDIR" > ${rpath}/remote.backup.sh
-      if [ "X$replaceflag" == "X" ]
-      then
-        echo 'archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"' >> ${rpath}/remote.backup.sh
-        echo 'echo "${archname}" > ${rpath}/lastbackup.${bconf}.archname' >> ${rpath}/remote.backup.sh
-      else
-        echo 'archname=`cat ${rpath}/lastbackup.${bconf}.archname`' >> ${rpath}/remote.backup.sh
+      if [ "X$replaceflag" == "X" ]; then
+        echo -e 'archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"\necho "${archname}" > ${rpath}/lastbackup.${bconf}.archname\narchname=`cat ${rpath}/lastbackup.${bconf}.archname`' >> ${rpath}/remote.backup.sh
       fi
-      echo "compression=${compression}" >> ${rpath}/remote.backup.sh
-      echo "remotepath=${remotepath}" >> ${rpath}/remote.backup.sh
       echo 'ARCOPTS="'${ARCOPTS}'"' >> ${rpath}/remote.backup.sh
-      echo "keepremote=${keepremote}" >> ${rpath}/remote.backup.sh
-      echo "removeoldremote=${removeoldremote}" >> ${rpath}/remote.backup.sh
-      echo "keepremotedays=${keepremotedays}" >> ${rpath}/remote.backup.sh
-      echo "remotebackuppath=${remotebackuppath}" >> ${rpath}/remote.backup.sh
-      echo "databases=${databases}" >> ${rpath}/remote.backup.sh
-      echo "cd ${remotepath}" >> ${rpath}/remote.backup.sh
+      echo -e "compression=${compression}\nremotepath=${remotepath}\nkeepremote=${keepremote}\nremoveoldremote=${removeoldremote}\nkeepremotedays=${keepremotedays}\nremotebackuppath=${remotebackuppath}\ndatabases=${databases}\ncd ${remotepath}" >> ${rpath}/remote.backup.sh
       echo 'rm -f ${remotepath}/*.tar*' >> ${rpath}/remote.backup.sh
       for DB in ${databases}
       do
         echo 'rm -f ${remotepath}/${DB}/*.tar*' >> ${rpath}/remote.backup.sh
       done
-      while read LINE
-      do
-        if [ "x${LINE}" != "x" ]
-        then
+      while read LINE ; do
+        if [ -n "${LINE}" ]; then
           echo "LINE=${LINE}" >> ${rpath}/remote.backup.sh
           linetoname=`echo ${LINE} | sed 's|/|_|g'`
           echo "linetoname=${linetoname}" >> ${rpath}/remote.backup.sh
-          if [ "X${compression}" == "Xgzip" ]
-          then
+          if [ "X${compression}" == "Xgzip" ]; then
             echo 'tar ${ARCOPTS} -c -z -f ${remotepath}/$archname.$linetoname.tar.gz ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
           fi
-          if [ "X${compression}" == "Xbzip2" ]
-          then
+          if [ "X${compression}" == "Xbzip2" ]; then
             echo 'tar ${ARCOPTS} -c -j -f ${remotepath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
           fi
-          echo 'if [ -f $TMPDIR/$archname.$linetoname.tar.log] && [ `grep "^tar:" $TMPDIR/$archname.$linetoname.tar.log | grep -v "Removing leading" | wc -l` -gt 0 ]' >> ${rpath}/remote.backup.sh
-          echo 'then' >> ${rpath}/remote.backup.sh
-          echo 'grep "^tar:" $TMPDIR/$archname.$linetoname.tar.log | grep -v "Removing leading" >> ${remotepath}/m_backup.error' >> ${rpath}/remote.backup.sh
-          echo 'echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${remotepath}/m_backup.log' >> ${rpath}/remote.backup.sh
-          echo 'echo "Tar: ${LINE} copied `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${remotepath}/m_backup.log' >> ${rpath}/remote.backup.sh
-          echo 'else' >> ${rpath}/remote.backup.sh
-          echo 'tarresult=`grep "^Total bytes written:" $TMPDIR/$archname.$linetoname.tar.log | cut -d" " -f5,6`' >> ${rpath}/remote.backup.sh
-          echo 'echo "Tar: ${LINE} copied successfully ${tarresult}" >>${remotepath}/m_backup.log' >> ${rpath}/remote.backup.sh
-          echo 'fi' >> ${rpath}/remote.backup.sh
-          
-          echo 'if [ X$keepremote == "Xyes" ]' >> ${rpath}/remote.backup.sh
-          echo 'then' >> ${rpath}/remote.backup.sh
-            echo 'cp -r ${remotepath}/* ${remotepath}/backup.local 2>>${rpath}/m_backup.error' >> ${rpath}/remote.backup.sh
-          echo 'fi' >> ${rpath}/remote.backup.sh
-          echo 'if [ "X$removeoldremote" == "Xyes" ]' >> ${rpath}/remote.backup.sh
-          echo 'then' >> ${rpath}/remote.backup.sh
-            echo 'find ${remotepath}/backup.local -mtime +$keepremotedays | xargs rm -f' >> ${rpath}/remote.backup.sh
-          echo 'fi' >> ${rpath}/remote.backup.sh
-          echo 'echo ${archname} > ${remotepath}/m_backup.archname' >> ${rpath}/remote.backup.sh
+          cat >> ${rpath}/remote.backup.sh <<"EOF"
+if [ -f $TMPDIR/$archname.$linetoname.tar.log ]; then
+  tarerr=$(grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
+  [ -n "$tarerr" ] && echo "$tarerr" >> "${remotepath}/m_backup.error"
+  echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${remotepath}/m_backup.log
+  echo "Tar: ${LINE} copied `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${remotepath}/m_backup.log
+else
+  echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${remotepath}/m_backup.log" 2>/dev/null
+  rm -f $TMPDIR/$archname.$linetoname.tar.log
+fi
+if [ X$keepremote == "Xyes" ]; then
+  cp -r ${remotepath}/* ${remotepath}/backup.local 2>>${remotepath}/m_backup.error
+fi
+if [ "X$removeoldremote" == "Xyes" ]; then
+  find ${remotepath}/backup.local -mtime +$keepremotedays | xargs rm -f
+fi
+echo ${archname} > ${remotepath}/m_backup.archname
+EOF
         fi
       done < ${rpath}/${backupconf}.list
-      echo 'for DB in "${databases}"' >> ${rpath}/remote.backup.sh
-      echo 'do' >> ${rpath}/remote.backup.sh
-      echo '[ -x '${remotepath}'/${DB}.backup.sh ] && '${remotepath}'/${DB}.backup.sh ${remotepath}/remote.${DB}.conf' >> ${rpath}/remote.backup.sh
-      echo 'done' >> ${rpath}/remote.backup.sh
+      
+      cat >> ${rpath}/remote.backup.sh <<"EOF"
+for DB in ${databases} ; do
+  [ -x ${remotepath}/${DB}.backup.sh ] && ${remotepath}/${DB}.backup.sh ${remotepath}/remote.${DB}.conf'
+done
+EOF
       echo "localbackuppath=${remotepath}" > ${rpath}/remote.${DB}.conf
-      for DB in "${databases}"
-      do
+      for DB in ${databases} ; do
         ${SCP} -q ${rpath}/${DB}.backup.sh "${remoteuser}"@"${remotehost}:${remotepath}/${DB}.backup.sh"
         ${SCP} -q ${rpath}/remote.${DB}.conf "${remoteuser}"@"${remotehost}:${remotepath}/remote.${DB}.conf"
       done
@@ -687,50 +644,7 @@ bconf=${backupconf##*/}
     esac
     ${SSH} "${remoteuser}"@"${remotehost}" "rm -f ${remotepath}/m_backup.*"
   fi
-# If no direction is set..
-  if [ "X$xferdirection" == "X" ]
-  then
-# ..it means that no --from-remote nor --to-remote options are set either
-# Here is the place where other possible options go to.
-# Tests for other options are inverted, i.e. if some options ARE set, we do NOT
-# make local backups, which should run only if no options set at all.
-    if [ "X$nonbackup" == "X" ]
-    then
-# If no options set at all, we make local backup:
 
-###################
-# Local FS backup #
-###################
-
-      archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
-      echo "Neither --from-remote nor --to-remote option is set, so this is a local backup." >> ${rpath}/m_backup.log
-      echo "Making local backup to ${localbackuppath}/backup.local..." >> ${rpath}/m_backup.log
-      while read LINE
-      do
-        if [ "x${LINE}" != "x" ]
-        then
-          linetoname=`echo ${LINE} | sed 's|/|_|g'`
-          if [[ ${compression} == "gzip" ]]
-          then
-            tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log
-          fi
-          if [[ ${compression} == "bzip2" ]]
-          then
-            tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log
-          fi
-          if [[ $(grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' | wc -l) -gt 0 ]]
-          then
-            grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read' >> ${rpath}/m_backup.error
-            echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-            echo "Tar: ${LINE} copied `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
-          else
-            echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
-          fi
-        fi
-      done < ${backupconf}.list
-    fi
-  fi
-  rm -f $TMPDIR/$archname.$linetoname.tar.log
 # Copying backups to proper location
   if [ "X$keeplocal" == "Xyes" ] && [ "X$nonbackup" == "X" ]
   then
@@ -750,12 +664,11 @@ bconf=${backupconf##*/}
   if [ "X$removeoldlocal" == "Xyes" ]
   then
     [ $keeplocaldays -gt 0 ] && keeplocaldays=`expr $keeplocaldays - 1`
-    [ "X$debugflag" == "X" ] || rmv='-v'
+    [ -n "$debugflag" ] && rmv='-v'
     find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log && echo "Outdated backups at ${localrmpath} have been removed" >> ${rpath}/m_backup.log
   fi
 #  echo "if X\$r_proto=X$r_proto"
-  if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ "X$r_proto" != "Xlocal" ] && [ "X${remotehost}" != "X" ]
-  then
+  if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ "X$r_proto" != "Xlocal" ] && [ -n "${remotehost}" ]; then
     case $r_proto in 
     ftp)
       echo "Removing remote files via FTP is not (yet) supported." | tee -a ${rpath}/m_backup.error | tee -a ${rpath}/m_backup.log
@@ -764,22 +677,22 @@ bconf=${backupconf##*/}
       remotepath1="${s3target}"
       while true; do
         `which s3cmd` ls "${remotepath1}" > $TMPDIR/s3list.$$
-        if [ "X$debugflag" != "X" ]; then
+        if [ -n "$debugflag" ]; then
           echo "=== In ${remotepath1} `cat $TMPDIR/s3list.$$|wc -l` objects found" >> ${rpath}/m_backup.log
         fi
         grep DIR $TMPDIR/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $TMPDIR/s3dirs.$$
-        if [ "X$debugflag" != "X" ]; then
+        if [ -n "$debugflag" ]; then
           echo "=== `cat $TMPDIR/s3dirs.$$|wc -l` are directories" >> ${rpath}/m_backup.log
         fi
         grep -v ^[[:space:]]*DIR[[:space:]]* $TMPDIR/s3list.$$ >> $TMPDIR/s3files.$$
-        if [ "X$debugflag" != "X" ]; then
+        if [ -n "$debugflag" ]; then
           echo "=== `cat $TMPDIR/s3files.$$|wc -l` are files" >> ${rpath}/m_backup.log
         fi
         for ((i=0; i < $keepremotedays; i++)); do
           d2k=$(date -d "`date +"%Y/%m/%d"` - $i days" +"%Y-%m-%d")
           sed -i -e "/$d2k/d" $TMPDIR/s3files.$$
         done
-        if [ "X$debugflag" != "X" ]; then
+        if [ -n "$debugflag" ]; then
           echo "=== `cat $TMPDIR/s3files.$$|wc -l` files have been marked for removal" >> ${rpath}/m_backup.log
         fi
         for s3file in `cat $TMPDIR/s3files.$$ | awk -F's3://' '{print $2}'`; do
@@ -788,7 +701,7 @@ bconf=${backupconf##*/}
         if [ `cat $TMPDIR/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
           remotepath1="`head -1 $TMPDIR/s3dirs.$$`"
           sed -i -e '1d' $TMPDIR/s3dirs.$$ 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
-          if [ "X$debugflag" != "X" ]; then
+          if [ -n "$debugflag" ]; then
             echo "=== Entering $remotepath1 directory" >> ${rpath}/m_backup.log
           fi
           continue
@@ -802,19 +715,20 @@ bconf=${backupconf##*/}
       SSH=`which ssh`
   #      echo "if \$xferdirection=$xferdirection \|\| X\$onlyclean=X$onlyclean"
       # For --from-remote removing see line 339
-      if [ "X$SSH" == "X" ]
-      then
+      if [ -z "$SSH" ]; then
         echo "No SSH client found! It is impossible to remove outdated backups on remote hosts." | tee -a ${rpath}/m_backup.error | tee -a ${rpath}/m_backup.log
         exit 1
       fi
       [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
       ${SSH} "${remoteuser}"@"${remotehost}" "find ${remotepath} -mtime +$keepremotedays -type f" 2>>${rpath}/m_backup.error > $TMPDIR/remote_files_to_remove.list
+      res=0
       for LINE in `cat $TMPDIR/remote_files_to_remove.list`
       do
-        [ "X$debugflag" == "X" ] || rmv='-v'
+        [ -n "$debugflag" ] && rmv='-v'
         ${SSH} "${remoteuser}"@"${remotehost}" "rm "$rmv" -f \"${LINE}\"" 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log
+        res+=$?
       done
-      if [ "X@?" == "X0" ]; then
+      if [ $res -eq 0 ]; then
         echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> ${rpath}/m_backup.log
       else
         echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >> ${rpath}/m_backup.error
@@ -827,16 +741,14 @@ bconf=${backupconf##*/}
 # Reporting and logging #
 #########################
 
-  echo "          Backup operations report" > ${rpath}/backup.report
-  echo "--------------------------------------------------------------" >> ${rpath}/backup.report
-  echo "Date: `date`" >> ${rpath}/backup.report
-  if [ "X$nonbackup" == "X" ]; then
-    echo "Archive file pattern: ${archname}" >> ${rpath}/backup.report
+  echo -e "          Backup operations report\n--------------------------------------------------------------\nDate: `date`\n\n" >> ${rpath}/backup.report
+  if [ -z "$nonbackup" ]; then
+    echo -e "Archive file name pattern: ${archname}\n--------------------------------------------------------------\n\n" >> ${rpath}/backup.report
   fi
-  echo "--------------------------------------------------------------" >> ${rpath}/backup.report
-  echo "" >> ${rpath}/backup.report
-  if [ `grep -c "\*\*\*" ${rpath}/m_backup.error` -ne 0 ]; then
-    if [ "X$debugflag" == "X" ]; then
+
+  errlog=`grep "\*\*\*" ${rpath}/m_backup.error`
+  if [ -n "$errlog" ]; then
+    if [ -n "$debugflag" ]; then
       grep "\*\*\*" ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
     fi
     echo "*** There were errors during this backup:" >> ${rpath}/backup.report
@@ -844,11 +756,11 @@ bconf=${backupconf##*/}
     do
       grep -i -m 3 "^${command}" ${rpath}/m_backup.error >> ${rpath}/backup.report
     done
-    echo "*** Note that errors shown are limited to 3 errors for every operation" >> ${rpath}/backup.report
-    echo "Full error log is available at ${locallogpath}/logs/m_backup.error" >> ${rpath}/backup.report
+    echo -e "*** Note that errors shown are limited to 3 errors for every operation\nFull error log is available at ${locallogpath}/logs/m_backup.error\n" >> ${rpath}/backup.report
   fi
-  echo "Operations finished:" >> ${rpath}/backup.report
-  echo "" >> ${rpath}/backup.report
+  
+  echo -e "Operations finished:\n\n" >> ${rpath}/backup.report
+
   cat ${rpath}/m_backup.log >> ${rpath}/backup.report
 # Send report by email
   while read LINE

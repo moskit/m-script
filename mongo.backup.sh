@@ -19,7 +19,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-if [ -n $1 ]; then
+if [ -z "$1" ]; then
   echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
   exit 1
 else
