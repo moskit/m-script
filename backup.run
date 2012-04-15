@@ -181,7 +181,7 @@ RSYNC_RSH_BK=$RSYNC_RSH
 ###################################################################
 
 source ${rpath}/conf/mon.conf
-export $TMPDIR
+export TMPDIR
 declare -i res
 
 localbackuppath=${rpath}

@@ -21,7 +21,7 @@ rpath=${0%/*}
 store_vars() {
   varfile="${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
   local role="${1}"
-  for LINE in `cat "${ROLES_ROOT}/${role}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "$varfile" ; done
+  for LINE in `cat "${ROLES_ROOT}/common/role.conf" "${ROLES_ROOT}/${role}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "$varfile" ; done
 }
 
 SSH=`which ssh 2>/dev/null`
