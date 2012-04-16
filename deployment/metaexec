@@ -126,8 +126,15 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/ /--/g'`; do 
-    [ "X$s_optname" == "X$option" ] && [ -n "$s_optarg" ] && eval "$option=\"${s_optarg}\"" && found=1
+  for option in `echo $possible_options | sed 's/,/ /g'`; do
+    if [ "X$s_optname" == "X$option" ]; then
+      if [ -n "$s_optarg" ]; then
+        eval "$option=${s_optarg}"
+      else
+        [ -z "$option" ] && eval "$option="
+      fi
+      found=1
+    fi
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
