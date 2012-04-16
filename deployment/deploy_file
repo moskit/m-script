@@ -79,7 +79,7 @@ do
   done
 done
 if [ "X$help" == "Xyes" ] ; then
-  cat > <<"EOF"
+  cat <<"EOF"
 Usage: ${0##*/} <options> <local path> <remote path>"
 
 Deploys files to remote servers. Substitutes variables marked down like this:
@@ -185,8 +185,15 @@ if [ "X$command" != "X" ] ; then
   sed 's|\\"|\\\\"|g' | \
   sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g' >> "${tmpfile}.orig"
-
-  for LINE in `cat -E "${tmpfile}.orig"` ; do LINE=`echo $LINE | sed 's|\$$||'` ; a=`eval "echo \"$LINE\""` ; [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}" ; done
+  
+  [ -n "$debug" ] && cat "${tmpfile}.orig"
+  
+  for LINE in `cat -E "${tmpfile}.orig"` ; do
+    LINE=`echo $LINE | sed 's|\$$||'`
+    a=`eval "echo \"$LINE\""`
+    [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}"
+    [ -n "$debug" ] && tail -1 "${tmpfile}"
+  done
   
   to=${command#* }
   
