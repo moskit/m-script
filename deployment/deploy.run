@@ -26,7 +26,7 @@ store_vars() {
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose ip cluster type file key role flavor timestamp task dry cloud"
+possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud"
 necessary_options="file type task role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -73,6 +73,9 @@ echo >> "${rpath}/../deploy.log"
 
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
+
+[ -n "$debug" ] && verbose="yes"
+export debug verbose
 # These must exist
 [ -z "$WORK_DIR" ] && echo "WORK_DIR is not set, check deployment.conf" && exit 1
 [ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT is not set, check deployment.conf" && exit 1
@@ -94,6 +97,8 @@ RETVAL=0
 IFS1=$IFS; IFS='
 '
 # save variables to a file
+# common first
+[[ "$role" == "common" ]] || store_vars common
 if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
   store_vars $role
 fi

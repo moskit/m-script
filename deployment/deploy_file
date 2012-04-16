@@ -20,7 +20,19 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
 store_vars() {
-  for LINE in `cat "${1}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "${tmpfile}.var" ; done
+  if [ -f "${tmpfile}.var" ]; then
+    [ -n "$verbose" ] && echo "Reading existing variables"
+    source "${tmpfile}.var"
+  fi
+  [ -n "$verbose" ] && echo "Sourcing $1"
+  for LINE in `cat "${1}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+    [ -n "$debug" ] && echo "  == $LINE"
+    ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
+    [ -n "$debug" ] && echo "  << $ELINE"
+    #eval "$LINE"
+    eval "echo \"$ELINE\"" >> "${tmpfile}.var"
+    [ -n "$debug" ] && echo "  >> `tail -1 "${tmpfile}.var"`"
+  done
 }
 
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
@@ -28,7 +40,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 RSYNC=`which rsync 2>/dev/null`
 
-possible_options="cluster help region verbose flavor role ip test dry cloud timestamp"
+possible_options="cluster help region verbose debug flavor role ip test dry cloud timestamp"
 commflag=0
 for s_option in "${@}"
 do
@@ -67,27 +79,38 @@ do
   done
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options> <local path> <remote path>"
-  echo 
-  echo "Without options <local path> will be copied to all servers from servers.list's path"
-  echo
-  echo "Options:"
-  echo
-  echo "  --cluster=clustername    - the command will be run on all servers"
-  echo "                             from this cluster."
-  echo "  --region=region          - the command will be run on all servers"
-  echo "                             from this region."
-  echo "  --verbose                - shows each server details before running"
-  echo "                             the command."
+  cat > <<"EOF"
+Usage: ${0##*/} <options> <local path> <remote path>"
+
+Deploys files to remote servers. Substitutes variables marked down like this:
+  
+  %{VAR1}%
+
+Without options <local path> will be deployed to all servers from servers.list's path
+
+Options:"
+
+  --cluster=clustername    - the command will be run on all servers
+                             from this cluster.
+  --region=region          - the command will be run on all servers
+                             from this region.
+  --verbose                - shows each server details before running
+                             the command.
+  --debug                  - debug. Implies --verbose.
+
+EOF
   exit 0
 fi
 source "${rpath}/../conf/mon.conf"
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
+[ -n "$debug" ] && verbose="yes"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
 [ -n "$M_ROOT" ] || M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
+
+[ -f "${ROLES_ROOT}/common/role.conf" ] && store_vars "${ROLES_ROOT}/common/role.conf"
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 install -d ${TMPDIR}/deployment/
