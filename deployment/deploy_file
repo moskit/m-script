@@ -75,7 +75,7 @@ do
     ;;
   esac
   for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+    [ "X$s_optname" == "X$option" ] && [ -n "$s_optarg" ] && eval "$option=${s_optarg}"
   done
 done
 if [ "X$help" == "Xyes" ] ; then
@@ -186,7 +186,7 @@ if [ "X$command" != "X" ] ; then
   sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g' >> "${tmpfile}.orig"
   
-  [ -n "$debug" ] && cat "${tmpfile}.orig"
+  [ -n "$debug" ] && echo " --- TMP FILE ---" && cat "${tmpfile}.orig" && echo " --- END OF TMP FILE ---"
   
   for LINE in `cat -E "${tmpfile}.orig"` ; do
     LINE=`echo $LINE | sed 's|\$$||'`

@@ -21,7 +21,18 @@ rpath=${0%/*}
 store_vars() {
   varfile="${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
   local role="${1}"
-  for LINE in `cat "${ROLES_ROOT}/common/role.conf" "${ROLES_ROOT}/${role}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'` ; eval "$LINE" ; eval "echo \"$ELINE\"" >> "$varfile" ; done
+  if [ -f "$varfile" ]; then
+    [ -n "$verbose" ] && echo "Reading existing variables"
+    source "$varfile"
+  fi
+  [ -n "$verbose" ] && echo "Sourcing ${ROLES_ROOT}/${role}/role.conf"
+  for LINE in `cat "${ROLES_ROOT}/common/role.conf" "${ROLES_ROOT}/${role}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+    [ -n "$debug" ] && echo "  == $LINE"
+    ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
+    [ -n "$debug" ] && echo "  << $ELINE"
+    eval "$LINE" ; eval "echo \"$ELINE\"" >> "$varfile"
+    [ -n "$debug" ] && echo "  >> `tail -1 "$varfile"`"
+  done
 }
 
 SSH=`which ssh 2>/dev/null`
@@ -52,7 +63,7 @@ do
     ;;
   esac
   for option in `echo $possible_options | sed 's/,/ /g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+    [ "X$s_optname" == "X$option" ] && [ -n "$s_optarg" ] && $eval "$option=${s_optarg}" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
