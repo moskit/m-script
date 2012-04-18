@@ -129,7 +129,7 @@ do
   for option in `echo $possible_options | sed 's/ /--/g'`; do
     if [ "X$s_optname" == "X$option" ]; then
       if [ -n "$s_optarg" ]; then
-        eval "$option=${s_optarg}"
+        eval "$s_optname=\"$s_optarg\""
       else
         [ -z "$(eval echo \$$option)" ] && eval "$option="
       fi
