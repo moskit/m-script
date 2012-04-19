@@ -23,6 +23,15 @@ possible_commands="help list clone"
 possible_subcommands="list:metas,scripts,files"
 
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+
+tab() {
+  l=${#1}
+  echo -n "$1"
+  for ((i=0; i<$(($col-$l)); i++)) ; do
+    echo -n " "
+  done
+}
+
 declare -i ppn
 ppn=1
 
@@ -133,11 +142,22 @@ case $command1 in
       
       ;;
       *)
-        echo -e "Role\t\tCluster\t\tFlavor\t\tImage"
+        col=20
+        printcol "Role"
+        printcol "Cluster"
+        printcol "Flavor"
+        echo "Image"
         for r in $ROLES_ROOT/* ; do
-          echo -n -e "$r\t\t"
-          for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f10,1,11,6 | grep ^$r\|` ; do
-            echo -e "$cl" | cut -d'|' -f2,3,4 | tr '|' '\t\t'
+          r=${r##*/}
+          for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
+            printcol "${r}"
+            printcol "${cl}"
+            ln=`cat $M_ROOT/conf/clusters.conf | grep ^$cl`
+            fl=`echo "$ln" | cut -d'|' -f11`
+            printcol "${fl}"
+            im=`echo "$ln" | cut -d'|' -f6`
+            echo "$im"
+
           done
         done
       ;;
