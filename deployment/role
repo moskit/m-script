@@ -139,13 +139,54 @@ case $command1 in
   list)
     case $command2 in
       metas)
-      
+        [ -z "$param1" ] && param1="$role"
+        col=26
+        printcol "Meta"
+        printcol "Scripts"
+        echo "Includes"
+        for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
+          ml=`cat "$ROLES_ROOT/$param1/$m" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]#`
+          sn=`echo "$ml" | wc -l`
+          in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
+          for ins in $in ; do
+            printcol "$m"
+            printcol "$sn"
+            echo "$in"
+            unset m sn
+          done
+        done
       ;;
       scripts)
-      
+        [ -z "$param1" ] && param1="$role"
+        col=50
+        printcol "Script"
+        echo "Meta"
+        for sc in `find "$ROLES_ROOT/$param1"/* -maxdepth 1 -type f` ; do
+          for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
+            [ `grep -c "$sc$" "$m"` -gt 0 ] && mi="$mi $m"
+          done
+          for mis in $mi ; do
+            printcol "$sc"
+            echo "$mis"
+            unset sc
+          done
+        done
       ;;
       files)
-      
+        [ -z "$param1" ] && param1="$role"
+        col=50
+        printcol "File"
+        echo "Script"
+        for fl in `find "$ROLES_ROOT/$param1"/*/files -maxdepth 1 -type f` ; do
+          for sc in `find "$ROLES_ROOT/$param1"/* -maxdepth 1 -type f` ; do
+            [ -n "`grep -E "deploy_file|cloudsync|cp|scp" "$sc" | grep "$fl"`" ] && sci="$sci $sc"
+          done
+          for scis in $sci ; do
+            printcol "$fl"
+            echo "$scis"
+            unset fl
+          done
+        done
       ;;
       *)
         col=20
@@ -165,6 +206,7 @@ case $command1 in
             echo "$im"
             unset r
           done
+          [ -n "$r" ] && echo "$r"
         done
       ;;
     esac
