@@ -1,0 +1,16 @@
+#!/bin/bash
+
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+SQLITE=`which sqlite3 2>/dev/null`
+install -d "${rpath}/data"
+source "${rpath}/../../conf/mon.conf"
+if [ "X$SQLITE3" == "X1" ] ; then
+  $SQLITE "${rpath}/postfix.sql3" "CREATE TABLE queue (timeindex integer, day varchar(8), host text, qtype text, qlength integer)"
+  $SQLITE "${rpath}/postfix.sql3" "CREATE INDEX thqt on queue (timeindex, host, qtype)"
+fi
+PCONF=`which postconf 2>/dev/null`
+echo "SPOOLDIR=`$PCONF | grep queue_directory`" >> "${rpath}/postfix.conf"
+
