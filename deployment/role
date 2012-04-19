@@ -24,12 +24,18 @@ possible_subcommands="list:metas,scripts,files"
 
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 
-tab() {
-  l=${#1}
-  echo -n "$1"
-  for ((i=0; i<$(($col-$l)); i++)) ; do
-    echo -n " "
-  done
+printcol() {
+  if [ -n "$1" ] ; then
+    l=${#1}
+    echo -n "$1"
+    for ((i=0; i<$(($col-$l)); i++)) ; do
+      echo -n " "
+    done
+  else
+    for ((i=0; i<$col; i++)) ; do
+      echo -n " "
+    done
+  fi
 }
 
 declare -i ppn
@@ -157,7 +163,7 @@ case $command1 in
             printcol "${fl}"
             im=`echo "$ln" | cut -d'|' -f6`
             echo "$im"
-
+            unset r
           done
         done
       ;;
