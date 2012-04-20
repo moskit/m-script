@@ -171,10 +171,11 @@ case $command1 in
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi="$mi ${m#meta.}"
           done
           for mis in $mi ; do
-            printcol "$sc"
+            printcol "${sc##*/}"
             echo "$mis"
             unset sc
           done
+          unset mi
         done
       ;;
       files)
@@ -191,6 +192,7 @@ case $command1 in
             echo "$scis"
             unset fl
           done
+          unset sci
         done
       ;;
       *)
