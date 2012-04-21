@@ -709,7 +709,7 @@ EOF
           break
         fi
       done
-      rm -f $TMPDIR/s3dirs.$$ $TMPDIR/s3files.$$
+      rm -f $TMPDIR/s3dirs.$$ $TMPDIR/s3files.$$ $TMPDIR/s3list.$$
     ;;
     *)
       SSH=`which ssh`

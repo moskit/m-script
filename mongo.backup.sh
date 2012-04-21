@@ -88,8 +88,9 @@ if [ -n "$mongodbpertableconf" ] ; then
     bktype=`echo $table | cut -d'|' -f3`
     case bktype in
       full)
-        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" | grep -v '^connected to' >>${rpath}/m_backup.error && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
-        [ -n "$TAR" ] && $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" | grep -v 'Removing leading' >>${rpath}/m_backup.error
+        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
+        [ -n "$TAR" ] && $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp
+        cat ${rpath}/logs/mongo.backup.tmp | grep -v ^connected | grep -v 'Removing leading' >>${rpath}/m_backup.error
         rm -rf "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error
         ;;
       periodic)
@@ -136,8 +137,9 @@ else
   #    fi
   # --------------------
   # 
-      $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 1>>"$stdinto" | grep -v '^connected to' >>${rpath}/m_backup.error && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
-      [ -n "$TAR" ] && $TAR "${MBD}/${db}.${archname}.tar.${ext}" "${MBD}/${db}.${archname}" 1>>"$stdinto" | grep -v 'Removing leading' >>${rpath}/m_backup.error
+      $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 1>>"$stdinto" 2>${rpath}/logs/mongo.backup.tmp && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
+      [ -n "$TAR" ] && $TAR "${MBD}/${db}.${archname}.tar.${ext}" "${MBD}/${db}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp
+      cat ${rpath}/logs/mongo.backup.tmp | grep -v ^connected | grep -v 'Removing leading' >>${rpath}/m_backup.error
       rm -rf "${MBD}/${db}.${archname}" 2>>${rpath}/m_backup.error
     fi
   done
