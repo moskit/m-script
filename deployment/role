@@ -133,8 +133,9 @@ do
     ;;
   esac
 done
-IFS=$IFS1
 
+IFS='
+'
 case $command1 in
   list)
     case $command2 in
@@ -185,7 +186,7 @@ case $command1 in
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f` ; do
           for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f` ; do
-            [ -n "`grep -E "deploy_file|cloudsync|cp|scp" "${sc##*/}" | grep "${fl##*/}"`" ] && sci="$sci ${sc##*/}"
+            [ -n "`grep -E "deploy_file|cloudsync|cp|scp" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${sc##*/}"
           done
           for scis in $sci ; do
             printcol "${fl##*/}"
@@ -201,12 +202,12 @@ case $command1 in
         printcol "Cluster"
         printcol "Flavor"
         echo "Image"
-        for r in $ROLES_ROOT/* ; do
+        for r in `find $ROLES_ROOT/ -maxdepth 1 -type d` ; do
           r=${r##*/}
           for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
             printcol "${r}"
             printcol "${cl}"
-            ln=`cat $M_ROOT/conf/clusters.conf | grep ^$cl`
+            ln=`cat "$M_ROOT/conf/clusters.conf" | grep "^$cl"`
             fl=`echo "$ln" | cut -d'|' -f11`
             printcol "${fl}"
             im=`echo "$ln" | cut -d'|' -f6`
@@ -219,7 +220,20 @@ case $command1 in
     esac
     ;;
   clone)
-  
+    [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
+    [ ! -d "$ROLES_ROOT/$param1" ] && echo "Role $param1 not found" && exit 1
+    [ ! -d "$ROLES_ROOT/$param2" ] && echo "Role $param2 exists" && exit 1
+    for dir in `find "$ROLES_ROOT/$param1/" -type d` ; do
+      newdir=`echo "$dir" | sed "s|^$ROLES_ROOT/$param1/||"`
+      install -d  "$ROLES_ROOT/$param2/$newdir"
+    done
+    for sl in `find "$ROLES_ROOT/$param1/" -type l` ; do
+      f=`readlink -m $sl`
+      [ -f "$f" ] && ln -s "$f" "$ROLES_ROOT/$param2/`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`"
+    done
+    for f in `find "$ROLES_ROOT/$param1/" -type d` ; do
+      
+    done
     ;;
   help)
     
@@ -229,4 +243,4 @@ case $command1 in
     ;;
 esac
 
-
+IFS=$IFS1

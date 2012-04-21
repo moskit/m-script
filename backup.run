@@ -741,7 +741,7 @@ EOF
 # Reporting and logging #
 #########################
 
-  echo -e "          Backup operations report\n--------------------------------------------------------------\nDate: `date`\n\n" >> ${rpath}/backup.report
+  echo -e "          Backup operations report\n--------------------------------------------------------------\nDate: `date`\n\n" > ${rpath}/backup.report
   if [ -z "$nonbackup" ]; then
     echo -e "Archive file name pattern: ${archname}\n--------------------------------------------------------------\n\n" >> ${rpath}/backup.report
   fi
@@ -770,13 +770,18 @@ EOF
     fi
   done < ${rpath}/conf/mail.backup.list
   
-  echo "*** `date` ***" >> ${locallogpath}/logs/m_backup.error
+  if [ -n "$errlog" ]; then
+    echo "*** `date` ***" >> ${locallogpath}/logs/m_backup.error
+    if [ "X$nonbackup" == "X" ]; then
+      echo "*** ${archname} ***" >> ${locallogpath}/logs/m_backup.error
+    fi
+    cat ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
+  fi
   echo "*** `date` ***" >> ${locallogpath}/logs/m_backup.log
   if [ "X$nonbackup" == "X" ]; then
-    echo "*** ${archname} ***" >> ${locallogpath}/logs/m_backup.error
     echo "*** ${archname} ***" >> ${locallogpath}/logs/m_backup.log
   fi
-  cat ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
+  
   cat ${rpath}/m_backup.log >> ${locallogpath}/logs/m_backup.log
   rm -f ${rpath}/m_backup.{error,log}
   rm -f $TMPDIR/$archname*log

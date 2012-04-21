@@ -261,5 +261,12 @@ grep '<\*>' "${rpath}/report" | sed 's|<\*>||g' > "${rpath}/alert1"
 
 mailalert
 
+# lazily removing stale data (terminated clusters etc)
+find "${rpath}/data/" -type f -mmin +60 -exec rm {} \;
+find "${rpath}/" -name "*.dat" -o -name "*.dat.prev" -o -name "*.nodes.list" -mmin +60 -exec rm {} \;
+# keeping report for 1 day, it may contain something useful
+# ( the last known state of a disappeared cluster :) )
+find "${rpath}/" -name "*.report" -mtime +1 -exec rm {} \;
+
 exit 0
 

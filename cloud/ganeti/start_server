@@ -85,6 +85,20 @@ check_cluster_limit() {
   return 1
 }
 
+find_ip() {
+  class=${GANETI_NETWORK%.*}
+  [ -z "$class" ] && class="10.1.1"
+  maxip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1 | grep ^$class | sort | uniq | tail -1`
+  maxip=${maxip##*.}
+  if [ -n "$maxip" ]; then
+    [ "$maxip" == "254" ] && echo "No more IPs available!" && exit 1
+    echo "${class}.$((maxip+1))"
+  else
+    echo "${class}.2"
+  fi
+}
+
+
 
 # echo '10.1.1.10 gnttest' >> /etc/hosts
 # /usr/local/sbin/gnt-instance add -n roman.vodo.net -o debootstrap+default -t plain --disk 0:size=20G --disk 1:size=1G gnttest2
