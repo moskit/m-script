@@ -20,6 +20,8 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 
+source "$rpath/conf/mon.conf"
+
 if [ "X${1}" == "X" ]; then
   echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
   exit 1
@@ -50,10 +52,12 @@ else
 fi
 
 [ ! -d $MBD ] && install -d $MBD
+rm -f "$TMPDIR/pgsql.backup.error" 2>/dev/null
 
 # Get all database list first
 if [ "X${pgdblist}" == "X" ]; then
-  pgdblist="$($PSQL -U $pgsqluser -h $pgsqlhost --list -t | awk '{print $1}' | grep -vE '^$|^:|^template[0-9]')" 2>>${rpath}/m_backup.error
+  pgdblist="$($PSQL -U $pgsqluser -h $pgsqlhost  -t --list -A | cut -d'|' -f1 | grep -vE "^postgres|^template" 2>"$TMPDIR/pgsql.backup.error")"
+  [ -f "$TMPDIR/pgsql.backup.error" ] && echo "pgsql: Error getting database list:" >> ${rpath}/m_backup.log && cat "$TMPDIR/pgsql.backup.error" >> ${rpath}/m_backup.error && exit 1
 fi
 
 for db in $pgdblist
@@ -67,8 +71,10 @@ do
   fi
     
   if [ "$skipdb" == "-1" ]; then
+    rm -f "$TMPDIR/pgsql.backup.error" 2>/dev/null
   	FILE="$MBD/$db.$archname.gz"
-    $PG_DUMP -U $pgsqluser -h $pgsqlhost $db 2>>${rpath}/m_backup.error | $GZIP -9 > $FILE 2>>${rpath}/m_backup.error && echo "pgsql: $db dumped OK" >>${rpath}/m_backup.log
+    $PG_DUMP -U $pgsqluser -h $pgsqlhost $db 2>>"$TMPDIR/pgsql.backup.error" | $GZIP > $FILE 2>>"$TMPDIR/pgsql.backup.error"
+    [ -f "$TMPDIR/pgsql.backup.error" ] && (echo "pgsql: $db backup failed" >>${rpath}/m_backup.log && cat "$TMPDIR/pgsql.backup.error" >>${rpath}/m_backup.error) || echo "pgsql: $db dumped OK" >>${rpath}/m_backup.log
   fi
 done
 
