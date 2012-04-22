@@ -404,7 +404,7 @@ bconf=${backupconf##*/}
       fi
       if [ -f $TMPDIR/$archname.ftp.log ] && [ `cat $TMPDIR/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.ftp.log >> ${rpath}/m_backup.error
-        echo -e "FTP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nFTP: Files transferred (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)\n" >> ${rpath}/m_backup.log
+        echo -e "FTP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nFTP: Files transferred (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "FTP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -427,7 +427,7 @@ bconf=${backupconf##*/}
       fi
       if [ -f $TMPDIR/$archname.scp.log ] && [ `cat $TMPDIR/$archname.scp.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.scp.log >> ${rpath}/m_backup.error
-        echo -e "SCP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nSCP: Files transferred (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)\n" >> ${rpath}/m_backup.log
+        echo -e "SCP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nSCP: Files transferred (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "SCP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -452,7 +452,7 @@ bconf=${backupconf##*/}
         cat $TMPDIR/$archname.rsync.log >> ${rpath}/m_backup.error
         echo -e "RSYNC: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nRSYNC: Files transferred (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)\n" >> ${rpath}/m_backup.log
       else
-        echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
+        echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       fi
       rm -f $TMPDIR/$archname.rsync.log
     ;;
@@ -475,7 +475,7 @@ bconf=${backupconf##*/}
       fi
       if [ -f $TMPDIR/$archname.s3.log ] && [ `cat $TMPDIR/$archname.s3.log | wc -l` -gt 0 ]; then
         cat $TMPDIR/$archname.s3.log >> ${rpath}/m_backup.error
-        echo -e "S3: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nS3: Files transferred (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)\n" >> ${rpath}/m_backup.log
+        echo -e "S3: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nS3: Files transferred (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "S3: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)" >> ${rpath}/m_backup.log
       fi
@@ -497,7 +497,7 @@ bconf=${backupconf##*/}
         cat $TMPDIR/$archname.local.log >> ${rpath}/m_backup.error
         echo -e "CP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nCP: Files transferred (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)\n" >> ${rpath}/m_backup.log
       else
-        echo "CP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
+        echo "CP: Files transferred successfully (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       fi
       rm -f $TMPDIR/$archname.local.log
     ;;
