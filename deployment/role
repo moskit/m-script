@@ -19,10 +19,9 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-possible_commands="help list clone"
-possible_subcommands="list:metas,scripts,files"
-
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+possible_commands="help list clone create edit"
+possible_subcommands="list:metas,scripts,files edit:meta,script,file"
+possible_options="role cluster flavor"
 
 printcol() {
   if [ -n "$1" ] ; then
@@ -231,9 +230,62 @@ case $command1 in
       f=`readlink -m $sl`
       [ -f "$f" ] && ln -s "$f" "$ROLES_ROOT/$param2/`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`"
     done
-    for f in `find "$ROLES_ROOT/$param1/" -type d` ; do
-      
+    for f in `find "$ROLES_ROOT/$param1/" -type f` ; do
+      ln -s "$f" "$ROLES_ROOT/$param2/`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`"
     done
+    for rcl in `cat "$ROLES_ROOT/$param1/"role.conf` ; do
+      echo "$rcl" | sed 's|=|=  #|' >> "$ROLES_ROOT/$param2/"role.conf
+    done
+    ;;
+  create)
+    declare -a flarr
+    [ -z "$param1" ] echo "Usage: role create NAME" && exit 1
+    for fl in `find "$ROLES_ROOT/"*/ -maxdepth 1 -type d | sed "s|^$ROLES_ROOT/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
+      flarr+=( "$fl" )
+    done
+    echo "Choose existing system flavors from the list and/or add new ones. Existing flavors can be added by their numbers."
+    echo "Example: 2,4,5,centos6    - will add existing flavors with numbers 2, 4 and 5 and create a new one named centos6"
+    echo "To have all listed flavors in the new role just press Enter"
+    echo
+    for ((i=0; i<${#flarr[*]}; i++)) ; do
+      echo "$((i+1)). ${flarr[$i]}"
+    done
+    echo
+    read -p "Input roles, separated by comma: " roleslist
+    if [ -z "$roleslist" ] ; then
+      for fl in ${flarr[*]} ; do
+        install -d "$ROLES_ROOT/$param1/$fl"
+      done
+    else
+      for r in `echo -e "$roleslist" | sed 's|,|\n|g'` ; do
+        if [[ $r =~ [0-9]* ]]; then
+          install -d "$ROLES_ROOT/$param1/${flarr[$r]}"
+        else
+          install -d "$ROLES_ROOT/$param1/$r"
+        fi
+      done
+    fi
+    ;;
+  edit)
+    [ -z "$param1" ] echo "Usage: role edit meta|script|file NAME" && exit 1
+    [ -n "$VISUAL" ] && ED=$VISUAL
+    [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
+    [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you like" && ED=`which vim 2>/dev/null`
+    [ -z "$ED" ] && echo "Editor not found" && exit 1
+    case $command2 in
+      meta)
+        $ED "$ROLES_ROOT/$role/meta.$param1"
+        ;;
+      script)
+        $ED "$ROLES_ROOT/$role/$flavor/$param1"
+        ;;
+      file)
+        $ED "$ROLES_ROOT/$role/$flavor/files/$param1"
+        ;;
+      *)
+        echo "Usage: role edit meta|script|file NAME"
+        ;;
+    esac
     ;;
   help)
     
