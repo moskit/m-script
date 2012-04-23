@@ -265,7 +265,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
   fi
   echo
-  if [ -n "$command" ] ; then
+  if [ -n "$command" ] && [[ ! $command =~ [[0-9]]* ]]; then
     meta="$command"
     run_meta "${meta}"
   else
@@ -276,6 +276,8 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     metan=1
     for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
       meta=`eval "echo ${meta}"`
+      runthis=true
+      skipthis=false
       if [ -n "$list" ] ; then
         echo "$metan ${meta}"
       else
@@ -283,11 +285,15 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
           for skipn in `echo -e $skip | tr ',' '\n'` ; do
             [[ $skipn -eq $metan ]] && skipthis=true
           done
-          $skipthis || run_meta "${meta}"
-          skipthis=false
-        else
-          run_meta "${meta}"
         fi
+        if [ -n "$command" ] ; then
+          runthis=false
+          for commandn in `echo -e $command | tr ',' '\n'` ; do
+            [[ $commandn -eq $metan ]] && runthis=true
+          done
+        fi
+        $runthis && ! $skipthis && run_meta "${meta}"
+
       fi
       metan+=1
     done
