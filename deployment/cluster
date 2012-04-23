@@ -141,11 +141,11 @@ case $command1 in
   list)
     col=29
     printcol "Cluster"
-    printcol "Servers number"
+    echo "Servers number"
     for L in `cat "$rpath/../conf/clusters.conf" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f1` ; do
-      N=`cat "$rpath/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f5 | wc -l`
+      N=`cat "$rpath/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f5 | grep "^${L}$" | wc -l`
       printcol "$L"
-      printcol "$N"
+      echo "$N"
     done
     ;;
   clone)

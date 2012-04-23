@@ -221,25 +221,44 @@ case $command1 in
   clone)
     [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
     [ ! -d "$ROLES_ROOT/$param1" ] && echo "Role $param1 not found" && exit 1
-    [ ! -d "$ROLES_ROOT/$param2" ] && echo "Role $param2 exists" && exit 1
+    if [ -d "$ROLES_ROOT/$param2" ]; then
+      if [ $(cd -P - "$ROLES_ROOT/$param2/../") == "$ROLES_ROOT" ]; then
+        echo "Role $param2 exists, updating..."
+      else
+        echo "Role folder must be a subfolder of ${ROLES_ROOT}. You can change ROLE_ROOT setting in clonf/deployment.conf"
+        exit 1
+      fi
+    fi
     for dir in `find "$ROLES_ROOT/$param1/" -type d` ; do
       newdir=`echo "$dir" | sed "s|^$ROLES_ROOT/$param1/||"`
-      install -d  "$ROLES_ROOT/$param2/$newdir"
+      install -d "$ROLES_ROOT/$param2/$newdir"
     done
     for sl in `find "$ROLES_ROOT/$param1/" -type l` ; do
       f=`readlink -m $sl`
-      [ -f "$f" ] && ln -s "$f" "$ROLES_ROOT/$param2/`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`"
+      nsl=`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`
+      if [ -f "$ROLES_ROOT/$param2/$nsl" ]; then
+        [ "$nsl" != "role.conf" ] && echo "$nsl is not a symlink. Check manually."
+      else
+        [ ! -e "$ROLES_ROOT/$param2/$nsl" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nsl"
+      fi
     done
-    for f in `find "$ROLES_ROOT/$param1/" -type f` ; do
-      ln -s "$f" "$ROLES_ROOT/$param2/`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`"
+    for f in `find "$ROLES_ROOT/$param1/" -type f ! -name role.conf` ; do
+      nf=`echo "$f" | sed "s|$ROLES_ROOT/$param1/||"`
+      if [ -f "$ROLES_ROOT/$param2/$nf" ]; then
+        [ "$nf" != "role.conf" ] && echo "$nf is not a symlink. Check manually."
+      else
+        [ ! -e "$ROLES_ROOT/$param2/$nf" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nf"
+      fi
     done
-    for rcl in `cat "$ROLES_ROOT/$param1/"role.conf` ; do
-      echo "$rcl" | sed 's|=|=  #|' >> "$ROLES_ROOT/$param2/"role.conf
-    done
+    if [ ! -e "$ROLES_ROOT/$param2/role.conf" ]; then
+      for rcl in `cat "$ROLES_ROOT/$param1/role.conf"` ; do
+        echo "$rcl" | sed 's|=|=  #|' >> "$ROLES_ROOT/$param2/role.conf"
+      done
+    fi
     ;;
   create)
     declare -a flarr
-    [ -z "$param1" ] echo "Usage: role create NAME" && exit 1
+    [ -z "$param1" ] && echo "Usage: role create NAME" && exit 1
     for fl in `find "$ROLES_ROOT/"*/ -maxdepth 1 -type d | sed "s|^$ROLES_ROOT/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
       flarr+=( "$fl" )
     done
@@ -258,8 +277,8 @@ case $command1 in
       done
     else
       for r in `echo -e "$roleslist" | sed 's|,|\n|g'` ; do
-        if [[ $r =~ [0-9]* ]]; then
-          install -d "$ROLES_ROOT/$param1/${flarr[$r]}"
+        if [[ $r =~ [[0-9]]* ]]; then
+          install -d "$ROLES_ROOT/$param1/${flarr[$r-1]}"
         else
           install -d "$ROLES_ROOT/$param1/$r"
         fi
