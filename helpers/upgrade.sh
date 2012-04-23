@@ -87,6 +87,7 @@ if [ -f "${rpath}/../this_upgrade_actions" ] ; then
   if [[ $thists =~ [^[0-9]] ]] ; then
     echo "Timestamp not found or has wrong format, 1st line of the script must be: # <epoch>"
   else
+    [ -f "${rpath}/../upgrade.log" ] || echo 0 > "${rpath}/../upgrade.log"
     lastts=`tail -1 "${rpath}/../upgrade.log"`
     if [[ $lastts =~ [^[0-9]] ]] ; then
       echo "Unable to find last upgrade time, using file VERSION creation time"

@@ -222,7 +222,7 @@ case $command1 in
     [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
     [ ! -d "$ROLES_ROOT/$param1" ] && echo "Role $param1 not found" && exit 1
     if [ -d "$ROLES_ROOT/$param2" ]; then
-      if [ $(cd -P - "$ROLES_ROOT/$param2/../") == "$ROLES_ROOT" ]; then
+      if [ $(cd -P "$ROLES_ROOT/$param2/../" && pwd) == "$ROLES_ROOT" ]; then
         echo "Role $param2 exists, updating..."
       else
         echo "Role folder must be a subfolder of ${ROLES_ROOT}. You can change ROLE_ROOT setting in clonf/deployment.conf"
@@ -236,7 +236,7 @@ case $command1 in
     for sl in `find "$ROLES_ROOT/$param1/" -type l` ; do
       f=`readlink -m $sl`
       nsl=`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`
-      if [ -f "$ROLES_ROOT/$param2/$nsl" ]; then
+      if [ -e "$ROLES_ROOT/$param2/$nsl" -a ! -h "$ROLES_ROOT/$param2/$nsl" ]; then
         [ "$nsl" != "role.conf" ] && echo "$nsl is not a symlink. Check manually."
       else
         [ ! -e "$ROLES_ROOT/$param2/$nsl" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nsl"
@@ -244,7 +244,7 @@ case $command1 in
     done
     for f in `find "$ROLES_ROOT/$param1/" -type f ! -name role.conf` ; do
       nf=`echo "$f" | sed "s|$ROLES_ROOT/$param1/||"`
-      if [ -f "$ROLES_ROOT/$param2/$nf" ]; then
+      if [ -e "$ROLES_ROOT/$param2/$nf" -a ! -h "$ROLES_ROOT/$param2/$nf" ]; then
         [ "$nf" != "role.conf" ] && echo "$nf is not a symlink. Check manually."
       else
         [ ! -e "$ROLES_ROOT/$param2/$nf" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nf"

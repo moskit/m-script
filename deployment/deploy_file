@@ -212,7 +212,7 @@ if [ "X$command" != "X" ] ; then
 
   if [ -n "$test" -o -n "$dry" ] ; then
     # some ip, just to fill the vars
-    ip="10.10.10.10"
+    export ip="10.10.10.10"
     prepare_file
     cat "${tmpfile}"
   else
@@ -221,11 +221,11 @@ if [ "X$command" != "X" ] ; then
       if [ `echo $ip | grep -c "$localip"` -ne 0 ] ; then
         cp -up $tmpfile $to
       else
-        KEY=`cat "${rpath}/../servers.list" \| grep ^$ip\| | cut -d'|' -f2`
-        REGION=`cat "${rpath}/../servers.list" \| grep ^$ip\| | cut -d'|' -f3`
-        CLUSTER=`cat "${rpath}/../servers.list" \| grep ^$ip\| | cut -d'|' -f5`
+        KEY=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f2`
+        REGION=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f3`
+        CLUSTER=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f5`
         [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
-        [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && continue)
+        [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && exit1)
         if [ `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "$to"` ] ; then
           to=${to%/}/${from##*/}
         fi
