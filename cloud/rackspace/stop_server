@@ -114,13 +114,13 @@ if [ `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
   [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1
   if [ -n "$ipint" ] ; then
     $SSHK -q -R "$ipint" >/dev/null 2>&1
-    sed -i "/^$ipint\|/d" "${rpath}/../../servers.list"
-    sed -i "/^$ipint\|/d" /etc/hosts
+    sed -i "/^$ipint|/d" "${rpath}/../../servers.list"
+    sed -i "/^$ipint /d" /etc/hosts
   fi
   if [ -n "$ipext" ] ; then
     $SSHK -q -R "$ipext" >/dev/null 2>&1
-    sed -i "/^$ipext\|/d" "${rpath}/../../servers.list"
-    sed -i "/^$ipext\|/d" /etc/hosts
+    sed -i "/^$ipext|/d" "${rpath}/../../servers.list"
+    sed -i "/^$ipext /d" /etc/hosts
   fi
 fi
 

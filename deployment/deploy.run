@@ -93,7 +93,8 @@ source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
 
 [ -n "$debug" ] && verbose="yes"
-export debug verbose
+[ -n "$dry" -o -n "$test" ] && dry="yes"
+export debug verbose dry
 # These must exist
 [ -z "$WORK_DIR" ] && echo "WORK_DIR is not set, check deployment.conf" && exit 1
 [ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT is not set, check deployment.conf" && exit 1
@@ -189,7 +190,7 @@ if [ "$type" == "remote" ] ; then
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../deploy.log"
   if [ -n "$dry" ] ; then
-    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
+    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file} && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file} | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash)`
   else
     # running the script
     result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`

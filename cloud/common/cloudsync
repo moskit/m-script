@@ -123,6 +123,7 @@ IFS='
 '
 if [ "X$command" != "X" ] ; then
   from=${command%% *}
+  [ -h "$from" ] && from=`readlink -m "$from"`
   to=${command#* }
   [ -n "$verbose" ] && echo "### Syncing $from to $to"
   for cluster in `printf "${cluster}\n"|sed 's|,|\n|g'` ; do

@@ -29,11 +29,14 @@ run_meta() {
       printf "\n  type: $metatype  script: $metascript\n"
       V='--verbose'
     fi
+    if [ -n "$debug" ] ; then
+      D='--debug'
+    fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       if [ -e "${ROLES_ROOT}/$metascript" ] ; then
         [ -e "${WORK_DIR}/${role}.${task}.${timestamp}/$metascript" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestamp}/$metascript"
         [ -e "${WORK_DIR}/${role}.${task}.${timestamp}/${metascript}.var" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestamp}/${metascript}.var"
-        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V
+        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V $D
         res=$?
       else
         echo "${ROLES_ROOT}/$metascript not found"
@@ -151,10 +154,6 @@ if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
   echo "  The --command option arguments should be escaped"
   exit 0
-fi
-if [ -n "$task" -a -n "$command" ] ; then
-  echo "Both command and task can't be executed"
-  exit 1
 fi
 if [ -n "$ip" ] ; then
   if [[ $ip =~ [^[0-9.]]* ]] ; then
@@ -302,7 +301,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
 else
   echo "Setting up self is not supported"
 fi
-if [ -z "$list" -a -z "$test" ] ; then
+if [ -z "$list" ] ; then
   echo "Timestamp: $timestamp"
   echo "Work directory: ${WORK_DIR}/${role}.${task}.${timestamp}"
 fi

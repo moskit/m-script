@@ -30,7 +30,7 @@ store_vars() {
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
     [ -n "$debug" ] && echo "  << $ELINE"
     #eval "$LINE"
-    eval "echo \"$ELINE\"" >> "${tmpfile}.var"
+    eval "$LINE" ; eval "echo \"$ELINE\"" >> "${tmpfile}.var"
     [ -n "$debug" ] && echo "  >> `tail -1 "${tmpfile}.var"`"
   done
 }
@@ -78,19 +78,27 @@ prepare_file() {
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
   source "${tmpfile}.var"
   
-  cat "$fullfrom" | sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
-  sed 's|\\"|\\\\"|g' | \
-  sed 's|"|\\\"|g' | \
-  sed 's|`|\\\`|g' >> "${tmpfile}.orig"
-  
+  cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
+    sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
+    sed 's|\\"|\\\\"|g' | \
+    sed 's|"|\\\"|g' | \
+    sed 's|`|\\\`|g' >> "${tmpfile}.orig"
+
   [ -n "$debug" ] && echo " --- TMP FILE ---" && cat "${tmpfile}.orig" && echo " --- END OF TMP FILE ---"
-  
+
   for LINE in `cat -E "${tmpfile}.orig"` ; do
-    LINE=`echo $LINE | sed 's|\$$||'`
-    a=`eval "echo \"$LINE\""`
-    [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}"
-    [ -n "$debug" ] && tail -1 "${tmpfile}"
+    if [[ $LINE =~ '\\\$$' ]]; then
+      KEEP="${KEEP}`echo "$LINE" | sed 's|\\\\$$||'`"
+      continue
+    else
+      LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
+      unset KEEP
+      a=`eval "echo \"$LINE\""`
+      [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}"
+      [ -n "$debug" ] && tail -1 "${tmpfile}"
+    fi
   done
+
 }
 
 

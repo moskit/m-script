@@ -23,7 +23,7 @@ IFS='
 '
 # in case the file doesn't end correctly
 [ `cat -E /etc/hosts | tail -1 | grep -c \$$` -eq 0 ] && echo >> /etc/hosts
-[ `cat -E /etc/hosts | tail -1 | grep -c ^$` -eq 1 ] && sed -i '$d' /etc/hosts
+while [ `cat /etc/hosts | tail -1 | grep -c ^$` -eq 1 ] ; do sed -i '$d' /etc/hosts ; done
 cat "${rpath}/../../servers.list" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | cut -d'|' -f1,4 | while read HOST
 do
   ip=`echo $HOST | cut -d'|' -f1`
