@@ -287,7 +287,7 @@ case $command1 in
     fi
     ;;
   edit)
-    [ -z "$param1" ] echo "Usage: role edit meta|script|file NAME" && exit 1
+    [ -z "$param1" ] && echo "Usage: role edit meta|script|file NAME" && exit 1
     [ -n "$VISUAL" ] && ED=$VISUAL
     [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
     [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you like" && ED=`which vim 2>/dev/null`
@@ -308,7 +308,7 @@ case $command1 in
     esac
     ;;
   show)
-    [ -z "$param1" ] echo "Usage: role show meta|script|file NAME" && exit 1
+    [ -z "$param1" ] && echo "Usage: role show meta|script|file NAME" && exit 1
     case $command2 in
       meta)
         cat "$ROLES_ROOT/$role/meta.$param1"
