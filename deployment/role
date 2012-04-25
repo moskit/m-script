@@ -164,7 +164,7 @@ case $command1 in
       ;;
       scripts)
         [ -z "$param1" ] && param1="$role"
-        col=50
+        col=30
         printcol "Script"
         echo "Meta"
         for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
@@ -181,11 +181,11 @@ case $command1 in
       ;;
       files)
         [ -z "$param1" ] && param1="$role"
-        col=50
+        col=30
         printcol "File"
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
-          for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f` ; do
+          for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
             [ -n "`grep -E "deploy_file|cloudsync|cp|scp" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${sc##*/}"
           done
           for scis in $sci ; do
@@ -300,7 +300,12 @@ case $command1 in
         $ED "$ROLES_ROOT/$role/$flavor/$param1"
         ;;
       file)
-        $ED "$ROLES_ROOT/$role/$flavor/files/$param1"
+        [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ] && rf=`readlink -m "$ROLES_ROOT/$role/$flavor/files/$param1"` || rf="$ROLES_ROOT/$role/$flavor/files/$param1"
+        if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
+          $ED "$rf"
+        else
+          echo "The file seems binary, sorry. Open it directly if you are certain."
+        fi
         ;;
       *)
         echo "Usage: role edit meta|script|file NAME"
@@ -317,7 +322,12 @@ case $command1 in
         cat "$ROLES_ROOT/$role/$flavor/$param1"
         ;;
       file)
-        cat "$ROLES_ROOT/$role/$flavor/files/$param1"
+        [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ] && rf=`readlink -m "$ROLES_ROOT/$role/$flavor/files/$param1"` || rf="$ROLES_ROOT/$role/$flavor/files/$param1"
+        if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
+          cat "$rf"
+        else
+          file "$rf"
+        fi
         ;;
       *)
         echo "Usage: role edit meta|script|file NAME"
