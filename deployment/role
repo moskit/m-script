@@ -149,8 +149,8 @@ case $command1 in
           ml=`cat "$ROLES_ROOT/$param1/meta.$m" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]#`
           sn=`echo "$ml" | wc -l`
           for sc in $ml ; do
-            scf="${ml#* }"
-            [ -e "$scf" ] || scerr+=("   *** Script \"$scf\" not found")
+            scf="${sc#* }" ; scf=`eval "echo \"$scf\""`
+            [ -e "$ROLES_ROOT/$scf" ] || scerr+=("   *** Script \"$scf\" not found")
           done
           in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
           if [ -z "$in" ] ; then
@@ -167,6 +167,7 @@ case $command1 in
           for ((i=0; i<${#scerr[*]}; i++)) ; do
             echo "${scerr[$i]}"
           done
+          unset scerr
         done
       ;;
       scripts)

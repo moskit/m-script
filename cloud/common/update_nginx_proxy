@@ -79,7 +79,8 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source ${rpath}/../../conf/cloud.conf
+source "${rpath}/../../conf/cloud.conf"
+source "${rpath}/../../conf/mon.conf"
 
 for var in APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
@@ -93,18 +94,18 @@ if [ "X$cloud" == "Xec2" ] ; then
   export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 fi
 
-TMPDIR=/tmp/m_script/cloud/$cloud
+TMPDIR="$TMPDIR/cloud/$cloud"
 install -d $TMPDIR
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 
 if [ -z "$application" ] ; then
-  APPS=`echo $APP_SERVERS | cut -d'|' -f3 | sort | uniq`
+  APPS=`for AS in $APP_SERVERS ; do echo $AS ; done | cut -d'|' -f3 | sort | uniq`
 else
   APPS="$application"
 fi
 
 if [ -z "$cluster" ] ; then
-  CLUSTERS=`echo $APP_SERVERS | cut -d'|' -f1 | sort | uniq`
+  CLUSTERS=`for AS in $APP_SERVERS ; do echo $AS ; done | cut -d'|' -f1 | sort | uniq`
 else
   CLUSTERS="$cluster"
 fi
@@ -125,7 +126,7 @@ for app in $APPS ; do
         fi
       fi
     done
-    for IP in `cat "${rpath}/../../servers.list" | grep \|${cluster}[[:space:]]*$ | cut -d'|' -f1` ; do
+    for IP in `"$rpath"/get_ips --cluster=${cluster}` ; do
       for PORT in $ports ; do
         echo "$IP:$PORT" >> $TMPDIR/${app}.${cluster}.ips
       done
