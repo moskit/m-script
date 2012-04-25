@@ -19,8 +19,8 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-possible_commands="help list clone create edit"
-possible_subcommands="list:metas,scripts,files edit:meta,script,file"
+possible_commands="help list clone create edit show"
+possible_subcommands="list:metas,scripts,files edit:meta,script,file show:meta,script,file"
 possible_options="role cluster flavor"
 
 printcol() {
@@ -100,6 +100,7 @@ do
               fi
             fi
           done
+          unset subcommands
         done
         if ! $found ; then 
           param1=$s_param
@@ -166,7 +167,7 @@ case $command1 in
         col=50
         printcol "Script"
         echo "Meta"
-        for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f` ; do
+        for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi="$mi ${m#meta.}"
           done
@@ -183,7 +184,7 @@ case $command1 in
         col=50
         printcol "File"
         echo "Script"
-        for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f` ; do
+        for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
           for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f` ; do
             [ -n "`grep -E "deploy_file|cloudsync|cp|scp" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${sc##*/}"
           done
@@ -300,6 +301,23 @@ case $command1 in
         ;;
       file)
         $ED "$ROLES_ROOT/$role/$flavor/files/$param1"
+        ;;
+      *)
+        echo "Usage: role edit meta|script|file NAME"
+        ;;
+    esac
+    ;;
+  show)
+    [ -z "$param1" ] echo "Usage: role show meta|script|file NAME" && exit 1
+    case $command2 in
+      meta)
+        cat "$ROLES_ROOT/$role/meta.$param1"
+        ;;
+      script)
+        cat "$ROLES_ROOT/$role/$flavor/$param1"
+        ;;
+      file)
+        cat "$ROLES_ROOT/$role/$flavor/files/$param1"
         ;;
       *)
         echo "Usage: role edit meta|script|file NAME"
