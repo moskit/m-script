@@ -21,7 +21,7 @@ rpath=${rpath%/*}
 
 possible_commands="help list clone create edit show"
 possible_subcommands="list:metas,scripts,files edit:meta,script,file show:meta,script,file"
-possible_options="role cluster flavor"
+possible_options="role cluster flavor method"
 
 printcol() {
   if [ -n "$1" ] ; then
@@ -148,6 +148,10 @@ case $command1 in
         for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\. | sed 's|^meta.||'` ; do
           ml=`cat "$ROLES_ROOT/$param1/meta.$m" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]#`
           sn=`echo "$ml" | wc -l`
+          for sc in $ml ; do
+            scf="${ml#* }"
+            [ -e "$scf" ] || scerr+=("   *** Script \"$scf\" not found")
+          done
           in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
           if [ -z "$in" ] ; then
             printcol "$m"
@@ -160,6 +164,9 @@ case $command1 in
               unset m sn
             done
           fi
+          for ((i=0; i<${#scerr[*]}; i++)) ; do
+            echo "${scerr[$i]}"
+          done
         done
       ;;
       scripts)
@@ -335,7 +342,27 @@ case $command1 in
     esac
     ;;
   help)
-    
+    cat <<"EOF"
+
+Syntax: role command <sub-command> <args> <--option=value>
+
+  list            - lists all existing roles and some info about them:
+                      Cluster: the default cluster for this role
+                      Flavor: Linux flavor, default for this role
+                      Image: server image ID (if cloud environment is set)
+  
+    list metas    - lists all metascripts for the current role or the role set
+                    with the --role option and additional info:
+                      Scripts: the number of scripts included in this meta
+                      Includes: lists other roles which this meta includes
+                                  scripts from
+    list scripts  - lists all scripts (not only included in metas) for the role
+                    along with the meta they are included into
+    list files    - lists all files for the role along with the scripts they are
+                    mentioned in
+                    
+  create          - creates a new role
+EOF
     ;;
   *)
   
