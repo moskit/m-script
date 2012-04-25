@@ -236,6 +236,8 @@ if [ "X$command" != "X" ] ; then
         [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && exit1)
         if [ `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "$to"` ] ; then
           to=${to%/}/${from##*/}
+        elif [ ! `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "${to%/*}"` ] ; then
+          $SSH -i "${rpath}/../keys/$KEY" $ip install -d "${to%/*}"
         fi
         prepare_file
         cloudsync --ip=$ip "$tmpfile" "${to}"
