@@ -194,6 +194,7 @@ else
     fi
   fi
 fi
+export role cluster
 [ -n "$verbose" ] && V='--verbose'
 if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1

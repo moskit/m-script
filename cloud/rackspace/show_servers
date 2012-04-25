@@ -196,15 +196,32 @@ flavorid() {
   grep \/$imagenum\/name\| "${TMPDIR}/flavors.resp" | cut -d'|' -f2
 }
 
+try_auth() {
+  local -i i
+  i=0
+  while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+    [ $i > 20 ] && echo "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    ${rpath}/auth
+    i+=1
+    sleep 30
+  done
+  echo "rackspace/show_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+}
+
 source "${rpath}/../../conf/cloud.conf"
 
 if [ -z "$noupdate" ] ; then
-  [ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
+  try_auth
   request
-  if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
-    ${rpath}/auth
+  declare -i n
+  n=0
+  while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
+    sleep 300
+    try_auth
     request
+    n+=1
   fi
+  echo "rackspace/show_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 fi
 list_servers
 
