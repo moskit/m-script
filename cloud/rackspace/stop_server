@@ -99,28 +99,56 @@ req="/servers/$id"
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-  $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" > "${TMPDIR}/${rcommand}.resp.raw" ; cat "${TMPDIR}/${rcommand}.resp.raw" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+  $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+  return $?
 }
 
-[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
-request
-if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
-  ${rpath}/auth
-  request
+try_auth() {
+  local -i i
+  i=0
+  while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+    [ $i > 20 ] && echo "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    ${rpath}/auth
+    i+=1
+    sleep 30
+  done
+  [ $i -gt 0 ] && echo "rackspace/show_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+}
+
+source "${rpath}/../../conf/cloud.conf"
+
+if [ -z "$noupdate" ] ; then
+  try_auth
+  reqres=`request`
+  [ $reqres -gt 0 ] && echo "Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+  declare -i n
+  n=0
+  while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
+    sleep 300
+    try_auth
+    reqres=`request`
+    [ $reqres -gt 0 ] && echo "Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+    n+=1
+  done
+  [ $n -gt 0 ] && echo "rackspace/show_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 fi
-cat "${TMPDIR}/${rcommand}.resp"
-if [ `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
+
+cat "${TMPDIR}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
+
+
+if [ $reqres -eq 0 -a `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
+  echo -e "Server name ${name}, id ${id}, IPint ${ipint}, IPext ${ipext} terminated succesfully\n\n" >> "$rpath"/../rackspace.log | tee -a "$rpath"/../../logs/cloud.log
   SSHK=`which ssh-keygen 2>/dev/null`
-  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1
+  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && echo "$name removed from known_hosts" >> "$rpath"/../../logs/cloud.log
   if [ -n "$ipint" ] ; then
-    $SSHK -q -R "$ipint" >/dev/null 2>&1
-    sed -i "/^$ipint|/d" "${rpath}/../../servers.list"
-    sed -i "/^$ipint /d" /etc/hosts
+    $SSHK -q -R "$ipint" >/dev/null 2>&1 && echo "$ipint removed from known_hosts" >> "$rpath"/../../logs/cloud.log
+    sed -i "/^$ipint|/d" "${rpath}/../../servers.list" && echo "$ipint removed from servers.list" >> "$rpath"/../../logs/cloud.log
+    sed -i "/^$ipint /d" /etc/hosts && echo "$ipint removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
   fi
   if [ -n "$ipext" ] ; then
-    $SSHK -q -R "$ipext" >/dev/null 2>&1
-    sed -i "/^$ipext|/d" "${rpath}/../../servers.list"
-    sed -i "/^$ipext /d" /etc/hosts
+    $SSHK -q -R "$ipext" >/dev/null 2>&1 && echo "$ipext removed from known_hosts" >> "$rpath"/../../logs/cloud.log
+    sed -i "/^$ipext|/d" "${rpath}/../../servers.list" && echo "$ipext removed from servers.list" >> "$rpath"/../../logs/cloud.log
+    sed -i "/^$ipext /d" /etc/hosts && echo "$ipext removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
   fi
 fi
 

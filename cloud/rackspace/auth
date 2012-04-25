@@ -30,8 +30,8 @@ V="v1.1"
 source "${rpath}/../../conf/cloud.conf"
 cat "${rpath}/auth.$V.json" | sed "s|RS_AUTH_USER|$RS_AUTH_USER|;s|RS_AUTH_KEY|$RS_AUTH_KEY|" > "$TMPDIR/auth.req"
 $CURL -X POST -T "$TMPDIR/auth.req" -H "Content-Type: application/json" -H "Accept: application/json" "https://${RS_APIURL#https://}/$V/auth" | "${rpath}/../../lib/json2txt" > "$TMPDIR/auth.resp"
-[ `grep -c ^1\/auth\/token\/id "$TMPDIR/auth.resp"` -eq 1 ] || exit 1
-# Needs to be moved one line up, left here for a while for debug purposes
 rm -f "$TMPDIR/auth.req"
+[ `grep -c ^1\/auth\/token\/id "$TMPDIR/auth.resp"` -eq 1 ] || exit 1
+
 exit 0
 
