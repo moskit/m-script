@@ -107,12 +107,12 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i > 20 ] && echo "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    [ $i > 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Problem getting authorization from the Rackspace Cloud API" && exit 1
     ${rpath}/auth
     i+=1
-    sleep 30
+    sleep 10
   done
-  [ $i -gt 0 ] && echo "rackspace/show_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
 }
 
 source "${rpath}/../../conf/cloud.conf"
@@ -120,17 +120,18 @@ source "${rpath}/../../conf/cloud.conf"
 if [ -z "$noupdate" ] ; then
   try_auth
   reqres=`request`
-  [ $reqres -gt 0 ] && echo "Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+  [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
   declare -i n
   n=0
   while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
-    sleep 300
+    [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Problem getting authorization from the Rackspace Cloud API" && exit 1
+    [ $n -gt 1 ] && sleep 30
     try_auth
     reqres=`request`
-    [ $reqres -gt 0 ] && echo "Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+    [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
     n+=1
   done
-  [ $n -gt 0 ] && echo "rackspace/show_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
+  [ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 fi
 
 cat "${TMPDIR}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
