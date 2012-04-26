@@ -133,6 +133,16 @@ do
     ppn+=1
     ;;
   esac
+  for option in `echo $possible_options`; do
+    if [ "X$s_optname" == "X$option" ]; then
+      if [ -n "$s_optarg" ]; then
+        eval "$s_optname=\"$s_optarg\""
+      else
+        [ -z "$(eval echo \$$option)" ] && eval "$option="
+      fi
+      found=1
+    fi
+  done
 done
 
 IFS='
