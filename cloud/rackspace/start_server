@@ -222,6 +222,7 @@ if [ -z "$noupdate" ] ; then
   while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: Problem getting authorization from the Rackspace Cloud API" && exit 1
     [ $n -gt 1 ] && sleep 30
+    rm -f "${TMPDIR}/auth.resp"
     try_auth
     request
     n+=1
