@@ -133,7 +133,7 @@ do
     ppn+=1
     ;;
   esac
-  for option in `echo $possible_options`; do
+  for option in `echo $possible_options | sed 's| |--|g'`; do
     if [ "X$s_optname" == "X$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""
