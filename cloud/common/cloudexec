@@ -103,7 +103,7 @@ if [ -n "$ip" ] ; then
     fi
   fi
 fi
-[ -z "$cluster" ] && cluster=$M_CLUSTER
+
 # all clusters, then
 [ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 declare -i n

@@ -233,7 +233,7 @@ if [ "X$command" != "X" ] ; then
         REGION=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f3`
         CLUSTER=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f5`
         [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
-        [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && exit1)
+        [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && exit 1)
         if [ `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "$to"` ] ; then
           to=${to%/}/${from##*/}
         elif [ ! `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "${to%/*}"` ] ; then
