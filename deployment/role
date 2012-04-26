@@ -322,19 +322,26 @@ case $command1 in
         $ED "$ROLES_ROOT/$role/meta.$param1"
         ;;
       script)
-        [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ] && echo "$param1 doesn't exist in this role (${role}). If it is included from another role, use --role option or change the role" && exit 1
-        $ED "$ROLES_ROOT/$role/$flavor/$param1"
+        if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
+          if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
+            echo "$param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+          else
+            $ED "$ROLES_ROOT/$role/common/$param1"
+          fi
+        else
+          $ED "$ROLES_ROOT/$role/$flavor/$param1"
+        fi
         ;;
       file)
         if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
           rf=`readlink -m "$ROLES_ROOT/$role/$flavor/files/$param1"`
-        elif [ -h "$ROLES_ROOT/common/$flavor/files/$param1" ]; then
-          rf=`readlink -m "$ROLES_ROOT/common/$flavor/files/$param1"`
+        elif [ -h "$ROLES_ROOT/$role/common/files/$param1" ]; then
+          rf=`readlink -m "$ROLES_ROOT/$role/common/files/$param1"`
         else
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi
-        [ ! -e "$rf" ] && rf="$ROLES_ROOT/common/$flavor/files/$param1"
-        [ ! -e "$rf" ] && echo "File $param1 doesn't exist neither in this nor in the common role (${role}). If it is included from another role, use --role option or change the role" && exit 1
+        [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           $ED "$rf"
         else
@@ -354,19 +361,26 @@ case $command1 in
         cat "$ROLES_ROOT/$role/meta.$param1"
         ;;
       script)
-        [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ] && echo "$param1 doesn't exist in this role (${role}). If it is included from another role, use --role option or change the role" && exit 1
-        cat "$ROLES_ROOT/$role/$flavor/$param1"
+        if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
+          if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
+            echo "$param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+          else
+            cat "$ROLES_ROOT/$role/common/$param1"
+          fi
+        else
+          cat "$ROLES_ROOT/$role/$flavor/$param1"
+        fi
         ;;
       file)
         if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
           rf=`readlink -m "$ROLES_ROOT/$role/$flavor/files/$param1"`
-        elif [ -h "$ROLES_ROOT/common/$flavor/files/$param1" ]; then
-          rf=`readlink -m "$ROLES_ROOT/common/$flavor/files/$param1"`
+        elif [ -h "$ROLES_ROOT/$role/common/files/$param1" ]; then
+          rf=`readlink -m "$ROLES_ROOT/$role/common/files/$param1"`
         else
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi
-        [ ! -e "$rf" ] && rf="$ROLES_ROOT/common/$flavor/files/$param1"
-        [ ! -e "$rf" ] && echo "File $param1 doesn't exist neither in this nor in the common role (${role}). If it is included from another role, use --role option or change the role" && exit 1
+        [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           cat "$rf"
         else
