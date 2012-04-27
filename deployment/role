@@ -151,7 +151,8 @@ case $command1 in
     case $command2 in
       metas)
         [ -z "$param1" ] && param1="$role"
-        col=29
+        col=$((COLUMNS/3+4))
+        col=${col-30}
         printcol "Meta"
         printcol "Scripts"
         echo "Includes"
@@ -182,24 +183,25 @@ case $command1 in
       ;;
       scripts)
         [ -z "$param1" ] && param1="$role"
-        col=30
+        col=$((COLUMNS/3+4))
+        col=${col-30}
         printcol "Script"
         printcol "Meta"
         echo "Role"
         for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
-            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi="$mi ${m#meta.}" || mi="$mi unused"
+            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi="$mi ${m#meta.}"
           done
-          
+          [ -z "$mi" ] && mi="unused"
           for mis in $mi ; do
-            printcol "${sc##*/}"
-            printcol "$mis"
-            if [ -n "$all" -a "$mis" == "unused" ] ; then
-              printcol "${sc##*/}"
-              echo "not found in any meta"
+            if [ "$mis" == "unused" ] ; then
+              if [ -n "$all" ]; then
+                printcol "${sc/"$ROLES_ROOT/$param1/"/}"
+                echo "not found in any meta"
+              fi
             else
-              for r in `grep "$mis" | awk '{print $2}' | cut -d'/' -f1` ; do
-                printcol "${sc##*/}"
+              for r in `grep "${sc##*/}" "$mis" | awk '{print $2}' | cut -d'/' -f1` ; do
+                printcol "${sc/"$ROLES_ROOT/$param1/"/}"
                 printcol "$mis"
                 echo "$r"
                 unset sc mis
@@ -211,7 +213,8 @@ case $command1 in
       ;;
       files)
         [ -z "$param1" ] && param1="$role"
-        col=30
+        col=$((COLUMNS/3+4))
+        col=${col-30}
         printcol "File"
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
@@ -227,7 +230,8 @@ case $command1 in
         done
       ;;
       *)
-        col=20
+        col=$((COLUMNS/3-4))
+        col=${col-20}
         printcol "Role"
         printcol "Cluster"
         printcol "Flavor"
