@@ -98,21 +98,22 @@ req="/servers/$id"
 
 request() {
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+  echo "Sending DELETE to ${URL}${req}" >> "$rpath"/../../logs/cloud.log
   TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
-  return $?
+  echo $?
 }
 
 try_auth() {
   local -i i
   i=0
   while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Problem getting authorization from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+    [ $i -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Problem getting authorization from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
     ${rpath}/auth
     i+=1
     sleep 10
   done
-  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
 }
 
 source "${rpath}/../../conf/cloud.conf"
@@ -120,19 +121,19 @@ source "${rpath}/../../conf/cloud.conf"
 if [ -z "$noupdate" ] ; then
   try_auth
   reqres=`request`
-  [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+  [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
   declare -i n
   n=0
   while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+    [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
     [ $n -gt 1 ] && sleep 30
     rm -f "${TMPDIR}/auth.resp"
     try_auth
     reqres=`request`
-    [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+    [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
     n+=1
   done
-  [ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
+  [ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 fi
 
 cat "${TMPDIR}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
