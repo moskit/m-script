@@ -151,8 +151,8 @@ case $command1 in
     case $command2 in
       metas)
         [ -z "$param1" ] && param1="$role"
-        col=$((COLUMNS/3+4))
-        col=${col-30}
+        COL=`tput cols 2>/dev/null`
+        [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "Meta"
         printcol "Scripts"
         echo "Includes"
@@ -183,8 +183,8 @@ case $command1 in
       ;;
       scripts)
         [ -z "$param1" ] && param1="$role"
-        col=$((COLUMNS/3+4))
-        col=${col-30}
+        COL=`tput cols 2>/dev/null`
+        [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "Script"
         printcol "Meta"
         echo "Role"
@@ -200,7 +200,7 @@ case $command1 in
                 echo "not found in any meta"
               fi
             else
-              for r in `grep "${sc##*/}" "$mis" | awk '{print $2}' | cut -d'/' -f1` ; do
+              for r in `grep "${sc##*/}" "$ROLES_ROOT/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1` ; do
                 printcol "${sc/"$ROLES_ROOT/$param1/"/}"
                 printcol "$mis"
                 echo "$r"
@@ -213,8 +213,8 @@ case $command1 in
       ;;
       files)
         [ -z "$param1" ] && param1="$role"
-        col=$((COLUMNS/3+4))
-        col=${col-30}
+        COL=`tput cols 2>/dev/null`
+        [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "File"
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
@@ -230,8 +230,8 @@ case $command1 in
         done
       ;;
       *)
-        col=$((COLUMNS/3-4))
-        col=${col-20}
+        COL=`tput cols 2>/dev/null`
+        [ -n "$COL" ] && col=$((COL/3-4)) || col=${col-20}
         printcol "Role"
         printcol "Cluster"
         printcol "Flavor"
