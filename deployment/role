@@ -21,7 +21,7 @@ rpath=${rpath%/*}
 
 possible_commands="help list clone create edit show"
 possible_subcommands="list:metas,scripts,files edit:meta,script,file show:meta,script,file"
-possible_options="role cluster flavor method all"
+possible_options="role cluster flavor method all strip"
 
 printcol() {
   if [ -n "$1" ] ; then
@@ -190,10 +190,10 @@ case $command1 in
         echo "Role"
         for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
-            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi="$mi ${m#meta.}"
+            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
           done
           [ -z "$mi" ] && mi="unused"
-          for mis in $mi ; do
+          for mis in ${mi[*]} ; do
             if [ "$mis" == "unused" ] ; then
               if [ -n "$all" ]; then
                 printcol "${sc/"$ROLES_ROOT/$param1/"/}"
@@ -201,6 +201,7 @@ case $command1 in
               fi
             else
               for r in `grep "${sc##*/}" "$ROLES_ROOT/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1` ; do
+                r=`eval "echo \"$r\""`
                 printcol "${sc/"$ROLES_ROOT/$param1/"/}"
                 printcol "$mis"
                 echo "$r"
@@ -238,6 +239,7 @@ case $command1 in
         echo "Image"
         for r in `find $ROLES_ROOT/ -maxdepth 1 -type d` ; do
           r=${r##*/}
+          [[ $r =~ ^\. ]] && continue
           for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
             printcol "${r}"
             printcol "${cl}"
@@ -293,6 +295,7 @@ case $command1 in
     ;;
   create)
     declare -a flarr
+    [ -n "$param2" ] && echo "Usage: role create NAME" && exit 1
     [ -z "$param1" ] && echo "Usage: role create NAME" && exit 1
     for fl in `find "$ROLES_ROOT/"*/ -maxdepth 1 -type d | sed "s|^$ROLES_ROOT/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
       flarr+=( "$fl" )
@@ -333,7 +336,7 @@ case $command1 in
       script)
         if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
           if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-            echo "$param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+            echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
           else
             $ED "$ROLES_ROOT/$role/common/$param1"
           fi
@@ -367,6 +370,7 @@ case $command1 in
     case $command2 in
       meta)
         [ ! -e "$ROLES_ROOT/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
+        [ -n "$strip" ] && cat "$ROLES_ROOT/$role/meta.$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/meta.$param1"
         cat "$ROLES_ROOT/$role/meta.$param1"
         ;;
       script)
@@ -374,10 +378,10 @@ case $command1 in
           if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
             echo "$param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
           else
-            cat "$ROLES_ROOT/$role/common/$param1"
+            [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
           fi
         else
-          cat "$ROLES_ROOT/$role/$flavor/$param1"
+          [ -n "$strip" ] && cat "$ROLES_ROOT/$role/$flavor/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/$flavor/$param1"
         fi
         ;;
       file)
@@ -391,7 +395,7 @@ case $command1 in
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
         [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
-          cat "$rf"
+          [ -n "$strip" ] && cat "$rf" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$rf"
         else
           file "$rf"
         fi
