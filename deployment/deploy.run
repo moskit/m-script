@@ -141,6 +141,7 @@ for option in `echo $possible_options | sed 's/,/ /g'`; do
 done
 IFS=$IFS2
 # now prepare the script
+source "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
 for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
   ELINE=$(echo "$LINE" | \
   sed 's|"|\\\"|g' | \
