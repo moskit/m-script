@@ -113,7 +113,7 @@ start)
         
         case $DASHBOARD_TRANSPORT in
           SSH)
-            ${rpath}/getdash.ssh
+            ${rpath}/getdash.ssh 2>$rpath/dashboard.log
           ;;
           JSON)
           
@@ -130,11 +130,11 @@ start)
         esac
       fi
       # Standalone tests, if any
-      for sa in ${rpath}/standalone/rc/* ; do
-        for satest in ${sa}/rc/* ; do
+      for sa in `find ${rpath}/standalone/rc/ -maxdepth 1 -type l` ; do
+        for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           $satest >> ${rpath}/sa.log 2>&1
-        done  </dev/null &
+        done </dev/null &
       done
     else
 ## Tests that are always enabled

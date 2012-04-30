@@ -29,8 +29,11 @@ store_vars() {
     [ -n "$debug" ] && echo "  == $LINE"
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
     [ -n "$debug" ] && echo "  << $ELINE"
-    #eval "$LINE"
-    eval "$LINE" ; eval "echo \"$ELINE\"" >> "${tmpfile}.var"
+    # This conditional evaluation below is a workaround for hard nuts like pipes
+    # inside sub-shells. More complex constructs involving both sub-shell and 
+    # non-sub-shell expression in a single line both with pipes will probably 
+    # not work. Just avoid such things.
+    eval "$LINE" 2>/dev/null ; eval "$ELINE" 2>/dev/null && eval "echo \"$ELINE\"" >> "${tmpfile}.var" || eval "echo \"$LINE\"" >> "${tmpfile}.var"
     [ -n "$debug" ] && echo "  >> `tail -1 "${tmpfile}.var"`"
   done
 }
@@ -84,17 +87,21 @@ prepare_file() {
     sed 's|"|\\\"|g' | \
     sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
-  [ -n "$debug" ] && echo " --- TMP FILE ---" && cat "${tmpfile}.orig" && echo " --- END OF TMP FILE ---"
+  [ -n "$debug" ] && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
 
   for LINE in `cat -E "${tmpfile}.orig"` ; do
-    if [[ $LINE =~ '\\\$$' ]]; then
+    if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
       KEEP="${KEEP}`echo "$LINE" | sed 's|\\\\$$||'`"
       continue
     else
       LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
       unset KEEP
-      a=`eval "echo \"$LINE\""`
-      [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${tmpfile}" || echo "$LINE" >> "${tmpfile}"
+      a=`eval "echo \"$LINE\"" 2>"${rpath}/../deploy.log"`
+      if [ $? -eq 0 ] && [ -n "$a" ]; then
+        echo "$a" >> "${tmpfile}"
+      else
+        echo "$LINE" >> "${tmpfile}"
+      fi
       [ -n "$debug" ] && tail -1 "${tmpfile}"
     fi
   done

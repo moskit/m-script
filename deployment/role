@@ -161,7 +161,7 @@ case $command1 in
           sn=`echo "$ml" | wc -l`
           for sc in $ml ; do
             scf="${sc#* }" ; scf=`eval "echo \"$scf\""`
-            [ -e "$ROLES_ROOT/$scf" ] || scerr+=("   *** Script \"$scf\" not found")
+            [ -e "$ROLES_ROOT/$scf" ] || scerr+=(" *** Script \"$ROLES_ROOT/$scf\" not found")
           done
           in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
           if [ -z "$in" ] ; then

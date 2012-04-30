@@ -29,6 +29,9 @@ source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 timeindexnow=`cat ${TMPDIR}/timeindex` || timeindexnow=`date +"%s"`
+
+IFS1=$IFS ; IFS='
+'
 for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
   mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath="/opt/m"
@@ -36,7 +39,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     [ -n "$RUNDELAY" ] && sleep $RUNDELAY
     time0=`date +"%s"`
     ip=${server%%|*}
-    [ `echo $ip | grep -c "$localip"` -ne 0 ] && continue
+    [ `echo $ip | grep -c "^$localip$"` -ne 0 ] && continue
     key=`echo $server | cut -d'|' -f2`
     [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
     [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
@@ -46,8 +49,8 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     find "${rpath}/www/servers/${cluster}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.local.dash.list
     nd=`diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\< | sed 's|^< ||'`
     if [ -n "$nd" ] ; then
-      nd="$nd dash.html report.html"
-      for dashfile in $nd ; do
+      nd+=( "$nd" dash.html report.html )
+      for dashfile in ${nd[*]} ; do
         $SCP -i "${rpath}/keys/${key}" -P $SSHPORT ${ip}:${mpath}/www/servers/localhost/$dashfile "${rpath}/www/servers/${cluster}/${servername}/" >/dev/null 2>&1 </dev/null &
       done
       [ -e "${rpath}/www/servers/${cluster}/${servername}/notfound" ] && rm -f "${rpath}/www/servers/${cluster}/${servername}/notfound"
@@ -77,4 +80,6 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/servers/$cluster/${server##*/}"
   done
 done
+
+IFS=$IFS1
 

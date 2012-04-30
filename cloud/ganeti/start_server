@@ -98,6 +98,32 @@ find_ip() {
   fi
 }
 
+save_details() {
+  [ -n "$1" ] && echo "Saving details..."
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "${rpath}/../ganeti.log"
+  echo "${ip}|${thekey}||${name}|${cluster}" >> "${rpath}/../../servers.list"
+  return 0
+}
+
+wait_ready() {
+  [ -n "$1" ] && echo "Waiting..."
+  waittimeout=600
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
+    if [ -n "$1" ] ; then
+      printf "Progress: `grep \/progress\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`     \r"
+    fi
+    if [ "X`grep \/status\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`" == "XACTIVE" ] ; then
+      echo
+      return 0
+    fi
+  done
+  return 1
+}
+
 
 
 # echo '10.1.1.10 gnttest' >> /etc/hosts
