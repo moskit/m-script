@@ -320,9 +320,9 @@ case $command1 in
           install -d "$ROLES_ROOT/$param1/$r/files"
         fi
         install -d "$ROLES_ROOT/$param1/common/files"
-        echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/$param1/role.conf"
       done
     fi
+    echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/$param1/role.conf"
     ;;
   edit)
     [ -z "$param1" ] && echo "Usage: role edit meta|script|file NAME" && exit 1
