@@ -138,16 +138,18 @@ IFS1=$IFS; IFS='
 # save variables to a file
 # common first
 [[ "$role" == "common" ]] || store_vars common
-[ $? -ne 0 ] && exit 1
+[ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
 if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-  store_vars $role || exit 1
+  store_vars $role
+  [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
 # if some other role's script is included in meta script, source its variables
 # too. Variables with same names would be overwritten.
 roleincluded=${file%%/*}
 if [ "X$roleincluded" != "X$role" ] ; then
   if [ -e "${ROLES_ROOT}/${roleincluded}/role.conf" ] ; then
-    store_vars $roleincluded || exit 1
+    store_vars $roleincluded
+    [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
     export ROLEINCL=$roleincluded
   fi
 fi
