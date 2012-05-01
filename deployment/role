@@ -26,6 +26,7 @@ possible_options="role cluster flavor method all strip"
 printcol() {
   if [ -n "$1" ] ; then
     l=${#1}
+    [[ $(($col-$l)) -le 0 ]] && l=$(($col-1))
     echo -n "$1"
     for ((i=0; i<$(($col-$l)); i++)) ; do
       echo -n " "
@@ -189,6 +190,7 @@ case $command1 in
         printcol "Meta"
         echo "Role"
         for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
+          scr="${sc/$ROLES_ROOT\//}" && scr="${scr/\/$param1/}"
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
           done
@@ -196,16 +198,17 @@ case $command1 in
           for mis in ${mi[*]} ; do
             if [ "$mis" == "unused" ] ; then
               if [ -n "$all" ]; then
-                printcol "${sc/"$ROLES_ROOT/$param1/"/}"
+                sc="${sc/$ROLES_ROOT\//}"
+                printcol "${sc/\/$param1/}"
                 echo "not found in any meta"
               fi
             else
-              for r in `grep "${sc##*/}" "$ROLES_ROOT/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1` ; do
+              for r in `grep "${sc##*/}" "$ROLES_ROOT/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
                 r=`eval "echo \"$r\""`
-                printcol "${sc/"$ROLES_ROOT/$param1/"/}"
+                printcol "$scr"
                 printcol "$mis"
                 echo "$r"
-                unset sc mis
+                unset scr mis
               done
             fi
           done
@@ -239,7 +242,7 @@ case $command1 in
         echo "Image"
         for r in `find $ROLES_ROOT/ -maxdepth 1 -type d` ; do
           r=${r##*/}
-          [[ $r =~ ^\. ]] && continue
+          [[ $r =~ '^\.' ]] && continue
           for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
             printcol "${r}"
             printcol "${cl}"
