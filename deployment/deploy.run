@@ -36,11 +36,13 @@ store_vars() {
     # non-sub-shell expression in a single line both with pipes will probably 
     # not work. Just avoid such things.
     eval "$LINE" 2>/dev/null
+    eval $(eval "echo \"$LINE\"") 2>/dev/null
     if [ $? -eq 0 ]; then
       [ -n "$debug" ] && echo "evaluating plain line"
       eval "echo \"$LINE\"" >> "$varfile"
     else
       eval "$ELINE" 2>/dev/null
+      eval $(eval "echo \"$ELINE\"") 2>/dev/null
       if [ $? -eq 0 ]; then
         [ -n "$debug" ] && echo "evaluating converted line"
         eval "echo \"$ELINE\"" >> "$varfile"
