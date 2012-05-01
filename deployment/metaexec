@@ -156,6 +156,15 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
+source "${rpath}/../conf/deployment.conf"
+source "${rpath}/../conf/cloud.conf"
+[ -n "$cloud" ] || cloud=$CLOUD
+[ -n "$cloud" ] || cloud=common
+M_ROOT=$(cd "${rpath}/../" && pwd)
+export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
+
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+
 if [ -n "$timestamp" ] ; then
   [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that brought up a server, it's safe to run $rcommand --repeat or $rcommand --timestamp without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
   if [ "X$timestamp" == "Xrepeat" ]; then
@@ -169,7 +178,6 @@ else
 fi
 install -d "${WORK_DIR}/${role}.${task}.${timestampact}"
 touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
-
 
 if [ -n "$ip" ] ; then
   [ -n "$newserver" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
@@ -251,15 +259,6 @@ if [ -z "$output" ] ; then
 	  && match_lhs=$(dircolors --print-database)
   [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 fi
-
-source "${rpath}/../conf/deployment.conf"
-source "${rpath}/../conf/cloud.conf"
-[ -n "$cloud" ] || cloud=$CLOUD
-[ -n "$cloud" ] || cloud=common
-M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
-
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
