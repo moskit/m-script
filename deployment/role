@@ -190,7 +190,7 @@ case $command1 in
         printcol "Meta"
         echo "Role"
         for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
-          scr="${sc/$ROLES_ROOT\//}" && scr="${scr/\/$param1/}"
+          scr="${sc/$ROLES_ROOT\//}" && scr="${scr/$param1\//}"
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
           done
@@ -198,8 +198,7 @@ case $command1 in
           for mis in ${mi[*]} ; do
             if [ "$mis" == "unused" ] ; then
               if [ -n "$all" ]; then
-                sc="${sc/$ROLES_ROOT\//}"
-                printcol "${sc/\/$param1/}"
+                printcol "$scr"
                 echo "not found in any meta"
               fi
             else
