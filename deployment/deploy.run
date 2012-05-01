@@ -51,7 +51,7 @@ store_vars() {
         exit 1
       fi
     fi
-    [ -n "$debug" ] && echo "  >> `tail -1 "$varfile"`"
+    [ -n "$debug" ] && echo "  >> `tail -1 "$varfile"`" || true
   done
 }
 

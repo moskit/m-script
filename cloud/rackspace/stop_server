@@ -138,21 +138,21 @@ fi
 
 cat "${TMPDIR}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
 
+IPS=( "${ipint}" "${ipext}" "${ip}" )
 
 if [ $reqres -eq 0 -a `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
-  echo -e "Server name ${name}, id ${id}, IPint ${ipint}, IPext ${ipext} terminated succesfully\n\n" >> "$rpath"/../rackspace.log | tee -a "$rpath"/../../logs/cloud.log
+  echo -e "`date +"%m.%d %H:%M"` rackspace/stop_server: server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully\n\n" >> "$rpath"/../rackspace.log | tee -a "$rpath"/../../logs/cloud.log
   SSHK=`which ssh-keygen 2>/dev/null`
-  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && echo "$name removed from known_hosts" >> "$rpath"/../../logs/cloud.log
-  if [ -n "$ipint" ] ; then
-    $SSHK -q -R "$ipint" >/dev/null 2>&1 && echo "$ipint removed from known_hosts" >> "$rpath"/../../logs/cloud.log
-    sed -i "/^$ipint|/d" "${rpath}/../../servers.list" && echo "$ipint removed from servers.list" >> "$rpath"/../../logs/cloud.log
-    sed -i "/^$ipint /d" /etc/hosts && echo "$ipint removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
-  fi
-  if [ -n "$ipext" ] ; then
-    $SSHK -q -R "$ipext" >/dev/null 2>&1 && echo "$ipext removed from known_hosts" >> "$rpath"/../../logs/cloud.log
-    sed -i "/^$ipext|/d" "${rpath}/../../servers.list" && echo "$ipext removed from servers.list" >> "$rpath"/../../logs/cloud.log
-    sed -i "/^$ipext /d" /etc/hosts && echo "$ipext removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
-  fi
+  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $name removed from known_hosts" >> "$rpath"/../../logs/cloud.log
+
+  for ipa in ${IPS[*]} ; do
+    if [ -n "$ipa" ] ; then
+      $SSHK -q -R "$ipa" >/dev/null 2>&1 && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from known_hosts" >> "$rpath"/../../logs/cloud.log
+      sed -i "/^$ipa|/d" "${rpath}/../../servers.list" && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from servers.list" >> "$rpath"/../../logs/cloud.log
+      sed -i "/^$ipa /d" /etc/hosts && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
+    fi
+  done
+
 fi
 
 

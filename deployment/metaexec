@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 
 run_meta() {
-  [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestamp}/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "${rpath}/../deploy.log" && return 0
+  [ `grep -c "^${1}$" "${WORK_DIR}/${role}.${task}.${timestampact}/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "${rpath}/../deploy.log" && return 0
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[0m" || printf "META: $1"
   if [ -n "$test" -o -n "$dry" ] ; then
     metatype=`echo $1 | awk '{print $1}'`
@@ -34,9 +34,9 @@ run_meta() {
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       if [ -e "${ROLES_ROOT}/$metascript" ] ; then
-        [ -e "${WORK_DIR}/${role}.${task}.${timestamp}/$metascript" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestamp}/$metascript"
-        [ -e "${WORK_DIR}/${role}.${task}.${timestamp}/${metascript}.var" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestamp}/${metascript}.var"
-        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" --dry $V $D
+        [ -e "${WORK_DIR}/${role}.${task}.${timestampact}/$metascript" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestampact}/$metascript"
+        [ -e "${WORK_DIR}/${role}.${task}.${timestampact}/${metascript}.var" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestampact}/${metascript}.var"
+        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" --dry $V $D
         res=$?
       else
         echo "${ROLES_ROOT}/$metascript not found"
@@ -73,7 +73,7 @@ run_meta() {
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       if [ -e "${ROLES_ROOT}/$metascript" ] ; then
-        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestamp --task="$task" $V
+        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $V
         res=$?
       else
         echo "${ROLES_ROOT}/$metascript not found"
@@ -93,7 +93,7 @@ run_meta() {
         fi
       fi
       [ -n "$verbose" ] && echo
-      [ $res -eq 0 ] && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestamp}/log" || exit 1
+      [ $res -eq 0 ] && echo "$meta" >> "${WORK_DIR}/${role}.${task}.${timestampact}/log" || exit 1
     else
       echo "Error parsing the meta: $meta"
     fi
@@ -149,13 +149,30 @@ IFS=$IFS1
 
 [ -n "$debug" ] && verbose="yes"
 export verbose debug
+[ -n "$repeat" ] && timestamp=repeat
 
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
-  echo "  The --command option arguments should be escaped"
   exit 0
 fi
+
+if [ -n "$timestamp" ] ; then
+  [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that brought up a server, it's safe to run $rcommand --repeat or $rcommand --timestamp without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
+  if [ "X$timestamp" == "Xrepeat" ]; then
+    timestampact=`ls -1tr "${WORK_DIR}" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring the process with timestamp $timestampact"
+    [ -f "${WORK_DIR}/${role}.${task}.${timestampact}/ARGV" ] && source "${WORK_DIR}/${role}.${task}.${timestampact}/ARGV" && unset newserver
+  else
+    timestampact="$timestamp"
+  fi
+else
+  timestampact=`date +"%y_%m_%d_%H_%M_%S"`
+fi
+install -d "${WORK_DIR}/${role}.${task}.${timestampact}"
+touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
+
+
 if [ -n "$ip" ] ; then
+  [ -n "$newserver" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
   if [[ $ip =~ [^[0-9.]]* ]] ; then
     echo "Something's wrong with IP: $ip"
     exit 1
@@ -195,10 +212,11 @@ else
   fi
 fi
 export role cluster
+
 [ -n "$verbose" ] && V='--verbose'
+
 if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
-  [ -n "$ip" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
   echo "*** Bringing up a new server in the cloud $cloud"
   "${rpath}"/../cloud/${cloud}/update_servers_list
   ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" 2>>"${rpath}"/../logs/cloud.log | tail -1`
@@ -220,7 +238,7 @@ if [ -z "$flavor" ] ; then
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
 [ -n "$task" ] || task=notask
-[ -n "$repeat" ] && timestamp=repeat
+
 # Default output is console, colored if colors are supported
 if [ -z "$output" ] ; then
 # Thanks to Gentoo guys for this part, I couldn't do better
@@ -259,10 +277,20 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
   #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
   
   if [ -z "$list" ] ; then
-    [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}" | grep ^${role}.${task} | tail -1` && timestamp=${timestamp##*.} && echo "Restoring the process with timestamp $timestamp"
-    [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M_%S"`
-    install -d "${WORK_DIR}/${role}.${task}.${timestamp}"
-    touch "${WORK_DIR}/${role}.${task}.${timestamp}/log"
+    
+    if [ -z "$timestamp" ];then
+    ## Saving arguments to make re-run simpler
+      IFS2=$IFS ; IFS=$' \t\n'
+      for option in `echo $possible_options | sed 's/,/ /g'`; do
+        echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestampact}/ARGV"
+      done
+      IFS=$IFS2
+      echo -e "flavor=$flavor\ncluster=$cluster\nrole=$role\n" >> "${WORK_DIR}/${role}.${task}.${timestampact}/ARGV"
+      if [ -n "$newserver" ]; then
+        echo "ip=$ip" >> "${WORK_DIR}/${role}.${task}.${timestampact}/ARGV"
+      fi
+    fi
+    ##
   fi
   echo
   if [ -n "$command" ] && [[ ! $command =~ [[0-9]]* ]]; then
@@ -293,7 +321,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
           done
         fi
         $runthis && ! $skipthis && run_meta "${meta}"
-
+        [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && exit 1
       fi
       metan+=1
     done
@@ -303,8 +331,7 @@ else
   echo "Setting up self is not supported"
 fi
 if [ -z "$list" ] ; then
-  echo "Timestamp: $timestamp"
-  echo "Work directory: ${WORK_DIR}/${role}.${task}.${timestamp}"
+  echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n"
 fi
 echo
 #echo "Preparing the keys"
