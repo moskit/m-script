@@ -16,31 +16,32 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
-install -d /tmp/m_script
-echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> ${rpath}/monitoring.log
-lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +60`
+#*/
+source "$rpath/conf/mon.conf"
+install -d "$TMPDIR"
+echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> "${rpath}/monitoring.log"
+lockfile=`find "${rpath}" -maxdepth 1 -name mon.run.lock -mmin +60`
 if [ -n "$lockfile" ] ; then
-  ls -l $lockfile >> ${rpath}/monitoring.log
-  echo "`date +"%H:%M:%S"` *** Fixports.run: Lock file is older than 60 minutes, removing" >> ${rpath}/monitoring.log
+  ls -l $lockfile >> "${rpath}/monitoring.log"
+  echo "`date +"%H:%M:%S"` *** Fixports.run: Lock file is older than 60 minutes, removing" >> "${rpath}/monitoring.log"
   rm -f $lockfile
 fi
 for ((i=1; i<=10; i++))
 do
-  if [ -f ${rpath}/mon.run.lock ] ; then
-    echo "`date +"%H:%M:%S"` Fixports.run: Delay 1 min, another instance is running" >> ${rpath}/monitoring.log
+  if [ -f "${rpath}/mon.run.lock" ] ; then
+    echo "`date +"%H:%M:%S"` Fixports.run: Delay 1 min, another instance is running" >> "${rpath}/monitoring.log"
     sleep 60
     continue
   else
-    echo "`date +"%H:%M:%S"` Fixports.run: is unlocked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` Fixports.run: is unlocked" >> "${rpath}/monitoring.log"
     break
   fi
 done
-if [ -f ${rpath}/mon.run.lock ] ; then
+if [ -f "${rpath}/mon.run.lock" ] ; then
   echo "Giving up..."
   exit 1
 fi
-touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> Fixports.run: locking" >> ${rpath}/monitoring.log
+touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> Fixports.run: locking" >> "${rpath}/monitoring.log"
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
 [ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
@@ -50,7 +51,7 @@ if [ `uname` == "Linux" ]; then
     exit 1
   fi
 fi
-rm -f /tmp/m_script/netstat.*.tmp 2>/dev/null
+rm -f "$TMPDIR"/netstat.*.tmp 2>/dev/null
 
 # TCP and UDP PORTS
 inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
@@ -71,35 +72,35 @@ udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
 fi
 if ([[ $tcphead -eq $inusetcp ]] || ([ -n "$inusetcp6" ] && [[ $tcp6head -eq $inusetcp6 ]])); then
   if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
-    echo "fixports: TCP ports monitor is disabled" >> ${rpath}/monitoring.log
+    echo "fixports: TCP ports monitor is disabled" >> "${rpath}/monitoring.log"
   fi
 else
   # No point in parsing of more than 100 lines of LISTENING ports, increase this
   # if you want
-  $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > /tmp/m_script/netstat.tcp.tmp
-  [ `cat /tmp/m_script/netstat.tcp.tmp | wc -l` -gt `cat /tmp/m_script/netstat.tcp.tmp | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/netstat.tcp.tmp
+  $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > "$TMPDIR"/netstat.tcp.tmp
+  [ `cat /tmp/m_script/netstat.tcp.tmp | wc -l` -gt `cat /tmp/m_script/netstat.tcp.tmp | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/monitoring.log" && rm -f "$TMPDIR"/netstat.tcp.tmp
 fi
 
 if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $inuseudp6 ]])); then
   if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
-    echo "fixports: UDP ports monitor is disabled" >> ${rpath}/monitoring.log
+    echo "fixports: UDP ports monitor is disabled" >> "${rpath}/monitoring.log"
   fi
 else
-  $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> /tmp/m_script/netstat.udp.tmp
-  [ `cat /tmp/m_script/netstat.udp.tmp | wc -l` -gt `cat /tmp/m_script/netstat.udp.tmp | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> ${rpath}/monitoring.log && rm -f /tmp/m_script/netstat.udp.tmp
+  $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> "$TMPDIR"/netstat.udp.tmp
+  [ `cat "$TMPDIR"/netstat.udp.tmp | wc -l` -gt `cat /tmp/m_script/netstat.udp.tmp | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/monitoring.log" && rm -f "$TMPDIR"/netstat.udp.tmp
 fi
 
-rm -f ${rpath}/ports.*.list
+rm -f "${rpath}"/ports.*.list
 IFS1=$IFS
 IFS='
 '
-if [ -e /tmp/m_script/netstat.tcp.tmp ] ; then
+if [ -e "$TMPDIR"/netstat.tcp.tmp ] ; then
   while read LINE
   do
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
-    for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
+    for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
       if [[ $exclport =~ $prog ]] ; then
         if [[ $exclport =~ [^[0-9]-]* ]] ; then
@@ -114,16 +115,16 @@ if [ -e /tmp/m_script/netstat.tcp.tmp ] ; then
         fi
       fi
     done
-    [[ $skip -eq 1 ]] && skip=0 || echo "${port}|${prog}" >> ${rpath}/ports.tcp.list
-  done < /tmp/m_script/netstat.tcp.tmp
+    [[ $skip -eq 1 ]] && skip=0 || echo "${port}|${prog}" >> "${rpath}/ports.tcp.list"
+  done < "$TMPDIR"/netstat.tcp.tmp
 fi
-if [ -e /tmp/m_script/netstat.udp.tmp ] ; then
+if [ -e "$TMPDIR"/netstat.udp.tmp ] ; then
   while read LINE
   do
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
-    for exclport in `cat ${rpath}/conf/ports.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
+    for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
       if [[ $exclport =~ $prog ]] ; then
         if [[ $exclport =~ [^[0-9]-]* ]] ; then
@@ -138,20 +139,20 @@ if [ -e /tmp/m_script/netstat.udp.tmp ] ; then
         fi
       fi
     done
-    [[ $skip -eq 1 ]] && skip=0 || echo "$port|${prog}" >> ${rpath}/ports.udp.list
-  done < /tmp/m_script/netstat.udp.tmp
+    [[ $skip -eq 1 ]] && skip=0 || echo "$port|${prog}" >> "${rpath}/ports.udp.list"
+  done < "$TMPDIR"/netstat.udp.tmp
 fi
 # UNIX SOCKETS
-$NETSTATCMD -xlpn 2>/dev/null | grep STREAM > /tmp/m_script/netstat.sockets.tmp
-rm -f ${rpath}/sockets.list
+$NETSTATCMD -xlpn 2>/dev/null | grep STREAM > "$TMPDIR"/netstat.sockets.tmp
+rm -f "${rpath}/sockets.list"
 while read LINE
 do
-  for exclsocket in `cat ${rpath}/conf/sockets.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
+  for exclsocket in `cat "${rpath}/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
-  [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> ${rpath}/sockets.list
-done < /tmp/m_script/netstat.sockets.tmp
+  [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> "${rpath}/sockets.list"
+done < "$TMPDIR"/netstat.sockets.tmp
 IFS=$IFS1
-rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` <<< Lock file removed by the process called as $0 $* " >> ${rpath}/monitoring.log
-echo  >> ${rpath}/monitoring.log
+rm -f "${rpath}/mon.run.lock" && echo "`date +"%H:%M:%S"` <<< Lock file removed by the process called as $0 $* " >> "${rpath}/monitoring.log"
+echo  >> "${rpath}/monitoring.log"
