@@ -162,6 +162,7 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
+[ -n "$task" ] || task=notask
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
@@ -245,7 +246,6 @@ if [ -z "$flavor" ] ; then
   echo "Using flavor ${flavor}, default for cluster ${cluster}"
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
-[ -n "$task" ] || task=notask
 
 # Default output is console, colored if colors are supported
 if [ -z "$output" ] ; then
