@@ -292,7 +292,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     ##
   fi
   echo
-  if [ -n "$command" ] && [[ `grep -c "^[0-9]*$" $command` -eq 0 ]]; then
+  if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9]*$"` -eq 0 ]]; then
     meta="$command"
     run_meta "${meta}"
   else
@@ -319,8 +319,10 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
             [[ $commandn -eq $metan ]] && runthis=true
           done
         fi
-        $runthis && ! $skipthis && run_meta "${meta}"
-        [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && exit 1
+        if $runthis && ! $skipthis ; then
+          run_meta "${meta}"
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && exit 1
+        fi
       fi
       metan+=1
     done

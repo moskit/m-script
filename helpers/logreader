@@ -25,7 +25,7 @@ rpath=${0%/*}
 ### NOTES:
 # timestamp is assumed to be at the beginning of the line
 
-possible_options="file maxlines period timeformat"
+possible_options="file maxlines period timeformat help verbose"
 necessary_options="file"
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 
@@ -39,14 +39,13 @@ do
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
     [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
-   if [[ $found -ne 1 ]]; then 
+  if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
+  found=0
 done
 IFS=$IFS1
-
-found=0
 
 source "${rpath}/../conf/mon.conf"
 # defaults
@@ -56,6 +55,10 @@ source "${rpath}/../conf/mon.conf"
 
 timepattern=`date -d "-${period}" +"$timeformat"`
 ln=`tail -n $maxlines "$file" | grep -n -m 1 -h ^"$timepattern" | cut -d':' -f1`
-tail -n $maxlines "$file" | tail -n +$ln
+[ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
+[[ $ln -gt 0 ]] || ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
+[ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
+tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1
+[[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln
 
 
