@@ -77,6 +77,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
         unset skip
       done
     else
+      thepath="${thepath%/}"
       find "$thepath" -maxdepth 1 -name "*\.pid" | while read pidfile ; do
         for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
         do
