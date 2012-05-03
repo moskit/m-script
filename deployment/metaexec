@@ -292,7 +292,7 @@ if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
     ##
   fi
   echo
-  if [ -n "$command" ] && [[ ! $command =~ [[0-9]]* ]]; then
+  if [ -n "$command" ] && [[ `grep -c "^[0-9]*$" $command` -eq 0 ]]; then
     meta="$command"
     run_meta "${meta}"
   else

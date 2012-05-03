@@ -9,7 +9,7 @@ echo ""
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 source "${PWD}/../../conf/dash.conf"
 source "${PWD}/../../conf/mon.conf"
-[ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift`
+[ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift 2>/dev/null` || timeshift=5
 [ -n "$freqdef" ] || freqdef=$FREQ
 timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 oldest=`date -d "-$timerange sec"`
