@@ -33,7 +33,22 @@ store_vars() {
     # inside sub-shells. More complex constructs involving both sub-shell and 
     # non-sub-shell expression in a single line both with pipes will probably 
     # not work. Just avoid such things.
-    eval "$LINE" 2>/dev/null ; eval "$ELINE" 2>/dev/null && eval "echo \"$ELINE\"" >> "${tmpfile}.var" || eval "echo \"$LINE\"" >> "${tmpfile}.var"
+    eval "$LINE" 2>/dev/null
+    eval $(eval "echo \"$LINE\"") 2>/dev/null
+    if [ $? -eq 0 ]; then
+      [ -n "$debug" ] && echo "evaluating plain line"
+      eval "echo \"$LINE\"" >> "${tmpfile}.var"
+    else
+      eval "$ELINE" 2>/dev/null
+      eval $(eval "echo \"$ELINE\"") 2>/dev/null
+      if [ $? -eq 0 ]; then
+        [ -n "$debug" ] && echo "evaluating converted line"
+        eval "echo \"$ELINE\"" >> "${tmpfile}.var"
+      else
+        echo "ERROR: both plain and converted lines evaluation failed"
+        exit 1
+      fi
+    fi
     [ -n "$debug" ] && echo "  >> `tail -1 "${tmpfile}.var"`"
   done
 }
