@@ -127,6 +127,13 @@ IFS='
 '
 if [ "X$command" != "X" ] ; then
   from=${command%% *}
+  ## Deployment system integration ##
+  if [ ! -e "$from" ]; then
+    source "${rpath}/../../conf/deployment.conf"
+    from=`find "$ROLES_ROOT/$role"/*/files/ -maxdepth 1 -type f -o -type l -name "$from"`
+    [ ! -e "$from" ] && echo "File $from not found" && exit 1
+  fi
+  ##
   [ -h "$from" ] && from=`readlink -m "$from"`
   to=${command#* }
   [ -n "$verbose" ] && echo "### Syncing $from to $to"
