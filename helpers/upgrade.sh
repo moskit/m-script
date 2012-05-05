@@ -72,7 +72,7 @@ echo "Checking symlinks:"
 for symlink in `find "/tmp/m_script/.update" -type l`; do
   echo -n " -- ${symlink##*/} ... "
   oldsymlink=`echo "$symlink" | sed "s|/tmp/m_script/.update/|${rpath}/../|"`
-  cp --preserve=all --update "${symlink}" "$oldsymlink" && chown `id -un`:`id -gn` "$oldsymlink" && echo "OK"
+  cp -P "${symlink}" "$oldsymlink" && chown `id -un`:`id -gn` "$oldsymlink" && echo "OK"
 done
 printf "Removing .new files that have zero difference with the local files ..."
 for newfile in `find ${rpath}/../ -name "*.new"` ; do
