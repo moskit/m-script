@@ -47,7 +47,7 @@ store_vars() {
         [ -n "$debug" ] && echo "evaluating converted line"
         eval "echo \"$ELINE\"" >> "$varfile"
       else
-        echo "ERROR: both plain and converted lines evaluation failed"
+        echo -e "ERROR: both plain and converted lines evaluation failed for this line:\n\n$LINE\n\n"
         exit 1
       fi
     fi

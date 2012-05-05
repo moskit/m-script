@@ -222,13 +222,19 @@ case $command1 in
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
           for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
-            [ -n "`grep -E "deploy_file|cloudsync|cp|scp" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${sc##*/}"
+            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${sc##*/}"
           done
-          for scis in $sci ; do
+          if [ -n "$sci" ]; then
+            for scis in $sci ; do
+              printcol "${fl##*/}"
+              echo "$scis"
+              unset fl
+            done
+          elif [ -n "$all" ]; then
             printcol "${fl##*/}"
-            echo "$scis"
+            echo "not found in any script"
             unset fl
-          done
+          fi
           unset sci
         done
       ;;

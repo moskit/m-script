@@ -45,7 +45,7 @@ store_vars() {
         [ -n "$debug" ] && echo "evaluating converted line"
         eval "echo \"$ELINE\"" >> "${tmpfile}.var"
       else
-        echo "ERROR: both plain and converted lines evaluation failed"
+        echo -e "ERROR: both plain and converted lines evaluation failed for this line:\n\n$LINE\n\n"
         exit 1
       fi
     fi
@@ -111,13 +111,13 @@ prepare_file() {
     else
       LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
       unset KEEP
-      a=`eval "echo \"$LINE\"" 2>"${rpath}/../deploy.log"`
+      a=`eval "echo \"$LINE\"" 2>>"${rpath}/../deploy.log"`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
         echo "$a" >> "${tmpfile}"
       else
         echo "$LINE" >> "${tmpfile}"
       fi
-      [ -n "$debug" ] && tail -1 "${tmpfile}"
+      [ -n "$debug" ] && tail -1 "${tmpfile}" || true
     fi
   done
 

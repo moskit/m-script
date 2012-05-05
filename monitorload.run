@@ -30,12 +30,13 @@ trap "rm -f $tempfile; exit" 15
 
 case $1 in
 start)
-  [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" && exit 0
   rpath=$(readlink -m "$BASH_SOURCE")
   rcommand=${rpath##*/}
   rpath=${rpath%/*}
   #*/
-
+  [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" | tee -a "${rpath}/monitoring.log" && exit 0
+  
+  [ -f "${rpath}/mon.run.lock" ] && rm -f "${rpath}/mon.run.lock"
   [ -f "${rpath}/conf/mon.conf" ] && source "${rpath}/conf/mon.conf" || exit 1
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
   install -d $TMPDIR
@@ -62,7 +63,12 @@ start)
     $MG ${MGOPTS} -R ${MONGOOSE_HOSTNAME} >> ${rpath}/mongoose.log 2>&1 </dev/null &
     succ=$?
     echo $! > $mgpidfile
-    [[ $succ -eq 0 ]] && echo "done" || echo "error"
+    if [[ $succ -eq 0 ]]; then
+      echo "done"
+      echo "Mongoose server started" >> "${rpath}/monitoring.log"
+    else
+      echo "error"
+    fi
   fi
   printf "Starting monitorload...      "
   
@@ -146,7 +152,12 @@ start)
 
   succ=$?
   echo $! > $pidfile
-  [[ $succ -eq 0 ]] && echo "done" || echo "error"
+  if [[ $succ -eq 0 ]]; then
+    echo "Monitorload daemon started" >> "${rpath}/monitoring.log"
+    echo "done"
+  else
+    echo "error"
+  fi
   exit 0
   ;;
 stop)
@@ -154,14 +165,14 @@ stop)
     pid=`cat ${pidfile}|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
     rm -f $pidfile
-    kill -15 $pid && rm -f $tempfile && echo "done"
+    kill -15 $pid && rm -f $tempfile && echo "done" && echo "Monitorload daemon stopped" >> "${rpath}/monitoring.log"
   else
     echo "${pidfile} not found!"
   fi
   if [ -f $mgpidfile ] ; then
     pid=`cat $mgpidfile|tail -1`
     printf "Stopping web interface (pid $pid)...       "
-    kill -15 $pid && rm -f $mgpidfile && echo "done"
+    kill -15 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "${rpath}/monitoring.log"
   fi
   ;;
 restart)
