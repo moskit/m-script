@@ -103,9 +103,9 @@ run_meta() {
 }
 
 startserver() {
-  ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --noupdate --return=ip "$V" 2>>"${rpath}"/../logs/cloud.log | tail -1`
+  ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" 2>>"${rpath}"/../logs/cloud.log | tail -1`
   res=$?
-  echo "`date +"%m.%d %H:%M"` metaexec: start_server returned this IP: $ip">>"${rpath}"/../logs/cloud.log
+  echo "`date +"%m.%d %H:%M"` metaexec: start_server exited with status $res and returned this IP: $ip">>"${rpath}"/../logs/cloud.log
 }
 
 SSH=`which ssh 2>/dev/null`

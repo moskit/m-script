@@ -64,6 +64,7 @@ install -d "$TMPDIR"
 source "${rpath}/../../conf/cloud.conf"
 
 generate_name() {
+  echo "`date +"%m.%d %H:%M"` rackspace/start_server: generating name...">>"${rpath}"/../logs/cloud.log
   nam=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
   am=0 ; lm=0
@@ -94,6 +95,7 @@ find_flavor() {
 }
 
 check_cluster_limit() {
+  echo "`date +"%m.%d %H:%M"` rackspace/start_server: checking cluster $cluster limit...">>"${rpath}"/../logs/cloud.log
   limit=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
@@ -107,6 +109,7 @@ check_cluster_limit() {
 }
 
 request() {
+  echo "`date +"%m.%d %H:%M"` rackspace/start_server: sending request...">>"${rpath}"/../logs/cloud.log
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   $CURL -X POST -T "$TMPDIR/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/servers" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
@@ -115,6 +118,7 @@ request() {
 }
 
 save_details() {
+  echo "`date +"%m.%d %H:%M"` rackspace/start_server: saving details of the new server...">>"${rpath}"/../logs/cloud.log
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
@@ -128,6 +132,7 @@ save_details() {
 }
 
 wait_ready() {
+  echo "`date +"%m.%d %H:%M"` rackspace/start_server: waiting for the server ready...">>"${rpath}"/../logs/cloud.log
   [ -n "$1" ] && echo "Waiting..."
   waittimeout=600
   waitperiod=10
