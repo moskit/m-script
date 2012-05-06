@@ -75,7 +75,8 @@ Options:
                              from this cluster. Multiple clusters are
                              allowed, separated by comma (no spaces!).
                              MUST be defined. To execute the command on all
-                             servers, use --cluster=all. 
+                             servers, use --cluster=all.
+  --all                    - shortcut for --cluster=all.
   --region=region          - the command will be executed on all servers from
                              this region.
   --ip=IP                  - executes the command on a single server. This
@@ -108,6 +109,7 @@ if [ -n "$ip" ] ; then
   fi
 fi
 
+[ -n "$all" ] && cluster=all
 [ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "No clusters found" && exit 1

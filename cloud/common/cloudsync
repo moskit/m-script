@@ -92,7 +92,8 @@ Options:
   --recursive              - recursive sync of directories, implies --delete
   --cluster=clustername    - the command will be run on all servers
                              from this cluster. MUST be defined. To address all
-                             available clusters, use --cluster=all
+                             available clusters, use --cluster=all.
+  --all                    - shortcut for --cluster=all.
   --ip=IP                  - ip for a single server operation.
                              If ip is defined, cluster and region are ignored.
   --region=region          - the command will be run on all servers
@@ -122,6 +123,7 @@ if [ -n "$ip" ] ; then
   fi
 fi
 
+[ -n "$all" ] && cluster=all
 [ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "No clusters found" && exit 1
