@@ -222,8 +222,8 @@ case $command1 in
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
           for flv in `find "$ROLES_ROOT/$param1/" -maxdepth 1 -type d` ; do
-            for sc in `find "$ROLES_ROOT/$param1/$flv/" -maxdepth 1 -type f -o -type l` ; do
-              [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${flv}/${sc##*/}"
+            for sc in `find "$ROLES_ROOT/$param1/${flv##*/}/" -maxdepth 1 -type f -o -type l` ; do
+              [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${flv##*/}/${sc##*/}"
             done
           done
           if [ -n "$sci" ]; then

@@ -24,7 +24,17 @@ run_meta() {
   if [ -n "$test" -o -n "$dry" ] ; then
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
+    [ -z "$metascript" ] && metascript="$metatype" && unset metatype
     metascript=`eval "echo $metascript"`
+    if [ -z "$metatype" ] ; then
+      # finding out from shebang
+      ipr=`head -1 "$1" | grep ^#! | cut -b 3- | awk '{print $1}'`
+      if [ -n "$ipr" ] ; then
+        [ "$ipr" == "runlocal" ] && metatype="local"
+        [ "$ipr" == "runremote" ] && metatype="remote"
+      fi
+    fi
+    [ -z "$metatype" ] && echo "Meta type is not defined. Don't know how to run it." && exit 1
     if [ -n "$verbose" ] ; then
       printf "\n  type: $metatype  script: $metascript\n"
       V='--verbose'
