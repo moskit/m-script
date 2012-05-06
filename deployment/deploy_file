@@ -53,7 +53,7 @@ store_vars() {
   done
 }
 
-prepare_file() {
+find_source() {
   if [ -f "$from" ] ; then
     fullfrom=$from
   else
@@ -76,11 +76,11 @@ prepare_file() {
           if [ -f "${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from"
             echo "the file is found in included role ${ROLEINCL} ... good"
-            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${ROLEINCL}/role.conf"
+            realrole=$ROLEINCL
           elif [ -f "${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from"
             echo "the file is found in included role ${ROLEINCL} ... good"
-            [ -f "${ROLES_ROOT}/${ROLEINCL}/role.conf" ] && store_vars "${ROLES_ROOT}/${ROLEINCL}/role.conf"
+            realrole=$ROLEINCL
           else
             echo "not found, giving up"
             exit 1
@@ -90,9 +90,11 @@ prepare_file() {
       fi
     fi
   fi
-  tmpfile=${TMPDIR}/deployment/`echo $fullfrom | tr '/' '_'`
-  rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
-  
+
+}
+
+prepare_file() {
+  [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
   [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
   source "${tmpfile}.var"
   
@@ -122,8 +124,6 @@ prepare_file() {
   done
 
 }
-
-
 
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
@@ -198,6 +198,7 @@ Options:"
 EOF
   exit 0
 fi
+
 source "${rpath}/../conf/mon.conf"
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
@@ -206,8 +207,6 @@ source "${rpath}/../conf/cloud.conf"
 [ -n "$cloud" ] || cloud=common
 [ -n "$M_ROOT" ] || M_ROOT=$(cd "${rpath}/../" && pwd)
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
-
-[ -f "${ROLES_ROOT}/common/role.conf" ] && store_vars "${ROLES_ROOT}/common/role.conf"
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 install -d ${TMPDIR}/deployment/
@@ -236,70 +235,79 @@ if [ "X$command" != "X" ] ; then
   [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no servers found in cluster $cluster" && exit 1
   [ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
   [ -n "$verbose" ] && echo "### Reading configuration from ${ROLES_ROOT}/${role}/role.conf"
-  
-  to=${command#* }
-  [ -n "$verbose" ] && echo "### Deploying file $from to $to"
 
-  if [ -n "$test" -o -n "$dry" ] ; then
-    # some ip, just to fill the vars
-    export ip="10.10.10.10"
-    prepare_file
-    cat "${tmpfile}"
-  else
-    if [ -n "$ip" ] ; then
-    # Single destination: region, cluster, cloud are ignored
-      if [ `echo $ip | grep -c "$localip"` -ne 0 ] ; then
-        cp -up $tmpfile $to
-      else
-        KEY=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f2`
-        REGION=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f3`
-        CLUSTER=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f5`
-        [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
-        [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && exit 1)
-        if [ `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "$to"` ] ; then
-          to=${to%/}/${from##*/}
-        elif [ ! `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "${to%/*}"` ] ; then
-          $SSH -i "${rpath}/../keys/$KEY" $ip install -d "${to%/*}"
-        fi
-        prepare_file
-        cloudsync --ip=$ip "$tmpfile" "${to}"
-      fi
+find_source
+# fullfrom and realrole are now defined
+tmpfile=${TMPDIR}/deployment/`echo $fullfrom | tr '/' '_'`
+rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
+  
+[ -f "${ROLES_ROOT}/common/role.conf" ] && store_vars "${ROLES_ROOT}/common/role.conf"
+[ -n "$realrole" ] && [ -f "${ROLES_ROOT}/${realrole}/role.conf" ] && store_vars "${ROLES_ROOT}/${realrole}/role.conf"
+[ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
+
+to=${command#* }
+[ -n "$verbose" ] && echo "### Deploying file $from to $to"
+
+if [ -n "$test" -o -n "$dry" ] ; then
+  # some ip, just to fill the vars
+  export ip="10.10.10.10"
+  prepare_file
+  cat "${tmpfile}"
+else
+  if [ -n "$ip" ] ; then
+  # Single destination: region, cluster, cloud are ignored
+    if [ `echo $ip | grep -c "$localip"` -ne 0 ] ; then
+      cp -up $tmpfile $to
     else
-    # Multiple destinations
-      for cl in `echo $cluster | tr ',' ' '` ; do
-        for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
-          IP=${server%%|*}
-          KEY=`echo $server | cut -d'|' -f2`
-          if [ -n "$region" ] ; then
-            REGION=`echo $server | cut -d'|' -f3`
-            [ "X$REGION" == "X$region" ] || continue
-          fi
-          if [ -n "$cl" ] ; then
-            CLUSTER=`echo $server | cut -d'|' -f5`
-            [ "X$CLUSTER" == "X$cl" ] || continue
-          fi
-          if [ "X$verbose" == "Xyes" ] ; then
-            echo
-            echo "### Server: $server"
-            echo
-          fi
-          if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
-            cp -up $tmpfile $to
-          else
-            [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
-            [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $IP" && continue)
-            if [ `$SSH -i "${rpath}/../keys/$KEY" $IP test -d "$to"` ] ; then
-              to=${to%/}/${from##*/}
-            fi
-            ip=$IP
-            prepare_file
-            cloudsync --ip=$IP "$tmpfile" "${to}"
-          fi
-        done
-      done
+      KEY=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f2`
+      REGION=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f3`
+      CLUSTER=`cat "${rpath}/../servers.list" | grep ^$ip\| | cut -d'|' -f5`
+      [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
+      [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $ip" && exit 1)
+      if [ `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "$to"` ] ; then
+        to=${to%/}/${from##*/}
+      elif [ ! `$SSH -i "${rpath}/../keys/$KEY" $ip test -d "${to%/*}"` ] ; then
+        $SSH -i "${rpath}/../keys/$KEY" $ip install -d "${to%/*}"
+      fi
+      prepare_file
+      cloudsync --ip=$ip "$tmpfile" "${to}"
     fi
+  else
+  # Multiple destinations
+    for cl in `echo $cluster | tr ',' ' '` ; do
+      for server in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+        IP=${server%%|*}
+        KEY=`echo $server | cut -d'|' -f2`
+        if [ -n "$region" ] ; then
+          REGION=`echo $server | cut -d'|' -f3`
+          [ "X$REGION" == "X$region" ] || continue
+        fi
+        if [ -n "$cl" ] ; then
+          CLUSTER=`echo $server | cut -d'|' -f5`
+          [ "X$CLUSTER" == "X$cl" ] || continue
+        fi
+        if [ "X$verbose" == "Xyes" ] ; then
+          echo
+          echo "### Server: $server"
+          echo
+        fi
+        if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+          cp -up $tmpfile $to
+        else
+          [ -f "${rpath}/../keys/$KEY" ] || KEY="${KEY}.pem"
+          [ -f "${rpath}/../keys/$KEY" ] || (echo "${rcommand}: key not found for IP $IP" && continue)
+          if [ `$SSH -i "${rpath}/../keys/$KEY" $IP test -d "$to"` ] ; then
+            to=${to%/}/${from##*/}
+          fi
+          ip=$IP
+          prepare_file
+          cloudsync --ip=$IP "$tmpfile" "${to}"
+        fi
+      done
+    done
   fi
-  rm -f "$tmpfile"*
 fi
+rm -f "$tmpfile"*
+
 IFS=$IFS1
 
