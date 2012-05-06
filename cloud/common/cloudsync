@@ -77,26 +77,30 @@ do
     fi
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
+  for option in `echo $possible_options`; do 
     [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
   done
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options> <local path> <remote path>"
-  echo 
-  echo "Without options <local path> will be copied to all servers from servers.list's path"
-  echo
-  echo "Options:"
-  echo
-  echo "  --recursive              - recursive sync of directories, implies --delete"
-  echo "  --cluster=clustername    - the command will be run on all servers"
-  echo "                             from this cluster."
-  echo "  --ip=IP                  - ip for a single server operation."
-  echo "                             If ip is defined, cluster and region are ignored."
-  echo "  --region=region          - the command will be run on all servers"
-  echo "                             from this region."
-  echo "  --verbose                - shows each server details before running"
-  echo "                             the command."
+  cat <<"EOF"
+Usage: ${0##*/} <options> <local path> <remote path>
+
+Without options <local path> will be copied to all servers from servers.list's path
+
+Options:
+
+  --recursive              - recursive sync of directories, implies --delete
+  --cluster=clustername    - the command will be run on all servers
+                             from this cluster. MUST be defined. To address all
+                             available clusters, use --cluster=all
+  --ip=IP                  - ip for a single server operation.
+                             If ip is defined, cluster and region are ignored.
+  --region=region          - the command will be run on all servers
+                             from this region.
+  --verbose                - shows each server details before running
+                             the command.
+
+EOF
   exit 0
 fi
 
@@ -117,9 +121,9 @@ if [ -n "$ip" ] ; then
     fi
   fi
 fi
+
+[ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 [ -z "$cluster" ] && cluster=$M_CLUSTER
-# all clusters, then
-[ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
 [ -z "$cluster" ] && echo "No clusters found" && exit 1
 
 IFS1=$IFS

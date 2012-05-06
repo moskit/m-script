@@ -57,35 +57,39 @@ do
     fi
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
+  for option in `echo $possible_options`; do 
     [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
   done
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options> command"
-  echo 
-  echo "Without options the command will be run on all servers from servers.list"
-  echo
-  echo "Options:"
-  echo
-  echo "  --cluster=clustername    - the command will be run on all servers"
-  echo "                             from this cluster. Multiple clusters are"
-  echo "                             allowed, separated by comma (no spaces!)."
-  echo "                             Without this option the command will be"
-  echo "                             run on all clusters mentioned in servers.list."
-  echo "  --region=region          - the command will be run on all servers from"
-  echo "                             this region."
-  echo "  --ip=IP                  - runs the command on a single server. This"
-  echo "                             allows other scripts to include this one the"
-  echo "                             way that makes possible to apply it to a single"
-  echo "                             server or multiple servers depending on which"
-  echo "                             variables are defined. With this option non-"
-  echo "                             empty, cluster and region are ignored."
-  echo "  --verbose                - shows each server details before running the"
-  echo "                             command."
-  echo "  --limit=N                - runs the command on first N servers of each"
-  echo "                             cluster defined by the --cluster option"
-  echo
+  cat <<"EOF"
+Usage: ${0##*/} <options> command
+
+Without options the command will be executed on all servers from servers.list
+
+NOTE that options can be passed as environment variables too!
+
+Options:
+
+  --cluster=clustername    - the command will be executed on all servers
+                             from this cluster. Multiple clusters are
+                             allowed, separated by comma (no spaces!).
+                             MUST be defined. To execute the command on all
+                             servers, use --cluster=all. 
+  --region=region          - the command will be executed on all servers from
+                             this region.
+  --ip=IP                  - executes the command on a single server. This
+                             allows other scripts to include this one the
+                             way that makes possible to apply it to a single
+                             server or multiple servers depending on which
+                             variables are defined. With this option non-empty,
+                             cluster and region are ignored.
+  --verbose                - shows each server details before running the
+                             command.
+  --limit=N                - runs the command on first N servers of each
+                             cluster defined by the --cluster option
+
+EOF
   exit 0
 fi
 
@@ -104,8 +108,10 @@ if [ -n "$ip" ] ; then
   fi
 fi
 
-# all clusters, then
-[ -n "$cluster" ] || cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
+[ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq`
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && echo "No clusters found" && exit 1
+
 declare -i n
 IFS1=$IFS
 IFS='
