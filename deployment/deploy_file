@@ -233,7 +233,7 @@ if [ "X$command" != "X" ] ; then
       [ -z "$cluster" ] && echo "${rcommand}: cluster not defined for role $role" && exit 1
     fi
   fi
-  [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && echo "${rcommand}: no servers found in cluster $cluster" && exit 1
+  [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no servers found in cluster $cluster" && exit 1
   [ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
   [ -n "$verbose" ] && echo "### Reading configuration from ${ROLES_ROOT}/${role}/role.conf"
   

@@ -216,19 +216,19 @@ source "${rpath}/../../conf/cloud.conf"
 
 if [ -z "$noupdate" ] ; then
   try_auth
-  request
-  declare -i n
-  n=0
-  while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
-    [ $n -gt 1 ] && sleep 30
-    rm -f "${TMPDIR}/auth.resp"
-    try_auth
-    request
-    n+=1
-  done
-  [ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 fi
+request
+declare -i n
+n=0
+while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
+  [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+  [ $n -gt 1 ] && sleep 30
+  rm -f "${TMPDIR}/auth.resp"
+  try_auth
+  request
+  n+=1
+done
+[ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 
 echo -n "`grep \/code\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`: "
 grep \/message\| "${TMPDIR}/${rcommand}.resp"

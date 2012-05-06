@@ -125,7 +125,7 @@ export debug verbose dry
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "${rpath}/../deploy.log" && exit 1
-[ -n "$cluster" ] && [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" ] && echo "No servers found in cluster $cluster" && exit 1
+[ -n "$cluster" ] && [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
