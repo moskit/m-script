@@ -344,15 +344,23 @@ case $command1 in
         $ED "$ROLES_ROOT/$role/meta.$param1"
         ;;
       script)
-        if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
-          if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-            echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+        prmarr=( `echo "$param1" | tr '/' ' '` )
+        [ ${#prmarr[*]} -gt 3 ] && echo "Path can't have more than 3 parts (role/flavor/script)" && exit 1
+        case ${#prmarr[*]} in
+          3) $ED "$ROLES_ROOT/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" ;;
+          2) $ED "$ROLES_ROOT/$role/${prmarr[1]}/${prmarr[2]}" ;;
+          1)
+          if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
+            if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
+              echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+            else
+              $ED "$ROLES_ROOT/$role/common/$param1"
+            fi
           else
-            $ED "$ROLES_ROOT/$role/common/$param1"
+            $ED "$ROLES_ROOT/$role/$flavor/$param1"
           fi
-        else
-          $ED "$ROLES_ROOT/$role/$flavor/$param1"
-        fi
+          ;;
+        esac
         ;;
       file)
         if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
@@ -384,15 +392,23 @@ case $command1 in
         cat "$ROLES_ROOT/$role/meta.$param1"
         ;;
       script)
-        if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
-          if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-            echo "$param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+        prmarr=( `echo "$param1" | tr '/' ' '` )
+        [ ${#prmarr[*]} -gt 3 ] && echo "Path can't have more than 3 parts (role/flavor/script)" && exit 1
+        case ${#prmarr[*]} in
+          3) [ -n "$strip" ] && cat "$ROLES_ROOT/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" ;;
+          2) [ -n "$strip" ] && cat "$ROLES_ROOT/$role/${prmarr[1]}/${prmarr[2]}" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/${prmarr[1]}/${prmarr[2]}" ;;
+          1)
+          if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
+            if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
+              echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+            else
+              [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
+            fi
           else
             [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
           fi
-        else
-          [ -n "$strip" ] && cat "$ROLES_ROOT/$role/$flavor/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/$flavor/$param1"
-        fi
+          ;;
+        esac
         ;;
       file)
         if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
