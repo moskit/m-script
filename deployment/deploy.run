@@ -139,12 +139,8 @@ IFS1=$IFS; IFS='
 # common first
 [[ "$role" == "common" ]] || store_vars common
 [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
-if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
-  store_vars $role
-  [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
-fi
 # if some other role's script is included in meta script, source its variables
-# too. Variables with same names would be overwritten.
+# too.
 roleincluded=${file%%/*}
 if [ "X$roleincluded" != "X$role" ] ; then
   if [ -e "${ROLES_ROOT}/${roleincluded}/role.conf" ] ; then
@@ -153,6 +149,13 @@ if [ "X$roleincluded" != "X$role" ] ; then
     export ROLEINCL=$roleincluded
   fi
 fi
+# The actual role is the last one. This way it has the last word and overwrites
+# variables of the same name from the roles included above
+if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
+  store_vars $role
+  [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
+fi
+
 # command-line options (variables from this script) should be saved too
 IFS2=$IFS ; IFS=$' \t\n'
 for option in `echo $possible_options | sed 's/,/ /g'`; do

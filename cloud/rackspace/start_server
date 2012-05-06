@@ -102,7 +102,7 @@ check_cluster_limit() {
   [ "$limit" == "0" ] && return 0
   # tmp file is assumed to be up-to-date, metaexec updates it for example
   n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
-  [ -z "$n" ] && return 1
+  [ -z "$n" ] && n=0
   [ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \> $n` -gt 0 ] && return 0
   return 1
@@ -177,7 +177,8 @@ printreturn() {
   done
 }
 
-check_cluster_limit || exit 5
+res=`check_cluster_limit`
+[[ $res -ne 0 ]] && exit 5
 [ -z "$name" ] && name=`generate_name` && echo "`date +"%m.%d %H:%M"` rackspace/start_server: name auto-generated: $name">>"${rpath}"/../../logs/cloud.log
 [ -z "$name" ] && exit 6
 find_image
