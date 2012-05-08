@@ -110,16 +110,21 @@ RETVAL=0
 [ -n "$recursive" ] && r="-r"
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 if [ -n "$ip" ] ; then
-  cluster= && region=
+  cluster= ; region=
   if [ `grep -c "^$ip|" "${rpath}/../../servers.list"` -eq 0 ] ; then
+    # if name passed as ip
     if [ `cat "${rpath}/../../servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
       echo "Unable to find $ip in servers.list"
       exit 1
     else
-      # if name passed as ip
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
       [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
     fi
+  else
+    # cluster is still needed for some cases
+    server=`grep "^$ip|" "${rpath}/../../servers.list"`
+    cluster=`echo "$server" | cut -d'|' -f5`
+    region=`echo "$server" | cut -d'|' -f3`
   fi
 fi
 
