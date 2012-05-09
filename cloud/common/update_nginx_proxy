@@ -118,6 +118,7 @@ for app in $APPS ; do
     mv $TMPDIR/${app}.${cluster}.ips $TMPDIR/${app}.${cluster}.ips.prev 2>/dev/null
     for APPCLUSTER in $APP_SERVERS; do
       if [ "X${APPCLUSTER%%|*}" == "X$cluster" ] && [ "X`echo ${APPCLUSTER} | cut -d'|' -f3`" == "X$app" ] ; then
+        found=true
         port=`echo ${APPCLUSTER} | cut -d'|' -f2`
         ports="$ports $port"
         method=`echo ${APPCLUSTER} | cut -d'|' -f4`
@@ -126,6 +127,7 @@ for app in $APPS ; do
         fi
       fi
     done
+    $found && found=false && continue
     for IP in `"$rpath"/get_ips --cluster=${cluster}` ; do
       for PORT in $ports ; do
         echo "$IP:$PORT" >> $TMPDIR/${app}.${cluster}.ips
@@ -135,7 +137,7 @@ for app in $APPS ; do
     if [ `cat $TMPDIR/${app}.${cluster}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
       changed=1
       case $balance_method in
-        sticky|ip_hash)
+        sticky|ip_hash|hash)
           balance_method="ip_hash"
           ;;
         *)
