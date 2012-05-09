@@ -115,6 +115,7 @@ balance_method=$BALANCE_METHOD
 
 for app in $APPS ; do
   for cluster in $CLUSTERS ; do
+    found=false
     mv $TMPDIR/${app}.${cluster}.ips $TMPDIR/${app}.${cluster}.ips.prev 2>/dev/null
     for APPCLUSTER in $APP_SERVERS; do
       if [ "X${APPCLUSTER%%|*}" == "X$cluster" ] && [ "X`echo ${APPCLUSTER} | cut -d'|' -f3`" == "X$app" ] ; then
@@ -127,7 +128,7 @@ for app in $APPS ; do
         fi
       fi
     done
-    $found && found=false && continue
+    $found || continue
     for IP in `"$rpath"/get_ips --cluster=${cluster}` ; do
       for PORT in $ports ; do
         echo "$IP:$PORT" >> $TMPDIR/${app}.${cluster}.ips

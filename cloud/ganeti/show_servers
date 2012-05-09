@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+source "${rpath}/../../conf/mon.conf"
+TMPDIR=$TMPDIR/cloud/ganeti
+install -d $TMPDIR
+
+declare -i icount
+
+GNTI=`which gnt-instance 2>/dev/null`
+
+possible_options="cluster state filter node short view all count"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optname=`echo $s_optname | tr -d '-'`
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+  if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: ${missing_options} not found"
+  exit 1
+fi
+
+[ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
+[ -n "$short" ] && req='/servers' || req='/servers/detail'
+[ -n "$forceupdate" ] && rm -f "${TMPDIR}"/${rcommand}.resp
+[ -z "$status" -a -n "$state" ] && status=$state
+[ -z "$status" ] && status="active"
+[ -n "$filter" ] && filter="${filter},addresses,cluster"
+
+PARS="name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,tags,uuid,os,ctime"
+PARR=( `echo "$PARS" | tr './' '_' | tr ',' ' '` )
+
+request() {
+  $GNTI list --separator='|' --no-headers -o $PARS > "${TMPDIR}/${rcommand}.resp"
+}
+
+list_servers() {
+  IFS1=$IFS
+  IFS='
+'
+  if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
+  
+    for LINE in `cat "${TMPDIR}/${rcommand}.resp"` ; do
+      
+      LARR=( `echo -e "$LINE" | tr '|' '\n'` )
+      
+      for ((i=0; i<=${#PARR[*]}; i++)); do
+        eval "${PARR[$i]}=\"${LARR[$i]}\""
+      done
+      
+      if [ -n "$tags" ]; then
+        for tag in `echo -e "$tags" | tr ',' '\n'`; do
+          [ `echo "$tag" | grep -c ^cluster\:` -eq 1 ] && icluster="${tag##*:}"
+        done
+      fi
+      
+      for ip in `echo -e "$nic_ips" | tr ',' '\n'` ; do
+        if [ -z "$icluster" ] ; then
+          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+        else
+          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] && unset icluster
+        fi
+      done
+      
+      if [ -z "$update_servers_list" ] ; then
+        # icluster existence condition is needed for the case there are multiple
+        # projects (cluster groups) in the same cloud.
+        # Note that if you use same names for clusters in different cluster
+        # groups, you'll get them mixed here.
+        if [ -n "$icluster" -o -n "$all" ] ; then
+          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+          [ "X$state" != "X$istatus" ] && [ "X$state" != "Xall" ] && continue
+          case $view in
+            list)
+              echo "Name: $name  State: $istatus  IPs: $nic_ips  Size: ${be_vcpus}/${be_memory}/${disk_sizes}  OS: $os  Nodes: ${pnode}+${snodes}  Started: $ctime"
+              ;;
+            table)
+              echo "${name}|${istatus}|${nic_ips}|${be_vcpus}/${be_memory}/${disk_sizes}|${os}|${pnode}+${snodes}|$ctime"
+              ;;
+            column)
+              echo -e "Name: $name\nState: $istatus\nIPs: $nic_ips\nSize: ${be_vcpus}/${be_memory}/${disk_sizes}\nOS: $os\nNodes: ${pnode}+${snodes}\nStarted: $ctime"
+              ;;
+            none)
+              ;;
+            *)
+              echo "------------------------------------------------------------------------------"
+              #echo "Server ID: $id"
+              echo "Server name: $name    Cluster: $icluster"
+              echo "IPs: $nic_ips"
+              echo "Server OS: $os  Server size: ${be_vcpus}/${be_memory}/${disk_sizes}"
+              echo "Status: $istatus  Started: $ctime"
+              echo "Nodes: primary: ${pnode} secondary: ${snodes}"
+              echo
+              ;;
+          esac
+          icount+=1
+        fi
+      else
+        if [ -n "$icluster" ] ; then
+          if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+            sed -i /^$nic_ip_0\|/d "${rpath}/../../servers.list"
+            echo "${nic_ip_0}|${key}|${pnode}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+            usedips=`$GNTI list -o nic.ip/0`
+            for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+              [ `echo $usedips | grep -c ^${listip}$` -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+            done
+            
+          fi
+        fi
+      fi
+      
+    done
+  else
+    echo "No data. Run without --noupdate"
+  fi
+  IFS=$IFS1
+}
+
