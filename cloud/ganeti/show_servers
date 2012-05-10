@@ -25,7 +25,7 @@ declare -i icount
 
 GNTI=`which gnt-instance 2>/dev/null`
 
-possible_options="cluster state filter node short view all count"
+possible_options="cluster state filter node view all count"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -59,11 +59,10 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
-[ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && rm -f "${TMPDIR}"/${rcommand}.resp
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
-[ -n "$filter" ] && filter="${filter},addresses,cluster"
+[ -n "$filter" ] && filter="${filter},nic_ips,cluster"
 
 PARS="name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,tags,uuid,os,ctime"
 PARR=( `echo "$PARS" | tr './' '_' | tr ',' ' '` )
@@ -154,4 +153,7 @@ list_servers() {
   fi
   IFS=$IFS1
 }
+
+request
+list_servers
 
