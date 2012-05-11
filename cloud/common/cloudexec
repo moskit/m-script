@@ -65,9 +65,10 @@ if [ "X$help" == "Xyes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> command
 
-Without options the command will be executed on all servers from servers.list
+Executes command on remote servers. The list of servers is defined by either
+command-line arguments or environment variables.
 
-NOTE that options can be passed as environment variables too!
+Any option can be passed as environment variable of the same name.
 
 Options:
 
@@ -75,7 +76,8 @@ Options:
                              from this cluster. Multiple clusters are
                              allowed, separated by comma (no spaces!).
                              MUST be defined. To execute the command on all
-                             servers, use --cluster=all.
+                             servers, use --cluster=all. Accepts also M_CLUSTER
+                             environment variable (used by msh).
   --all                    - shortcut for --cluster=all.
   --region=region          - the command will be executed on all servers from
                              this region.
