@@ -199,8 +199,6 @@ if [ -n "$timestamp" ] ; then
 else
   timestampact=`date +"%y_%m_%d_%H_%M_%S"`
 fi
-install -d "${WORK_DIR}/${role}.${task}.${timestampact}"
-touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
 
 if [ -n "$ip" ] ; then
   [ -n "$newserver" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
@@ -243,8 +241,9 @@ else
   fi
 fi
 export role cluster
-
 [ -n "$verbose" ] && V='--verbose'
+install $V -d "${WORK_DIR}/${role}.${task}.${timestampact}"
+touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
 
 if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
