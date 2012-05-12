@@ -413,7 +413,7 @@ case $command1 in
               [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
             fi
           else
-            [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
+            [ -n "$strip" ] && cat "$ROLES_ROOT/$role/$flavor/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/$flavor/$param1"
           fi
           ;;
         esac
