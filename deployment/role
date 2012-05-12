@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rpath=$(readlink -m "$BASH_SOURCE")
+rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
@@ -267,7 +267,15 @@ case $command1 in
     ;;
   clone)
     [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
-    [ ! -d "$ROLES_ROOT/$param1" ] && echo "Role $param1 not found" && exit 1
+    if [ ! -d "$ROLES_ROOT/$param1" ]; then
+      if [ ! -d "$param1" ]; then
+        echo "Role $param1 not found" && exit 1
+      else
+        sourcerole="$param1"
+      fi
+    else
+      sourcerole="$ROLES_ROOT/$param1"
+    fi
     if [ -d "$ROLES_ROOT/$param2" ]; then
       if [ $(cd -P "$ROLES_ROOT/$param2/../" && pwd) == "$ROLES_ROOT" ]; then
         echo "Role $param2 exists, updating..."
@@ -276,21 +284,21 @@ case $command1 in
         exit 1
       fi
     fi
-    for dir in `find "$ROLES_ROOT/$param1/" -type d` ; do
-      newdir=`echo "$dir" | sed "s|^$ROLES_ROOT/$param1/||"`
+    for dir in `find "$sourcerole/" -type d` ; do
+      newdir=`echo "$dir" | sed "s|^$$sourcerole/||"`
       install -d "$ROLES_ROOT/$param2/$newdir"
     done
-    for sl in `find "$ROLES_ROOT/$param1/" -type l` ; do
+    for sl in `find "$sourcerole/" -type l` ; do
       f=`readlink -m $sl`
-      nsl=`echo "$sl" | sed "s|$ROLES_ROOT/$param1/||"`
+      nsl=`echo "$sl" | sed "s|$sourcerole/||"`
       if [ -e "$ROLES_ROOT/$param2/$nsl" -a ! -h "$ROLES_ROOT/$param2/$nsl" ]; then
         [ "$nsl" != "role.conf" ] && echo "$nsl is not a symlink. Check manually."
       else
         [ ! -e "$ROLES_ROOT/$param2/$nsl" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nsl"
       fi
     done
-    for f in `find "$ROLES_ROOT/$param1/" -type f ! -name role.conf` ; do
-      nf=`echo "$f" | sed "s|$ROLES_ROOT/$param1/||"`
+    for f in `find "$sourcerole/" -type f ! -name role.conf` ; do
+      nf=`echo "$f" | sed "s|$sourcerole/||"`
       if [ -e "$ROLES_ROOT/$param2/$nf" -a ! -h "$ROLES_ROOT/$param2/$nf" ]; then
         [ "$nf" != "role.conf" ] && echo "$nf is not a symlink. Check manually."
       else
@@ -298,7 +306,7 @@ case $command1 in
       fi
     done
     if [ ! -e "$ROLES_ROOT/$param2/role.conf" ]; then
-      for rcl in `cat "$ROLES_ROOT/$param1/role.conf"` ; do
+      for rcl in `cat "$sourcerole/role.conf"` ; do
         echo "$rcl" | sed 's|=|=  #|' >> "$ROLES_ROOT/$param2/role.conf"
       done
     fi
