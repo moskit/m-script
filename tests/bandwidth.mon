@@ -14,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# bc workaround to make it work with floating point numbers
 solve() {
 bc << EOF
 scale=2
@@ -25,18 +23,20 @@ EOF
 PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
-
-if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
-then
 
 netstatbin=`which netstat 2>/dev/null`
 iptablesbin=`which iptables 2>/dev/null`
  
-timeindexnow=`cat /tmp/m_script/timeindex`
-lasttimeindex=`cat /tmp/m_script/lasttimeindex` || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat /tmp/m_script/timeindex`
+timeindexnow=`cat /tmp/m_script/timeindex 2>/dev/null`
+lasttimeindex=`cat /tmp/m_script/lasttimeindex 2>/dev/null`
+
+if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
+then
+
+[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat /tmp/m_script/timeindex`
 
 numconn=`${netstatbin} -s | grep 'connections established' | awk '{print $1}'`
 binputlast=`sqlite3 ${rpath}/../sysdata "select input from sysdata where timeindex='$lasttimeindex'"`
