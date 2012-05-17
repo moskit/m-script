@@ -18,6 +18,11 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
+GNTI=`which gnt-instance 2>/dev/null`
+ROUTE=`which route 2>/dev/null`
+[ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
+[ -z "$ROUTE" ] && echo "route utility not found" && exit 1
+
 possible_options="region flavor cluster image name return verbose"
 necessary_options="cluster"
 
@@ -107,16 +112,13 @@ save_details() {
 
 wait_ready() {
   [ -n "$1" ] && echo "Waiting..."
-  waittimeout=600
-  waitperiod=10
+  waittimeout=200
+  waitperiod=5
   checks=`expr $waittimeout / $waitperiod`
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
-    "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
-    if [ -n "$1" ] ; then
-      printf "Progress: `grep \/progress\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`     \r"
-    fi
-    if [ "X`grep \/status\| "${TMPDIR}/get_server_details.resp" | cut -d'|' -f2`" == "XACTIVE" ] ; then
+    "$rpath"/get_server_details --name=$name >/dev/null 2>&1
+    if [ `cat "${TMPDIR}/${rcommand}.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
       echo
       return 0
     fi
@@ -124,10 +126,30 @@ wait_ready() {
   return 1
 }
 
+request() {
+node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
+iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
+echo "$ip $name" >> /etc/hosts
+$GNTI add -n $node -o $iparams $name
+$ROUTE add -host $ip dev `find_idev $ip`
+}
+
+find_idev() {
+$ROUTE -n | grep "^${1}[[:space:]]" | awk '{print $8}'
+}
+
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && echo "Cluster not defined" && exit 1
+
+res=`check_cluster_limit`
+[[ $res -ne 0 ]] && exit 5
+[ -z "$name" ] && name=`generate_name` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: name auto-generated: $name">>"${rpath}"/../../logs/cloud.log
+[ -z "$name" ] && exit 6
+[ -z "$ip" ] && ip=`find_ip` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: IP that will be used: $ip">>"${rpath}"/../../logs/cloud.log
+[ -z "$ip" ] && exit 4
 
 
-# echo '10.1.1.10 gnttest' >> /etc/hosts
-# /usr/local/sbin/gnt-instance add -n roman.vodo.net -o debootstrap+default -t plain --disk 0:size=20G --disk 1:size=1G gnttest2
-# route add -host 10.1.1.10 dev tap0
+request && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log
+
 
 

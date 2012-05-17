@@ -51,6 +51,29 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+request() {
+IFS1=$IFS
+IFS='
+'
+for L in `$GNTI info "$name"` ; do
+#echo "    sect: $sect   subsect: $subsect"
+  e1=`expr "$L" : '^[[:space:]]*[A-Z]'`
+  e2=`expr "$L" : '^[[:space:]]*-\ [a-z]'`
+  e3=`expr "$L" : '^[[:space:]]*[a-z]'`
+#echo "=== $e1 $e2 $e3 ::: \"$L\""
+  [ $e1 -eq 1 ] && sect=`echo "$L" | cut -d: -f1` && echo $L | sed 's_: _|_' && continue
+  [ $e1 -eq 3 ] && subsect=`echo "$L" | cut -d: -f1 | sed 's|^ *||'` && subvalue=`echo $L | cut -d: -f2 | sed 's|^ *||'`
+  [ -n "$subvalue" ] && echo "${sect}/${subsect}|${subvalue}" && continue
+  [ $e2 -gt 0 ] && var=`echo "$L" | cut -d: -f1 | sed 's|^ *- ||'` && value=`echo "$L" | cut -d: -f2,3,4 | sed 's|^ *||'`
+  [ -n "$value" ] && echo "${sect}/${subsect}/${var}|${value}" && unset value && continue
+  [ $e3 -gt 0 ] && var=`echo "$L" | cut -d: -f1 | sed 's|^ *||'` && value=`echo "$L" | cut -d: -f2,3,4 | sed 's|^ *||'`
+  [ -n "$value" ] && echo "${sect}/${subsect}/${var}|${value}" && unset value
+done  > "${TMPDIR}/${rcommand}.resp"
+
+IFS=$IFS1
+
+}
+
 source "${rpath}/../../conf/cloud.conf"
 source "${rpath}/../../conf/mon.conf"
 TMPDIR="$TMPDIR"/cloud/ganeti
@@ -66,14 +89,8 @@ if [ -z "$name" ]; then
     exit 1
   fi
 fi
-$GNTI info "$name" | while read L ; do
-  e1=`expr "$L" : ^[[:space:]]*[A-Z]`
-  e2=`expr "$L" : ^[[:space:]]*-\ [a-z]`
-  e3=`expr "$L" : ^[[:space:]]*[a-z]`
-  [ $e1 -eq 1 ] && sect=`echo $L | cut -d: -f1` && echo $L | sed 's_: _|_' && continue
-  [ $e1 -eq 3 ] && subsect=`echo $L | cut -d: -f1` && subvalue=`echo $L | cut -d: -f2 | sed 's|^ *||'`
-  [ -n "$subvalue" ] && echo "${sect}/${subsect}|${subvalue}" && unset subvalue && continue
-  [ $e2 -gt 0 ] && value=`echo $L | cut -d: -f2 | sed 's|^ *||'` && echo "${sect}/${subsect}|${value}" && continue
-  [ $e3 -gt 0 ] && value=`echo $L | cut -d: -f2 | sed 's|^ *||'` && echo "${sect}/${subsect}|${value}"
-done
+
+request
+cat "${TMPDIR}/${rcommand}.resp"
+
 
