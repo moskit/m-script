@@ -20,9 +20,10 @@ rpath=${0%/*}
 
 GNTI=`which gnt-instance 2>/dev/null`
 ROUTE=`which route 2>/dev/null`
+IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
 [ -z "$ROUTE" ] && echo "route utility not found" && exit 1
-
+[ -z "$IPR2" ] && echo "ip utility not found" && exit 1
 possible_options="region flavor cluster image name return verbose"
 necessary_options="cluster"
 
@@ -135,7 +136,9 @@ $GNTI add -n $node $iparams $name 2>&1
 }
 
 find_idev() {
-$ROUTE -n | grep "^${1}[[:space:]]" | awk '{print $8}'
+if [ "`cat "${TMPDIR}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
+link=`cat "${TMPDIR}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
+$IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
 }
 
 [ -z "$cluster" ] && cluster=$M_CLUSTER
