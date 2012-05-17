@@ -118,7 +118,7 @@ wait_ready() {
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     "$rpath"/get_server_details --name=$name >/dev/null 2>&1
-    if [ `cat "${TMPDIR}/${rcommand}.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
+    if [ `cat "${TMPDIR}/get_server_details.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
       echo
       return 0
     fi
@@ -130,8 +130,8 @@ request() {
 node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
 iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
 echo "$ip $name" >> /etc/hosts
-$GNTI add -n $node -o $iparams $name
-$ROUTE add -host $ip dev `find_idev $ip`
+#echo "$GNTI add -n $node -o $iparams $name"
+$GNTI add -n $node $iparams $name 2>&1
 }
 
 find_idev() {
@@ -150,6 +150,10 @@ res=`check_cluster_limit`
 
 
 request && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log
-
-
-
+wait_ready
+idev=`find_idev $ip`
+if [ -n "$idev" ]; then
+  $ROUTE add -host $ip dev $idev
+else
+  echo "Instance started, but tap device doesn't exist"
+fi

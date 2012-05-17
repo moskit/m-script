@@ -52,10 +52,11 @@ if [[ found -eq 1 ]]; then
 fi
 
 request() {
+rm -f "${TMPDIR}/${rcommand}.resp"
 IFS1=$IFS
 IFS='
 '
-for L in `$GNTI info "$name"` ; do
+for L in `$GNTI info "$name" 2>/dev/null` ; do
 #echo "    sect: $sect   subsect: $subsect"
   e1=`expr "$L" : '^[[:space:]]*[A-Z]'`
   e2=`expr "$L" : '^[[:space:]]*-\ [a-z]'`
@@ -63,11 +64,14 @@ for L in `$GNTI info "$name"` ; do
 #echo "=== $e1 $e2 $e3 ::: \"$L\""
   [ $e1 -eq 1 ] && sect=`echo "$L" | cut -d: -f1` && echo $L | sed 's_: _|_' && continue
   [ $e1 -eq 3 ] && subsect=`echo "$L" | cut -d: -f1 | sed 's|^ *||'` && subvalue=`echo $L | cut -d: -f2 | sed 's|^ *||'`
-  [ -n "$subvalue" ] && echo "${sect}/${subsect}|${subvalue}" && continue
-  [ $e2 -gt 0 ] && var=`echo "$L" | cut -d: -f1 | sed 's|^ *- ||'` && value=`echo "$L" | cut -d: -f2,3,4 | sed 's|^ *||'`
-  [ -n "$value" ] && echo "${sect}/${subsect}/${var}|${value}" && unset value && continue
-  [ $e3 -gt 0 ] && var=`echo "$L" | cut -d: -f1 | sed 's|^ *||'` && value=`echo "$L" | cut -d: -f2,3,4 | sed 's|^ *||'`
-  [ -n "$value" ] && echo "${sect}/${subsect}/${var}|${value}" && unset value
+  [ -n "$subvalue" ] && echo "${sect}/${subsect}|${subvalue}" && unset subvalue && continue
+  if [ -n "$all" -o "x$subsect" != "xHypervisor" ]; then
+    [ $e2 -gt 0 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }"
+    [ $e2 -eq 7 ] && subvar=$var && echo "${sect}/${subsect}/${var}|${value}" && continue
+    [ $e2 -eq 9 ] && echo "${sect}/${subsect}/${var}/${subvar}|${value}" && unset value && continue
+    [ $e3 -gt 0 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }"
+    echo "${sect}/${subsect}/${var}/${subvar}|${value}" && unset value
+  fi
 done  > "${TMPDIR}/${rcommand}.resp"
 
 IFS=$IFS1
@@ -91,6 +95,6 @@ if [ -z "$name" ]; then
 fi
 
 request
-cat "${TMPDIR}/${rcommand}.resp"
+cat "${TMPDIR}/${rcommand}.resp" || exit 1
 
 
