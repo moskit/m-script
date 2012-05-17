@@ -72,17 +72,18 @@ find_source() {
       fi
       if [ -n "$notfound" ] ; then
         echo -n "checking if another role is included ... "
+        [ -n "$ROLEINCL" ] && echo -n "included role $ROLEINCL found ... "
         if [[ "$role" != "$ROLEINCL" ]] ; then
           if [ -f "${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from" ] ; then
             fullfrom="${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from"
             echo "the file is found in included role ${ROLEINCL} ... good"
             realrole=$ROLEINCL
-          elif [ -f "${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from" ] ; then
-            fullfrom="${ROLES_ROOT}/${ROLEINCL}/${M_FLAVOR}/files/$from"
+          elif [ -f "${ROLES_ROOT}/${ROLEINCL}/common/files/$from" ] ; then
+            fullfrom="${ROLES_ROOT}/${ROLEINCL}/common/files/$from"
             echo "the file is found in included role ${ROLEINCL} ... good"
             realrole=$ROLEINCL
           else
-            echo "not found, giving up"
+            echo "file not found, giving up"
             exit 1
           fi
         fi

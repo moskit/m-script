@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+possible_options="id name ip return verbose"
+necessary_options=""
+
+GNTI=`which gnt-instance 2>/dev/null`
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: ${missing_options} not found"
+  exit 1
+fi
+
+source "${rpath}/../../conf/cloud.conf"
+source "${rpath}/../../conf/mon.conf"
+TMPDIR="$TMPDIR"/cloud/ganeti
+install -d "$TMPDIR"
+
+if [ -z "$name" ]; then
+  if [ -n "$id" ]; then
+    name=`$GNTI list --separator='|' --no-headers -o uuid,name | grep "^${id}\|" | cut -d'|' -f2`
+  elif [ -n "$ip" ]; then
+    name=`$GNTI list --separator='|' --no-headers -o nic.ip/0,name | grep "^${ip}\|" | cut -d'|' -f2`
+  else
+    echo "One of --ip, --id or --name is required to identify the instance"
+    exit 1
+  fi
+fi
+$GNTI info "$name" | while read L ; do
+  e1=`expr "$L" : ^[[:space:]]*[A-Z]`
+  e2=`expr "$L" : ^[[:space:]]*-\ [a-z]`
+  e3=`expr "$L" : ^[[:space:]]*[a-z]`
+  [ $e1 -eq 1 ] && sect=`echo $L | cut -d: -f1` && echo $L | sed 's_: _|_' && continue
+  [ $e1 -eq 3 ] && subsect=`echo $L | cut -d: -f1` && subvalue=`echo $L | cut -d: -f2 | sed 's|^ *||'`
+  [ -n "$subvalue" ] && echo "${sect}/${subsect}|${subvalue}" && unset subvalue && continue
+  [ $e2 -gt 0 ] && value=`echo $L | cut -d: -f2 | sed 's|^ *||'` && echo "${sect}/${subsect}|${value}" && continue
+  [ $e3 -gt 0 ] && value=`echo $L | cut -d: -f2 | sed 's|^ *||'` && echo "${sect}/${subsect}|${value}"
+done
+

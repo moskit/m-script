@@ -73,7 +73,6 @@ run_meta() {
       [ -n "$use_color" ] && printf "\033[0m"
     fi
   else
-    
     metatype=`echo $1 | awk '{print $1}'`
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
@@ -83,6 +82,8 @@ run_meta() {
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       if [ -e "${ROLES_ROOT}/$metascript" ] ; then
+        [ -e "${WORK_DIR}/${role}.${task}.${timestampact}/$metascript" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestampact}/$metascript"
+        [ -e "${WORK_DIR}/${role}.${task}.${timestampact}/${metascript}.var" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestampact}/${metascript}.var"
         deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $V
         res=$?
       else
@@ -247,7 +248,7 @@ touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
 
 if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
-  echo "*** Bringing up a new server in the cloud $cloud"
+  echo "*** Bringing up a new server in cloud $cloud"
   "${rpath}"/../cloud/${cloud}/update_servers_list
   startserver
   for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do

@@ -160,3 +160,5 @@ list_servers() {
 request
 list_servers
 
+[ -n "$count" ] && echo $icount || exit 0
+
