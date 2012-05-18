@@ -191,14 +191,14 @@ $GNTC master-ping
 OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
 # OS required for the new server
-OSNAME=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | ct -d'+' -f1`
+OSNAME=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
 # common.sh is supposed to be a file containing functions and default settings
 # it cannot be just sourced, but we need only two things anyway
-OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
+OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2`
 
 source "$OS_DEFAULT_CONF"
 HOOKS_DIR="$CUSTOMIZE_DIR"
-[ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2`
+[ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
 
 # some logic to define the Linux flavor will be here
 
