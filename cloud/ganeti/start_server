@@ -200,6 +200,16 @@ res=`check_cluster_limit`
 [ -z "$ip" ] && ip=`find_ip` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: IP that will be used: $ip">>"${rpath}"/../../logs/cloud.log
 [ -z "$ip" ] && exit 4
 
+thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
+[ -f "${rpath}/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
+[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
+PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
 [ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && exit 1
