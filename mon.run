@@ -421,6 +421,7 @@ function timeshift() {
 }
 
 source ${rpath}/conf/mon.conf
+export TMPDIR FREQ
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $TMPDIR
 case ${1} in

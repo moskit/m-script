@@ -9,7 +9,7 @@ scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found, exiting..  " && exit 1
-CURL="$CURL -s"
+CURL="$CURL -m 2 -s"
 echo "<div class=\"dashtitle\">"
   echo "<div class=\"server\">"
     echo "<div class=\"servername\" id=\"title1\">ID</div>"

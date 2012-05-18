@@ -129,7 +129,7 @@ for cluster in $clusternames ; do
 done
 
 for node in `cat "${rpath}"/*.es_servers.list` ; do
-  allclusters="$allclusters `$CURL "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}"`"
+  allclusters="$allclusters `$CURL -m 2 "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}"`"
 done
 
 date > "${rpath}/report"
@@ -147,7 +147,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   [[ "$clusterport1" == "$clusterport2" ]] || echo "Different port numbers for cluster ${escluster}: $clusterport1 $clusterport2  - please keep your enironment sane!"
   [ -n "$clusterport1" ] && clusterport="$clusterport1" || clusterport="$clusterport2"
   
-  ($CURL "http://${clusterhost1}/_cluster/health" || $CURL "http://${clusterhost2}/_cluster/health") | ${rpath}/../../lib/json2txt > "${rpath}/${escluster}.dat"
+  ($CURL -m 2 "http://${clusterhost1}/_cluster/health" || $CURL -m 5 "http://${clusterhost2}/_cluster/health") | ${rpath}/../../lib/json2txt > "${rpath}/${escluster}.dat"
   IFS1=$IFS
   IFS='
 '
@@ -190,7 +190,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     $SQLITE "${rpath}/elasticsearch.sql3" "INSERT INTO cluster (timeindex, day, name, status, timed_out, number_of_nodes, number_of_data_nodes, active_primary_shards, active_shards, relocating_shards, initializing_shards, unassigned_shards) values ($timeindexnow, '`date +"%Y%m%d"`', '$cluster_name', '$status', '$timed_out', $number_of_nodes, $number_of_data_nodes, $active_primary_shards, $active_shards, $relocating_shards, $initializing_shards, $unassigned_shards)"
     unset name status timed_out number_of_nodes number_of_data_nodes active_primary_shards active_shards relocating_shards initializing_shards unassigned_shards
   fi
-  ($CURL "http://${clusterhost1}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL "http://${clusterhost2}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.nodes"
+  ($CURL -m 3 "http://${clusterhost1}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://${clusterhost2}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.nodes"
   for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^1\/master_node "${rpath}/data/${escluster}.nodes" | grep -c "$clusternode"`
@@ -207,7 +207,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
       echo "${rname}:${clusterport}" >> "${rpath}/${escluster}.nodes.list"
       mv "${rpath}/data/${escluster}.${rname}.dat" "${rpath}/data/${escluster}.${rname}.dat.prev"
       echo -e "clusternode_id|${clusternode}\nip|${nodehost}\nmaster|${ismaster}" > "${rpath}/data/${escluster}.${rname}.dat"
-      ($CURL "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats" || $CURL "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
+      ($CURL -m 5 "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats" || $CURL -m 10 "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
       if [ "X$SQLITE3" == "X1" ] ; then
         hostport=`grep ^$nodehost\: "${rpath}/${escluster}.nodes.list" | tail -1`
         [ -n "$hostport" ] || hostport=`grep ^$rname\: "${rpath}/${escluster}.nodes.list" | tail -1`
@@ -245,7 +245,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     fi
     
   done
-  ($CURL "http://${clusterhost1}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL "http://${clusterhost2}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.routing"
+  ($CURL -m 5 "http://${clusterhost1}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://${clusterhost2}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.routing"
   declare -i m
   for shard in `cat "${rpath}/data/${escluster}.routing" | grep '^1/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
     rm -f "${rpath}/data/${escluster}.${shard}.routing"
