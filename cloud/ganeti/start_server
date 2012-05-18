@@ -61,6 +61,7 @@ source "${rpath}/../../conf/mon.conf"
 TMPDIR="$TMPDIR"/cloud/ganeti
 install -d "$TMPDIR"
 source "${rpath}/../../conf/cloud.conf"
+[ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
 
 generate_name() {
   nam=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
@@ -103,6 +104,18 @@ find_ip() {
   else
     echo "${class}.2"
   fi
+}
+
+find_gateway() {
+  class=${GANETI_NETWORK%.*}
+  [ -z "$class" ] && class="10.1.1"
+  echo "${class}.1"
+}
+
+find_broadcast() {
+  class=${GANETI_NETWORK%.*}
+  [ -z "$class" ] && class="10.1.1"
+  echo "${class}.254"
 }
 
 save_details() {
@@ -194,17 +207,22 @@ OSPATH="${OSPATH##*: }"
 OSNAME=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
 # common.sh is supposed to be a file containing functions and default settings
 # it cannot be just sourced, but we need only two things anyway
-OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2`
+OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`
 
 source "$OS_DEFAULT_CONF"
 HOOKS_DIR="$CUSTOMIZE_DIR"
 [ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
 
 # some logic to define the Linux flavor will be here
+IFS1=$IFS
+IFS='
+'
+[ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
+broadcast=`find_broadcast`
 
 prepare_file "$rpath/network_if.debian.tmpl"
-cp "$rpath/network_if.debian" "$HOOKS_DIR"/
-chmod 755 "$HOOKS_DIR/network_if.debian"
+cp "$rpath/network_if.debian" "$HOOKS_DIR/network"
+chmod 755 "$HOOKS_DIR/network"
 export M_TMPDIR=$TMPDIR
 
 request && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log
@@ -216,4 +234,5 @@ else
   echo "Instance started, but tap device doesn't exist"
 fi
 
+IFS=$IFS1
 
