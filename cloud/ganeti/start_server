@@ -158,6 +158,9 @@ $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
 }
 
 prepare_file() {
+IFS1=$IFS
+IFS='
+'
   tmpfile="${TMPDIR}/interfaces"
   rm -f "${tmpfile}" "${tmpfile}.orig"
 
@@ -185,6 +188,7 @@ prepare_file() {
       [ -n "$debug" ] && tail -1 "${tmpfile}" || true
     fi
   done
+  IFS=$IFS1
 }
 
 [ -z "$cluster" ] && cluster=$M_CLUSTER
@@ -214,9 +218,7 @@ HOOKS_DIR="$CUSTOMIZE_DIR"
 [ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
 
 # some logic to define the Linux flavor will be here
-IFS1=$IFS
-IFS='
-'
+
 [ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
 broadcast=`find_broadcast`
 
@@ -234,5 +236,5 @@ else
   echo "Instance started, but tap device doesn't exist"
 fi
 
-IFS=$IFS1
+
 
