@@ -201,14 +201,13 @@ res=`check_cluster_limit`
 [ -z "$ip" ] && exit 4
 
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "${rpath}/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
-[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
-PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_dsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+[ -f "${rpath}/../../keys/${thekey}.pub" ] && PUBLIC_KEY=${thekey}.pub
+[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && PUBLIC_KEY=${thekey}.pem.pub
+[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME}/.ssh/id_dsa.pub
+[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
+[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
+[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
+[ ! -f "$PUBLIC_KEY" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
