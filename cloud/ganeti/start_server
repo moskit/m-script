@@ -161,18 +161,17 @@ prepare_file() {
 IFS1=$IFS
 IFS='
 '
-  tmpfile="${TMPDIR}/interfaces"
-  rm -f "${tmpfile}" "${tmpfile}.orig"
+  rm -f "${2}" "${2}.orig"
 
   cat "$1" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
     sed 's|\\"|\\\\"|g' | \
     sed 's|"|\\\"|g' | \
-    sed 's|`|\\\`|g' >> "${tmpfile}.orig"
+    sed 's|`|\\\`|g' >> "${2}.orig"
 
-  [ -n "$debug" ] && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
+  [ -n "$debug" ] && echo -e "\n --- TMP FILE ---\n\n" && cat "${2}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
 
-  for LINE in `cat -E "${tmpfile}.orig"` ; do
+  for LINE in `cat -E "${2}.orig"` ; do
     if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
       KEEP="${KEEP}`echo "$LINE" | sed 's|\\\\$$||'`"
       continue
@@ -181,11 +180,11 @@ IFS='
       unset KEEP
       a=`eval "echo \"$LINE\"" 2>>"${rpath}/../deploy.log"`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
-        echo "$a" >> "${tmpfile}"
+        echo "$a" >> "${2}"
       else
-        echo "$LINE" >> "${tmpfile}"
+        echo "$LINE" >> "${2}"
       fi
-      [ -n "$debug" ] && tail -1 "${tmpfile}" || true
+      [ -n "$debug" ] && tail -1 "${2}" || true
     fi
   done
   IFS=$IFS1
@@ -217,15 +216,13 @@ source "$OS_DEFAULT_CONF"
 HOOKS_DIR="$CUSTOMIZE_DIR"
 [ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
 
-# some logic to define the Linux flavor will be here
-
 [ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
 broadcast=`find_broadcast`
-
-prepare_file "$rpath/network_if.debian.tmpl"
-cp "$rpath/network_if.debian" "$HOOKS_DIR/network"
+# some logic to define the Linux flavor will be here
+prepare_file "$rpath/network_if.debian.tmpl" "$TMPDIR/interfaces"
+prepare_file "$rpath/network_if.debian" "$TMPDIR/network"
+cp "$TMPDIR/network" "$HOOKS_DIR/"
 chmod 755 "$HOOKS_DIR/network"
-export M_TMPDIR=$TMPDIR
 
 request && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log
 wait_ready

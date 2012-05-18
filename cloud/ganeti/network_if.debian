@@ -14,6 +14,6 @@ if [ "$(mountpoint -d /)" = "$(mountpoint -d "$TARGET")" ]; then
 fi
 
 echo "Creating network interfaces file"
-mv "$M_TMPDIR/interfaces" "$TARGET/etc/network/"
+mv "%{TMPDIR}%/interfaces" "$TARGET/etc/network/"
 
 exit 0
