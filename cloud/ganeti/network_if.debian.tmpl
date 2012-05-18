@@ -1,0 +1,16 @@
+# Loopback device:
+auto lo
+iface lo inet loopback
+
+# device: eth0
+auto  eth0
+iface eth0 inet static
+  address   %{ip}%
+  broadcast %{broadcast}%
+  netmask   255.255.255.0
+  gateway   %{GANETI_GATEWAY}%
+
+# default route to access subnet
+up route add -net %{GANETI_NETWORK}% netmask 255.255.255.0 gw %{GANETI_GATEWAY}% eth0
+
+

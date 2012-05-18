@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -e
+
+# Make sure we're not working on the root directory
+if [ -z "$TARGET" -o "$TARGET" = "/" ]; then
+    echo "Invalid target directory '$TARGET', aborting." 1>&2
+    exit 1
+fi
+
+if [ "$(mountpoint -d /)" = "$(mountpoint -d "$TARGET")" ]; then
+    echo "The target directory seems to be the root dir, aborting."  1>&2
+    exit 1
+fi
+
+echo "Creating network interfaces file"
+mv "$M_TMPDIR/interfaces" "$TARGET/etc/network/"
+
+exit 0

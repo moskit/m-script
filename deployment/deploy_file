@@ -123,7 +123,6 @@ prepare_file() {
       [ -n "$debug" ] && tail -1 "${tmpfile}" || true
     fi
   done
-
 }
 
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`

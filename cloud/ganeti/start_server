@@ -19,6 +19,7 @@ rpath=${0%/*}
 #*/
 
 GNTI=`which gnt-instance 2>/dev/null`
+GNTC=`which gnt-cluster 2>/dev/null`
 ROUTE=`which route 2>/dev/null`
 IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
@@ -129,16 +130,48 @@ wait_ready() {
 
 request() {
 node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
-iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
+ios=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
+iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f6`
 echo "$ip $name" >> /etc/hosts
 #echo "$GNTI add -n $node -o $iparams $name"
-$GNTI add -n $node $iparams $name 2>&1
+$GNTI add -n $node -o $ios $iparams $name 2>&1
 }
 
 find_idev() {
 if [ "`cat "${TMPDIR}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
-link=`cat "${TMPDIR}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
+  link=`cat "${TMPDIR}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
+fi
 $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
+}
+
+prepare_file() {
+  tmpfile="${TMPDIR}/interfaces"
+  rm -f "${tmpfile}" "${tmpfile}.orig"
+
+  cat "$1" | sed 's|}\%|}\%\\\n|g' | \
+    sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
+    sed 's|\\"|\\\\"|g' | \
+    sed 's|"|\\\"|g' | \
+    sed 's|`|\\\`|g' >> "${tmpfile}.orig"
+
+  [ -n "$debug" ] && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
+
+  for LINE in `cat -E "${tmpfile}.orig"` ; do
+    if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
+      KEEP="${KEEP}`echo "$LINE" | sed 's|\\\\$$||'`"
+      continue
+    else
+      LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
+      unset KEEP
+      a=`eval "echo \"$LINE\"" 2>>"${rpath}/../deploy.log"`
+      if [ $? -eq 0 ] && [ -n "$a" ]; then
+        echo "$a" >> "${tmpfile}"
+      else
+        echo "$LINE" >> "${tmpfile}"
+      fi
+      [ -n "$debug" ] && tail -1 "${tmpfile}" || true
+    fi
+  done
 }
 
 [ -z "$cluster" ] && cluster=$M_CLUSTER
@@ -151,6 +184,28 @@ res=`check_cluster_limit`
 [ -z "$ip" ] && ip=`find_ip` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: IP that will be used: $ip">>"${rpath}"/../../logs/cloud.log
 [ -z "$ip" ] && exit 4
 
+# Ganeti cluster must be running, and this script can run on master node only
+$GNTC master-ping
+[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && exit 1
+# If it's alive, we can get some info from it
+OSPATH=`$GNTC info | grep 'OS search path'`
+OSPATH="${OSPATH##*: }"
+# OS required for the new server
+OSNAME=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | ct -d'+' -f1`
+# common.sh is supposed to be a file containing functions and default settings
+# it cannot be just sourced, but we need only two things anyway
+OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
+
+source "$OS_DEFAULT_CONF"
+HOOKS_DIR="$CUSTOMIZE_DIR"
+[ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2`
+
+# some logic to define the Linux flavor will be here
+
+prepare_file "$rpath/network_if.debian.tmpl"
+cp "$rpath/network_if.debian" "$HOOKS_DIR"/
+chmod 755 "$HOOKS_DIR/network_if.debian"
+export M_TMPDIR=$TMPDIR
 
 request && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log
 wait_ready
@@ -160,3 +215,5 @@ if [ -n "$idev" ]; then
 else
   echo "Instance started, but tap device doesn't exist"
 fi
+
+
