@@ -179,6 +179,16 @@ if [ "Xsize" == "Xthumbnail" ] ; then
   pointsize=`expr $pointsize / 4`
 fi
 
+[ -z "$legendpos" ] && legendpos=left
+[ "$legendpos" == "left" ] && legendH=$legend && legendV=0
+[ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
+areaH=`expr $graphH - 2 \* $padding - $legendH`
+areaV=`expr $graphV - 2 \* $padding - $legendV`
+perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
+[[ $perdotY -lt 1 ]] && perdotY=1
+perdotX=`expr \( $to - $from \) / $areaH + 1`
+[[ $perdotX -lt 1 ]] && perdotX=1
+
 #####################
 #### Time period ####
 #####################
@@ -371,15 +381,6 @@ hourX=`expr 3600 / $perdotX`
 # Variable looping across all X marks
 currpoint=$from
 # Various coordinates
-[ -z "$legendpos" ] && legendpos=left
-[ "$legendpos" == "left" ] && legendH=$legend && legendV=0
-[ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
-areaH=`expr $graphH - 2 \* $padding - $legendH`
-areaV=`expr $graphV - 2 \* $padding - $legendV`
-perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
-[[ $perdotY -lt 1 ]] && perdotY=1
-perdotX=`expr \( $to - $from \) / $areaH + 1`
-[[ $perdotX -lt 1 ]] && perdotX=1
 # 0:0 coordinate
 startX=`expr $legendH + $padding`
 startY=`expr $graphV - $legendV - $padding`
