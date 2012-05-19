@@ -184,10 +184,6 @@ fi
 [ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
 areaH=`expr $graphH - 2 \* $padding - $legendH`
 areaV=`expr $graphV - 2 \* $padding - $legendV`
-perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
-[[ $perdotY -lt 1 ]] && perdotY=1
-perdotX=`expr \( $to - $from \) / $areaH + 1`
-[[ $perdotX -lt 1 ]] && perdotX=1
 
 #####################
 #### Time period ####
@@ -374,6 +370,11 @@ fi
 # 20 to 40 pixels
 countminX=20
 countminY=20
+
+perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
+[[ $perdotY -lt 1 ]] && perdotY=1
+perdotX=`expr \( $to - $from \) / $areaH + 1`
+[[ $perdotX -lt 1 ]] && perdotX=1
 
 # How many pixels one hour takes
 hourX=`expr 3600 / $perdotX`
