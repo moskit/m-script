@@ -142,8 +142,8 @@ if [ "X$command" != "X" ] ; then
   ## Deployment system integration ##
   if [ ! -e "$from" ]; then
     source "${rpath}/../../conf/deployment.conf"
-    [ -n "$flavor" ] && from1=`find "$ROLES_ROOT/$role/$flavor/files/" -maxdepth 1 -name "$from" -type f -o -type l`
-    [ ! -e "$from1" ] && from1=`find "$ROLES_ROOT/$role/common/files/" -maxdepth 1 -name "$from" -type f -o -type l`
+    [ -n "$flavor" ] && from1=`find "$ROLES_ROOT/$role/$flavor/files/" -maxdepth 1 -name "$from" \( -type f -o -type l \)`
+    [ ! -e "$from1" ] && from1=`find "$ROLES_ROOT/$role/common/files/" -maxdepth 1 -name "$from" \( -type f -o -type l \)`
     [ ! -e "$from1" ] && echo "File $from not found" && exit 1
     from=$from1
   fi

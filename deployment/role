@@ -397,7 +397,6 @@ case $command1 in
       meta)
         [ ! -e "$ROLES_ROOT/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
         [ -n "$strip" ] && cat "$ROLES_ROOT/$role/meta.$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/meta.$param1"
-        cat "$ROLES_ROOT/$role/meta.$param1"
         ;;
       script)
         prmarr=( `echo "$param1" | tr '/' '\n'` )

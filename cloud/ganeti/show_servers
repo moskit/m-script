@@ -137,6 +137,7 @@ list_servers() {
         fi
       else
         if [ -n "$icluster" ] ; then
+echo "adding ${nic_ip_0}|${key}|${pnode}|${name}|${icluster}"
           if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
             sed -i /^$nic_ip_0\|/d "${rpath}/../../servers.list"

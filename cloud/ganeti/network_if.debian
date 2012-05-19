@@ -19,7 +19,7 @@ echo "Installing OpenSSH..."
 chroot "$TARGET" apt-get install ssh -y
 echo "Installing SSH keys..."
 chroot "$TARGET" install -d /root/.ssh
-cp "%{M_ROOT}%/keys/%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
+cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
 chmod 600 "$TARGET/root/.ssh/authorized_keys"
 
 exit 0

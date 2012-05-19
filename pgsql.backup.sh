@@ -57,7 +57,7 @@ rm -f "$TMPDIR/pgsql.backup.error" 2>/dev/null
 # Get all database list first
 if [ "X${pgdblist}" == "X" ]; then
   pgdblist="$($PSQL -U $pgsqluser -h $pgsqlhost  -t --list -A | cut -d'|' -f1 | grep -vE "^postgres|^template" 2>"$TMPDIR/pgsql.backup.error")"
-  [ -f "$TMPDIR/pgsql.backup.error" ] && echo "pgsql: Error getting database list:" >> ${rpath}/m_backup.log && cat "$TMPDIR/pgsql.backup.error" >> ${rpath}/m_backup.error && exit 1
+  [ `cat "$TMPDIR/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: Error getting database list:" >> ${rpath}/m_backup.log && cat "$TMPDIR/pgsql.backup.error" >> ${rpath}/m_backup.error && exit 1
 fi
 
 for db in $pgdblist

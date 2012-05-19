@@ -87,6 +87,7 @@ check_cluster_limit() {
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
   n=`${rpath}/show_servers --view=none --count --cluster=$cluster`
+  [ -n "$1" ] && echo -e "Number of servers is limited for this cluster\nLimit: $limit\nCurrent number: $n\n\n"
   [ -z "$n" ] && return 1
   [ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \> $n` -gt 0 ] && return 0
@@ -132,6 +133,7 @@ wait_ready() {
   checks=`expr $waittimeout / $waitperiod`
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
+    [ -n "$1" ] && echo -n '.'
     "$rpath"/get_server_details --name=$name >/dev/null 2>&1
     if [ `cat "${TMPDIR}/get_server_details.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
       echo
@@ -147,7 +149,7 @@ ios=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f
 iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f6`
 echo "$ip $name" >> /etc/hosts
 #echo "$GNTI add -n $node -o $iparams $name"
-$GNTI add -n $node -o $ios $iparams $name 2>&1
+$GNTI add -n $node -o $ios $iparams $name 2>&1 </dev/null &
 }
 
 find_idev() {
@@ -193,7 +195,7 @@ IFS='
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
 
-res=`check_cluster_limit`
+res=`check_cluster_limit $verbose`
 [[ $res -ne 0 ]] && exit 5
 [ -z "$name" ] && name=`generate_name` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: name auto-generated: $name">>"${rpath}"/../../logs/cloud.log
 [ -z "$name" ] && exit 6
@@ -201,13 +203,13 @@ res=`check_cluster_limit`
 [ -z "$ip" ] && exit 4
 
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "${rpath}/../../keys/${thekey}.pub" ] && PUBLIC_KEY=${thekey}.pub
-[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && PUBLIC_KEY=${thekey}.pem.pub
-[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME}/.ssh/id_dsa.pub
-[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
-[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
-[ -f "$PUBLIC_KEY" ] || PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
-[ ! -f "$PUBLIC_KEY" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+[ -f "${rpath}/../../keys/${thekey}.pub" ] && PUBLIC_KEY="${rpath}/../../keys/${thekey}.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && PUBLIC_KEY="${rpath}/../../keys/${thekey}.pem.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_dsa.pub
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
+[ -z "$PUBLIC_KEY" ] && echo "No public key found. Tried ${rpath}/../../keys/${thekey}.\*, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
@@ -233,14 +235,45 @@ prepare_file "$rpath/network_if.debian" "$TMPDIR/network"
 cp "$TMPDIR/network" "$HOOKS_DIR/"
 chmod 755 "$HOOKS_DIR/network"
 
-request && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log
-wait_ready
-idev=`find_idev $ip`
-if [ -n "$idev" ]; then
-  $ROUTE add -host $ip dev $idev
+request $verbose
+[ $? -eq 0 ] && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log || echo "`date +"%m.%d %H:%M"` ganeti/start_server: request returned status $?">>"${rpath}"/../../logs/cloud.log
+wait_ready $V
+if [ $? -eq 0 ]; then
+  idev=`find_idev $ip`
+  if [ -n "$idev" ]; then
+    $ROUTE add -host $ip dev $idev
+    [ $? -ne 0 ] && echo "Failure adding the route: $ROUTE add -host $ip dev $idev" && exit 1
+  else
+    echo "Instance started, but tap device doesn't exist"
+    exit 1
+  fi
 else
-  echo "Instance started, but tap device doesn't exist"
+  echo "Timeout while waiting for the server is up"
+  exit 1
 fi
 
+# adding to the list
+$GNTI --add-tags $name cluster:$cluster && "$rpath/show_servers" --update_servers_list
 
+if [ -n "$return" ]; then
+  echo
+  for ret in `echo $return | tr ',' ' '`; do
+    case $ret in
+      ip)
+        echo $ip ;;
+      name)
+        echo $name ;;
+      idev)
+        echo $idev ;;
+      iparams)
+        echo $iparams ;;
+      node)
+        echo $node ;;
+      ios)
+        echo $ios ;;
+    esac
+  done
+fi
+
+exit 0
 
