@@ -248,13 +248,15 @@ touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
 
 if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
+  [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
+  [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
   echo "*** Bringing up a new server in cloud $cloud"
   "${rpath}"/../cloud/${cloud}/update_servers_list
   startserver
   for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
     # update_servers_list isn't required here, successful start_server updates it
     [ $res -eq 5 ] && echo "Maximum servers number for cluster $cluster has been reached, unable to add another server" && sleep $WAIT_BETWEEN_TRIES && startserver
-    [ $res -eq 6 ] && echo "Failed to generate a name for the new server" && sleep $WAIT_BETWEEN_TRIES && exit 1
+    [ $res -eq 6 ] && echo "Failed to generate a name for the new server" && exit 1
     [ $res -eq 7 ] && echo "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver
     [ $res -eq 8 ] && echo "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver
     [ $res -eq 1 ] && echo "Something went wrong, unable to add a server to the cluster $cluster" && sleep $WAIT_BETWEEN_TRIES && startserver

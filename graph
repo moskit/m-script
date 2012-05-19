@@ -148,6 +148,10 @@ install -d ${rpath}/www/graphs
 declare -a colors
 colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
 
+##################################
+#### Definitions and defaults ####
+##################################
+
 [ -n "$padding" ] || padding=20
 [ -n "$legend" ] || legend=60
 [ -n "$fontsize" ] || fontsize=10
@@ -155,7 +159,6 @@ colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "
 [ -n "$pointsize" ] || pointsize=12
 [ -n "$width" ] && graphH=$width
 [ -n "$height" ] && graphV=$height
-
 [ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size in conf/dash.conf or as command-line options >> "${rpath}/dashboard.log"" && exit 1)
 if [ "X$size" == "Xsmall" ] ; then
   graphH=`expr $graphH / 2`
@@ -163,7 +166,7 @@ if [ "X$size" == "Xsmall" ] ; then
   padding=`expr $padding / 2`
   legend=`expr $legend / 2`
   fontsize=`expr $fontsize - 2`
-  strokewidth=2
+  strokewidth=1
   pointsize=`expr $pointsize / 2`
 fi
 if [ "Xsize" == "Xthumbnail" ] ; then
@@ -175,8 +178,10 @@ if [ "Xsize" == "Xthumbnail" ] ; then
   strokewidth=1
   pointsize=`expr $pointsize / 4`
 fi
-areaH=`expr $graphH - 2 \* $padding - $legend`
-areaV=`expr $graphV - 2 \* $padding - $legend`
+
+#####################
+#### Time period ####
+#####################
 
 # the idea is to work entirely in UTC (timestamps in the db is UTC as well)
 # only X axis marks are converted to server local time
@@ -203,6 +208,11 @@ fi
 title="Graph: $metric from $tfrom to $tto"
 #tlength=`expr length $title`
 echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
+
+##############################
+#### Servers and clusters ####
+##############################
+
 if [ ! -f "${rpath}/servers.list" ] ; then
   echo "Create ${rpath}/servers.list please" >> "${rpath}/dashboard.log"
   exit 1
@@ -228,6 +238,10 @@ if [ -z "$localip" ] ; then
 else
   sIP="localhost"
 fi
+
+###########################
+#### Querying the data ####
+###########################
 
 [ -z "$database" ] && database="sysdata"
 dbname=`echo "$database" | tr '/' '_'`
@@ -267,7 +281,7 @@ dbname=`echo "$database" | tr '/' '_'`
 #fi
 ########
 
-########    The part above, but with getting min and max from the file
+##  Same as above, but with getting min and max from the file
 
 metricmin=0
 metricmax=0
@@ -302,6 +316,11 @@ if [ -n "$new" ] ; then
     exit 1
   fi
 fi
+
+#############################
+#### Processing the data ####
+#############################
+
 declare -i n
 n=2
 for smetric in `echo $metric | tr ',' ' '` ; do
@@ -314,6 +333,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   n+=1
 done
 sn=`echo $metric | tr ',' ' ' | wc -w`
+
 if [ "X$scale" == "Xyes" ] ; then
   sadd=`solve "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve "$metricmax / $sn"` 2>/dev/null || sadd=10
   snadd=0
@@ -337,13 +357,11 @@ if [ "X$scale" == "Xyes" ] ; then
   done
 fi
 
-perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
-[[ $perdotY -lt 1 ]] && perdotY=1
-perdotX=`expr \( $to - $from \) / $areaH + 1`
-[[ $perdotX -lt 1 ]] && perdotX=1
+#####################################
+#### Graph geometry calculations ####
+#####################################
 
 # 20 to 40 pixels
-
 countminX=20
 countminY=20
 
@@ -353,9 +371,18 @@ hourX=`expr 3600 / $perdotX`
 # Variable looping across all X marks
 currpoint=$from
 # Various coordinates
+[ -z "$legendpos" ] && legendpos=left
+[ "$legendpos" == "left" ] && legendH=$legend && legendV=0
+[ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
+areaH=`expr $graphH - 2 \* $padding - $legendH`
+areaV=`expr $graphV - 2 \* $padding - $legendV`
+perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
+[[ $perdotY -lt 1 ]] && perdotY=1
+perdotX=`expr \( $to - $from \) / $areaH + 1`
+[[ $perdotX -lt 1 ]] && perdotX=1
 # 0:0 coordinate
-startX=`expr $legend + $padding`
-startY=`expr $graphV - $legend - $padding`
+startX=`expr $legendH + $padding`
+startY=`expr $graphV - $legendV - $padding`
 # Vertical grid lines
 mX1=`expr $startY + 2`
 mXT1=`expr $mX1 + 14`
@@ -366,12 +393,12 @@ mYT1=`expr $mY1 - 50`
 mY2=`expr $graphH - $padding`
 # Axis names coordinates
 axisXX=`expr $graphH - $padding - 60`
-axisXY=`expr $graphV - $legend + 20`
+axisXY=`expr $graphV - $legendV + 20`
 axisYX=$padding
 axisYY=$padding
 
 #titleX=`expr \( $graphH - $tlength \) / 2`
-titleX=`expr $padding + $legend + 20`
+titleX=`expr $padding + $legendH + 20`
 titleY=`expr $graphV - $padding`
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
@@ -506,13 +533,16 @@ if [[ $res -lt $a ]] ; then
   fi
 fi
 
-# Drawing
+################
+### Drawing ####
+################
+
 declare -i i
 declare -i imark
 imark=`expr $metricmin / $res \* $res`
 shiftY=`expr $metricmin - $imark`
 ires=`expr $res / $perdotY`
-i=`expr $legend + $padding`
+i=`expr $legendV + $padding`
 imax=`expr $i + $areaV`
 while true
 do
@@ -541,13 +571,13 @@ echo "<g id=\"axis\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 printf "<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 printf " $startX,$startY $startX,$mX2" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:2\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 printf " $startX,$startY $mY2,$startY" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Marks
-echo "<g id=\"marks\" style=\"fill:none;stroke:#999;stroke-width:1;\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
@@ -560,15 +590,29 @@ echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Graphs
 i=0
-startlegendX=`solve "$startX - $legend"`
-slegendY=$startY
-sadd=`expr \( $graphV - $legend - $padding \) / $sn`
+if [ "$legendpos" == "left" ]; then
+  slegendX=`solve "$startX - $legend"`
+  slegendY=$startY
+  sadd=`expr \( $graphV - $padding \) / $sn`
+else
+  slegendX=10
+  slegendY=$axisXY
+  sadd=`expr 2 \* $fontsize`
+fi
 echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 n=2
+
 for smetric in `echo $metric | tr ',' ' '` ; do
-  slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$startlegendX\\" y=\\"$slegendY\\" >$smetric</text>"`"
-  slegendY=`solve "$slegendY - $sadd"`
+
+  slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$slegendX\\" y=\\"$slegendY\\" >$smetric</text>"`"
+  
+  if [ "$legendpos" == "left" ]; then
+    slegendY=`expr $slegendY - $sadd`
+  else
+    slegendY=`expr $slegendY - $sadd`
+  fi
   printf "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+  
   if [ "X$scale" == "Xyes" ] ; then cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled ; else cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n} ; fi | while read LINE
   do
     X=`echo $LINE | cut -d'|' -f1`
