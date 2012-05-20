@@ -28,6 +28,8 @@ IPR2=`which ip 2>/dev/null`
 possible_options="region flavor cluster image name return verbose"
 necessary_options="cluster"
 
+LOG="${rpath}"/../../logs/cloud.log
+
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 
 IFS1=$IFS
@@ -143,6 +145,10 @@ wait_ready() {
   return 1
 }
 
+log() {
+echo "`date +"%m.%d %H:%M"` ganeti/start_server: ${@}">>$LOG
+}
+
 request() {
 node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
 ios=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
@@ -197,9 +203,9 @@ IFS='
 
 res=`check_cluster_limit $verbose`
 [[ $res -ne 0 ]] && exit 5
-[ -z "$name" ] && name=`generate_name` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: name auto-generated: $name">>"${rpath}"/../../logs/cloud.log
+[ -z "$name" ] && name=`generate_name` && log "name auto-generated: $name"
 [ -z "$name" ] && exit 6
-[ -z "$ip" ] && ip=`find_ip` && echo "`date +"%m.%d %H:%M"` ganeti/start_server: IP that will be used: $ip">>"${rpath}"/../../logs/cloud.log
+[ -z "$ip" ] && ip=`find_ip` && log "IP that will be used: $ip"
 [ -z "$ip" ] && exit 4
 
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
@@ -209,7 +215,7 @@ thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -
 [ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
 [ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
 [ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
-[ -z "$PUBLIC_KEY" ] && echo "No public key found. Tried ${rpath}/../../keys/${thekey}.\*, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+[ -z "$PUBLIC_KEY" ] && log "No public key found. Tried ${rpath}/../../keys/${thekey}.\*, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
@@ -236,24 +242,31 @@ cp "$TMPDIR/network" "$HOOKS_DIR/"
 chmod 755 "$HOOKS_DIR/network"
 
 request $verbose
-[ $? -eq 0 ] && echo "`date +"%m.%d %H:%M"` ganeti/start_server: request sent">>"${rpath}"/../../logs/cloud.log || echo "`date +"%m.%d %H:%M"` ganeti/start_server: request returned status $?">>"${rpath}"/../../logs/cloud.log
+[ $? -eq 0 ] && log "request sent successfully" || log "request returned status $?"
 wait_ready $V
 if [ $? -eq 0 ]; then
   idev=`find_idev $ip`
   if [ -n "$idev" ]; then
     $ROUTE add -host $ip dev $idev
-    [ $? -ne 0 ] && echo "Failure adding the route: $ROUTE add -host $ip dev $idev" && exit 1
+    [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && exit 1
   else
-    echo "Instance started, but tap device doesn't exist"
+    log "Instance started, but tap device doesn't exist"
     exit 1
   fi
 else
-  echo "Timeout while waiting for the server is up"
+  log "Timeout while waiting for the server is up"
   exit 1
 fi
 
 # adding to the list
-$GNTI --add-tags $name cluster:$cluster && "$rpath/show_servers" --update_servers_list
+$GNTI add-tags $name cluster:$cluster
+if [ $? -eq 0 ]; then
+  log "Tag cluster:$cluster added"
+  "$rpath/show_servers" --update_servers_list
+else
+  log "Adding tag cluster:$cluster failed"
+  echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"
+fi
 
 if [ -n "$return" ]; then
   echo

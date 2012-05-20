@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+GNTI=`which gnt-instance 2>/dev/null`
+
+source "${rpath}/../../conf/mon.conf"
+source "${rpath}/../../conf/cloud.conf"
+TMPDIR="${TMPDIR}/cloud/${CLOUD}"
+LOG="${rpath}"/../../logs/cloud.log
+
+possible_options="id name ip verbose"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+[ -z "$ARGV" ] && echo "Stop server? Which one?" && exit 1
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+find_by_ip() {
+  name=`$GNTI list --no-headers -o name,nic.ip/0 | grep " $ip$" | cut -d' ' -f1`
+}
+
+find_by_id() {
+  name=`$GNTI list --no-headers -o name,uuid | grep " $id$" | cut -d' ' -f1`
+}
+
+log() {
+echo "`date +"%m.%d %H:%M"` ganeti/stop_server: ${@}">>$LOG
+}
+
+if [ -z "$name" ] ; then
+  if [ -z "$ip" ] ; then
+    if [ -z "$id" ] ; then
+      echo "One of id, ip or name is required to identify the server"
+      exit 1
+    else
+      find_by_id
+    fi
+  else
+    find_by_ip
+  fi
+fi
+[ -z "$name" ] && echo "Unable to find this server" && exit 1
+
+request() {
+  $GNTI remove -f $name
+  echo $?
+}
+
+IPS=`$GNTI list --no-headers -o name,nic.ips $name | tr ',' ' '`
+
+reqres=`request`
+
+if [ $reqres -eq 0 ] ; then
+  log "server name ${name}, id ${id}, IP ${ip} terminated succesfully" | tee -a "$rpath"/../ganeti.log
+  SSHK=`which ssh-keygen 2>/dev/null`
+  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
+  for ipa in ${IPS} ; do
+    if [ -n "$ipa" ] ; then
+      $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "$ipa removed from known_hosts"
+      sed -i "/^$ipa|/d" "${rpath}/../../servers.list" && log "$ipa removed from servers.list"
+      sed -i "/^$ipa /d" /etc/hosts && log "$ipa removed from /etc/hosts"
+    fi
+  done
+
+fi
+
+
