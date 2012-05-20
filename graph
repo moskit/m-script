@@ -602,8 +602,9 @@ else
   sadd=`expr 2 \* $fontsize`
 fi
 echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-n=2
 
+# first column is the X axis, data starts from the column 2
+n=2
 for smetric in `echo $metric | tr ',' ' '` ; do
 
   slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$slegendX\\" y=\\"$slegendY\\" >$smetric</text>"`"
@@ -620,8 +621,8 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     X=`echo $LINE | cut -d'|' -f1`
     Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
     if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
-    X=`expr \( $X - $from \) / $perdotX + $padding + $legend`
-    Y=`expr $graphV - $padding - $legend - \( $Y - $metricmin + $shiftY \) / $perdotY`
+    X=`expr \( $X - $from \) / $perdotX + $padding + $legendH`
+    Y=`expr $graphV - $padding - $legendV - \( $Y - $metricmin + $shiftY \) / $perdotY`
     printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   done
   echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
