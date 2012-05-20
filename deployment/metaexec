@@ -284,7 +284,7 @@ if [ -z "$output" ] ; then
   [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 fi
 
-if [ `echo $ip | grep -c "$localip"` -eq 0 ] ; then
+if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
   [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
   [ -z "$SSH" ] && echo "SSH client not found!" && exit 1

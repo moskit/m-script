@@ -171,7 +171,7 @@ if [ "X$command" != "X" ] ; then
         echo
         echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
       fi
-      if [ `echo $IP | grep -c "$localip"` -ne 0 ] ; then
+      if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
         [ -z "$nolocalhost" ] && cp -up $from $to
       else
         [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"

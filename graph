@@ -133,7 +133,7 @@ fi
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
 if [ -n "$ip" ] ; then
-  if [ `echo $sIP | grep -c "$localip"` -ne 0 ] ; then
+  if [ `echo $sIP | grep -c "^$localip$"` -ne 0 ] ; then
     localip="yes"
   else
     unset localip
@@ -153,6 +153,7 @@ colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "
 ##################################
 
 [ -n "$padding" ] || padding=20
+[ -n "$axis" ] || axis=40
 [ -n "$legend" ] || legend=60
 [ -n "$fontsize" ] || fontsize=10
 [ -n "$strokewidth" ] || strokewidth=2
@@ -164,6 +165,7 @@ if [ "X$size" == "Xsmall" ] ; then
   graphH=`expr $graphH / 2`
   graphV=`expr $graphV / 2`
   padding=`expr $padding / 2`
+  axis=`expr $axis / 2`
   legend=`expr $legend / 2`
   fontsize=`expr $fontsize - 2`
   strokewidth=1
@@ -173,6 +175,7 @@ if [ "Xsize" == "Xthumbnail" ] ; then
   graphH=`expr $graphH / 4`
   graphV=`expr $graphV / 4`
   padding=`expr $padding / 4`
+  axis=`expr $axis / 4`
   legend=`expr $legend / 4`
   fontsize=`expr $fontsize - 4`
   strokewidth=1
@@ -182,8 +185,8 @@ fi
 [ -z "$legendpos" ] && legendpos=left
 [ "$legendpos" == "left" ] && legendH=$legend && legendV=0
 [ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
-areaH=`expr $graphH - 2 \* $padding - $legendH`
-areaV=`expr $graphV - 2 \* $padding - $legendV`
+areaH=`expr $graphH - 2 \* $padding - $legendH - $axis`
+areaV=`expr $graphV - 2 \* $padding - $legendV - $axis`
 
 #####################
 #### Time period ####
@@ -383,8 +386,8 @@ hourX=`expr 3600 / $perdotX`
 currpoint=$from
 # Various coordinates
 # 0:0 coordinate
-startX=`expr $legendH + $padding`
-startY=`expr $graphV - $legendV - $padding`
+startX=`expr $legendH + $padding + $axis`
+startY=`expr $graphV - $legendV - $padding - $axis`
 # Vertical grid lines
 mX1=`expr $startY + 2`
 mXT1=`expr $mX1 + 14`
@@ -395,13 +398,14 @@ mYT1=`expr $mY1 - 50`
 mY2=`expr $graphH - $padding`
 # Axis names coordinates
 axisXX=`expr $graphH - $padding - 60`
-axisXY=`expr $graphV - $legendV + 20`
+axisXY=`expr $graphV - $legendV - $axis + 20`
 axisYX=$padding
 axisYY=$padding
 
 #titleX=`expr \( $graphH - $tlength \) / 2`
 titleX=`expr $padding + $legendH + 20`
-titleY=`expr $graphV - $padding`
+titleY=`expr $graphV - \( $padding / 2 \)`
+
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
   # How many hours are within 40 pixels
@@ -597,7 +601,7 @@ if [ "$legendpos" == "left" ]; then
   slegendY=$startY
   sadd=`expr \( $graphV - $padding \) / $sn`
 else
-  slegendX=10
+  slegendX=$padding
   slegendY=$axisXY
   sadd=`expr 2 \* $fontsize`
 fi
@@ -612,7 +616,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   if [ "$legendpos" == "left" ]; then
     slegendY=`expr $slegendY - $sadd`
   else
-    slegendY=`expr $slegendY - $sadd`
+    slegendY=`expr $slegendY + $sadd`
   fi
   printf "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   
@@ -621,8 +625,8 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     X=`echo $LINE | cut -d'|' -f1`
     Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
     if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
-    X=`expr \( $X - $from \) / $perdotX + $padding + $legendH`
-    Y=`expr $graphV - $padding - $legendV - \( $Y - $metricmin + $shiftY \) / $perdotY`
+    X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
+    Y=`expr $graphV - $padding - $axis - $legendV - \( $Y - $metricmin + $shiftY \) / $perdotY`
     printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   done
   echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
