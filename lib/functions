@@ -1,0 +1,61 @@
+#!/bin/bash
+# Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+source "$rpath/../conf/mon.conf"
+SQL=`which sqlite3 2>/dev/null`
+
+store_results() {
+  [ -z "$1" ] && echo "Fields are not defined" && exit 1
+  [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
+  if [ -z "$2" ]; then
+    caller=$(readlink -f "$0")
+    callername=${caller##*/}
+    callerfolder=${caller%/*}
+    callerparent=${callerfolder%/*}
+echo "if [ -n \"$callerparent\" -a \"${callerparent##*/}\" == \"standalone\" ]"
+echo "elif [ -n \"$callerfolder\" -a \"${callerfolder##*/}\" == \"tests\" ]"
+    if [ -n "$callerparent" -a "${callerparent##*/}" == "standalone" ]; then
+      dbfile="$callerfolder/${callername%.mon}.db"
+    elif [ -n "$callerfolder" -a "${callerfolder##*/}" == "tests" ]; then
+      dbfile="$callerfolder/../sysdata"
+    else
+      echo "Non-standard file location, unable to define where the database is"
+      exit 1
+    fi
+    dbtable="${callername%.mon}"
+  else
+    dbfile="${2%%|*}"
+    dbtable="${2##*|}"
+  fi
+  timeindex=`date +"%s"`
+  day=`date +"%Y%m%d"`
+  [ -z "$dbtable" ] && echo "Unable to find out what table to store the data into" && exit 1
+  [ -z "$dbfile" ] && echo "Database file definition is NULL" && exit 1
+  values="$(IFS=','; for f in $fields; do f=${f%:*}; echo "`eval \$$f`,"; done)"
+  if [ ! -f "$dbfile" ]; then
+    fields="`echo "$1" | tr ':' ' '`"
+    $SQL "$dbfile" "CREATE TABLE '$dbtable' (timeindex integer, day varchar(8), $fields)"
+  fi
+  fields="$(IFS=','; for f in $fields; do f=${f%:*}; echo "${f},"; done)"
+echo "$SQL \"$dbfile\" \"INSERT INTO TABLE \'$dbtable\' (timeindex, day, $fields) values ($timeindex, \'$day\', $values)\""
+  #$SQL "$dbfile" "INSERT INTO TABLE '$dbtable' (timeindex, day, $fields) values ($timeindex, '$day', $values)"
+
+}
+
