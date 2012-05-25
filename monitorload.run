@@ -119,7 +119,7 @@ start)
         
         case $DASHBOARD_TRANSPORT in
           SSH)
-            ${rpath}/getdash.ssh 2>$rpath/dashboard.log
+            ${rpath}/getdash.ssh 2>$rpath/dashboard.log </dev/null &
           ;;
           JSON)
           

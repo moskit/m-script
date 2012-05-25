@@ -81,5 +81,17 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
   done
 done
 
+# Clusters not present in clusters.conf are backuped to M_ROOT/mon.backups/dash
+install -d "$rpath/mon.backups/dash/"
+for cluster in `find "$rpath/www/servers/" -maxdepth 1 -type d` ; do
+  cluster=${cluster##*/}
+  if [ -n "$cluster" ]; then
+    if [ `grep -c "^$cluster|" "$rpath/conf/clusters.conf"` -eq 0 ]; then
+      cp -u "$rpath/www/servers/$cluster" "$rpath/mon.backups/dash/"
+      rm -rf "$rpath/www/servers/$cluster"
+    fi
+  fi
+done
+
 IFS=$IFS1
 

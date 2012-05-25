@@ -74,7 +74,8 @@ fi
 [ -z "$name" ] && echo "Unable to find this server" && exit 1
 
 request() {
-  $GNTI remove -f $name
+  ssh root@$name shutdown
+  $GNTI remove -f $name 2>/dev/null
   echo $?
 }
 
