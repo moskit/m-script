@@ -85,9 +85,9 @@ done
 install -d "$rpath/mon.backups/dash/"
 for cluster in `find "$rpath/www/servers/" -maxdepth 1 -type d` ; do
   cluster=${cluster##*/}
-  if [ -n "$cluster" ]; then
+  if [ -n "$cluster" -a "$cluster" != "localhost" ]; then
     if [ `grep -c "^$cluster|" "$rpath/conf/clusters.conf"` -eq 0 ]; then
-      cp -u "$rpath/www/servers/$cluster" "$rpath/mon.backups/dash/"
+      cp -ru "$rpath/www/servers/$cluster" "$rpath/mon.backups/dash/"
       rm -rf "$rpath/www/servers/$cluster"
     fi
   fi
