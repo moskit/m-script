@@ -152,6 +152,19 @@ if [ $reqres -eq 0 -a `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; t
       sed -i "/^$ipa /d" /etc/hosts && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
     fi
   done
+  
+  for bcluster in $APP_SERVERS ; do
+    [ "X${bcluster%%|*}" == "X$cluster" ] && needs_balancer=true
+  done
+  if $needs_balancer ; then
+    if [ -n "$BALANCER" ] ; then
+      case "$BALANCER" in
+      nginx)
+        update_nginx_proxy
+        ;;
+      esac
+    fi
+  fi
 
 fi
 
