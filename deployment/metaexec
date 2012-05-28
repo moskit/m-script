@@ -297,8 +297,12 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && exit 1
   #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
   if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
-    $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip pwd >/dev/null
-    [ $? -ne 0 ] && echo "Unable to login to the server $ip" && exit 1
+    for ((k=0; k<3; k++)); do
+      $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip echo >/dev/null
+      [ $? -ne 0 ] && echo "Unable to login to the server $ip using the key ${rpath}/../keys/${KEY}, trying again...">>"${rpath}"/../logs/cloud.log
+      sleep 5
+    done
+    [ $? -ne 0 ] && exit 1
   fi
   #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
 

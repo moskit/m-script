@@ -74,9 +74,10 @@ fi
 [ -z "$name" ] && echo "Unable to find this server" && exit 1
 
 request() {
-  ssh root@$name shutdown
+  ssh root@$name poweroff
   $GNTI remove -f $name 2>/dev/null
   echo $?
+  
 }
 
 IPS=`$GNTI list --no-headers -o name,nic.ips $name | tr ',' ' '`
