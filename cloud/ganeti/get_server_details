@@ -87,9 +87,9 @@ install -d "$TMPDIR"
 
 if [ -z "$name" ]; then
   if [ -n "$id" ]; then
-    name=`$GNTI list --separator='|' --no-headers -o uuid,name | grep "^${id}\|" | cut -d'|' -f2`
+    name=`$GNTI list --separator='|' --no-headers -o uuid,name | grep "^${id}|" | cut -d'|' -f2`
   elif [ -n "$ip" ]; then
-    name=`$GNTI list --separator='|' --no-headers -o nic.ip/0,name | grep "^${ip}\|" | cut -d'|' -f2`
+    name=`$GNTI list --separator='|' --no-headers -o nic.ip/0,name | grep "^${ip}|" | cut -d'|' -f2`
   else
     echo "One of --ip, --id or --name is required to identify the instance"
     exit 1
@@ -97,6 +97,31 @@ if [ -z "$name" ]; then
 fi
 
 request
-cat "${TMPDIR}/${rcommand}.resp" || exit 1
+if [ -z "$return" ]; then
+  cat "${TMPDIR}/${rcommand}.resp" || exit 1
+else
+  case $return in
+  os)
+    pattern="State/Operating system|"
+    ;;
+  cpu|cpus)
+    pattern="State/Hardware/VCPUs|"
+    ;;
+  memory)
+    pattern="State/Hardware/memory|"
+    ;;
+  nic|nics)
+    pattern="State/Hardware/NICs/nic/"
+    ;;
+  disk|disks)
+    pattern="State/Disks/disk/"
+    ;;
+  *)
+    pattern="$return|"
+    ;;
+  esac
+  cat "${TMPDIR}/${rcommand}.resp" | grep "^$pattern" | sed "s_^$pattern__g" || exit 1
+fi
 
+exit 0
 
