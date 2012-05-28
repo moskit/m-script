@@ -114,7 +114,7 @@ run_meta() {
 }
 
 startserver() {
-  ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" 2>>"${rpath}"/../logs/cloud.log | tail -1`
+  ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log | tail -1`
   res=$?
   echo "`date +"%m.%d %H:%M"` metaexec: start_server exited with status $res and returned this IP: $ip">>"${rpath}"/../logs/cloud.log
 }
@@ -243,6 +243,7 @@ else
 fi
 export role cluster
 [ -n "$verbose" ] && V='--verbose'
+[ -n "$test" ] && T='--test'
 install $V -d "${WORK_DIR}/${role}.${task}.${timestampact}"
 touch "${WORK_DIR}/${role}.${task}.${timestampact}/log"
 
@@ -251,17 +252,21 @@ if [ -n "$newserver" ]; then
   [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
   echo "*** Bringing up a new server in cloud $cloud"
-  "${rpath}"/../cloud/${cloud}/update_servers_list
-  startserver
+  if [ -z "$test" ]; then
+    "${rpath}"/../cloud/${cloud}/update_servers_list
+  else
+    echo "*** This is a test"
+  fi
+  startserver $T
   for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
     # update_servers_list isn't required here, successful start_server updates it
-    [ $res -eq 5 ] && echo "Maximum servers number for cluster $cluster has been reached, unable to add another server" && sleep $WAIT_BETWEEN_TRIES && startserver
+    [ $res -eq 5 ] && echo "Maximum servers number for cluster $cluster has been reached, unable to add another server" && sleep $WAIT_BETWEEN_TRIES && startserver $T
     [ $res -eq 6 ] && echo "Failed to generate a name for the new server" && exit 1
-    [ $res -eq 7 ] && echo "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver
-    [ $res -eq 8 ] && echo "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver
-    [ $res -eq 1 ] && echo "Something went wrong, unable to add a server to the cluster $cluster" && sleep $WAIT_BETWEEN_TRIES && startserver
-    [[ $ip =~ [^[0-9.]]* ]] && echo "Something's wrong with IP: $ip" && sleep $WAIT_BETWEEN_TRIES && startserver
-    [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && startserver
+    [ $res -eq 7 ] && echo "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver $T
+    [ $res -eq 8 ] && echo "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver $T
+    [ $res -eq 1 ] && echo "Something went wrong, unable to add a server to the cluster $cluster" && sleep $WAIT_BETWEEN_TRIES && startserver $T
+    [[ $ip =~ [^[0-9.]]* ]] && echo "Something's wrong with IP: $ip" && sleep $WAIT_BETWEEN_TRIES && startserver $T
+    [ -z "$ip" ] && echo "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && startserver $T
   done
 fi
 

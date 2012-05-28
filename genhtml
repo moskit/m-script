@@ -19,7 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-possible_options="type css"
+possible_options="type css folder"
 necessary_options="type"
 [ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
@@ -63,7 +63,8 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-install -d "${rpath}/www/servers/localhost"
+[ -z "$folder" ] && folder="servers/localhost"
+install -d "${rpath}/www/$folder"
 source "${rpath}/conf/dash.conf"
 source "${rpath}/conf/mon.conf"
 [ -z "$freqdef" ] && freqdef=$FREQ
@@ -73,20 +74,20 @@ case $type in
   dash)
     id="`date +"%m.%d_%H:%M:%S"`"
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
-    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}_${serverid}','/servers')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
-    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/${id}_${serverid}.html"
-    exc=`cat "${rpath}/www/servers/localhost/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
+    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}_${serverid}','/servers')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "${rpath}/www/$folder/dash.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/$folder/${id}_${serverid}.html"
+    exc=`cat "${rpath}/www/$folder/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
       for ((i=1; i<=${exc}; i++)) ; do
-        sed -i '1d' "${rpath}/www/servers/localhost/dash.html" 2>>"${rpath}/dashboard.log"
+        sed -i '1d' "${rpath}/www/$folder/dash.html" 2>>"${rpath}/dashboard.log"
       done
     fi
     timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
-    find "${rpath}/www/servers/localhost/" -mmin +$timerange -exec rm '{}' \;
+    find "${rpath}/www/$folder/" -mmin +$timerange -exec rm '{}' \;
     ;;
   report)
-    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/servers/localhost/report.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/$folder/report.html" 2>>"${rpath}/dashboard.log"
     ;;
 esac
 IFS=$IFS1

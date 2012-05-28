@@ -28,19 +28,21 @@ addxmarks() {
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos"
+possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel"
 necessary_options="metric"
-source ${rpath}/conf/dash.conf
-RSYNC=`which rsync 2>/dev/null`
+source "${rpath}/conf/mon.conf"
+source "${rpath}/conf/dash.conf"
 
-#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+RSYNC=`which rsync 2>/dev/null`
+SQL3=`which sqlite3 2>/dev/null` # assuming that remote path is the same
+
 for s_option in "${@}"
 do
   found=0
@@ -74,45 +76,64 @@ do
 done
 # "metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} --metric=metric <other options>"
-  echo 
-  echo "Without --from a graph for the default period will be generated,"
-  echo "depending on the graph size and FREQ variable (see conf/dash.conf)."
-  echo "The --to option is ignored in this case."
-  echo "With --from but without --to the latter defaults to the current time."
-  echo
-  echo "Options:"
-  echo
-  echo "  --ip=<IP address of the server to get data from>"
-  echo "           Server must be present in servers.list"
-  echo "           If empty, means localhost"
-  echo "  --from=<start time in any format acceptable by the 'date' utility>"
-  echo "  --to=<end time in any format acceptable by the 'date' utility>"
-  echo "  --metric=<check sqlite3 sysdata '.schema sysdata' to see all metrics>"
-  echo "           Multiple metrics accepted, separated by comma, no spaces"
-  echo "  --new  - forces getting the latest data from the server. Without this"
-  echo "           option a new graph is generated using the data received by"
-  echo "           the dashboard update daemon. Option --from always invokes"
-  echo "           this option"
-  echo "  --database=<path to database file, relative to M-Script root folder>"
-  echo "           The default is sysdata"
-  echo "  --table=<table name>  The default is sysdata"
-  echo "  --size=<small|thumbnail>  If not defined, it's the default big graph"
-  echo "  --scale  Used to create combined graphs with multiple metrics."
-  echo "           This options scales graphs so that changes become visible"
-  echo "           and places graphs one under another."
-  echo "  --where=<field:value>  Additional WHERE clause for SQL query."
-  echo "           Add escaped quotes to value if needed: field:\'value\'"
-  echo "  --as=<name>  New name for metric. Especially useful if metric is an" 
-  echo "           ariphmetic expression like: --metric=\"\(metric1+metric2\)\""
-  echo "  --legendpos=<left|below>"
-  echo
-  echo "Graph format options:"
-  echo
-  echo "  --width, --height, --padding, --legend,"
-  echo "  --fontsize, --strokewidth, --pointsize"
-  echo "  These options can be used to overwrites those from conf/dash.conf."
-  echo
+cat << "EOF"
+Usage: ${0##*/} --metric=metric <other options>
+
+Without --from a graph for the default period will be generated,
+depending on the graph size and FREQ variable (see conf/dash.conf).
+The --to option is ignored in this case.
+With --from but without --to the latter defaults to the current time.
+
+Options:
+
+--ip=<IP>               IP address of the server to get data from
+                        Server must be present in servers.list
+                        If empty, means localhost
+                    
+--from=<date/time>      time of the beginning of the graph in any format
+                        acceptable by the 'date' utility
+
+--to=<date/time>        graph end time in any format acceptable by the 'date'
+                        utility
+
+--metric=<metric>       metric = database field name
+                        Multiple metrics accepted, separated by comma, no spaces
+                    
+--new                   forces getting the latest data from the server.
+                        Without this option a new graph is generated using the
+                        data received by the dashboard update daemon.
+                        Option --from always invokes this option
+                    
+--database=<path/to/database>
+                        path to database file, relative to M-Script root folder
+                        The default is sysdata
+                    
+--table=<table name>    The default is sysdata
+
+--size=<small|thumbnail>
+                        If not defined, it's the default big graph
+                        
+--scale                 Used to create combined graphs with multiple metrics.
+                        This options scales graphs so that changes become visible
+                        and places graphs one under another.
+                        
+--where=<field:value>   Additional WHERE clause for SQL query.
+                        Add escaped quotes to value if needed: field:\'value\'
+                        
+--as=<name>             New name for metric. Especially useful if metric is an
+                        ariphmetic expression like:
+                        --metric=\"\(metric1+metric2\)\" --as=MyMetric
+                        
+--legendpos=<left|below>
+
+Graph format options:
+
+  --width, --height, --padding, --legend,           These options can be used
+  --fontsize, --strokewidth, --pointsize            to overwrites those from
+                                                    conf/dash.conf.
+  
+  
+EOF
   exit 0
 fi
 found=0
@@ -142,9 +163,9 @@ else
   localip="yes"
 fi
 
-TMPDIR=/tmp/m_script/dash
-install -d $TMPDIR
-install -d ${rpath}/www/graphs
+TMPDIR="$TMPDIR"/dash
+install -d "$TMPDIR"
+install -d "${rpath}/www/graphs"
 declare -a colors
 colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
 
@@ -192,31 +213,37 @@ areaV=`expr $graphV - 2 \* $padding - $legendV - $axis`
 #### Time period ####
 #####################
 
-# the idea is to work entirely in UTC (timestamps in the db is UTC as well)
-# only X axis marks are converted to server local time
-if [ -n "$from" ] ; then
-# whatever you provide as --from, it is supposed to be UTC unless you provided
-# the time zone. In this latter case it will be converted to UTC, not just
-# considered to be UTC
-  tfrom=`date -u -d "$from"`
-  from=`date -u -d "$from" +"%s"`
-  if [ -n "$to" ] ; then
-    tto=`date -u -d "$to"`
-    to=`date -d "$to" +"%s"`
+# perpixel option makes time period obsolete
+if [ -z "$perpixel" ] ; then
+  # the idea is to work entirely in UTC (timestamps in the db is UTC as well)
+  # only X axis marks are converted to server local time
+  if [ -n "$from" ] ; then
+  # whatever you provide as --from, it is supposed to be UTC unless you provided
+  # the time zone. In this latter case it will be converted to UTC, not just
+  # considered to be UTC
+    tfrom=`date -u -d "$from"`
+    from=`date -u -d "$from" +"%s"`
+    if [ -n "$to" ] ; then
+      tto=`date -u -d "$to"`
+      to=`date -d "$to" +"%s"`
+    else
+      to=`date +"%s"`
+      tto=`date -u`
+    fi
   else
+    from=`date +"%s"` # this is always UTC
+    from=`expr $from - $areaH \* $freqdef`
+    tfrom=`date -u -d "1970/01/01 +$from sec"`
     to=`date +"%s"`
     tto=`date -u`
   fi
+  title="Graph: $metric from $tfrom to $tto"
+  #tlength=`expr length $title`
+  echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
 else
-  from=`date +"%s"` # this is always UTC
-  from=`expr $from - $areaH \* $freqdef`
-  tfrom=`date -u -d "1970/01/01 +$from sec"`
-  to=`date +"%s"`
-  tto=`date -u`
+  title="Graph: $metric"
+  echo "`date +"%d/%m %H:%M"` Generating graph ${metric}, last $areaH values">> "${rpath}/dashboard.log"
 fi
-title="Graph: $metric from $tfrom to $tto"
-#tlength=`expr length $title`
-echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
 
 ##############################
 #### Servers and clusters ####
@@ -241,9 +268,8 @@ if [ -z "$localip" ] ; then
   scluster=`echo $server | cut -d'|' -f5`
   mpath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
   [ -z "$mpath" ] && echo "M-Script path for server $server not found" >> "${rpath}/dashboard.log" && exit 1
-  if [ -n "$skey" ] && [ -f "${rpath}/keys/${skey}.pem" ] ; then
-    thekey="-i ${rpath}/keys/${skey}.pem"
-  fi
+  [ -f "${rpath}/keys/${skey}" ] && thekey="-i ${rpath}/keys/${skey}"
+  [ -z "$thekey" -a -f "${rpath}/keys/${skey}.pem" ] && thekey="-i ${rpath}/keys/${skey}.pem"
 else
   sIP="localhost"
 fi
@@ -257,72 +283,75 @@ dbname=`echo "$database" | tr '/' '_'`
 [ -z "$table" ] && table="sysdata" || dbname="${dbname}_${table}"
 [ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
 
-######     Getting min and max values from database
+if [ -n "$perpixel" ]; then
+  expr $perpixel / 1 >/dev/null 2>&1 || perpixel=1
+  limit=$(($areaH/$perpixel))
+###### Getting min and max values from database
+  minmaxQ="select min($metric)*1000, max($metric)*1000 from (select $metric from $table order by timeindex desc limit $limit)"
+  if [ "$sIP" == "localhost" ]; then
+    minmax=`$SQL3 "${rpath}/$database" "$minmaxQ"`
+  else
+    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"$minmaxQ\""`
+  fi
+  metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
+  metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
+  if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
+    echo "Error getting minimum and maximum values for $metric $limit last values" >> "${rpath}/dashboard.log"
+    exit 1
+  fi
+  [ -z "$metricmin" ] && metricmin=0
+  [ -z "$metricmax" ] && metricmax=$areaV
 
-#minmax=`$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${rpath}/sysdata\" \"select min($metric), max($metric) from sysdata where timeindex between $from and $to\""`
-#metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
-#metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
-#if [ -z "$metricminfp" ] || [ -z "$metricmaxfp" ] ; then
-#  echo "Error getting minimum and maximum values for $metric from $from to $to" >> "${rpath}/dashboard.log"
-#  exit 1
-#fi
-#[ -z "$metricmin" ] && metricmin=0
-#[ -z "$metricmax" ] && metricmax=0
+  mp=`solve "$areaV / $metrixmax"`
+  
+  QUERY="select ${metric}*${mp} from $table order by timeindex desc limit $limit"
+  
+  if [ "$sIP" == "localhost" ]; then
+    $SQL3 "${rpath}/$database" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+  else
+    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+  fi
+  if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
+    echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
+    exit 1
+  fi
 
-## Ideally we want 3 meaningful digits
-#if [ `expr length $metricmax` -lt 3 ] ; then
-#  metricmaxdec=`expr length ${metricmaxfp#*.}`
-#  if [[ $metricmaxdec -eq 0 ]] ; then
-#    mp=10
-#  else
-#    mp=1 ; for ((i=0; i<$metricmaxdec; i++)) ; do mp="${mp}0" ; done
-#  fi
-#  QUERY="select timeindex, ${metric}*${mp} from sysdata where timeindex between $from and $to;"
-#  metricmin=`solve "$metricminfp * $mp"` ; metricmin=${metricmin%.*}
-#  metricmax=`solve "$metricmaxfp * $mp"` ; metricmax=${metricmax%.*}
-#else
-#  QUERY="select timeindex, $metric from sysdata where timeindex between $from and #$to;"
-#fi
-#$SSH $thekey -o StrictHostKeyChecking=no $sIP "sqlite3 \"${rpath}/sysdata\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
-#if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
-#  echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
-#  exit 1
-#fi
 ########
-
+else
 ##  Same as above, but with getting min and max from the file
 
-metricmin=0
-metricmax=0
-# Using fixed multiplyer to avoid double querying
-mp=100
-if [ -n "$as" ] ; then
-  name=$as
-else
-  name=`echo $metric | tr ',' '_'`
-fi
-qmetric="timeindex"
-for smetric in `echo $metric | tr ',' ' '` ; do
-  rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
-  qmetric="${qmetric}, ${smetric}*${mp}"
-done
-  
-if [ -n "$new" ] ; then
-  QUERY="SELECT $qmetric FROM $table WHERE timeindex BETWEEN $from AND $to"
-  if [ -n "$where" ] ; then
-    field=${where%%:*}
-    value=${where#*:}
-    QUERY="$QUERY AND $field=$value" 
-  fi
-  if [ "X$sIP" == "Xlocalhost" ] ; then
-    sqlite3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+  metricmin=0
+  metricmax=0
+  # Using fixed multiplyer to avoid double querying
+  mp=100
+  if [ -n "$as" ] ; then
+    name=$as
   else
-  # -o StrictHostKeyChecking=no 
-    $SSH $thekey -p $SSHPORT $sIP "sqlite3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+    name=`echo $metric | tr ',' '_'`
   fi
-  if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
-    echo "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
-    exit 1
+  qmetric="timeindex"
+  for smetric in `echo $metric | tr ',' ' '` ; do
+    rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
+    qmetric="${qmetric}, ${smetric}*${mp}"
+  done
+    
+  if [ -n "$new" ] ; then
+    QUERY="SELECT $qmetric FROM $table WHERE timeindex BETWEEN $from AND $to"
+    if [ -n "$where" ] ; then
+      field=${where%%:*}
+      value=${where#*:}
+      QUERY="$QUERY AND $field=$value" 
+    fi
+    if [ "X$sIP" == "Xlocalhost" ] ; then
+      $SQL3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+    else
+    # -o StrictHostKeyChecking=no 
+      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+    fi
+    if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
+      echo "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
+      exit 1
+    fi
   fi
 fi
 
@@ -548,7 +577,7 @@ declare -i imark
 imark=`expr $metricmin / $res \* $res`
 shiftY=`expr $metricmin - $imark`
 ires=`expr $res / $perdotY`
-i=`expr $legendV + $padding`
+i=`expr $legendV + $padding + $axis`
 imax=`expr $i + $areaV`
 while true
 do

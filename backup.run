@@ -745,18 +745,20 @@ EOF
   if [ -z "$nonbackup" ]; then
     echo -e "Archive file name pattern: ${archname}\n--------------------------------------------------------------\n\n" >> ${rpath}/backup.report
   fi
-
+  cat ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
+  
   errlog=`grep "\*\*\*" ${rpath}/m_backup.error`
   if [ -n "$errlog" ]; then
     if [ -n "$debugflag" ]; then
-      grep "\*\*\*" ${rpath}/m_backup.error >> ${locallogpath}/logs/m_backup.error
+      cat ${rpath}/m_backup.error >> ${rpath}/backup.report
+    else
+      echo "*** There were errors during this backup:" >> ${rpath}/backup.report
+      for command in "cp scp rsync debug mv rm mysql pgsql ncftpput tar"
+      do
+        grep -i -m 3 "^${command}" ${rpath}/m_backup.error >> ${rpath}/backup.report
+      done
+      echo -e "*** Note that errors shown are limited to 3 errors for every operation\nFull error log is available at ${locallogpath}/logs/m_backup.error\n" >> ${rpath}/backup.report
     fi
-    echo "*** There were errors during this backup:" >> ${rpath}/backup.report
-    for command in "cp scp rsync debug mv rm mysql pgsql ncftpput tar"
-    do
-      grep -i -m 3 "^${command}" ${rpath}/m_backup.error >> ${rpath}/backup.report
-    done
-    echo -e "*** Note that errors shown are limited to 3 errors for every operation\nFull error log is available at ${locallogpath}/logs/m_backup.error\n" >> ${rpath}/backup.report
   fi
   
   echo -e "Operations finished:\n\n" >> ${rpath}/backup.report

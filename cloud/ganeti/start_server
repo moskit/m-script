@@ -25,7 +25,7 @@ IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
 [ -z "$ROUTE" ] && echo "route utility not found" && exit 1
 [ -z "$IPR2" ] && echo "ip utility not found" && exit 1
-possible_options="region flavor cluster image name return verbose"
+possible_options="region flavor cluster image name return verbose test"
 necessary_options="cluster"
 
 LOG="${rpath}"/../../logs/cloud.log
@@ -241,31 +241,33 @@ prepare_file "$rpath/network_if.debian" "$TMPDIR/network"
 cp "$TMPDIR/network" "$HOOKS_DIR/"
 chmod 755 "$HOOKS_DIR/network"
 
-request $verbose
-[ $? -eq 0 ] && log "request sent successfully" || log "request returned status $?"
-wait_ready $V
-if [ $? -eq 0 ]; then
-  idev=`find_idev $ip`
-  if [ -n "$idev" ]; then
-    $ROUTE add -host $ip dev $idev
-    [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && exit 1
+if [ -z "$test" ]; then
+  request $verbose
+  [ $? -eq 0 ] && log "request sent successfully" || log "request returned status $?"
+  wait_ready $V
+  if [ $? -eq 0 ]; then
+    idev=`find_idev $ip`
+    if [ -n "$idev" ]; then
+      $ROUTE add -host $ip dev $idev
+      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && exit 1
+    else
+      log "Instance started, but tap device doesn't exist"
+      exit 1
+    fi
   else
-    log "Instance started, but tap device doesn't exist"
+    log "Timeout while waiting for the server is up"
     exit 1
   fi
-else
-  log "Timeout while waiting for the server is up"
-  exit 1
-fi
 
-# adding to the list
-$GNTI add-tags $name cluster:$cluster
-if [ $? -eq 0 ]; then
-  log "Tag cluster:$cluster added"
-  "$rpath/show_servers" --update_servers_list
-else
-  log "Adding tag cluster:$cluster failed"
-  echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"
+  # adding to the list
+  $GNTI add-tags $name cluster:$cluster
+  if [ $? -eq 0 ]; then
+    log "Tag cluster:$cluster added"
+    "$rpath/show_servers" --update_servers_list
+  else
+    log "Adding tag cluster:$cluster failed"
+    echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"
+  fi
 fi
 
 if [ -n "$return" ]; then

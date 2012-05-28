@@ -55,6 +55,7 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
       done
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
     echo "</div>"
+    
     echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
     
     for node in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.nodes.list` ; do
