@@ -61,3 +61,28 @@ echo "elif [ -n \"$callerfolder\" -a \"${callerfolder##*/}\" == \"tests\" ]"
 
 }
 
+function gendash() {
+  indic="ok"
+  [ -n "`grep '<\*>' "$1"`" ] && indic="w1"
+  [ -n "`grep '<\*\*>' "$1"`" ] && indic="w2"
+  [ -n "`grep '<\*\*\*>' "$1"`" ] && indic="w3"
+  case $DASHBOARD in
+    HTML)
+      "${rpath}/genhtml" --type=dash --css=${indic}${3} --folder="$2" "$1" 2>>${rpath}/dashboard.log
+      ;;
+    JSON)
+      "${rpath}/genjson" --type=dash --css=${indic}${3} --folder="$2" "$1" 2>>${rpath}/dashboard.log
+      ;;
+  esac
+}
+
+function genreport() {
+  case $DASHBOARD in
+    HTML)
+      "${rpath}/genhtml" --type=report "$1" 2>>"${rpath}/dashboard.log"
+      ;;
+    JSON)
+      "${rpath}/genjson" --type=report "$1" 2>>"${rpath}/dashboard.log"
+      ;;
+  esac
+}

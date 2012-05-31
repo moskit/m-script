@@ -64,18 +64,18 @@ if [ "X$help" == "Xyes" ] ; then
 fi
 
 [ -z "$folder" ] && folder="servers/localhost"
-install -d "${rpath}/www/$folder"
+[ -d "${rpath}/www/$folder" ] || install -d "${rpath}/www/$folder"
 source "${rpath}/conf/dash.conf"
 source "${rpath}/conf/mon.conf"
 [ -z "$freqdef" ] && freqdef=$FREQ
 
-text="${s_param}"
+textfile="${s_param}"
 case $type in
   dash)
     id="`date +"%m.%d_%H:%M:%S"`"
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
-    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}_${serverid}','/servers')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "${rpath}/www/$folder/dash.html" 2>>"${rpath}/dashboard.log"
-    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/$folder/${id}_${serverid}.html"
+    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}_${serverid}','${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "${rpath}/www/$folder/dash.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "$textfile" >> "${rpath}/www/$folder/${id}_${serverid}.html"
     exc=`cat "${rpath}/www/$folder/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
@@ -87,7 +87,7 @@ case $type in
     find "${rpath}/www/$folder/" -mmin +$timerange -exec rm '{}' \;
     ;;
   report)
-    "${rpath}/lib/txt2html" "${rpath}/report" >> "${rpath}/www/$folder/report.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "$$textfile" >> "${rpath}/www/$folder/report.html" 2>>"${rpath}/dashboard.log"
     ;;
 esac
 IFS=$IFS1

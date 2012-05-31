@@ -1,0 +1,94 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+possible_options="type css folder"
+necessary_options="type"
+[ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+IFS1=$IFS
+IFS='--'
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+
+  for option in `echo $possible_options | sed 's/ /--/g'`; do 
+    [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options> <textfile>"
+  echo 
+  echo "Options:"
+  echo
+  echo "  --type=<type>            - dash, report, alert"
+  echo "                             default is dash."
+  echo "  --css=<CSS class>        - dash slot class (dash only)"
+  exit 0
+fi
+
+[ -z "$folder" ] && folder="servers/localhost"
+[ -d "${rpath}/www/$folder" ] || install -d "${rpath}/www/$folder"
+source "${rpath}/conf/dash.conf"
+source "${rpath}/conf/mon.conf"
+[ -z "$freqdef" ] && freqdef=$FREQ
+
+textfile="${s_param}"
+case $type in
+  dash)
+    id="`date +"%m.%d_%H:%M:%S"`"
+    serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
+    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}_${serverid}','${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "${rpath}/www/$folder/dash.html" 2>>"${rpath}/dashboard.log"
+    "${rpath}/lib/txt2html" "$textfile" >> "${rpath}/www/$folder/${id}_${serverid}.html"
+    exc=`cat "${rpath}/www/$folder/dash.html" | wc -l` 2>>"${rpath}/dashboard.log"
+    exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
+    if [[ $exc -gt 0 ]] ; then
+      for ((i=1; i<=${exc}; i++)) ; do
+        sed -i '1d' "${rpath}/www/$folder/dash.html" 2>>"${rpath}/dashboard.log"
+      done
+    fi
+    timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
+    find "${rpath}/www/$folder/" -mmin +$timerange -exec rm '{}' \;
+    ;;
+  report)
+    "${rpath}/lib/txt2html" "$$textfile" >> "${rpath}/www/$folder/report.html" 2>>"${rpath}/dashboard.log"
+    ;;
+esac
+IFS=$IFS1
+

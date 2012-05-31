@@ -404,9 +404,9 @@ countminX=20
 countminY=20
 
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
-[[ $perdotY -lt 1 ]] && perdotY=1
+#[[ $perdotY -lt 1 ]] && perdotY=1
 perdotX=`expr \( $to - $from \) / $areaH + 1`
-[[ $perdotX -lt 1 ]] && perdotX=1
+#[[ $perdotX -lt 1 ]] && perdotX=1
 
 # How many pixels one hour takes
 hourX=`expr 3600 / $perdotX`
@@ -554,7 +554,7 @@ fi
 unset nexthour theday themonth theyear themark currpoint hourX
 
 # Now for Y
-# Finding out what resolution might be
+# Finding out what per mark resolution might be
 a=`expr $perdotY \* $countminY`
 b=`expr 2 \* $a`
 s=`expr length $b`
@@ -574,7 +574,9 @@ fi
 
 declare -i i
 declare -i imark
+# where the Y axis zero is
 imark=`expr $metricmin / $res \* $res`
+# how much above the axis zero the minimum value is
 shiftY=`expr $metricmin - $imark`
 ires=`expr $res / $perdotY`
 i=`expr $legendV + $padding + $axis`
@@ -655,7 +657,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
     if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
     X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
-    Y=`expr $graphV - $padding - $axis - $legendV - \( $Y - $metricmin + $shiftY \) / $perdotY`
+    Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
     printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   done
   echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"

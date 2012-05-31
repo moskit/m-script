@@ -137,9 +137,10 @@ start)
       fi
       # Standalone tests, if any
       for sa in `find ${rpath}/standalone/rc/ -maxdepth 1 -type l` ; do
+        safolder=$(readlink -f "$sa")
         for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-          $satest >> ${rpath}/sa.log 2>&1
+          $satest >> "${rpath}/$safolder/report" 2>${rpath}/sa.log
         done </dev/null &
       done
     else

@@ -44,7 +44,7 @@ print_page_title() {
 
 print_cluster_header() {
   id=$(echo ${@} | tr ' ' '_')
-  echo "<div class=\"clustername\"><span class=\"indent\">${@}</span></div>\n<div class=\"cluster\" id=\"${id}\">"
+  echo -e "<div class=\"clustername\"><span class=\"indent\">${@}</span></div>\n<div class=\"cluster\" id=\"${id}\">"
 }
 
 print_cluster_bottom() {
@@ -55,7 +55,7 @@ print_line_title() {
   onclick=$1
   shift
   id=$(echo ${@} | tr ' ' '_')
-  echo "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}','${onclick}')\">${@}</div>"
+  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}','${onclick}')\">${@}</div>"
 }
 
 close_line() {
@@ -69,7 +69,9 @@ print_dashline() {
     case $source in
     folder)
       shift
-      cat "$rpath/../www/$1/dash.html"
+      
+      [ -d "$rpath/../www/${@}" ] || install -d "$rpath/../www/${@}"
+      cat "$rpath/../www/${@}/dash.html"
       ;;
     database)
       shift
