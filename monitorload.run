@@ -138,9 +138,12 @@ start)
       # Standalone tests, if any
       for sa in `find ${rpath}/standalone/rc/ -maxdepth 1 -type l` ; do
         safolder=$(readlink -f "$sa")
+        rm -f "$safolder/report" 2>/dev/null
+        echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "${rpath}/sa.log"
         for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-          $satest >> "${rpath}/$safolder/report" 2>${rpath}/sa.log
+          echo "`date +"%H:%M:%S"` $satest" >> "${rpath}/sa.log"
+          $satest >> "$safolder/report" 2>>"${rpath}/sa.log"
         done </dev/null &
       done
     else
