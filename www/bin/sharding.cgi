@@ -8,7 +8,7 @@ echo ""
 saname="MongoDB"
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-
+MONGO=`which mongo 2>/dev/null`
 source "${PWD}/../../conf/mon.conf"
 FREQ2=`expr $FREQ \* 2`
 
@@ -42,21 +42,21 @@ coll_bottom() {
 }
 
 print_shards() {
-
+  echo "do nothing"
 }
 
 cat "${PWD}/../../standalone/${saname}/views_nav_bar.html" | sed "/\"${scriptname}\"/s/\"viewsbutton\"/\"viewsbutton active\"/"
 confserver=`tail -1 "${PWD}/../../standalone/${saname}/mongo_config_servers.list"`
 [ -z "$confserver" ] && echo "No configuration servers found" && exit 1
-masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
+masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${PWD}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
 for db in `ls -1 "${PWD}/../../standalone/${saname}/data"/shards.*.* | cut -d'/' -f2 | cut -d'.' -f2 | sort | uniq` ; do
   db_header $db
   for coll in "${PWD}/../../standalone/${saname}/data"/shards.${db}.* ; do
     colldata=`find "${PWD}/../../standalone/${saname}/data" -name ${db}.dat -mmin $FREQ2 2>/dev/null`
     if [ -n "$colldata" ] ; then
       colldata=`grep ^$coll\| "$colldata"`
-    else
-    
+#    else
+#    
     fi
     coll_header $colldata
     print_shards $coll

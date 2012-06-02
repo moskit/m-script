@@ -14,11 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rpath=$(readlink -f "$BASH_SOURCE")
-rcommand=${rpath##*/}
-rpath=${rpath%/*}
+fpath=$(readlink -f "$BASH_SOURCE")
+fpath=${fpath%/*}
 #*/
-source "$rpath/../conf/mon.conf"
+source "$fpath/../conf/mon.conf"
 SQL=`which sqlite3 2>/dev/null`
 
 store_results() {
@@ -36,7 +35,7 @@ echo "elif [ -n \"$callerfolder\" -a \"${callerfolder##*/}\" == \"tests\" ]"
     elif [ -n "$callerfolder" -a "${callerfolder##*/}" == "tests" ]; then
       dbfile="$callerfolder/../sysdata"
     else
-      echo "Non-standard file location, unable to define where the database is"
+      echo "Non-standard file location, unable to determine where the database is"
       exit 1
     fi
     dbtable="${callername%.mon}"
@@ -68,10 +67,10 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' "$1"`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      "${rpath}/genhtml" --type=dash --css=${indic}${3} --folder="$2" "$1" 2>>${rpath}/dashboard.log
+      "${fpath}/genhtml" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"${fpath}/../dashboard.log"
       ;;
     JSON)
-      "${rpath}/genjson" --type=dash --css=${indic}${3} --folder="$2" "$1" 2>>${rpath}/dashboard.log
+      "${fpath}/genjson" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"${fpath}/../dashboard.log"
       ;;
   esac
 }
@@ -79,10 +78,13 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      "${rpath}/genhtml" --type=report "$1" 2>>"${rpath}/dashboard.log"
+      "${fpath}/genhtml" --type=report "$1" 2>>"${fpath}/../dashboard.log"
       ;;
     JSON)
-      "${rpath}/genjson" --type=report "$1" 2>>"${rpath}/dashboard.log"
+      "${fpath}/genjson" --type=report "$1" 2>>"${fpath}/../dashboard.log"
       ;;
   esac
 }
+
+unset fpath SQL
+

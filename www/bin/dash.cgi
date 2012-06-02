@@ -1,37 +1,8 @@
 #!/bin/bash
 
-echo "Pragma: no-cache"
-echo "Expires: 0"
-echo "Content-Cache: no-cache"
-echo "Content-type: text/html"
-echo ""
-[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-source "${PWD}/../../conf/dash.conf"
-source "${PWD}/../../conf/mon.conf"
-[ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift 2>/dev/null` || timeshift=5
-[ -n "$freqdef" ] || freqdef=$FREQ
-timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
-oldest=`date -d "-$timerange sec"`
-hour=`date -d "$oldest" +"%H"`
-echo "<div class=\"dashtitle\">"
-echo "<div class=\"clustername\"><span class=\"indent\">Cluster</span></div>"
-echo "<div class=\"server\">"
-echo "<span class=\"servername\">Server</span>"
-freqdef1=`expr $freqdef + 5`
-for ((n=0; n<$slotline_length; n++)) ; do
-  timediff=`expr $n \* \( $freqdef - $timeshift \)`
-  timestamp=`date -d "$oldest +$timediff sec"`
-  hournew=`date -d "$timestamp" +"%H"`
-  if [ "X$hournew" == "X$hour" ] ; then
-    echo "<div class=\"chunk\">&nbsp;</div>"
-  else
-    echo "<div class=\"chunk hour\">${hournew}:00</div>"
-    hour=$hournew
-  fi
-done
-echo "</div>"
-echo "</div>"
+print_cgi_headers
+
+print_timeline Cluster Server
 
 for cluster in `find ../servers/* -maxdepth 0 -type d 2>/dev/null`
 do

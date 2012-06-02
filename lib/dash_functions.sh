@@ -14,11 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rpath=$(readlink -f "$BASH_SOURCE")
-rcommand=${rpath##*/}
-rpath=${rpath%/*}
+dpath=$(readlink -f "$BASH_SOURCE")
+dpath=${dpath%/*}
 #*/
-source "$rpath/../conf/mon.conf"
+source "$dpath/../conf/mon.conf"
+source "$dpath/../conf/dash.conf"
+
 SQL=`which sqlite3 2>/dev/null`
 
 print_cgi_headers() {
@@ -70,8 +71,8 @@ print_dashline() {
     folder)
       shift
       
-      [ -d "$rpath/../www/${@}" ] || install -d "$rpath/../www/${@}"
-      cat "$rpath/../www/${@}/dash.html"
+      [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
+      cat "$dpath/../www/${@}/dash.html"
       ;;
     database)
       shift
@@ -85,5 +86,27 @@ print_dashline() {
   fi
 }
 
+print_timeline() {
+  [ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift 2>/dev/null` || timeshift=5
+  [ -n "$freqdef" ] || freqdef=$FREQ
+  timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
+  oldest=`date -d "-$timerange sec"`
+  hour=`date -d "$oldest" +"%H"`
+  echo -e "<div class=\"dashtitle\">\n<div class=\"clustername\"><span class=\"indent\">${1}</span></div>\n<div class=\"server\">\n<span class=\"servername\">${2}</span>\n"
+  freqdef1=`expr $freqdef + 5`
+  for ((n=0; n<$slotline_length; n++)) ; do
+    timediff=`expr $n \* \( $freqdef - $timeshift \)`
+    timestamp=`date -d "$oldest +$timediff sec"`
+    hournew=`date -d "$timestamp" +"%H"`
+    if [ "X$hournew" == "X$hour" ] ; then
+      echo "<div class=\"chunk\">&nbsp;</div>"
+    else
+      echo "<div class=\"chunk hour\">${hournew}:00</div>"
+      hour=$hournew
+    fi
+  done
+  echo -e "</div>\n</div>"
+}
 
+unset dpath SQL
 
