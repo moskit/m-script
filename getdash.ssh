@@ -28,7 +28,7 @@ SQLITE=`which sqlite3 2>/dev/null`
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
-timeindexnow=`cat ${TMPDIR}/timeindex` || timeindexnow=`date +"%s"`
+timeindexnow=`cat ${TMPDIR}/timeindex 2>/dev/null` || timeindexnow=`date +"%s"`
 
 monitor="$1"
 [ -z "$monitor" ] && monitor="servers"

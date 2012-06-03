@@ -11,13 +11,13 @@ print_cgi_headers
 print_cluster_header End-to-End
 
 #  print_line_title tangobench End-to-End
-    print_dashline tangobench folder tango
+    print_dashlines tangobench folder tango
 #  close_line
 print_cluster_bottom
 
 print_cluster_header Log Monitor
 #  print_line_title none Log Reader
-    print_dashline showlogs folder tango_logger
+    print_dashlines showlogs folder tango_logger
 #  close_line
 
 print_cluster_bottom
