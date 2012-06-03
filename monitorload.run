@@ -20,6 +20,11 @@
 # ln -s /path-to/monitoringload.run /etc/init.d
 # (or /etc/rc.d/init.d if you have FHS compliant distro)
 
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+  
 tempfile=/tmp/avgload-$$
 pidfile=/var/run/monitorload.pid
 mgpidfile=/var/run/mongoose.pid
@@ -30,10 +35,7 @@ trap "rm -f $tempfile; exit" 15
 
 case $1 in
 start)
-  rpath=$(readlink -m "$BASH_SOURCE")
-  rcommand=${rpath##*/}
-  rpath=${rpath%/*}
-  #*/
+
   [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" | tee -a "${rpath}/monitoring.log" && exit 0
   
   [ -f "${rpath}/mon.run.lock" ] && rm -f "${rpath}/mon.run.lock"
@@ -138,7 +140,7 @@ start)
       # Standalone tests, if any
       for sa in `find ${rpath}/standalone/rc/ -maxdepth 1 -type l` ; do
         safolder=$(readlink -f "$sa")
-        rm -f "$safolder/report" 2>/dev/null
+        echo -e "`date`\n------------------------------\n" > "$safolder/report"
         echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "${rpath}/sa.log"
         for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY

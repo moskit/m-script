@@ -56,11 +56,13 @@ print_line_title() {
   onclick=$1
   shift
   id=$(echo ${@} | tr ' ' '_')
-  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}','${onclick}')\">${@}</div>"
+  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${@}</div>"
 }
 
 close_line() {
+  id=$(echo ${@} | tr ' ' '_')
   echo "</div>"
+  echo "<div class=\"details\" id=\"${id}_details\"></div>"
 }
 
 print_dashline() {
@@ -89,10 +91,10 @@ print_dashlines() {
     case $source in
     folder)
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
-      for server in `find "$dpath/../www/${@}" -maxdepth 1 -type d` ; do
+      for server in `find "$dpath/../www/${@}" -maxdepth 1 -mindepth 1 -type d` ; do
         print_line_title $onclick "${server##*/}"
         cat "$dpath/../www/${@}/${server##*/}/dash.html"
-        close_line
+        close_line "${server##*/}"
       done
       ;;
     database)
@@ -129,5 +131,4 @@ print_timeline() {
   echo -e "</div>\n</div>"
 }
 
-unset dpath SQL
 

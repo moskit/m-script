@@ -86,5 +86,7 @@ function genreport() {
   esac
 }
 
-unset fpath SQL
+print_report_title() {
+  echo -e "`date`\n------------------------------\n" > "$1"
+}
 
