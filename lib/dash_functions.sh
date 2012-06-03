@@ -69,10 +69,31 @@ print_dashline() {
   if [ -n "$source" ]; then
     case $source in
     folder)
-      shift
-      
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
       cat "$dpath/../www/${@}/dash.html"
+      ;;
+    database)
+      dbpath=$1
+      shift
+      dbtable=$1
+      ;;
+    esac
+  fi
+}
+
+print_dashlines() {
+  onclick=$1
+  source=$2
+  shift 2
+  if [ -n "$source" ]; then
+    case $source in
+    folder)
+      [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
+      for server in `find "$dpath/../www/${@}" -maxdepth 1 -type d` ; do
+        print_line_title $onclick "${server##*/}"
+        cat "$dpath/../www/${@}/${server##*/}/dash.html"
+        close_line
+      done
       ;;
     database)
       shift
