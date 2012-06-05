@@ -285,7 +285,7 @@ case $command1 in
       fi
     fi
     for dir in `find "$sourcerole/" -type d` ; do
-      newdir=`echo "$dir" | sed "s|^$$sourcerole/||"`
+      newdir=`echo "$dir" | sed "s|^$sourcerole/||"`
       install -d "$ROLES_ROOT/$param2/$newdir"
     done
     for sl in `find "$sourcerole/" -type l` ; do

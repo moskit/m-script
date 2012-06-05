@@ -150,7 +150,7 @@ start)
       done
     else
 ## Tests that are always enabled
-      ${rpath}/mon.run mem.mon,servers.mon </dev/null &
+      ${rpath}/mon.run mem.mon </dev/null &
     fi
 ###
   done >/dev/null 2>&1 </dev/null &
