@@ -48,6 +48,7 @@ IFS1=$IFS ; IFS='
 for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
   [ -n "$targetcluster" -a "$targetcluster" != "$cluster" ] && continue
   [ -z "$clustered_as" ] && clustered_as="$cluster"
+#echo "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as" >> /opt/m/dashboard.log
   mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath="/opt/m"
   for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
@@ -59,10 +60,10 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
     [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
     servername=`echo $server | cut -d'|' -f4`
-    install -d "${rpath}/www/$monitor/${clustered_as}/${servername}"
-    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find ${mpath}/www/$monitor/localhost -type f -printf \"%f\\n\" | sort > ${TMPDIR}/${ip}.remote.dash.list
-    find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.local.dash.list
-    nd=`diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\< | sed 's|^< ||'`
+    [ -d "${rpath}/www/$monitor/${clustered_as}/${servername}" ] || install -d "${rpath}/www/$monitor/${clustered_as}/${servername}"
+    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > ${TMPDIR}/${ip}.${monitor}.remote.dash.list
+    find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.${monitor}.local.dash.list
+    nd=`diff ${TMPDIR}/${ip}.${monitor}.remote.dash.list ${TMPDIR}/${ip}.${monitor}.local.dash.list | grep ^\< | sed 's|^< ||'`
     if [ -n "$nd" ] ; then
       nd+=( "$nd" dash.html report.html )
       for dashfile in ${nd[*]} ; do
@@ -71,7 +72,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
       [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/notfound"
       [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/stopped"
     else
-      echo "No data received from server ${servername}, cluster ${cluster}" >> "${rpath}/monitoring.log"
+      echo "No data received from server ${servername}, cluster ${cluster}, monitor ${monitor}" >> "${rpath}/monitoring.log"
       if [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] ; then
         rm -f "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound"
         touch "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped"
@@ -79,7 +80,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
         touch "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound"
       fi
     fi
-    for dashfile in `diff ${TMPDIR}/${ip}.remote.dash.list ${TMPDIR}/${ip}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
+    for dashfile in `diff ${TMPDIR}/${ip}.${monitor}.remote.dash.list ${TMPDIR}/${ip}.${monitor}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
       rm -f "${rpath}/www/$monitor/${clustered_as}/${servername}/${dashfile}"
     done
     time1=`date +"%s"`
@@ -91,14 +92,15 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
       echo "${clustered_as}/${servername}: $timediff sec" >> "${rpath}/dashboard.log"
     fi
   done
-  for server in `find ${rpath}/www/$monitor/$clustered_as/* -maxdepth 0 -type d 2>/dev/null` ; do
-    [ `cat "${rpath}/servers.list" | grep "|${clustered_as}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/$monitor/$clustered_as/${server##*/}"
+  for server in `find "${rpath}/www/$monitor/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
+    [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/$monitor/$cluster/${server##*/}"
   done
+  unset clustered_as
 done
 
 # Clusters not present in clusters.conf are backuped to M_ROOT/mon.backups/dash
-install -d "$rpath/mon.backups/dash/"
-for cluster in `find "$rpath/www/$monitor/" -maxdepth 1 -type d` ; do
+[ -d "$rpath/mon.backups/dash/" ] || install -d "$rpath/mon.backups/dash/"
+for cluster in `find "$rpath/www/servers/" -maxdepth 1 -type d` ; do
   cluster=${cluster##*/}
   if [ -n "$cluster" -a "$cluster" != "localhost" ]; then
     if [ `grep -c "^$cluster|" "$rpath/conf/clusters.conf"` -eq 0 ]; then

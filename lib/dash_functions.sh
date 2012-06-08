@@ -44,7 +44,8 @@ print_page_title() {
 }
 
 print_cluster_header() {
-  id=$(echo ${@} | tr ' ' '_')
+#  id=$(echo ${@} | tr ' ' '_')
+  id="${@}"
   echo -e "<div class=\"clustername\"><span class=\"indent\">${@}</span></div>\n<div class=\"cluster\" id=\"${id}\">"
 }
 
@@ -55,12 +56,14 @@ print_cluster_bottom() {
 print_line_title() {
   onclick=$1
   shift
-  id=$(echo ${@} | tr ' ' '_')
+#  id=$(echo ${@} | tr ' ' '_')
+id="${@}"
   echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${@}</div>"
 }
 
 close_line() {
-  id=$(echo ${@} | tr ' ' '_')
+ # id=$(echo ${@} | tr ' ' '_')
+id="${@}"
   echo "</div>"
   echo "<div class=\"details\" id=\"${id}_details\"></div>"
 }
@@ -91,11 +94,14 @@ print_dashlines() {
     case $source in
     folder)
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
-      for server in `find "$dpath/../www/${@}" -maxdepth 1 -mindepth 1 -type d` ; do
+IFS1=$IFS; IFS='
+'
+      for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d` ; do
         print_line_title $onclick "${server##*/}"
         cat "$dpath/../www/${@}/${server##*/}/dash.html"
         close_line "${server##*/}"
       done
+IFS=$IFS1
       ;;
     database)
       shift

@@ -160,7 +160,7 @@ if [ -f "${TMPDIR}/ports.tcp.$$" ] ; then
         m=`expr length "${t}"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`${NETCONNSTCP} | grep ":${t} " | wc -l`\n"
+        printf "`$NETCONNSTCP | grep ":${t} " | wc -l`\n"
         portfound=1
         break
       fi
@@ -205,7 +205,7 @@ if [ -f "${TMPDIR}/ports.udp.$$" ] ; then
         m=`expr length "${t}"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`${NETCONNSUDP} | grep ":${t} " | wc -l`\n"
+        printf "`$NETCONNSUDP | grep ":${t} " | wc -l`\n"
         portfound=1
         break
       fi

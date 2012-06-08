@@ -1,44 +1,30 @@
 #!/bin/bash
-echo "Pragma: no-cache"
-echo "Expires: 0"
-echo "Content-Cache: no-cache"
-echo "Content-type: text/html"
-echo ""
 
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
+source "${PWD}/../../lib/dash_functions.sh"
 CURL=`which curl 2>/dev/null`
-[ -z "$CURL" ] && echo "Curl not found, exiting..  " && exit 1
-CURL="$CURL -m 2 -s"
-echo "<div class=\"dashtitle\">"
-  echo "<div class=\"server\">"
-    echo "<div class=\"servername\" id=\"title1\">ID</div>"
-    echo "<div class=\"status\" id=\"title2\"><b>Status<br />Host</b></div>"
-    echo "<div class=\"status\" id=\"title3\"><b>Heap used / committed</b></div>"
-    echo "<div class=\"status\" id=\"title4\"><b>Indices size</b></div>"
-    echo "<div class=\"status\" id=\"title5\"><b>Indices docs number</b></div>"
-    echo "<div class=\"status\" id=\"title6\"><b>Open file descriptors</b></div>"
-    echo "<div class=\"status\" id=\"title7\"><b>Conn http / transport</b></div>"
-  echo "</div>"
-echo "</div>"
 
-echo "<div class=\"clustername\"><span class=\"indent\">Clusters and nodes</span></div>"
+print_cgi_headers
+print_page_title ID|Host|Heap used / committed|Indices size|Indices docs number|Open file descriptors|Conn http / transport
 
 for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
+  
+  print_cluster_header "$clustername"
+  
   clusterdat=`ls -1t "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat`
   esip=`cat $clusterdat | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do
     eshostname=`grep ^$eshostip\| "${PWD}/../../servers.list" | cut -d'|' -f4`
     if [ -n "$eshostname" ] ; then
       servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | cut -d'|' -f5`
-      
-      eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+      [ -f "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list" ] && eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
       [ -n "$eshost" ] || eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
     else
       eshost="${eshostip}:9200"
     fi
-    thisesstatus=`$CURL "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
+    [ -n "$CURL" ] && thisesstatus=`$CURL -m 2 -s "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
     if [ -n "$prevstatus" ] ; then
       [ "X$prevstatus" != "X$thisesstatus" ] && esstatus="$esstatus $thisesstatus"
     else
@@ -46,6 +32,7 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
     fi
     prevstatus=$thisesstatus
   done
+  
   echo "<div class=\"cluster\" id=\"${clustername}\">"
     echo "<div class=\"server\" id=\"${clustername}_status\">"
     
