@@ -33,14 +33,14 @@ EOF
 }
 
 print_page_title() {
-  echo -e "<div class=\"dashtitle\">\n  <div class=\"server\">\n    <div class=\"servername\" id=\"title1\">${1%%|*}</div>"
-  IFS1=$IFS ; IFS='|'
-  for title in ${1#*|} ; do
-    id=$(echo $title | tr -d '<>/' | tr ' ' '_')
-    echo "<div class=\"status\" id=\"${id}\"><b>${title}</b></div>"
+  echo -e "<div class=\"dashtitle\">\n  <div class=\"server\">\n    <div class=\"servername\" id=\"title1\">${1}</div>"
+  shift
+  while [ -n "$1" ] ; do
+    id=$(echo "$1" | tr -d '<>/' | tr ' ' '_')
+    echo "<div class=\"status\" id=\"${id}\"><b>${1}</b></div>"
+    shift
   done
   echo -e "  </div>\n</div>"
-  IFS=$IFS1
 }
 
 print_cluster_header() {

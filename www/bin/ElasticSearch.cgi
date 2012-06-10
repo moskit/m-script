@@ -6,7 +6,7 @@ source "${PWD}/../../lib/dash_functions.sh"
 CURL=`which curl 2>/dev/null`
 
 print_cgi_headers
-print_page_title ID|Host|Heap used / committed|Indices size|Indices docs number|Open file descriptors|Conn http / transport
+print_page_title "ID" "Host" "Heap used / committed" "Indices size" "Indices docs number" "Open file descriptors" "Conn http / transport"
 
 for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}

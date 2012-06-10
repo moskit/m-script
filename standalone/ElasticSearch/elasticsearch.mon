@@ -22,11 +22,11 @@ LOG="${rpath}/../../sa.log"
 install -d "${TMPDIR}"
 timeindexnow=`date +"%s"`
 ### Uncomment to debug
-# debug=true
+debug=true
 $debug && log "start"
 
 log() {
-echo "`date +"%m.%d %H:%M"` $rcommand: ${@}">>$LOG
+echo "`date +"%H:%M:%S"` $rcommand: ${@}">>$LOG
 }
 
 function mailalert() {
@@ -216,7 +216,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   
   ## This dumb test is needed to ensure that there is no ghost clusters that could form because of connectivity problems.
   for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
-    thisesstatus=`$CURL -m 2 -s "http://${clusternode}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
+    thisesstatus=`$CURL -m 2 -s "http://${clusternode}/_cluster/health" | "${rpath}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
     if [ -n "$prevstatus" ] ; then
       [ "X$prevstatus" != "X$thisesstatus" ] && echo "<***> Cluster status: ${esstatus}, but ${clusternode} reports status $thisesstatus" >> "$rpath/report"
     else
