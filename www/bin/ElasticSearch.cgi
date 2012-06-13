@@ -19,8 +19,10 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
     eshostname=`grep ^$eshostip\| "${PWD}/../../servers.list" | cut -d'|' -f4`
     if [ -n "$eshostname" ] ; then
       servercluster=`grep ^$eshostip\| "${PWD}/../../servers.list" | cut -d'|' -f5`
-      [ -f "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list" ] && eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-      [ -n "$eshost" ] || eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+      if [ -f "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list" ]; then
+        eshost=`grep "^${eshostname}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+        [ -n "$eshost" ] || eshost=`grep "^${eshostip}:" "${PWD}/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
+      fi
     else
       eshost="${eshostip}:9200"
     fi

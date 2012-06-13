@@ -24,7 +24,12 @@ rpath=$(readlink -m "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
-  
+## The root folder for descendant processes. It is not recommended to rely on
+## this in scripts, because they would mess up things if executed independently
+## Good idea might be to check if M_ROOT is defined and then find the path if it
+## is not.
+export M_ROOT="$rpath"
+
 tempfile=/tmp/avgload-$$
 pidfile=/var/run/monitorload.pid
 mgpidfile=/var/run/mongoose.pid

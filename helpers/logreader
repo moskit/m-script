@@ -15,17 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rcommand=${0##*/}
-rpath=${0%/*}
+rpath=$(readlink -m "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
 #*/
 
-# timeformat='%b %e %H:%M'
-# tail -1000 mail.log| grep -n ^"`date -d "-5 min" +"$timeformat"`"
-
-### NOTES:
-# timestamp is assumed to be at the beginning of the line
-
-possible_options="file maxlines period timeformat help verbose"
+possible_options="file maxlines period timeformat help verbose resolution"
 necessary_options="file"
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 
@@ -52,13 +47,44 @@ source "${rpath}/../conf/mon.conf"
 [ -z "$maxlines" ] && maxlines=1000
 [ -z "$period" ] && period="$FREQ sec"
 [ -z "$timeformat" ] && timeformat='%b %e %H:%M'
+if [ -n "$resolution" ]; then
+  case $resolution in
+    min|minute|minutes)
+      res="1 min"
+      ;;
+    sec|second|seconds)
+      res="1 sec"
+      ;;
+  esac
+fi
+if [ -z "$res" ]; then
+  lastletter=`echo ${timeformat##*%} | cut -b 1`
+  [ "X$lastletter" == "XM" ] && res="1 min"
+  [ "X$lastletter" == "XS" ] && res="1 sec"
+fi
 
 timepattern=`date -d "-${period}" +"$timeformat"`
-ln=`tail -n $maxlines "$file" | grep -n -m 1 -h ^"$timepattern" | cut -d':' -f1`
-[ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
-[[ $ln -gt 0 ]] || ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
-[ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
-tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1
-[[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln
+timecurrent=`date +"$timeformat"`
+
+ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
+if [ -z "$ln" ] ; then
+  badpattern=false
+  declare -i i ; i=0 ; ilimit=20 # safety limit
+  while [[ "$timepattern" != "$timecurrent" ]]; do
+    dd=`date -d "$timepattern"`
+    timepattern=`date -d "$dd +$res" +"$timeformat" 2>/dev/null || badpattern=true`
+    $badpattern && break
+    i+=1
+    [ $i -gt $ilimit ] && break
+    ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
+    [ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
+    [[ $ln -gt 0 ]] && break
+  done
+fi
+
+[[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln || echo "Logreader: was unable to find the number of lines to process. Command was: $0 $@" >> "$rpath/../monitoring.log"
+
+exit 0
+
 
 
