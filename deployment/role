@@ -15,8 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 rpath=$(readlink -f "$BASH_SOURCE")
-rcommand=${rpath##*/}
-rpath=${rpath%/*}
+rcommand="${rpath##*/}"
+rpath="${rpath%/*}"
+[ -n "$M_ROOT" ] || M_ROOT="${rpath%/*}"
 #*/
 
 possible_commands="help list clone create edit show"
@@ -146,7 +147,7 @@ do
 done
 
 if [ -n "$role" ]; then
-  if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$"` -eq 0 ]; then
+  if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
     echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly. Add a cluster for this role to $M_ROOT/conf/clusters.conf if you want to avoid this."
   fi
 fi
