@@ -1,6 +1,8 @@
 #!/bin/bash
 rpath=$(readlink -m "$BASH_SOURCE")
 rpath=${rpath%/*}
+M_ROOT="$rpath"
+export M_ROOT
 #*/
 ba=`which bash` ; [ $? -ne 0 ] && exit 1
 $ba --rcfile "$rpath"/m.rc

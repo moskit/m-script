@@ -55,6 +55,17 @@ store_vars() {
   done
 }
 
+print_result() {
+  if [ -n "$verbose" ] ; then
+    echo "--------------------------------------------------------------------------------"
+    echo "${result}" | tee -a "${rpath}/../deploy.log"
+    echo "--------------------------------------------------------------------------------"
+  else
+    echo "${result}" >> "${rpath}/../deploy.log"
+  fi
+  [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1 && return 1
+}
+
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud"
@@ -187,33 +198,40 @@ if [ "$type" == "remote" ] ; then
   [ -f "${rpath}/../keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/../deploy.log" ; exit 1)
   echo "`date +"%H:%M:%S"` REMOTE $file" >> "${rpath}/../deploy.log"
   if [ -z "$ip" ] ; then
-    ips=`get_ips --cluster="${cluster}"`
+    if [ -n "$dry" ] ; then
+      ips=`get_ips --cluster="${cluster}" --limit=1`
+    else
+      ips=`get_ips --cluster="${cluster}"`
+    fi
   else
     ips=$ip
   fi
-  for IP in $ips ; do
-    # install remote workdir
-    $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-    # copy the script to remote server
-    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
-    # copy config to remote server
-    $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../deploy.log" 2>&1
-    $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP echo "ip=$IP" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
+  if [ -n "$ips" ]; then
+    for IP in $ips ; do
+      # install remote workdir
+      $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+      # copy the script to remote server
+      $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../deploy.log" 2>&1 || exit 1
+      # copy config to remote server
+      $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../deploy.log" 2>&1
+      $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP echo "ip=$IP" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
+      if [ -n "$dry" ] ; then
+        result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+      else
+        # run the script, catch the output, exit if non-zero status
+        result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+      fi
+      print_result || break
+    done
+  else
     if [ -n "$dry" ] ; then
-      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+      echo "Remote servers not found, dry-running locally" | tee -a "${rpath}/../deploy.log"
+      result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
     else
-      # run the script, catch the output, exit if non-zero status
-      result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+      echo "Remote servers not found, exiting" | tee -a "${rpath}/../deploy.log"
+      RETVAL+=1
     fi
-    if [ -n "$verbose" ] ; then
-      echo "--------------------------------------------------------------------------------"
-      echo "${result}" | tee -a "${rpath}/../deploy.log"
-      echo "--------------------------------------------------------------------------------"
-    else
-      echo "${result}" >> "${rpath}/../deploy.log"
-    fi
-    [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1 && break
-  done
+  fi
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../deploy.log"
   if [ -n "$dry" ] ; then
@@ -222,14 +240,7 @@ elif [ "$type" == "local" ] ; then
     # running the script
     result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`
   fi
-  if [ -n "$verbose" ] ; then
-      echo "--------------------------------------------------------------------------------"
-      echo "${result}" | tee -a "${rpath}/../deploy.log"
-      echo "--------------------------------------------------------------------------------"
-    else
-      echo "${result}" >> "${rpath}/../deploy.log"
-    fi
-  [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1
+  print_result
 else
   echo "type: \"$type\" not supported"
   exit 1
