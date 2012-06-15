@@ -145,6 +145,12 @@ do
   done
 done
 
+if [ -n "$role" ]; then
+  if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$"` -eq 0 ]; then
+    echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly. Add a cluster for this role to $M_ROOT/conf/clusters.conf if you want to avoid this."
+  fi
+fi
+
 IFS='
 '
 case $command1 in
@@ -267,6 +273,11 @@ case $command1 in
     ;;
   clone)
     [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
+    if [ -n "$method" -a $method == "copy" ] ; then
+      method="cp -u"
+    else
+      method="ln -s"
+    fi
     if [ ! -d "$ROLES_ROOT/$param1" ]; then
       if [ ! -d "$param1" ]; then
         echo "Role $param1 not found" && exit 1
@@ -294,7 +305,7 @@ case $command1 in
       if [ -e "$ROLES_ROOT/$param2/$nsl" -a ! -h "$ROLES_ROOT/$param2/$nsl" ]; then
         [ "$nsl" != "role.conf" ] && echo "$nsl is not a symlink. Check manually."
       else
-        [ ! -e "$ROLES_ROOT/$param2/$nsl" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nsl"
+        [ ! -e "$ROLES_ROOT/$param2/$nsl" ] && $method "$f" "$ROLES_ROOT/$param2/$nsl"
       fi
     done
     for f in `find "$sourcerole/" -type f ! -name role.conf` ; do
@@ -302,7 +313,7 @@ case $command1 in
       if [ -e "$ROLES_ROOT/$param2/$nf" -a ! -h "$ROLES_ROOT/$param2/$nf" ]; then
         [ "$nf" != "role.conf" ] && echo "$nf is not a symlink. Check manually."
       else
-        [ ! -e "$ROLES_ROOT/$param2/$nf" ] && ln -s "$f" "$ROLES_ROOT/$param2/$nf"
+        [ ! -e "$ROLES_ROOT/$param2/$nf" ] && $method "$f" "$ROLES_ROOT/$param2/$nf"
       fi
     done
     if [ ! -e "$ROLES_ROOT/$param2/role.conf" ]; then
