@@ -26,7 +26,7 @@ WGET=`which wget 2>/dev/null`
 source "${rpath}/../../conf/mon.conf"
 TMPDIR=$TMPDIR/cloud/rackspace
 install -d $TMPDIR
-CURL="$CURL -s"
+CURL="$CURL -s -k"
 declare -i icount
 
 possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolve-ids"

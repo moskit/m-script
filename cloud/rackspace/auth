@@ -25,7 +25,7 @@ WGET=`which wget 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 TMPDIR=/tmp/m_script/cloud/rackspace
 install -d $TMPDIR
-CURL="$CURL -s"
+CURL="$CURL -s -k"
 V="v1.1"
 source "${rpath}/../../conf/cloud.conf"
 cat "${rpath}/auth.$V.json" | sed "s|RS_AUTH_USER|$RS_AUTH_USER|;s|RS_AUTH_KEY|$RS_AUTH_KEY|" > "$TMPDIR/auth.req"

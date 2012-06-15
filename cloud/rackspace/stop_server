@@ -23,7 +23,7 @@ LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 
-CURL="$CURL -s"
+CURL="$CURL -s -k"
 V="v1.0"
 
 source "${rpath}/../../conf/mon.conf"

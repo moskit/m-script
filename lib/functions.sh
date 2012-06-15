@@ -28,8 +28,6 @@ store_results() {
     callername=${caller##*/}
     callerfolder=${caller%/*}
     callerparent=${callerfolder%/*}
-echo "if [ -n \"$callerparent\" -a \"${callerparent##*/}\" == \"standalone\" ]"
-echo "elif [ -n \"$callerfolder\" -a \"${callerfolder##*/}\" == \"tests\" ]"
     if [ -n "$callerparent" -a "${callerparent##*/}" == "standalone" ]; then
       dbfile="$callerfolder/${callername%.mon}.db"
     elif [ -n "$callerfolder" -a "${callerfolder##*/}" == "tests" ]; then
