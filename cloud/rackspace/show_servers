@@ -206,7 +206,7 @@ try_auth() {
     i+=1
     sleep 10
   done
-  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/show_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/show_servers: $i additional auth request(s) due to no reply from API" >> "$rpath"/../../logs/cloud.log
 }
 
 source "${rpath}/../../conf/cloud.conf"

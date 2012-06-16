@@ -225,8 +225,9 @@ if [ "$type" == "remote" ] ; then
     done
   else
     if [ -n "$dry" ] ; then
-      echo "Remote servers not found, dry-running locally" | tee -a "${rpath}/../deploy.log"
+      echo "Remote servers not found, testing locally" | tee -a "${rpath}/../deploy.log"
       result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
+      print_result
     else
       echo "Remote servers not found, exiting" | tee -a "${rpath}/../deploy.log"
       RETVAL+=1

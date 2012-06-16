@@ -85,7 +85,7 @@ if [ "X$help" == "Xyes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> <local path> <remote path>
 
-Rsyncs (or copies over if rsync not found) local path to remote path on remote servers. The list of servers is defined by either command-line arguments or environment variables.
+Rsyncs (or copies over if rsync not found) local path to remote path on remote servers. The list of target servers is defined by either command-line arguments or environment variables.
 
 Options:
 
@@ -94,7 +94,7 @@ Options:
                              Multiple clusters are allowed, separated by comma.
                              MUST be defined. To sync to all servers, use 
                              --cluster=all. Accepts also M_CLUSTER environment
-                             variable (used by msh).
+                             variable (from msh environment).
   --all                    - shortcut for --cluster=all.
   --ip=IP                  - ip for a single server operation.
                              If ip is defined, cluster and region are ignored.
