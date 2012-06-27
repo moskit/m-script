@@ -37,8 +37,14 @@ echo "URL: $URL"
 
 if [ -n "$WGET" ] ; then
   [ -n "$2" ] && DEST="-P ${2}"
-  $WGET -q -nH -N $DEST "${PROTO}://${URL}"
-  res=$?
+  if [ -n "$verbose" ]; then
+    echo "Fetching with wget"
+    $WGET -nH -N $DEST "${PROTO}://${URL}"
+    res=$?
+  else
+    $WGET -q -nH -N $DEST "${PROTO}://${URL}"
+    res=$?
+  fi
 fi
 if [[ $res -eq 0 ]] ; then
   exit 0

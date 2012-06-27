@@ -130,7 +130,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 RSYNC=`which rsync 2>/dev/null`
 
-possible_options="cluster help region verbose debug flavor role ip test dry cloud timestamp"
+possible_options="cluster help region verbose debug flavor role ip test dry cloud timestamp local"
 
 IFS1=$IFS
 IFS='--'
