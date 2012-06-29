@@ -4,5 +4,5 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
-${rpath}/show_servers --update_servers_list
+${rpath}/show_servers --forceupdate --update_servers_list
 

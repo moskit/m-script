@@ -21,7 +21,8 @@ rpath=${0%/*}
 
 SSH=`which ssh 2>/dev/null`
 possible_options="cluster help region delimiter limit names quoted spaces"
-commflag=0
+IFS1=$IFS
+IFS='--'
 for s_option in "${@}"
 do
   found=0
@@ -44,8 +45,15 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  for option in `echo $possible_options | sed 's/ /--/g'`; do
+    if [ "X$s_optname" == "X$option" ]; then
+      if [ -n "$s_optarg" ]; then
+        eval "$s_optname=\"$s_optarg\""
+      else
+        [ -z "$(eval echo \$$option)" ] && eval "$option="
+      fi
+      found=1
+    fi
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
@@ -53,6 +61,7 @@ do
     exit 1
   fi
 done
+IFS=$IFS1
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
   echo 
