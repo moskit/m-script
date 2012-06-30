@@ -14,6 +14,10 @@ CURL="$CURL -s"
 source "${rpath}/../../conf/mon.conf" || exit 1
 source "${rpath}/${rcommand%.mon}.conf"
 
+log() {
+echo "`date +"%H:%M:%S"` $rcommand: ${@}">>$LOG
+}
+
 SQLITE=`which sqlite3 2>/dev/null`
 MAILX=`which mail 2>/dev/null`
 TMPDIR="${TMPDIR}/elasticsearch"
@@ -24,10 +28,6 @@ timeindexnow=`date +"%s"`
 ### Uncomment to debug
 debug=true
 $debug && log "start"
-
-log() {
-echo "`date +"%H:%M:%S"` $rcommand: ${@}">>$LOG
-}
 
 function mailalert() {
   if [ -f ${rpath}/alert1 ] && [ `cat ${rpath}/alert1 | wc -l` -ne 0 ]; then
@@ -215,14 +215,12 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   # different servers clusters and clusters might not all be defined in .conf)
   
   ## This dumb test is needed to ensure that there is no ghost clusters that could form because of connectivity problems.
-  for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
-    thisesstatus=`$CURL -m 2 -s "http://${clusternode}/_cluster/health" | "${rpath}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
-    if [ -n "$prevstatus" ] ; then
-      [ "X$prevstatus" != "X$thisesstatus" ] && echo "<***> Cluster status: ${esstatus}, but ${clusternode} reports status $thisesstatus" >> "$rpath/report"
-    else
-      esstatus="$thisesstatus"
-    fi
-    prevstatus=$thisesstatus
+  for clusterhost in "$clusterhost1" "$clusterhost2" ; do
+    for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
+  
+    thisnodename=`$CURL -m 2 -s "http://${clusterhost}/_cluster/nodes" | "${rpath}/../../lib/json2txt" | grep "/nodes/$clusternode/name|" | cut -d'|' -f2`
+    [ -z "$name" ] && echo "<***> Node $clusternode not known to the node located on the host ${clusterhost}" >> "$rpath/report"
+    done
   done
   
   for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
