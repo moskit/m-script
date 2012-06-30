@@ -113,6 +113,8 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
   IP=${dserver%%|*}
   [ -n "$ip" ] && [ "X$IP" != "X$ip" ] && continue
   KEY=`echo $dserver | cut -d'|' -f2`
+  [ -z "${rpath}/../keys/${KEY}" ] && KEY="${rpath}/../keys/${KEY}.pem"
+  [ -z "${rpath}/../keys/${KEY}" ] && echo "No key found for server: $dserver" && continue
   if [ -n "$region" ] ; then
     DREGION=`echo $dserver | cut -d'|' -f3`
     [ "X$DREGION" == "X$region" ] || continue
@@ -159,14 +161,14 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
           fi
         fi
       else
-        rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}.pem"`
+        rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}"`
         [ -n "$rchain" ] || continue
         [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
         command="\`which iptables-save 2>/dev/null\` | grep \"\-A $rchain \-s $IP2UB \-j ACCEPT\" | wc -l"
-        existing=`$SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"`
+        existing=`$SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $IP "$command"`
         if [[ $existing -eq 0 ]] ; then
           command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
-          $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+          $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $IP "$command"
         else
           dupes=`expr $existing - 1`
           if [[ $dupes -gt 0 ]] ; then
@@ -174,7 +176,7 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
             for ((n=0; n<$dupes; n++)) ; do
               printf "."
               command="\`which iptables 2>/dev/null\` -D \"$rchain\" -s $IP2UB -j ACCEPT"
-              $SSH -i "${rpath}/../keys/${KEY}.pem" -o StrictHostKeyChecking=no $IP "$command"
+              $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $IP "$command"
             done
             echo
           fi
