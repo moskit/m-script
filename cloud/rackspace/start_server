@@ -22,6 +22,7 @@ CURL=`which curl 2>/dev/null`
 LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
+LOG="${rpath}"/../../logs/cloud.log
 
 CURL="$CURL -s -k"
 V="v1.0"
@@ -62,56 +63,26 @@ source "${rpath}/../../conf/mon.conf"
 TMPDIR="$TMPDIR"/cloud/rackspace
 install -d "$TMPDIR"
 source "${rpath}/../../conf/cloud.conf"
+source "${rpath}/../../lib/cloud_functions.sh"
 
-generate_name() {
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: generating name...">>"${rpath}"/../../logs/cloud.log
-  # double-check the cluster is defined
-  [ -z "$cluster" ] && echo "`date +"%m.%d %H:%M"` rackspace/start_server: cluster is not defined, exiting" >> "${rpath}"/../../logs/cloud.log && exit 1
-  nam=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
-  [ -n "$nam" ] || nam=$cluster
-  am=0 ; lm=0
-  num=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4 | grep ^$nam | while read name ; do a=`expr "X$name" : 'X.*[^0-9]\([0-9]*\)'` ; l=${#a} ; [ `expr $l \> ${lm}` -gt 0 ] && lm=$l ; [ `expr $a \> ${am}` -gt 0 ] && am=$a ; echo "$am|$lm" ; done | tail -1)
-  am=${num%|*} ; lm=${num#*|}
-  if [ -n "$am" ] ; then
-    am=`expr $am + 1`
-    # length might change
-    lnew=${#a}
-    [[ $lnew -gt $lm ]] && lm=$lnew
-  else
-    am=1
-  fi
-  [ -n "$lm" ] || lm=$NAME_INDEX_LENGTH
-  echo "$nam`until [[ ${#am} -eq $lm ]] ; do am="0$am" ; m0="0$m0" ; [[ ${#am} -gt $lm ]] && exit 1 ; echo $m0 ; done | tail -1`$am"
+log() {
+  echo "`date +"%m.%d %H:%M"` rackspace/start_server: ${@}">>$LOG
 }
 
 find_image() {
-  [ -f "${TMPDIR}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${TMPDIR}/images.resp"` -gt 0 ] && imageid=$image && echo "`date +"%m.%d %H:%M"` rackspace/start_server: image ID for the new server is $imageid (based on command-line option)">>"${rpath}"/../../logs/cloud.log && return
+  [ -f "${TMPDIR}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${TMPDIR}/images.resp"` -gt 0 ] && imageid=$image && log "image ID for the new server is $imageid (based on command-line option)" && return
   imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: image ID for the new server is $imageid (based on the cluster $cluster default)">>"${rpath}"/../../logs/cloud.log
+  log "image ID for the new server is $imageid (based on the cluster $cluster default)"
 }
 
 find_flavor() {
-  [ -f "${TMPDIR}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "${TMPDIR}/flavors.resp"` -gt 0 ] && flavorid=$flavor && echo "`date +"%m.%d %H:%M"` rackspace/start_server: flavor ID for the new server is $flavorid (based on command-line option)">>"${rpath}"/../../logs/cloud.log && return
+  [ -f "${TMPDIR}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "${TMPDIR}/flavors.resp"` -gt 0 ] && flavorid=$flavor && log "flavor ID for the new server is $flavorid (based on command-line option)" && return
   flavorid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: flavor ID for the new server is $flavorid (based on the cluster $cluster default)">>"${rpath}"/../../logs/cloud.log 
-}
-
-check_cluster_limit() {
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: checking cluster $cluster limit...">>"${rpath}"/../../logs/cloud.log
-  limit=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
-  [ -z "$limit" ] && return 0
-  limit=${limit#*:}
-  [ "$limit" == "0" ] && return 0
-  # tmp file is assumed to be up-to-date, metaexec updates it for example
-  n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
-  [ -z "$n" ] && n=0
-  [ `expr $n \>= 0` -gt 0 ] || return 1
-  [ `expr $limit \> $n` -gt 0 ] && return 0
-  return 1
+  log "flavor ID for the new server is $flavorid (based on the cluster $cluster default)"
 }
 
 request() {
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: sending request...">>"${rpath}"/../../logs/cloud.log
+  log "sending request..."
   URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
   $CURL -X POST -T "$TMPDIR/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/servers" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
@@ -120,7 +91,7 @@ request() {
 }
 
 save_details() {
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: saving details of the new server...">>"${rpath}"/../../logs/cloud.log
+  log "saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${TMPDIR}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
@@ -134,7 +105,7 @@ save_details() {
 }
 
 wait_ready() {
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: waiting for the server ready...">>"${rpath}"/../../logs/cloud.log
+  log "waiting for the server ready..."
   [ -n "$1" ] && echo "Waiting..."
   waittimeout=600
   waitperiod=10
@@ -179,9 +150,10 @@ printreturn() {
   done
 }
 
+log "checking cluster $cluster limit..."
 res=`check_cluster_limit`
 [[ $res -ne 0 ]] && exit 5
-[ -z "$name" ] && name=`generate_name` && echo "`date +"%m.%d %H:%M"` rackspace/start_server: name auto-generated: $name">>"${rpath}"/../../logs/cloud.log
+[ -z "$name" ] && name=`generate_name` && log "name auto-generated: $name"
 [ -z "$name" ] && exit 6
 find_image
 [ -z "$imageid" ] && exit 7
@@ -210,18 +182,19 @@ echo "            }" >> "$TMPDIR/${rcommand}.req"
 echo "        ]" >> "$TMPDIR/${rcommand}.req"
 echo "    }" >> "$TMPDIR/${rcommand}.req"
 echo "}" >> "$TMPDIR/${rcommand}.req"
-echo "`date +"%m.%d %H:%M"` rackspace/start_server: request generated">>"${rpath}"/../../logs/cloud.log
+log "request generated"
 
 try_auth() {
   local -i i
   i=0
   while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: Problem getting authorization from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
     ${rpath}/auth
     i+=1
     sleep 10
   done
-  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+  i+=-1
+  [ $i -ne 0 ] && log "$i additional auth requests due to no reply from API"
 }
 
 source "${rpath}/../../conf/cloud.conf"
@@ -229,18 +202,18 @@ source "${rpath}/../../conf/cloud.conf"
 if [ -z "$noupdate" ] ; then
   try_auth
 fi
-request && echo "`date +"%m.%d %H:%M"` rackspace/start_server: request sent">>"${rpath}"/../../logs/cloud.log
+request && log "request sent"
 declare -i n
 n=0
 while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
-  [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
   [ $n -gt 1 ] && sleep 30
   rm -f "${TMPDIR}/auth.resp"
   try_auth
-  request && echo "`date +"%m.%d %H:%M"` rackspace/start_server: request sent">>"${rpath}"/../../logs/cloud.log
+  request && log "request sent"
   n+=1
 done
-[ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/start_servers: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
+[ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
 echo -n "`grep \/code\| "${TMPDIR}/${rcommand}.resp" | cut -d'|' -f2`: "
 grep \/message\| "${TMPDIR}/${rcommand}.resp"
@@ -253,7 +226,7 @@ else
   exit 1
 fi
 
-${rpath}/update_hosts_file && echo "`date +"%m.%d %H:%M"` rackspace/start_server: /etc/hosts updated">>"${rpath}"/../../logs/cloud.log
+${rpath}/update_hosts_file && log "/etc/hosts updated"
 
 exit 0
 

@@ -35,30 +35,28 @@ for cluster in "${PWD}/../../standalone/${scriptname}/data/"*.nodes ; do
     prevstatus=$thisesstatus
   done
   
-  echo "<div class=\"cluster\" id=\"${clustername}\">"
-    echo "<div class=\"server\" id=\"${clustername}_status\">"
-    
-      echo "<div class=\"servername\" id=\"${clustername}_name\" onclick=\"showDetails('${clustername}_status','eshealth')\">Cluster: ${clustername}</div>"
+  print_line_title eshealth ${clustername}
       for esst in $esstatus ; do
-        echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_status','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
+        echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
-    echo "</div>"
-    
-    echo "<div id=\"${clustername}_details\" class=\"details\" style=\"display: none\"></div>"
-    
-    for node in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.nodes.list` ; do
+  close_line ${clustername}
+
+    for node in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.nodes.list | sort` ; do
       [ "X`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
-      echo "<div class=\"server\" id=\"${node}\">"
-        echo "<div class=\"servername\" id=\"${node}_name\" onClick=\"showData('${node}_name','/${scriptname}')\">`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^name\||cut -d'|' -f2`<span class=\"master\">$role</span><div id=\"data_${node}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
-        echo "<div class=\"status\" id=\"${node}_host\">${node%:*}</div>"
+      print_line_title $scriptname $node
+
+        echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^name\||cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_mem\">`grep ^jvm\/mem\/heap_used\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb'` / `grep ^jvm\/mem\/heap_committed\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb'`</div>"
         echo "<div class=\"status\" id=\"${node}_size\">`grep ^indices/store/size\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_docs\">`grep ^indices/docs/count\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^process/open_file_descriptors\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_conn\">`grep ^http/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^transport/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
-      echo "</div>"
+        
+      close_line $node
     done
+    
+print_cluster_bottom
 
 done
 
