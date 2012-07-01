@@ -1,11 +1,14 @@
 #!/bin/bash
 
 source "${PWD}/../../conf/dash.conf"
+source "${PWD}/../../conf/mon.conf"
+if [ -z "$freqdef" ]; then
+  timeshift=`cat "$TMPDIR/timeshift"`
+  freqdef=$(($FREQ + $timeshift))
+fi
 ex=$(find ${PWD}/../graphs -mmin -$(expr 2 \* ${freqdef} / 60 ) -name localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo ${2} | tr ':' '_'`.opcountersQuery.svg)
 if [ -z "$ex" ] ; then
 ${PWD}/../../graph --database=standalone/MongoDB/mongodb.sql3 --table=servers --metric=opcountersQuery --where="hostport:\'${2}\'" --new --width=750 --height=300 --padding=10 --legend=160
 fi
-echo "<div class=\"combinedgraph\">"
-echo "<object data=\"/graphs/localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo ${2} | tr ':' '_'`.opcountersQuery.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>"
-echo "</div>"
+echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo ${2} | tr ':' '_'`.opcountersQuery.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 

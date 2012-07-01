@@ -26,19 +26,27 @@ addxmarks() {
   textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
 }
 
+log() {
+echo "`date +"%H:%M:%S"` $rcommand: ${@}">>$LOG
+}
+
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+
+# to enable debug logging even without command-line option
+debug=true
 
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel"
+possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug"
 necessary_options="metric"
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/dash.conf"
+LOG="${rpath}/logs/dashboard.log"
 
 RSYNC=`which rsync 2>/dev/null`
 SQL3=`which sqlite3 2>/dev/null` # assuming that remote path is the same
@@ -152,6 +160,8 @@ if [ -z "$new" ] && [ $RSYNC == "" ] ; then
   exit 1
 fi
 
+[ -z "$debug" ] && debug=false || debug=true
+
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
 if [ -n "$ip" ] ; then
   if [ `echo $sIP | grep -c "^$localip$"` -ne 0 ] ; then
@@ -250,28 +260,30 @@ fi
 ##############################
 
 if [ ! -f "${rpath}/servers.list" ] ; then
-  echo "Create ${rpath}/servers.list please" >> "${rpath}/dashboard.log"
+  log "Create ${rpath}/servers.list please"
   exit 1
 fi
 if [ ! -f "${rpath}/conf/clusters.conf" ] ; then
-  echo "Create ${rpath}/conf/clusters.conf please" >> "${rpath}/dashboard.log"
+  log "Create ${rpath}/conf/clusters.conf please"
   exit 1
 fi
 if [ -z "$localip" ] ; then
   server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
   if [ -z "$server" ] ; then
-    echo "Server with IP ${ip} not found in ${rpath}/servers.list" >> "${rpath}/dashboard.log"
+    log "Server with IP ${ip} not found in ${rpath}/servers.list"
     exit 1
   fi
   sIP=`echo $server | cut -d'|' -f1`
   skey=`echo $server | cut -d'|' -f2`
   scluster=`echo $server | cut -d'|' -f5`
   mpath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
-  [ -z "$mpath" ] && echo "M-Script path for server $server not found" >> "${rpath}/dashboard.log" && exit 1
+  [ -z "$mpath" ] && log "M-Script path for server $server not found" && exit 1
   [ -f "${rpath}/keys/${skey}" ] && thekey="-i ${rpath}/keys/${skey}"
   [ -z "$thekey" -a -f "${rpath}/keys/${skey}.pem" ] && thekey="-i ${rpath}/keys/${skey}.pem"
+  $debug && log "fetching data from ${sIP}, cluster ${scluster} using key ${skey}"
 else
   sIP="localhost"
+  $debug && log "reading data from localhost"
 fi
 
 ###########################
@@ -284,6 +296,7 @@ dbname=`echo "$database" | tr '/' '_'`
 [ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
 
 if [ -n "$perpixel" ]; then
+  $debug && log "per pixel mode"
   expr $perpixel / 1 >/dev/null 2>&1 || perpixel=1
   limit=$(($areaH/$perpixel))
 ###### Getting min and max values from database
@@ -296,7 +309,7 @@ if [ -n "$perpixel" ]; then
   metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
   metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
   if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
-    echo "Error getting minimum and maximum values for $metric $limit last values" >> "${rpath}/dashboard.log"
+    log "Error getting minimum and maximum values for $metric $limit last values"
     exit 1
   fi
   [ -z "$metricmin" ] && metricmin=0
@@ -305,21 +318,23 @@ if [ -n "$perpixel" ]; then
   mp=`solve "$areaV / $metrixmax"`
   
   QUERY="select ${metric}*${mp} from $table order by timeindex desc limit $limit"
-  
+
   if [ "$sIP" == "localhost" ]; then
+    $debug && log "$SQL3 \"${rpath}/$database\" \"$QUERY\""
     $SQL3 "${rpath}/$database" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
   else
+    $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${rpath}/$database\" \"${QUERY}\""
     $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
   fi
   if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
-    echo "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
+    log "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated."
     exit 1
   fi
 
 ########
 else
 ##  Same as above, but with getting min and max from the file
-
+  $debug && log "scaled mode (per pixel mode disabled)"
   metricmin=0
   metricmax=0
   # Using fixed multiplyer to avoid double querying
@@ -343,13 +358,15 @@ else
       QUERY="$QUERY AND $field=$value" 
     fi
     if [ "X$sIP" == "Xlocalhost" ] ; then
-      $SQL3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+      $debug && log "$SQL3 \"${rpath}/${database}\" \"${QUERY}\""
+      $SQL3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || log "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP"
     else
-    # -o StrictHostKeyChecking=no 
-      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || echo "Problem getting data from ${rpath}/${database}, server $sIP" >> "${rpath}/dashboard.log"
+    # -o StrictHostKeyChecking=no
+      $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/${database}\" \"${QUERY}\""
+      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || log "Problem getting data from ${rpath}/${database}, server $sIP"
     fi
     if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
-      echo "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated." >> "${rpath}/dashboard.log"
+      log "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated."
       exit 1
     fi
   fi
