@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source "${PWD}/../../conf/dash.conf"
-timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
+source "${PWD}/../../lib/dash_functions.sh"
 
 ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}$" | cut -d'|' -f1`
 [ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}[[:space:]]$" | cut -d'|' -f1`
@@ -13,7 +13,5 @@ if [ -z "$ex" ] ; then
 ${PWD}/../../graph --metric=loadavg,activeram,freeswap,procnum,diskusage,cpuusage,connections,bwidthin,bwidthout --new --scale --width=750 --height=300 --from=-${timerange}sec $sip --padding=20 --legend=160
 fi
 
-echo "<div class=\"combinedgraph\">"
-echo "<object data=\"/graphs/${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>"
-echo "</div>"
+echo -e "<div class=\"combinedgraph\"><object data=\"/graphs/${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object></div>"
 

@@ -17,8 +17,12 @@
 dpath=$(readlink -f "$BASH_SOURCE")
 dpath=${dpath%/*}
 #*/
+
 source "$dpath/../conf/mon.conf"
 source "$dpath/../conf/dash.conf"
+[ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift 2>/dev/null` || timeshift=5
+[ -n "$freqdef" ] || freqdef=$FREQ
+timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 
 SQL=`which sqlite3 2>/dev/null`
 
@@ -116,13 +120,9 @@ IFS=$IFS1
 }
 
 print_timeline() {
-  [ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift 2>/dev/null` || timeshift=5
-  [ -n "$freqdef" ] || freqdef=$FREQ
-  timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
   oldest=`date -d "-$timerange sec"`
   hour=`date -d "$oldest" +"%H"`
   echo -e "<div class=\"dashtitle\">\n<div class=\"clustername\"><span class=\"indent\">${1}</span></div>\n<div class=\"server\">\n<span class=\"servername\">${2}</span>\n"
-  freqdef1=`expr $freqdef + 5`
   for ((n=0; n<$slotline_length; n++)) ; do
     timediff=`expr $n \* \( $freqdef - $timeshift \)`
     timestamp=`date -d "$oldest +$timediff sec"`

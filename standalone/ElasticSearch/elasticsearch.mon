@@ -21,7 +21,7 @@ echo "`date +"%H:%M:%S"` $rcommand: ${@}">>$LOG
 SQLITE=`which sqlite3 2>/dev/null`
 MAILX=`which mail 2>/dev/null`
 TMPDIR="${TMPDIR}/elasticsearch"
-LOG="${rpath}/../../sa.log"
+LOG="${rpath}/../../logs/sa.log"
 
 install -d "${TMPDIR}"
 timeindexnow=`date +"%s"`

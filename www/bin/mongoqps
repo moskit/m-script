@@ -2,11 +2,8 @@
 
 source "${PWD}/../../conf/dash.conf"
 source "${PWD}/../../conf/mon.conf"
-if [ -z "$freqdef" ]; then
-  timeshift=`cat "$TMPDIR/timeshift" 2>/dev/null`
-  [ -z "$timeshift" ] && timeshift=5
-  freqdef=$(($FREQ + $timeshift))
-fi
+source "${PWD}/../../dash_functions.sh"
+
 ex=$(find ${PWD}/../graphs -mmin -$(expr 2 \* ${freqdef} / 60 ) -name localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo ${2} | tr ':' '_'`.opcountersQuery.svg)
 if [ -z "$ex" ] ; then
 ${PWD}/../../graph --database=standalone/MongoDB/mongodb.sql3 --table=servers --metric=opcountersQuery --where="hostport:\'${2}\'" --new --width=750 --height=300 --padding=10 --legend=160
