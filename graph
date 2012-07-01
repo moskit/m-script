@@ -47,7 +47,11 @@ necessary_options="metric"
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/dash.conf"
 LOG="${rpath}/logs/dashboard.log"
-
+if [ -z "$freqdef" ]; then
+  timeshift=`cat "$TMPDIR/timeshift" 2>/dev/null`
+  [ -z "$timeshift" ] && timeshift=5
+  freqdef=$(($FREQ + $timeshift))
+fi
 RSYNC=`which rsync 2>/dev/null`
 SQL3=`which sqlite3 2>/dev/null` # assuming that remote path is the same
 
@@ -64,7 +68,7 @@ do
     s_optarg='yes' 
     ;;
   *=*)
-    echo "Wrong syntax: options must start with a double dash" >> "${rpath}/dashboard.log"
+    log "Wrong syntax: options must start with a double dash"
     exit 1
     ;;
   *)
@@ -78,7 +82,7 @@ do
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
-    echo "Unknown option: $s_optname" >> "${rpath}/dashboard.log"
+    log "Unknown option: $s_optname"
     exit 1
   fi
 done
@@ -151,12 +155,12 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found" >> "${rpath}/dashboard.log"
+  log "Necessary options: ${missing_options} not found"
   exit 1
 fi
 if [ -n "$from" ] ; then new="yes" ; fi
 if [ -z "$new" ] && [ $RSYNC == "" ] ; then
-  echo "Rsync is required if neither --new nor --from is present" >> "${rpath}/dashboard.log"
+  log "Rsync is required if neither --new nor --from is present"
   exit 1
 fi
 
@@ -191,7 +195,7 @@ colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "
 [ -n "$pointsize" ] || pointsize=12
 [ -n "$width" ] && graphH=$width
 [ -n "$height" ] && graphV=$height
-[ -n "$graphH" ] && [ -n "$graphV" ] || (echo "Define graph size in conf/dash.conf or as command-line options >> "${rpath}/dashboard.log"" && exit 1)
+[ -n "$graphH" ] && [ -n "$graphV" ] || (log "Define graph size in conf/dash.conf or as command-line options" && exit 1)
 if [ "X$size" == "Xsmall" ] ; then
   graphH=`expr $graphH / 2`
   graphV=`expr $graphV / 2`
@@ -249,10 +253,10 @@ if [ -z "$perpixel" ] ; then
   fi
   title="Graph: $metric from $tfrom to $tto"
   #tlength=`expr length $title`
-  echo "`date +"%d/%m %H:%M"` Generating graph $metric from $tfrom to $tto" >> "${rpath}/dashboard.log"
+  log "Generating graph $metric from $tfrom to $tto"
 else
   title="Graph: $metric"
-  echo "`date +"%d/%m %H:%M"` Generating graph ${metric}, last $areaH values">> "${rpath}/dashboard.log"
+  log "Generating graph ${metric}, last $areaH values"
 fi
 
 ##############################
