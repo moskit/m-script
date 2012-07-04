@@ -19,6 +19,8 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
+[ -z "$M_ROOT" ] && M_ROOT=$rpath
+
 if [ -z "$1" ]; then
   echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
   exit 1
@@ -79,6 +81,8 @@ else
 fi
 
 if [ -n "$mongodbpertableconf" ] ; then
+  [ ! -f "$mongodbpertableconf" ] && mongodbpertableconf="$M_ROOT/$mongodbpertableconf"
+  [ ! -f "$mongodbpertableconf" ] && echo "Per table configuration file not found" >> ${rpath}/m_backup.error && exit 1
   IFS1=$IFS
   IFS='
 '

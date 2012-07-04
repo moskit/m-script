@@ -219,7 +219,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
   
     thisnodename=`$CURL -m 2 -s "http://${clusterhost}/_cluster/nodes" | "${rpath}/../../lib/json2txt" | grep "/nodes/$clusternode/name|" | cut -d'|' -f2`
-    [ -z "$name" ] && echo "<***> Node $clusternode not known to the node located on the host ${clusterhost}" >> "$rpath/report"
+    [ -z "$thisnodename" ] && echo "<***> Node $clusternode not known to the node located on the host ${clusterhost}" >> "$rpath/report"
     done
   done
   

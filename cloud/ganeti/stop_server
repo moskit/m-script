@@ -72,10 +72,11 @@ if [ -z "$name" ] ; then
   fi
 fi
 [ -z "$name" ] && echo "Unable to find this server" && exit 1
-cluster=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4,5 | grep ^$name\| | cut -d'|' -f2)
+tscluster=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4,5 | grep ^$name\| | cut -d'|' -f2)
 
 request() {
-  ssh root@$name poweroff
+  ssh root@$name poweroff 2>&1 </dev/null &
+  sleep 10
   $GNTI remove -f $name 2>/dev/null
   echo $?
   
@@ -85,7 +86,7 @@ IPS=`$GNTI list --no-headers -o name,nic.ips $name | tr ',' ' '`
 
 reqres=`request`
 
-if [ $reqres -eq 0 ] ; then
+if [[ $reqres -eq 0 ]] ; then
   log "server name ${name}, id ${id}, IP ${ip} terminated succesfully" | tee -a "$rpath"/../ganeti.log
   SSHK=`which ssh-keygen 2>/dev/null`
   [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
@@ -96,8 +97,9 @@ if [ $reqres -eq 0 ] ; then
       sed -i "/^$ipa /d" /etc/hosts && log "$ipa removed from /etc/hosts"
     fi
   done
+  needs_balancer=false
   for bcluster in $APP_SERVERS ; do
-    [ "X${bcluster%%|*}" == "X$cluster" ] && needs_balancer=true
+    [ "X${bcluster%%|*}" == "X$tscluster" ] && needs_balancer=true
   done
   if $needs_balancer ; then
     if [ -n "$BALANCER" ] ; then
