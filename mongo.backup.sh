@@ -81,6 +81,7 @@ else
 fi
 
 if [ -n "$mongodbpertableconf" ] ; then
+  [ -n "$verbose" ] && echo "Per table backup configuration enabled" >> ${rpath}/m_backup.error
   [ ! -f "$mongodbpertableconf" ] && mongodbpertableconf="$M_ROOT/$mongodbpertableconf"
   [ ! -f "$mongodbpertableconf" ] && echo "Per table configuration file not found" >> ${rpath}/m_backup.error && exit 1
   IFS1=$IFS
@@ -90,7 +91,8 @@ if [ -n "$mongodbpertableconf" ] ; then
     db=`echo $table | cut -d'|' -f1`
     coll=`echo $table | cut -d'|' -f2`
     bktype=`echo $table | cut -d'|' -f3`
-    case bktype in
+    [ -n "$verbose" ] && echo "Database $db table $coll type $bktype" >> ${rpath}/m_backup.error
+    case $bktype in
       full)
         $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
         [ -n "$TAR" ] && $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp
@@ -117,6 +119,7 @@ if [ -n "$mongodbpertableconf" ] ; then
   done
   IFS=$IFS1
 else
+  [ -n "$verbose" ] && echo "Per table backup configuration disabled" >> ${rpath}/m_backup.error
   if [ "X$mongodblist" == "X" ]; then
     mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>${rpath}/m_backup.error
   fi
