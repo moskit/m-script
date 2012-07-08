@@ -27,31 +27,44 @@ netstatbin=`which netstat 2>/dev/null`
 timeindexnow=`cat /tmp/m_script/timeindex 2>/dev/null`
 lasttimeindex=`cat /tmp/m_script/lasttimeindex 2>/dev/null`
 
-[ -n "$timeindexnow" ] || timeindex=`date +"%s"`
+[ -n "$timeindexnow" ] || timeindexnow=`date +"%s"`
 monperiod=`expr $timeindexnow - $lasttimeindex`
 [ -z "$monperiod" -o $monperiod -le 0 ] && timeshift=`cat "$TMPDIR/timeshift"` && monperiod=`expr $FREQ + $timeshift`
 
-curr_values=$($netstatbin -s | grep -E "`cat "${rpath}/netstat.conf" | grep -v ^$ | cut -d'|' -f2 | tr '\n' '|' | sed 's/ /\\ /g;s/|$//'`" | sed 's|^ *||' | while read L; do val=${L%% *}; var=`grep "${L#* }" ${rpath}/netstat.conf | cut -d'|' -f1`; eval "echo \"${var}=${val}\""; done)
+IFS1=$IFS ; IFS='
+'
+config=( `cat "${rpath}/netstat.conf" | grep -v ^$` )
+
+metrics=$(echo "${config[*]}" | cut -d'|' -f2 | tr '\n' '|'); metrics=${metrics%|}
+
 prev_values_arr=( `cat "$TMPDIR/netstat.dat" 2>/dev/null` )
+
+curr_values=$($netstatbin -s | grep -E "$metrics" | sed 's|^ *||' | while read L ; do val=${L%% *}; var=`echo "${config[*]}" | cut -d'|' -f1,2 | grep "${L#* }" | cut -d'|' -f1`; eval "echo \"${var}=${val}\""; done)
+
+IFS=$IFS1
+
 rm -f "$TMPDIR/netstat.dat"
 for st in $curr_values ; do eval $st ; echo $st >> "$TMPDIR/netstat.dat" ; done
 curr_values_arr=( $curr_values )
 
 [ ${#prev_values_arr[*]} -eq 0 ] && echo "`date +"%H:%M:%S"` $rcommand: previous data not found" >> "$M_ROOT/monitoring.log" && exit 1
-dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \( \\\$${var} - \\\$${var}_prev" \) / $monperiod`"; done) )
+dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \\( \\\$${var} - \\\$${var}_prev \\) \\\\* 60 / $monperiod"`"; done) )
 
 store_results $(for st in ${dat_arr[*]} ; do echo -n "${st%%=*}:integer," ; done)
 
-echo -e "\nNetwork stats\n-------------\n\n" >> "$M_ROOT/report"
+echo -e "\nNetwork stats\n-------------\n\n"
 
-for l3 in `cat "${rpath}/netstat.conf" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; do
+IFS1=$IFS ; IFS='
+'
+for l3 in `echo "${config[*]}" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; do
   var=`echo $l3 | cut -d'|' -f1`
   thr1=`echo $l3 | cut -d'|' -f2`
   thr2=`echo $l3 | cut -d'|' -f3`
   thr3=`echo $l3 | cut -d'|' -f4`
-  val=`echo -e "$dat_arr" | tr ' ' '\n' | grep ^${var}= | cut -d'=' -f2`
-  [[ `expr $val \> $thr3` -eq 1 ]] && echo "<***> `grep ^$var "${rpath}/netstat.conf" | cut -d'|' -f2` is $val" >> "$M_ROOT/report" && continue
-  [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `grep ^$var "${rpath}/netstat.conf" | cut -d'|' -f2` is $val" >> "$M_ROOT/report" && continue
-  [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `grep ^$var "${rpath}/netstat.conf" | cut -d'|' -f2` is $val" >> "$M_ROOT/report" && continue
+  val=`echo "${dat_arr[*]}" | tr ' ' '\n' | grep ^${var}= | cut -d'=' -f2`
+  [[ `expr $val \> $thr3` -eq 1 ]] && echo "<***> `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is $val" && continue
+  [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is $val" && continue
+  [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is $val" && continue
 done
+IFS=$IFS1
 
