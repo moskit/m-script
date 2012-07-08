@@ -15,12 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     
-rpath=$(readlink -m "$BASH_SOURCE")
+rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 rm -f "${rpath}/m_backup.log"
-source "${rpath}/m.rc"
+source "${rpath}/../m.rc"
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
 splitfile() {
   if [ -n "$split_size" ]; then
@@ -121,7 +123,7 @@ EOF
   this program with, for example, --only-clean option for particular hosts.
 
   Syntax is:
-  ${0} --configfiles=file1,file2,file3,...
+  backup.run --configfiles=file1,file2,file3,...
   All other configuration files will be ignored.
 
     Note that this option also allows to use any config files names. Without
@@ -139,7 +141,7 @@ EOF
     cfgfiles="`echo $s_optarg|sed 's|,| |g'`"
     for conf in ${cfgfiles}
     do
-      configfiles="${configfiles} ${rpath}/conf/${conf}"
+      configfiles="${configfiles} ${rpath}/../conf/${conf}"
     done
   ;;
   replace|incremental|incr)
@@ -180,7 +182,9 @@ RSYNC_RSH_BK=$RSYNC_RSH
 # Main loop. Runs as many times as many backup.*.conf files used  #
 ###################################################################
 
-source ${rpath}/conf/mon.conf
+source ${rpath}/../conf/mon.conf
+TMPDIR=$TMPDIR/backups
+[ -d "$TMPDIR" ] && install -d "$TMPDIR"
 export TMPDIR
 declare -i res
 
@@ -191,7 +195,7 @@ install -d "$TMPDIR" 2>&1>>${rpath}/m_backup.error
 if [ -z "$configfiles" ]
 then
   configfiles=( )
-  for conf in ${rpath}/conf/backup*.conf
+  for conf in ${rpath}/../conf/backup*.conf
   do
     configfiles+=("${conf}")
   done
@@ -281,9 +285,9 @@ bconf=${backupconf##*/}
   fi
   install -d "${locallogpath}/logs"
 
-  if [ -f ${rpath}/${backupconf}.exclude ]; then
+  if [ -f ${rpath}/../conf/${backupconf}.exclude ]; then
     echo "Excluding files matching patterns from ${rpath}/${backupconf}.exclude" >> ${rpath}/m_backup.log
-    ARCOPTS="${ARCOPTS} --totals -X ${rpath}/${backupconf}.exclude"
+    ARCOPTS="${ARCOPTS} --totals -X ${rpath}/../conf/${backupconf}.exclude"
   else
     ARCOPTS="${ARCOPTS} --totals"
   fi
@@ -770,7 +774,7 @@ EOF
     if [ -n "${LINE}" ]; then
       cat ${rpath}/backup.report | mail -s "Server $(hostname -f) backup report" "${LINE}"
     fi
-  done < ${rpath}/conf/mail.backup.list
+  done < ${rpath}/../conf/mail.backup.list
   
   if [ -n "$errlog" ]; then
     echo "*** `date` ***" >> ${locallogpath}/logs/m_backup.error

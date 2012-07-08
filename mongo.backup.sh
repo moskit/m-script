@@ -91,11 +91,11 @@ if [ -n "$mongodbpertableconf" ] ; then
     db=`echo $table | cut -d'|' -f1`
     coll=`echo $table | cut -d'|' -f2`
     bktype=`echo $table | cut -d'|' -f3`
-    [ -n "$debugflag" ] && echo "Database $db table $coll type $bktype" >> ${rpath}/m_backup.log
+    [ -n "$debugflag" ] && echo -e "\n>>> Database $db table $coll type $bktype\n" >> ${rpath}/m_backup.log
     case $bktype in
       full)
         $MONGODUMP --host $mongohost --db $db --collection $coll $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp && echo "mongo: $db dumped successfully" >>${rpath}/m_backup.log || echo "mongo: $db dump failed" >>${rpath}/m_backup.log
-        [ -n "$TAR" ] && (IFS=' ' $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp)
+        [ -n "$TAR" ] && (IFS=$IFS1 ; $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>${rpath}/logs/mongo.backup.tmp)
         cat ${rpath}/logs/mongo.backup.tmp | grep -v ^connected | grep -v 'Removing leading' >>${rpath}/m_backup.error
         rm -rf "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>${rpath}/m_backup.error
         ;;

@@ -47,14 +47,14 @@ store_results() {
   [ -z "$dbfile" ] && echo "Database file definition is NULL" && exit 1
   values="$(IFS=','; for f in $1; do f=${f%:*}; eval "echo \$${f},"; done)"
   values="${values%,}"
-  if [ ! -f "$dbfile" ]; then
-    fields="`echo "$1" | tr ':' ' '`"
-    $SQL "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $fields)"
-  fi
   fields="$(IFS=','; for f in $1; do f=${f%:*}; echo "${f},"; done)"
   fields="${fields%,}"
-#echo "$SQL \"$dbfile\" \"INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)\""
-  $SQL "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)"
+  if [ ! -f "$dbfile" ] ; then
+    $SQL "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $fields)" 2>>$M_ROOT/monitoring.log
+  elif [ -z "`$SQL "$dbfile" ".schema $dbtable"`" ] ; then
+    $SQL "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $fields)" 2>>$M_ROOT/monitoring.log
+  fi
+  $SQL "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)" 2>>$M_ROOT/monitoring.log
 
 }
 
