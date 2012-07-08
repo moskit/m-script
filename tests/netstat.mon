@@ -28,7 +28,8 @@ timeindexnow=`cat /tmp/m_script/timeindex 2>/dev/null`
 lasttimeindex=`cat /tmp/m_script/lasttimeindex 2>/dev/null`
 
 [ -n "$timeindexnow" ] || timeindex=`date +"%s"`
-[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat /tmp/m_script/timeindex` || exit 1
+monperiod=`expr $timeindexnow - $lasttimeindex`
+[ -z "$monperiod" -o $monperiod -le 0 ] && timeshift=`cat "$TMPDIR/timeshift"` && monperiod=`expr $FREQ + $timeshift`
 
 curr_values=$($netstatbin -s | grep -E "`cat "${rpath}/netstat.conf" | grep -v ^$ | cut -d'|' -f2 | tr '\n' '|' | sed 's/ /\\ /g;s/|$//'`" | sed 's|^ *||' | while read L; do val=${L%% *}; var=`grep "${L#* }" ${rpath}/netstat.conf | cut -d'|' -f1`; eval "echo \"${var}=${val}\""; done)
 prev_values_arr=( `cat "$TMPDIR/netstat.dat" 2>/dev/null` )
@@ -37,11 +38,11 @@ for st in $curr_values ; do eval $st ; echo $st >> "$TMPDIR/netstat.dat" ; done
 curr_values_arr=( $curr_values )
 
 [ ${#prev_values_arr[*]} -eq 0 ] && echo "`date +"%H:%M:%S"` $rcommand: previous data not found" >> "$M_ROOT/monitoring.log" && exit 1
-dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \\\$${var} - \\\$${var}_prev"`"; done) )
+dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \( \\\$${var} - \\\$${var}_prev" \) / $monperiod`"; done) )
 
-store_results $(for st in $dat_arr ; do echo -n "${st%%=*}:integer," ; done)
+store_results $(for st in ${dat_arr[*]} ; do echo -n "${st%%=*}:integer," ; done)
 
-echo -e "\nNetwork stats\n\-------------\n\n" >> "$M_ROOT/report"
+echo -e "\nNetwork stats\n-------------\n\n" >> "$M_ROOT/report"
 
 for l3 in `cat "${rpath}/netstat.conf" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; do
   var=`echo $l3 | cut -d'|' -f1`
