@@ -112,7 +112,7 @@ if [ -e "$TMPDIR"/netstat.tcp.tmp ] ; then
           xports=${exclport%%|*}
           port1=${xports%-*}
           port2=${xports#*-}
-          [ $portnum -lt $port1 -a $portnum -gt $port2 ] && skip=true && break
+          [ $portnum -gt $port1 -a $portnum -lt $port2 ] && skip=true && break
         fi
       fi
     done
@@ -137,7 +137,7 @@ if [ -e "$TMPDIR"/netstat.udp.tmp ] ; then
           xports=${exclport%%|*}
           port1=${xports%-*}
           port2=${xports#*-}
-          [ $portnum -lt $port1 -a $portnum -gt $port2 ] && skip=true && break
+          [ $portnum -gt $port1 -a $portnum -lt $port2 ] && skip=true && break
         fi
       fi
     done
