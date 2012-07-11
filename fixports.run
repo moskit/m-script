@@ -102,20 +102,21 @@ if [ -e "$TMPDIR"/netstat.tcp.tmp ] ; then
     port=${LINE% *}
     for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
+      skip=false
       if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
         if [ `expr $exclport : "[0-9]*-[0-9]*"` -gt 0 ] ; then
-          skip=1 && break
+          skip=true && break
         else
           portif=${port%:*}
           portnum=${port##*:}
           xports=${exclport%%|*}
           port1=${xports%-*}
           port2=${xports#*-}
-          ([[ $portnum -lt $port1 ]] || [[ $portnum -gt $port2 ]]) && skip=1 && break
+          [ $portnum -lt $port1 -a $portnum -gt $port2 ] && skip=true && break
         fi
       fi
     done
-    [[ $skip -eq 1 ]] && skip=0 || echo "${port}|${prog}" >> "${rpath}/ports.tcp.list"
+    $skip && skip=false || echo "${port}|${prog}" >> "${rpath}/ports.tcp.list"
   done < "$TMPDIR"/netstat.tcp.tmp
 fi
 if [ -e "$TMPDIR"/netstat.udp.tmp ] ; then
@@ -126,20 +127,21 @@ if [ -e "$TMPDIR"/netstat.udp.tmp ] ; then
     port=${LINE% *}
     for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
+      skip=false
       if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
-        if [ `expr $exclport : "[0-9]*-[0-9]*"` -gt 0 ] ; then
-          skip=1 && break
+        if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
+          skip=true && break
         else
           portif=${port%:*}
           portnum=${port##*:}
           xports=${exclport%%|*}
           port1=${xports%-*}
           port2=${xports#*-}
-          ([[ $portnum -lt $port1 ]] || [[ $portnum -gt $port2 ]]) && skip=1 && break
+          [ $portnum -lt $port1 -a $portnum -gt $port2 ] && skip=true && break
         fi
       fi
     done
-    [[ $skip -eq 1 ]] && skip=0 || echo "$port|${prog}" >> "${rpath}/ports.udp.list"
+    $skip && skip=false || echo "${port}|${prog}" >> "${rpath}/ports.udp.list"
   done < "$TMPDIR"/netstat.udp.tmp
 fi
 # UNIX SOCKETS
@@ -149,9 +151,10 @@ while read LINE
 do
   for exclsocket in `cat "${rpath}/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
-    [[ $LINE =~ $exclsocket ]] && skip=1 && break
+    skip=false
+    [[ $LINE =~ $exclsocket ]] && skip=true && break
   done
-  [[ $skip -eq 1 ]] && skip=0 || echo "${LINE##*[[:space:]]}" >> "${rpath}/sockets.list"
+  $skip && skip=false || echo "${LINE##*[[:space:]]}" >> "${rpath}/sockets.list"
 done < "$TMPDIR"/netstat.sockets.tmp
 IFS=$IFS1
 rm -f "${rpath}/mon.run.lock" && echo "`date +"%H:%M:%S"` <<< Lock file removed by the process called as $0 $* " >> "${rpath}/monitoring.log"
