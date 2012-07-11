@@ -29,7 +29,7 @@ setup_env() {
   HOME_ORIG=$HOME
   HOME=$M_ROOT
   [ -f $HOME/.bashrc ] && source $HOME/.bashrc
-  export CLOUD ROLES_ROOT M_ROOT HOME HOME_ORIG
+  export CLOUD ROLES_ROOT M_ROOT HOME HOME_ORIG TMPDIR
   export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 }
 
@@ -42,7 +42,7 @@ cr() {
   fi
   cd "$ROLES_ROOT/$1"
   export M_ROLE="$1"
-  export role="$1"
+  export role="${1%/}"
   M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
   [ `echo $M_CLUSTER | wc -l` -gt 1 ] && echo "More than one cluster found for this role. It is not a critical error, but default cluster and flavor cannot be determined. It is recommended to clone the role and make each cluster have its own role." && unset M_CLUSTER
   if [ -z "$M_CLUSTER" ]; then

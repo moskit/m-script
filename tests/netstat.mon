@@ -66,9 +66,9 @@ for l3 in `echo "${config[*]}" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; d
   thr2=`echo $l3 | cut -d'|' -f3`
   thr3=`echo $l3 | cut -d'|' -f4`
   val=`echo "${dat_arr[*]}" | tr ' ' '\n' | grep ^${var}= | cut -d'=' -f2`
-  [[ `expr $val \> $thr3` -eq 1 ]] && echo "<***> `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is $val" && continue
-  [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is $val" && continue
-  [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is $val" && continue
+  [[ `expr $val \> $thr3` -eq 1 ]] && echo "<***> `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
+  [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
+  [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
 done
 IFS=$IFS1
 

@@ -280,11 +280,6 @@ case $command1 in
     ;;
   clone)
     [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
-    if [ -n "$method" -a "$method" == "copy" ] ; then
-      method="`echo -e "cp\n-u"`"
-    else
-      method="`echo -e "ln\n-s"`"
-    fi
     if [ ! -d "$ROLES_ROOT/$param1" ]; then
       if [ ! -d "$param1" ]; then
         echo "Role $param1 not found" && exit 1

@@ -102,13 +102,13 @@ if [ -e "$TMPDIR"/netstat.tcp.tmp ] ; then
     port=${LINE% *}
     for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
-      if [[ $exclport =~ $prog ]] ; then
-        if [[ $exclport =~ [^[0-9]-]* ]] ; then
+      if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
+        if [ `expr $exclport : "[0-9]*-[0-9]*"` -gt 0 ] ; then
           skip=1 && break
         else
           portif=${port%:*}
           portnum=${port##*:}
-          xports=${exclport%%%*}
+          xports=${exclport%%|*}
           port1=${xports%-*}
           port2=${xports#*-}
           ([[ $portnum -lt $port1 ]] || [[ $portnum -gt $port2 ]]) && skip=1 && break
@@ -126,13 +126,13 @@ if [ -e "$TMPDIR"/netstat.udp.tmp ] ; then
     port=${LINE% *}
     for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
-      if [[ $exclport =~ $prog ]] ; then
-        if [[ $exclport =~ [^[0-9]-]* ]] ; then
+      if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
+        if [ `expr $exclport : "[0-9]*-[0-9]*"` -gt 0 ] ; then
           skip=1 && break
         else
           portif=${port%:*}
           portnum=${port##*:}
-          xports=${exclport%%%*}
+          xports=${exclport%%|*}
           port1=${xports%-*}
           port2=${xports#*-}
           ([[ $portnum -lt $port1 ]] || [[ $portnum -gt $port2 ]]) && skip=1 && break
