@@ -97,14 +97,14 @@ IFS='
 if [ -e "$TMPDIR"/netstat.tcp.tmp ] ; then
   while read LINE
   do
+    skip=false
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
     for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
-      skip=false
       if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
-        if [ `expr $exclport : "[0-9]*-[0-9]*"` -gt 0 ] ; then
+        if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
           skip=true && break
         else
           portif=${port%:*}
@@ -122,12 +122,12 @@ fi
 if [ -e "$TMPDIR"/netstat.udp.tmp ] ; then
   while read LINE
   do
+    skip=false
     prog=${LINE#* }
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
     for exclport in `cat "${rpath}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
     do
-      skip=false
       if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
         if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
           skip=true && break
