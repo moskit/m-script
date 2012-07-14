@@ -208,7 +208,7 @@ case $command1 in
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
           done
           for or in `find "$ROLES_ROOT" -maxdepth 1 -type d` ; do
-            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$or/"meta.*` -gt 0 ] && mi+=( "found in role $or" )
+            [ `cat "$or/"meta.* 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
           done
           [ -z "$mi" ] && mi="unused"
           for mis in ${mi[*]} ; do
@@ -216,6 +216,7 @@ case $command1 in
               if [ -n "$all" ]; then
                 printcol "$scr"
                 echo "not found in any meta"
+                unset scr
               fi
             else
               for r in `grep "${sc##*/}" "$ROLES_ROOT/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
@@ -227,7 +228,13 @@ case $command1 in
               done
             fi
           done
-          unset mi
+          for oris in ${ori[*]} ; do
+            printcol "$scr"
+            printcol "$oris"
+            echo
+            unset scr oris
+          done
+          unset mi ori
         done
       ;;
       files)

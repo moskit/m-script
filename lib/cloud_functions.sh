@@ -22,10 +22,10 @@ generate_name() {
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && echo "`date +"%m.%d %H:%M"` $CLOUD/${BASH_SOURCE[0]##*/}: cluster is not defined, exiting" >> "${rpath}"/../../logs/cloud.log && exit 1
-  nam=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | grep ${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
+  nam=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | grep \|${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
   am=0 ; lm=0
-  num=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4 | grep ^$nam | while read name ; do a=`expr "X$name" : 'X.*[^0-9]\([0-9]*\)'` ; l=${#a} ; [ `expr $l \> ${lm}` -gt 0 ] && lm=$l ; [ `expr $a \> ${am}` -gt 0 ] && am=$a ; echo "$am|$lm" ; done | tail -1)
+  num=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4 | grep ^$nam[0-9] | while read name ; do a=`expr "X$name" : 'X.*[^0-9]\([0-9]*\)'` ; l=${#a} ; [ `expr $l \> ${lm}` -gt 0 ] && lm=$l ; [ `expr $a \> ${am}` -gt 0 ] && am=$a ; echo "$am|$lm" ; done | tail -1)
   am=${num%|*} ; lm=${num#*|}
   if [ -n "$am" ] ; then
     am=`expr $am + 1`
