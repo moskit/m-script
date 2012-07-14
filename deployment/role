@@ -207,7 +207,7 @@ case $command1 in
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
           done
-          for or in `find "$ROLES_ROOT" -maxdepth 1 -type d` ; do
+          for or in `find "$ROLES_ROOT" -mindepth 1 -maxdepth 1 -type d ! -name "$param1"` ; do
             [ `cat "$or/"meta.* 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
           done
           [ -z "$mi" ] && mi="unused"
