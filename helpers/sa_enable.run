@@ -19,4 +19,5 @@ for mon in "${rpath}/../standalone/$1"/*.mon ; do
   ln -s "${mon}" "${rpath}/../standalone/${1}/rc/${m}.${mon##*/}"
   n=`expr $n + 1`
 done
+[ -x "${rpath}/../standalone/$1"/setup.run ] && "${rpath}/../standalone/$1"/setup.run
 
