@@ -305,7 +305,7 @@ case $command1 in
     fi
     if [ -d "$ROLES_ROOT/$param2" ]; then
       if [ $(cd -P "$ROLES_ROOT/$param2/../" && pwd) == "$ROLES_ROOT" ]; then
-        echo "Role $param2 exists, updating..."
+        echo "Role $param2 exists, adding files missing in the target role. Use --all to overwrite existing files."
       else
         echo "Role folder must be a subfolder of ${ROLES_ROOT}. You can change ROLE_ROOT setting in conf/deployment.conf"
         exit 1
@@ -319,19 +319,27 @@ case $command1 in
       nsl=`echo "$sl" | sed "s|$sourcerole/||"`
       f=`readlink $sl`
       if [ "X${f:0:1}" == "X/" ]; then
-        [ "$method" == "link" ] && echo "${sl##*/} is a symlink resolving to an absolute path. Copying the file instead."
-        cp -u "$f" "$ROLES_ROOT/$param2/$nsl"
+        if [ "$method" == "link" ]; then
+          if [ ! -e "$ROLES_ROOT/$param2/$nsl" -o -n "$all" ]; then
+            echo "${sl##*/} is a symlink resolving to an absolute path. Copying the file instead."
+            cp -u "$f" "$ROLES_ROOT/$param2/$nsl"
+          fi
+        fi
       else
         if [ -e "$ROLES_ROOT/$param2/$nsl" -a ! -h "$ROLES_ROOT/$param2/$nsl" ]; then
           echo "Source file $nsl is a symlink, but target is not. Not copying."
         else
-          $methodcommand "$sl" "$ROLES_ROOT/$param2/$nsl"
+          if [ ! -e "$ROLES_ROOT/$param2/$nsl" -o -n "$all" ]; then
+            $methodcommand "$sl" "$ROLES_ROOT/$param2/$nsl"
+          fi
         fi
       fi
     done
     for f in `find "$sourcerole/" -type f ! -name role.conf` ; do
       nf=`echo "$f" | sed "s|$sourcerole/||"`
-      $methodcommand "$f" "$ROLES_ROOT/$param2/$nf"
+      if [ ! -e "$ROLES_ROOT/$param2/$nf" -o -n "$all" ]; then
+        $methodcommand "$f" "$ROLES_ROOT/$param2/$nf"
+      fi
     done
     if [ ! -e "$ROLES_ROOT/$param2/role.conf" ]; then
       for rcl in `cat "$sourcerole/role.conf"` ; do
