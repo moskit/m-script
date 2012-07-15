@@ -237,8 +237,9 @@ case $command1 in
               echo
               unset scr oris
             done
-            unset mi ori
+            unset ori
           fi
+          unset mi
         done
       ;;
       files)
