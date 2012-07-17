@@ -177,7 +177,7 @@ if [ "X$command" != "X" ] ; then
         [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
         [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
         if [ -n "$RSYNC" ] ; then
-          $RSYNC -l ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "$from" "${IP}:${to}"
+          $RSYNC -l ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "${from%/}" "${IP}:${to}"
           [ $? -eq 0 ] && echo "Success" && continue
         fi
         printf "Rsync failed or not found, trying scp ...  "
