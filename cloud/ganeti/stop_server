@@ -56,7 +56,7 @@ find_by_id() {
 }
 
 log() {
-echo "`date +"%m.%d %H:%M"` ganeti/stop_server: ${@}">>$LOG
+  echo "`date +"%m.%d %H:%M"` ganeti/stop_server: ${@}">>$LOG
 }
 
 if [ -z "$name" ] ; then
@@ -86,8 +86,11 @@ request() {
   echo $?
 }
 
-IPS=`$GNTI list --no-headers -o name,nic.ips $name | tr ',' ' '`
-
+IPS=`($GNTI list --no-headers -o name,nic.ips $name || echo "ERROR") | tr ',' ' ' | tail -1`
+if [ "X$IPS" == "XERROR" ]; then
+  echo "Error getting IPs of the instance ${name}. Non-existing instance?"
+  exit 1
+fi
 reqres=`request`
 
 if [[ $reqres -eq 0 ]] ; then
