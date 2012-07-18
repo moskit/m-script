@@ -124,6 +124,7 @@ request() {
 node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
 ios=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
 iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f6`
+sed -i "/^${ip}/d" /etc/hosts
 echo "$ip $name" >> /etc/hosts
 #echo "$GNTI add -n $node -o $iparams $name"
 $GNTI add -n $node -o $ios $iparams $name 2>&1 </dev/null &
@@ -249,7 +250,7 @@ $SSHK -q -R "$ip" >/dev/null
 [ -f "$thekey" ] && $SSH -i $thekey -o StrictHostKeyChecking=no $ip echo 2>/dev/null &&
 $SSH -i $thekey -o StrictHostKeyChecking=no $name echo 2>/dev/null
 if [ $? -ne 0 ]; then
-  echo "Unable to login to the server $ip using the key ${rpath}/../../keys/${KEY}, trying again...">>"${rpath}"/../logs/cloud.log
+  log "Unable to login to the server $ip using the key ${rpath}/../../keys/${KEY}, trying again..."
   for ((k=0; k<3; k++)); do
     $SSH -i "${rpath}/../../keys/${KEY}" -o StrictHostKeyChecking=no $ip echo >/dev/null
     [ $? -eq 0 ] && $SSH -i "${rpath}/../../keys/${KEY}" -o StrictHostKeyChecking=no $name echo >/dev/null && break

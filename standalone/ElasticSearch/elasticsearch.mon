@@ -286,6 +286,8 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     
   done
   
+  eval echo -e \${${clustername}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${clustername}.nodes.list
+  
   ($CURL -m 5 "http://${clusterhost1}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://${clusterhost2}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.routing"
   $debug && log "ES cluster ${escluster}: routing data collected"
   

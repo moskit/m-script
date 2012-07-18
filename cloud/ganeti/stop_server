@@ -77,8 +77,8 @@ tscluster=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d
 request() {
   ssh root@$name poweroff 2>&1 </dev/null &
   sleep 10
-  $GNTI shutdown $name 2>/dev/null
-  $GNTI remove -f $name 2>/dev/null
+  $GNTI shutdown $name >/dev/null 2>&1
+  $GNTI remove -f $name >/dev/null 2>&1
   echo $?
 }
 
