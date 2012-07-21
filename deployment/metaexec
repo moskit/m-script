@@ -178,6 +178,7 @@ fi
 
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
+source "${rpath}/../lib/functions.sh"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "${rpath}/../" && pwd)
