@@ -194,7 +194,7 @@ try_auth() {
     sleep 10
   done
   i+=-1
-  [ $i -ne 0 ] && log "$i additional auth requests due to no reply from API"
+  [ $i -gt 0 ] && log "$i additional auth requests due to no reply from API"
 }
 
 source "${rpath}/../../conf/cloud.conf"

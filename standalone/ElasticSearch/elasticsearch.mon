@@ -128,7 +128,8 @@ if [ -n "$ES_SERVERS" ] ; then
     done
   fi
 else
-  echo "ES_SERVERS variable is not defined, check ${rcommand}.conf" >> ${rpath}/../../logs/elasticsearch.log
+  log "ES_SERVERS variable is not defined, check ${rcommand}.conf"
+  exit 1
 fi
 $debug && log "hosts collected"
 

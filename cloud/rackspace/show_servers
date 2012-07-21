@@ -174,7 +174,7 @@ list_servers() {
               echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
             done
             for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-              [ `grep -c \|${listip}$ "${TMPDIR}/${rcommand}.resp"` -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+              [ `grep -c \|${listip}$ "${TMPDIR}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
             done
           fi
         fi

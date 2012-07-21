@@ -88,3 +88,7 @@ print_report_title() {
   echo -e "`date`\n------------------------------\n" > "$1"
 }
 
+log() {
+  echo "`date +"%H:%M:%S"` ${BASH_SOURCE[0]##*/}: ${@}">>$LOG
+}
+
