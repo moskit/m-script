@@ -30,7 +30,7 @@ source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
 TMPDIR="${TMPDIR}/cloud/${CLOUD}"
 
-possible_options="id name ip verbose"
+possible_options="id name ip verbose force"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -51,6 +51,8 @@ do
   fi
 done
 IFS=$IFS1
+
+[ -n "$force" ] && force=true
 
 find_by_ip() {
   if [ -f "${TMPDIR}/show_servers.resp" ] ; then
@@ -140,8 +142,12 @@ cat "${TMPDIR}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
 
 IPS=( "${ipint}" "${ipext}" "${ip}" )
 
-if [ $reqres -eq 0 -a `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ] ; then
+if [ $reqres -eq 0 -a `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ]; then
   echo -e "`date +"%m.%d %H:%M"` rackspace/stop_server: server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully\n\n" >> "$rpath"/../rackspace.log | tee -a "$rpath"/../../logs/cloud.log
+  removed=true
+fi
+
+if [ $removed -o $force ]; then
   SSHK=`which ssh-keygen 2>/dev/null`
   [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $name removed from known_hosts" >> "$rpath"/../../logs/cloud.log
 

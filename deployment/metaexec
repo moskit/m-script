@@ -166,7 +166,9 @@ do
 done
 IFS=$IFS1
 
+M_ROOT=$(cd "${rpath}/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
+
 [ -n "$debug" ] && verbose="yes" && debug=true
 export verbose debug
 [ -n "$repeat" ] && timestamp=repeat
@@ -181,7 +183,7 @@ source "${rpath}/../conf/cloud.conf"
 source "${rpath}/../lib/functions.sh"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-M_ROOT=$(cd "${rpath}/../" && pwd)
+
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 [ -n "$task" ] || task=notask
 

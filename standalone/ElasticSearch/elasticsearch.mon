@@ -325,6 +325,7 @@ find "${rpath}/" -name "*.dat" -o -name "*.dat.prev" -o -name "*.nodes.list" -mm
 # ( the last known state of a disappeared cluster :) )
 find "${rpath}/" -name "*.report" -mtime +1 -exec rm {} \;
 $debug && log "finish"
+rm -f "$rpath/lock"
 
 exit 0
 
