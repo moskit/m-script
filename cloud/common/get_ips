@@ -93,13 +93,18 @@ fi
 
 [ -n "$public" -a -n "$private" ] && unset public private
 
+cluster=`echo -e $cluster | tr ',' '\n'`
+[ -n "$all" ] && cluster=all
+[ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && echo "No clusters found" && exit 1
+
 IFS1=$IFS
 IFS='
 '
 declare -i n
 n=1
 [ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
-cluster=`echo $cluster | tr ',' '\n'`
 for server in $IPS ; do
   list=false
   IP=${server%%|*}

@@ -20,7 +20,7 @@
 # ln -s /path-to/monitoringload.run /etc/init.d
 # (or /etc/rc.d/init.d if you have FHS compliant distro)
 
-rpath=$(readlink -m "$BASH_SOURCE")
+rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/

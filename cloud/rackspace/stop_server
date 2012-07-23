@@ -52,7 +52,8 @@ do
 done
 IFS=$IFS1
 
-[ -n "$force" ] && force=true
+[ -n "$force" ] && force=true || force=false
+removed=false
 
 find_by_ip() {
   if [ -f "${TMPDIR}/show_servers.resp" ] ; then

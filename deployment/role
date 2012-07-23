@@ -409,9 +409,9 @@ case $command1 in
         ;;
       file)
         if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
-          rf=`readlink -m "$ROLES_ROOT/$role/$flavor/files/$param1"`
+          rf=`readlink -f "$ROLES_ROOT/$role/$flavor/files/$param1"`
         elif [ -h "$ROLES_ROOT/$role/common/files/$param1" ]; then
-          rf=`readlink -m "$ROLES_ROOT/$role/common/files/$param1"`
+          rf=`readlink -f "$ROLES_ROOT/$role/common/files/$param1"`
         else
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi
@@ -456,9 +456,9 @@ case $command1 in
         ;;
       file)
         if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
-          rf=`readlink -m "$ROLES_ROOT/$role/$flavor/files/$param1"`
+          rf=`readlink -f "$ROLES_ROOT/$role/$flavor/files/$param1"`
         elif [ -h "$ROLES_ROOT/$role/common/files/$param1" ]; then
-          rf=`readlink -m "$ROLES_ROOT/$role/common/files/$param1"`
+          rf=`readlink -f "$ROLES_ROOT/$role/common/files/$param1"`
         else
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi

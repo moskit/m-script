@@ -21,7 +21,7 @@ rpath=${0%/*}
 touch /etc/mynetworks
 IFS1=$IFS
 IFS='|'
-cat ${rpath}/../../servers.list | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | awk -F'|' '{print $1" "$4}' | while read HOST
+cat ${rpath}/../../servers.list | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | cut -d'|' -f1,4 | while read HOST
 do
   ip=`echo $HOST | awk '{print $1}'`
   hname=`echo $HOST | awk '{print $2}'`

@@ -123,7 +123,6 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
     [ "X$DREGION" == "X$region" ] || continue
   fi
   DCLUSTER=`echo $dserver | cut -d'|' -f5`
-  [ "X$DCLUSTER" == "X$SUPERCLUSTER" ] || continue
   if [ "x$cluster" != "xall" ] ; then
     [ "X$DCLUSTER" == "X$cluster" ] || continue
   fi
@@ -138,10 +137,11 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
     SREGION=`echo $sserver | cut -d'|' -f3`
     [ "X$SREGION" == "X$fromregion" ] || continue
     fi
+    SCLUSTER=`echo $sserver | cut -d'|' -f5`
     if [ -n "$fromcluster" ] ; then
-      SCLUSTER=`echo $sserver | cut -d'|' -f5`
       [ "X$SCLUSTER" == "X$fromcluster" ] || continue
     fi
+    [ "X$SCLUSTER" == "X$SUPER_CLUSTER" ] && [ "X$DCLUSTER" != "X$SUPER_CLUSTER" ] && continue
     IP2UB=${sserver%%|*}
 
     for mainchain in INPUT OUTPUT ; do

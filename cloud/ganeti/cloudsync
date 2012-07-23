@@ -1,1 +1,198 @@
-../common/cloudsync
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+[[ $0 =~ ^\/ ]] && rroot='/'
+for step in `echo ${0} | tr '/' ' '` ; do
+  rlink=`readlink "${rroot}${rpath}${step}"`
+  if [ -n "$rlink" ] ; then
+    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" || rpath="${rpath}${rlink}/"
+  else
+    rpath="${rpath}${step}/"
+  fi
+done
+rpath=${rpath%/}
+rcommand=${rpath##*/}
+rpath="${rroot}${rpath%/*}"
+#*/ (this is needed to fix vi syntax highlighting)
+source "${rpath}/../../conf/mon.conf"
+source "${rpath}/../../conf/cloud.conf"
+RSYNC=`which rsync 2>/dev/null`
+SCP=`which scp 2>/dev/null`
+if [ -z "$RSYNC" ] ; then
+  echo "Rsync utility not found, trying scp"
+  if [ -n "$SCP" ] ; then
+    echo "Using scp"
+  else
+    echo "Neither rsync nor scp is found. Exiting" && exit 1
+  fi
+fi
+[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
+[ -n "$SSHPORT" ] || SSHPORT=22
+possible_options="cluster help region verbose recursive ip nolocalhost"
+commflag=0
+for s_option in "${@}"
+do
+  case ${s_option} in
+  --*=*)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
+      s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
+    fi
+    ;;
+  --*)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+      s_optarg='yes'
+    fi
+    ;;
+  *=*)
+    command="$command ${s_option}"
+    exit 1
+    ;;
+  *)
+    if [ "$commflag" == "1" ] ; then
+      command="$command ${s_option}"
+    else
+      commflag=1
+      command="${s_option}"
+    fi
+    ;;
+  esac
+  for option in `echo $possible_options`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+  done
+done
+if [ "X$help" == "Xyes" ] ; then
+  cat <<"EOF"
+Usage: ${0##*/} <options> <local path> <remote path>
+
+Rsyncs (or copies over if rsync not found) local path to remote path on remote servers. The list of target servers is defined by either command-line arguments or environment variables.
+
+Options:
+
+  --recursive              - recursive sync of directories, implies --delete
+  --cluster=clustername    - syncs to all servers from this cluster.
+                             Multiple clusters are allowed, separated by comma.
+                             MUST be defined. To sync to all servers, use 
+                             --cluster=all. Accepts also M_CLUSTER environment
+                             variable (from msh environment).
+  --all                    - shortcut for --cluster=all.
+  --ip=IP                  - ip for a single server operation.
+                             If ip is defined, cluster and region are ignored.
+  --region=region          - syncs to all servers from this region.
+  --verbose                - shows each server details before running
+                             the command.
+
+EOF
+  exit 0
+fi
+
+declare -i RETVAL
+RETVAL=0
+[ -n "$recursive" ] && r="-r"
+[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+if [ -n "$ip" ] ; then
+  cluster= ; region=
+  if [ `grep -c "^$ip|" "${rpath}/../../servers.list"` -eq 0 ] ; then
+    # if name passed as ip
+    if [ `cat "${rpath}/../../servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+      echo "Unable to find $ip in servers.list"
+      exit 1
+    else
+      ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+      [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
+    fi
+  else
+    # cluster is still needed for some cases
+    server=`grep "^$ip|" "${rpath}/../../servers.list"`
+    cluster=`echo "$server" | cut -d'|' -f5`
+    region=`echo "$server" | cut -d'|' -f3`
+  fi
+fi
+
+[ -n "$all" ] && cluster=all
+[ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && echo "No clusters found" && exit 1
+
+IFS1=$IFS
+IFS='
+'
+if [ "X$command" != "X" ] ; then
+  from=${command%% *}
+  ## Deployment system integration ##
+  if [ ! -e "$from" ]; then
+    source "${rpath}/../../conf/deployment.conf"
+    [ -n "$flavor" ] && from1=`find "$ROLES_ROOT/$role/$flavor/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
+    [ ! -e "$from1" ] && from1=`find "$ROLES_ROOT/$role/common/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
+    [ ! -e "$from1" ] && echo "File $from not found" && exit 1
+    from=$from1
+  fi
+  ##
+  [ -h "$from" ] && from=`readlink -f "$from"`
+  to=${command#* }
+  [ -n "$verbose" ] && echo "### Syncing $from to $to"
+  for cluster in `printf "${cluster}\n"|sed 's|,|\n|g'` ; do
+    for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^#|grep -v ^[[:space:]]*#` ; do
+      IP=${server%%|*}
+      if [ -n "$ip" ] ; then
+        [ "X$IP" == "X$ip" ] || continue
+      fi
+      KEY=`echo $server | cut -d'|' -f2`
+      if [ -n "$region" ] ; then
+        REGION=`echo $server | cut -d'|' -f3`
+        [ "X$REGION" == "X$region" ] || continue
+      fi
+      if [ -n "$cluster" ] ; then
+        CLUSTER=`echo $server | cut -d'|' -f5`
+        [ "X$CLUSTER" == "X$cluster" ] || continue
+      fi
+      if [ "X$verbose" == "Xyes" ] ; then
+        NAME=`echo $server | cut -d'|' -f4`
+        echo
+        echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
+      fi
+      if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+        [ -z "$nolocalhost" ] && cp -up $from $to
+      else
+        [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
+        [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
+        if [ -n "$RSYNC" ] ; then
+          $RSYNC -l ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "${from%/}" "${IP}:${to}"
+          [ $? -eq 0 ] && echo "Success" && continue
+        fi
+        printf "Rsync failed or not found, trying scp ...  "
+        $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT -p ${r} "$from" "${IP}:${to}"
+        if [ $? -eq 0 ] ; then
+          echo "Success"
+        else
+          echo "ERROR: Unable to cloudsync"
+          RETVAL+=1
+        fi
+      fi
+    done
+  done
+fi
+IFS=$IFS1
+exit $RETVAL
+
