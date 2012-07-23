@@ -144,7 +144,11 @@ if [ "X$command" != "X" ] ; then
   if [ ! -e "$from" ]; then
     source "${rpath}/../../conf/deployment.conf"
     [ -n "$flavor" ] && from1=`find "$ROLES_ROOT/$role/$flavor/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
-    [ ! -e "$from1" ] && from1=`find "$ROLES_ROOT/$role/common/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
+    if [ ! -e "$from1" ]; then
+      for r in $role common ; do
+        from1=`find "$ROLES_ROOT/$r/common/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
+      done
+    fi
     [ ! -e "$from1" ] && echo "File $from not found" && exit 1
     from=$from1
   fi
