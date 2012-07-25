@@ -304,28 +304,27 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
   [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && exit 1
-  #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
-  $debug && log "ensuring the target server $ip is accessible"
-  if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
-    for ((k=0; k<3; k++)); do
-      $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip echo >/dev/null
-      if [ $? -ne 0 ]; then
-        echo "Unable to login to the server $ip using the key ${rpath}/../keys/${KEY}, trying again...">>"$LOG"
-        loggedin=false
-        sleep 30
-      else
-        loggedin=true
-        break
-      fi
-    done
-    $loggedin || exit 1
-  fi
-  #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
-
-  #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
-  
   if [ -z "$list" ] ; then
-    
+    #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
+    $debug && log "ensuring the target server $ip is accessible"
+    if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
+      for ((k=0; k<3; k++)); do
+        $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip echo >/dev/null
+        if [ $? -ne 0 ]; then
+          echo "Unable to login to the server $ip using the key ${rpath}/../keys/${KEY}, trying again...">>"$LOG"
+          loggedin=false
+          sleep 30
+        else
+          loggedin=true
+          break
+        fi
+      done
+      $loggedin || exit 1
+    fi
+    #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
+
+    #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
+
     if [ -z "$timestamp" ];then
     ## Saving arguments to make re-run simpler
       $debug && log "saving command-line arguments for possible repeat of the sequence"
@@ -359,6 +358,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
         echo "$metan ${meta}"
         if [ "$list" == "unfold" ]; then
           echo '--------------------------------------------------------------------------------'
+          role show script "${meta#* }" | sed 's|\\\$|$|g'
           role show script "${meta#* }" | sed 's|\\\$|$|g'
           echo '--------------------------------------------------------------------------------'
         fi
