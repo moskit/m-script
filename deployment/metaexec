@@ -359,7 +359,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
         echo "$metan ${meta}"
         if [ "$list" == "unfold" ]; then
           echo '--------------------------------------------------------------------------------'
-          role show script "$meta"
+          role show script "${meta#* }" | sed 's|\\\$|$|g'
           echo '--------------------------------------------------------------------------------'
         fi
       else
