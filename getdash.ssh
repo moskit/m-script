@@ -19,9 +19,9 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/
 
-SCP=`which scp 2>/dev/null`
+[ -z "$SCP" ] && SCP=`which scp 2>/dev/null`
 [ -z "$SCP" ] && echo "scp utility not found, exiting" && exit 1
-SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && SSH=`which ssh 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 SQLITE=`which sqlite3 2>/dev/null`
@@ -61,7 +61,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
     servername=`echo $server | cut -d'|' -f4`
     [ -d "${rpath}/www/$monitor/${clustered_as}/${servername}" ] || install -d "${rpath}/www/$monitor/${clustered_as}/${servername}"
-    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > ${TMPDIR}/${ip}.${monitor}.remote.dash.list
+    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" 2>/dev/null | sort > ${TMPDIR}/${ip}.${monitor}.remote.dash.list
     find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.${monitor}.local.dash.list
     nd=`diff ${TMPDIR}/${ip}.${monitor}.remote.dash.list ${TMPDIR}/${ip}.${monitor}.local.dash.list | grep ^\< | sed 's|^< ||'`
     if [ -n "$nd" ] ; then
