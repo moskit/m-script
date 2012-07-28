@@ -79,7 +79,7 @@ thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$tscluster\| | cut -d'|'
 [ ! -f "$thekey" ] && thekey="$HOME/.ssh/id_dsa.pub"
 
 request() {
-  ssh -i "$thekey" -o StrictHostKeyChecking=no root@$name poweroff 2>&1 </dev/null &
+  ssh -i "$thekey" -o StrictHostKeyChecking=no root@$name poweroff >/dev/null 2>&1 </dev/null &
   sleep 10
   $GNTI shutdown $name >/dev/null 2>&1
   $GNTI remove -f $name >/dev/null 2>&1

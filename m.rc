@@ -67,7 +67,8 @@ exitrole() {
 
 set_default_ps() {
   if ${use_color} ; then
-    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
+    [ -z "$PS_COLOR" ] && PS_COLOR="$ATTR_BOLD$FG_RED"
+    PS1="\[${CONTR_SEQ}$ATTR_NONE$FG_WHITE\][\[${CONTR_SEQ}$PS_COLOR\]${HOSTNAME%%.*}\[${UNSET_COLOR}\]:\[${CONTR_SEQ}$ATTR_BOLD$FG_CYAN\]${M_ROLE}\[${CONTR_SEQ}$ATTR_NONE$FG_WHITE\] \W]# \[${UNSET_COLOR}\]"
   else
     PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
   fi
@@ -84,6 +85,41 @@ match_lhs=""
 	&& match_lhs=$(dircolors --print-database)
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 export use_color
+
+if $use_color ; then
+# Attribute codes: 
+# 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
+# Text color codes:
+# 30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
+# Background color codes:
+# 40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
+  CONTR_SEQ='\033['
+  UNSET_COLOR="${CONTR_SEQ}0m"
+  FG_BLACK='30m'
+  FG_RED='31m'
+  FG_GREEN='32m'
+  FG_YELLOW='33m'
+  FG_BLUE='34m'
+  FG_MAGENTA='35m'
+  FG_CYAN='36m'
+  FG_WHITE='37m'
+  BG_BLACK='40m'
+  BG_RED='41m'
+  BG_GREEN='42m'
+  BG_YELLOW='43m'
+  BG_BLUE='44m'
+  BG_MAGENTA='45m'
+  BG_CYAN='46m'
+  BG_WHITE='47m'
+  ATTR_NONE='00;'
+  ATTR_BOLD='01;'
+  ATTR_UNDERSCORE='04;'
+  ATTR_BLINK='05;'
+  ATTR_REVERSE='07;'
+  ATTR_CONCEALED='08;'
+  # Example:
+  # echo -e "$CONTR_SEQ$ATTR_BOLD$FG_RED$HOSTNAME$CONTR_SEQ$ATTR_BLINK${FG_WHITE}:$UNSET_COLOR"
+fi
 
 setup_env
 set_default_ps
