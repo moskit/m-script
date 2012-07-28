@@ -5,6 +5,6 @@
 
 for f in $@ ; do
   [ -f "$M_ROOT/$f" ] || continue
-  mv $M_ROOT/$f $M_ROOT/${f%.new}
+  diff $M_ROOT/$f $M_ROOT/${f%.new}
 done
 
