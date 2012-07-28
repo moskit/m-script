@@ -143,7 +143,7 @@ $debug && log "hosts collected"
 # These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
   touch "${rpath}/${cluster}.es_servers.list"
-  [ -n "`eval echo -e \$${clustername}ips | tr ' ' '\n' | sort | $DIFF -q - "${rpath}/${cluster}.es_servers.list"`" ] && eval echo -e \$${clustername}ips | tr ' ' '\n' | sort > "${rpath}/${cluster}.es_servers.list"
+  [ -n "`eval echo -e \$${cluster}ips | tr ' ' '\n' | sort | $DIFF -q - "${rpath}/${cluster}.es_servers.list"`" ] && eval echo -e \$${cluster}ips | tr ' ' '\n' | sort > "${rpath}/${cluster}.es_servers.list"
 done
 $debug && log "server lists updated"
 
@@ -177,6 +177,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
 '
   for LINE in `cat "${rpath}/${escluster}.dat"  | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
   IFS=$IFS1
+  
   $debug && log "ES cluster ${escluster}: health data parsed"
   
   number_of_nodes_was=`grep 'number_of_nodes|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
@@ -294,7 +295,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     
   done
   
-  eval echo -e \${${clustername}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${clustername}.nodes.list
+  eval echo -e \${${escluster}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${escluster}.nodes.list
   
   ($CURL -m 5 "http://${clusterhost1}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://${clusterhost2}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.routing"
   $debug && log "ES cluster ${escluster}: routing data collected"

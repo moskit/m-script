@@ -109,7 +109,7 @@ fi
 
 declare -i RETVAL
 RETVAL=0
-[ -n "$recursive" ] && r="-r"
+[ -n "$recursive" ] && recursive="-r"
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 if [ -n "$ip" ] ; then
   cluster= ; region=
@@ -182,11 +182,11 @@ if [ "X$command" != "X" ] ; then
         [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
         [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
         if [ -n "$RSYNC" ] ; then
-          $RSYNC -l ${r} -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "${from%/}" "${IP}:${to}"
+          $RSYNC -l $recursive -e "$SSH -i ${rpath}/../../keys/${KEY} -p $SSHPORT" "${from%/}" "${IP}:${to}"
           [ $? -eq 0 ] && echo "Success" && continue
         fi
         printf "Rsync failed or not found, trying scp ...  "
-        $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT -p ${r} "$from" "${IP}:${to}"
+        $SCP -i "${rpath}/../../keys/${KEY}" -P $SSHPORT -p $recursive "$from" "${IP}:${to}"
         if [ $? -eq 0 ] ; then
           echo "Success"
         else

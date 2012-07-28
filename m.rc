@@ -52,11 +52,7 @@ cr() {
     flavor=`grep ^$M_CLUSTER\| "${rpath}/conf/clusters.conf" | cut -d'|' -f11`
     export flavor
   fi
-  if ${use_color} ; then
-    PS1="\[\033[00;37m\][\[\033[01;31m\]${HOSTNAME%%.*}\[\033[0m\]:\[\033[01;36m\]${M_ROLE}\[\033[00;37m\] \W]# \[\033[0m\]"
-  else
-    PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
-  fi
+  set_default_ps
   source role.conf
 }
 
