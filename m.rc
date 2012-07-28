@@ -64,11 +64,11 @@ exitrole() {
 set_default_ps() {
   if ${use_color} ; then
     if [ -z "$PS_COLOR" ] ; then
-      PS_COLOR="$ATTR_BOLD$FG_RED"
+      PS1_COLOR="$ATTR_BOLD$FG_RED"
     else
-      PS_COLOR=`eval echo "$PS_COLOR"`
+      PS1_COLOR="`eval echo "$PS_COLOR"`"
     fi
-    PS1="\[${CONTR_SEQ}$ATTR_NONE$FG_WHITE\][\[${CONTR_SEQ}$PS_COLOR\]${HOSTNAME%%.*}\[${UNSET_COLOR}\]:\[${CONTR_SEQ}$ATTR_BOLD$FG_CYAN\]${M_ROLE}\[${CONTR_SEQ}$ATTR_NONE$FG_WHITE\] \W]# \[${UNSET_COLOR}\]"
+    PS1="\[${CONTR_SEQ}$ATTR_NONE$FG_WHITE\][\[${CONTR_SEQ}$PS1_COLOR\]${HOSTNAME%%.*}\[${UNSET_COLOR}\]:\[${CONTR_SEQ}$ATTR_BOLD$FG_CYAN\]${M_ROLE}\[${CONTR_SEQ}$ATTR_NONE$FG_WHITE\] \W]# \[${UNSET_COLOR}\]"
   else
     PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
   fi
