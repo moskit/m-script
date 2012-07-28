@@ -1,39 +1,18 @@
 #!/bin/bash
-echo "Pragma: no-cache"
-echo "Expires: 0"
-echo "Content-Cache: no-cache"
-echo "Content-type: text/html"
-echo ""
 
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-
-cat "${PWD}/../../standalone/${scriptname}/views_nav_bar.html" | sed '/\"view0\"/s/\"viewsbutton\"/\"viewsbutton active\"/'
-cat "${PWD}/../../standalone/${scriptname}/servers_title.html"
-
-# Naming table (see MongoDB/servers.mon)
-mongoservers="MongoDB Servers"
-configservers="Configuration Servers"
-shardservers="Shard Servers"
-balancers="Balancers"
-
-function cluster_header() {
-  title=`eval "echo \\$$1"`
-  install -d "${PWD}/../${scriptname}/$1"
-  echo "<div class=\"clustername\"><span class=\"indent\">${title}</span></div>"
-  echo "<div class=\"cluster\" id=\"${1}\">"
-}
-
-function cluster_bottom() {
-  echo "</div>"
-}
+source "${PWD}/../../lib/dash_functions.sh"
+print_cgi_headers
+print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections"
+print_page_title "host:port" "Status" "Memory Res/Virt" "Conn" "Curr/Avail" "Bandwidth In/Out" "Requests / sec"
 
 IFS1=$IFS
 IFS='
 '
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc -l` -gt 0 ] ; then
 
-  cluster_header configservers
+  print_cluster_header "configservers|Configuration Servers"
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
       port=${s##*:}
@@ -57,12 +36,12 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
     
-  cluster_bottom
+  print_cluster_bottom
   
 # Standalone servers
 elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` -gt 0 ] ; then
   
-  cluster_header mongoservers
+  print_cluster_header "mongoservers|MongoDB Servers"
   
     for rs in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server\" id=\"${rs}\">"
@@ -121,13 +100,13 @@ elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` 
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
     
-  cluster_bottom
+  print_cluster_bottom
   
 fi
 
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then
 
-  cluster_header shardservers
+  print_cluster_header "shardservers|Shard Servers"
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"|cut -d'|' -f1` ; do
       port=`echo $s | awk '{print $1}' | cut -d':' -f2`
@@ -152,13 +131,13 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
     
-  cluster_bottom
+  print_cluster_bottom
   
 fi
 
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
 
-  cluster_header balancers
+  print_cluster_header "balancers|Balancers"
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
       port=${s##*:}
@@ -184,7 +163,7 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc
       echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
     done
     
-  cluster_bottom
+  print_cluster_bottom
   
 fi
 IFS=$IFS1

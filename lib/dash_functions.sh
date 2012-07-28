@@ -48,9 +48,7 @@ print_page_title() {
 }
 
 print_cluster_header() {
-#  id=$(echo ${@} | tr ' ' '_')
-  id="${@}"
-  echo -e "<div class=\"clustername\"><span class=\"indent\">${@}</span></div>\n<div class=\"cluster\" id=\"${id}\">"
+  echo -e "<div class=\"clustername\"><span class=\"indent\">${1#*|}</span></div>\n<div class=\"cluster\" id=\"${1%%|*}\">"
 }
 
 print_cluster_bottom() {
@@ -137,4 +135,16 @@ print_timeline() {
   echo -e "</div>\n</div>"
 }
 
+print_nav_bar() {
+  # view0 is a special ID indicating updaterlevel = 0 in monitors.js
+  # that is, clicking it is the same as clicking the corresponding upper tab
+  # other buttons IDs become CGI scripts names (with .cgi extension)
+  echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton active\" id=\"view0\" onClick=\"initMonitors(\'${1%%|*}\', 0)\">${1#*|}</li>"
+    shift
+    while [ -n "$1" ]; do
+      echo -e "<li class=\"viewsbutton\" id=\"${1%%|*}\" onClick=\"initMonitors(\'${1%%|*}\', 1)\">${1#*|}</li>\n"
+      shift
+    done
+  echo -e "</ul>\n</div>"
+}
 
