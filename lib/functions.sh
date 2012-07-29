@@ -89,6 +89,6 @@ print_report_title() {
 }
 
 log() {
-  echo "`date +"%H:%M:%S"` ${BASH_SOURCE[0]##*/}: ${@}">>$LOG
+  [ -n "$LOG" ] && echo "`date +"%H:%M:%S"` ${0}: ${@}">>$LOG
 }
 

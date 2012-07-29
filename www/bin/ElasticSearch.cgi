@@ -5,10 +5,8 @@ scriptname=${scriptname##*/}
 source "${PWD}/../../lib/dash_functions.sh"
 CURL=`which curl 2>/dev/null`
 
-cat "${PWD}/../../standalone/${scriptname}/views_nav_bar.html" | sed '/\"view0\"/s/\"viewsbutton\"/\"viewsbutton active\"/'
-
 print_cgi_headers
-print_nav_bar "Nodes" "Logs"
+print_nav_bar "ElasticSearch|Nodes" "es_logs|Logs"
 print_page_title "ID" "Host" "Heap used / committed" "Indices size" "Indices docs number" "Open file descriptors" "Conn http / transport"
 
 for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name "*.nodes" 2>/dev/null` ; do

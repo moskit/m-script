@@ -3,27 +3,35 @@
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT="$rpath/../../"
 #*/
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+LOG="$M_ROOT/logs/sa.log"
+log "Running ${rpath}/${rcommand}"
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
 
-function print_databases() {
-  if [ -n "$2" ] ; then
-    echo
-    echo "Databases"
-    echo "---------"
-    echo 
-    echo " Name               Size"
-    echo
-  fi
-  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | tr -d '^='
-}
+#function print_databases() {
+#  if [ -n "$2" ] ; then
+#    echo
+#    echo "Databases"
+#    echo "---------"
+#    echo 
+#    echo " Name               Size"
+#    echo
+#  fi
+#  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | tr -d '^='
+#}
 
-${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "${rpath}/data/databases.dat"
+[ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list"`
+[ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`head -1 "$rpath/mongo_servers.list"`
+[ -z "$hostport" ] && echo "No servers found" && exit 1
 
+${MONGO} ${hostport}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "${rpath}/data/databases.dat"
 
+for db in `cat "${rpath}/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$"` ; do
+  (IFS=','; for coll in `${MONGO} "$hostport/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null` ; do ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.${coll}.dat"; done)
+done
 
 #mongo localhost/solariat_flask --quiet --eval "db.printCollectionStats()" | /opt/m/lib/json2txt | grep -E "\/ns\||\/size\||\/indexSizes\/|\/totalIndexSize\|" | grep -v \/shards\/ | while read LINE ; do if [[ $LINE =~ ^0\/ns ]] ; then echo ; echo "\"`echo $LINE | cut -d'|' -f2`\"" ; else echo "\"`echo $LINE | cut -d'|' -f1 | sed 's|0/||'`\",\"$(echo "scale=2; `echo $LINE | cut -d'|' -f2` / 1024 / 1024" | bc)\"" ; fi ; done > coll_stats1.csv

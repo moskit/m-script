@@ -139,10 +139,14 @@ print_nav_bar() {
   # view0 is a special ID indicating updaterlevel = 0 in monitors.js
   # that is, clicking it is the same as clicking the corresponding upper tab
   # other buttons IDs become CGI scripts names (with .cgi extension)
-  echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton active\" id=\"view0\" onClick=\"initMonitors(\'${1%%|*}\', 0)\">${1#*|}</li>"
+  [ -z "$1" ] && exit 0
+  [ "${1%%|*}" == "${0%.cgi}" ] && active=" active"
+  echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$active\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
     shift
     while [ -n "$1" ]; do
-      echo -e "<li class=\"viewsbutton\" id=\"${1%%|*}\" onClick=\"initMonitors(\'${1%%|*}\', 1)\">${1#*|}</li>\n"
+      unset active
+      [ "${1%%|*}" == "${0%.cgi}" ] && active=" active"
+      echo -e "<li class=\"viewsbutton$active\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
       shift
     done
   echo -e "</ul>\n</div>"
