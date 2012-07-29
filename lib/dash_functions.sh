@@ -63,6 +63,15 @@ id="${@}"
   echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${@}</div>"
 }
 
+print_inline() {
+  while [ -n "$1" ] ; do
+    [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
+    [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}"
+    echo "<div class=\"status\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval $$status`</div>"
+    shift
+  done
+}
+
 close_line() {
  # id=$(echo ${@} | tr ' ' '_')
 id="${@}"
