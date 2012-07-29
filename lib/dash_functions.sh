@@ -65,9 +65,10 @@ id="${@}"
 
 print_inline() {
   while [ -n "$1" ] ; do
+    status="$1"
     [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
     [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}"
-    echo "<div class=\"status\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval $$status`</div>"
+    echo "<div class=\"status\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval echo \"\\$$status\"`</div>"
     shift
   done
 }
