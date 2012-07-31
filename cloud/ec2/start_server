@@ -18,7 +18,8 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
 
 possible_options="cluster ami number aki region zone type return verbose"
 necessary_options=""
@@ -65,7 +66,14 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source ${rpath}/../../conf/cloud.conf
+source $M_ROOT/conf/cloud.conf
+source $M_ROOT/lib/functions.sh
+source $M_ROOT/lib/cloud_functions.sh
+LOG=$M_ROOT/logs/cloud.log
+
+check_cluster_limit
+[ $? -eq 1 ] && log "cluster limit reached, not starting new instance." && exit 1
+
 for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
@@ -90,17 +98,18 @@ if [ -n "$cluster" ] ; then
   [ -n "$type" ] || type=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f5`
 fi
 secgroup=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f4`
-[ -n "$secgroup" ] || secgroup="default"
 
-[ -n "$amiID" ] && echo "`date +"%H:%M:%S"`:Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (echo "No AMI found" && exit 1)
+[ -n "$amiID" ] && log "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (log "No AMI found" && exit 1)
 
-[ "X$aki" == "X" ] || aki="--kernel $aki"
-[ "X$number" == "X" ] || number="-n $number"
-[ "X$zone" == "X" ] || zone="-z $zone"
-[ "X$type" == "X" ] || type="-t $type"
+[ -z "$aki" ] || aki="--kernel $aki"
+[ -z "$number" ] || number="-n $number"
+[ -z "$zone" ] || zone="-z $zone"
+[ -z "$type" ] || type="-t $type"
+[ -n "$secgroup" ] && for sg in `echo $secgroup | tr ',' ' '`; do secgr="$secgr -g $secgroup" ; done
 
-instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g' || echo "ERROR"`
-[ "X$instances" == "XERROR" ] && echo "Error starting instances" && exit 1
+instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $secgr $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g' || echo "ERROR"`
+[ "X$instances" == "XERROR" ] && log "Error starting instances" && exit 1
+log "Instances started: $instances"
 
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} >/dev/null
@@ -110,7 +119,7 @@ for ((i=0; i<30; i++)) ; do
   sleep 10
   for instance in $instances ; do
     istate=`"${rpath}"/show_servers --id=$instance --filter=istate`
-    [ -n "$verbose" ] && echo "`date +"%H:%M:%S"`: instance $instance state: $istate"
+    [ -n "$verbose" ] && log "instance $instance state: $istate"
     if [ "X$istate" == "Xrunning" ] ; then
       echo
       if [ -n "$return" ] ; then
