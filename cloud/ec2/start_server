@@ -65,14 +65,14 @@ if [[ found -eq 1 ]]; then
   echo "Necessary options: ${missing_options} not found"
   exit 1
 fi
-
+source $M_ROOT/conf/mon.conf
 source $M_ROOT/conf/cloud.conf
 source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
 LOG=$M_ROOT/logs/cloud.log
 
 check_cluster_limit
-[ $? -eq 1 ] && log "cluster limit reached, not starting new instance." && exit 1
+[ $? -eq 1 ] && log "Cluster limit reached, not starting new instance" && exit 1
 
 for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
@@ -80,7 +80,7 @@ done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY EC2_REGION PATH
 
-TMPDIR=/tmp/m_script/cloud/ec2
+TMPDIR=$TMPDIR/cloud/ec2
 install -d $TMPDIR
 
 [ -n "$region" ] && EC2_REGION=$region
@@ -114,6 +114,8 @@ log "Instances started: $instances"
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} >/dev/null
 done
+
+$rpath/update_servers_list
 
 for ((i=0; i<30; i++)) ; do
   sleep 10

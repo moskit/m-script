@@ -44,7 +44,7 @@ cr() {
   export M_ROLE="${1%/}"
   export role="${1%/}"
   M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
-  [ `echo $M_CLUSTER | wc -l` -gt 1 ] && echo "More than one cluster found for this role. It is not a critical error, but default cluster and flavor cannot be determined. It is recommended to clone the role and make each cluster have its own role." && unset M_CLUSTER
+  [ `echo -e "$M_CLUSTER" | wc -l` -gt 1 ] && echo "More than one cluster found for this role. Selecting the first one." && M_CLUSTER=`echo -e "$M_CLUSTER" | head -1`
   if [ -z "$M_CLUSTER" ]; then
     echo "Cluster not found for this role. It is not a critical error, but default cluster and flavor cannot be determined. It is recommended to create a record in conf/clusters.conf."
   else
