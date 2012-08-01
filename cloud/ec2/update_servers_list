@@ -17,7 +17,8 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 SED=`which sed 2>/dev/null`
@@ -30,6 +31,22 @@ IFCFG=`which ifconfig 2>/dev/null`
 # this is why the variable below is not used for remote servers: you may
 # have different OSes there with different paths to hostname utility.
 HOSTNAME=`which hostname 2>/dev/null`
+
+add_server() {
+  if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
+    if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
+      sname=`$HOSTNAME`
+    else
+      sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
+    fi
+  else
+    message=" (key ${rpath}/../../keys/${keypair}.pem not found)"
+  fi
+  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message && sname=$altname
+  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
+  unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
+}
+
 possible_options="help region force verbose"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -75,25 +92,27 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-source ${rpath}/../../conf/cloud.conf
+source $M_ROOT/conf/mon.conf
+source $M_ROOT/conf/cloud.conf
+source $M_ROOT/lib/functions.sh
+source $M_ROOT/lib/cloud_functions.sh
+LOG=$M_ROOT/logs/cloud.log
 
 for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH ; do
-  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
+  [ -z "`eval echo \\$\$var`" ] && log "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
-TMPDIR=/tmp/m_script/cloud/ec2
+TMPDIR=$TMPDIR/cloud/ec2
 install -d $TMPDIR
 
 [ -n "$region" ] && EC2_REGION=$region
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
-`which date` >> ${rpath}/../../cloud.log
-echo "------------------" >> ${rpath}/../../cloud.log
 
 changed=0
 [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev || touch $TMPDIR/servers.${EC2_REGION}.ips.prev
-[ -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] || (echo "ec2-describe-instances binary not found! Exiting.." >> ${rpath}/../../cloud.log && exit 1)
+[ ! -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] && log "ec2-describe-instances binary not found! Exiting.." && exit 1
   
 ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/servers.${EC2_REGION}.tmp
 firstline=1
@@ -105,17 +124,8 @@ do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
       if [ "X$state" == "Xrunning" ] ; then
-        if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
-          if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
-            sname=`$HOSTNAME`
-          else
-            sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
-          fi
-        fi
-        [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP" >> ${rpath}/../../cloud.log
-        echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
+        add_server
       fi
-      unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
     else
       firstline=0
     fi
@@ -142,17 +152,7 @@ do
 done
 
 if [ "X$state" == "Xrunning" ] ; then
-  if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
-    if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
-      sname=`$HOSTNAME`
-    else
-      sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
-    fi
-  else
-    message=" (key ${rpath}/../../keys/${keypair}.pem not found)"
-  fi
-  [ "X$sname" == "X" ] && echo "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" >> ${rpath}/../../cloud.log && unset message && sname=$altname
-  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
+  add_server
 fi
 
 [ -z "$force" ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/servers.${EC2_REGION}.ips.prev $TMPDIR/servers.${EC2_REGION}.ips`" ] && exit 0
