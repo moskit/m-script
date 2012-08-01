@@ -34,17 +34,20 @@ HOSTNAME=`which hostname 2>/dev/null`
 
 add_server() {
   if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
-    if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
-      sname=`$HOSTNAME`
-    else
-      sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
-    fi
+    key=${keypair}.pem
+  elif [ -f "${rpath}/../../keys/${keypair}" ] ; then
+    key=${keypair}
   else
-    message=" (key ${rpath}/../../keys/${keypair}.pem not found)"
+    message=" (key ${rpath}/../../keys/${keypair}{.pem} not found)"
+  fi
+  if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
+    sname=`$HOSTNAME`
+  else
+    sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${keypair}.pem" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
   fi
   [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message && sname=$altname
   echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
-  unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname
+  unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname
 }
 
 possible_options="help region force verbose"

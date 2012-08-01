@@ -166,7 +166,7 @@ parse_server() {
   fi
 }
 
-possible_options="cluster ami state filter noupdate help region id view"
+possible_options="cluster ami state filter noupdate help region id view count"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
