@@ -18,9 +18,14 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/ (this is needed to fix vi syntax highlighting)
+declare -i i
+i=0
 
 print_server() {
+  [ -n "$count" ] && i+=1
+  [ "X$view" == "Xnone" ] && return 0
 # icluster is not always present
   if [ -n "$cluster" ] ; then
     [[ "$1" =~ '|icluster::' ]] || return 0
@@ -161,7 +166,7 @@ parse_server() {
   fi
 }
 
-possible_options="cluster ami state filter noupdate help region id"
+possible_options="cluster ami state filter noupdate help region id view"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -269,14 +274,19 @@ EOF
   exit 0
 fi
 
-source ${rpath}/../../conf/cloud.conf
+source $M_ROOT/conf/mon.conf
+source $M_ROOT/conf/cloud.conf
+source $M_ROOT/lib/functions.sh
+source $M_ROOT/lib/cloud_functions.sh
+LOG=$M_ROOT/logs/cloud.log
+
 for var in EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_AK EC2_REGION PATH
 
-TMPDIR=/tmp/m_script/cloud/ec2
+TMPDIR=$TMPDIR/cloud/ec2
 install -d $TMPDIR
 
 filter=`echo $filter | sed 's_,_|_g'`
@@ -311,5 +321,5 @@ do
 done<$TMPDIR/servers.${EC2_REGION}.tmp
 print_server "$current_server"
 unset newr current_server
-
+[ -n "$count" ] && echo $i && unset i
 

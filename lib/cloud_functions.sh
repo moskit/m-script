@@ -40,10 +40,11 @@ generate_name() {
 }
 
 check_cluster_limit() {
+  local LOG="$M_ROOT/logs/cloud.log"
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && echo "`date +"%m.%d %H:%M"` $CLOUD/${BASH_SOURCE[0]##*/}: cluster is not defined, exiting" >> "${rpath}"/../../logs/cloud.log && exit 1
-  limit=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
+  [ -z "$cluster" ] && log "$CLOUD/${0}: cluster is not defined, exiting" && exit 1
+  limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
