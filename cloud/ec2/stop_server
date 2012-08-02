@@ -53,8 +53,8 @@ removed=false
 
 find_by_ip() {
   show_servers >/dev/null
-  id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep \|${1}$ | cut -d'|' -f2`
-  [ -z "$id" ] && id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep \|${1}$ | cut -d'|' -f2`
+  id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${1}\| | cut -d'|' -f2`
+  [ -z "$id" ] && id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${1}\| | cut -d'|' -f2`
 }
 
 if [ -z "$id" ] ; then
@@ -63,6 +63,7 @@ if [ -z "$id" ] ; then
       echo "One of id, ip or name is required to identify the server"
       exit 1
     else
+      # IP is more reliable
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
       if [ -n "$ip" ] ; then
@@ -88,7 +89,7 @@ req="/servers/$id"
 
 IPS=( "${ipint}" "${ipext}" "${ip}" )
 
-${EC2_TOOLS_BIN_PATH}/ec2-terminate-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $ID >> "$M_ROOT"/logs/cloud.log && log "(EC2) server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully" && removed=true 
+${EC2_TOOLS_BIN_PATH}/ec2-terminate-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $id >> "$M_ROOT"/logs/cloud.log && log "(EC2) server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully" && removed=true 
 
 if [ $removed -o $force ]; then
   SSHK=`which ssh-keygen 2>/dev/null`

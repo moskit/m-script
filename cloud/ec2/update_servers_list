@@ -40,12 +40,19 @@ add_server() {
   else
     message=" (key ${rpath}/../../keys/${keypair}\{.pem\} not found)"
   fi
-  if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
-    sname=`$HOSTNAME`
+  # altname was supposed to be an alternative source (from instance tags), but
+  # it is reconsidered due to no good way to inject the name into the new server
+  if [ -n "$altname" ]; then
+    sname=$altname
   else
-    sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
+    log "Name not found, retrieving one from the host"
+    if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
+      sname=`$HOSTNAME`
+    else
+      sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
+    fi
   fi
-  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message && sname=$altname
+  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message
   echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
   unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname
 }
@@ -132,25 +139,25 @@ do
     else
       firstline=0
     fi
-    secgroup=`echo $SERVER | awk -F'|' '{print $4}'`
+    secgroup=`echo $SERVER | cut -d'|' -f4`
   fi
   if [[ $SERVER =~ ^INSTANCE ]] ; then
-    inIP=`echo $SERVER | awk -F'|' '{print $18}'`
-    extIP=`echo $SERVER | awk -F'|' '{print $17}'`
-    iID=`echo $SERVER | awk -F'|' '{print $2}'`
-    ami=`echo $SERVER | awk -F'|' '{print $3}'`
-    state=`echo $SERVER | awk -F'|' '{print $6}'`
-    keypair=`echo $SERVER | awk -F'|' '{print $7}'`
-    isize=`echo $SERVER | awk -F'|' '{print $10}'`
-    started=`echo $SERVER | awk -F'|' '{print $11}'`
-    zone=`echo $SERVER | awk -F'|' '{print $12}'`
-    aki=`echo $SERVER | awk -F'|' '{print $13}'`
-    ari=`echo $SERVER | awk -F'|' '{print $14}'`
+    inIP=`echo $SERVER | cut -d'|' -f18`
+    extIP=`echo $SERVER | cut -d'|' -f17`
+    iID=`echo $SERVER | cut -d'|' -f2`
+    ami=`echo $SERVER | cut -d'|' -f3`
+    state=`echo $SERVER | cut -d'|' -f6`
+    keypair=`echo $SERVER | cut -d'|' -f7`
+    isize=`echo $SERVER | cut -d'|' -f10`
+    started=`echo $SERVER | cut -d'|' -f11`
+    zone=`echo $SERVER | cut -d'|' -f12`
+    aki=`echo $SERVER | cut -d'|' -f13`
+    ari=`echo $SERVER | cut -d'|' -f14`
   fi
   if [[ $SERVER =~ ^TAG ]] ; then
-    tag=`echo $SERVER | awk -F'|' '{print $4}'`
-    [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | awk -F'|' '{print $5}'`
-    [ "X$tag" == "XName" ] && altname=`echo $SERVER | awk -F'|' '{print $5}'`
+    tag=`echo $SERVER | cut -d'|' -f4`
+    [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | cut -d'|' -f5`
+    [ "X$tag" == "XName" ] && altname=`echo $SERVER | cut -d'|' -f5`
   fi
 done
 
@@ -165,13 +172,13 @@ $SED -i -e "/|${EC2_REGION}|.*$/d" ${rpath}/../../servers.list
 while read SERVER
 do
   if [ "X$NETWORK" == "Xexternal" ] ; then
-    IP=`echo $SERVER | awk -F'|' '{print $2}'`
+    IP=`echo $SERVER | cut -d'|' -f2`
   else
-    IP=`echo $SERVER | awk -F'|' '{print $1}'`
+    IP=`echo $SERVER | cut -d'|' -f1`
   fi
-  keypair=`echo $SERVER | awk -F'|' '{print $6}'`
-  sname=`echo $SERVER | awk -F'|' '{print $13}'`
-  srole=`echo $SERVER | awk -F'|' '{print $14}'`
+  keypair=`echo $SERVER | cut -d'|' -f6`
+  sname=`echo $SERVER | cut -d'|' -f13`
+  srole=`echo $SERVER | cut -d'|' -f14`
   echo "${IP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> ${rpath}/../../servers.list
 done<$TMPDIR/servers.${EC2_REGION}.ips
 

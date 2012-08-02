@@ -117,8 +117,6 @@ for instance in $instances ; do
   [ "X$name" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag Name=${name} >/dev/null
 done
 
-$rpath/update_servers_list
-
 for ((i=0; i<30; i++)) ; do
   sleep 10
   for instance in $instances ; do
@@ -150,4 +148,6 @@ for ((i=0; i<30; i++)) ; do
   done
   [ -n "`echo "$instances" | tr -d ' '`" ] || break
 done
+
+$rpath/update_servers_list
 
