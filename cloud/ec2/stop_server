@@ -53,8 +53,8 @@ removed=false
 
 find_by_ip() {
   show_servers >/dev/null
-  id=`"${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep \|${1}$ | cut -d'|' -f2`
-  [ -z "$id" ] && id=`"${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep \|${1}$ | cut -d'|' -f2`
+  id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep \|${1}$ | cut -d'|' -f2`
+  [ -z "$id" ] && id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep \|${1}$ | cut -d'|' -f2`
 }
 
 if [ -z "$id" ] ; then
@@ -69,7 +69,7 @@ if [ -z "$id" ] ; then
         find_by_ip $ip
       else
         show_servers >/dev/null
-        id=`"${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
+        id=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
@@ -79,9 +79,9 @@ else
   if [ -f "${TMPDIR}/servers.${EC2_REGION}.ips" ] ; then
     show_servers >/dev/null
   fi
-  name=`"${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
-  ipint=`"${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`
-  ipext=`"${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${id}\| | cut -d'|' -f1`
+  name=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
+  ipint=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`
+  ipext=`cat "${TMPDIR}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${id}\| | cut -d'|' -f1`
 fi
 [ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
 req="/servers/$id"
