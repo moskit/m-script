@@ -85,7 +85,7 @@ install -d $TMPDIR
 
 [ -n "$region" ] && EC2_REGION=$region
 
-[ "X`which ec2-start-instances`" == "X" ] && echo "API Tools needed" && exit 1
+[ "X`which ec2-run-instances`" == "X" ] && echo "API Tools needed" && exit 1
 ### Cluster name|Key name|Availability zone|Security group|Instance type|AMI|Auto-scalability limit|M-Script path|Compatibility|Role|Flavor
 if [ -n "$cluster" ] ; then
   if [ -z "$ami" ] ; then
@@ -113,6 +113,8 @@ log "Instances started: $instances"
 
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} >/dev/null
+  name=`generate_name 2>/dev/null`
+  [ "X$name" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag Name=${name} >/dev/null
 done
 
 $rpath/update_servers_list
