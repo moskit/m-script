@@ -24,12 +24,28 @@ declare -i i
 i=0
 
 print_server() {
-  [ -n "$count" ] && i+=1
-  [ "X$view" == "Xnone" ] && return 0
 # icluster is not always present
-  if [ -n "$cluster" ] ; then
+  if [ -n "$cluster" ]; then
     [[ "$1" =~ '|icluster::' ]] || return 0
   fi
+  if [ -z "$cluster" ] || [ -n "$cluster" -a "$cluster" != "all" ]; then
+    thiscluster=`echo "$1" | cut -d'|' -f20 | cut -d':' -f3`
+    if [ -n "$thiscluster" ]; then
+      if [ `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f1 | grep -c ^${thiscluster}$` -eq 0 ]; then
+        return 0
+      fi
+    else
+      thisipint=`echo "$1" | cut -d'|' -f6 | cut -d':' -f3`
+      thisipext=`echo "$1" | cut -d'|' -f7 | cut -d':' -f3`
+      thisipcluster=`cat "$M_ROOT/servers.list" | grep ^$thisipint\| | cut -d'|' -f5`
+      [ -z "$thisipcluster" ] && thisipcluster=`cat "$M_ROOT/servers.list" | grep ^$thisipext\| | cut -d'|' -f5`
+      [ -z "$thisipcluster" ] && return 0
+    fi
+  fi
+  [ -n "$count" ] && i+=1
+  [ "X$view" == "Xnone" ] && return 0
+  [ "X$view" == "Xraw" ] && echo "$1" && return 0
+
   local line1
   local line2
   local line3
@@ -79,6 +95,7 @@ print_server() {
           line4="$line4 Started: $b"
           ;;
         icluster)
+          [ -z "$b" -a -n "$thisipcluster" ] && b="$thisipcluster"
           [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
           line1="$line1  Cluster: $b"
           ;;

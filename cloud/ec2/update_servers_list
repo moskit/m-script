@@ -167,8 +167,6 @@ fi
 
 [ -z "$force" ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/servers.${EC2_REGION}.ips.prev $TMPDIR/servers.${EC2_REGION}.ips`" ] && exit 0
 
-$SED -i -e "/|${EC2_REGION}|.*$/d" ${rpath}/../../servers.list
-
 while read SERVER
 do
   if [ "X$NETWORK" == "Xexternal" ] ; then
@@ -179,13 +177,19 @@ do
   keypair=`echo $SERVER | cut -d'|' -f6`
   sname=`echo $SERVER | cut -d'|' -f13`
   srole=`echo $SERVER | cut -d'|' -f14`
-  echo "${IP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> ${rpath}/../../servers.list
-done<$TMPDIR/servers.${EC2_REGION}.ips
+  if [ -z "$srole" ] ; then  # added manually?
+    srole=`cat "${rpath}/../../servers.list" | grep ^$IP\| | cut -d'|' -f5`
+  fi
+  [ -z "$srole" ] && continue
+  [ `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f1 | grep -c ^${srole}$` -eq 0 ] && continue
+  $SED -i "/^${IP}|${keypair}|${EC2_REGION}|/d" "${rpath}/../../servers.list"
+  echo "${IP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> "${rpath}/../../servers.list"
+done<"$TMPDIR/servers.${EC2_REGION}.ips"
 
 unset IP inIP extIP keypair iID ami state isize secgroup started zone aki ari sname srole
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
-  ${rpath}/update_nginx_proxy
+  "${rpath}"/update_nginx_proxy
 fi
 
 IFS=$IFS1
