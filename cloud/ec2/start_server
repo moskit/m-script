@@ -149,5 +149,5 @@ for ((i=0; i<30; i++)) ; do
   [ -n "`echo "$instances" | tr -d ' '`" ] || break
 done
 
-$rpath/update_servers_list
+$rpath/update_servers_list >/dev/null
 
