@@ -20,9 +20,9 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 rm -f "${rpath}/m_backup.log"
-source "${rpath}/../m.rc"
+source "${rpath}/m.rc"
 
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath")
 
 splitfile() {
   if [ -n "$split_size" ]; then
@@ -141,7 +141,7 @@ EOF
     cfgfiles="`echo $s_optarg|sed 's|,| |g'`"
     for conf in ${cfgfiles}
     do
-      configfiles="${configfiles} ${rpath}/../conf/${conf}"
+      configfiles="${configfiles} $M_ROOT/conf/${conf}"
     done
   ;;
   replace|incremental|incr)
@@ -182,7 +182,7 @@ RSYNC_RSH_BK=$RSYNC_RSH
 # Main loop. Runs as many times as many backup.*.conf files used  #
 ###################################################################
 
-source ${rpath}/../conf/mon.conf
+source $M_ROOT/conf/mon.conf
 TMPDIR=$TMPDIR/backups
 [ -d "$TMPDIR" ] && install -d "$TMPDIR"
 export TMPDIR
@@ -195,7 +195,7 @@ install -d "$TMPDIR" 2>&1>>${rpath}/m_backup.error
 if [ -z "$configfiles" ]
 then
   configfiles=( )
-  for conf in ${rpath}/../conf/backup*.conf
+  for conf in $M_ROOT/conf/backup*.conf
   do
     configfiles+=("${conf}")
   done
@@ -285,9 +285,9 @@ bconf=${backupconf##*/}
   fi
   install -d "${locallogpath}/logs"
 
-  if [ -f ${rpath}/../conf/${backupconf}.exclude ]; then
+  if [ -f $M_ROOT/conf/${backupconf}.exclude ]; then
     echo "Excluding files matching patterns from ${rpath}/${backupconf}.exclude" >> ${rpath}/m_backup.log
-    ARCOPTS="${ARCOPTS} --totals -X ${rpath}/../conf/${backupconf}.exclude"
+    ARCOPTS="${ARCOPTS} --totals -X $M_ROOT/conf/${backupconf}.exclude"
   else
     ARCOPTS="${ARCOPTS} --totals"
   fi
@@ -774,7 +774,7 @@ EOF
     if [ -n "${LINE}" ]; then
       cat ${rpath}/backup.report | mail -s "Server $(hostname -f) backup report" "${LINE}"
     fi
-  done < ${rpath}/../conf/mail.backup.list
+  done < $M_ROOT/conf/mail.backup.list
   
   if [ -n "$errlog" ]; then
     echo "*** `date` ***" >> ${locallogpath}/logs/m_backup.error
