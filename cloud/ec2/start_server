@@ -107,9 +107,12 @@ secgroup=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -
 [ -z "$type" ] || type="-t $type"
 [ -n "$secgroup" ] && for sg in `echo $secgroup | tr ',' ' '`; do secgr="$secgr -g $secgroup" ; done
 
-instances=`ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $secgr $amiID | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g' || echo "ERROR"`
-[ "X$instances" == "XERROR" ] && log "Error starting instances" && exit 1
-log "Instances started: $instances"
+ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $number $type $secgr $amiID > "$TMPDIR"/start_server.resp
+[ $? -ne 0 ] && log "error starting instances" && exit 1
+
+instances=`cat "$TMPDIR"/start_server.resp | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
+[ "X$instances" == "XERROR" ] && 
+log "instances started: $instances"
 
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} >/dev/null

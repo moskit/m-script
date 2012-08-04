@@ -25,11 +25,11 @@ i=0
 
 print_server() {
 # icluster is not always present
-  if [ -n "$cluster" ]; then
-    [[ "$1" =~ '|icluster::' ]] || return 0
+  thiscluster=`expr "$1" : ".*icluster::\([^|]*\)|"`
+  if [ -n "$cluster" -a "$cluster" != "all" ]; then
+    [ -z "$thiscluster" ] && return 0
   fi
   if [ -z "$cluster" ] || [ -n "$cluster" -a "$cluster" != "all" ]; then
-    thiscluster=`echo "$1" | cut -d'|' -f20 | cut -d':' -f3`
     if [ -n "$thiscluster" ]; then
       if [ `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f1 | grep -c ^${thiscluster}$` -eq 0 ]; then
         return 0
@@ -95,7 +95,7 @@ print_server() {
           line4="$line4 Started: $b"
           ;;
         icluster)
-          [ -z "$b" -a -n "$thisipcluster" ] && b="$thisipcluster"
+          [ -n "$b" ] && thiscluster="$b"
           [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
           line1="$line1  Cluster: $b"
           ;;

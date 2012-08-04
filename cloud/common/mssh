@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && echo "command ssh not found" && exit 1
+nextkey=false
+
+# if target is IP
+KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
+# if target is hostname
+[ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${1}$ | cut -d'|' -f1`
+
+if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+  KEY1="${KEY}.pem"
+  [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
+  [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+fi
+
+if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+  cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+    KEY1="${KEY}.pem"
+    [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
+    [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+  fi
+  if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+    USERKEY1="~/.ssh/id_rsa"
+    USERKEY2="~/.ssh/id_dsa"
+  fi
+fi
+
+KEY="$M_ROOT/keys/$KEY"
+
+if [ -f "$KEY" ]; then
+  $SSH -i "$KEY" "$1"
+  [ $? -eq 255 ] && nextkey=true || exit 0
+fi
+if $nextkey ; then
+  if [ -f "$USERKEY1" ]; then
+    $SSH -i "$USERKEY1" "$1"
+    [ $? -eq 255 ] && nextkey=true || exit 0
+  fi
+fi
+if $nextkey ; then
+  if [ -f "$USERKEY2" ]; then
+    $SSH -i "$USERKEY2" "$1"
+    [ $? -eq 255 ] && nextkey=true || exit 0
+  fi
+fi
+
+
