@@ -445,14 +445,14 @@ span.indent {
 
 .statusok {
   background-color: #f8fff8;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#e0ffe0', endColorstr='#fafffa,'); 
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#e0ffe0', endColorstr='#fafffa'); 
   background: -webkit-gradient(linear, left bottom, left top, from(#fafffa), to(#e0ffe0)); 
   background: -moz-linear-gradient(bottom,  #fafffa,  #e0ffe0)
 }
 
 .statuserr {
   background-color: #fff8f8;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff0f0', endColorstr='#fffafa,');
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff0f0', endColorstr='#fffafa');
   background: -webkit-gradient(linear, left bottom, left top, from(#fffafa), to(#fff0f0));
   background: -moz-linear-gradient(bottom,  #fffafa,  #fff0f0)
 }
@@ -591,28 +591,49 @@ span.value {
 
 .indline {
   width: 800px;
-  height: 10px;
+  height: 16px;
   float: left;
+  display: table;
 }
 
-.red_thin_line {
-  height: 10px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  background-color: red;
+.red_thin_ind {
+  height: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  background-color: #c55;
+  float: left;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-bottomleft: 3px;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#cc5555', endColorstr='#993333');
+  background: -webkit-gradient(linear, left bottom, left top, from(#993333), to(#cc5555));
+  background: -moz-linear-gradient(bottom,  #993333,  #CC5555)
 }
 
-.blue_thin_line {
-  height: 10px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  background-color: blue;
+.blue_thin_ind {
+  height: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  background-color: #779;
+  float: left;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#5555CC', endColorstr='#333399');
+  background: -webkit-gradient(linear, left bottom, left top, from(#333399), to(#5555CC));
+  background: -moz-linear-gradient(bottom,  #333399,  #5555CC)
 }
 
-.green_thin_line {
-  height: 10px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  background-color: green;
+.green_thin_ind {
+  height: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  background-color: #797;
+  float: left;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+  -moz-border-radius-topright: 3px;
+  -moz-border-radius-bottomright: 3px;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#55CC55', endColorstr='#339933');
+  background: -webkit-gradient(linear, left bottom, left top, from(#339933), to(#55CC55));
+  background: -moz-linear-gradient(bottom,  #339933,  #55CC55)
 }
 

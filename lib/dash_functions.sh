@@ -75,7 +75,7 @@ print_inline() {
 
 close_line() {
  # id=$(echo ${@} | tr ' ' '_')
-id="${@}"
+  id="${@}"
   echo "</div>"
   echo "<div class=\"details\" id=\"${id}_details\"></div>"
 }

@@ -7,7 +7,7 @@ IFS='
 chunksmax=0
 datasizemax=0
 indexsizemax=0
-echo "<div>"
+echo "<div style=\"display: table; width: 800px;\">"
 
 for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server}"` ; do
   chunks=`echo $shard | cut -d'|' -f3`
@@ -18,18 +18,20 @@ for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server
   [[ $indexsize -gt $indexsizemax ]] && indexsizemax=$indexsize
 done
 
-chunkslm=`echo "scale=2; 800 / 5 / $chunksmax" | bc 2>/dev/null`
-datasizelm=`echo "scale=2; 800 * 2 / 5 / $datasizemax" | bc 2>/dev/null`
-indexsizelm=`echo "scale=2; 800 * 2 / 5 / $indexsizemax" | bc 2>/dev/null`
+chunkspp=`echo "scale=4; $chunksmax / (600 / 5)" | bc 2>/dev/null`
+datasizepp=`echo "scale=4; $datasizemax / (600 / 5 * 2)" | bc 2>/dev/null`
+indexsizepp=`echo "scale=4; $indexsizemax / (600 / 5 * 2)" | bc 2>/dev/null`
 
 for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server}"` ; do
+  chunks=`echo $shard | cut -d'|' -f3`
+  datasize=`echo $shard | cut -d'|' -f4`
+  indexsize=`echo $shard | cut -d'|' -f5`
   shname=`echo $shard | cut -d'|' -f1`
-  [ $chunksmax -gt 0 ] && chunksw=`echo "scale=2; $chunks / $chunksmax * $chunkslm" | bc 2>/dev/null` || chunksw=1
-  [ $datasizemax -gt 0 ] && datasizew=`echo "scale=2; $datasize / $datasizemax * $datasizelm" | bc 2>/dev/null` || datasizew=1
-  [ $indexsizemax -gt 0 ] && indexsizew=`echo "scale=2; $indexsize / $indexsizemax * $indexsizelm" | bc 2>/dev/null` || indexsizew=1
-  echo -e "<div class=\"ind_line\"><span style=\"font-weight:bold\">${shname}</span><span class=\"red_thin_ind\" width=\"$chunksw\">&nbsp;</span><span class=\"blue_thin_ind\" width=\"$datasizew\">&nbsp;</span><span class=\"green_thin_ind\" width=\"$indexsizew\">&nbsp;</span></div>"
+  chunksw=`echo "$chunks / $chunkspp + 2" | bc 2>/dev/null` || chunksw=1
+  datasizew=`echo "$datasize / $datasizepp + 2" | bc 2>/dev/null` || datasizew=1
+  indexsizew=`echo "$indexsize / $indexsizepp + 2" | bc 2>/dev/null` || indexsizew=1
+  echo -e "<div class=\"indline\"><span style=\"font-weight:bold;padding-left:40px;padding-right:40px;width:100px;float:left;\">${shname}</span><span class=\"red_thin_ind\" style=\"width:${chunksw}px\">&nbsp;</span><span class=\"blue_thin_ind\" style=\"width:${datasizew}px\">&nbsp;</span><span class=\"green_thin_ind\" style=\"width:${indexsizew}px\">&nbsp;</span></div>"
 done
 
 echo "</div>"
-
 
