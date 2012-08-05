@@ -53,7 +53,7 @@ add_server() {
     fi
   fi
   [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message
-  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $TMPDIR/servers.${EC2_REGION}.ips
+  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> $M_TEMP/servers.${EC2_REGION}.ips
   unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname
 }
 
@@ -113,23 +113,23 @@ for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
-TMPDIR=$TMPDIR/cloud/ec2
-install -d $TMPDIR
+M_TEMP=$M_TEMP/cloud/ec2
+install -d $M_TEMP
 
 [ -n "$region" ] && EC2_REGION=$region
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
 changed=0
-[ -f $TMPDIR/servers.${EC2_REGION}.ips ] && mv $TMPDIR/servers.${EC2_REGION}.ips $TMPDIR/servers.${EC2_REGION}.ips.prev || touch $TMPDIR/servers.${EC2_REGION}.ips.prev
+[ -f $M_TEMP/servers.${EC2_REGION}.ips ] && mv $M_TEMP/servers.${EC2_REGION}.ips $M_TEMP/servers.${EC2_REGION}.ips.prev || touch $M_TEMP/servers.${EC2_REGION}.ips.prev
 [ ! -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] && log "ec2-describe-instances binary not found! Exiting.." && exit 1
   
-${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $TMPDIR/servers.${EC2_REGION}.tmp
+${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | sed 's/\t/|/g' > $M_TEMP/servers.${EC2_REGION}.tmp
 firstline=1
 IFS1=$IFS
 IFS='
 '
-for SERVER in `cat $TMPDIR/servers.${EC2_REGION}.tmp`
+for SERVER in `cat $M_TEMP/servers.${EC2_REGION}.tmp`
 do
   if [[ $SERVER =~ ^RESERVATION ]] ; then 
     if [[ $firstline -eq 0 ]] ; then
@@ -165,7 +165,7 @@ if [ "X$state" == "Xrunning" ] ; then
   add_server
 fi
 
-[ -z "$force" ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips.prev ] && [ -f $TMPDIR/servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $TMPDIR/servers.${EC2_REGION}.ips.prev $TMPDIR/servers.${EC2_REGION}.ips`" ] && exit 0
+[ -z "$force" ] && [ -f $M_TEMP/servers.${EC2_REGION}.ips.prev ] && [ -f $M_TEMP/servers.${EC2_REGION}.ips ] && [ -z "`$DIFF -q $M_TEMP/servers.${EC2_REGION}.ips.prev $M_TEMP/servers.${EC2_REGION}.ips`" ] && exit 0
 
 while read SERVER
 do
@@ -182,12 +182,12 @@ do
   fi
   [ -z "$srole" ] && continue
   [ `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f1 | grep -c ^${srole}$` -eq 0 ] && continue
-  echo "${IP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> "$TMPDIR/servers.list"
-done<"$TMPDIR/servers.${EC2_REGION}.ips"
+  echo "${IP}|${keypair}|${EC2_REGION}|${sname}|${srole}" >> "$M_TEMP/servers.list"
+done<"$M_TEMP/servers.${EC2_REGION}.ips"
 
 $SED -i "/|${EC2_REGION}|/d" "${rpath}/../../servers.list"
-cat "$TMPDIR/servers.list" >> "${rpath}/../../servers.list"
-rm -f "$TMPDIR/servers.list"
+cat "$M_TEMP/servers.list" >> "${rpath}/../../servers.list"
+rm -f "$M_TEMP/servers.list"
 unset IP inIP extIP keypair iID ami state isize secgroup started zone aki ari sname srole
 
 if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then

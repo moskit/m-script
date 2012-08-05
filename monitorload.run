@@ -46,7 +46,7 @@ start)
   [ -f "${rpath}/mon.run.lock" ] && rm -f "${rpath}/mon.run.lock"
   [ -f "${rpath}/conf/mon.conf" ] && source "${rpath}/conf/mon.conf" || exit 1
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
-  install -d $TMPDIR
+  install -d $M_TEMP
   UPTIME=`which uptime`
 
   echo $$ > $pidfile

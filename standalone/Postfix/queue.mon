@@ -27,7 +27,7 @@ source "${rpath}/postfix.conf"
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 
-TMPDIR="${TMPDIR}/Postfix"
-install -d "${TMPDIR}"
+M_TEMP="${M_TEMP}/Postfix"
+install -d "${M_TEMP}"
 
 

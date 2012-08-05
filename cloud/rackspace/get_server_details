@@ -49,9 +49,9 @@ done
 IFS=$IFS1
 
 find_by_ip() {
-  if [ -f "${TMPDIR}/show_servers.resp" ] ; then
-    sn=`grep addresses "${TMPDIR}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
-    id=`grep \/$sn\/id\| "${TMPDIR}/show_servers.resp" | cut -d'|' -f2`
+  if [ -f "${M_TEMP}/show_servers.resp" ] ; then
+    sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
     id=`${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
@@ -70,7 +70,7 @@ fi
 
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
-TMPDIR="$TMPDIR/cloud/$CLOUD"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
 
 if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
@@ -94,17 +94,17 @@ fi
 req="/servers/$id"
 
 request() {
-  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^1\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
 }
 
-[ -f "${TMPDIR}/auth.resp" ] || ${rpath}/auth
+[ -f "${M_TEMP}/auth.resp" ] || ${rpath}/auth
 request
-if [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; then
+if [ `grep -c ^1\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; then
   ${rpath}/auth
   request
 fi
 
-cat "${TMPDIR}/${rcommand}.resp"
+cat "${M_TEMP}/${rcommand}.resp"
 

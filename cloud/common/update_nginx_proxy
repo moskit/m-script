@@ -94,8 +94,8 @@ if [ "X$cloud" == "Xec2" ] ; then
   export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 fi
 
-TMPDIR="$TMPDIR/cloud/$cloud"
-install -d $TMPDIR
+M_TEMP="$M_TEMP/cloud/$cloud"
+install -d $M_TEMP
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 
 if [ -z "$application" ] ; then
@@ -116,7 +116,7 @@ balance_method=$BALANCE_METHOD
 for app in $APPS ; do
   for cluster in $CLUSTERS ; do
     found=false
-    mv $TMPDIR/${app}.${cluster}.ips $TMPDIR/${app}.${cluster}.ips.prev 2>/dev/null
+    mv $M_TEMP/${app}.${cluster}.ips $M_TEMP/${app}.${cluster}.ips.prev 2>/dev/null
     for APPCLUSTER in $APP_SERVERS; do
       if [ "X${APPCLUSTER%%|*}" == "X$cluster" ] && [ "X`echo ${APPCLUSTER} | cut -d'|' -f3`" == "X$app" ] ; then
         found=true
@@ -131,11 +131,11 @@ for app in $APPS ; do
     $found || continue
     for IP in `"$rpath"/get_ips --cluster=${cluster}` ; do
       for PORT in $ports ; do
-        echo "$IP:$PORT" >> $TMPDIR/${app}.${cluster}.ips
+        echo "$IP:$PORT" >> $M_TEMP/${app}.${cluster}.ips
       done
     done
-    [ -f $TMPDIR/${app}.${cluster}.ips.prev ] && [ -f $TMPDIR/${app}.${cluster}.ips ] && [ -z "`$DIFF -q $TMPDIR/${app}.${cluster}.ips.prev $TMPDIR/${app}.${cluster}.ips`" ] && continue
-    if [ -f "$TMPDIR/${app}.${cluster}.ips" -a `cat "$TMPDIR/${app}.${cluster}.ips" | grep -v ^$ | wc -l` -gt 0 ] ; then
+    [ -f $M_TEMP/${app}.${cluster}.ips.prev ] && [ -f $M_TEMP/${app}.${cluster}.ips ] && [ -z "`$DIFF -q $M_TEMP/${app}.${cluster}.ips.prev $M_TEMP/${app}.${cluster}.ips`" ] && continue
+    if [ -f "$M_TEMP/${app}.${cluster}.ips" -a `cat "$M_TEMP/${app}.${cluster}.ips" | grep -v ^$ | wc -l` -gt 0 ] ; then
       changed=1
       case $balance_method in
         sticky|ip_hash|hash)
@@ -149,7 +149,7 @@ for app in $APPS ; do
       [ -n "$balance_method" ] && echo "  ${balance_method};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
       while read IP; do
         echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-      done<$TMPDIR/${app}.${cluster}.ips
+      done<$M_TEMP/${app}.${cluster}.ips
       echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
     else
       echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log

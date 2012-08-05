@@ -20,7 +20,7 @@ dpath=${dpath%/*}
 
 source "$dpath/../conf/mon.conf"
 source "$dpath/../conf/dash.conf"
-[ -n "$timeshift" ] || timeshift=`cat "$TMPDIR"/timeshift 2>/dev/null` || timeshift=5
+[ -n "$timeshift" ] || timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=5
 [ -n "$freqdef" ] || freqdef=$FREQ
 timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 

@@ -14,7 +14,7 @@ source "${rpath}/../../conf/mon.conf" || exit 1
 source "${rpath}/${rcommand%.mon}.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 MAILX=`which mail 2>/dev/null`
-TMPDIR="${TMPDIR}/elasticsearch"
+M_TEMP="${M_TEMP}/elasticsearch"
 LOG="${rpath}/../../logs/sa.log"
 log() {
 echo "`date +"%H:%M:%S"` $rcommand ($pid): ${@}">>$LOG
@@ -31,7 +31,7 @@ echo $pid > "$rpath/lock"
 
 echo "Running ${rpath}/${rcommand}" >> $LOG
 
-install -d "${TMPDIR}"
+install -d "${M_TEMP}"
 timeindexnow=`date +"%s"`
 ### Uncomment to debug
 debug=true

@@ -25,12 +25,15 @@ indexsizepp=`echo "scale=4; $indexsizemax / (600 / 5 * 2)" | bc 2>/dev/null`
 for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server}"` ; do
   chunks=`echo $shard | cut -d'|' -f3`
   datasize=`echo $shard | cut -d'|' -f4`
+  datasize_m=$(($datasize / 1048576))
   indexsize=`echo $shard | cut -d'|' -f5`
+  indexsize_m=$(($indexsize / 1048576))
   shname=`echo $shard | cut -d'|' -f1`
+  shhost=`echo $shard | cut -d'|' -f2`
   chunksw=`echo "$chunks / $chunkspp + 2" | bc 2>/dev/null` || chunksw=1
   datasizew=`echo "$datasize / $datasizepp + 2" | bc 2>/dev/null` || datasizew=1
   indexsizew=`echo "$indexsize / $indexsizepp + 2" | bc 2>/dev/null` || indexsizew=1
-  echo -e "<div class=\"indline\"><span style=\"font-weight:bold;padding-left:40px;padding-right:40px;width:100px;float:left;\">${shname}</span><span class=\"red_thin_ind\" style=\"width:${chunksw}px\">&nbsp;</span><span class=\"blue_thin_ind\" style=\"width:${datasizew}px\">&nbsp;</span><span class=\"green_thin_ind\" style=\"width:${indexsizew}px\">&nbsp;</span></div>"
+  echo -e "<div class=\"indline\"><span style=\"font-weight:bold;margin-left:40px;margin-right:40px;width:140px;float:left;color:#555;\" title=\"$shhost\">${shname}</span><span class=\"red_thin_ind\" style=\"width:${chunksw}px\" title=\"$chunks chunks\">&nbsp;</span><span class=\"blue_thin_ind\" style=\"width:${datasizew}px\" title=\"$datasize_m MB\">&nbsp;</span><span class=\"green_thin_ind\" style=\"width:${indexsizew}px\" title=\"$indexsize_m MB\">&nbsp;</span></div>"
 done
 
 echo "</div>"

@@ -26,7 +26,7 @@ source "${rpath}/m.rc"
 
 splitfile() {
   if [ -n "$split_size" ]; then
-    split -b $split_size -d $1 $1 2>>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+    split -b $split_size -d $1 $1 2>>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
     rm -f ${localbackuppath}/$archname.$linetoname.tar.bz2
   fi
 }
@@ -183,13 +183,13 @@ RSYNC_RSH_BK=$RSYNC_RSH
 ###################################################################
 
 source $M_ROOT/conf/mon.conf
-TMPDIR=$TMPDIR/backups
-[ -d "$TMPDIR" ] && install -d "$TMPDIR"
-export TMPDIR
+M_TEMP=$M_TEMP/backups
+[ -d "$M_TEMP" ] && install -d "$M_TEMP"
+export M_TEMP
 declare -i res
 
 localbackuppath=${rpath}
-install -d "$TMPDIR" 2>&1>>${rpath}/m_backup.error
+install -d "$M_TEMP" 2>&1>>${rpath}/m_backup.error
 # If config files collection is not set by option, we use all files having names
 # like backup*.conf
 if [ -z "$configfiles" ]
@@ -353,34 +353,34 @@ bconf=${backupconf##*/}
           linetoname=`echo ${LINE} | sed 's|/|_|g'`
           if [ "X${compression}" == "Xgzip" ]; then
             [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> ${rpath}/m_backup.log
-            tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+            tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
             splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
           fi
           if [ "X${compression}" == "Xbzip2" ]
           then
             [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> ${rpath}/m_backup.log
-            tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+            tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
             splitfile ${localbackuppath}/$archname.$linetoname.tar.bz2
           fi
           if [ "X${compression}" == "X" ]
           then
             [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> ${rpath}/m_backup.log
-          	tar ${ARCOPTS} -c -f ${localbackuppath}/$archname.$linetoname.tar ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+          	tar ${ARCOPTS} -c -f ${localbackuppath}/$archname.$linetoname.tar ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
             splitfile ${localbackuppath}/$archname.$linetoname.tar
           fi
           
-          if [ -f $TMPDIR/$archname.$linetoname.tar.log ]; then
-            tarerr=$(grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
+          if [ -f $M_TEMP/$archname.$linetoname.tar.log ]; then
+            tarerr=$(grep '^tar:' $M_TEMP/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
             [ -n "$tarerr" ] && echo "$tarerr" >> "${rpath}/m_backup.error"
             echo "Tar: ${LINE} copied with some errors, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-            echo "Tar: ${LINE} copied `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
+            echo "Tar: ${LINE} copied `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
           else
-            echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${rpath}/m_backup.log" 2>/dev/null
-            rm -f $TMPDIR/$archname.$linetoname.tar.log
+            echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${rpath}/m_backup.log" 2>/dev/null
+            rm -f $M_TEMP/$archname.$linetoname.tar.log
           fi
         fi
       done < ${backupconf}.list
-      #rm -f $TMPDIR/${archname}.${linetoname}.tar.log
+      #rm -f $M_TEMP/${archname}.${linetoname}.tar.log
   # Backuping databases (see the correspondent database backup scripts for details
       for DB in ${databases}
       do
@@ -400,19 +400,19 @@ bconf=${backupconf##*/}
       [ "X$samefs" != "Xyes" ] || FTPOPTS="${FTPOPTS}"
       FTPOPTS="${ftpoptions}"
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && FTPOPTS="${FTPOPTS} -d ${rpath}/m_backup.log" && echo "FTP options are: ${FTPOPTS}" >> ${rpath}/m_backup.log
-      ftptime=`(time -p ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}/* 2>$TMPDIR/$archname.ftp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      ftptime=`(time -p ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}/* 2>$M_TEMP/$archname.ftp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       ftptime=`expr $ftptime + 1`
       if [ -n "$debugflag" ]; then
         echo -e "COMMAND: ${ftpput} ${FTPOPTS} -R -V -u${remoteuser} -p${remotepw} -m ${remotehost} ${remotepath} ${localbackuppath}\/\*\nftptime = $ftptime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.ftp.log ] && [ `cat $TMPDIR/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]; then
-        cat $TMPDIR/$archname.ftp.log >> ${rpath}/m_backup.error
+      if [ -f $M_TEMP/$archname.ftp.log ] && [ `cat $M_TEMP/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]; then
+        cat $M_TEMP/$archname.ftp.log >> ${rpath}/m_backup.error
         echo -e "FTP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nFTP: Files transferred (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "FTP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.ftp.log
+      rm -f $M_TEMP/$archname.ftp.log
     ;;
     scp)
       [ "X$followlinks" != "Xyes" ] || SCPOPTS="${SCPOPTS}"
@@ -423,19 +423,19 @@ bconf=${backupconf##*/}
       [ "X$xfercompression" != "Xyes" ] || SCPOPTS="${SCPOPTS} -C"
       SCPOPTS="${scpoptions}"
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && SCPOPTS="${SCPOPTS} -v" && echo "SCP options are: ${SCPOPTS}" >> ${rpath}/m_backup.log
-      scptime=`(time -p ${SCP} ${SCPOPTS} ${localbackuppath}/* "${remoteuser}"@"${remotehost}:${remotepath}" 2>$TMPDIR/$archname.scp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      scptime=`(time -p ${SCP} ${SCPOPTS} ${localbackuppath}/* "${remoteuser}"@"${remotehost}:${remotepath}" 2>$M_TEMP/$archname.scp.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       scptime=`expr $scptime + 1`
       if [ -n "$debugflag" ]; then
         echo -e "COMMAND: ${SCP} ${SCPOPTS} ${localbackuppath}/* ${remoteuser}@${remotehost}:${remotepath}\nscptime = $scptime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.scp.log ] && [ `cat $TMPDIR/$archname.scp.log | wc -l` -gt 0 ]; then
-        cat $TMPDIR/$archname.scp.log >> ${rpath}/m_backup.error
+      if [ -f $M_TEMP/$archname.scp.log ] && [ `cat $M_TEMP/$archname.scp.log | wc -l` -gt 0 ]; then
+        cat $M_TEMP/$archname.scp.log >> ${rpath}/m_backup.error
         echo -e "SCP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nSCP: Files transferred (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "SCP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.scp.log
+      rm -f $M_TEMP/$archname.scp.log
     ;;
     rsync)
       [ "X$followlinks" == "Xyes" ] || RSYNCOPTS="${RSYNCOPTS} -l"
@@ -446,19 +446,19 @@ bconf=${backupconf##*/}
       [ "X$xfercompression" != "Xyes" ] || RSYNCOPTS="${RSYNCOPTS} -z"
       RSYNCOPTS="${rsyncoptions} -rt "
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && RSYNCOPTS="${RSYNCOPTS} -v" && echo "Rsync options are: ${RSYNCOPTS}" >> ${rpath}/m_backup.log
-      rsynctime=`(time -p ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}" 1>>${rpath}/m_backup.log 2>$TMPDIR/$archname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      rsynctime=`(time -p ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}" 1>>${rpath}/m_backup.log 2>$M_TEMP/$archname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       rsynctime=`expr $rsynctime + 1`
       if [ -n "$debugflag" ]; then
         echo -e "COMMAND: ${RSYNC} ${RSYNCOPTS} ${localbackuppath}/* -e \"ssh -l ${remoteuser}\" \"${remoteuser}\"@\"${remotehost}:${remotepath}\"\nrsynctime = $rsynctime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.rsync.log ] && [ `cat $TMPDIR/$archname.rsync.log | wc -l` -gt 0 ]; then
-        cat $TMPDIR/$archname.rsync.log >> ${rpath}/m_backup.error
+      if [ -f $M_TEMP/$archname.rsync.log ] && [ `cat $M_TEMP/$archname.rsync.log | wc -l` -gt 0 ]; then
+        cat $M_TEMP/$archname.rsync.log >> ${rpath}/m_backup.error
         echo -e "RSYNC: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nRSYNC: Files transferred (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.rsync.log
+      rm -f $M_TEMP/$archname.rsync.log
     ;;
     s3)
       [ "X$followlinks" != "Xyes" ] || S3OPTS="${S3OPTS}"
@@ -471,19 +471,19 @@ bconf=${backupconf##*/}
       remotepath=${remotepath#/}
       s3target="s3://`echo "${remotehost%/}/${remotepath%/}/" | sed 's|s3://||;s|//|/|g'`"
 #      [ -n "$debugflag" ] && [ "X$nonbackup" == "X" ] && [ "X$onlyclean" == "X" ] && S3OPTS="${S3OPTS} -v" && echo "S3 options are: ${S3OPTS}" >> ${rpath}/m_backup.log
-      s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${s3target}" 2>$TMPDIR/$archname.s3.log 1>>$stdinto) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
+      s3time=`(time -p ${S3} ${S3OPTS} sync ${localbackuppath}/ "${s3target}" 2>$M_TEMP/$archname.s3.log 1>>$stdinto) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       s3time=`expr $s3time + 1`
       if [ -n "$debugflag" ]; then
         echo -e "COMMAND: ${S3} ${S3OPTS} sync ${localbackuppath}/ ${s3target}\ns3time = $s3time\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.s3.log ] && [ `cat $TMPDIR/$archname.s3.log | wc -l` -gt 0 ]; then
-        cat $TMPDIR/$archname.s3.log >> ${rpath}/m_backup.error
+      if [ -f $M_TEMP/$archname.s3.log ] && [ `cat $M_TEMP/$archname.s3.log | wc -l` -gt 0 ]; then
+        cat $M_TEMP/$archname.s3.log >> ${rpath}/m_backup.error
         echo -e "S3: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nS3: Files transferred (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "S3: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $s3time / 60`min, `expr $arcsize / $s3time`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.s3.log
+      rm -f $M_TEMP/$archname.s3.log
     ;;
     local)
       [ "X$followlinks" != "Xyes" ] && CPOPTS="${CPOPTS} -d" || CPOPTS="${CPOPTS} -L"
@@ -491,19 +491,19 @@ bconf=${backupconf##*/}
       [ "X$samefs" != "Xyes" ] || CPOPTS="${CPOPTS} --one-file-system"
       CPOPTS="${cpoptions}"
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && CPOPTS="${CPOPTS} -v" && echo "CP options are: ${CPOPTS}" >> ${rpath}/m_backup.log
-      ltime=`(time -p cp ${CPOPTS} -r ${localbackuppath}/* ${remotepath} 2>$TMPDIR/$archname.local.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      ltime=`(time -p cp ${CPOPTS} -r ${localbackuppath}/* ${remotepath} 2>$M_TEMP/$archname.local.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
       ltime=`expr $ltime + 1`
       if [ -n "$debugflag" ]; then
         echo -e "COMMAND: cp ${CPOPTS} -r ${localbackuppath}\/\* ${remotepath}\nltime = $ltime\narcsize = $arcsize\n" >> ${rpath}/m_backup.log
       fi
-      if [ -f $TMPDIR/$archname.local.log ] && [ `cat $TMPDIR/$archname.local.log | wc -l` -gt 0 ]; then
-        cat $TMPDIR/$archname.local.log >> ${rpath}/m_backup.error
+      if [ -f $M_TEMP/$archname.local.log ] && [ `cat $M_TEMP/$archname.local.log | wc -l` -gt 0 ]; then
+        cat $M_TEMP/$archname.local.log >> ${rpath}/m_backup.error
         echo -e "CP: There were errors while transferring files, see ${locallogpath}/logs/m_backup.error\nCP: Files transferred (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)\n" >> ${rpath}/m_backup.log
       else
         echo "CP: Files transferred successfully (`expr $arcsize / 1024`.`expr $arcsize % 1024 \* 10 / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.local.log
+      rm -f $M_TEMP/$archname.local.log
     ;;
     esac
   fi
@@ -524,7 +524,7 @@ bconf=${backupconf##*/}
         echo "No SSH client found! Consider using --only-pickup option"
         exit 1
       fi
-      echo "install -d ${remotepath}/backup.local && install -d ${remotepath}/backup.tmp && install -d $TMPDIR" > ${rpath}/remote.backup.sh
+      echo "install -d ${remotepath}/backup.local && install -d ${remotepath}/backup.tmp && install -d $M_TEMP" > ${rpath}/remote.backup.sh
       if [ "X$replaceflag" == "X" ]; then
         echo -e 'archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"\necho "${archname}" > ${rpath}/lastbackup.${bconf}.archname\narchname=`cat ${rpath}/lastbackup.${bconf}.archname`' >> ${rpath}/remote.backup.sh
       fi
@@ -541,20 +541,20 @@ bconf=${backupconf##*/}
           linetoname=`echo ${LINE} | sed 's|/|_|g'`
           echo "linetoname=${linetoname}" >> ${rpath}/remote.backup.sh
           if [ "X${compression}" == "Xgzip" ]; then
-            echo 'tar ${ARCOPTS} -c -z -f ${remotepath}/$archname.$linetoname.tar.gz ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
+            echo 'tar ${ARCOPTS} -c -z -f ${remotepath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
           fi
           if [ "X${compression}" == "Xbzip2" ]; then
-            echo 'tar ${ARCOPTS} -c -j -f ${remotepath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$TMPDIR/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
+            echo 'tar ${ARCOPTS} -c -j -f ${remotepath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
           fi
           cat >> ${rpath}/remote.backup.sh <<"EOF"
-if [ -f $TMPDIR/$archname.$linetoname.tar.log ]; then
-  tarerr=$(grep '^tar:' $TMPDIR/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
+if [ -f $M_TEMP/$archname.$linetoname.tar.log ]; then
+  tarerr=$(grep '^tar:' $M_TEMP/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
   [ -n "$tarerr" ] && echo "$tarerr" >> "${remotepath}/m_backup.error"
   echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${remotepath}/m_backup.log
-  echo "Tar: ${LINE} copied `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${remotepath}/m_backup.log
+  echo "Tar: ${LINE} copied `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${remotepath}/m_backup.log
 else
-  echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $TMPDIR/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${remotepath}/m_backup.log" 2>/dev/null
-  rm -f $TMPDIR/$archname.$linetoname.tar.log
+  echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${remotepath}/m_backup.log" 2>/dev/null
+  rm -f $M_TEMP/$archname.$linetoname.tar.log
 fi
 if [ X$keepremote == "Xyes" ]; then
   cp -r ${remotepath}/* ${remotepath}/backup.local 2>>${remotepath}/m_backup.error
@@ -584,66 +584,66 @@ EOF
     ftp)
       ${ftpget} -V -u${remoteuser} -p${remotepw} ${remotehost} ${rpath}/ ${remotepath}/m_backup.*
       archname=`cat ${rpath}/m_backup.archname`
-      ftptime=`(time -p ${ftpget} -R -V -u${remoteuser} -p${remotepw} ${remotehost} ${localbackuppath}/backup.tmp ${remotepath}/* 2>$TMPDIR/$archname.$linetoname.ftp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      ftptime=`(time -p ${ftpget} -R -V -u${remoteuser} -p${remotepw} ${remotehost} ${localbackuppath}/backup.tmp ${remotepath}/* 2>$M_TEMP/$archname.$linetoname.ftp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       ftptime=`expr $ftptime + 1`
-      if [ -f $TMPDIR/$archname.$linetoname.ftp.log ] && [ `cat $TMPDIR/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]
+      if [ -f $M_TEMP/$archname.$linetoname.ftp.log ] && [ `cat $M_TEMP/$archname.$linetoname.ftp.log | wc -l` -gt 0 ]
       then
-        cat $TMPDIR/$archname.$linetoname.ftp.log >> ${rpath}/m_backup.error
+        cat $M_TEMP/$archname.$linetoname.ftp.log >> ${rpath}/m_backup.error
         echo "FTP: There were errors while transferring files, see ${localbackuppath}/logs/m_backup.error" >> ${rpath}/m_backup.log
         echo "FTP: Files transferred (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       else
         echo "FTP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ftptime / 60`min, `expr $arcsize / $ftptime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.$linetoname.ftp.log
+      rm -f $M_TEMP/$archname.$linetoname.ftp.log
     ;;
     scp)
       ${SCP} -q "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
       archname=`cat ${rpath}/m_backup.archname`
-      scptime=`(time -p ${SCP} -q -r "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>$TMPDIR/$archname.$linetoname.scp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      scptime=`(time -p ${SCP} -q -r "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>$M_TEMP/$archname.$linetoname.scp.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       scptime=`expr $scptime + 1`
-      if [ -f $TMPDIR/$archname.$linetoname.scp.log ] && [ `cat $TMPDIR/$archname.$linetoname.scp.log | wc -l` -gt 0 ]
+      if [ -f $M_TEMP/$archname.$linetoname.scp.log ] && [ `cat $M_TEMP/$archname.$linetoname.scp.log | wc -l` -gt 0 ]
       then
-        cat $TMPDIR/$archname.$linetoname.scp.log >> ${rpath}/m_backup.error
+        cat $M_TEMP/$archname.$linetoname.scp.log >> ${rpath}/m_backup.error
         echo "SCP: There were errors while transferring files, see ${localbackuppath}/logs/m_backup.error" >> ${rpath}/m_backup.log
         echo "SCP: Files transferred (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       else
         echo "SCP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $scptime / 60`min, `expr $arcsize / $scptime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.$linetoname.scp.log
+      rm -f $M_TEMP/$archname.$linetoname.scp.log
     ;;
     rsync)
       ${RSYNC} "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
       archname=`cat ${rpath}/m_backup.archname`
-      rsynctime=`(time -p ${RSYNC} -r -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>$TMPDIR/$archname.$linetoname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      rsynctime=`(time -p ${RSYNC} -r -e "ssh -l ${remoteuser}" "${remoteuser}"@"${remotehost}:${remotepath}/*" ${localbackuppath}/backup.tmp 2>$M_TEMP/$archname.$linetoname.rsync.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       rsynctime=`expr $rsynctime + 1`
-      if [ -f $TMPDIR/$archname.$linetoname.rsync.log ] && [ `cat $TMPDIR/$archname.$linetoname.rsync.log | wc -l` -gt 0 ]
+      if [ -f $M_TEMP/$archname.$linetoname.rsync.log ] && [ `cat $M_TEMP/$archname.$linetoname.rsync.log | wc -l` -gt 0 ]
       then
-        cat $TMPDIR/$archname.$linetoname.rsync.log >> ${rpath}/m_backup.error
+        cat $M_TEMP/$archname.$linetoname.rsync.log >> ${rpath}/m_backup.error
         echo "RSYNC: There were errors while transferring files, see ${localbackuppath}/logs/m_backup.error" >> ${rpath}/m_backup.log
         echo "RSYNC: Files transferred (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       else
         echo "RSYNC: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $rsynctime / 60`min, `expr $arcsize / $rsynctime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.$linetoname.rsync.log
+      rm -f $M_TEMP/$archname.$linetoname.rsync.log
     ;;
     local)
       ${SCP} "${remoteuser}"@"${remotehost}:${remotepath}/m_backup.*" ${rpath}/
       archname=`cat ${rpath}/m_backup.archname`
-      ltime=`(time -p ${SSH} "${remoteuser}"@"${remotehost}" "cp -r ${remotepath}/* ${remotebackuppath}/backup.tmp 2>$TMPDIR/$archname.$linetoname.local.log") 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
+      ltime=`(time -p ${SSH} "${remoteuser}"@"${remotehost}" "cp -r ${remotepath}/* ${remotebackuppath}/backup.tmp 2>$M_TEMP/$archname.$linetoname.local.log") 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -c ${localbackuppath} | grep 'total' | cut -f1`
       ltime=`expr $rsynctime + 1`
-      if [ -f $TMPDIR/$archname.$linetoname.local.log ] && [ `cat $TMPDIR/$archname.$linetoname.local.log | wc -l` -gt 0 ]
+      if [ -f $M_TEMP/$archname.$linetoname.local.log ] && [ `cat $M_TEMP/$archname.$linetoname.local.log | wc -l` -gt 0 ]
       then
-        cat $TMPDIR/$archname.$linetoname.local.log >> ${rpath}/m_backup.error
+        cat $M_TEMP/$archname.$linetoname.local.log >> ${rpath}/m_backup.error
         echo "CP: There were errors while transferring files, see ${localbackuppath}/logs/m_backup.error" >> ${rpath}/m_backup.log
         echo "CP: Files transferred (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       else
         echo "CP: Files transferred successfully (`expr $arcsize / 1024`MB, `expr $ltime / 60`min, `expr $arcsize / $ltime`KB/s)" >> ${rpath}/m_backup.log
       fi
-      rm -f $TMPDIR/$archname.$linetoname.local.log
+      rm -f $M_TEMP/$archname.$linetoname.local.log
     ;;
     esac
     ${SSH} "${remoteuser}"@"${remotehost}" "rm -f ${remotepath}/m_backup.*"
@@ -680,31 +680,31 @@ EOF
     s3)
       remotepath1="${s3target}"
       while true; do
-        `which s3cmd` ls "${remotepath1}" > $TMPDIR/s3list.$$
+        `which s3cmd` ls "${remotepath1}" > $M_TEMP/s3list.$$
         if [ -n "$debugflag" ]; then
-          echo "=== In ${remotepath1} `cat $TMPDIR/s3list.$$|wc -l` objects found" >> ${rpath}/m_backup.log
+          echo "=== In ${remotepath1} `cat $M_TEMP/s3list.$$|wc -l` objects found" >> ${rpath}/m_backup.log
         fi
-        grep DIR $TMPDIR/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $TMPDIR/s3dirs.$$
+        grep DIR $M_TEMP/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $M_TEMP/s3dirs.$$
         if [ -n "$debugflag" ]; then
-          echo "=== `cat $TMPDIR/s3dirs.$$|wc -l` are directories" >> ${rpath}/m_backup.log
+          echo "=== `cat $M_TEMP/s3dirs.$$|wc -l` are directories" >> ${rpath}/m_backup.log
         fi
-        grep -v ^[[:space:]]*DIR[[:space:]]* $TMPDIR/s3list.$$ >> $TMPDIR/s3files.$$
+        grep -v ^[[:space:]]*DIR[[:space:]]* $M_TEMP/s3list.$$ >> $M_TEMP/s3files.$$
         if [ -n "$debugflag" ]; then
-          echo "=== `cat $TMPDIR/s3files.$$|wc -l` are files" >> ${rpath}/m_backup.log
+          echo "=== `cat $M_TEMP/s3files.$$|wc -l` are files" >> ${rpath}/m_backup.log
         fi
         for ((i=0; i < $keepremotedays; i++)); do
           d2k=$(date -d "`date +"%Y/%m/%d"` - $i days" +"%Y-%m-%d")
-          sed -i -e "/$d2k/d" $TMPDIR/s3files.$$
+          sed -i -e "/$d2k/d" $M_TEMP/s3files.$$
         done
         if [ -n "$debugflag" ]; then
-          echo "=== `cat $TMPDIR/s3files.$$|wc -l` files have been marked for removal" >> ${rpath}/m_backup.log
+          echo "=== `cat $M_TEMP/s3files.$$|wc -l` files have been marked for removal" >> ${rpath}/m_backup.log
         fi
-        for s3file in `cat $TMPDIR/s3files.$$ | awk -F's3://' '{print $2}'`; do
+        for s3file in `cat $M_TEMP/s3files.$$ | awk -F's3://' '{print $2}'`; do
           `which s3cmd` del "s3://${s3file}" 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
         done
-        if [ `cat $TMPDIR/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
-          remotepath1="`head -1 $TMPDIR/s3dirs.$$`"
-          sed -i -e '1d' $TMPDIR/s3dirs.$$ 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
+        if [ `cat $M_TEMP/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
+          remotepath1="`head -1 $M_TEMP/s3dirs.$$`"
+          sed -i -e '1d' $M_TEMP/s3dirs.$$ 2>>${rpath}/m_backup.error 1>>${rpath}/m_backup.log
           if [ -n "$debugflag" ]; then
             echo "=== Entering $remotepath1 directory" >> ${rpath}/m_backup.log
           fi
@@ -713,7 +713,7 @@ EOF
           break
         fi
       done
-      rm -f $TMPDIR/s3dirs.$$ $TMPDIR/s3files.$$ $TMPDIR/s3list.$$
+      rm -f $M_TEMP/s3dirs.$$ $M_TEMP/s3files.$$ $M_TEMP/s3list.$$
     ;;
     *)
       SSH=`which ssh`
@@ -724,9 +724,9 @@ EOF
         exit 1
       fi
       [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
-      ${SSH} "${remoteuser}"@"${remotehost}" "find ${remotepath} -mtime +$keepremotedays -type f" 2>>${rpath}/m_backup.error > $TMPDIR/remote_files_to_remove.list
+      ${SSH} "${remoteuser}"@"${remotehost}" "find ${remotepath} -mtime +$keepremotedays -type f" 2>>${rpath}/m_backup.error > $M_TEMP/remote_files_to_remove.list
       res=0
-      for LINE in `cat $TMPDIR/remote_files_to_remove.list`
+      for LINE in `cat $M_TEMP/remote_files_to_remove.list`
       do
         [ -n "$debugflag" ] && rmv='-v'
         ${SSH} "${remoteuser}"@"${remotehost}" "rm "$rmv" -f \"${LINE}\"" 2>>${rpath}/m_backup.error >> ${rpath}/m_backup.log
@@ -790,7 +790,7 @@ EOF
   
   cat ${rpath}/m_backup.log >> ${locallogpath}/logs/m_backup.log
   rm -f ${rpath}/m_backup.{error,log}
-  rm -f $TMPDIR/$archname*log
+  rm -f $M_TEMP/$archname*log
 ### Now it's time to restore some environment variables
   export RSYNC_RSH="${RSYNC_RSH_BK}"
 done

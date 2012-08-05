@@ -16,8 +16,8 @@ source "${rpath}/${rcommand}.conf" 2>/dev/null
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 [ "X$SQLITE3" == "X1" ] && [ -z "$SQLITE" ] && echo "Sqlite3 not found, exiting..  " && exit 1
-TMPDIR="${TMPDIR}/MongoDB"
-install -d "${TMPDIR}"
+M_TEMP="${M_TEMP}/MongoDB"
+install -d "${M_TEMP}"
 timeindexnow=`date +"%s"`
 
 a=`cat "${rpath}/mongo_config_servers.list" 2>/dev/null | wc -l`
@@ -81,16 +81,16 @@ for coll in $sharded ; do
   #echo "$chkshard   $chkidmin   $chkidmax"
 
   # latest chunks of this collection
-  #$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" }, { _id : 0, shard : 1, min : 1, max : 1 } ).sort({_id:-1}).limit(${depth}).forEach(printjson)" | "${rpath}"/../../lib/json2txt > "$TMPDIR/${coll}.chunks"
+  #$MONGO "$confserver"/config --quiet --eval "db.chunks.find( { ns : \"${coll}\" }, { _id : 0, shard : 1, min : 1, max : 1 } ).sort({_id:-1}).limit(${depth}).forEach(printjson)" | "${rpath}"/../../lib/json2txt > "$M_TEMP/${coll}.chunks"
   #echo
   #echo "Last $depth chunks"
   #echo "--------------"
   #echo
   #echo " Shard                Key min               Key max"
-  #for chn in `cat "$TMPDIR/${coll}.chunks" | cut -d '/' -f1 | uniq` ; do
-  #  echo -n -e "$(grep \|`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/shard | cut -d'|' -f2`\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1)  "
-  #  echo -n "`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/min | cut -d'|' -f2 | tr '\n' '::'`    "
-  #  maxid=`cat "$TMPDIR/${coll}.chunks" | grep ^${chn}\/max | cut -d'|' -f2 | tr '\n' '::'`
+  #for chn in `cat "$M_TEMP/${coll}.chunks" | cut -d '/' -f1 | uniq` ; do
+  #  echo -n -e "$(grep \|`cat "$M_TEMP/${coll}.chunks" | grep ^${chn}\/shard | cut -d'|' -f2`\| "${rpath}"/mongo_shards.list 2>/dev/null | cut -d'|' -f1)  "
+  #  echo -n "`cat "$M_TEMP/${coll}.chunks" | grep ^${chn}\/min | cut -d'|' -f2 | tr '\n' '::'`    "
+  #  maxid=`cat "$M_TEMP/${coll}.chunks" | grep ^${chn}\/max | cut -d'|' -f2 | tr '\n' '::'`
   #  [ -z "$maxid" ] && maxid="current"
   #  echo -n "$maxid"
   #  echo

@@ -66,8 +66,8 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-TMPDIR=/tmp/m_script/cloud
-install -d $TMPDIR
+M_TEMP=/tmp/m_script/cloud
+install -d $M_TEMP
 
 [ -f "${rpath}/../repos.revisions" ] || touch "${rpath}/../repos.revisions"
 

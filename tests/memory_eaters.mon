@@ -20,44 +20,44 @@ echo
 IFS1=$IFS
 IFS='
 '
-ps aux | tail -n +2 > ${TMPDIR}/ps.list
-for LINE in `cat ${TMPDIR}/ps.list | grep -v ^$`; do
+ps aux | tail -n +2 > ${M_TEMP}/ps.list
+for LINE in `cat ${M_TEMP}/ps.list | grep -v ^$`; do
   command=`echo "${LINE}" | awk '{print $11}'`
   virtual=`echo "${LINE}" | awk '{print $5}'`
   resident=`echo "${LINE}" | awk '{print $6}'`
   user=`echo "${LINE}" | awk '{print $1}'`
-  echo "${command} ${user} ${resident} ${virtual}" >> ${TMPDIR}/ps.list.reordered
+  echo "${command} ${user} ${resident} ${virtual}" >> ${M_TEMP}/ps.list.reordered
 done
-for proc in `cat ${TMPDIR}/ps.list.reordered | cut -d' ' -f1,2 | sort | uniq` ; do
+for proc in `cat ${M_TEMP}/ps.list.reordered | cut -d' ' -f1,2 | sort | uniq` ; do
   virtual=0
   resident=0
   procuser=`echo $proc | cut -d' ' -f1,2`
-  for thisproc in `cat ${TMPDIR}/ps.list.reordered | grep "^${procuser}" 2>/dev/null` ; do
+  for thisproc in `cat ${M_TEMP}/ps.list.reordered | grep "^${procuser}" 2>/dev/null` ; do
     VSZ=`echo $thisproc | cut -d' ' -f4`
     RSS=`echo $thisproc | cut -d' ' -f3`
     virtual=`expr $virtual + $VSZ`
     resident=`expr $resident + $RSS`
   done
   
-  echo "$resident ${procuser}" >> ${TMPDIR}/ps.list.res
-  echo "$virtual ${procuser}" >> ${TMPDIR}/ps.list.vir
+  echo "$resident ${procuser}" >> ${M_TEMP}/ps.list.res
+  echo "$virtual ${procuser}" >> ${M_TEMP}/ps.list.vir
 done
 
-sort -g -r ${TMPDIR}/ps.list.res | head -n $MEM_TOP_NUM > ${TMPDIR}/ps.list.res.sorted
-sort -g -r ${TMPDIR}/ps.list.vir | head -n $MEM_TOP_NUM > ${TMPDIR}/ps.list.vir.sorted
+sort -g -r ${M_TEMP}/ps.list.res | head -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.res.sorted
+sort -g -r ${M_TEMP}/ps.list.vir | head -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir.sorted
 
 totalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
 totalswap=`cat /proc/meminfo | grep ^SwapTotal | awk '{ print $2 }'`
 totalmem=`expr $totalram + $totalswap`
 
-for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
+for proc in `cat ${M_TEMP}/ps.list.res.sorted` ; do
   unset usageprev warnind
   procname=${proc#* }
   usage=${proc%% *}
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
   [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
-  [ -f ${TMPDIR}/ps.prev.res ] && usageprev=`grep " ${procname}$" ${TMPDIR}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -77,14 +77,14 @@ for proc in `cat ${TMPDIR}/ps.list.res.sorted` ; do
   fi
 done
 
-for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
+for proc in `cat ${M_TEMP}/ps.list.vir.sorted` ; do
   unset usageprev warnind
   procname=${proc#* }
   usage=${proc%% *}
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalmem * 100"`
   [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of virtual memory"
-  [ -f ${TMPDIR}/ps.prev.vir ] && usageprev=`grep " ${procname}$" ${TMPDIR}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
+  [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -103,9 +103,9 @@ for proc in `cat ${TMPDIR}/ps.list.vir.sorted` ; do
     [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" virtual memory usage $direction by $usagediff percents"
   fi
 done
-mv ${TMPDIR}/ps.list.res.sorted ${TMPDIR}/ps.prev.res
-mv ${TMPDIR}/ps.list.vir.sorted ${TMPDIR}/ps.prev.vir
-rm -f ${TMPDIR}/ps.list*
+mv ${M_TEMP}/ps.list.res.sorted ${M_TEMP}/ps.prev.res
+mv ${M_TEMP}/ps.list.vir.sorted ${M_TEMP}/ps.prev.vir
+rm -f ${M_TEMP}/ps.list*
 IFS=$IFS1
 
 

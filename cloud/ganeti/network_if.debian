@@ -14,7 +14,7 @@ if [ "$(mountpoint -d /)" = "$(mountpoint -d "$TARGET")" ]; then
 fi
 
 echo "Creating network interfaces file..."
-mv "%{TMPDIR}%/interfaces" "$TARGET/etc/network/"
+mv "%{M_TEMP}%/interfaces" "$TARGET/etc/network/"
 echo "Installing OpenSSH..."
 chroot "$TARGET" apt-get install ssh -y
 echo "Installing SSH keys..."

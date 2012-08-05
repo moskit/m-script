@@ -28,7 +28,7 @@ SQLITE=`which sqlite3 2>/dev/null`
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
-timeindexnow=`cat ${TMPDIR}/timeindex 2>/dev/null` || timeindexnow=`date +"%s"`
+timeindexnow=`cat ${M_TEMP}/timeindex 2>/dev/null` || timeindexnow=`date +"%s"`
 
 monitor="$1"
 if [ -z "$monitor" ]; then
@@ -61,9 +61,9 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
     servername=`echo $server | cut -d'|' -f4`
     [ -d "${rpath}/www/$monitor/${clustered_as}/${servername}" ] || install -d "${rpath}/www/$monitor/${clustered_as}/${servername}"
-    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" 2>/dev/null | sort > ${TMPDIR}/${ip}.${monitor}.remote.dash.list
-    find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${TMPDIR}/${ip}.${monitor}.local.dash.list
-    nd=`diff ${TMPDIR}/${ip}.${monitor}.remote.dash.list ${TMPDIR}/${ip}.${monitor}.local.dash.list | grep ^\< | sed 's|^< ||'`
+    $SSH -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" 2>/dev/null | sort > ${M_TEMP}/${ip}.${monitor}.remote.dash.list
+    find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${M_TEMP}/${ip}.${monitor}.local.dash.list
+    nd=`diff ${M_TEMP}/${ip}.${monitor}.remote.dash.list ${M_TEMP}/${ip}.${monitor}.local.dash.list | grep ^\< | sed 's|^< ||'`
     if [ -n "$nd" ] ; then
       nd+=( "$nd" dash.html report.html )
       for dashfile in ${nd[*]} ; do
@@ -80,7 +80,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
         touch "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound"
       fi
     fi
-    for dashfile in `diff ${TMPDIR}/${ip}.${monitor}.remote.dash.list ${TMPDIR}/${ip}.${monitor}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
+    for dashfile in `diff ${M_TEMP}/${ip}.${monitor}.remote.dash.list ${M_TEMP}/${ip}.${monitor}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
       rm -f "${rpath}/www/$monitor/${clustered_as}/${servername}/${dashfile}"
     done
     time1=`date +"%s"`

@@ -25,8 +25,8 @@ WGET=`which wget 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 source "$rpath/../../conf/cloud.conf"
 source "$rpath/../../conf/mon.conf"
-TMPDIR="$TMPDIR/cloud/$CLOUD"
-install -d "$TMPDIR"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+install -d "$M_TEMP"
 CURL="$CURL -s"
 
 possible_options="region action id zone name type value items wholezone noupdate comment hostedzoneid dnsname"
@@ -64,7 +64,7 @@ fi
 [ "X$action" == "Xlistzone" ] && [ -z "$name" ] && name=$zone
 [ "X$action" == "Xlistzone" ] && [ -z "$items" ] && items=1
 
-request=$TMPDIR/r53query.$$
+request=$M_TEMP/r53query.$$
 
 server_date=`curl -q -s -S -I --max-time 5 --url https://route53.amazonaws.com/date | grep ^Date | awk -F'Date: ' '{print $2}' | sed 's|\r||'`
 
@@ -72,15 +72,15 @@ signature=`printf "$server_date" | $SSLEX dgst -binary -sha1 -hmac $AWS_SECRET_A
 
 case $action in 
   list)
-    $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone > $TMPDIR/r53.list.xml
-    ${rpath}/../../lib/xml2txt $TMPDIR/r53.list.xml > $TMPDIR/r53.list.txt
-    grep ^ListHostedZonesResponse_HostedZones_HostedZone_Id $TMPDIR/r53.list.txt | cut -d' ' -f2 | sed 's|/hostedzone/||' > $TMPDIR/r53.list.ids
-    [ -z "$noupdate" ] && [ `cat $TMPDIR/r53.list.ids | wc -l` -ne 0 ] && rm -f "${rpath}/../../$CLOUD.dnszones.list"
+    $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone > $M_TEMP/r53.list.xml
+    ${rpath}/../../lib/xml2txt $M_TEMP/r53.list.xml > $M_TEMP/r53.list.txt
+    grep ^ListHostedZonesResponse_HostedZones_HostedZone_Id $M_TEMP/r53.list.txt | cut -d' ' -f2 | sed 's|/hostedzone/||' > $M_TEMP/r53.list.ids
+    [ -z "$noupdate" ] && [ `cat $M_TEMP/r53.list.ids | wc -l` -ne 0 ] && rm -f "${rpath}/../../$CLOUD.dnszones.list"
     [ -f "${rpath}/../../$CLOUD.dnszones.list" ] || touch "${rpath}/../../$CLOUD.dnszones.list"
     while read zoneid ; do
-      zonename=`grep -A 1 "${zoneid}$" $TMPDIR/r53.list.txt | tail -1 | cut -d' ' -f2`
+      zonename=`grep -A 1 "${zoneid}$" $M_TEMP/r53.list.txt | tail -1 | cut -d' ' -f2`
       [ -z "$noupdate" ] && [[ `grep -c "^$zoneid|$zonename$" "${rpath}/../../$CLOUD.dnszones.list"` -eq 0 ]] && echo "$zoneid|$zonename" >> "${rpath}/../../$CLOUD.dnszones.list"
-    done < $TMPDIR/r53.list.ids
+    done < $M_TEMP/r53.list.ids
     cat "${rpath}/../../$CLOUD.dnszones.list"
     ;;
   show)
@@ -95,13 +95,13 @@ case $action in
         fi
       fi
     fi
-    if [ -z "$noupdate" ] || [ ! -f $TMPDIR/r53.${id}.show ] ; then
-      $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone/$id > $TMPDIR/r53.${id}.show
+    if [ -z "$noupdate" ] || [ ! -f $M_TEMP/r53.${id}.show ] ; then
+      $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone/$id > $M_TEMP/r53.${id}.show
     fi
     echo "------------------------------------------------------------------------------"
     printf "Zone name: ${zone}\tZone id: ${id}\n"
     echo "------------------------------------------------------------------------------"
-    ${rpath}/../../lib/xml2txt $TMPDIR/r53.${id}.show | grep ^GetHostedZoneResponse_HostedZone_DelegationSet_NameServers_NameServer | cut -d' ' -f2
+    ${rpath}/../../lib/xml2txt $M_TEMP/r53.${id}.show | grep ^GetHostedZoneResponse_HostedZone_DelegationSet_NameServers_NameServer | cut -d' ' -f2
     ;;
   listzone)
     if [ -z "$id" ] ; then
@@ -117,9 +117,9 @@ case $action in
     fi
     [ -z "$name" ] && name=`grep "^${id}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f2`
     if [ -n "$wholezone" ] ; then
-      request=$TMPDIR/r53.${id}.listzone.wholezone
+      request=$M_TEMP/r53.${id}.listzone.wholezone
     else
-      request=$TMPDIR/r53.${id}.listzone.${name}.${type}.${items}
+      request=$M_TEMP/r53.${id}.listzone.${name}.${type}.${items}
     fi
     echo "------------------------------------------------------------------------------"
     printf "Zone name: ${zone}\tZone id: ${id}\n"

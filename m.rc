@@ -29,7 +29,7 @@ setup_env() {
   HOME_ORIG=$HOME
   HOME=$M_ROOT
   [ -f $HOME/.bashrc ] && source $HOME/.bashrc
-  export CLOUD ROLES_ROOT M_ROOT HOME HOME_ORIG TMPDIR
+  export CLOUD ROLES_ROOT M_ROOT HOME HOME_ORIG M_TEMP
   export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${CLOUD}:${M_ROOT}/helpers:${PATH}
 }
 

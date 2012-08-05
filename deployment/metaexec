@@ -118,7 +118,7 @@ run_meta() {
 startserver() {
   ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log | tail -1`
   res=$?
-  log "start_server exited with status $res and returned this IP: $ip">>"${rpath}"/../logs/cloud.log
+  log "($CLOUD) start_server exited with status $res and returned this as IP: $ip"
 }
 
 SSH=`which ssh 2>/dev/null`
@@ -278,16 +278,18 @@ if [ -n "$newserver" ]; then
     echo "*** This is a test"
   fi
   log "initiating start server sequence"
-  startserver $T
+  
   for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
-    # update_servers_list isn't required here, successful start_server updates it
-    [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && sleep $WAIT_BETWEEN_TRIES && startserver $T
+    startserver $T
+    [ $res -eq 0 -a `expr $ip : [0-9.]*$` -ne 0 ] && break
+    [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
     [ $res -eq 6 ] && log "Failed to generate a name for the new server" && exit 1
-    [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver $T
-    [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && sleep $WAIT_BETWEEN_TRIES && startserver $T
-    [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster" && sleep $WAIT_BETWEEN_TRIES && startserver $T
-    [[ $ip =~ [^[0-9.]]* ]] && log "Something's wrong with IP: $ip" && sleep $WAIT_BETWEEN_TRIES && startserver $T
-    [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && startserver $T
+    [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && exit 1
+    [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && exit 1
+    [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
+    [ `expr $ip : [0-9.]*$` -eq 0 ] && log "Something's wrong with IP: $ip"
+    [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address."
+    sleep $WAIT_BETWEEN_TRIES
   done
 fi
 

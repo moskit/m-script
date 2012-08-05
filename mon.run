@@ -27,7 +27,7 @@ commline="$0 $*"
 echo "`date +"%H:%M:%S"` == Running ${commline} ==" >> ${rpath}/monitoring.log
 #*/ (this is needed to fool vi syntax highlighting)
 
-#[ "X$SAR" == "X" ] || $SAR -o $TMPDIR/sar.tmp 1 5 >/dev/null
+#[ "X$SAR" == "X" ] || $SAR -o $M_TEMP/sar.tmp 1 5 >/dev/null
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
 lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
@@ -106,7 +106,7 @@ function runscript() {
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
-    $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${TMPDIR}/lasttimeindex"
+    $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${M_TEMP}/lasttimeindex"
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
   if [ "X$1" == "XSQL" ]; then
@@ -158,11 +158,11 @@ IFS1=$IFS; IFS='
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
     if [ -n "$nalerts" ] ; then
-      calerts=`cat "${TMPDIR}/consequent_alerts.tmp" 2>/dev/null | grep ^"${commline}"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
+      calerts=`cat "${M_TEMP}/consequent_alerts.tmp" 2>/dev/null | grep ^"${commline}"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
       if [ -n "$calerts" ] ; then
         calerts=`echo "$calerts" | cut -d'|' -f4`
       else
-        echo "${commline}|$pattern|$level|0" >> "${TMPDIR}/consequent_alerts.tmp"
+        echo "${commline}|$pattern|$level|0" >> "${M_TEMP}/consequent_alerts.tmp"
       fi
     fi
     [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> ${rpath}/monitoring.log && continue
@@ -178,18 +178,18 @@ IFS1=$IFS; IFS='
             calerts=`expr $calerts + 1`
             if [[ $calerts -ge $nalerts ]] ; then
               echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
-              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
+              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
             else
-              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${TMPDIR}/consequent_alerts.tmp"
+              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${M_TEMP}/consequent_alerts.tmp"
             fi
           fi
         fi
       done <"${rpath}/alert$i"
     done
-    if [ -f "${TMPDIR}/consequent_alerts.tmp" ] ; then
-      if [ `grep -c ^$commline "${TMPDIR}/consequent_alerts.tmp"` -ne 0 ] ; then
+    if [ -f "${M_TEMP}/consequent_alerts.tmp" ] ; then
+      if [ `grep -c ^$commline "${M_TEMP}/consequent_alerts.tmp"` -ne 0 ] ; then
         if [ -z "$action_alert_found" ] ; then
-          sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${TMPDIR}/consequent_alerts.tmp"
+          sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
         fi
       fi
     fi
@@ -371,11 +371,11 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 
 function newtimeindex() {
   timeindexnow=$(date +"%s")
-  echo $timeindexnow > ${TMPDIR}/timeindex
+  echo $timeindexnow > ${M_TEMP}/timeindex
 }
 
 function deltimeindex() {
-  rm -f ${TMPDIR}/timeindex
+  rm -f ${M_TEMP}/timeindex
 }
 
 function gendash() {
@@ -413,7 +413,7 @@ function timeshift() {
     timeshift=$(expr $fintime - $timeindexnow)
   fi
   export timeshift
-  echo $timeshift > "$TMPDIR"/timeshift
+  echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
     MAINSEQ_EXECTIME=`eval "echo \$MAINSEQ_EXECTIME_$i"`
     [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${0##*/} $* execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
@@ -421,9 +421,9 @@ function timeshift() {
 }
 
 source ${rpath}/conf/mon.conf
-export TMPDIR FREQ
+export M_TEMP FREQ
 [ "X$2" == "XSQL" ] && SQL=SQL
-install -d $TMPDIR
+install -d $M_TEMP
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
@@ -501,7 +501,7 @@ case ${1} in
 esac
 rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` <<< unlocking by ${commline}" >> ${rpath}/monitoring.log
 echo  >> ${rpath}/monitoring.log
-#rm -f ${TMPDIR}/sar.tmp
+#rm -f ${M_TEMP}/sar.tmp
 chmod 666 ${rpath}/alert* 2>/dev/null
 export LC_MESSAGES=`echo ${currentlocale}`
 

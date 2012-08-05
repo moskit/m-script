@@ -304,8 +304,8 @@ done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_AK EC2_REGION PATH
 
-TMPDIR=$TMPDIR/cloud/ec2
-install -d $TMPDIR
+M_TEMP=$M_TEMP/cloud/ec2
+install -d $M_TEMP
 
 filter=`echo $filter | sed 's_,_|_g'`
 [ -n "$region" ] && EC2_REGION=$region
@@ -313,7 +313,7 @@ filter=`echo $filter | sed 's_,_|_g'`
 [ -n "$id" ] && ID=$id
 if [ "X$noupdate" == "X" ] ; then
   [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
-  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $ID | sed 's/\t/|/g' > $TMPDIR/servers.${EC2_REGION}.tmp
+  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $ID | sed 's/\t/|/g' > $M_TEMP/servers.${EC2_REGION}.tmp
 fi
 # newr = New Reservation, inverted
 while read SERVER
@@ -336,7 +336,7 @@ do
       current_server="$current_server`parse_server $SERVER`" && unset newr
     fi
   fi
-done<$TMPDIR/servers.${EC2_REGION}.tmp
+done<$M_TEMP/servers.${EC2_REGION}.tmp
 print_server "$current_server"
 unset newr current_server
 [ -n "$count" ] && echo $i && unset i

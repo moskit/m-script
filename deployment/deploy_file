@@ -208,7 +208,7 @@ source "${rpath}/../conf/cloud.conf"
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-install -d ${TMPDIR}/deployment/
+install -d ${M_TEMP}/deployment/
 IFS1=$IFS
 IFS='
 '
@@ -237,7 +237,7 @@ fi
 
 find_source
 # fullfrom and realrole are now defined
-tmpfile=${TMPDIR}/deployment/`echo $fullfrom | tr '/' '_'`
+tmpfile=${M_TEMP}/deployment/`echo $fullfrom | tr '/' '_'`
 rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
   
 [ -f "${ROLES_ROOT}/common/role.conf" ] && store_vars "${ROLES_ROOT}/common/role.conf"

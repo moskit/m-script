@@ -24,8 +24,8 @@ LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 source "${rpath}/../../conf/mon.conf"
-TMPDIR=$TMPDIR/cloud/rackspace
-install -d $TMPDIR
+M_TEMP=$M_TEMP/cloud/rackspace
+install -d $M_TEMP
 CURL="$CURL -s -k"
 declare -i icount
 
@@ -64,27 +64,27 @@ fi
 
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
-[ -n "$forceupdate" ] && rm -f "${TMPDIR}"/${rcommand}.resp
+[ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
 request() {
-  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
-  [ -n "`find "${TMPDIR}" -mtime -2 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/flavors.resp"
-  [ -n "`find "${TMPDIR}" -mtime -2 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/images.resp"
+  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^1\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
+  [ -n "`find "${M_TEMP}" -mtime -2 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
+  [ -n "`find "${M_TEMP}" -mtime -2 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
 }
 
 list_servers() {
   IFS1=$IFS
   IFS='
 '
-  if [ -f "${TMPDIR}/${rcommand}.resp" ] ; then
-    for n in `cat "${TMPDIR}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
+  if [ -f "${M_TEMP}/${rcommand}.resp" ] ; then
+    for n in `cat "${M_TEMP}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
-      for LINE in `grep \/servers\/${n}\/ "${TMPDIR}/${rcommand}.resp"` ; do
+      for LINE in `grep \/servers\/${n}\/ "${M_TEMP}/${rcommand}.resp"` ; do
         LINE=`echo $LINE | awk -F"servers/${n}/" '{print $2}'`
         lvar=`echo $LINE | cut -d'|' -f1`
         if [ -n "$filter" ] ; then
@@ -174,7 +174,7 @@ list_servers() {
               echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
             done
             for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-              [ `grep -c \|${listip}$ "${TMPDIR}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+              [ `grep -c \|${listip}$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
             done
           fi
         fi
@@ -188,19 +188,19 @@ list_servers() {
 }
 
 imageid() {
-  imagenum=`grep \/id\|${1}$ "${TMPDIR}/images.resp" | cut -d'/' -f3`
-  grep \/$imagenum\/name\| "${TMPDIR}/images.resp" | cut -d'|' -f2
+  imagenum=`grep \/id\|${1}$ "${M_TEMP}/images.resp" | cut -d'/' -f3`
+  grep \/$imagenum\/name\| "${M_TEMP}/images.resp" | cut -d'|' -f2
 }
 
 flavorid() {
-  imagenum=`grep \/id\|${1}$ "${TMPDIR}/flavors.resp" | cut -d'/' -f3`
-  grep \/$imagenum\/name\| "${TMPDIR}/flavors.resp" | cut -d'|' -f2
+  imagenum=`grep \/id\|${1}$ "${M_TEMP}/flavors.resp" | cut -d'/' -f3`
+  grep \/$imagenum\/name\| "${M_TEMP}/flavors.resp" | cut -d'|' -f2
 }
 
 try_auth() {
   local -i i
   i=0
-  while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+  while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/show_servers: Problem getting authorization from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
     ${rpath}/auth
     i+=1
@@ -216,10 +216,10 @@ if [ -z "$noupdate" ] ; then
   request
   declare -i n
   n=0
-  while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
+  while [ `grep -c ^1\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/show_servers: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
     [ $n -gt 1 ] && sleep 30
-    rm -f "${TMPDIR}/auth.resp"
+    rm -f "${M_TEMP}/auth.resp"
     try_auth
     request
     n+=1

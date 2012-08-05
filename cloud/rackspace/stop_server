@@ -28,7 +28,7 @@ V="v1.0"
 
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
-TMPDIR="${TMPDIR}/cloud/${CLOUD}"
+M_TEMP="${M_TEMP}/cloud/${CLOUD}"
 
 possible_options="id name ip verbose force"
 necessary_options=""
@@ -56,9 +56,9 @@ IFS=$IFS1
 removed=false
 
 find_by_ip() {
-  if [ -f "${TMPDIR}/show_servers.resp" ] ; then
-    sn=`grep addresses "${TMPDIR}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
-    id=`grep \/$sn\/id\| "${TMPDIR}/show_servers.resp" | cut -d'|' -f2`
+  if [ -f "${M_TEMP}/show_servers.resp" ] ; then
+    sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
     id=`${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
@@ -83,11 +83,11 @@ if [ -z "$id" ] ; then
     find_by_ip $ip
   fi
 else
-  if [ -f "${TMPDIR}/show_servers.resp" ] ; then
-    sn=`grep \/id\| "${TMPDIR}/show_servers.resp" | grep "${id}$" | cut -d'/' -f3`
-    name=`grep \/$sn\/name\| "${TMPDIR}/show_servers.resp" | cut -d'|' -f2`
-    ipint=`grep \/$sn\/addresses\/private "${TMPDIR}/show_servers.resp" | cut -d'|' -f2`
-    ipext=`grep \/$sn\/addresses\/public "${TMPDIR}/show_servers.resp" | cut -d'|' -f2`
+  if [ -f "${M_TEMP}/show_servers.resp" ] ; then
+    sn=`grep \/id\| "${M_TEMP}/show_servers.resp" | grep "${id}$" | cut -d'/' -f3`
+    name=`grep \/$sn\/name\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
+    ipint=`grep \/$sn\/addresses\/private "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
+    ipext=`grep \/$sn\/addresses\/public "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$name" ] ; then
     nameips=`${rpath}/show_servers --forceupdate --view=table | grep ^${id}\| | cut -d'|' -f2,4,5`
@@ -100,17 +100,17 @@ fi
 req="/servers/$id"
 
 request() {
-  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${TMPDIR}/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   echo "Sending DELETE to ${URL}${req}" >> "$rpath"/../../logs/cloud.log
-  TOKEN=`grep ^1\/auth\/token\/id "${TMPDIR}/auth.resp" | cut -d'|' -f2`
-  $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${TMPDIR}/${rcommand}.resp"
+  TOKEN=`grep ^1\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
   echo $?
 }
 
 try_auth() {
   local -i i
   i=0
-  while [ ! -e "${TMPDIR}/auth.resp" -o `cat "${TMPDIR}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+  while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Problem getting authorization from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
     ${rpath}/auth
     i+=1
@@ -127,10 +127,10 @@ if [ -z "$noupdate" ] ; then
   [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
   declare -i n
   n=0
-  while [ `grep -c ^1\/unauthorized\/code\|401$ "${TMPDIR}/${rcommand}.resp"` -eq 1 ] ; do
+  while [ `grep -c ^1\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
     [ $n -gt 1 ] && sleep 30
-    rm -f "${TMPDIR}/auth.resp"
+    rm -f "${M_TEMP}/auth.resp"
     try_auth
     reqres=`request`
     [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
@@ -139,11 +139,11 @@ if [ -z "$noupdate" ] ; then
   [ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
 fi
 
-cat "${TMPDIR}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
+cat "${M_TEMP}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
 
 IPS=( "${ipint}" "${ipext}" "${ip}" )
 
-if [ $reqres -eq 0 -a `grep -c code\|4 "${TMPDIR}/${rcommand}.resp"` -eq 0 ]; then
+if [ $reqres -eq 0 -a `grep -c code\|4 "${M_TEMP}/${rcommand}.resp"` -eq 0 ]; then
   echo -e "`date +"%m.%d %H:%M"` rackspace/stop_server: server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully\n\n" >> "$rpath"/../rackspace.log | tee -a "$rpath"/../../logs/cloud.log
   removed=true
 fi

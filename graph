@@ -48,7 +48,7 @@ source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/dash.conf"
 LOG="${rpath}/logs/dashboard.log"
 if [ -z "$freqdef" ]; then
-  timeshift=`cat "$TMPDIR/timeshift" 2>/dev/null`
+  timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
   [ -z "$timeshift" ] && timeshift=5
   freqdef=$(($FREQ + $timeshift))
 fi
@@ -177,8 +177,8 @@ else
   localip="yes"
 fi
 
-TMPDIR="$TMPDIR"/dash
-install -d "$TMPDIR"
+M_TEMP="$M_TEMP"/dash
+install -d "$M_TEMP"
 install -d "${rpath}/www/graphs"
 declare -a colors
 colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
@@ -325,12 +325,12 @@ if [ -n "$perpixel" ]; then
 
   if [ "$sIP" == "localhost" ]; then
     $debug && log "$SQL3 \"${rpath}/$database\" \"$QUERY\""
-    $SQL3 "${rpath}/$database" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+    $SQL3 "${rpath}/$database" "${QUERY}" > ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}
   else
     $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${rpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}
+    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}
   fi
-  if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
+  if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
     log "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated."
     exit 1
   fi
@@ -350,7 +350,7 @@ else
   fi
   qmetric="timeindex"
   for smetric in `echo $metric | tr ',' ' '` ; do
-    rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
+    rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
     qmetric="${qmetric}, ${smetric}*${mp}"
   done
     
@@ -363,13 +363,13 @@ else
     fi
     if [ "X$sIP" == "Xlocalhost" ] ; then
       $debug && log "$SQL3 \"${rpath}/${database}\" \"${QUERY}\""
-      $SQL3 "${rpath}/${database}" "${QUERY}" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || log "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP"
+      $SQL3 "${rpath}/${database}" "${QUERY}" > ${M_TEMP}/graph.${sIP}.${dbname}.${name} || log "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP"
     else
     # -o StrictHostKeyChecking=no
       $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/${database}\" \"${QUERY}\""
-      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > ${TMPDIR}/graph.${sIP}.${dbname}.${name} || log "Problem getting data from ${rpath}/${database}, server $sIP"
+      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${name} || log "Problem getting data from ${rpath}/${database}, server $sIP"
     fi
-    if [ `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
+    if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
       log "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated."
       exit 1
     fi
@@ -383,8 +383,8 @@ fi
 declare -i n
 n=2
 for smetric in `echo $metric | tr ',' ' '` ; do
-  smax=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
-  smin=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
+  smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
+  smin=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
   [[ $metricmax -eq 0 ]] && metricmin=$smax
   [ -z "$metricmin" ] && metricmin=0
   [[ $smax -gt $metricmax ]] && metricmax=$smax
@@ -398,17 +398,17 @@ if [ "X$scale" == "Xyes" ] ; then
   snadd=0
   n=2
   for smetric in `echo $metric | tr ',' ' '` ; do
-    rm -f ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
-    smax=`cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
+    rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
+    smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
     if [ -n "$smax" ] ; then
       [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve "$metricmax / $smax / $sn / 1.2"` || sratio=1
-      for LINE in `cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
+      for LINE in `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
         st=`echo $LINE | cut -d'|' -f1`
         [ -z "$st" ] && continue
         sd=`echo $LINE | cut -d'|' -f2`
         [ -z "$sd" ] && continue
         sds=`solve "$sd * $sratio + $snadd"`
-        echo "${st}|${sds}" >> ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled
+        echo "${st}|${sds}" >> ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled
       done
     fi
     snadd=`solve "$snadd + $sadd"`
@@ -672,7 +672,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   fi
   printf "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   
-  if [ "X$scale" == "Xyes" ] ; then cat ${TMPDIR}/graph.${sIP}.${dbname}.${smetric}.scaled ; else cat ${TMPDIR}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n} ; fi | while read LINE
+  if [ "X$scale" == "Xyes" ] ; then cat ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled ; else cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n} ; fi | while read LINE
   do
     X=`echo $LINE | cut -d'|' -f1`
     Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}

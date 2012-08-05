@@ -88,14 +88,14 @@ fi
 [ -z "$block_forever_after" ] && block_forever_after=99999
 if [ -n "$ips" ] ; then
   for ip in $ips ; do
-  echo $ip >> "${TMPDIR}/ip_block.tmp"
+  echo $ip >> "${M_TEMP}/ip_block.tmp"
     # Never block own IPs! :)
     if [[ `grep -c ^${ip}\| "${rpath}/../servers.list"` -eq 0 ]] ; then
-      ipincl=`grep -c "^${ip}$" "${TMPDIR}/ip_block.tmp"` || ipincl=0
+      ipincl=`grep -c "^${ip}$" "${M_TEMP}/ip_block.tmp"` || ipincl=0
 echo "$ip :: $ipincl -gt $block_forever_after" >> /opt/m/ip_block.log
       if [[ $ipincl -gt $block_forever_after ]] ; then
-        if [[ `grep -c "^${ip}$" "${TMPDIR}/ip_block.const"` -eq 0 ]] ; then
-          echo $ip >> "${TMPDIR}/ip_block.const"
+        if [[ `grep -c "^${ip}$" "${M_TEMP}/ip_block.const"` -eq 0 ]] ; then
+          echo $ip >> "${M_TEMP}/ip_block.const"
           $IPT -A M_IPBLOCK_CONST -s $ip -j $method
         fi
       else

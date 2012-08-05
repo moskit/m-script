@@ -104,20 +104,20 @@ done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 
-TMPDIR=/tmp/m_script/cloud/ec2
-install -d $TMPDIR
+M_TEMP=/tmp/m_script/cloud/ec2
+install -d $M_TEMP
 [ -n "$noupdate" ] && noupdate="--noupdate"
 [ -n "$region" ] && region="--region=$region"
 [ -n "$cluster" ] && cluster="--cluster=$cluster"
 [ -n "$ami" ] && ami="--ami=$ami"
 [ -n "$state" ] && state="--state=$state"
 
-${rpath}/../show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $TMPDIR/volumes.list
+${rpath}/../show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $M_TEMP/volumes.list
 if [ -n "$keep" ] ; then
   outdated=`date -d "$currtime - $keep days" +"%s"`
-  ec2-describe-snapshots $region > $TMPDIR/snapshots.list
-  for ebs in `cat $TMPDIR/volumes.list` ; do
-    cat $TMPDIR/snapshots.list | grep "[[:space:]]$ebs[[:space:]]" | while read snap ; do
+  ec2-describe-snapshots $region > $M_TEMP/snapshots.list
+  for ebs in `cat $M_TEMP/volumes.list` ; do
+    cat $M_TEMP/snapshots.list | grep "[[:space:]]$ebs[[:space:]]" | while read snap ; do
       snapID=`echo $snap | awk '{print $2}'`
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
       snaptime=`date -d "$snaptime" +"%s"`
@@ -130,7 +130,7 @@ if [ -n "$keep" ] ; then
     printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> ${rpath}/../../ebs_backup.report && echo "DONE" >> ${rpath}/../../ebs_backup.report || echo "ERROR" >> ${rpath}/../../ebs_backup.report
   done
 else
-  for ebs in `cat $TMPDIR/volumes.list` ; do
+  for ebs in `cat $M_TEMP/volumes.list` ; do
     printf "Creating snapshot of volume $ebs ... " >> ${rpath}/../../ebs_backup.report
     printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> ${rpath}/../../ebs_backup.report && echo "DONE" >> ${rpath}/../../ebs_backup.report || echo "ERROR" >> ${rpath}/../../ebs_backup.report
   done

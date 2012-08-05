@@ -29,7 +29,7 @@ lasttimeindex=`cat /tmp/m_script/lasttimeindex 2>/dev/null`
 
 [ -n "$timeindexnow" ] || timeindexnow=`date +"%s"`
 monperiod=`expr $timeindexnow - $lasttimeindex`
-[ -z "$monperiod" -o $monperiod -le 0 ] && timeshift=`cat "$TMPDIR/timeshift"` && monperiod=`expr $FREQ + $timeshift`
+[ -z "$monperiod" -o $monperiod -le 0 ] && timeshift=`cat "$M_TEMP/timeshift"` && monperiod=`expr $FREQ + $timeshift`
 
 IFS1=$IFS ; IFS='
 '
@@ -37,14 +37,14 @@ config=( `cat "${rpath}/netstat.conf" | grep -v ^$` )
 
 metrics=$(echo "${config[*]}" | cut -d'|' -f2 | tr '\n' '|'); metrics=${metrics%|}
 
-prev_values_arr=( `cat "$TMPDIR/netstat.dat" 2>/dev/null` )
+prev_values_arr=( `cat "$M_TEMP/netstat.dat" 2>/dev/null` )
 
 curr_values=$($netstatbin -s | grep -E "$metrics" | sed 's|^ *||' | while read L ; do val=${L%% *}; var=`echo "${config[*]}" | cut -d'|' -f1,2 | grep "${L#* }" | cut -d'|' -f1`; eval "echo \"${var}=${val}\""; done)
 
 IFS=$IFS1
 
-rm -f "$TMPDIR/netstat.dat"
-for st in $curr_values ; do eval $st ; echo $st >> "$TMPDIR/netstat.dat" ; done
+rm -f "$M_TEMP/netstat.dat"
+for st in $curr_values ; do eval $st ; echo $st >> "$M_TEMP/netstat.dat" ; done
 curr_values_arr=( $curr_values )
 
 [ ${#prev_values_arr[*]} -eq 0 ] && echo "`date +"%H:%M:%S"` $rcommand: previous data not found" >> "$M_ROOT/monitoring.log" && exit 1

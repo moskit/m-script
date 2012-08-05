@@ -84,8 +84,8 @@ for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION
-TMPDIR=/tmp/m_script/cloud/ec2
-install -d $TMPDIR
+M_TEMP=/tmp/m_script/cloud/ec2
+install -d $M_TEMP
 install -d $NGINX_PROXY_CLUSTER_CONF_DIR
 
 [ -n "$region" ] && EC2_REGION=$region
@@ -105,24 +105,24 @@ for cluster in "$CLUSTERS" ; do
       ports="$ports ${CLUSTER#*:}"
     fi
   done
-  [ -f $TMPDIR/${cluster}.servers.ips ] && mv $TMPDIR/${cluster}.servers.ips $TMPDIR/${cluster}.servers.ips.prev
+  [ -f $M_TEMP/${cluster}.servers.ips ] && mv $M_TEMP/${cluster}.servers.ips $M_TEMP/${cluster}.servers.ips.prev
   [ -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] || (echo "ec2-describe-instances binary not found! Exiting.." >> ${rpath}/../../cloud.log && exit 1)
   for IP in `${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -F "tag:cluster=$cluster" --show-empty-fields --region $EC2_REGION | grep '^INSTANCE' | awk '{print $18}'` ; do
 #    echo "IP: $IP" >> ${rpath}/../../cloud.log
     for PORT in $ports ; do
       PORT=${PORT#* }; PORT=${PORT% *}
 #      echo "port: $PORT" >> ${rpath}/../../cloud.log
-      echo "$IP:$PORT" >> $TMPDIR/${cluster}.servers.ips
+      echo "$IP:$PORT" >> $M_TEMP/${cluster}.servers.ips
     done
   done
-  [ -f $TMPDIR/${cluster}.servers.ips ] || (echo "IP list doesn't exist! Exiting.." >> ${rpath}/../../cloud.log && exit 1)
-  [ -f $TMPDIR/${cluster}.servers.ips.prev ] && [ -f $TMPDIR/${cluster}.servers.ips ] && [ -z "`$DIFF -q $TMPDIR/${cluster}.servers.ips.prev $TMPDIR/${cluster}.servers.ips`" ] && continue
-  if [ `cat $TMPDIR/${cluster}.servers.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
+  [ -f $M_TEMP/${cluster}.servers.ips ] || (echo "IP list doesn't exist! Exiting.." >> ${rpath}/../../cloud.log && exit 1)
+  [ -f $M_TEMP/${cluster}.servers.ips.prev ] && [ -f $M_TEMP/${cluster}.servers.ips ] && [ -z "`$DIFF -q $M_TEMP/${cluster}.servers.ips.prev $M_TEMP/${cluster}.servers.ips`" ] && continue
+  if [ `cat $M_TEMP/${cluster}.servers.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
     echo "upstream $cluster {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
     echo "  ip_hash;" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
     while read IP; do
       echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
-    done<$TMPDIR/${cluster}.servers.ips
+    done<$M_TEMP/${cluster}.servers.ips
     echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${cluster}.conf
   else
     echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log

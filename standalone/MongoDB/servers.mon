@@ -14,8 +14,8 @@ source "${rpath}/${rcommand%.mon}.conf"
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" "${rpath}/mongo_shards.list" "${rpath}/mongo_servers.list"
-TMPDIR="${TMPDIR}/MongoDB"
-install -d "${TMPDIR}"
+M_TEMP="${M_TEMP}/MongoDB"
+install -d "${M_TEMP}"
 
 function print_servers() {
   for host in $@ ; do
@@ -62,8 +62,8 @@ function collect_hosts() {
 function parse_data() {
   unset timeindex day hostport status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable netIn netOut netReqn opcountersInsert opcountersQuery opcountersUpdate opcountersDelete opcountersGetmore opcountersCommand opsShardedInsert opsShardedQuery opsShardedUpdate opsShardedDelete opsShardedGetmore opsShardedCommand opsNotShardedInsert opsNotShardedQuery opsNotShardedUpdate opsNotShardedDelete opsNotShardedGetmore opsNotShardedCommand lockRatio lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters ops_queriesps ops_queriesps_sharded ops_queriesps_notsharded ops_insertsps ops_insertsps_sharded ops_insertsps_notsharded ops_updatesps ops_updatesps_sharded ops_updatesps_notsharded ops_deletesps ops_deletesps_sharded ops_deletesps_notsharded ops_getmoresps ops_getmoresps_sharded ops_getmoresps_notsharded ops_commandsps ops_commandsps_sharded  ops_commandsps_notsharded ops_totalqps ops_totalqps_sharded ops_totalqps_notsharded
   timeindexnow=`date +"%s"`
-  lasttimeindex=`cat "${TMPDIR}/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
-  echo $timeindexnow > "${TMPDIR}/${1}.lasttimeindex"
+  lasttimeindex=`cat "${M_TEMP}/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
+  echo $timeindexnow > "${M_TEMP}/${1}.lasttimeindex"
   for d in `cat "${rpath}/data/${1}.dat" | grep \|` ; do
     eval "`echo "$d" | sed 's_|_=_'`"
   done
@@ -222,8 +222,8 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
     collect_hosts $MONGO_CONFIG_SERVERS
   fi
 
-  print_servers $configips > "${TMPDIR}/mongo_config_servers.list" | tee -a ${rpath}/../../logs/MongoDB.log
-  [ -f "${TMPDIR}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${TMPDIR}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
+  print_servers $configips > "${M_TEMP}/mongo_config_servers.list" | tee -a ${rpath}/../../logs/MongoDB.log
+  [ -f "${M_TEMP}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${M_TEMP}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
   
 elif [ -z "$MONGO_SERVERS" ] ; then
   echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting" >> ${rpath}/../../logs/MongoDB.log
@@ -253,7 +253,7 @@ else
   fi
   
   ## Collecting servers list
-  rm -f "${TMPDIR}/mongo_servers.list"
+  rm -f "${M_TEMP}/mongo_servers.list"
   # For hosts from servers.conf
   for mongohost in $configips ; do
     mongoport=${mongohost##*:}
@@ -263,27 +263,27 @@ else
       replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
       find_rsmemberrole "${mongohost}:${mongoport}"
     fi
-    echo "${mongohost}:${mongoport}|${replicaset}${rsmemberrole}" >> "${TMPDIR}/mongo_servers.list"
+    echo "${mongohost}:${mongoport}|${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
   done
   
   # Getting hosts list for every found replica set
-  for rs in `cat "${TMPDIR}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
-    for rshost in `cat "${TMPDIR}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
+  for rs in `cat "${M_TEMP}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
+    for rshost in `cat "${M_TEMP}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
       replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
 
     for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
+      [ `grep -c "^${replicahost}|" "${M_TEMP}/mongo_servers.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
-      [ `grep -c "^${rname}:${replicahost##*:}|" "${TMPDIR}/mongo_servers.list"` -gt 0 ] && continue
+      [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_servers.list"` -gt 0 ] && continue
       find_rsmemberrole "${replicahost}"
-      echo "${rname}:${replicahost##*:}|${rs}${rsmemberrole}" >> "${TMPDIR}/mongo_servers.list"
+      echo "${rname}:${replicahost##*:}|${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
     done
 
   done
   
-  [ -f "${TMPDIR}/mongo_servers.list" ] && [ -f "${rpath}/mongo_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_servers.list" "${rpath}/mongo_servers.list"`" ] && mv "${TMPDIR}/mongo_servers.list" "${rpath}/mongo_servers.list"
+  [ -f "${M_TEMP}/mongo_servers.list" ] && [ -f "${rpath}/mongo_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_servers.list" "${rpath}/mongo_servers.list"`" ] && mv "${M_TEMP}/mongo_servers.list" "${rpath}/mongo_servers.list"
 fi
   
 for configip in $configips ; do
@@ -295,11 +295,11 @@ for configip in $configips ; do
 done
 
 if [ -n "$mongoses" ] ; then
-  print_servers $mongoses > "${TMPDIR}/mongo_mongos_servers.list"
-  [ -f "${TMPDIR}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${TMPDIR}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
+  print_servers $mongoses > "${M_TEMP}/mongo_mongos_servers.list"
+  [ -f "${M_TEMP}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
 else
-  echo > "${TMPDIR}/mongo_mongos_servers.list"
-  echo > "${TMPDIR}/mongo_mongos_servers.list"
+  echo > "${M_TEMP}/mongo_mongos_servers.list"
+  echo > "${M_TEMP}/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
@@ -309,7 +309,7 @@ for configip in $configips ; do
 done
 
 if [ -n "$shardhosts" ] ; then
-  [ -f "${TMPDIR}/mongo_shards.list" ] && rm -f "${TMPDIR}/mongo_shards.list"
+  [ -f "${M_TEMP}/mongo_shards.list" ] && rm -f "${M_TEMP}/mongo_shards.list"
   IFS1=$IFS
   IFS='
 '
@@ -327,29 +327,29 @@ if [ -n "$shardhosts" ] ; then
     fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
-    echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}" >> "${TMPDIR}/mongo_shards.list"
+    echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}" >> "${M_TEMP}/mongo_shards.list"
   done
   
-  for rs in `cat "${TMPDIR}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
+  for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
   
-    for rshost in `cat "${TMPDIR}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
+    for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
       replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
       
     for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "${TMPDIR}/mongo_shards.list"` -gt 0 ] && continue
+      [ `grep -c "^${replicahost}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
-      [ `grep -c "^${rname}:${replicahost##*:}|" "${TMPDIR}/mongo_shards.list"` -gt 0 ] && continue
-      echo "${replicahost}|${rs}" >> "${TMPDIR}/mongo_shards.list"
+      [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
+      echo "${replicahost}|${rs}" >> "${M_TEMP}/mongo_shards.list"
     done
 
   done
   
-  [ -f "${TMPDIR}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${TMPDIR}/mongo_shards.list" "${rpath}/mongo_shards.list"
+  [ -f "${M_TEMP}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${M_TEMP}/mongo_shards.list" "${rpath}/mongo_shards.list"
 IFS=$IFS1
 else
-  echo > "${TMPDIR}/mongo_shards.list"
+  echo > "${M_TEMP}/mongo_shards.list"
 fi
 
 if [ -e "${rpath}/mongo_config_servers.list" ] ; then

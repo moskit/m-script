@@ -226,8 +226,8 @@ for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
-TMPDIR=/tmp/m_script/cloud/ec2
-[ -f "$TMPDIR/servers.${EC2_REGION}.tmp" ] || (echo "Looks like ${rpath}/../update_servers_list has never run before. Run it first please." && exit 1)
+M_TEMP=/tmp/m_script/cloud/ec2
+[ -f "$M_TEMP/servers.${EC2_REGION}.tmp" ] || (echo "Looks like ${rpath}/../update_servers_list has never run before. Run it first please." && exit 1)
 [ -n "$region" ] && EC2_REGION=$region
 
 while read SERVER
@@ -244,7 +244,7 @@ do
       current_server="$current_server`parse_server $SERVER`"
     fi
   fi
-done<$TMPDIR/servers.${EC2_REGION}.tmp
+done<$M_TEMP/servers.${EC2_REGION}.tmp
 fix_server "$current_server" && unset current_server
 unset newr current_server
 

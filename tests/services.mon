@@ -95,7 +95,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
   fi
 done
 [ -f "${rpath}/../services.list" ] && prevlist=`cat "${rpath}/../services.list" 2>/dev/null` || echo "services.list not found" >> "${rpath}/../monitoring.log"
-[ -f "${TMPDIR}/services.tmp" ] && currlist=`cat ${TMPDIR}/services.tmp 2>/dev/null` || echo "services.tmp not found" >> "${rpath}/../monitoring.log"
+[ -f "${M_TEMP}/services.tmp" ] && currlist=`cat ${M_TEMP}/services.tmp 2>/dev/null` || echo "services.tmp not found" >> "${rpath}/../monitoring.log"
 if [ -n "$prevlist" -a -n "$currlist" ] ; then
   for LINE in $currlist ; do
     if [ `echo "$prevlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
@@ -122,7 +122,7 @@ if [ -n "$prevlist" -a -n "$currlist" ] ; then
 else
   echo "${rcommand} failed to compare services lists: one of the lists is empty" >> "${rpath}/../monitoring.log"
 fi
-[ -f "${TMPDIR}/services.tmp" ] && cat ${TMPDIR}/services.tmp > "${rpath}/../services.list"
-rm -f ${TMPDIR}/services.tmp 2>&1
+[ -f "${M_TEMP}/services.tmp" ] && cat ${M_TEMP}/services.tmp > "${rpath}/../services.list"
+rm -f ${M_TEMP}/services.tmp 2>&1
 IFS=$IFS1
 
