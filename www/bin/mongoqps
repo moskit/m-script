@@ -2,7 +2,7 @@
 
 source "${PWD}/../../conf/dash.conf"
 source "${PWD}/../../conf/mon.conf"
-source "${PWD}/../../dash_functions.sh"
+#source "${PWD}/../../dash_functions.sh"
 
 ex=$(find ${PWD}/../graphs -mmin -$(expr 2 \* ${freqdef} / 60 ) -name localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo ${2} | tr ':' '_'`.opcountersQuery.svg)
 if [ -z "$ex" ] ; then

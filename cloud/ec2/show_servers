@@ -96,8 +96,9 @@ print_server() {
           ;;
         icluster)
           [ -n "$b" ] && thiscluster="$b"
-          [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
-          line1="$line1  Cluster: $b"
+          if [ -n "$cluster" ]; then 
+            [ "X$cluster" != "Xall" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
+          fi
           ;;
         itag)
           line6="$line6 $b"

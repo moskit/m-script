@@ -135,7 +135,7 @@ for app in $APPS ; do
       done
     done
     [ -f $TMPDIR/${app}.${cluster}.ips.prev ] && [ -f $TMPDIR/${app}.${cluster}.ips ] && [ -z "`$DIFF -q $TMPDIR/${app}.${cluster}.ips.prev $TMPDIR/${app}.${cluster}.ips`" ] && continue
-    if [ `cat $TMPDIR/${app}.${cluster}.ips | grep -v ^$ | wc -l` -gt 0 ] ; then
+    if [ -f "$TMPDIR/${app}.${cluster}.ips" -a `cat "$TMPDIR/${app}.${cluster}.ips" | grep -v ^$ | wc -l` -gt 0 ] ; then
       changed=1
       case $balance_method in
         sticky|ip_hash|hash)

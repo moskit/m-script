@@ -138,6 +138,7 @@ else
       if $compress_onthefly ; then
 ### Works if version >= 1.7, avoids intermediate space usage by uncompressed dumps
 ### Note that it doesn't dump indexes
+        install -d "${MBD}/${db}.${archname}"
         if [ -n "$compress" ] ; then
           for collection in `$MONGO $DBHOST/$db --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
             $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "${MBD}/${db}.${archname}/${collection}.bson.${ext}" 2>>${rpath}/m_backup.error

@@ -588,3 +588,31 @@ span.name {
 span.value {
   color: blue;
 }
+
+.indline {
+  width: 800px;
+  height: 10px;
+  float: left;
+}
+
+.red_thin_line {
+  height: 10px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-color: red;
+}
+
+.blue_thin_line {
+  height: 10px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-color: blue;
+}
+
+.green_thin_line {
+  height: 10px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-color: green;
+}
+
