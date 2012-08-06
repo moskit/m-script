@@ -8,7 +8,7 @@ source "${PWD}/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections"
 print_page_title "Collection" "Status" "Count" "Data Size" "Size on Disk" "Index Size" "Chunks"
-for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|${PWD}/../../standalone/${saname}/data/shards.||" | cut -d'.' -f1 | sort | uniq` ; do
+for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|${PWD}/../../standalone/${saname}/data/shards.||g" | cut -d'.' -f1 | sort | uniq` ; do
   db_dat="${PWD}/../../standalone/${saname}/data"/${db}.dat
   total_ok=`cat "$db_dat" | grep ^1\/ok\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
@@ -30,9 +30,10 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
   total_datasize="$total_datasize $csunits"
   total_chunks=`cat $db_dat | grep ^1\/nchunks\| | cut -d'|' -f2`
   
-  print_cluster_header databases "$db"
-  print_inline "total_status" "total_count" "total_datasize" "total_storsize" "total_indexsize" "total_chunks"
-  close_line  "$db"
+  open_cluster databases "$db"
+  
+  print_cluster_inline "total_status" "total_count" "total_datasize" "total_storsize" "total_indexsize" "total_chunks"
+  close_cluster_line "$db"
   
   for coll in "${PWD}/../../standalone/${saname}/data"/shards.${db}.* ; do
     coll_dat="${PWD}/../../standalone/${saname}/data"/${db}.${coll}.dat
@@ -61,5 +62,5 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
     print_inline "coll_status" "coll_count" "coll_size" "stor_size" "coll_indexsize" "coll_chunks"
     close_line "$coll"
   done
-  print_cluster_bottom
+  close_cluster
 done

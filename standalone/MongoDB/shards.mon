@@ -3,8 +3,10 @@
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+source "$M_ROOT/lib/functions.sh"
+log "Starting..."
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
@@ -15,7 +17,7 @@ source "${rpath}/${rcommand}.conf" 2>/dev/null
 
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
-[ "X$SQLITE3" == "X1" ] && [ -z "$SQLITE" ] && echo "Sqlite3 not found, exiting..  " && exit 1
+[ "X$SQLITE3" == "X1" ] && [ -z "$SQLITE" ] && log "Sqlite3 not found, exiting..  " && exit 1
 M_TEMP="${M_TEMP}/MongoDB"
 install -d "${M_TEMP}"
 timeindexnow=`date +"%s"`
@@ -24,7 +26,7 @@ a=`cat "${rpath}/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && a=1
 
 confserver=`head -n $((RANDOM%$a)) "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1`
-[ -z "$confserver" ] && echo "No configuration servers found" && exit 1
+[ -z "$confserver" ] && log "No configuration servers found" && exit 1
 
 #masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
 

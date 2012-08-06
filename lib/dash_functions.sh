@@ -47,16 +47,34 @@ print_page_title() {
   echo -e "  </div>\n</div>"
 }
 
-print_cluster_header() {
+open_cluster() {
   if [ -n "$2" ]; then
     onclick=$1
     shift
   fi
   id="${@}"
-  echo -e "<div class=\"clustername\"><span class=\"indent\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${id#*|}</span></div>\n<div class=\"cluster\" id=\"${id%%|*}\">"
+  echo -e "<div class=\"clustername\"><span class=\"indent\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${id#*|}</span>"
 }
 
-print_cluster_bottom() {
+print_cluster_inline() {
+  while [ -n "$1" ] ; do
+    status="$1"
+    [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
+    [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}"
+    echo "<div class=\"clusterstatus\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval echo \"\\$$status\"`</div>"
+    shift
+  done
+  echo -e "</div>\n<div class=\"cluster\" id=\"${id%%|*}\">"
+}
+
+close_cluster_line() {
+  id="${@}"
+  echo "</div>"
+  [ -n "$id" ] && echo "<div class=\"details\" id=\"${id}_details\"></div>"
+  echo "<div class=\"cluster\" id=\"${id%%|*}\">"
+}
+
+close_cluster() {
   echo "</div>"
 }
 

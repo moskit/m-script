@@ -3,13 +3,15 @@
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+source "$M_ROOT/lib/functions.sh"
+log "Starting.."
 
 DIFF=`which diff 2>/dev/null`
-[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
+[ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`
-[ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
+[ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf"
 source "${rpath}/../../conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
@@ -29,7 +31,7 @@ function find_master() {
     im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1 2>>${rpath}/../../logs/MongoDB.log`
     [ "X$im" == "Xtrue" ] && im=$1
   fi
-  [ -n "$im" ] && echo $im || (echo "Unable to find master for replica set (asked ${1})" >> ${rpath}/../../logs/MongoDB.log && exit 1)
+  [ -n "$im" ] && echo $im || (log "Unable to find master for replica set (asked ${1})" && exit 1)
 }
 
 function find_rsmemberrole() {
@@ -211,7 +213,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
       cluster=1
     fi
   done
-  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && log "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
   if [ "X$cluster" == "X1" ] ; then
     for name in $MONGO_CONFIG_SERVERS ; do
       port=${name#*:}
@@ -226,7 +228,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   [ -f "${M_TEMP}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${M_TEMP}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
   
 elif [ -z "$MONGO_SERVERS" ] ; then
-  echo "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting" >> ${rpath}/../../logs/MongoDB.log
+  log "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
   exit 1
 else
 
@@ -241,7 +243,7 @@ else
       cluster=1
     fi
   done
-  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && log "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
   if [ "X$cluster" == "X1" ] ; then
     for name in $MONGO_SERVERS ; do
       port=${name#*:}

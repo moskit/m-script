@@ -232,6 +232,17 @@ span.indent {
   font-weight: inherit;
 }
 
+
+.clusterstatus {
+  width: 88px;
+  height: 20px;
+  display: table;
+  padding: auto;
+  text-align: center;
+  float: left;
+  cursor: pointer;
+}
+
 .ok {
   background-color: green;
 }
