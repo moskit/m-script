@@ -13,7 +13,7 @@ for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name 
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
   
   open_cluster "$clustername"
-  
+  close_cluster_line
   clusterdat=`ls -1t "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat`
   esip=`cat $clusterdat | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do

@@ -13,7 +13,7 @@ IFS='
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc -l` -gt 0 ] ; then
 
   open_cluster "configservers|Configuration Servers"
-  
+  close_cluster_line
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
       port=${s##*:}
       name=${s%:*}
@@ -42,7 +42,7 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc
 elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` -gt 0 ] ; then
   
   open_cluster "mongoservers|MongoDB Servers"
-  
+  close_cluster_line
     for rs in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server\" id=\"${rs}\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
@@ -107,7 +107,7 @@ fi
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then
 
   open_cluster "shardservers|Shard Servers"
-  
+  close_cluster_line
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"|cut -d'|' -f1` ; do
       port=`echo $s | awk '{print $1}' | cut -d':' -f2`
       name=`echo $s | awk '{print $1}' | cut -d':' -f1`
@@ -138,6 +138,7 @@ fi
 if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
 
   open_cluster "balancers|Balancers"
+  close_cluster_line
   
     for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
       port=${s##*:}
