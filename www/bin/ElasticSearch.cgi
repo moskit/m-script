@@ -12,7 +12,7 @@ print_page_title "ID" "Host" "Heap used / committed" "Indices size" "Indices doc
 for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name "*.nodes" 2>/dev/null` ; do
   clustername=${cluster##*/} ; clustername=${clustername%.nodes}
   
-  print_cluster_header "$clustername"
+  open_cluster "$clustername"
   
   clusterdat=`ls -1t "${PWD}/../../standalone/${scriptname}/data/${clustername}."*.dat`
   esip=`cat $clusterdat | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
@@ -57,7 +57,7 @@ for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name 
       close_line $node
     done
     
-print_cluster_bottom
+close_cluster
 
 done
 
