@@ -228,6 +228,7 @@ a:active { color: #393; }
 
 span.indent {
   margin-left: 6px;
+  width: 180px;
   font-size: inherit;
   font-weight: inherit;
   float: left;
@@ -244,6 +245,7 @@ span.indent {
   cursor: pointer;
   font-family: verdana,arial,helvetica,sans-serif;
   font-size: 11px;
+  font-weight: normal;
 }
 
 .ok {
