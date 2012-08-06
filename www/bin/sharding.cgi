@@ -14,11 +14,10 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
   db_dat="${PWD}/../../standalone/${saname}/data"/${db}.dat
   total_ok=`cat "$db_dat" | grep ^1\/ok\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
-  total_count=`cat $db_dat | grep ^1\/count\| | cut -d'|' -f2`
-  total_datasize=`cat $db_dat | grep ^1\/size\| | cut -d'|' -f2`
+  total_count=`cat $db_dat | grep ^1\/objects\| | cut -d'|' -f2`
+  total_datasize=`cat $db_dat | grep ^1\/dataSize\| | cut -d'|' -f2`
   total_storsize=`cat $db_dat | grep ^1\/storageSize\| | cut -d'|' -f2`
-  total_indexsize=`cat $db_dat | grep ^1\/totalIndexSize\| | cut -d'|' -f2`
-
+  total_indexsize=`cat $db_dat | grep ^1\/indexSize\| | cut -d'|' -f2`
   total_datasize=`expr $total_datasize / 1048576`
   csunits="MB"
   if [ ${#coll_size} -gt 3 ] ; then
