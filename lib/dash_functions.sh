@@ -48,7 +48,12 @@ print_page_title() {
 }
 
 print_cluster_header() {
-  echo -e "<div class=\"clustername\"><span class=\"indent\">${1#*|}</span></div>\n<div class=\"cluster\" id=\"${1%%|*}\">"
+  if [ -n "$2" ]; then
+    onclick=$1
+    shift
+  fi
+  id="${@}"
+  echo -e "<div class=\"clustername\"><span class=\"indent\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${id#*|}</span></div>\n<div class=\"cluster\" id=\"${id%%|*}\">"
 }
 
 print_cluster_bottom() {
@@ -56,10 +61,11 @@ print_cluster_bottom() {
 }
 
 print_line_title() {
-  onclick=$1
-  shift
-#  id=$(echo ${@} | tr ' ' '_')
-id="${@}"
+  if [ -n "$2" ]; then
+    onclick=$1
+    shift
+  fi
+  id="${@}"
   echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${@}</div>"
 }
 

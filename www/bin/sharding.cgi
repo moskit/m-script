@@ -30,7 +30,7 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
   total_datasize="$total_datasize $csunits"
   total_chunks=`cat $db_dat | grep ^1\/nchunks\| | cut -d'|' -f2`
   
-  print_cluster_header "$db"
+  print_cluster_header databases "$db"
   print_inline "total_status" "total_count" "total_datasize" "total_storsize" "total_indexsize" "total_chunks"
   close_line  "$db"
   
