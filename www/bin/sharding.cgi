@@ -8,7 +8,9 @@ source "${PWD}/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections"
 print_page_title "Collection" "Status" "Count" "Data Size" "Size on Disk" "Index Size" "Chunks"
-for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|${PWD}/../../standalone/${saname}/data/shards.||g" | cut -d'.' -f1 | sort | uniq` ; do
+
+for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|${PWD}/../../standalone/${saname}/data/shards.||g" | cut -d'.' -f1 | sort | uniq | grep -v ^$` ; do
+
   db_dat="${PWD}/../../standalone/${saname}/data"/${db}.dat
   total_ok=`cat "$db_dat" | grep ^1\/ok\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
@@ -36,8 +38,8 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
   close_cluster_line "$db"
   
   for coll in "${PWD}/../../standalone/${saname}/data"/shards.${db}.* ; do
-    coll_dat="${PWD}/../../standalone/${saname}/data"/${db}.${coll}.dat
     coll=`echo $coll | sed "s|${PWD}/../../standalone/${saname}/data/shards.${db}.||"`
+    coll_dat="${PWD}/../../standalone/${saname}/data"/${db}.${coll}.dat
     print_line_title shards "$coll"
     coll_ok=`cat $coll_dat | grep ^1\/ok\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")

@@ -230,6 +230,7 @@ span.indent {
   margin-left: 6px;
   font-size: inherit;
   font-weight: inherit;
+  float: left;
 }
 
 
@@ -241,6 +242,8 @@ span.indent {
   text-align: center;
   float: left;
   cursor: pointer;
+  font-family: verdana,arial,helvetica,sans-serif;
+  font-size: 11px;
 }
 
 .ok {
