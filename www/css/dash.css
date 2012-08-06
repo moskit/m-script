@@ -237,7 +237,7 @@ span.indent {
 
 .clusterstatus {
   width: 88px;
-  height: 20px;
+  height: 18px;
   display: table;
   padding: auto;
   text-align: center;
@@ -246,6 +246,7 @@ span.indent {
   font-family: verdana,arial,helvetica,sans-serif;
   font-size: 11px;
   font-weight: normal;
+  margin-top: 3px;
 }
 
 .ok {

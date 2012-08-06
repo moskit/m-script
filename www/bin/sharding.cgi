@@ -20,7 +20,7 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
   total_indexsize=`cat $db_dat | grep ^1\/indexSize\| | cut -d'|' -f2`
   total_datasize=`expr $total_datasize / 1048576`
   csunits="MB"
-  if [ ${#coll_size} -gt 3 ] ; then
+  if [ ${#total_datasize} -gt 3 ] ; then
     total_datasize=`expr $total_datasize / 1024` && csunits="GB"
     total_storsize="`expr $total_storsize / 1073741824` $csunits"
     total_indexsize="`expr $total_indexsize / 1073741824` $csunits"
