@@ -49,7 +49,7 @@ if [ -z "$defopt" ] ; then
   echo
 fi
 
-if [ "X${SED}" == "X" ]
+if [ "X$SED" == "X" ]
 then
   echo
   echo "Sed not found. It is necessary, please install it first."
@@ -57,7 +57,7 @@ then
   exit 1
 fi
 
-if [ "X${NETSTAT}" == "X" ]
+if [ "X$NETSTAT" == "X" ]
 then
   echo
   echo "Netstat not found. It is necessary, please install it first."
@@ -65,7 +65,7 @@ then
   exit 1
 fi
 
-if [ "X${BC}" == "X" ]
+if [ "X$BC" == "X" ]
 then
   if [ -z "$defopt" ] ; then
     echo
@@ -102,7 +102,7 @@ then
   fi
 fi
 
-if [ "X${MAILX}" == "X" ]
+if [ "X$MAILX" == "X" ]
 then
   if [ -z "$defopt" ] ; then
     echo
@@ -140,7 +140,7 @@ then
   fi
 fi
 
-if [ "X${MONGOOSE}" == "X" ]
+if [ "X$MONGOOSE" == "X" ]
 then
   if [ -z "$defopt" ] ; then
     echo
@@ -153,50 +153,50 @@ then
   fi
   if [ `echo $installmongoose | grep -c -i "^y"` -ne 0 ]
   then
-    rm -rf ${rpath}/mongoose-source 2>/dev/null
-    (mkdir ${rpath}/mongoose-source && cd ${rpath}/mongoose-source && ../${rpath}/helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../${rpath}/)
-    if [[ $? -ne 0 ]] ; then
+    rm -rf "$rpath/mongoose-source" 2>/dev/null
+    (mkdir "$fpath/mongoose-source" && cd "$fpath/mongoose-source" && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose "$fpath/")
+    if [ $? -ne 0 ] ; then
       echo
-      echo "Some error.. disabling it for now. Compile it or install some other way and copy its binary to ${rpath}/ if you need it"
-      sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" ${rpath}/conf/mon.conf
+      echo "Some error.. disabling it for now. Compile it or install some other way and copy its binary to $fpath/ if you need it"
+      sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" "$rpath/conf/mon.conf"
     else
-      if [ `grep -c "^MONGOOSE=" ${rpath}/conf/mon.conf` -ne 0 ]
+      if [ `grep -c "^MONGOOSE=" "$rpath/conf/mon.conf"` -ne 0 ]
       then
-        sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" ${rpath}/conf/mon.conf
+        sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" "$rpath/conf/mon.conf"
       else    
-        echo "MONGOOSE=1" >> ${rpath}/conf/mon.conf
+        echo "MONGOOSE=1" >> "$rpath/conf/mon.conf"
       fi
     fi
   fi
 else
-  if [ `grep -c "^MONGOOSE=" ${rpath}/conf/mon.conf` -ne 0 ]
+  if [ `grep -c "^MONGOOSE=" "$rpath/conf/mon.conf"` -ne 0 ]
   then
-    sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" ${rpath}/conf/mon.conf
+    sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" "$rpath/conf/mon.conf"
   else    
-    echo "MONGOOSE=1" >> ${rpath}/conf/mon.conf
+    echo "MONGOOSE=1" >> "$rpath/conf/mon.conf"
   fi
 fi
 
-if [ `grep -c "^MONGOOSE=1" ${rpath}/conf/mon.conf` -ne 0 ]
+if [ `grep -c "^MONGOOSE=1" "$rpath/conf/mon.conf"` -ne 0 ]
 then
-  if [ `grep -c "^p " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^p " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
     echo
     read -p "Enter a port number for the web interface: [8989] " mongooseport
     [ -n "$mongooseport" ] || mongooseport=8989
-    echo "p $mongooseport" >> ${rpath}/conf/mongoose.conf
+    echo "p $mongooseport" >> "$rpath/conf/mongoose.conf"
   fi
-  if [ `grep -c "^d " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^d " $rpath/conf/mongoose.conf` -eq 0 ]
   then
-    echo "d no" >> ${rpath}/conf/mongoose.conf
+    echo "d no" >> "$rpath/conf/mongoose.conf"
   fi
-  if [ `grep -c "^g " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^g " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
-    echo "g ${fpath}/conf/htaccess" >> ${rpath}/conf/mongoose.conf
+    echo "g ${fpath}/conf/htaccess" >> "$rpath/conf/mongoose.conf"
   fi
-  if [ `grep -c "^r " ${rpath}/conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^r " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
-    echo "r ${fpath}/www" >> ${rpath}/conf/mongoose.conf
+    echo "r ${fpath}/www" >> "$rpath/conf/mongoose.conf"
   fi
   echo
   echo "You may want to adjust access settings for the web interface."
@@ -217,21 +217,21 @@ then
   fi
   if [ `echo $noiptables | grep -c -i "^y"` -ne 0 ]
   then
-    if [ `grep -c "^IPTABLES=" ${rpath}/conf/mon.conf` -ne 0 ]
+    if [ `grep -c "^IPTABLES=" "$rpath/conf/mon.conf"` -ne 0 ]
     then
-      sed -i -e "s|IPTABLES=.*|IPTABLES=0|g" ${rpath}/conf/mon.conf
+      sed -i -e "s|IPTABLES=.*|IPTABLES=0|g" "$rpath/conf/mon.conf"
     else    
-      echo "IPTABLES=0" >> ${rpath}/conf/mon.conf
+      echo "IPTABLES=0" >> "$rpath/conf/mon.conf"
     fi
   else
     exit 1
   fi
 else
-  if [ `grep -c "^IPTABLES=" ${rpath}/conf/mon.conf` -ne 0 ]
+  if [ `grep -c "^IPTABLES=" $rpath/conf/mon.conf` -ne 0 ]
   then
-    sed -i -e "s|IPTABLES=.*|IPTABLES=1|g" ${rpath}/conf/mon.conf
+    sed -i -e "s|IPTABLES=.*|IPTABLES=1|g" "$rpath/conf/mon.conf"
   else    
-    echo "IPTABLES=1" >> ${rpath}/conf/mon.conf
+    echo "IPTABLES=1" >> "$rpath/conf/mon.conf"
   fi
 fi
 
@@ -264,11 +264,11 @@ then
   fi
   if [ `echo $nosqlite | grep -c -i "^y"` -ne 0 ]
   then
-    if [ `grep -c "^SQLITE3=" ${rpath}/conf/mon.conf` -ne 0 ]
+    if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
     then
-      sed -i -e "s|SQLITE3=.*|SQLITE3=0|g" ${rpath}/conf/mon.conf
+      sed -i -e "s|SQLITE3=.*|SQLITE3=0|g" "$rpath/conf/mon.conf"
     else    
-      echo "SQLITE3=0" >> ${rpath}/conf/mon.conf
+      echo "SQLITE3=0" >> "$rpath/conf/mon.conf"
     fi
   else
     if [ -z "$defopt" ] ; then
@@ -301,35 +301,35 @@ then
       exit 1
     fi
   fi
-  if [ `grep -c "^SQLITE3=" ${rpath}/conf/mon.conf` -ne 0 ]
+  if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
   then
-    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" ${rpath}/conf/mon.conf
+    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" "$rpath/conf/mon.conf"
   else    
-    echo "SQLITE3=1" >> ${rpath}/conf/mon.conf
+    echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
   fi
   SQLITE=`which sqlite3 2>/dev/null`
-  $SQLITE ${rpath}/sysdata 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
-  $SQLITE ${rpath}/sysdata 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
+  $SQLITE "$rpath/sysdata" 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
+  $SQLITE $rpath/sysdata 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
 else
-  if [ `grep -c "^SQLITE3=" ${rpath}/conf/mon.conf` -ne 0 ]
+  if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
   then
-    sed -i "s|SQLITE3=.*|SQLITE3=1|g" ${rpath}/conf/mon.conf
+    sed -i "s|SQLITE3=.*|SQLITE3=1|g" "$rpath/conf/mon.conf"
   else    
-    echo "SQLITE3=1" >> ${rpath}/conf/mon.conf
+    echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
   fi
-  $SQLITE ${rpath}/sysdata 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime integer, loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
-  $SQLITE ${rpath}/sysdata 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
-  $SQLITE ${rpath}/sysdata 'create table selfmon(timeindex integer, day varchar(8), monitor varchar(64), duration integer)'
+  $SQLITE "$rpath/sysdata" 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime integer, loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
+  $SQLITE "$rpath/sysdata" 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
+  $SQLITE "$rpath/sysdata" 'create table selfmon(timeindex integer, day varchar(8), monitor varchar(64), duration integer)'
 fi
 
-chmod 755 ${rpath}/*.run ${rpath}/*.sh
-chmod 600 ${rpath}/conf/backup.conf
-chown -R root:root ${rpath}
-install -d ${rpath}/standalone/rc
-install -m 700 -d ${rpath}/keys
-install -d ${rpath}/logs
-
-${rpath}/fixports.run
+chmod 755 "$rpath/"*.run "$rpath/"*.sh
+chmod 600 "$rpath/conf/backup.conf"
+chown -R root:root "$rpath"
+install -d "$rpath/standalone/rc"
+install -m 700 -d "$rpath/keys"
+install -d "$rpath/logs"
+"$rpath"/helpers/init_rc
+"$rpath"/fixports.run
 
 printf "Adjusting some thresholds for your system...    "
 cpun=`find /sys/class/cpuid -name cpu[0-9] 2>/dev/null | wc -l`
@@ -339,23 +339,23 @@ if [[ $cpun -ne 0 ]] ; then
   l2=$cpun
   l3=`echo "scale=1;$cpun * 2" | bc`
   lcrit=`echo "scale=1;$cpun * 10" | bc`
-  sed -i -e "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|g" ${rpath}/conf/mon.conf
-  sed -i -e "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|g" ${rpath}/conf/mon.conf
-  sed -i -e "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|g" ${rpath}/conf/mon.conf
-  sed -i -e "s|LOAD_CRIT=.*|LOAD_CRIT=$lcrit|g" ${rpath}/conf/mon.conf
+  sed -i -e "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|g" "$rpath/conf/mon.conf"
+  sed -i -e "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|g" "$rpath/conf/mon.conf"
+  sed -i -e "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|g" "$rpath/conf/mon.conf"
+  sed -i -e "s|LOAD_CRIT=.*|LOAD_CRIT=$lcrit|g" "$rpath/conf/mon.conf"
 fi
 [ -d /etc/init.d ] && rcdir=/etc/init.d
 [ -d /etc/rc.d/init.d ] && rcdir=/etc/rc.d/init.d
-[ "X$rcdir" == "X" ] || ln -s $(cd ${rpath} && pwd)/monitorload.run $rcdir/monitorload
+[ "X$rcdir" == "X" ] || ln -s "$fpath/monitorload.run" $rcdir/monitorload
 if [ -z "$defopt" ] ; then
   echo
   echo "Default email address for reports and alerts is root@localhost. You can change"
   echo "it now or leave it for later. In the latter case just press Enter"
   echo
   read -p "What email address to send reports and alerts to? " email
-  echo $email > ${rpath}/conf/mail.alert.list
-  echo $email > ${rpath}/conf/mail.admin.list
-  echo $email > ${rpath}/conf/mail.backup.list
+  echo $email > "$rpath/conf/mail.alert.list"
+  echo $email > "$rpath/conf/mail.admin.list"
+  echo $email > "$rpath/conf/mail.backup.list"
   echo
   read -p "Do you want load monitoring service to start up at boot automatically? [y/N] " bootmon
 else
@@ -365,7 +365,7 @@ if [ `echo $bootmon | grep -c -i "^y"` -ne 0 ]
 then
 if [ -n "`which insserv 2>/dev/null`" ] ; then
   echo "insserv is found, putting LSB headers override to /etc/insserv/overrides/monitorload.run"
-  echo "If you see insserv errors below, you'll have to setup boot script manually, sorry."
+  echo "If you see insserv errors below related to monitorload init script, you'll have to setup boot script manually, sorry."
   cat > /etc/insserv/overrides/monitorload.run << "EOF"
 ### BEGIN INIT INFO
 # Provides:          monitorload

@@ -168,8 +168,6 @@ do
 done
 IFS=$IFS1
 
-
-
 [ -n "$debug" ] && verbose="yes" && debug=true
 export verbose debug
 [ -n "$repeat" ] && timestamp=repeat

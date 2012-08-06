@@ -51,6 +51,11 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+source "${rpath}/../../conf/cloud.conf"
+source "${rpath}/../../conf/mon.conf"
+M_TEMP="$M_TEMP/cloud/ganeti"
+install -d "$M_TEMP"
+
 request() {
 rm -f "${M_TEMP}/${rcommand}.resp"
 IFS1=$IFS
@@ -79,11 +84,6 @@ done  > "${M_TEMP}/${rcommand}.resp"
 IFS=$IFS1
 
 }
-
-source "${rpath}/../../conf/cloud.conf"
-source "${rpath}/../../conf/mon.conf"
-M_TEMP="$M_TEMP"/cloud/ganeti
-install -d "$M_TEMP"
 
 if [ -z "$name" ]; then
   if [ -n "$id" ]; then

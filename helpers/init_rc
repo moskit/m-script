@@ -1,12 +1,15 @@
 #!/bin/bash
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*} #*/
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+M_ROOT=$(cd "${rpath}/../" && pwd)
+
 initlist="connections services bandwidth disk cpu mem servers cpu_eaters memory_eaters"
+
 declare -i i ; i=1
 for mon in $initlist ; do
   [[ `expr length $i` -eq 1 ]] && n="0$i" || n=$i
-  ln -s ../tests/${mon}.mon "${rpath}/../rc/${n}.${mon}.mon"
+  ln -s ../tests/${mon}.mon "$M_ROOT/rc/${n}.${mon}.mon"
   i+=1
 done

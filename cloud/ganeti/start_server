@@ -61,7 +61,7 @@ if [[ found -eq 1 ]]; then
 fi
 
 source "${rpath}/../../conf/mon.conf"
-M_TEMP="$M_TEMP"/cloud/ganeti
+M_TEMP="$M_TEMP/cloud/ganeti"
 install -d "$M_TEMP"
 source "${rpath}/../../conf/cloud.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
@@ -103,7 +103,7 @@ save_details() {
 wait_ready() {
   [ -n "$1" ] && echo "Waiting..."
   waittimeout=200
-  waitperiod=5
+  waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
@@ -206,15 +206,25 @@ HOOKS_DIR="$CUSTOMIZE_DIR"
 [ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
 broadcast=`find_broadcast`
 # some logic to define the Linux flavor will be here
+# for now it's the default Debian debootstrap OS
 prepare_file "$rpath/network_if.debian.tmpl" "$M_TEMP/interfaces"
 prepare_file "$rpath/network_if.debian" "$M_TEMP/network"
+# installing software via chroot has proven to be unreliable
+cp "$rpath/setup.sh.debian" "$M_TEMP/setup.sh"
 cp "$M_TEMP/network" "$HOOKS_DIR/"
 chmod 755 "$HOOKS_DIR/network"
 
 if [ -z "$test" ]; then
   request $verbose
-  [ $? -eq 0 ] && log "request sent successfully" || log "request returned status $?"
-  wait_ready $V
+  reqexit=$?
+  if [ $reqexit -eq 0 ]; then
+    log "request sent successfully"
+    sleep 20
+  else
+    log "request returned status $reqexit"
+    exit 1
+  fi
+  wait_ready $V 
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then

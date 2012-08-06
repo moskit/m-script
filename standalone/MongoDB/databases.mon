@@ -31,6 +31,7 @@ source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
 ${MONGO} ${hostport}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "${rpath}/data/databases.dat"
 
 for db in `cat "${rpath}/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$"` ; do
+  ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.dat"
   (IFS=','; for coll in `${MONGO} "$hostport/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null` ; do ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.${coll}.dat"; done)
 done
 

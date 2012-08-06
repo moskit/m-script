@@ -18,9 +18,9 @@ for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server
   [[ $indexsize -gt $indexsizemax ]] && indexsizemax=$indexsize
 done
 
-chunkspp=`echo "scale=4; $chunksmax / (600 / 5)" | bc 2>/dev/null`
-datasizepp=`echo "scale=4; $datasizemax / (600 / 5 * 2)" | bc 2>/dev/null`
-indexsizepp=`echo "scale=4; $indexsizemax / (600 / 5 * 2)" | bc 2>/dev/null`
+chunkspp=`echo "scale=4; $chunksmax / (500 / 5)" | bc 2>/dev/null`
+datasizepp=`echo "scale=4; $datasizemax / (500 / 5 * 2)" | bc 2>/dev/null`
+indexsizepp=`echo "scale=4; $indexsizemax / (500 / 5 * 2)" | bc 2>/dev/null`
 
 for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server}"` ; do
   chunks=`echo $shard | cut -d'|' -f3`
@@ -37,4 +37,5 @@ for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server
 done
 
 echo "</div>"
+
 

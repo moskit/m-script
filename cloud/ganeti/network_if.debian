@@ -15,11 +15,11 @@ fi
 
 echo "Creating network interfaces file..."
 mv "%{M_TEMP}%/interfaces" "$TARGET/etc/network/"
-echo "Installing OpenSSH..."
-chroot "$TARGET" apt-get install ssh -y
+mv "%{M_TEMP}%/setup.sh" "$TARGET/"
 echo "Installing SSH keys..."
-chroot "$TARGET" install -d /root/.ssh
+chroot "$TARGET" install -m 700 -d /root/.ssh
 cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
 chmod 600 "$TARGET/root/.ssh/authorized_keys"
 
 exit 0
+
