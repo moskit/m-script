@@ -1,7 +1,9 @@
 #!/bin/bash
 
-[ -z "$M_ROOT" ] && echo "M_ROOT is not defined" && exit 1
-[ ! -d "$M_ROOT" ] && echo "M_ROOT does not exist" && exit 1
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
 
 for f in $@ ; do
   [ -f "$M_ROOT/$f" ] || continue

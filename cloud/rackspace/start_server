@@ -28,7 +28,7 @@ CURL="$CURL -s -k"
 V="v1.0"
 
 possible_options="region flavor cluster image name return verbose"
-necessary_options="cluster"
+necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 
@@ -64,6 +64,8 @@ M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 source "${rpath}/../../conf/cloud.conf"
 source "${rpath}/../../lib/cloud_functions.sh"
+
+[ -z "$cluster" ] && cluster="$M_CLUSTER"
 
 log() {
   echo "`date +"%m.%d %H:%M"` rackspace/start_server: ${@}">>$LOG
@@ -215,7 +217,8 @@ while [ `grep -c ^1\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 
 done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
-echo -n "`grep \/code\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`: "
+code=`grep \/code\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
+[ -n "$code" ] && echo -n "${code}: "
 grep \/message\| "${M_TEMP}/${rcommand}.resp"
 newid=`grep \/id\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then

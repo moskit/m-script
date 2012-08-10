@@ -26,10 +26,6 @@ addxmarks() {
   textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
 }
 
-log() {
-echo "`date +"%H:%M:%S"` $rcommand: ${@}">>$LOG
-}
-
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
@@ -298,6 +294,11 @@ fi
 dbname=`echo "$database" | tr '/' '_'`
 [ -z "$table" ] && table="sysdata" || dbname="${dbname}_${table}"
 [ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
+  if [ -n "$as" ] ; then
+    name=$as
+  else 
+    name=`echo $metric | tr ',' '_'`
+  fi
 
 if [ -n "$perpixel" ]; then
   $debug && log "per pixel mode"
@@ -318,19 +319,23 @@ if [ -n "$perpixel" ]; then
   fi
   [ -z "$metricmin" ] && metricmin=0
   [ -z "$metricmax" ] && metricmax=$areaV
-
-  mp=`solve "$areaV / $metrixmax"`
-  
+  mp=`solve "$areaV / $metricmax * 1000"`
+  to=`date +"%s"`
+  log "max value: $metricmax  vertical size: $areaV  coeff: $mp"
+  QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
   QUERY="select ${metric}*${mp} from $table order by timeindex desc limit $limit"
 
   if [ "$sIP" == "localhost" ]; then
-    $debug && log "$SQL3 \"${rpath}/$database\" \"$QUERY\""
-    $SQL3 "${rpath}/$database" "${QUERY}" > ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}
+    $debug && log "$SQL3 \"${rpath}/$database\" \"$QUERY\" >> ${M_TEMP}/graph.${sIP}.${dbname}.${metric}"
+    $SQL3 "${rpath}/$database" "${QUERY}" > ${M_TEMP}/graph.${sIP}.${dbname}.${metric}
+    from=`$SQL3 "${rpath}/$database" "${QUERYFROM}" | tail -1`
   else
     $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${rpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}
+    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${metric}
+    from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERYFROM}\"" \| tail -1`
   fi
-  if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${smetric} | wc -l` -le 5 ] ; then
+  log "from: $from  to: $to"
+  if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${metric} | wc -l` -le 5 ] ; then
     log "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated."
     exit 1
   fi
@@ -343,11 +348,6 @@ else
   metricmax=0
   # Using fixed multiplyer to avoid double querying
   mp=100
-  if [ -n "$as" ] ; then
-    name=$as
-  else
-    name=`echo $metric | tr ',' '_'`
-  fi
   qmetric="timeindex"
   for smetric in `echo $metric | tr ',' ' '` ; do
     rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
@@ -671,20 +671,33 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     slegendY=`expr $slegendY + $sadd`
   fi
   printf "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-  
-  if [ "X$scale" == "Xyes" ] ; then cat ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled ; else cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n} ; fi | while read LINE
-  do
-    X=`echo $LINE | cut -d'|' -f1`
-    Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-    if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
-    X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
-    Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
-    printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-  done
+  if [ -z "$perpixel" ]; then  
+    if [ "X$scale" == "Xyes" ] ; then cat ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled ; else cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n} ; fi | while read LINE
+    do
+      X=`echo $LINE | cut -d'|' -f1`
+      Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+      if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
+      X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
+      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
+      printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+    done
+  else
+    declare -i X
+    X=`expr $padding + $legendH + $axis`
+    cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | while read LINE
+    do
+      Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+      if [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
+      X+=1
+      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
+      printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+    done
+  fi
   echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
   i+=1
   n+=1
 done
+
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "<g id=\"legend\" text-rendering=\"optimizeSpeed\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "$slegend" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"

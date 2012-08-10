@@ -261,15 +261,9 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     
     if [ "X$SQLITE3" == "X1" ] ; then
       master=`grep ^master\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_size=`grep ^indices\/size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_docsnum=`grep ^indices\/docs\/num_docs\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_cache_field_evictions=`grep ^indices\/cache\/field_evictions\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_cache_field_size=`grep ^indices\/cache\/field_size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_cache_filter_count=`grep ^indices\/cache\/filter_count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_cache_filter_evictions=`grep ^indices\/cache\/filter_evictions\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_cache_filter_size=`grep ^indices\/cache\/filter_size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_merges=$(expr `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` 2>/dev/null) || ind_merges=0
-      ind_merges_time=$(expr \( `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^indices\/merges\/total_time_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || ind_merges_time=0
+      ind_size=`grep ^indices\/store\/size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      ind_docsnum=`grep ^indices\/docs\/count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+
       open_file_descriptors=`grep ^process\/open_file_descriptors\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
       proc_cpu_sys=$(expr \( `grep ^process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_sys=0
       proc_cpu_user=$(expr \( `grep ^process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_user=0

@@ -267,8 +267,8 @@ if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
   [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
-  echo "*** Bringing up a new server in cloud $cloud"
-  log "bringing up a new server in cloud $cloud"
+  echo "*** Bringing up new server in cloud $cloud"
+  log "bringing up new server in cloud $cloud"
   if [ -z "$test" ]; then
     log "updating servers list"
     "${rpath}"/../cloud/${cloud}/update_servers_list
