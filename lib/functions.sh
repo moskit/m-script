@@ -45,14 +45,14 @@ store_results() {
   day=`date +"%Y%m%d"`
   [ -z "$dbtable" ] && echo "Unable to find out what table to store the data into" && exit 1
   [ -z "$dbfile" ] && echo "Database file definition is NULL" && exit 1
-  values="$(IFS=','; for f in $1; do f=${f%:*}; eval "echo \$${f},"; done)"
+  values="$(IFS=','; for f in $1; do f=${f%%:*}; eval "echo \$${f},"; done)"
   values="${values%,}"
-  fields="$(IFS=','; for f in $1; do f=${f%:*}; echo "${f},"; done)"
+  fields="$(IFS=','; for f in $1; do echo "${f%%:*},"; done)"
   fields="${fields%,}"
-  if [ ! -f "$dbfile" ] ; then
-    $SQL "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $fields)" 2>>$M_ROOT/monitoring.log
-  elif [ -z "`$SQL "$dbfile" ".schema $dbtable"`" ] ; then
-    $SQL "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $fields)" 2>>$M_ROOT/monitoring.log
+  if [ ! -f "$dbfile" ] || [ -f "$dbfile" -a -z "`$SQL "$dbfile" ".schema $dbtable"`" ]; then
+    cfields="$(IFS=','; for f in $1; do echo -n "${f%%:*} `echo "${f}" | cut -d':' -f2`,"; done)"
+    cfields="${cfields%,}"
+    $SQL -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
   $SQL "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)" 2>>$M_ROOT/monitoring.log
 
@@ -91,4 +91,31 @@ print_report_title() {
 log() {
   [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: ${@}">>$LOG
 }
+
+find_delta() {
+  timenow=`date +"%s"`
+  if [ -f "$M_TEMP/${0##*/}.delta" ]; then
+    arrprev=( `cat "$M_TEMP/${0##*/}.delta" | cut -d'|' -f2` )
+  fi
+  arrnames=( $(IFS=','; for f in $1; do echo -n "${f%%:*} "; done) )
+  echo -e "${timenow}\n$(IFS=','; for f in $1; do echo -e "${f}|`eval "echo \$${f%%:*}"`\n"; done)" > "$M_TEMP/${0##*/}.delta"
+  arrcurr=( ${timenow} (IFS=','; for f in $1; do echo -e "`eval "echo \$${f%%:*}"`:${f#*:} "; done) )
+  [ ${#arrcurr[*]} -ne ${#arrprev[*]} ] && return
+  for ((i=0; i<${#arrcurr[*]}; i++)); do
+    if [ "X${arrcurr[$i]}" == "Xinteger" ]; then
+      arrval+=( `expr ${arrcurr[$i]} - ${arrprev[$i]} 2>/dev/null || echo 0` )
+    else
+      # TODO: bc silently defaults non-numeric arguments to 0
+      arrval+=( `echo "scale=2; ${arrcurr[$i]} - ${arrprev[$i]}" | bc 2>/dev/null || echo 0` )
+    fi
+  done
+  for ((i=0; i<${#arrcurr[*]}; i++)); do
+    eval "${arrnames[$i]}=\$$${arrval[$i]}"
+  done
+}
+
+
+
+
+
 

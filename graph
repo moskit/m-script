@@ -23,7 +23,7 @@ EOF
 
 addxmarks() {
   marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mX1\\" x2=\\"$1\\" y2=\\"$mX2\\" />"`"
-  textX="${textX}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
+  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
 }
 
 rcommand=${0##*/}
@@ -614,9 +614,9 @@ do
   if [ "X$scale" != "Xyes" ] ; then
     if [ -n "$mp" ] ; then
       [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
-      textY="${textY}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
+      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
     else
-      textY="${textY}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"#666\\" x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
+      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
     fi
   fi
 done
@@ -639,7 +639,7 @@ echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;s
 echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<g id=\"marks_text\" text-rendering=\"optimizeSpeed\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo $textX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 [ "X$scale" == "Xyes" ] || echo $textY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
