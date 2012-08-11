@@ -24,35 +24,37 @@ emptyobj=true
 declare -a arrayi
 declare -i ai
 
+showdebug() {
+  if [ -n "$1" ]; then
+    echo "Parsing line = $line"
+    echo "  WAS: index = $i    var[$i] = ${index[$i]}    value = $value    openedby = $openedby"
+    echo "  WAS: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
+  else
+    echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value    openedby = $openedby"
+    echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
+  fi
+}
+
 parseline() {
   line=$1
-  if [ -n "$d" ] ; then
-    echo "Parsing line = $line"
-    echo "  WAS: index = $i    var[$i] = ${index[$i]}    value = $value"
-    echo "  WAS: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-  fi
+  [ -n "$d" ] && showdebug was
   if [ "X$line" == "X{" ] ; then
-    $emptyobj && emptyobj=false && index[$i]=`expr ${index[$i]} + 1`
+    #$emptyobj || index[$i]=`expr ${index[$i]} + 1`
     if [ -n "$value" ] ; then
       printvalue "$value" && unset value
     fi
     i+=1
-    if [ -n "$d" ] ; then
-      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
-      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-    fi
+    [ -n "$d" ] && showdebug
     return
   fi
   if [ "X$line" == "X}" ] ; then
     emptyobj=true
+    isclosed=1
     if [ -n "$value" ] ; then
       printvalue "$value" && unset value
     fi
     i+=-1
-    if [ -n "$d" ] ; then
-      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
-      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-    fi
+    [ -n "$d" ] && showdebug
     return
   fi
   if [ "X$line" == "X[" ] ; then
@@ -64,10 +66,7 @@ parseline() {
     else
       value="${value}${line}"
     fi
-    if [ -n "$d" ] ; then
-      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
-      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-    fi
+    [ -n "$d" ] && showdebug
     return
   fi
   if [ "X$line" == "X]" ] ; then
@@ -86,11 +85,13 @@ parseline() {
         fi
       fi
     fi
-    
-    if [ -n "$d" ] ; then
-      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
-      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-    fi
+    [ -n "$d" ] && showdebug
+    return
+  fi
+  if [ "X$line" == 'X"' ] ; then
+    unset openedby
+    isclosed=1
+    [ -n "$d" ] && showdebug
     return
   fi
   if [ "X$line" == "X," ] ; then
@@ -106,10 +107,7 @@ parseline() {
     else
       value="${value}${line}"
     fi
-    if [ -n "$d" ] ; then
-      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
-      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-    fi
+    [ -n "$d" ] && showdebug
     return
   fi
   if [ -n "$line" ] ; then
@@ -183,13 +181,9 @@ parseline() {
       fi
     
     else
-      [ "X$openedby" == "Xquo" ] && value="${value}${line}" || isclosed=1
+      value="${value}${line}"
     fi
-    if [ -n "$d" ] ; then
-      echo "  = it's a data line"
-      echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value"
-      echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
-    fi
+    [ -n "$d" ] && showdebug
 #    unset noprint
   fi
 
@@ -207,6 +201,6 @@ printvalue() {
 }
 
 #( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
-cat $1|sed 's|{|\n{\n|g;s|},|\n}\n|g;s|}|\n}\n|g;s|",|"\n,\n|g;s|,"|\n,\n"|g;s|,$|\n,|g;s|,[[:space:]]"|\n,\n"|g;s|\[|\n\[\n|g;s|\],|\n\]\n|g;s|\]|\n\]\n|g' | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
+cat $1|sed 's|{|\n{\n|g;s|},|\n}\n,\n|g;s|}|\n}\n|g;s|",|"\n,\n|g;s|,"|\n,\n"|g;s|,$|\n,|g;s|,[[:space:]]"|\n,\n"|g;s|\[|\n\[\n|g;s|\],|\n\]\n,\n|g;s|\]|\n\]\n|g' | grep -v ^$ | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
 unset branch index ndcont cont i LINE node
 
