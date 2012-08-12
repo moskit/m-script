@@ -56,7 +56,7 @@ open_cluster() {
   fi
   id="${@}"
   echo "<div class=\"cluster\" id=\"${id%%|*}\">"
-  echo -e "<div class=\"clustername\"><span id=\"${id}_name\" `[ -n "$onclick" ] && echo -n "class=\"indent clickable\" onclick=\"showDetails('${id}_name','${onclick}')\"" || echo -n "class=\"indent\""`>${id#*|}</span>"
+  echo -e "<div class=\"clustername\"><span id=\"${id}_name\" `[ -n "$onclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"indent\\""`>${id#*|}</span>"
   unset onclick
 }
 
@@ -65,7 +65,7 @@ print_cluster_inline() {
     status="$1"
     [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
     [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}" && onclick="${onclick%%|*}"
-    echo "<div id=\"${id}_status\" `[ -n "$onclick" ] && echo -n "class=\"clusterstatus clickable\" onclick=\"showDetails('${id}_name','${onclick}')\"" || echo -n "class=\"clusterstatus\""` style=\"$style\">$status</div>"
+    echo "<div id=\"${id}_status\" `[ -n "$onclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$style\">$status</div>"
     shift
   done
 }
