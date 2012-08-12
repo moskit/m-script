@@ -315,7 +315,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     $debug && log "ensuring the target server $ip is accessible"
     if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
       for ((k=0; k<10; k++)); do
-        $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $ip echo >/dev/null
+        $SSH -i "${rpath}/../keys/${KEY}" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
         if [ $? -ne 0 ]; then
           echo "Unable to login to the server $ip using the key ${rpath}/../keys/${KEY}, trying again...">>"$LOG"
           loggedin=false
