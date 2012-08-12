@@ -93,26 +93,28 @@ log() {
 }
 
 find_delta() {
-  timenow=`date +"%s"`
   if [ -f "$M_TEMP/${0##*/}.delta" ]; then
     arrprev=( `cat "$M_TEMP/${0##*/}.delta" | cut -d'|' -f2` )
   fi
   arrnames=( $(IFS=','; for f in $1; do echo -n "${f%%:*} "; done) )
-  echo -e "${timenow}\n$(IFS=','; for f in $1; do echo -e "${f}|`eval "echo \$${f%%:*}"`\n"; done)" > "$M_TEMP/${0##*/}.delta"
-  arrcurr=( ${timenow} (IFS=','; for f in $1; do echo -e "`eval "echo \$${f%%:*}"`:${f#*:} "; done) )
+  echo "$(IFS=','; for f in $1; do echo "${f}|`eval "echo \\$${f%%:*}"`"; done)" > "$M_TEMP/${0##*/}.delta"
+  arrcurr=( $(IFS=','; for f in $1; do echo "`eval "echo \\$${f%%:*}"`:${f#*:} "; done) )
   [ ${#arrcurr[*]} -ne ${#arrprev[*]} ] && return
   for ((i=0; i<${#arrcurr[*]}; i++)); do
-    if [ "X${arrcurr[$i]}" == "Xinteger" ]; then
-      arrval+=( `expr ${arrcurr[$i]} - ${arrprev[$i]} 2>/dev/null || echo 0` )
+    if [ "X${arrcurr[$i]#*:}" == "Xinteger" ]; then
+      arrval+=( `expr ${arrcurr[$i]%%:*} - ${arrprev[$i]} 2>/dev/null || echo 0` )
     else
       # TODO: bc silently defaults non-numeric arguments to 0
-      arrval+=( `echo "scale=2; ${arrcurr[$i]} - ${arrprev[$i]}" | bc 2>/dev/null || echo 0` )
+      arrval+=( `echo "scale=2; ${arrcurr[$i]%%:*} - ${arrprev[$i]}" | bc 2>/dev/null || echo 0` )
     fi
   done
+
   for ((i=0; i<${#arrcurr[*]}; i++)); do
-    eval "${arrnames[$i]}=\$$${arrval[$i]}"
+    eval "${arrnames[$i]}=${arrval[$i]}"
   done
+  unset arrprev arrnames arrcurr arrval
 }
+
 
 
 

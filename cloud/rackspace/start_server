@@ -85,8 +85,8 @@ find_flavor() {
 
 request() {
   log "sending request..."
-  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^1\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/servers" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
@@ -207,7 +207,7 @@ fi
 request && log "request sent"
 declare -i n
 n=0
-while [ `grep -c ^1\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
   [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
   [ $n -gt 1 ] && sleep 30
   rm -f "${M_TEMP}/auth.resp"

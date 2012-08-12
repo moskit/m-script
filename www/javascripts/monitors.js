@@ -114,6 +114,7 @@ showData = function(theid,base) {
 showDetails = function(theid,script) {
   cluster=$(theid).parentNode.parentNode.id;
   server=$(theid).parentNode.id;
+  
   if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
     hideblocked = 1;
     stopUpdater(updater);

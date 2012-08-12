@@ -94,14 +94,14 @@ fi
 req="/servers/$id"
 
 request() {
-  URL=`grep ^1\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^1\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
 }
 
 [ -f "${M_TEMP}/auth.resp" ] || ${rpath}/auth
 request
-if [ `grep -c ^1\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; then
+if [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; then
   ${rpath}/auth
   request
 fi

@@ -42,6 +42,8 @@ possible_options="metric help from to ip new database table size width height sc
 necessary_options="metric"
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/dash.conf"
+source "${rpath}/lib/functions.sh"
+
 LOG="${rpath}/logs/dashboard.log"
 if [ -z "$freqdef" ]; then
   timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`

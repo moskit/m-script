@@ -654,3 +654,8 @@ span.value {
   background: -moz-linear-gradient(bottom,  #339933,  #55CC55)
 }
 
+.clickable {
+  cursor: pointer;
+}
+
+

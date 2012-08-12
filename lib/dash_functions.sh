@@ -18,6 +18,8 @@ dpath=$(readlink -f "$BASH_SOURCE")
 dpath=${dpath%/*}
 #*/
 
+M_ROOT=$(readlink -f "$dpath/..")
+
 source "$dpath/../conf/mon.conf"
 source "$dpath/../conf/dash.conf"
 [ -n "$timeshift" ] || timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=5
@@ -53,7 +55,8 @@ open_cluster() {
     shift
   fi
   id="${@}"
-  echo -e "<div class=\"clustername\"><span class=\"indent\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${id#*|}</span>"
+  echo "<div class=\"cluster\" id=\"${id%%|*}\">"
+  echo -e "<div class=\"clustername\"><span id=\"${id}_name\" `[ -n "$onclick" ] && echo -n "class=\"indent clickable\" onclick=\"showDetails('${id}_name','${onclick}')\"" || echo -n "class=\"indent\""`>${id#*|}</span>"
 }
 
 print_cluster_inline() {
@@ -61,17 +64,16 @@ print_cluster_inline() {
     status="$1"
     [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
     [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}"
-    echo "<div class=\"clusterstatus\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval echo \"\\$$status\"`</div>"
+    echo "<div class=\"clusterstatus\" id=\"${id}_status\" onclick=\"showDetails('${id}_name','$onclick')\" style=\"$style\">$status</div>"
     shift
   done
-  echo -e "</div>\n<div class=\"cluster\" id=\"${id%%|*}\">"
 }
 
 close_cluster_line() {
   id="${@}"
   echo "</div>"
   [ -n "$id" ] && echo "<div class=\"details\" id=\"${id}_details\"></div>"
-  echo "<div class=\"cluster\" id=\"${id%%|*}\">"
+  
 }
 
 close_cluster() {
