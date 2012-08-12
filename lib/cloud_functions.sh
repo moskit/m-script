@@ -17,6 +17,12 @@
 dpath=$(readlink -f "$BASH_SOURCE")
 dpath=${dpath%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$dpath/../")
+LOG="$M_ROOT/logs/cloud.log"
+
+log() {
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${CLOUD}/${0##*/}: ${@}">>$LOG
+}
 
 generate_name() {
   # double-check the cluster is defined
@@ -40,16 +46,16 @@ generate_name() {
 }
 
 check_cluster_limit() {
-  local LOG="$M_ROOT/logs/cloud.log"
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && log "$CLOUD/${0}: cluster is not defined, exiting" && exit 1
+  [ -z "$cluster" ] && log "cluster is not defined, exiting" && exit 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
   # tmp file is assumed to be up-to-date
   n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
+  log "cluster $cluster limit is ${limit}, current servers number is $n"
   [ -z "$n" ] && n=0
   [ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \> $n` -gt 0 ] && return 0

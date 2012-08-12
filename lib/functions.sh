@@ -17,7 +17,8 @@
 fpath=$(readlink -f "$BASH_SOURCE")
 fpath=${fpath%/*}
 #*/
-source "$fpath/../conf/mon.conf"
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
+source "$M_ROOT/conf/mon.conf"
 SQL=`which sqlite3 2>/dev/null`
 
 store_results() {
