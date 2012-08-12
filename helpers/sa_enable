@@ -1,0 +1,23 @@
+#!/bin/bash
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+
+[ -z "$1" ] && echo "Usage: $rcommand testname" && exit 1
+
+${rpath}/sa_disable.run $1
+install -d "${rpath}/../standalone/${1}/rc" "${rpath}/../standalone/rc"
+n=`ls -1 "${rpath}/../standalone/rc" | grep ^[0-9]*\. | cut -d'.' -f1 | tail -1`
+n=`expr $n + 1`
+[ ${#n} -eq 1 ] && n="0$n"
+ln -s "${rpath}/../standalone/$1" "${rpath}/../standalone/rc/${n}.$1"
+n=0
+for mon in "${rpath}/../standalone/$1"/*.mon ; do
+  [ ${#n} -eq 1 ] && m="0$n"
+  ln -s "${mon}" "${rpath}/../standalone/${1}/rc/${m}.${mon##*/}"
+  n=`expr $n + 1`
+done
+[ -x "${rpath}/../standalone/$1"/setup.run ] && "${rpath}/../standalone/$1"/setup.run
+
