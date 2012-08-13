@@ -17,12 +17,11 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 CURL=`which curl 2>/dev/null`
 LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
-LOG="${rpath}"/../../logs/cloud.log
 
 CURL="$CURL -s -k"
 V="v1.0"
@@ -59,32 +58,28 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source "${rpath}/../../conf/mon.conf"
+source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
-source "${rpath}/../../conf/cloud.conf"
-source "${rpath}/../../lib/cloud_functions.sh"
+source "$$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
-log() {
-  echo "`date +"%m.%d %H:%M"` rackspace/start_server: ${@}">>$LOG
-}
-
 find_image() {
-  [ -f "${M_TEMP}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${M_TEMP}/images.resp"` -gt 0 ] && imageid=$image && log "image ID for the new server is $imageid (based on command-line option)" && return
+  [ -f "${M_TEMP}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${M_TEMP}/images.resp"` -gt 0 ] && imageid=$image && log "Image ID for the new server is $imageid (based on command-line option)" && return
   imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
-  log "image ID for the new server is $imageid (based on the cluster $cluster default)"
+  log "Image ID for the new server is $imageid (based on the cluster $cluster default)"
 }
 
 find_flavor() {
   [ -f "${M_TEMP}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "${M_TEMP}/flavors.resp"` -gt 0 ] && flavorid=$flavor && log "flavor ID for the new server is $flavorid (based on command-line option)" && return
   flavorid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
-  log "flavor ID for the new server is $flavorid (based on the cluster $cluster default)"
+  log "Flavor ID for the new server is $flavorid (based on the cluster $cluster default)"
 }
 
 request() {
-  log "sending request..."
+  log "Sending request..."
   URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/servers" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
@@ -93,7 +88,7 @@ request() {
 }
 
 save_details() {
-  log "saving details of the new server..."
+  log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${M_TEMP}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
@@ -107,7 +102,7 @@ save_details() {
 }
 
 wait_ready() {
-  log "waiting for the server ready..."
+  log "Waiting for the server ready..."
   [ -n "$1" ] && echo "Waiting..."
   waittimeout=600
   waitperiod=10
@@ -152,10 +147,10 @@ printreturn() {
   done
 }
 
-log "checking cluster $cluster limit..."
+log "Checking cluster $cluster limit..."
 res=`check_cluster_limit`
 [[ $res -ne 0 ]] && exit 5
-[ -z "$name" ] && name=`generate_name` && log "name auto-generated: $name"
+[ -z "$name" ] && name=`generate_name` && log "Name auto-generated: $name"
 [ -z "$name" ] && exit 6
 find_image
 [ -z "$imageid" ] && exit 7
@@ -204,7 +199,7 @@ source "${rpath}/../../conf/cloud.conf"
 if [ -z "$noupdate" ] ; then
   try_auth
 fi
-request && log "request sent"
+request && log "Request sent"
 declare -i n
 n=0
 while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
@@ -212,7 +207,7 @@ while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 
   [ $n -gt 1 ] && sleep 30
   rm -f "${M_TEMP}/auth.resp"
   try_auth
-  request && log "request sent"
+  request && log "Request sent"
   n+=1
 done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"

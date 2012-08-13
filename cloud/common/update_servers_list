@@ -6,3 +6,6 @@ rpath=${0%/*}
 
 ${rpath}/show_servers --forceupdate --update_servers_list
 
+if [ -n "$NGINX_PROXY_CLUSTER_CONF_DIR" ] ; then
+  "${rpath}"/update_nginx_proxy
+fi

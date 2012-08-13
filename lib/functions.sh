@@ -66,10 +66,10 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' "$1"`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      "${fpath}/genhtml" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"${fpath}/../dashboard.log"
+      "${fpath}/genhtml" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
     JSON)
-      "${fpath}/genjson" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"${fpath}/../dashboard.log"
+      "${fpath}/genjson" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
   esac
 }
@@ -77,10 +77,10 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      "${fpath}/genhtml" --type=report "$1" 2>>"${fpath}/../dashboard.log"
+      "${fpath}/genhtml" --type=report "$1" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
     JSON)
-      "${fpath}/genjson" --type=report "$1" 2>>"${fpath}/../dashboard.log"
+      "${fpath}/genjson" --type=report "$1" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
   esac
 }

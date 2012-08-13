@@ -81,6 +81,7 @@ fi
 
 source "${rpath}/../../conf/cloud.conf"
 source "${rpath}/../../conf/mon.conf"
+source "${rpath}/../../lib/cloud_functions.sh"
 
 for var in APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
@@ -110,13 +111,13 @@ else
   CLUSTERS="$cluster"
 fi
 
-changed=0
+changed=false
 balance_method=$BALANCE_METHOD
 
 for app in $APPS ; do
   for cluster in $CLUSTERS ; do
     found=false
-    mv $M_TEMP/${app}.${cluster}.ips $M_TEMP/${app}.${cluster}.ips.prev 2>/dev/null
+    [ -f "$M_TEMP/${app}.${cluster}.ips" ] && mv "$M_TEMP/${app}.${cluster}.ips" "$M_TEMP/${app}.${cluster}.ips.prev" 2>/dev/null
     for APPCLUSTER in $APP_SERVERS; do
       if [ "X${APPCLUSTER%%|*}" == "X$cluster" ] && [ "X`echo ${APPCLUSTER} | cut -d'|' -f3`" == "X$app" ] ; then
         found=true
@@ -131,33 +132,37 @@ for app in $APPS ; do
     $found || continue
     for IP in `"$rpath"/get_ips --cluster=${cluster}` ; do
       for PORT in $ports ; do
-        echo "$IP:$PORT" >> $M_TEMP/${app}.${cluster}.ips
+        echo "$IP:$PORT" >> "$M_TEMP/${app}.${cluster}.ips"
       done
     done
-    [ -f $M_TEMP/${app}.${cluster}.ips.prev ] && [ -f $M_TEMP/${app}.${cluster}.ips ] && [ -z "`$DIFF -q $M_TEMP/${app}.${cluster}.ips.prev $M_TEMP/${app}.${cluster}.ips`" ] && continue
-    if [ -f "$M_TEMP/${app}.${cluster}.ips" -a `cat "$M_TEMP/${app}.${cluster}.ips" | grep -v ^$ | wc -l` -gt 0 ] ; then
-      changed=1
-      case $balance_method in
-        sticky|ip_hash|hash)
-          balance_method="ip_hash"
-          ;;
-        *)
-          unset balance_method
-          ;;
-      esac
-      echo "upstream $app {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-      [ -n "$balance_method" ] && echo "  ${balance_method};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-      while read IP; do
-        echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-      done<$M_TEMP/${app}.${cluster}.ips
-      echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-    else
-      echo "IP list is empty! Exiting.." >> ${rpath}/../../cloud.log
+    [ -f "$M_TEMP/${app}.${cluster}.ips.prev" ] && [ -f "$M_TEMP/${app}.${cluster}.ips" ] && [ -z "`$DIFF -q "$M_TEMP/${app}.${cluster}.ips.prev" "$M_TEMP/${app}.${cluster}.ips"`" ] && continue
+    if [ -f "$M_TEMP/${app}.${cluster}.ips" ]; then
+      if [ `cat "$M_TEMP/${app}.${cluster}.ips" | grep -v ^$ | wc -l` -gt 0 ] ; then
+        changed=true
+        case $balance_method in
+          sticky|ip_hash|hash)
+            balance_method="ip_hash"
+            ;;
+          *)
+            unset balance_method
+            ;;
+        esac
+        echo "upstream $app {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+        [ -n "$balance_method" ] && echo "  ${balance_method};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+        while read IP; do
+          echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+        done<$M_TEMP/${app}.${cluster}.ips
+        echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+      fi
+    fi
+    if ! $changed
+      log "IP list is empty! Exiting.."
       exit 1
     fi
   done
   unset ports
 done
 
-[ "X$changed" == "X1" ] && $NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND || exit 0
+$changed && $NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND || exit 0
+log "Finished"
 

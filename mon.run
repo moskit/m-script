@@ -385,11 +385,11 @@ function gendash() {
   [ -n "`grep '<\*\*\*>' ${rpath}/report`" ] && indic="w3"
   case $DASHBOARD in
     HTML)
-      "${rpath}/lib/genhtml" --type=dash --css=${indic}${1} "${rpath}/report" 2>>${rpath}/dashboard.log
+      "${rpath}/lib/genhtml" --type=dash --css=${indic}${1} "${rpath}/report" 2>>"$rpath/logs/dashboard.log"
 # sed 's|<|\&lt\;|g;s|>|\&gt\;|g;s|"|\&quot\;|g'|while read line ; do echo -n "$line" ; done
       ;;
     JSON)
-      "${rpath}/lib/genjson" --type=dash --css=${indic}${1} "`${rpath}/lib/txt2html ${rpath}/report`" 2>>${rpath}/dashboard.log
+      "${rpath}/lib/genjson" --type=dash --css=${indic}${1} "`${rpath}/lib/txt2html ${rpath}/report`" 2>>"$rpath/logs/dashboard.log"
       ;;
   esac
 }
@@ -397,10 +397,10 @@ function gendash() {
 function genreport() {
   case $DASHBOARD in
     HTML)
-      "${rpath}/lib/genhtml" --type=report "${rpath}/report" 2>>"${rpath}/dashboard.log"
+      "${rpath}/lib/genhtml" --type=report "${rpath}/report" 2>>"$rpath/logs/dashboard.log"
       ;;
     JSON)
-      "${rpath}/lib/genjson" --type=report "${rpath}/report" 2>>"${rpath}/dashboard.log"
+      "${rpath}/lib/genjson" --type=report "${rpath}/report" 2>>"$rpath/logs/dashboard.log"
       ;;
   esac
 }

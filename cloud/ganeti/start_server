@@ -155,7 +155,7 @@ IFS='
     else
       LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
       unset KEEP
-      a=`eval "echo \"$LINE\"" 2>>"${rpath}/../deploy.log"`
+      a=`eval "echo \"$LINE\"" 2>>"${rpath}/../logs/cloud.log"`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
         echo "$a" >> "${2}"
       else

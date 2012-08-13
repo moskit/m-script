@@ -126,7 +126,7 @@ start)
         
         case $DASHBOARD_TRANSPORT in
           SSH)
-            ${rpath}/getdash.ssh 2>>$rpath/dashboard.log </dev/null &
+            ${rpath}/getdash.ssh 2>>"$rpath/logs/dashboard.log" </dev/null &
           ;;
           JSON)
           
@@ -138,7 +138,7 @@ start)
           
           ;;
           *)
-          echo "Fetching data with $DASHBOARD_TRANSPORT is not supported" >> "${rpath}/dashboard.log"
+          echo "Fetching data with $DASHBOARD_TRANSPORT is not supported" >> "$rpath/logs/dashboard.log"
           ;;
         esac
       fi
@@ -147,11 +147,11 @@ start)
         [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         safolder=$(readlink -f "$sa")
         echo -e "`date`\n------------------------------\n" > "$safolder/report"
-        echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "${rpath}/sa.log"
+        echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
         for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-          echo "`date +"%H:%M:%S"` $satest" >> "${rpath}/sa.log"
-          $satest >> "$safolder/report" 2>>"${rpath}/sa.log"
+          echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
+          $satest >> "$safolder/report" 2>>"$rpath/logs/sa.log"
         done </dev/null &
       done
     else

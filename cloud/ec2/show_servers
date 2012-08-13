@@ -42,8 +42,7 @@ print_server() {
       [ -z "$thisipcluster" ] && return 0
     fi
   fi
-  [ -n "$count" ] && i+=1
-  [ "X$view" == "Xnone" ] && return 0
+  
   [ "X$view" == "Xraw" ] && echo "$1" && return 0
 
   local line1
@@ -99,6 +98,7 @@ print_server() {
           if [ -n "$cluster" ]; then 
             [ "X$cluster" != "Xall" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
           fi
+          line1="$line1  Cluster: $thiscluster"
           ;;
         itag)
           line6="$line6 $b"
@@ -120,6 +120,8 @@ print_server() {
           ;;
       esac
     done
+    [ -n "$count" ] && i+=1
+    [ "X$view" == "Xnone" ] && return 0
     echo "---------------------------------------------------------------------"
     printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
     [ -n "$line6" ] && printf "${line6}\n"
@@ -129,7 +131,7 @@ print_server() {
       a=`echo "$s" | awk -F'::' '{print $1}'`
       b=`echo "$s" | awk -F'::' '{print $2}'`
       [ "X$a" == "Xistate" ] && [ -n "$state" ] && [ "X$state" != "X$b" ] && unset line && IFS=$IFS1 && return 0
-      [ "X$a" == "Xicluster" ] && [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && unset line && IFS=$IFS1 && return 0
+      [ "X$a" == "Xicluster" ] && [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && [ "X$cluster" != "Xall" ] && unset line && IFS=$IFS1 && return 0
       for s in $filter ; do
         [ "X$a" == "X$s" ] && line="${line}${b} "
       done

@@ -18,7 +18,7 @@ dpath=$(readlink -f "$BASH_SOURCE")
 dpath=${dpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$dpath/../")
-LOG="$M_ROOT/logs/cloud.log"
+[ -z "$LOG" ] && LOG="$M_ROOT/logs/cloud.log"
 
 log() {
   [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${CLOUD}/${0##*/}: ${@}">>$LOG
@@ -27,7 +27,7 @@ log() {
 generate_name() {
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && echo "`date +"%m.%d %H:%M"` $CLOUD/${BASH_SOURCE[0]##*/}: cluster is not defined, exiting" >> "${rpath}"/../../logs/cloud.log && exit 1
+  [ -z "$cluster" ] && log "Cluster is not defined, exiting" && exit 1
   nam=$(cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | grep \|${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
   am=0 ; lm=0

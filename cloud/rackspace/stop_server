@@ -17,7 +17,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 CURL=`which curl 2>/dev/null`
 LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
@@ -26,9 +26,11 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-source "${rpath}/../../conf/mon.conf"
-source "${rpath}/../../conf/cloud.conf"
-M_TEMP="${M_TEMP}/cloud/${CLOUD}"
+source "$M_ROOT/conf/mon.conf"
+M_TEMP="$M_TEMP"/cloud/rackspace
+install -d "$M_TEMP"
+source "$$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 possible_options="id name ip verbose force"
 necessary_options=""
@@ -101,7 +103,7 @@ req="/servers/$id"
 
 request() {
   URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  echo "Sending DELETE to ${URL}${req}" >> "$rpath"/../../logs/cloud.log
+  log "Sending DELETE to ${URL}${req}"
   TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
   echo $?
@@ -111,52 +113,50 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Problem getting authorization from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
     ${rpath}/auth
     i+=1
     sleep 10
   done
-  [ $i -ne 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $i additional auth requests due to no reply from API" >> "$rpath"/../../logs/cloud.log
+  [ $i -ne 0 ] && log "$i additional auth requests due to no reply from API"
 }
-
-source "${rpath}/../../conf/cloud.conf"
 
 if [ -z "$noupdate" ] ; then
   try_auth
   reqres=`request`
-  [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+  [ $reqres -gt 0 ] && log "Curl request returned status $reqres"
   declare -i n
   n=0
   while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Problem getting authorization renewal from the Rackspace Cloud API" >> "$rpath"/../../logs/cloud.log && exit 1
+    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
     [ $n -gt 1 ] && sleep 30
     rm -f "${M_TEMP}/auth.resp"
     try_auth
     reqres=`request`
-    [ $reqres -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: Curl request returned status $reqres" >> "$rpath"/../../logs/cloud.log
+    [ $reqres -gt 0 ] && log "Curl request returned status $reqres"
     n+=1
   done
-  [ $n -gt 0 ] && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $n additional auth requests due to authorization expired" >> "$rpath"/../../logs/cloud.log
+  [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 fi
 
-cat "${M_TEMP}/${rcommand}.resp" >> "$rpath"/../../logs/cloud.log
+cat "${M_TEMP}/${rcommand}.resp" >> "$LOG"
 
 IPS=( "${ipint}" "${ipext}" "${ip}" )
 
 if [ $reqres -eq 0 -a `grep -c code\|4 "${M_TEMP}/${rcommand}.resp"` -eq 0 ]; then
-  echo -e "`date +"%m.%d %H:%M"` rackspace/stop_server: server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully\n\n" >> "$rpath"/../rackspace.log | tee -a "$rpath"/../../logs/cloud.log
+  log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully" | tee -a "$rpath"/../rackspace.log
   removed=true
 fi
 
 if [ $removed -o $force ]; then
   SSHK=`which ssh-keygen 2>/dev/null`
-  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $name removed from known_hosts" >> "$rpath"/../../logs/cloud.log
+  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
 
   for ipa in ${IPS[*]} ; do
     if [ -n "$ipa" ] ; then
-      $SSHK -q -R "$ipa" >/dev/null 2>&1 && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from known_hosts" >> "$rpath"/../../logs/cloud.log
-      sed -i "/^$ipa|/d" "${rpath}/../../servers.list" && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from servers.list" >> "$rpath"/../../logs/cloud.log
-      sed -i "/^$ipa /d" /etc/hosts && echo "`date +"%m.%d %H:%M"` rackspace/stop_server: $ipa removed from /etc/hosts" >> "$rpath"/../../logs/cloud.log
+      $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "$ipa removed from known_hosts"
+      sed -i "/^$ipa|/d" "${rpath}/../../servers.list" && log "$ipa removed from servers.list"
+      sed -i "/^$ipa /d" /etc/hosts && log "$ipa removed from /etc/hosts"
     fi
   done
   

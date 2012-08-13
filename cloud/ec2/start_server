@@ -67,7 +67,6 @@ if [[ found -eq 1 ]]; then
 fi
 source $M_ROOT/conf/mon.conf
 source $M_ROOT/conf/cloud.conf
-source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
 LOG=$M_ROOT/logs/cloud.log
 
@@ -99,20 +98,20 @@ if [ -n "$cluster" ] ; then
 fi
 secgroup=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f4`
 
-[ -n "$amiID" ] && log "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (log "No AMI found" && exit 1)
+[ -z "$number" ] && number=1 || snumber="-n $snumber"
+[ -n "$amiID" ] && log "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (log "AMI not defined" && exit 1)
 
 [ -z "$aki" ] || aki="--kernel $aki"
-[ -z "$number" ] || number="-n $number"
 [ -z "$zone" ] || zone="-z $zone"
 [ -z "$type" ] || type="-t $type"
 [ -n "$secgroup" ] && for sg in `echo $secgroup | tr ',' ' '`; do secgr="$secgr -g $secgroup" ; done
 
 ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_REGION $aki $zone $number $type $secgr $amiID > "$M_TEMP"/start_server.resp
-[ $? -ne 0 ] && log "error starting instances" && exit 1
+[ $? -ne 0 ] && log "Error starting instances" && exit 1
 
 instances=`cat "$M_TEMP"/start_server.resp | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
-[ "X$instances" == "XERROR" ] && 
-log "instances started: $instances"
+[ "X$instances" == "XERROR" ] && log "Error starting instances" && exit 1
+log "Instances started: $instances"
 
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} >/dev/null
@@ -120,13 +119,14 @@ for instance in $instances ; do
   [ "X$name" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag Name=${name} >/dev/null
 done
 
+log "Waiting for the server ready"
 for ((i=0; i<10; i++)) ; do
   sleep 30
   for instance in $instances ; do
     istate=`"${rpath}"/show_servers --id=$instance --filter=istate`
-    [ -n "$verbose" ] && log "instance $instance state: $istate"
+    [ -n "$verbose" ] && log "Instance $instance state: $istate"
     if [ "X$istate" == "Xrunning" ] ; then
-      echo
+      log "Instance $instance started"
       if [ -n "$return" ] ; then
         case $return in
           id|ids)
@@ -151,6 +151,7 @@ for ((i=0; i<10; i++)) ; do
   done
   [ -n "`echo "$instances" | tr -d ' '`" ] || break
 done
-
+log "Updating servers list"
 $rpath/update_servers_list >/dev/null
+log "Finished"
 
