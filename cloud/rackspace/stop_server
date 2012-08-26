@@ -32,7 +32,7 @@ install -d "$M_TEMP"
 source "$$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-possible_options="id name ip verbose force"
+possible_options="id name ip verbose force last first"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`

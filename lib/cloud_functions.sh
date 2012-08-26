@@ -24,6 +24,21 @@ log() {
   [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${CLOUD}/${0##*/}: ${@}">>$LOG
 }
 
+get_lock() {
+  local -i i
+  i=0
+  while [ -f "$M_TEMP/cloud/$CLOUD/lock" ]; do
+    sleep 5
+    i+=1
+    [ $i -gt 100 ] && return 1
+  done
+  touch "$M_TEMP/cloud/$CLOUD/lock"
+}
+
+rm_lock() {
+  rm -f "$M_TEMP/cloud/$CLOUD/lock"
+}
+
 generate_name() {
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
@@ -62,4 +77,21 @@ check_cluster_limit() {
   return 1
 }
 
+check_cluster_minimum() {
+  # double-check the cluster is defined
+  [ -z "$cluster" ] && cluster=$M_CLUSTER
+  [ -z "$cluster" ] && log "cluster is not defined, exiting" && exit 1
+  limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
+  [ -z "$limit" ] && return 0
+  [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
+  limit=${limit%:*}
+  [ "$limit" == "0" ] && return 0
+  # tmp file is assumed to be up-to-date
+  n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
+  log "cluster $cluster minimum is ${limit}, current servers number is $n"
+  [ -z "$n" ] && n=0
+  [ `expr $n \>= 0` -gt 0 ] || return 1
+  [ `expr $limit \< $n` -gt 0 ] && return 0
+  return 1
+}
 

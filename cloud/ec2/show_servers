@@ -145,25 +145,25 @@ print_server() {
 
 parse_server() {
   if [[ ${1} =~ ^RESERVATION ]] ; then
-    printf "SG::`echo ${1} | awk -F'|' '{print $4}'`|"
+    echo -n "SG::`echo ${1} | cut -d'|' -f4`|"
   fi
   if [[ ${1} =~ ^INSTANCE ]] ; then
-    iID=`echo ${1} | awk -F'|' '{print $2}'`
-    inIP=`echo ${1} | awk -F'|' '{print $18}'`
-    extIP=`echo ${1} | awk -F'|' '{print $17}'`
-    iami=`echo ${1} | awk -F'|' '{print $3}'`
-    istate=`echo ${1} | awk -F'|' '{print $6}'`
-    ikeypair=`echo ${1} | awk -F'|' '{print $7}'`
-    isize=`echo ${1} | awk -F'|' '{print $10}'`
-    istarted=`echo ${1} | awk -F'|' '{print $11}'`
-    izone=`echo ${1} | awk -F'|' '{print $12}'`
-    iaki=`echo ${1} | awk -F'|' '{print $13}'`
-    iari=`echo ${1} | awk -F'|' '{print $14}'`
-    printf "iID::$iID|iami::$iami|iaki::$iaki|iari::$iari|"
+    iID=`echo ${1} | cut -d'|' -f2`
+    inIP=`echo ${1} | cut -d'|' -f18`
+    extIP=`echo ${1} | cut -d'|' -f17`
+    iami=`echo ${1} | cut -d'|' -f3`
+    istate=`echo ${1} | cut -d'|' -f6`
+    ikeypair=`echo ${1} | cut -d'|' -f7`
+    isize=`echo ${1} | cut -d'|' -f10`
+    istarted=`echo ${1} | cut -d'|' -f11`
+    izone=`echo ${1} | cut -d'|' -f12`
+    iaki=`echo ${1} | cut -d'|' -f13`
+    iari=`echo ${1} | cut -d'|' -f14`
+    echo -n "iID::$iID|iami::$iami|iaki::$iaki|iari::$iari|"
     if [ "X$istate" == "Xrunning" ] ; then
-      printf "inIP::$inIP|extIP::$extIP|"
+      echo -n "inIP::$inIP|extIP::$extIP|"
     fi
-    printf "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|isize::$isize|"
+    echo -n "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|isize::$isize|"
     
   fi
   if [[ ${1} =~ ^TAG ]] ; then
@@ -172,9 +172,9 @@ parse_server() {
     tagvalue=`echo ${1} | awk -F'|' '{print $5}'`
     if [ "X$object" == "Xinstance" ] ; then
       if [ "X$itag" == "Xcluster" ] ; then
-        printf "icluster::$tagvalue|"
+        echo -n "icluster::$tagvalue|"
       else
-        printf "itag::${itag}=${tagvalue}|"
+        echo -n "itag::${itag}=${tagvalue}|"
       fi
     fi
   fi
@@ -182,7 +182,7 @@ parse_server() {
     bdev=`echo ${1} | awk -F'|' '{print $2}'`
     bID=`echo ${1} | awk -F'|' '{print $3}'`
     bstarted=`echo ${1} | awk -F'|' '{print $4}'`
-    printf "bdev::$bdev|bID::$bID|bstarted::$bstarted|"
+    echo -n "bdev::$bdev|bID::$bID|bstarted::$bstarted|"
   fi
 }
 
