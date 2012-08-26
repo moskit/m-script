@@ -141,8 +141,8 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
     if [ -n "$fromcluster" ] ; then
       [ "X$SCLUSTER" == "X$fromcluster" ] || continue
     fi
-    [ "X$SCLUSTER" == "X$SUPER_CLUSTER" ] && [ "X$DCLUSTER" != "X$SUPER_CLUSTER" ] || continue
     IP2UB=${sserver%%|*}
+    [ "X$SCLUSTER" == "X$SUPER_CLUSTER" ] && [ "X$DCLUSTER" != "X$SUPER_CLUSTER" ] && [ `echo $localip | grep -c $IP2UB` -eq 0 ] && continue
 
     for mainchain in INPUT OUTPUT ; do
       if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
