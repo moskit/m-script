@@ -12,12 +12,12 @@ print_page_title "Collection" "Status" "Count" "Data Size" "Size on Disk" "Index
 for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|${PWD}/../../standalone/${saname}/data/shards.||g" | cut -d'.' -f1 | sort | uniq | grep -v ^$` ; do
 
   db_dat="${PWD}/../../standalone/${saname}/data"/${db}.dat
-  total_ok=`cat "$db_dat" | grep ^1\/ok\| | cut -d'|' -f2`
+  total_ok=`cat "$db_dat" | grep ^0\/ok\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
-  total_count=`cat $db_dat | grep ^1\/objects\| | cut -d'|' -f2`
-  total_datasize=`cat $db_dat | grep ^1\/dataSize\| | cut -d'|' -f2`
-  total_storsize=`cat $db_dat | grep ^1\/storageSize\| | cut -d'|' -f2`
-  total_indexsize=`cat $db_dat | grep ^1\/indexSize\| | cut -d'|' -f2`
+  total_count=`cat $db_dat | grep ^0\/objects\| | cut -d'|' -f2`
+  total_datasize=`cat $db_dat | grep ^0\/dataSize\| | cut -d'|' -f2`
+  total_storsize=`cat $db_dat | grep ^0\/storageSize\| | cut -d'|' -f2`
+  total_indexsize=`cat $db_dat | grep ^0\/indexSize\| | cut -d'|' -f2`
   total_datasize=`expr $total_datasize / 1048576`
   csunits="MB"
   if [ ${#total_datasize} -gt 3 ] ; then
@@ -29,7 +29,7 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
     total_indexsize="`expr $total_indexsize / 1048576` $csunits"
   fi
   total_datasize="$total_datasize $csunits"
-  total_chunks=`cat $db_dat | grep ^1\/nchunks\| | cut -d'|' -f2`
+  total_chunks=`cat $db_dat | grep ^0\/nchunks\| | cut -d'|' -f2`
   
   open_cluster databases "$db"
   
@@ -40,12 +40,12 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
     coll=`echo $coll | sed "s|${PWD}/../../standalone/${saname}/data/shards.${db}.||"`
     coll_dat="${PWD}/../../standalone/${saname}/data"/${db}.${coll}.dat
     print_line_title shards "$coll"
-    coll_ok=`cat $coll_dat | grep ^1\/ok\| | cut -d'|' -f2`
+    coll_ok=`cat $coll_dat | grep ^0\/ok\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
-    coll_count=`cat $coll_dat | grep ^1\/count\| | cut -d'|' -f2`
-    coll_size=`cat $coll_dat | grep ^1\/size\| | cut -d'|' -f2`
-    stor_size=`cat $coll_dat | grep ^1\/storageSize\| | cut -d'|' -f2`
-    coll_indexsize=`cat $coll_dat | grep ^1\/totalIndexSize\| | cut -d'|' -f2`
+    coll_count=`cat $coll_dat | grep ^0\/count\| | cut -d'|' -f2`
+    coll_size=`cat $coll_dat | grep ^0\/size\| | cut -d'|' -f2`
+    stor_size=`cat $coll_dat | grep ^0\/storageSize\| | cut -d'|' -f2`
+    coll_indexsize=`cat $coll_dat | grep ^0\/totalIndexSize\| | cut -d'|' -f2`
 
     coll_size=`expr $coll_size / 1048576`
     csunits="MB"
@@ -58,7 +58,7 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
       coll_indexsize="`expr $coll_indexsize / 1048576` $csunits"
     fi
     coll_size="$coll_size $csunits"
-    coll_chunks=`cat $coll_dat | grep ^1\/nchunks\| | cut -d'|' -f2`
+    coll_chunks=`cat $coll_dat | grep ^0\/nchunks\| | cut -d'|' -f2`
 
     print_inline "coll_status" "coll_count" "coll_size" "stor_size" "coll_indexsize" "coll_chunks"
     close_line "$coll"

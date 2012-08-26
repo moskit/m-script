@@ -6,12 +6,12 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 LOG="$M_ROOT/logs/sa.log"
-log "Running ${rpath}/${rcommand}"
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
+log "Running ${rpath}/${rcommand}"
 
 #function print_databases() {
 #  if [ -n "$2" ] ; then
