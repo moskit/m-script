@@ -155,7 +155,7 @@ for app in $APPS ; do
         echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
       fi
     fi
-    if ! $changed
+    if ! $changed ; then
       log "IP list is empty! Exiting.."
       exit 1
     fi
