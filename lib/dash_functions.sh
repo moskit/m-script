@@ -65,7 +65,7 @@ print_cluster_inline() {
     status="$1"
     [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
     [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}" && onclick="${onclick%%|*}"
-    echo "<div id=\"${id}_status\" `[ -n "$onclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$style\">$status</div>"
+    echo "<div id=\"${id}_status\" `[ -n "$onclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$style\">`eval echo \\$$status`</div>"
     shift
   done
 }
