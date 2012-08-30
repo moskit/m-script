@@ -21,7 +21,9 @@ rpath=${xcommand%/*}
 
 [ -z "$SCP" ] && SCP=`which scp 2>/dev/null`
 [ -z "$SCP" ] && echo "scp utility not found, exiting" && exit 1
+SCP="$SCP -o ConnectTimeout=5"
 [ -z "$SSH" ] && SSH=`which ssh 2>/dev/null`
+SSH="$SSH -o ConnectTimeout=5"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 SQLITE=`which sqlite3 2>/dev/null`
