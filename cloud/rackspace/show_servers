@@ -128,9 +128,13 @@ list_servers() {
       for ip in $IP ; do
         ip=${ip#* } ; ip=${ip% *}
         if [ -z "$icluster" ] ; then
+          # servers having no cluster in metadata but added manually to servers.list
           icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
         else
-          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] && unset icluster
+          # no icluster means that server will not be shown, but only if there
+          # is no option --all. With this option, however, we want to see all
+          # clusters assigned via metadata
+          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
         fi
       done
       if [ -z "$update_servers_list" ] ; then

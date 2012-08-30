@@ -186,7 +186,7 @@ parse_server() {
   fi
 }
 
-possible_options="cluster ami state filter noupdate help region id view count"
+possible_options="cluster ami state filter noupdate help region id view count all"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -311,6 +311,7 @@ install -d $M_TEMP
 
 filter=`echo $filter | sed 's_,_|_g'`
 [ -n "$region" ] && EC2_REGION=$region
+[ -n "$all" ] && cluster=all
 
 [ -n "$id" ] && ID=$id
 if [ "X$noupdate" == "X" ] ; then
