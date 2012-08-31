@@ -61,12 +61,13 @@ if [[ found -eq 1 ]]; then
 fi
 
 source "${rpath}/../../conf/mon.conf"
-M_TEMP="$M_TEMP/cloud/ganeti"
-install -d "$M_TEMP"
 source "${rpath}/../../conf/cloud.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
 source "${rpath}/../../lib/functions.sh"
 source "${rpath}/../../lib/cloud_functions.sh"
+
+M_TEMP="$M_TEMP/cloud/ganeti"
+install -d "$M_TEMP"
 
 find_ip() {
   class=${GANETI_NETWORK%.*}
@@ -118,20 +119,20 @@ wait_ready() {
 }
 
 request() {
-node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
-ios=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
-iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f6`
-sed -i "/^${ip}/d" /etc/hosts
-echo "$ip $name" >> /etc/hosts
-#echo "$GNTI add -n $node -o $iparams $name"
-$GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1 </dev/null &
+  node=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
+  ios=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
+  iparams=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f6`
+  sed -i "/^${ip}/d" /etc/hosts
+  echo "$ip $name" >> /etc/hosts
+  #echo "$GNTI add -n $node -o $iparams $name"
+  $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1 </dev/null &
 }
 
 find_idev() {
-if [ "`cat "${M_TEMP}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
-  link=`cat "${M_TEMP}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
-fi
-$IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
+  if [ "`cat "${M_TEMP}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
+    link=`cat "${M_TEMP}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
+  fi
+  $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
 }
 
 prepare_file() {
@@ -155,7 +156,7 @@ IFS='
     else
       LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
       unset KEEP
-      a=`eval "echo \"$LINE\"" 2>>"${rpath}/../logs/cloud.log"`
+      a=`eval "echo \"$LINE\"" 2>>"$LOG"`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
         echo "$a" >> "${2}"
       else
@@ -195,20 +196,30 @@ OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
 # OS required for the new server
 OSNAME=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
+[ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && exit 1
 # common.sh is supposed to be a file containing functions and default settings
 # it cannot be just sourced, but we need only two things anyway
 OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`
 
 source "$OS_DEFAULT_CONF"
+log "$OS_DEFAULT_CONF sourced"
 HOOKS_DIR="$CUSTOMIZE_DIR"
 [ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
+log "HOOKS_DIR: $HOOKS_DIR"
+
+[ -z "$HOOKS_DIR" ] && log "Unable to find a hooks directory" && exit 1
 
 [ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
+
 broadcast=`find_broadcast`
+log "gateway: $GANETI_GATEWAY  broadcast: $broadcast"
+
 # some logic to define the Linux flavor will be here
 # for now it's the default Debian debootstrap OS
 prepare_file "$rpath/network_if.debian.tmpl" "$M_TEMP/interfaces"
+[ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
 prepare_file "$rpath/network_if.debian" "$M_TEMP/network"
+[ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
 # installing software via chroot has proven to be unreliable
 cp "$rpath/setup.sh.debian" "$M_TEMP/setup.sh"
 cp "$M_TEMP/network" "$HOOKS_DIR/"
@@ -248,6 +259,9 @@ if [ -z "$test" ]; then
     log "Adding tag cluster:$cluster failed"
     echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"
   fi
+else
+  log "This was a test, not sending request, exiting"
+  exit 0
 fi
 
 $SSHK -q -R "$ip" >/dev/null

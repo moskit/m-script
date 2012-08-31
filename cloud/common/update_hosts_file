@@ -48,7 +48,7 @@ IFS=$IFS1
 if [ -n "$1" ] ; then
   if [ "$1" == "everywhere" ] ; then
     echo "Syncing servers.list to all clusters"
-    for cluster in `cat "${rpath}/../../conf/clusters.conf" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*#` ; do
+    for cluster in `cat "${rpath}/../../conf/clusters.conf" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | grep -v ^$SUPER_CLUSTER\|` ; do
       clustername=`echo $cluster | cut -d'|' -f1`
       mpath=`echo $cluster | cut -d'|' -f8`
       if [ -n "$mpath" ] ; then
