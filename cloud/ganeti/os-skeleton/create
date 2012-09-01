@@ -1,0 +1,124 @@
+#!/bin/bash
+
+# Copyright (C) 2010 Oregon State University
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+
+set -e
+
+. common.sh
+
+debug set -x
+
+if [ "$IMAGE_TYPE" = "tarball" ] ; then
+    IMAGE_FILE="${IMAGE_DIR}/${IMAGE_NAME}-${ARCH}.tar.gz"
+elif [ "$IMAGE_TYPE" = "qemu" ] ; then
+    IMAGE_FILE="${IMAGE_DIR}/${IMAGE_NAME}-${ARCH}.img"
+elif [ "$IMAGE_TYPE" = "dump" ] ; then
+    IMAGE_FILE="${IMAGE_DIR}/${IMAGE_NAME}-${ARCH}-root.dump"
+fi
+
+if [ "$CDINSTALL" = "no" ] ; then
+    # If the target device is not a real block device we'll first losetup it.
+    # This is needed for file disks.
+    if [ ! -b $blockdev ]; then
+      ORIGINAL_BLOCKDEV=$blockdev
+      blockdev=$($LOSETUP -sf $blockdev)
+      CLEANUP+=("$LOSETUP -d $blockdev")
+    fi
+
+    if [ ! -f "$IMAGE_FILE" ] ; then
+      log_error "Can't find image file: $IMAGE_FILE"
+      exit 1
+    fi
+
+    # If the image is tarball based, then we need to manually create the
+    # volumes, filesystems, etc
+    if [ "${IMAGE_TYPE}" = "tarball" -o "${IMAGE_TYPE}" = "dump" ] ; then
+        # Create 3 partitions, /boot, swap, & /
+        format_disk0 $blockdev
+    elif [ "${IMAGE_TYPE}" = "qemu" ] ; then
+        # need a recent version of qemu for this
+        ${QEMU_IMG} convert ${IMAGE_FILE} -O host_device ${blockdev} > /dev/null
+    fi
+
+    # deploying something like a windows image, skip the rest
+    if [ "${NOMOUNT}" = "yes" ] ; then
+      cleanup
+      exit 0
+    fi
+
+    filesystem_dev=$(map_disk0 $blockdev)
+    CLEANUP+=("unmap_disk0 $blockdev")
+    root_dev=$(map_partition $filesystem_dev root)
+    boot_dev=$(map_partition $filesystem_dev boot)
+    swap_dev=$(map_partition $filesystem_dev swap)
+
+    if [ "${IMAGE_TYPE}" = "tarball" -o "${IMAGE_TYPE}" = "dump" ] ; then
+        mkfs_disk0
+        root_uuid="$($VOL_ID $root_dev)"
+        [ -n "$boot_dev" ] && sleep 1 && boot_uuid="$($VOL_ID $boot_dev)"
+        [ -n "$swap_dev" ] && sleep 1 && swap_uuid="$($VOL_ID $swap_dev)"
+    fi
+
+    TARGET=`mktemp -d` || exit 1
+    CLEANUP+=("rmdir $TARGET")
+
+    # mount filesystems
+    mount_disk0 $TARGET
+
+    if [ "${IMAGE_TYPE}" = "tarball" ] ; then
+        # unpack image
+        tar pzxf $IMAGE_FILE -C $TARGET
+    elif [ "${IMAGE_TYPE}" = "dump" ] ; then
+        root_dump="${IMAGE_FILE}"
+        ( cd ${TARGET}; restore -r -y -f ${root_dump} > /dev/null )
+
+        if [ -n "${boot_dev}" ] ; then
+            boot_dump="${IMAGE_FILE/root.dump/boot.dump}"
+            if [ ! -f "$boot_dump" ] ; then
+              log_error "Can't find image file: $boot_dump"
+              exit 1
+            fi
+            ( cd ${TARGET}/boot; restore -r -y -f ${boot_dump} > /dev/null )
+        fi
+    fi
+
+    if [ "${IMAGE_TYPE}" = "tarball" -o "${IMAGE_TYPE}" = "dump" ] ; then
+        setup_fstab $TARGET
+    fi
+
+    if [ "${INSTANCE_HV_serial_console}" = "True" ] ; then
+        setup_console $TARGET
+    fi
+
+    RUN_PARTS=`which run-parts`
+
+    if [ -n "$RUN_PARTS" -a -n "$CUSTOMIZE_DIR" -a -d "$CUSTOMIZE_DIR" ]; then
+      TARGET=$TARGET
+      BLOCKDEV=$blockdev
+      ROOT_DEV=$root_dev
+      BOOT_DEV=$boot_dev
+      export TARGET SUITE BLOCKDEV ROOT_DEV BOOT_DEV IMAGE_TYPE
+      $RUN_PARTS $CUSTOMIZE_DIR
+    fi
+fi
+
+# execute cleanups
+cleanup
+trap - EXIT
+
+exit 0

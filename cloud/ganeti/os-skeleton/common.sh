@@ -1,0 +1,446 @@
+#
+
+# Copyright (C) 2007, 2008, 2009 Google Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+
+AWK=`which awk 2>/dev/null`
+DUMP=`which dump 2>/dev/null`
+LOSETUP=`which losetup 2>/dev/null`
+KPARTX=`which kpartx 2>/dev/null`
+SFDISK=`which sfdisk 2>/dev/null`
+QEMU_IMG=`which qemu-img 2>/dev/null`
+MKDIR_P="`which install 2>/dev/null` -d"
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(cd "${rpath}/../../../" && pwd)
+LOG="$M_ROOT/logs/deploy.log"
+[ -z "$M_TEMP" ] && source "$M_ROOT/conf/mon.conf"
+[ -z "$M_TEMP" ] && M_TEMP="$M_TEMP/cloud/ganeti"
+
+CLEANUP=( )
+
+log_error() {
+  echo "$@" >&2
+}
+
+debug() {
+    [ "$IMAGE_DEBUG" == "1" -o "$IMAGE_DEBUG" == "yes" ] &&  $@ || :
+}
+
+get_api5_arguments() {
+  GETOPT_RESULT=$*
+  eval set -- "$GETOPT_RESULT"
+  while true; do
+    case "$1" in
+      -i|-n) instance=$2; shift 2;;
+
+      -o) old_name=$2; shift 2;;
+
+      -b) blockdev=$2; shift 2;;
+
+      -s) swapdev=$2; shift 2;;
+
+      --) shift; break;;
+
+      *)  log_error "Internal error!" >&2; exit 1;;
+    esac
+  done
+  if [ -z "$instance" -o -z "$blockdev" ]; then
+    log_error "Missing OS API Argument (-i, -n, or -b)"
+    exit 1
+  fi
+  if [ "$SCRIPT_NAME" != "export" -a -z "$swapdev"  ]; then
+    log_error "Missing OS API Argument -s (swapdev)"
+    exit 1
+  fi
+  if [ "$SCRIPT_NAME" = "rename" -a -z "$old_name"  ]; then
+    log_error "Missing OS API Argument -o (old_name)"
+    exit 1
+  fi
+}
+
+get_api10_arguments() {
+  if [ -z "$INSTANCE_NAME" -o -z "$HYPERVISOR" -o -z "$DISK_COUNT" ]; then
+    log_error "Missing OS API Variable:"
+    log_error "(INSTANCE_NAME HYPERVISOR or DISK_COUNT)"
+    exit 1
+  fi
+  instance=$INSTANCE_NAME
+  if [ $DISK_COUNT -lt 1 -o -z "$DISK_0_PATH" ]; then
+    log_error "At least one disk is needed"
+    exit 1
+  fi
+  if [ "$SCRIPT_NAME" = "export" ]; then
+    if [ -z "$EXPORT_DEVICE" ]; then
+      log_error "Missing OS API Variable EXPORT_DEVICE"
+    fi
+    blockdev=$EXPORT_DEVICE
+  elif [ "$SCRIPT_NAME" = "import" ]; then
+    if [ -z "$IMPORT_DEVICE" ]; then
+       log_error "Missing OS API Variable IMPORT_DEVICE"
+    fi
+    blockdev=$IMPORT_DEVICE
+  else
+    blockdev=$DISK_0_PATH
+  fi
+  if [ "$SCRIPT_NAME" = "rename" -a -z "$OLD_INSTANCE_NAME" ]; then
+    log_error "Missing OS API Variable OLD_INSTANCE_NAME"
+  fi
+  old_name=$OLD_INSTANCE_NAME
+}
+
+get_os_type() {
+    target=$1
+    if [ -z "${target}" ] ; then
+        log_error "target is not set in get_os_type"
+        exit 1
+    fi
+    if [ -e ${target}/etc/redhat-release ] ; then
+        OS_TYPE="redhat"
+    elif [ -e ${target}/etc/debian_version ] ; then
+        OS_TYPE="debian"
+    elif [ -e ${target}/etc/gentoo-release ] ; then
+        OS_TYPE="gentoo"
+    elif [ -e ${target}/etc/SuSE-release ] ; then
+        OS_TYPE="suse"
+    fi
+}
+
+get_os() {
+    target=$1
+    if [ -z "${target}" ] ; then
+        log_error "target is not set in get_os"
+        exit 1
+    fi
+    lsb="/usr/bin/lsb_release"
+    if [ -e $lsb ] ; then
+        OPERATING_SYSTEM="$(chroot ${target} ${lsb} -i -s | tr "[:upper:]" "[:lower:]")"
+    elif [ -e ${target}/etc/debian_version ] ; then
+        OPERATING_SYSTEM="debian"
+    elif [ -e ${target}/etc/gentoo-release ] ; then
+        OPERATING_SYSTEM="gentoo"
+    elif [ -e ${target}/etc/fedora-release ] ; then
+        OPERATING_SYSTEM="fedora"
+    elif [ -e ${target}/etc/redhat-release ] ; then
+        if [ -n "$(grep -i centos ${target}/etc/redhat-release)" ] ; then
+            OPERATING_SYSTEM="centos"
+        else
+            OPERATING_SYSTEM="redhat"
+        fi
+    fi
+}
+
+get_os_release() {
+    target=$1
+    if [ -z "${target}" ] ; then
+        log_error "target is not set in get_os_release"
+        exit 1
+    fi
+    lsb="/usr/bin/lsb_release"
+    if [ -e $lsb ] ; then
+        OS_RELEASE="$(chroot ${target} ${lsb} -r -s | tr "[:upper:]" "[:lower:]")"
+    elif [ -e ${target}/etc/debian_version ] ; then
+        OS_RELEASE="$(cat ${target}/etc/debian_version)"
+    elif [ -e ${target}/etc/fedora-release ] ; then
+        OS_RELEASE="$(cat ${target}/etc/fedora-release | awk '{print $3}')"
+    elif [ -e ${$target}/etc/redhat-release ] ; then
+        OS_RELEASE="$(cat ${target}/etc/redhat-release | awk '{print $3}')"
+    fi
+}
+
+format_disk0() {
+    local sfdisk_cmd="$SFDISK -uM -H 255 -S 63 --quiet --Linux --DOS $1"
+    if [  "${SWAP}" = "yes" -a -z "${KERNEL_PATH}" ] ; then
+        # Create three partitions:
+        # 1 - 100MB /boot, bootable
+        # 2 - Size of Memory, swap
+        # 3 - Rest
+        $sfdisk_cmd > /dev/null <<EOF
+,100,L,*
+,${SWAP_SIZE},S
+,,L
+EOF
+    elif [  "${SWAP}" = "no" -a -z "${KERNEL_PATH}" ] ; then
+        # Create two partitions:
+        # 1 - 100MB /boot, bootable
+        # 2 - Rest
+        $sfdisk_cmd > /dev/null <<EOF
+,100,L,*
+,,L
+EOF
+    elif [  "${SWAP}" = "yes" -a -n "${KERNEL_PATH}" ] ; then
+        # Create two partitions:
+        # 1 - Size of Memory, swap
+        # 2 - Rest
+        $sfdisk_cmd > /dev/null <<EOF
+,$SWAP_SIZE,S
+,,L
+EOF
+    elif [  "${SWAP}" = "no" -a -n "${KERNEL_PATH}" ] ; then
+        # Create two partitions:
+        # 1 - Whole
+        $sfdisk_cmd > /dev/null <<EOF
+,,L
+EOF
+    fi
+}
+
+mkfs_disk0() {
+    local mkfs="mkfs.${FILESYSTEM}"
+    # Format /
+    $mkfs -Fq -L / $root_dev > /dev/null
+    # Format /boot
+    if [ -n "${boot_dev}" ] ; then
+        $mkfs -Fq -L /boot $boot_dev > /dev/null
+    fi
+    # Format swap
+    if [ -n "${swap_dev}" ] ; then
+        # Format swap
+        mkswap -f $swap_dev > /dev/null
+    fi
+    # During reinstalls, ext4 needs a little time after a mkfs so add it here
+    # and also run a sync to be sure.
+    sync
+    sleep 2
+}
+
+mount_disk0() {
+    local target=$1
+    mount $root_dev $target
+    CLEANUP+=("umount $target")
+    if [ -n "${boot_dev}" ] ; then
+        $MKDIR_P $target/boot
+        mount $boot_dev $target/boot
+        CLEANUP+=("umount $target/boot")
+    fi
+    # sync the file systems before unmounting to ensure everything is flushed
+    # out
+    CLEANUP+=("sync")
+}
+
+map_disk0() {
+    blockdev="$1"
+    filesystem_dev_base=`$KPARTX -l -p- $blockdev | \
+                            grep -m 1 -- "-1.*$blockdev" | \
+                            $AWK '{print $1}'`
+    if [ -z "$filesystem_dev_base" ]; then
+        log_error "Cannot interpret kpartx output and get partition mapping"
+        exit 1
+    fi
+    $KPARTX -a -p- $blockdev > /dev/null
+    filesystem_dev="/dev/mapper/${filesystem_dev_base/%-1/}"
+    if [ ! -b "/dev/mapper/$filesystem_dev_base" ]; then
+        log_error "Can't find kpartx mapped partition: /dev/mapper/$filesystem_dev_base"
+        exit 1
+    fi
+    echo "$filesystem_dev"
+}
+
+map_partition() {
+    filesystem_dev="$1"
+    partition="$2"
+    if [ "${SWAP}" = "yes" -a -z "${KERNEL_PATH}" ] ; then
+        boot_dev="${filesystem_dev}-1"
+        swap_dev="${filesystem_dev}-2"
+        root_dev="${filesystem_dev}-3"
+    elif [ "${SWAP}" = "no" -a -z "${KERNEL_PATH}" ] ; then
+        boot_dev="${filesystem_dev}-1"
+        root_dev="${filesystem_dev}-2"
+    elif [ "${SWAP}" = "yes" -a -n "${KERNEL_PATH}" ] ; then
+        swap_dev="${filesystem_dev}-1"
+        root_dev="${filesystem_dev}-2"
+    elif [ "${SWAP}" = "no" -a -n "${KERNEL_PATH}" ] ; then
+        root_dev="${filesystem_dev}-1"
+    fi
+    echo "$(eval "echo \${$(echo ${partition}_dev)"})"
+}
+
+unmap_disk0() {
+  $KPARTX -d -p- $1
+}
+
+setup_fstab() {
+    local target=$1 fs=${FILESYSTEM}
+    get_os_type $target
+    cat > $target/etc/fstab <<EOF
+# /etc/fstab: static file system information.
+#
+# <file system>   <mount point>   <type>  <options>       <dump>  <pass>
+UUID=$root_uuid   /               $fs     defaults        0       1
+proc              /proc           proc    defaults        0       0
+EOF
+
+if [ -n "$boot_dev" -a -n "$boot_uuid" ] ; then
+    cat >> $target/etc/fstab <<EOF
+UUID=$boot_uuid   /boot           $fs     defaults        1       2
+EOF
+fi
+
+if [ -n "$swap_dev" -a -n "$swap_uuid" ] ; then
+    cat >> $target/etc/fstab <<EOF
+UUID=$swap_uuid   swap            swap    defaults        0       0
+EOF
+fi
+
+# OS Specific fstabs
+if [ "$OS_TYPE" = "redhat" ] ; then
+    cat >> $target/etc/fstab <<EOF
+tmpfs             /dev/shm        tmpfs   defaults        0       0
+devpts            /dev/pts        devpts  gid=5,mode=620  0       0
+sysfs             /sys            sysfs   defaults        0       0
+EOF
+fi
+
+if [ "$OS_TYPE" = "gentoo" ] ; then
+    cat >> $target/etc/fstab <<EOF
+shm               /dev/shm        tmpfs   nodev,nosuid,noexec 0   0
+EOF
+fi
+}
+
+setup_console() {
+    local target=$1
+    if [ -z "$target" ] ; then
+        log_error "target not set for setup_console"
+        exit 1
+    fi
+    # Upstart is on this system, so do this instead
+    if [ -e ${target}/etc/event.d/tty1 ] ; then
+        cat ${target}/etc/event.d/tty1 | sed -re 's/tty1/ttyS0/' \
+            > ${target}/etc/event.d/ttyS0
+        return
+    fi
+    # upstart in karmic and newer
+    if [ -e ${target}/etc/init/tty1.conf ] ; then
+        cat ${target}/etc/init/tty1.conf | \
+        sed -re 's/^exec.*/exec \/sbin\/getty -L 115200 ttyS0 vt102/' \
+            > ${target}/etc/init/ttyS0.conf
+        sed -ie 's/tty1/ttyS0/g' ${target}/etc/init/ttyS0.conf
+        return
+    fi
+    get_os $target
+    case $OPERATING_SYSTEM in
+        gentoo)
+            sed -i -e 's/.*ttyS0.*/s0:12345:respawn:\/sbin\/agetty 115200 ttyS0 vt100/' \
+                ${target}/etc/inittab
+            ;;
+        centos)
+            echo "s0:12345:respawn:/sbin/agetty 115200 ttyS0 vt100" >> \
+                ${target}/etc/inittab
+            ;;
+        debian|ubuntu)
+            sed -i -e 's/.*T0.*/T0:23:respawn:\/sbin\/getty -L ttyS0 115200 vt100/' \
+                ${target}/etc/inittab
+            ;;
+        *)
+            echo "No support for your OS in instance-image, skipping..."
+            ;;
+    esac
+}
+
+cleanup() {
+  if [ ${#CLEANUP[*]} -gt 0 ]; then
+    LAST_ELEMENT=$((${#CLEANUP[*]}-1))
+    REVERSE_INDEXES=$(seq ${LAST_ELEMENT} -1 0)
+    for i in $REVERSE_INDEXES; do
+      ${CLEANUP[$i]}
+    done
+  fi
+}
+
+trap cleanup EXIT
+
+# note: we don't set a default mirror since debian and ubuntu have
+# different defaults, and it's better to use the default
+
+# only if the user want to specify a mirror in the defaults file we
+# will use it, this declaration is to make sure the variable is set
+: ${CDINSTALL:="no"}
+: ${SWAP:="yes"}
+: ${SWAP_SIZE:="${INSTANCE_BE_memory}"}
+: ${FILESYSTEM:="ext3"}
+: ${KERNEL_ARGS=""}
+: ${OVERLAY=""}
+: ${IMAGE_NAME:=""}
+: ${IMAGE_TYPE:="dump"}
+: ${NOMOUNT:="no"}
+: ${ARCH:=""}
+: ${CUSTOMIZE_DIR:="$M_TEMP/hooks"}
+: ${VARIANTS_DIR:="$M_TEMP/variants"}
+: ${NETWORKS_DIR:="$M_TEMP/networks"}
+: ${OVERLAYS_DIR:="$M_TEMP/overlays"}
+: ${IMAGE_DIR:="/var/cache/ganeti-instance-image"}
+: ${IMAGE_DEBUG:="no"}
+
+SCRIPT_NAME=$(basename $0)
+KERNEL_PATH="$INSTANCE_HV_kernel_path"
+
+if [ -f /sbin/blkid -a -x /sbin/blkid ]; then
+    VOL_ID="/sbin/blkid -c /dev/null -o value -s UUID"
+    VOL_TYPE="/sbin/blkid -c /dev/null -o value -s TYPE"
+else
+    for dir in /lib/udev /sbin; do
+        if [ -f $dir/vol_id -a -x $dir/vol_id ]; then
+            VOL_ID="$dir/vol_id -u"
+            VOL_TYPE="$dir/vol_id -t"
+        fi
+    done
+fi
+
+if [ -z "$VOL_ID" ]; then
+    log_error "vol_id or blkid not found, please install udev or util-linux"
+    exit 1
+fi
+
+
+if [ -z "$OS_API_VERSION" -o "$OS_API_VERSION" = "5" ]; then
+  OS_API_VERSION=5
+  GETOPT_RESULT=`getopt -o o:n:i:b:s: -n '$0' -- "$@"`
+  if [ $? != 0 ] ; then log_error "Terminating..."; exit 1 ; fi
+  get_api5_arguments $GETOPT_RESULT
+elif [ "$OS_API_VERSION" = "10" -o "$OS_API_VERSION" = "15" ]; then
+  get_api10_arguments
+else
+  log_error "Unknown OS API VERSION $OS_API_VERSION"
+  exit 1
+fi
+
+if [ -n "$OS_VARIANT" ]; then
+  if [ ! -d "$VARIANTS_DIR" ]; then
+    log_error "OS Variants directory $VARIANTS_DIR doesn't exist"
+    exit 1
+  fi
+  VARIANT_CONFIG="$VARIANTS_DIR/$OS_VARIANT.conf"
+  if [ -f "$VARIANT_CONFIG" ]; then
+    . "$VARIANT_CONFIG"
+  else
+    if grep -qxF "$OS_VARIANT" variants.list; then
+      log_error "ERROR: instance-image configuration error"
+      log_error "  Published variant $OS_VARIANT is missing its config file"
+      log_error "  Please create $VARIANT_CONFIG or unpublish the variant"
+      log_error "  (by removing $OS_VARIANT from variants.list)"
+    else
+      log_error "Unofficial variant $OS_VARIANT is unsupported"
+      log_error "Most probably this is a user error, forcing a wrong name"
+      log_error "To support this variant please create file $VARIANT_CONFIG"
+    fi
+    exit 1
+  fi
+fi
+

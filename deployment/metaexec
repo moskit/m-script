@@ -279,7 +279,7 @@ if [ -n "$newserver" ]; then
   
   for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
     startserver $T
-    [[ $res -eq 0 -a `expr $ip : [0-9.]*$` -ne 0 ]] && break
+    [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]] && break
     [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
     [ $res -eq 6 ] && log "Failed to generate a name for the new server" && exit 1
     [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && exit 1

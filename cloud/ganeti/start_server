@@ -125,7 +125,7 @@ request() {
   sed -i "/^${ip}/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
   #echo "$GNTI add -n $node -o $iparams $name"
-  $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1 </dev/null &
+  $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1
 }
 
 find_idev() {
