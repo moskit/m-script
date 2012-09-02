@@ -94,9 +94,9 @@ request() {
     updateimages=true
   fi
   $updateflavors && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
-  nump=0; f=false ; cat "${M_TEMP}/flavors.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo > "${M_TEMP}/flavors.list"
+  (nump=0; f=false ; cat "${M_TEMP}/flavors.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "${M_TEMP}/flavors.list"
   $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
-  nump=0; f=false ; cat "${M_TEMP}/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo > "${M_TEMP}/images.list"
+  (nump=0; f=false ; cat "${M_TEMP}/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "${M_TEMP}/images.list"
 }
 
 list_servers() {

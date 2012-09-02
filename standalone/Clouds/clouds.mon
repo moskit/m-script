@@ -37,7 +37,7 @@ clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 
 [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ] && thischanged=false || thischanged=true
 for cloud in ${clouds[*]} ; do
   if [ -n "`$DIFF -q "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev" 2>&1`" ]; then
-    
+    "$M_ROOT"/cloud/$cloud/show_servers --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
   fi
 done
 
