@@ -168,4 +168,5 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
     esac
   fi
 done
+[ -n "$tableflag" ] && echo "</table>"
 IFS=$IFS1
