@@ -24,7 +24,7 @@ LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 
-possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolve-ids"
+possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolveids"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -94,7 +94,9 @@ request() {
     updateimages=true
   fi
   $updateflavors && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
+  nump=0; f=false ; cat "${M_TEMP}/flavors.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo > "${M_TEMP}/flavors.list"
   $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
+  nump=0; f=false ; cat "${M_TEMP}/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo > "${M_TEMP}/images.list"
 }
 
 list_servers() {
@@ -166,10 +168,10 @@ list_servers() {
           intIP=${intIP#* } ; intIP=${intIP% *}
           case $view in
             list)
-              echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Image: $imageId  Size: $flavorId"
+              echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
               ;;
             table)
-              echo "${id}|${name}|${status}|${extIP}|${intIP}|${imageId}|${flavorId}"
+              echo "${id}|${name}|${status}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}"
               ;;
             column)
               echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
@@ -211,13 +213,11 @@ list_servers() {
 }
 
 imageid() {
-  imagenum=`grep \/id\|${1}$ "${M_TEMP}/images.resp" | cut -d'/' -f3`
-  grep \/$imagenum\/name\| "${M_TEMP}/images.resp" | cut -d'|' -f2
+  grep ^$1\| "${M_TEMP}/images.list" | cut -d'|' -f2
 }
 
 flavorid() {
-  imagenum=`grep \/id\|${1}$ "${M_TEMP}/flavors.resp" | cut -d'/' -f3`
-  grep \/$imagenum\/name\| "${M_TEMP}/flavors.resp" | cut -d'|' -f2
+  grep ^$1\| "${M_TEMP}/flavors.list" | cut -d'|' -f2
 }
 
 try_auth() {
