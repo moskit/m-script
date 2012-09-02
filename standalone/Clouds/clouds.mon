@@ -1,0 +1,52 @@
+#!/bin/bash
+# Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+source "$M_ROOT/lib/functions.sh"
+LOG="$M_ROOT/logs/sa.log"
+log "Starting.."
+
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/cloud.conf"
+M_TEMP="$M_TEMP/cloud"
+
+clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
+
+# This monitor doesn't query API itself, it relies on periodic running of
+# update_servers_list instead
+[ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ] && thischanged=false || thischanged=true
+for cloud in ${clouds[*]} ; do
+  if [ -n "`$DIFF -q "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev" 2>&1`" ]; then
+    
+  fi
+done
+
+
+
+
+
+
+
+  
+
+

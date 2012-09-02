@@ -6,6 +6,7 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 source "$M_ROOT/lib/functions.sh"
+LOG="$M_ROOT/logs/sa.log"
 log "Starting.."
 
 DIFF=`which diff 2>/dev/null`
@@ -26,9 +27,9 @@ function print_servers() {
 }
 
 function find_master() {
-  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary"| grep -v arning | tail -1 2>>${rpath}/../../logs/MongoDB.log`
+  im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().primary" 2>>"$LOG" | grep -v arning | tail -1`
   if [ -z "$im" ] ; then
-    im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster"|tail -1 2>>${rpath}/../../logs/MongoDB.log`
+    im=`${MONGO} ${1}/config --quiet --eval "rs.isMaster().ismaster" 2>>"$LOG" |tail -1`
     [ "X$im" == "Xtrue" ] && im=$1
   fi
   [ -n "$im" ] && echo $im || (log "Unable to find master for replica set (asked ${1})" && exit 1)
@@ -38,7 +39,7 @@ function find_rsmemberrole() {
   rsmemberrole='|slave'
   master=`find_master "${1}"`
   members=`mongo ${master}/config --quiet --eval "rs.conf().members.forEach(printjson)" | "${rpath}/../../lib/json2txt"`
-  membernum=`echo "$members"|grep "${1}" | cut -d'/' -f1`
+  membernum=`echo "$members" | grep "${1}" | cut -d'/' -f1`
   arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
   [ $arbiter -eq 1 ] && rsmemberrole='|arbiter'
   [ -n "$master" ] && [ "$master" == "${1}" ] && rsmemberrole='|master'
@@ -196,7 +197,7 @@ function parse_data() {
   echo "Total                $ops_totalqps      $ops_totalqps_sharded      $ops_totalqps_notsharded"
   
   if [ "X$SQLITE3" == "X1" ] ; then
-    $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}')" 2>>${rpath}/MongoDB.log
+    $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}')" 2>>"$LOG"
   fi
   
 }
@@ -224,7 +225,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
     collect_hosts $MONGO_CONFIG_SERVERS
   fi
 
-  print_servers $configips > "${M_TEMP}/mongo_config_servers.list" | tee -a ${rpath}/../../logs/MongoDB.log
+  print_servers $configips > "${M_TEMP}/mongo_config_servers.list"
   [ -f "${M_TEMP}/mongo_config_servers.list" ] && [ -f "${rpath}/mongo_config_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"`" ] && mv "${M_TEMP}/mongo_config_servers.list" "${rpath}/mongo_config_servers.list"
   
 elif [ -z "$MONGO_SERVERS" ] ; then
