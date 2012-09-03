@@ -393,8 +393,12 @@ else
 fi
 if [ -z "$list" ] ; then
   echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n"
+  # the best moment for this seems to be here
+  [ -z "${KEEP_DEPLOYTMP}" ] && KEEP_DEPLOYTMP=30
+  find "$WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +${KEEP_DEPLOYTMP} -exec rm -rf {} \;
 fi
 echo
+
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then
 #  echo "Using existing key"

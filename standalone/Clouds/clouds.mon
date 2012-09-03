@@ -30,6 +30,25 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 M_TEMP="$M_TEMP/cloud"
 
+gen_html_table() {
+IFS1=$IFS
+IFS='
+'
+echo -n "<table><tr style=\"font-weight: bold\"><td>ID</td><td>Name</td><td>Status</td><td>Public IP</td><td>Private IP</td><td>Cluster</td><td>Image</td><td>Size</td></tr>"
+for LN in `cat "$M_TEMP/$cloud/full.servers.list"` ; do
+  ID="${LINE%%|*}"
+  name="`echo $LN | cut -d'|' -f2`"
+  status="`echo $LN | cut -d'|' -f3`"
+  pubIP="`echo $LN | cut -d'|' -f4`"
+  privIP="`echo $LN | cut -d'|' -f5`"
+  cluster="`echo $LN | cut -d'|' -f6`"
+  image="`echo $LN | cut -d'|' -f7`"
+  size="`echo $LN | cut -d'|' -f8`"
+  echo "<tr id=\"$ID\"><td id=\"${ID}_id\">$ID</td><td id=\"${ID}_name\">$name</td><td id=\"${ID}_status\">$status</td><td id=\"${ID}_pubIP\">$pubIP</td><td id=\"${ID}_privIP\">$privIP</td><td id=\"${ID}_cluster\">$cluster</td><td id=\"${ID}_image\">$image</td><td id=\"${ID}_size\">$size</td></tr></table>"
+done
+IFS=$IFS1
+}
+
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
 
 # This monitor doesn't query API itself, it relies on periodic running of
@@ -40,6 +59,11 @@ for cloud in ${clouds[*]} ; do
     "$M_ROOT"/cloud/$cloud/show_servers --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
   fi
 done
+
+nice gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
+
+
+
 
 
 
