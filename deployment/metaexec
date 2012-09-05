@@ -292,7 +292,7 @@ if [ -n "$newserver" ]; then
 fi
 
 # Default output is console, colored if colors are supported
-if [ -z "$output" ] ; then
+if [ -z "$output" -a -z "$use_color" ] ; then
 # Thanks to Gentoo guys for this part, I couldn't do better
   safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
   match_lhs=""

@@ -120,6 +120,7 @@ if $use_color ; then
   ATTR_CONCEALED='08;'
   # Example:
   # echo -e "$CONTR_SEQ$ATTR_BOLD$FG_RED$HOSTNAME$CONTR_SEQ$ATTR_BLINK${FG_WHITE}:$UNSET_COLOR"
+  # echo -e "$CONTR_SEQ$FG_MAGENTA blablabla $UNSET_COLOR"  ### - simplest case
 fi
 
 setup_env
