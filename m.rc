@@ -76,7 +76,6 @@ set_default_ps() {
   export PS1
 }
 
-use_color=false
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
 match_lhs=""
 [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
@@ -84,10 +83,10 @@ match_lhs=""
 [[ -z ${match_lhs}    ]] \
 	&& type -P dircolors >/dev/null \
 	&& match_lhs=$(dircolors --print-database)
-[[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
-export use_color
+[[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && M_COLOR=1
+export M_COLOR
 
-if $use_color ; then
+if [ -n "$M_COLOR" ] ; then
 # Attribute codes: 
 # 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
 # Text color codes:
@@ -121,6 +120,7 @@ if $use_color ; then
   # Example:
   # echo -e "$CONTR_SEQ$ATTR_BOLD$FG_RED$HOSTNAME$CONTR_SEQ$ATTR_BLINK${FG_WHITE}:$UNSET_COLOR"
   # echo -e "$CONTR_SEQ$FG_MAGENTA blablabla $UNSET_COLOR"  ### - simplest case
+  
 fi
 
 setup_env
@@ -128,5 +128,5 @@ set_default_ps
 cd
 
 
-unset use_color safe_term match_lhs
+unset safe_term match_lhs
 
