@@ -52,18 +52,18 @@ fi
 KEY="$M_ROOT/keys/$KEY"
 
 if [ -f "$KEY" ]; then
-  $SSH -i "$KEY" "$1"
+  $SSH -i "$KEY" "$@"
   [ $? -eq 255 ] && nextkey=true || exit 0
 fi
 if $nextkey ; then
   if [ -f "$USERKEY1" ]; then
-    $SSH -i "$USERKEY1" "$1"
+    $SSH -i "$USERKEY1" "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 fi
 if $nextkey ; then
   if [ -f "$USERKEY2" ]; then
-    $SSH -i "$USERKEY2" "$1"
+    $SSH -i "$USERKEY2" "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 fi

@@ -191,9 +191,9 @@ case $command1 in
             done
           fi
           for ((i=0; i<${#scerr[*]}; i++)) ; do
-            [ -n "$use_color" ] && echo -e "$CONTR_SEQ$FG_RED"
+            [ -n "$M_COLOR" ] && echo -n -e "$CONTR_SEQ$FG_RED"
             echo "${scerr[$i]}"
-            [ -n "$use_color" ] && echo -e "$UNSET_COLOR"
+            [ -n "$M_COLOR" ] && echo -n -e "$UNSET_COLOR"
           done
           unset scerr
         done
@@ -215,10 +215,10 @@ case $command1 in
           for mis in ${mi[*]} ; do
             if [ "$mis" == "unused" ] ; then
               if [ -n "$all" ]; then
-                [ -n "$use_color" ] && echo -e "$CONTR_SEQ$FG_MAGENTA"
+                [ -n "$M_COLOR" ] && echo -n -e "$CONTR_SEQ$FG_MAGENTA"
                 printcol "$scr"
                 echo "not found in any meta"
-                [ -n "$use_color" ] && echo -e "$UNSET_COLOR"
+                [ -n "$M_COLOR" ] && echo -n -e "$UNSET_COLOR"
                 unset scr
               fi
             else

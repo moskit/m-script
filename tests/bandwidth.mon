@@ -107,10 +107,7 @@ else
   diffbwout=0
 fi
 
-echo
-echo "Bandwidth:"
-echo "----------"
-echo
+echo -e "\nBandwidth:\n----------\n"
 
 [[ $CONNECTIONS_1 -ne 0 ]] && y1="$(echo "$numconn >= $CONNECTIONS_1" | bc)" || y1=0
 [[ $CONNECTIONS_2 -ne 0 ]] && y2="$(echo "$numconn >= $CONNECTIONS_2" | bc)" || y2=0

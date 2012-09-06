@@ -84,9 +84,9 @@ match_lhs=""
 	&& type -P dircolors >/dev/null \
 	&& match_lhs=$(dircolors --print-database)
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && M_COLOR=1
-export M_COLOR
 
 if [ -n "$M_COLOR" ] ; then
+  export M_COLOR
 # Attribute codes: 
 # 00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
 # Text color codes:
@@ -120,7 +120,7 @@ if [ -n "$M_COLOR" ] ; then
   # Example:
   # echo -e "$CONTR_SEQ$ATTR_BOLD$FG_RED$HOSTNAME$CONTR_SEQ$ATTR_BLINK${FG_WHITE}:$UNSET_COLOR"
   # echo -e "$CONTR_SEQ$FG_MAGENTA blablabla $UNSET_COLOR"  ### - simplest case
-  
+  export CONTR_SEQ UNSET_COLOR FG_BLACK FG_RED FG_GREEN FG_YELLOW FG_BLUE FG_MAGENTA FG_CYAN FG_WHITE BG_BLACK BG_RED BG_GREEN BG_YELLOW BG_BLUE BG_MAGENTA BG_CYAN BG_WHITE ATTR_NONE ATTR_BOLD ATTR_UNDERSCORE ATTR_BLINK ATTR_REVERSE ATTR_CONCEALED
 fi
 
 setup_env

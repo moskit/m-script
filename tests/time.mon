@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
+source "${rpath}/../conf/cloud.conf"
+source "${rpath}/../lib/functions.sh"
+
+[ -z "$CLUSTER" ] && CLUSTER="all"
+[ -x "/sbin/ntpd" ] && NTPD="/sbin/ntpd" || NTPD=`which ntpd 2>/dev/null`
+
+echo -e "\nClock drift:\n------------\n"
+
+servers=( )
+timedeltas=( )
+declare -i n
+n=0
+for server in "$M_ROOT"/cloud/common/get_ips --cluster=$CLUSTER ; do
+  timedelta=$(echo -e "scale=2; `(time -p "$M_ROOT"/helpers/mssh $server date +"%s.%N") 2>&1 | grep -E '^[0-9]|^real' | cut -d' ' -f2 | tr '\n' '|' | sed 's_|$__;s_|_ + \(_;s|$| * 0.25\)|'` - `date +"%s.%N"`" | bc)
+  servers+=( $server ) ; timedeltas+=( $timedelta )
+  deltasum=`echo "scale=2; $deltasum + $timedelta" | bc`
+done
+deltaavg=`echo "scale=2; $deltasum / ${#servers[*]}" | bc`
+deltaL=0
+deltaR=0
+for ((i=0; i<${#servers[*]}; i++)); do
+  delta=`echo "scale=2; ${timedeltas[$i]} - $deltaavg" | bc`
+  if [ `echo "$delta < $deltaL" | bc` -eq 1 ]; then
+    deltaL=$delta
+  fi
+  if [ `echo "$delta > $deltaR" | bc` -eq 1 ]; then
+    deltaR=$delta
+  fi
+done
+if [ `echo "$deltaavg > $MAXDELTA" | bc` -eq 1 ]; then
+  if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaL) < abs($deltaavg)" | bc` -eq 1 ] && [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaR) < abs($deltaavg)" | bc` -eq 1 ]; then
+    # This means that localhost's clock is not correct, so we fix it and exit
+    [ -n "$NTPD" ] && $NTPD -gq
+    exit 0
+  fi
+fi
+
+for ((i=0; i<${#servers[*]}; i++)); do
+  echo -e -n "`find_name ${server[$i]}`\t\t${timedeltas[$i]}"
+  if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs(${timedeltas[$i]}) > abs($MAXDELTA)" | bc` -eq 1 ]; then
+    "$M_ROOT"/helpers/mssh ${server[$i]} $NTPD -gq && echo -e "\tfixed" || echo -e "\tfix failed"
+  else
+    echo
+  fi
+done
+
+
+
+
+
+
