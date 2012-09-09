@@ -167,7 +167,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
   fi
 done
 
-ps axo vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir
+ps axo vsz,pid,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir
 
 for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   unset usageprev warnind
