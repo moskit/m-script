@@ -143,10 +143,11 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
   usage=${proc%% *}
   procid=`echo $proc | cut -d' ' -f2`
   procname=`echo $proc | cut -d' ' -f$fields`
+  prochumanname="${procname#* }"
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
-  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
-  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $procname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid \"${prochumanname}\" is using ${usagemb}MB of RAM"
+  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -162,21 +163,22 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     [ "$y1" == "1" ] && warnind=' <*> '
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
-    [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" RAM usage $direction by $usagediff percents"
+    [ -n "$warnind" ] && echo "${warnind} Process ID $procid \"${prochumanname}\" RAM usage $direction by $usagediff percents"
   fi
 done
 
 ps axo vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir
 
-for proc in `cat ${M_TEMP}/ps.list.res` ; do
+for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   unset usageprev warnind
   usage=${proc%% *}
   procid=`echo $proc | cut -d' ' -f2`
   procname=`echo $proc | cut -d' ' -f$fields`
+  prochumanname="${procname#* }"
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
-  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
-  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $procname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid \"${prochumanname}\" is using ${usagemb}MB of virtual memory"
+  [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep "$procid\ $prochumanname" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -192,7 +194,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     [ "$y1" == "1" ] && warnind=' <*> '
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
-    [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" RAM usage $direction by $usagediff percents"
+    [ -n "$warnind" ] && echo "${warnind} Process ID $procid \"${prochumanname}\" virtual memory usage $direction by $usagediff percents"
   fi
 done
 
