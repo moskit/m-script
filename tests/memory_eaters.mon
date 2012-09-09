@@ -34,24 +34,28 @@ totalmem=`expr $totalram + $totalswap`
 
 if [ -n "$CALCULATE_TOTALS" ] ; then
 
+  ### +1 to include user
+  ### +3 to start from the user field (see sequence below: rsz,vsz,user,cmd)
+  CMD_ARGS_TOT=`expr $CMD_ARGS + 4`
+  
   ps axo rsz,vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | tail -n +2 > ${M_TEMP}/ps.list
-  fields=$(for ((i=3; i<=$CMD_ARGS; i++)); do echo -n "${i}," ; done)
+  fields=$(for ((i=3; i<=$CMD_ARGS_TOT; i++)); do echo -n "${i}," ; done)
   fields=${fields%,} 
 
   [ -z "$TOTALS_MEM_TOP_NUM" ] && TOTALS_MEM_TOP_NUM=$MEM_TOP_NUM
-  [ -z "$MEM_RES_MIN" ] && TOTALS_MEM_RES_MIN=$MEM_RES_MIN
-  [ -z "$MEM_VIR_MIN" ] && TOTALS_MEM_VIR_MIN=$MEM_VIR_MIN
-  [ -z "$MEM_RES_1" ] && TOTALS_MEM_RES_1=$MEM_RES_1
-  [ -z "$MEM_RES_2" ] && TOTALS_MEM_RES_2=$MEM_RES_2
-  [ -z "$MEM_RES_3" ] && TOTALS_MEM_RES_3=$MEM_RES_3
-  [ -z "$MEM_VIR_1" ] && TOTALS_MEM_VIR_1=$MEM_VIR_1
-  [ -z "$MEM_VIR_2" ] && TOTALS_MEM_VIR_2=$MEM_VIR_2
-  [ -z "$MEM_VIR_3" ] && TOTALS_MEM_VIR_3=$MEM_VIR_3
+  [ -z "$TOTALS_MEM_RES_MIN" ] && TOTALS_MEM_RES_MIN=$MEM_RES_MIN
+  [ -z "$TOTALS_MEM_VIR_MIN" ] && TOTALS_MEM_VIR_MIN=$MEM_VIR_MIN
+  [ -z "$TOTALS_MEM_RES_1" ] && TOTALS_MEM_RES_1=$MEM_RES_1
+  [ -z "$TOTALS_MEM_RES_2" ] && TOTALS_MEM_RES_2=$MEM_RES_2
+  [ -z "$TOTALS_MEM_RES_3" ] && TOTALS_MEM_RES_3=$MEM_RES_3
+  [ -z "$TOTALS_MEM_VIR_1" ] && TOTALS_MEM_VIR_1=$MEM_VIR_1
+  [ -z "$TOTALS_MEM_VIR_2" ] && TOTALS_MEM_VIR_2=$MEM_VIR_2
+  [ -z "$TOTALS_MEM_VIR_3" ] && TOTALS_MEM_VIR_3=$MEM_VIR_3
   
   for proc in `cat ${M_TEMP}/ps.list | grep -v '^0 0' | cut -d' ' -f$fields | sort | uniq` ; do
     virtual=0
     resident=0
-    for thisproc in `cat ${M_TEMP}/ps.list | grep "${proc}" 2>/dev/null` ; do
+    for thisproc in `cat ${M_TEMP}/ps.list | grep " ${proc} " 2>/dev/null` ; do
       [ -z "$thisproc" ] && continue 2
       VSZ=`echo $thisproc | cut -d' ' -f2`
       [[ $VSZ -eq 0 ]] && continue 2
@@ -125,16 +129,24 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
 fi
 ### --> if [ -n "$CALCULATE_TOTALS" ]
 
-ps axo rsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.res
+### +2 to include user and pid
+### +1 to start from the pid field
+CMD_ARGS_NORM=`expr $CMD_ARGS + 3`
+
+fields=$(for ((i=2; i<=$CMD_ARGS_NORM; i++)); do echo -n "${i}," ; done)
+fields=${fields%,}
+  
+ps axo rsz,pid,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.res
 
 for proc in `cat ${M_TEMP}/ps.list.res` ; do
   unset usageprev warnind
   usage=${proc%% *}
-  procname=${proc#* }
+  procid=`echo $proc | cut -d' ' -f2`
+  procname=`echo $proc | cut -d' ' -f$fields`
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
   [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
-  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $procname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -159,11 +171,12 @@ ps axo vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:
 for proc in `cat ${M_TEMP}/ps.list.res` ; do
   unset usageprev warnind
   usage=${proc%% *}
-  procname=${proc#* }
+  procid=`echo $proc | cut -d' ' -f2`
+  procname=`echo $proc | cut -d' ' -f$fields`
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
   [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
-  [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
+  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $procname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
