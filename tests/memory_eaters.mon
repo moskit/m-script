@@ -18,11 +18,8 @@ source "${0%.mon}.conf" || exit 99
 
 [ -z "$CMD_LENGTH" ] && CMD_LENGTH=256
 [ -z "$CMD_ARGS" ] && CMD_ARGS=2
-### +1 to include user
-### +3 to start from the user field (see sequence below: rsz,vsz,user,cmd)
-CMD_ARGS=`expr $CMD_ARGS + 4`
 
-echo -e "\nMemory eaters (process name and process owner):\n-----------------------------------------------\n"
+echo -e "\nMemory eaters:\n--------------\n"
 
 IFS1=$IFS
 IFS='
@@ -144,10 +141,12 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
   procid=`echo $proc | cut -d' ' -f2`
   procname=`echo $proc | cut -d' ' -f$fields`
   prochumanname="${procname#* }"
+  owner="${prochumanname%% *}"
+  prochumanname="${prochumanname#* }"
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
-  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid \"${prochumanname}\" is using ${usagemb}MB of RAM"
-  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid owner $owner CMD \"${prochumanname}\" is using ${usagemb}MB of RAM"
+  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -163,7 +162,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     [ "$y1" == "1" ] && warnind=' <*> '
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
-    [ -n "$warnind" ] && echo "${warnind} Process ID $procid \"${prochumanname}\" RAM usage $direction by $usagediff percents"
+    [ -n "$warnind" ] && echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" RAM usage $direction by $usagediff percents"
   fi
 done
 
@@ -175,10 +174,12 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   procid=`echo $proc | cut -d' ' -f2`
   procname=`echo $proc | cut -d' ' -f$fields`
   prochumanname="${procname#* }"
+  owner="${prochumanname%% *}"
+  prochumanname="${prochumanname#* }"
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalmem * 100"`
-  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid \"${prochumanname}\" is using ${usagemb}MB of virtual memory"
-  [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep "$procid\ $prochumanname" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
+  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid owner $owner CMD \"${prochumanname}\" is using ${usagemb}MB of virtual memory"
+  [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -194,7 +195,7 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
     [ "$y1" == "1" ] && warnind=' <*> '
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
-    [ -n "$warnind" ] && echo "${warnind} Process ID $procid \"${prochumanname}\" virtual memory usage $direction by $usagediff percents"
+    [ -n "$warnind" ] && echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" virtual memory usage $direction by $usagediff percents"
   fi
 done
 
