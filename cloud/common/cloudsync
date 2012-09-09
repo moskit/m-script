@@ -14,22 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
 
-[[ $0 =~ ^\/ ]] && rroot='/'
-for step in `echo ${0} | tr '/' ' '` ; do
-  rlink=`readlink "${rroot}${rpath}${step}"`
-  if [ -n "$rlink" ] ; then
-    [[ $rlink =~ ^\/ ]] && rpath="${rlink}/" || rpath="${rpath}${rlink}/"
-  else
-    rpath="${rpath}${step}/"
-  fi
-done
-rpath=${rpath%/}
-rcommand=${rpath##*/}
-rpath="${rroot}${rpath%/*}"
-#*/ (this is needed to fix vi syntax highlighting)
-source "${rpath}/../../conf/mon.conf"
-source "${rpath}/../../conf/cloud.conf"
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "${rpath}/../../conf/mon.conf" || exit 99
+source "${rpath}/../../conf/cloud.conf" || exit 99
+
 RSYNC=`which rsync 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 if [ -z "$RSYNC" ] ; then

@@ -2,14 +2,81 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-s_var=`expr "X$1" : 'X\([^=]*\)'`
-s_value=`expr "X$1" : 'X[^=]*=\(.*\)'`
+
+possible_options="help verbose debug ip cluster role flavor add uncomment"
+necessary_options=""
+
+IFS1=$IFS
+IFS='--'
+for s_option in "${@}"
+do
+  found=false
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    [ -z "$ARG" ] && ARG=$s_option && found=true
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/ /--/g'`; do
+    if [ "X$s_optname" == "X$option" ]; then
+      if [ -n "$s_optarg" ]; then
+        eval "$s_optname=\"$s_optarg\""
+      else
+        [ -z "$(eval echo \$$option)" ] && eval "$option="
+      fi
+      found=true
+    fi
+  done
+  if ! $found; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+if [ "X$help" == "Xyes" ] ; then
+  echo -e -n "Usage: ${0##*/}"" <options> <positional parameters>\n\n"
+  if [ -n "$possible_options" ] ; then
+    echo -e " <options> <positional parameters>\n\n  Possible options: $possible_options"
+    [ -n "$necessary_options" ] && echo "  Necessary options: $necessary_options"
+  else
+    echo -e " <positional parameters>\n\n"
+  fi
+  exit 0
+fi
+
+s_var=`expr "X$ARG" : 'X\([^=]*\)'`
+s_value=`expr "X$ARG" : 'X[^=]*=\(.*\)'`
+
+set_var() {
+  if [ -n "$uncomment" ] ; then
+    sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=&|g" "$conf" && echo "uncommented"
+  fi
+  if [ -n "$add" ] ; then
+    sed -i "s|${s_var}=\(.*\)|${s_var}=&,${s_value}|g" "$conf" && echo "added"
+  else
+    sed -i "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
+  fi
+}
 
 for conf in `grep -l "${s_var}=" ${rpath}/../conf/*.conf` ; do
   printf "Found in $conf ...   "
-  sed -i -e "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
+  set_var
 done
 for conf in `grep -l "${s_var}=" ${rpath}/../tests/*.conf` ; do
   printf "Found in $conf ...   "
-  sed -i -e "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
+  set_var
 done
+
+

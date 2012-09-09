@@ -101,7 +101,7 @@ do
     exit 1
     ;;
   *)
-    s_param=${s_option}
+    s_param=$s_option
     s_optname=''
     s_optarg=''
     ;;
@@ -125,18 +125,24 @@ done
 IFS=$IFS1
 
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options>"
-
+  echo -e -n "Usage: ${0##*/}"" <options> <positional parameters>\n\n"
+  if [ -n "$possible_options" ] ; then
+    echo -e " <options> <positional parameters>\n\n  Possible options: $possible_options"
+    [ -n "$necessary_options" ] && echo "  Necessary options: $necessary_options"
+  else
+    echo -e " <positional parameters>\n\n"
+  fi
   exit 0
 fi
+
 echo >> "${rpath}/../logs/deploy.log"
 date >> "${rpath}/../logs/deploy.log"
 echo "-------------------" >> "${rpath}/../logs/deploy.log"
 echo "${0} $*" >> "${rpath}/../logs/deploy.log"
 echo >> "${rpath}/../logs/deploy.log"
 
-source "${rpath}/../conf/deployment.conf"
-source "${rpath}/../conf/cloud.conf"
+source "${rpath}/../conf/deployment.conf" || exit 99
+source "${rpath}/../conf/cloud.conf" || exit 99
 
 [ -n "$debug" ] && verbose="yes"
 [ -n "$dry" -o -n "$test" ] && dry="yes"

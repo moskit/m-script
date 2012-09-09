@@ -17,9 +17,12 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
-source "${rpath}/../../conf/mon.conf"
-source "${rpath}/../../conf/cloud.conf"
+#*/
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "${rpath}/../../conf/mon.conf" || exit 99
+source "${rpath}/../../conf/cloud.conf" || exit 99
+
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22

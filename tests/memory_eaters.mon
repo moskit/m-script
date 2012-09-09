@@ -6,54 +6,131 @@ scale=2
 ${1}
 EOF
 }
+
 PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+#*/
 
-echo
-echo "Memory eaters (process name and process owner):"
-echo "-----------------------------------------------"
-echo
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "${rpath}/../../conf/mon.conf" || exit 99
+source "${0%.mon}.conf" || exit 99
+
+[ -z "$CMD_LENGTH" ] && CMD_LENGTH=256
+[ -z "$CMD_ARGS" ] && CMD_ARGS=2
+### +1 to include user
+### +3 to start from the user field (see sequence below: rsz,vsz,user,cmd)
+CMD_ARGS=`expr $CMD_ARGS + 4`
+
+echo -e "\nMemory eaters (process name and process owner):\n-----------------------------------------------\n"
+
 IFS1=$IFS
 IFS='
 '
-ps aux | tail -n +2 > ${M_TEMP}/ps.list
-for LINE in `cat ${M_TEMP}/ps.list | grep -v ^$`; do
-  command=`echo "${LINE}" | awk '{print $11}'`
-  virtual=`echo "${LINE}" | awk '{print $5}'`
-  resident=`echo "${LINE}" | awk '{print $6}'`
-  user=`echo "${LINE}" | awk '{print $1}'`
-  echo "${command} ${user} ${resident} ${virtual}" >> ${M_TEMP}/ps.list.reordered
-done
-for proc in `cat ${M_TEMP}/ps.list.reordered | cut -d' ' -f1,2 | sort | uniq` ; do
-  virtual=0
-  resident=0
-  procuser=`echo $proc | cut -d' ' -f1,2`
-  for thisproc in `cat ${M_TEMP}/ps.list.reordered | grep "^${procuser}" 2>/dev/null` ; do
-    VSZ=`echo $thisproc | cut -d' ' -f4`
-    RSS=`echo $thisproc | cut -d' ' -f3`
-    virtual=`expr $virtual + $VSZ`
-    resident=`expr $resident + $RSS`
-  done
-  
-  echo "$resident ${procuser}" >> ${M_TEMP}/ps.list.res
-  echo "$virtual ${procuser}" >> ${M_TEMP}/ps.list.vir
-done
-
-sort -g -r ${M_TEMP}/ps.list.res | head -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.res.sorted
-sort -g -r ${M_TEMP}/ps.list.vir | head -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir.sorted
 
 totalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
 totalswap=`cat /proc/meminfo | grep ^SwapTotal | awk '{ print $2 }'`
 totalmem=`expr $totalram + $totalswap`
 
-for proc in `cat ${M_TEMP}/ps.list.res.sorted` ; do
+if [ -n "$CALCULATE_TOTALS" ] ; then
+
+  ps axo rsz,vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | tail -n +2 > ${M_TEMP}/ps.list
+  fields=$(for ((i=3; i<=$CMD_ARGS; i++)); do echo -n "${i}," ; done)
+  fields=${fields%,} 
+
+  [ -z "$TOTALS_MEM_TOP_NUM" ] && TOTALS_MEM_TOP_NUM=$MEM_TOP_NUM
+  [ -z "$MEM_RES_MIN" ] && TOTALS_MEM_RES_MIN=$MEM_RES_MIN
+  [ -z "$MEM_VIR_MIN" ] && TOTALS_MEM_VIR_MIN=$MEM_VIR_MIN
+  [ -z "$MEM_RES_1" ] && TOTALS_MEM_RES_1=$MEM_RES_1
+  [ -z "$MEM_RES_2" ] && TOTALS_MEM_RES_2=$MEM_RES_2
+  [ -z "$MEM_RES_3" ] && TOTALS_MEM_RES_3=$MEM_RES_3
+  [ -z "$MEM_VIR_1" ] && TOTALS_MEM_VIR_1=$MEM_VIR_1
+  [ -z "$MEM_VIR_2" ] && TOTALS_MEM_VIR_2=$MEM_VIR_2
+  [ -z "$MEM_VIR_3" ] && TOTALS_MEM_VIR_3=$MEM_VIR_3
+  
+  for proc in `cat ${M_TEMP}/ps.list | grep -v '^0 0' | cut -d' ' -f$fields | sort | uniq` ; do
+    virtual=0
+    resident=0
+    for thisproc in `cat ${M_TEMP}/ps.list | grep "${proc}" 2>/dev/null` ; do
+      [ -z "$thisproc" ] && continue 2
+      VSZ=`echo $thisproc | cut -d' ' -f2`
+      [[ $VSZ -eq 0 ]] && continue 2
+      RSS=`echo $thisproc | cut -d' ' -f1`
+      [[ $RSS -eq 0 ]] && continue 2
+      virtual=`expr $virtual + $VSZ`
+      resident=`expr $resident + $RSS`
+    done
+    echo "$resident ${proc}" >> ${M_TEMP}/ps.list.totals.res
+    echo "$virtual ${proc}" >> ${M_TEMP}/ps.list.totals.vir
+  done
+  sort -g -r ${M_TEMP}/ps.list.totals.res | head -n $TOTALS_MEM_TOP_NUM > ${M_TEMP}/ps.list.totals.res.sorted
+  sort -g -r ${M_TEMP}/ps.list.totals.vir | head -n $TOTALS_MEM_TOP_NUM > ${M_TEMP}/ps.list.totals.vir.sorted
+
+  for proc in `cat ${M_TEMP}/ps.list.totals.res.sorted` ; do
+    unset usageprev warnind
+    procname=${proc#* }
+    usage=${proc%% *}
+    usagemb=`solve "$usage / 1024"`
+    usageperc=`solve "$usage / $totalram * 100"`
+    [[ `echo "$usageperc >= $TOTALS_MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
+    [ -f ${M_TEMP}/ps.prev.totals.res ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.totals.res | cut -d' ' -f1 | tail -1` || continue
+    [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
+    if [ -n "$usageprevperc" ] ; then
+      if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
+        direction="increased"
+        usagediff=`solve "$usageperc - $usageprevperc"`
+      else
+        direction="decreased"
+        usagediff=`solve "$usageprevperc - $usageperc"`
+      fi
+      y3="$(echo "$usagediff >= $TOTALS_MEM_RES_3" | bc)"
+      [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $TOTALS_MEM_RES_2" | bc)"
+      [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $TOTALS_MEM_RES_1" | bc)"
+      [ "$y1" == "1" ] && warnind=' <*> '
+      [ "$y2" == "1" ] && warnind='<**> '
+      [ "$y3" == "1" ] && warnind='<***>'
+      [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" RAM usage $direction by $usagediff percents"
+    fi
+  done
+
+  for proc in `cat ${M_TEMP}/ps.list.totals.vir.sorted` ; do
+    unset usageprev warnind
+    procname=${proc#* }
+    usage=${proc%% *}
+    usagemb=`solve "$usage / 1024"`
+    usageperc=`solve "$usage / $totalmem * 100"`
+    [[ `echo "$usageperc >= $TOTALS_MEM_VIR_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of virtual memory"
+    [ -f ${M_TEMP}/ps.prev.totals.vir ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.totals.vir | cut -d' ' -f1 | tail -1` || continue
+    [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
+    if [ -n "$usageprevperc" ] ; then
+      if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
+        direction="increased"
+        usagediff=`solve "$usageperc - $usageprevperc"`
+      else
+        direction="decreased"
+        usagediff=`solve "$usageprevperc - $usageperc"`
+      fi
+      y3="$(echo "$usagediff >= $TOTALS_MEM_VIR_3" | bc)"
+      [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $TOTALS_MEM_VIR_2" | bc)"
+      [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $TOTALS_MEM_VIR_1" | bc)"
+      [ "$y1" == "1" ] && warnind=' <*> '
+      [ "$y2" == "1" ] && warnind='<**> '
+      [ "$y3" == "1" ] && warnind='<***>'
+      [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" virtual memory usage $direction by $usagediff percents"
+    fi
+  done
+  
+  mv ${M_TEMP}/ps.list.totals.res.sorted ${M_TEMP}/ps.prev.totals.res
+  mv ${M_TEMP}/ps.list.totals.vir.sorted ${M_TEMP}/ps.prev.totals.vir
+fi
+### --> if [ -n "$CALCULATE_TOTALS" ]
+
+ps axo rsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.res
+
+for proc in `cat ${M_TEMP}/ps.list.res` ; do
   unset usageprev warnind
-  procname=${proc#* }
   usage=${proc%% *}
+  procname=${proc#* }
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalram * 100"`
   [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
@@ -77,15 +154,17 @@ for proc in `cat ${M_TEMP}/ps.list.res.sorted` ; do
   fi
 done
 
-for proc in `cat ${M_TEMP}/ps.list.vir.sorted` ; do
+ps axo vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir
+
+for proc in `cat ${M_TEMP}/ps.list.res` ; do
   unset usageprev warnind
-  procname=${proc#* }
   usage=${proc%% *}
+  procname=${proc#* }
   usagemb=`solve "$usage / 1024"`
-  usageperc=`solve "$usage / $totalmem * 100"`
-  [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of virtual memory"
+  usageperc=`solve "$usage / $totalram * 100"`
+  [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process \"${procname}\" is using ${usagemb}MB of RAM"
   [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
-  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
+  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
@@ -94,17 +173,18 @@ for proc in `cat ${M_TEMP}/ps.list.vir.sorted` ; do
       direction="decreased"
       usagediff=`solve "$usageprevperc - $usageperc"`
     fi
-    y3="$(echo "$usagediff >= $MEM_VIR_3" | bc)"
-    [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_VIR_2" | bc)"
-    [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $MEM_VIR_1" | bc)"
+    y3="$(echo "$usagediff >= $MEM_RES_3" | bc)"
+    [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_RES_2" | bc)"
+    [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $MEM_RES_1" | bc)"
     [ "$y1" == "1" ] && warnind=' <*> '
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
-    [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" virtual memory usage $direction by $usagediff percents"
+    [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" RAM usage $direction by $usagediff percents"
   fi
 done
-mv ${M_TEMP}/ps.list.res.sorted ${M_TEMP}/ps.prev.res
-mv ${M_TEMP}/ps.list.vir.sorted ${M_TEMP}/ps.prev.vir
+
+mv ${M_TEMP}/ps.list.res ${M_TEMP}/ps.prev.res
+mv ${M_TEMP}/ps.list.vir ${M_TEMP}/ps.prev.vir
 rm -f ${M_TEMP}/ps.list*
 IFS=$IFS1
 

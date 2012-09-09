@@ -17,9 +17,12 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
-source "${rpath}/../conf/mon.conf"
-source "${0%.mon}.conf"
+#*/
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "${rpath}/../../conf/mon.conf" || exit 99
+source "${0%.mon}.conf" || exit 99
+
 portstcp=( `cat "${rpath}/../ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
 portsudp=( `cat "${rpath}/../ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
 sockets=( `cat "${rpath}/../sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[[:space:]]*#'` )
