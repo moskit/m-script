@@ -25,8 +25,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+source "${rpath}/../conf/mon.conf"
+source "${0%.mon}.conf"
 
 
 if [ -d /proc/acpi/thermal_zone ]

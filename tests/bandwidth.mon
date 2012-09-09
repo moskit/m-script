@@ -24,8 +24,8 @@ PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+source "${rpath}/../conf/mon.conf"
+source "${0%.mon}.conf"
 
 netstatbin=`which netstat 2>/dev/null`
 iptablesbin=`which iptables 2>/dev/null`

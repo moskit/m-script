@@ -31,8 +31,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+source "${rpath}/../conf/mon.conf"
+source "${0%.mon}.conf"
 ruptime=`cat /proc/uptime | cut -d'.' -f1`
 rfreeram=`cat /proc/meminfo | grep ^MemFree | awk '{ print $2 }'`
 mfreeram=`solve "$rfreeram / 1024"`

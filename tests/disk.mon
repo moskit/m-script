@@ -27,8 +27,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+source "${rpath}/../conf/mon.conf"
+source "${0%.mon}.conf"
 timeindexnow=`cat $M_TEMP/timeindex`
 lasttimeindex=`cat $M_TEMP/lasttimeindex.disk`
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1

@@ -21,9 +21,9 @@ rpath=${0%/*}
 #*/
 
 source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
-source "${rpath}/../conf/cloud.conf"
-source "${rpath}/../lib/functions.sh"
-source "${rpath}/../lib/cloud_functions.sh"
+source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -z "$CLUSTER" ] && CLUSTER="all"
 [ -x "/sbin/ntpd" ] && NTPD="/sbin/ntpd" || NTPD=`which ntpd 2>/dev/null`
