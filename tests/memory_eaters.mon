@@ -176,10 +176,10 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   procname=`echo $proc | cut -d' ' -f$fields`
   prochumanname="${procname#* }"
   usagemb=`solve "$usage / 1024"`
-  usageperc=`solve "$usage / $totalram * 100"`
+  usageperc=`solve "$usage / $totalmem * 100"`
   [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]] && echo "Process ID $procid \"${prochumanname}\" is using ${usagemb}MB of virtual memory"
   [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep "$procid\ $prochumanname" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
-  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
+  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
