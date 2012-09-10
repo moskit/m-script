@@ -189,10 +189,10 @@ print_nav_bar() {
   echo -e "</ul>\n</div>"
 }
 
+
 load_css() {
-  echo -e "<script language=\"javascript\">\nwindow.onload = load_css($1)\;\n</script>"
+  echo "<style type=\"text/css\">"
+  cat "$M_ROOT/www/css/$1"
+  echo "</style>"
 }
-
-
-
 

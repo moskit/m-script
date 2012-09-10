@@ -34,18 +34,39 @@ gen_html_table() {
 IFS1=$IFS
 IFS='
 '
-echo -n "<table><tr style=\"font-weight: bold\"><td>ID</td><td>Name</td><td>Status</td><td>Public IP</td><td>Private IP</td><td>Cluster</td><td>Image</td><td>Size</td></tr>"
-for LN in `cat "$M_TEMP/$cloud/full.servers.list"` ; do
-  ID="${LN%%|*}"
-  name="`echo $LN | cut -d'|' -f2`"
-  status="`echo $LN | cut -d'|' -f3`"
-  pubIP="`echo $LN | cut -d'|' -f4`"
-  privIP="`echo $LN | cut -d'|' -f5`"
-  cluster="`echo $LN | cut -d'|' -f6`"
-  image="`echo $LN | cut -d'|' -f7`"
-  size="`echo $LN | cut -d'|' -f8`"
-  echo "<tr id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
+echo -n "<table><tr style=\"font-weight: bold\"><td class=\"srvtbl_id\">ID</td><td class=\"srvtbl_name\">Name</td><td class=\"srvtbl_status\">Status</td><td class=\"srvtbl_pubIP\">Public IP</td><td class=\"srvtbl_privIP\">Private IP</td><td class=\"srvtbl_cluster\">Cluster</td><td class=\"srvtbl_image\">Image</td><td class=\"srvtbl_size\">Size</td></tr>"
+for CL in `cat "$M_TEMP/$cloud/full.servers.list" | cut -d'|' -f6 | sort | uniq`; do
+
+  for SN in `cat "$M_TEMP/$cloud/full.servers.list" | cut -d'|' -f1,2,6 | grep \|$CL$ | sort` ; do
+    ID="${SN%%|*}"
+    LN=`grep ^$ID\| "$M_TEMP/$cloud/full.servers.list"`
+    name="`echo $LN | cut -d'|' -f2`"
+    status="`echo $LN | cut -d'|' -f3`"
+    pubIP="`echo $LN | cut -d'|' -f4`"
+    privIP="`echo $LN | cut -d'|' -f5`"
+    cluster="`echo $LN | cut -d'|' -f6`"
+    `grep -q ^$cluster\| "$M_ROOT/conf/clusters.conf"` && trclass="thiscluster" || trclass="thatcluster"
+    image="`echo $LN | cut -d'|' -f7`"
+    size="`echo $LN | cut -d'|' -f8`"
+    echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
+  done
 done
+
+  for SN in `cat "$M_TEMP/$cloud/full.servers.list" | cut -d'|' -f1,2,6 | grep \|$ | sort` ; do
+    ID="${SN%%|*}"
+    LN=`grep ^$ID\| "$M_TEMP/$cloud/full.servers.list"`
+    name="`echo $LN | cut -d'|' -f2`"
+    status="`echo $LN | cut -d'|' -f3`"
+    pubIP="`echo $LN | cut -d'|' -f4`"
+    privIP="`echo $LN | cut -d'|' -f5`"
+    cluster="`grep ^$privIP\| "$M_ROOT/servers.list" | cut -d'|' -f5`"
+    [ -z "$cluster" ] && cluster="`grep ^$pubIP\| "$M_ROOT/servers.list" | cut -d'|' -f5`"
+    [ -z "$cluster" ] && trclass="nocluster" || trclass="mancluster"
+    image="`echo $LN | cut -d'|' -f7`"
+    size="`echo $LN | cut -d'|' -f8`"
+    echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
+    
+  done
 echo "</table>"
 IFS=$IFS1
 }

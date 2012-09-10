@@ -7,7 +7,7 @@ source "${PWD}/../../conf/mon.conf"
 source "${PWD}/../../conf/cloud.conf"
 
 print_cgi_headers
-load_css "css/clouds.css"
+load_css "clouds.css"
 
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
 #echo "== $CLOUD `cat "${PWD}/../../conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` =="
@@ -18,6 +18,5 @@ for cloud in ${clouds[*]} ; do
   cat "$M_TEMP/cloud/$cloud/full.servers.list.html" 2>/dev/null
   close_cluster
 done
-
 
 
