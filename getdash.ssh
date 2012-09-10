@@ -29,6 +29,10 @@ SSH_TIMEOUT="-o ConnectTimeout=$SSH_TIMEOUT"
 SQLITE=`which sqlite3 2>/dev/null`
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/cloud.conf"
+source "${rpath}/lib/functions.sh"
+LOG="$rpath/logs/dashboard.log"
+[ -n "$debug" ] && debug=false || debug=true
+
 [ -n "$SSHPORT" ] || SSHPORT=22
 timeindexnow=`cat ${M_TEMP}/timeindex 2>/dev/null` || timeindexnow=`date +"%s"`
 
@@ -50,7 +54,7 @@ IFS1=$IFS ; IFS='
 for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
   [ -n "$targetcluster" -a "$targetcluster" != "$cluster" ] && continue
   [ -z "$clustered_as" ] && clustered_as="$cluster"
-#echo "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as" >> /opt/m/dashboard.log
+  $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
   mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath="/opt/m"
   for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
@@ -59,9 +63,9 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     ip=${server%%|*}
     [ `echo $ip | grep -c "^$localip$"` -ne 0 ] && continue
     key=`echo $server | cut -d'|' -f2`
-    [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
-    [ -f "${rpath}/keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/monitoring.log" ; continue)
     servername=`echo $server | cut -d'|' -f4`
+    [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
+    [ ! -f "${rpath}/keys/${key}" ] && log "Unable to connect to $servername - key $key not found" && continue
     [ -d "${rpath}/www/$monitor/${clustered_as}/${servername}" ] || install -d "${rpath}/www/$monitor/${clustered_as}/${servername}"
     $SSH $SSH_TIMEOUT -i "${rpath}/keys/${key}" -p $SSHPORT ${ip} find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" 2>/dev/null | sort > ${M_TEMP}/${ip}.${monitor}.remote.dash.list
     find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${M_TEMP}/${ip}.${monitor}.local.dash.list
@@ -74,7 +78,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
       [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/notfound"
       [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/stopped"
     else
-      echo "No data received from server ${servername}, cluster ${cluster}, monitor ${monitor}" >> "${rpath}/monitoring.log"
+      log "No data received from server ${servername}, cluster ${cluster}, monitor ${monitor}"
       if [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] ; then
         rm -f "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound"
         touch "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped"
@@ -91,7 +95,7 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
       daynow=$(date +"%Y%m%d")
       $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${clustered_as}/${servername}', '$timediff')"
     else
-      echo "${clustered_as}/${servername}: $timediff sec" >> "${rpath}/dashboard.log"
+      log "${clustered_as}/${servername}: $timediff sec"
     fi
   done
   for server in `find "${rpath}/www/$monitor/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do

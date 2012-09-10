@@ -210,11 +210,5 @@ cursor_style = function(elem,type) {
   document.documentElement.style.cursor = type;
 }
 
-load_css = function(filename) {
-  var fileref=document.createElement("link");
-  fileref.setAttribute("rel", "stylesheet");
-  fileref.setAttribute("type", "text/css");
-  fileref.setAttribute("href", filename);
-}
 
 

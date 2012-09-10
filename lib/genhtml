@@ -87,7 +87,7 @@ case $type in
     find "${rpath}/../www/$folder/" -mmin +$timerange -exec rm '{}' \;
     ;;
   report)
-    "${rpath}/../lib/txt2html" "$$textfile" >> "${rpath}/../www/$folder/report.html" 2>>"$rpath/../logs/dashboard.log"
+    "${rpath}/../lib/txt2html" "$textfile" >> "${rpath}/../www/$folder/report.html" 2>>"$rpath/../logs/dashboard.log"
     ;;
 esac
 IFS=$IFS1
