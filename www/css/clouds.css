@@ -1,0 +1,63 @@
+table {
+  border-collapse:collapse;
+  width: 795px;
+}
+
+table,td {
+  border: 1px solid #f6f6f6;
+  padding: 2px;
+}
+
+tr {
+  height: 2em;
+  background-color: #e9e9e9;
+}
+
+td:first-child {
+  width: 9em;
+}
+
+td.srvtbl_status {
+  width: 10em;
+}
+
+td.srvtbl_pubIP {
+  width: 15em;
+}
+
+td.srvtbl_privIP {
+  width: 15em;
+}
+
+td.srvtbl_image {
+  width: 30em;
+}
+
+td.srvtbl_size {
+  width: 30em;
+}
+
+td.srvtbl_cluster {
+  width: 15em;
+}
+
+td.srvtbl_name {
+  width: 15em;
+}
+
+tr.nocluster {
+  background-color: #f9e9e9 !important;
+}
+
+tr.thiscluster {
+  background-color: #e9f9e9;
+}
+
+tr.thatcluster {
+  background-color: #e9e9f9;
+}
+
+tr.mancluster {
+  background-color: #f9f9e9;
+}
+
