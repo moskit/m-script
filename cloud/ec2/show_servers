@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,174 +18,162 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
-#*/ (this is needed to fix vi syntax highlighting)
-declare -i i
-i=0
+#*/
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
+SED=`which sed 2>/dev/null`
+[ -z "$SED" ] && echo "Sed utility not found, exiting..  " && exit 1
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && echo "Ssh utility not found, exiting..  " && exit 1
+IFCFG=`which ifconfig 2>/dev/null`
+# Normally needed for localhost only, and not always: depends on system.
+# Hostnames of remote servers are obtained via ssh which is a login shell;
+# this is why the variable below is not used for remote servers: you may
+# have different OSes there with different paths to hostname utility.
+HOSTNAME=`which hostname 2>/dev/null`
 
-print_server() {
-# icluster is not always present
-  thiscluster=`expr "$1" : ".*icluster::\([^|]*\)|"`
-  if [ -n "$cluster" -a "$cluster" != "all" ]; then
-    [ -z "$thiscluster" ] && return 0
-  fi
-  if [ -z "$cluster" ] || [ -n "$cluster" -a "$cluster" != "all" ]; then
-    if [ -n "$thiscluster" ]; then
-      if [ `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f1 | grep -c ^${thiscluster}$` -eq 0 ]; then
-        return 0
-      fi
-    else
-      thisipint=`echo "$1" | cut -d'|' -f6 | cut -d':' -f3`
-      thisipext=`echo "$1" | cut -d'|' -f7 | cut -d':' -f3`
-      thisipcluster=`cat "$M_ROOT/servers.list" | grep ^$thisipint\| | cut -d'|' -f5`
-      [ -z "$thisipcluster" ] && thisipcluster=`cat "$M_ROOT/servers.list" | grep ^$thisipext\| | cut -d'|' -f5`
-      [ -z "$thisipcluster" ] && return 0
-    fi
-  fi
-  
-  [ "X$view" == "Xraw" ] && echo "$1" && return 0
-
-  local line1
-  local line2
-  local line3
-  local line4
-  local line5
-  local line6
-  local line7
-  IFS1=$IFS
-  IFS='|'
-  if [ "X$filter" == "X" ] ; then
-    line6="Tags:"
-    for s in `echo "${1}"` ; do
-      a=`echo "$s" | awk -F'::' '{print $1}'`
-      b=`echo "$s" | awk -F'::' '{print $2}'`
-      case $a in
-        iID)
-          line1="Server: $b $line1"
-          ;;
-        isize)
-          [ -n "$size" ] && [ "X$size" != "X$b" ] && IFS=$IFS1 && return 0
-          line1="$line1 Size: $b"
-          ;;
-        inIP)
-          line2="IP: internal $b $line2"
-          ;;
-        extIP)
-          line2="$line2 external $b"
-          ;;
-        iami)
-          [ -n "$ami" ] && [ "X$ami" != "X$b" ] && IFS=$IFS1 && return 0
-          line5="AMI: $b $line5"
-          ;;
-        istate)
-          [ -n "$state" ] && [ "X$state" != "X$b" ] && IFS=$IFS1 && return 0
-          line4="State: $b $line4"
-          ;;
-        izone)
-          line3="Zone: $b $line3"
-          ;;
-        SG)
-          line3="$line3 Security group: $b"
-          ;;
-        ikeypair)
-          line3="$line3  Key: $b"
-          ;;
-        istarted)
-          line4="$line4 Started: $b"
-          ;;
-        icluster)
-          [ -n "$b" ] && thiscluster="$b"
-          if [ -n "$cluster" ]; then 
-            [ "X$cluster" != "Xall" ] && [ "X$cluster" != "X$b" ] && IFS=$IFS1 && return 0
-          fi
-          line1="$line1  Cluster: $thiscluster"
-          ;;
-        itag)
-          line6="$line6 $b"
-          ;;
-        bdev)
-          line7="EBS device: $b $line7"
-          ;;
-        bID)
-          line7="$line7 ID: $b"
-          ;;
-        bstarted)
-          line7="$line7  Started: $b\n"
-          ;;
-        iaki)
-          line5="$line5  AKI: $b"
-          ;;
-        iari)
-          line5="$line5  ARI: $b"
-          ;;
-      esac
-    done
-    [ -n "$count" ] && i+=1
-    [ "X$view" == "Xnone" ] && return 0
-    echo "---------------------------------------------------------------------"
-    printf "${line1}\n${line2}\n${line3}\n${line4}\n${line5}\n"
-    [ -n "$line6" ] && printf "${line6}\n"
-    [ -n "$line7" ] && printf "${line7}\n"
+add_server() {
+  if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
+    key=${keypair}.pem
+  elif [ -f "${rpath}/../../keys/${keypair}" ] ; then
+    key=${keypair}
   else
-    for s in `echo "${1}"` ; do
-      a=`echo "$s" | awk -F'::' '{print $1}'`
-      b=`echo "$s" | awk -F'::' '{print $2}'`
-      [ "X$a" == "Xistate" ] && [ -n "$state" ] && [ "X$state" != "X$b" ] && unset line && IFS=$IFS1 && return 0
-      [ "X$a" == "Xicluster" ] && [ -n "$cluster" ] && [ "X$cluster" != "X$b" ] && [ "X$cluster" != "Xall" ] && unset line && IFS=$IFS1 && return 0
-      for s in $filter ; do
-        [ "X$a" == "X$s" ] && line="${line}${b} "
+    message=" (key ${rpath}/../../keys/${keypair}\{.pem\} not found)"
+  fi
+  # altname was supposed to be an alternative source (from instance tags), but
+  # it is reconsidered due to no good way to inject the name into the new server
+  if [ -n "$altname" ]; then
+    sname=$altname
+  else
+    log "Name not found, retrieving one from the host"
+    if [ `echo $localip | grep -c "^$inIP$"` -ne 0 ] ; then
+      sname=`$HOSTNAME`
+    else
+      sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
+    fi
+  fi
+  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message
+  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> "$M_TEMP/servers.${region}.ips"
+  [ -n "${bID[*]}" ] && for ((i=0; i<${#bID[*]}; i++)) ; do echo "$iID|${bID[$i]}|${bdev[$i]}|${bstarted[$i]}" >> $M_TEMP/servers.${region}.bdevs
+  unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname bID bdev bstarted
+}
+
+list_servers() {
+  IFS1=$IFS
+  IFS='
+'
+  if [ -f "$M_TEMP/servers.${region}.ips" ] ; then
+    for sn in `cat "$M_TEMP/servers.${region}.ips"` ; do
+      unset id name istatus extIP intIP IP imageId flavorId region icluster
+      
+      for LINE in `grep "/servers/${sn}/" "${M_TEMP}/${rcommand}.resp"` ; do
+        LINE=`echo $LINE | awk -F"servers/${sn}/" '{print $2}'`
+        lvar=`echo $LINE | cut -d'|' -f1`
+        if [ -n "$filter" ] ; then
+          for fvar in `echo -e ${filter} | tr ',' '\n'` ; do            
+            [[ $lvar =~ $fvar ]] || continue 2
+          done
+        fi
+        lvalue=`echo $LINE | cut -d'|' -f2`
+        case $lvar in
+          imageId)
+            [ -n "$resolveids" ] && imageId=`imageid $lvalue` || imageId=$lvalue
+            ;;
+          flavorId)
+            [ -n "$resolveids" ] && flavorId=`flavorid $lvalue` || flavorId=$lvalue
+            ;;
+          status)
+            istatus=`echo $lvalue | sed 's|.|\l&|g'`
+            ;;
+          addresses/public/*)
+            extIP="$extIP $lvalue"
+            ;;
+          addresses/private/*)
+            intIP="$intIP $lvalue"
+            ;;
+          metadata/cluster)
+            icluster="$lvalue"
+            ;;
+          *)
+            eval "$lvar=\"$lvalue\""
+            ;;
+        esac
       done
-    done
-    echo $line | sed 's| $||'
-    unset line
-  fi
-  IFS=$IFS1
-  return 0
-}
-
-parse_server() {
-  if [[ ${1} =~ ^RESERVATION ]] ; then
-    echo -n "SG::`echo ${1} | cut -d'|' -f4`|"
-  fi
-  if [[ ${1} =~ ^INSTANCE ]] ; then
-    iID=`echo ${1} | cut -d'|' -f2`
-    inIP=`echo ${1} | cut -d'|' -f18`
-    extIP=`echo ${1} | cut -d'|' -f17`
-    iami=`echo ${1} | cut -d'|' -f3`
-    istate=`echo ${1} | cut -d'|' -f6`
-    ikeypair=`echo ${1} | cut -d'|' -f7`
-    isize=`echo ${1} | cut -d'|' -f10`
-    istarted=`echo ${1} | cut -d'|' -f11`
-    izone=`echo ${1} | cut -d'|' -f12`
-    iaki=`echo ${1} | cut -d'|' -f13`
-    iari=`echo ${1} | cut -d'|' -f14`
-    echo -n "iID::$iID|iami::$iami|iaki::$iaki|iari::$iari|"
-    if [ "X$istate" == "Xrunning" ] ; then
-      echo -n "inIP::$inIP|extIP::$extIP|"
-    fi
-    echo -n "istate::$istate|istarted::$istarted|izone::$izone|ikeypair::$ikeypair|isize::$isize|"
-    
-  fi
-  if [[ ${1} =~ ^TAG ]] ; then
-    object=`echo ${1} | awk -F'|' '{print $2}'`
-    itag=`echo ${1} | awk -F'|' '{print $4}'`
-    tagvalue=`echo ${1} | awk -F'|' '{print $5}'`
-    if [ "X$object" == "Xinstance" ] ; then
-      if [ "X$itag" == "Xcluster" ] ; then
-        echo -n "icluster::$tagvalue|"
+      if [ "X$NETWORK" == "Xexternal" ] ; then
+        IP=$extIP
       else
-        echo -n "itag::${itag}=${tagvalue}|"
+        IP=$intIP
       fi
-    fi
+      for ip in $IP ; do
+        ip=${ip#* } ; ip=${ip% *}
+        if [ -z "$icluster" ] ; then
+          # servers having no cluster in metadata but added manually to servers.list
+          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+        else
+          # no icluster means that server will not be shown, but only if there
+          # is no option --all. With this option, however, we want to see all
+          # clusters assigned via metadata
+          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+        fi
+      done
+      if [ -z "$update_servers_list" ] ; then
+        # icluster existence condition is needed for the case there are multiple
+        # projects (cluster groups) in the same cloud.
+        # Note that if you use same names for clusters in different cluster
+        # groups, you'll get them mixed here.
+        if [ -n "$icluster" -o -n "$all" ] ; then
+          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
+          extIP=${extIP#* } ; extIP=${extIP% *}
+          intIP=${intIP#* } ; intIP=${intIP% *}
+          case $view in
+            list)
+              echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
+              ;;
+            table)
+              echo "${id}|${name}|${status}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}"
+              ;;
+            column)
+              echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+              ;;
+            none)
+              ;;
+            *)
+              echo "------------------------------------------------------------------------------"
+              echo "Server ID: $id    Name: $name    Cluster: $icluster"
+              echo "Public IP: $extIP"
+              echo "Private IP: $intIP"
+              echo "Server image: $imageId"
+              echo "Server size: $flavorId    Status: $istatus"
+              ;;
+          esac
+          icount+=1
+        fi
+      else
+        if [ -n "$icluster" ] ; then
+          if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+            for ip in $IP ; do
+              ip=${ip#* } ; ip=${ip% *}
+              sed -i /^$ip\|/d "${rpath}/../../servers.list"
+              echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+            done
+          fi
+        fi
+      fi
+      
+    done
+  else
+    echo "No data. Run without --noupdate"
   fi
-  if [[ ${1} =~ ^BLOCKDEVICE ]] ; then
-    bdev=`echo ${1} | awk -F'|' '{print $2}'`
-    bID=`echo ${1} | awk -F'|' '{print $3}'`
-    bstarted=`echo ${1} | awk -F'|' '{print $4}'`
-    echo -n "bdev::$bdev|bID::$bID|bstarted::$bstarted|"
-  fi
+  for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+    [ `grep -c \|${listip}$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+  done
+  IFS=$IFS1
 }
 
-possible_options="cluster ami state filter noupdate help region id view count all"
+
+possible_options="help region verbose cluster state filter short noupdate view update_servers_list forceupdate all status count resolveids"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -220,77 +207,14 @@ do
     exit 1
   fi
 done
-found=0
-
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
-  exit 1
-fi
-
-if [ -n "$help" ] ; then
-  case $help in 
-    cluster)
-      echo "Usage: --cluster=<cluster name>"
-      echo "  Shows only instances within this cluster"
-      echo "  (tagged with \"cluster=<cluster name>\")"
-    ;;
-    ami)
-      echo "Usage: --ami=<ami_id>"
-      echo "  Shows only instances with this AMI ID"
-    ;;
-    state)
-      echo "Usage: --state=<state>"
-      echo "  Shows only instances in this state"
-      echo "  e.g. --state=running"
-    ;;
-    filter)
-      cat << "EOF"
-Usage: --filter=<var1,var2,var3>
-
-  Shows the defined variables only, like this:
-  
-  var1 var2 var3
-  
-  for each instance according to other options, e.g. to get internal and external
-  IPs of running instances, use:
-  
-  show_servers --state=running --filter=inIP,extIP
-  
-  Possible variables are:
-  
-    iID
-    inIP
-    extIP
-    iami
-    istate
-    izone
-    ikeypair
-    istarted
-    SG
-    icluster
-    itag
-    bdev
-    bID
-    bstarted
-    iaki
-    iari
-
-EOF
-    
-    ;;
-    noupdate)
-      echo "Usage: --noupdate"
-      echo "doesn't query AWS, uses the raw data of the previous query instead"
-    ;;
-    *)
-      echo "Use help=option"
-      echo "Possible options are: ${possible_options}"
-    ;;
-  esac
+if [ "X$help" == "Xyes" ] ; then
+  echo "Usage: ${0##*/} <options>"
+  echo 
+  echo "Without options all found clusters will be synced"
+  echo
+  echo "Options:"
+  echo
+  echo "  --region=region          - syncs only servers in this region."
   exit 0
 fi
 
@@ -300,47 +224,104 @@ source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
 LOG=$M_ROOT/logs/cloud.log
 
-for var in EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
-  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
+for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT region EC2_TOOLS_BIN_PATH ; do
+  [ -z "`eval echo \\$\$var`" ] && log "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
-export EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_AK EC2_REGION PATH
-
+export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT region PATH
 M_TEMP=$M_TEMP/cloud/ec2
 install -d $M_TEMP
 
-filter=`echo $filter | sed 's_,_|_g'`
-[ -n "$region" ] && EC2_REGION=$region
-[ -n "$all" ] && cluster=all
+[ -n "$region" ] && region=$EC2_REGION
 
-[ -n "$id" ] && ID=$id
-if [ "X$noupdate" == "X" ] ; then
-  [ "X`which ec2-describe-instances`" == "X" ] && echo "API Tools needed" && exit 1
-  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $ID | sed 's/\t/|/g' > $M_TEMP/servers.${EC2_REGION}.tmp
-fi
-# newr = New Reservation, inverted
-while read SERVER
+[ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
+
+changed=0
+[ -f $M_TEMP/servers.${region}.ips ] && mv $M_TEMP/servers.${region}.ips $M_TEMP/servers.${region}.ips.prev || touch $M_TEMP/servers.${region}.ips.prev
+[ -f $M_TEMP/servers.${region}.bdevs ] && mv $M_TEMP/servers.${region}.bdevs $M_TEMP/servers.${region}.bdevs.prev || touch $M_TEMP/servers.${region}.bdevs.prev
+[ ! -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] && log "ec2-describe-instances binary not found! Exiting.." && exit 1
+
+[ -z "$noupdate" ] && ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $region | sed 's/\t/|/g' > $M_TEMP/servers.${region}.tmp
+
+firstline=1
+IFS1=$IFS
+IFS='
+'
+for SERVER in `cat $M_TEMP/servers.${region}.tmp`
 do
-  if [[ $SERVER =~ ^RESERVATION ]] ; then
-    # if there is a previous server, print it, forget it and start a new
-    # reservation
-    [ -n "$current_server" ] && print_server "$current_server" && unset current_server
-    # start collecting new server data
-    current_server=`parse_server $SERVER` && newr=1
-    # save for other servers in this reservation
-    reservation_line=$current_server
-  else
-    if [[ $SERVER =~ ^INSTANCE ]] && [ ! $newr ] ; then
-      # This is another instance within the same reservation
-      print_server "$current_server" && unset current_server
-      current_server="$reservation_line`parse_server $SERVER`"
-      newr=1
+  if [[ $SERVER =~ ^RESERVATION ]] ; then 
+    if [[ $firstline -eq 0 ]] ; then
+      add_server
     else
-      current_server="$current_server`parse_server $SERVER`" && unset newr
+      firstline=0
     fi
+    secgroup=`echo $SERVER | cut -d'|' -f4`
   fi
-done<$M_TEMP/servers.${EC2_REGION}.tmp
-print_server "$current_server"
-unset newr current_server
-[ -n "$count" ] && echo $i && unset i
+  if [[ $SERVER =~ ^INSTANCE ]] ; then
+    inIP=`echo $SERVER | cut -d'|' -f18`
+    extIP=`echo $SERVER | cut -d'|' -f17`
+    iID=`echo $SERVER | cut -d'|' -f2`
+    ami=`echo $SERVER | cut -d'|' -f3`
+    state=`echo $SERVER | cut -d'|' -f6`
+    keypair=`echo $SERVER | cut -d'|' -f7`
+    isize=`echo $SERVER | cut -d'|' -f10`
+    started=`echo $SERVER | cut -d'|' -f11`
+    zone=`echo $SERVER | cut -d'|' -f12`
+    aki=`echo $SERVER | cut -d'|' -f13`
+    ari=`echo $SERVER | cut -d'|' -f14`
+  fi
+  if [[ $SERVER =~ ^TAG ]] ; then
+    tag=`echo $SERVER | cut -d'|' -f4`
+    [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | cut -d'|' -f5`
+    [ "X$tag" == "XName" ] && altname=`echo $SERVER | cut -d'|' -f5`
+  fi
+  if [[ ${1} =~ ^BLOCKDEVICE ]] ; then
+    bdev+=("`echo ${1} | cut -d'|' -f2`")
+    bID+=("`echo ${1} | cut -d'|' -f3`")
+    bstarted+=("`echo ${1} | cut -d'|' -f4`")
+  fi
+done
+add_server
+
+if [ -n "$update_servers_list" ]; then
+  [ -z "$forceupdate" ] && [ -f $M_TEMP/servers.${region}.ips.prev ] && [ -f $M_TEMP/servers.${region}.ips ] && [ -z "`$DIFF -q $M_TEMP/servers.${region}.ips.prev $M_TEMP/servers.${region}.ips`" ] && exit 0
+  for SERVER in `cat "$M_TEMP/servers.${region}.ips"`
+  do
+    if [ "X$NETWORK" == "Xexternal" ] ; then
+      IP=`echo $SERVER | cut -d'|' -f2`
+    else
+      IP=`echo $SERVER | cut -d'|' -f1`
+    fi
+    keypair=`echo $SERVER | cut -d'|' -f6`
+    sname=`echo $SERVER | cut -d'|' -f13`
+    icluster=`echo $SERVER | cut -d'|' -f14`
+    if [ -z "$icluster" ] ; then  # added manually?
+      icluster=`cat "${rpath}/../../servers.list" | grep ^$IP\|${keypair}\|${region}\| | cut -d'|' -f5`
+    fi
+    [ -z "$icluster" ] && continue
+    [ `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f1 | grep -c ^${icluster}$` -eq 0 ] && continue
+
+#    echo "${IP}|${keypair}|${region}|${sname}|${icluster}" >> "$M_TEMP/servers.list"
+
+    if [ -n "$icluster" ] ; then
+      if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
+        [ -z "$keypair" ] && keypair=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+        sed -i /^$IP\|/d "${rpath}/../../servers.list"
+        echo "${IP}|${keypair}|${region}|${sname}|${icluster}" >> "${rpath}/../../servers.list"
+
+      fi
+    fi
+    for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+      [ `grep -c \|${listip}\| "$M_TEMP/servers.${region}.ips"` -eq 0 -o `grep -c ^${listip}\| "$M_TEMP/servers.${region}.ips"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+    done
+  done
+  res=$?
+  unset IP inIP extIP keypair iID ami state isize secgroup started zone aki ari sname srole
+  exit $res
+fi
+
+
+
+IFS=$IFS1
+
 

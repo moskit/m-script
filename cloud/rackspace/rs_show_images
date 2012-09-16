@@ -25,7 +25,7 @@ LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 
-possible_options="public private status state noupdate forceupdate"
+possible_options="public private status state noupdate forceupdate short"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -95,8 +95,8 @@ list_images() {
   if [ -f "${M_TEMP}/images.resp" ] ; then
     for imnum in `cat "${M_TEMP}/images.resp" | sed 's|^0/images/||g' | cut -d'/' -f1 | sort | uniq` ; do
       im=`grep ^0\/images\/${imnum}\/ "${M_TEMP}/images.resp"`
-      for LN in `echo $im | cut -d'/' -f2 | tr '|' '='` ; do
-        eval $LN
+      for LN in `echo "$im" | cut -d'/' -f4 | sed 's_|_=\"_g;s_$_\"_g'` ; do
+        eval "$LN"
       done
       echo "${id}|${name}|${status}|${created}|${updated}|${progress}"
     done

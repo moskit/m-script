@@ -158,7 +158,7 @@ IFS1=$IFS; IFS='
     action=`echo $confline | cut -d'|' -f3`
     nalerts=`echo $confline | cut -d'|' -f4`
     if [ -n "$nalerts" ] ; then
-      calerts=`cat "${M_TEMP}/consequent_alerts.tmp" 2>/dev/null | grep ^"${commline}"\|"$pattern"\|$level\| 2>/dev/null | tail -1`
+      [ -f "${M_TEMP}/consequent_alerts.tmp" ] && calerts=`cat "${M_TEMP}/consequent_alerts.tmp" | grep ^"${commline}"\|"$pattern"\|$level\| | tail -1`
       if [ -n "$calerts" ] ; then
         calerts=`echo "$calerts" | cut -d'|' -f4`
       else
@@ -170,14 +170,14 @@ IFS1=$IFS; IFS='
     for ((i=$level; i<=3; i++)) ; do
       while read line ; do
         if [ -z "$nalerts" ] ; then
-          [[ $line =~ $pattern ]] && action_alert_found=1 && echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
+          [[ $line =~ $pattern ]] && action_alert_found=1 && echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/logs/actions.log 2>&1 </dev/null &
         else
           if [[ $line =~ $pattern ]] ; then
             action_alert_found=1
             [ -z "$calerts" ] && calerts=0
             calerts=`expr $calerts + 1`
             if [[ $calerts -ge $nalerts ]] ; then
-              echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/monitoring.log  2>&1 </dev/null &
+              echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/logs/actions.log 2>&1 </dev/null &
               sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
             else
               sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${M_TEMP}/consequent_alerts.tmp"
@@ -420,7 +420,26 @@ function timeshift() {
   done
 }
 
+function action() {
+  case $1 in
+    AND)
+      logical="AND"
+      shift
+      ;;
+    OR)
+      logical="OR"
+      shift
+      ;;
+    *)
+      logical="OR"
+      ;;
+  esac
+  echo "<OK> Action initiated: $@" >> "${rpath}/report"
+  
+}
+
 source ${rpath}/conf/mon.conf
+[ -z "$M_TEMP" ] && M_TEMP=$(cd "$rpath" && pwd)
 export M_TEMP FREQ
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP
