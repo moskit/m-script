@@ -184,7 +184,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" is using ${usagemb}MB of RAM"
     unset y1 y2 y3
   fi
-  [ -f ${M_TEMP}/ps.prev.res ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [ -f "${M_TEMP}/ps.prev.res" ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
@@ -217,7 +217,7 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   prochumanname="${prochumanname#* }"
   usagemb=`solve "$usage / 1024"`
   usageperc=`solve "$usage / $totalmem * 100"`
-  fi [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]]; then
+  if [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]]; then
     warnind='<OK> '
     [ -n "$MEM_VIR_3" ] && y3="$(echo "$usageperc >= $MEM_VIR_3" | bc)"
     [[ $y3 -eq 0 ]] && y2="$(echo "$usageperc >= $MEM_VIR_2" | bc)"

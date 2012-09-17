@@ -20,10 +20,6 @@ do
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
     s_optarg='yes' 
     ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
   *)
     [ -z "$ARG" ] && ARG=$s_option && found=true
     ;;

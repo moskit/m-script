@@ -166,7 +166,7 @@ fi
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
 if [ -n "$ip" ] ; then
-  if [ `echo $sIP | grep -c "^$localip$"` -ne 0 ] ; then
+  if [ `echo $ip | grep -c "^$localip$"` -ne 0 ] ; then
     localip="yes"
   else
     unset localip

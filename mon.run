@@ -147,6 +147,7 @@ function runscript() {
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
   grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
   grep '<\*>' "${rpath}/report" | sed 's|<\*>||g' > "${rpath}/alert1"
+  grep '<OK>' "${rpath}/report" | sed 's|<OK>||g' > "${rpath}/alert0"
 }
 
 function runactions() {
@@ -165,30 +166,48 @@ IFS1=$IFS; IFS='
         echo "${commline}|$pattern|$level|0" >> "${M_TEMP}/consequent_alerts.tmp"
       fi
     fi
+    
     [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> ${rpath}/monitoring.log && continue
     [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> ${rpath}/monitoring.log && continue
-    for ((i=$level; i<=3; i++)) ; do
+    
+    action_alert_found=false
+    action_init=false
+    
+    [[ $level -eq 0 ]] && levelmax=0 || levelmax=3
+
+    for ((i=$level; i<=$levelmax; i++)) ; do
       while read line ; do
-        if [ -z "$nalerts" ] ; then
-          [[ $line =~ $pattern ]] && action_alert_found=1 && echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/logs/actions.log 2>&1 </dev/null &
+        if [ -z "$nalerts" ]; then
+          if [[ $line =~ $pattern ]]; then
+            action_alert_found=true
+            action_init=true
+            break 2
+          fi
         else
           if [[ $line =~ $pattern ]] ; then
-            action_alert_found=1
+            action_alert_found=true
             [ -z "$calerts" ] && calerts=0
             calerts=`expr $calerts + 1`
             if [[ $calerts -ge $nalerts ]] ; then
-              echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/logs/actions.log 2>&1 </dev/null &
+              action_init=true
               sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
             else
               sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${M_TEMP}/consequent_alerts.tmp"
             fi
+            break 2
           fi
         fi
       done <"${rpath}/alert$i"
+      
+      if $action_init ; then
+        echo -e "\nAction initiated: $action\n" >> ${rpath}/monitoring.log && eval $action >> ${rpath}/logs/actions.log 2>&1 </dev/null &
+      fi
     done
+    
+    # Zeroing if event hasn't happened, to count consequent events only
     if [ -f "${M_TEMP}/consequent_alerts.tmp" ] ; then
       if [ `grep -c ^$commline "${M_TEMP}/consequent_alerts.tmp"` -ne 0 ] ; then
-        if [ -z "$action_alert_found" ] ; then
+        if ! $action_alert_found ; then
           sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
         fi
       fi
@@ -415,31 +434,18 @@ function timeshift() {
   export timeshift
   echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
-    MAINSEQ_EXECTIME=`eval "echo \$MAINSEQ_EXECTIME_$i"`
-    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${0##*/} $* execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
+    MAINSEQ_EXECTIME=`eval "echo \$MAINSEQ_EXECTIME_$l"`
+    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${BASH_SOURCE##*/} execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
   done
 }
 
 function action() {
-  case $1 in
-    AND)
-      logical="AND"
-      shift
-      ;;
-    OR)
-      logical="OR"
-      shift
-      ;;
-    *)
-      logical="OR"
-      ;;
-  esac
-  echo "<OK> Action initiated: $@" >> "${rpath}/report"
-  
+  # this function logs conditions satisfied for certain action request
+  echo "$@|pattern match|$pattern" >> "$rpath/actions.q"
+  chmod 600 "$rpath/actions.q"
 }
 
 source ${rpath}/conf/mon.conf
-[ -z "$M_TEMP" ] && M_TEMP=$(cd "$rpath" && pwd)
 export M_TEMP FREQ
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP
@@ -509,8 +515,8 @@ case ${1} in
     newtimeindex
     runscript ${1} $SQL
     runactions
-    mailalert
     timeshift
+    mailalert
     [ -n "$DASHBOARD" ] && gendash
     deltimeindex
   ;;
