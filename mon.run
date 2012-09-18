@@ -434,7 +434,7 @@ function timeshift() {
   export timeshift
   echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
-    MAINSEQ_EXECTIME=`eval "echo \$MAINSEQ_EXECTIME_$l"`
+    MAINSEQ_EXECTIME=`eval "echo \\$MAINSEQ_EXECTIME_$l"`
     [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${BASH_SOURCE##*/} execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
   done
 }

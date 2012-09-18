@@ -152,7 +152,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
   mv ${M_TEMP}/ps.list.totals.res.sorted ${M_TEMP}/ps.prev.totals.res
   mv ${M_TEMP}/ps.list.totals.vir.sorted ${M_TEMP}/ps.prev.totals.vir
 fi
-### --> if [ -n "$CALCULATE_TOTALS" ]
+###### --> if [ -n "$CALCULATE_TOTALS" ]   ######
 
 ### +2 to include user and pid
 ### +1 to start from the pid field
