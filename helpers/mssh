@@ -16,10 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-rcommand=${0##*/}
-rpath=${0%/*}
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+rcommand=${BASH_SOURCE##*/}
+rpath=${BASH_SOURCE%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../") && export M_ROOT
 #*/
+
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "command ssh not found" && exit 1
 nextkey=false

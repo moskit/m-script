@@ -88,7 +88,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
       echo "${warnind} Process \"${procname}\" is using ${usagemb}MB of RAM"
-      unset y1 y2 y3
+      unset y1 y2 y3 warnind
     fi
     [ -f ${M_TEMP}/ps.prev.totals.res ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.totals.res | cut -d' ' -f1 | tail -1` || continue
     [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
@@ -100,6 +100,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
         direction="decreased"
         usagediff=`solve "$usageprevperc - $usageperc"`
       fi
+      [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
       y3="$(echo "$usagediff >= $TOTALS_MEM_RES_DELTA_3" | bc)"
       [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $TOTALS_MEM_RES_DELTA_2" | bc)"
       [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $TOTALS_MEM_RES_DELTA_1" | bc)"
@@ -107,7 +108,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
       [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" RAM usage $direction by $usagediff percents"
-      unset y1 y2 y3
+      unset y1 y2 y3 warnind
     fi
   done
 
@@ -126,7 +127,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
       echo "${warnind} Process \"${procname}\" is using ${usagemb}MB of virtual memory"
-      unset y1 y2 y3
+      unset y1 y2 y3 warnind
     fi
     [ -f ${M_TEMP}/ps.prev.totals.vir ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.totals.vir | cut -d' ' -f1 | tail -1` || continue
     [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
@@ -138,6 +139,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
         direction="decreased"
         usagediff=`solve "$usageprevperc - $usageperc"`
       fi
+      [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
       y3="$(echo "$usagediff >= $TOTALS_MEM_VIR_DELTA_3" | bc)"
       [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $TOTALS_MEM_VIR_DELTA_2" | bc)"
       [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $TOTALS_MEM_VIR_DELTA_1" | bc)"
@@ -145,7 +147,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
       [ -n "$warnind" ] && echo "${warnind} Process \"${procname}\" virtual memory usage $direction by $usagediff percents"
-      unset y1 y2 y3
+      unset y1 y2 y3 warnind
     fi
   done
   
@@ -182,7 +184,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
     echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" is using ${usagemb}MB of RAM"
-    unset y1 y2 y3
+    unset y1 y2 y3 warnind
   fi
   [ -f "${M_TEMP}/ps.prev.res" ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
@@ -194,6 +196,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
       direction="decreased"
       usagediff=`solve "$usageprevperc - $usageperc"`
     fi
+    [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
     y3="$(echo "$usagediff >= $MEM_RES_DELTA_3" | bc)"
     [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_RES_DELTA_2" | bc)"
     [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $MEM_RES_DELTA_1" | bc)"
@@ -201,7 +204,7 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
     [ -n "$warnind" ] && echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" RAM usage $direction by $usagediff percents"
-    unset y1 y2 y3
+    unset y1 y2 y3 warnind
   fi
 done
 
@@ -226,7 +229,7 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
     echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" is using ${usagemb}MB of virtual memory"
-    unset y1 y2 y3
+    unset y1 y2 y3 warnind
   fi
   [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
@@ -238,6 +241,7 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
       direction="decreased"
       usagediff=`solve "$usageprevperc - $usageperc"`
     fi
+    [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
     y3="$(echo "$usagediff >= $MEM_VIR_DELTA_3" | bc)"
     [[ $y3 -eq 0 ]] && y2="$(echo "$usagediff >= $MEM_VIR_DELTA_2" | bc)"
     [[ $y2 -eq 0 ]] && y1="$(echo "$usagediff >= $MEM_VIR_DELTA_1" | bc)"
@@ -245,7 +249,7 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
     [ "$y2" == "1" ] && warnind='<**> '
     [ "$y3" == "1" ] && warnind='<***>'
     [ -n "$warnind" ] && echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" virtual memory usage $direction by $usagediff percents"
-    unset y1 y2 y3
+    unset y1 y2 y3 warnind
   fi
 done
 

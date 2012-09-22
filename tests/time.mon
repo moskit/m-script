@@ -24,6 +24,7 @@ source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
+LOG="$M_ROOT/monitoring.log"
 
 [ -z "$CLUSTER" ] && CLUSTER="all"
 [ -x "/sbin/ntpd" ] && NTPD="/sbin/ntpd" || NTPD=`which ntpd 2>/dev/null`
@@ -36,10 +37,19 @@ declare -i n
 n=0
 deltasum=0
 for server in `"$M_ROOT"/cloud/common/get_ips --cluster=$CLUSTER` ; do
-  timedelta=$(echo -e "scale=2; `(time -p "$M_ROOT"/helpers/mssh $server date +"%s.%N") 2>&1 | grep -E '^[0-9]|^real' | cut -d' ' -f2 | tr '\n' '|' | sed 's_|$__;s_|_ + \(_;s|$| * 0.25\)|'` - `date +"%s.%N"`" | bc)
-  servers+=( $server ) ; timedeltas+=( $timedelta )
-  deltasum=`echo "scale=2; $deltasum + $timedelta" | bc`
+  deltaexpr="scale=2; `(time -p "$M_ROOT"/helpers/mssh $server date +"%s.%N") 2>&1 | grep -E '^[0-9]|^real' | cut -d' ' -f2 | tr '\n' '|' | sed 's_|$__;s_|_ + \(_;s|$| * 0.25\)|'` - `date +"%s.%N"`"
+  $debug && log "$deltaexpr"
+  timedelta=$(echo -e "$deltaexpr" | bc 2>>"$LOG")
+  if [ -n "$timedelta" ]; then
+    servers+=( $server ) ; timedeltas+=( $timedelta )
+    deltasum=`echo "scale=2; $deltasum + $timedelta" | bc`
+  else
+    echo "${server}: error getting time delta"
+  fi
 done
+[ ${#servers[*]} -eq 0 ] && log "unable to collect clock drift data from remote 
+servers" && exit 0
+
 deltaavg=`echo "scale=2; $deltasum / ${#servers[*]}" | bc`
 
 deltaL=0
@@ -58,16 +68,19 @@ echo "Left delta:   $deltaL"
 echo "Right delta:   $deltaR"
 echo
 if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaavg) > abs($MAXDELTA)" | bc` -eq 1 ]; then
-  if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaL) < abs($deltaavg)" | bc` -eq 1 ] && [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaR) < abs($deltaavg)" | bc` -eq 1 ]; then
+#  if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaL) < abs($deltaavg)" | bc` -eq 1 ] && [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs($deltaR) < abs($deltaavg)" | bc` -eq 1 ]; then
     # This means that localhost's clock is not correct, so we fix it and exit
-    [ -n "$NTPD" ] && $NTPD -gq >/dev/null 2>&1
-    exit 0
-  fi
+    [ -n "$NTPD" ] && localdelta=`$NTPD -gq` 2>/dev/null
+#  fi
 fi
+
+[ `echo "scale=2; $deltaR - $deltaL <= $MAXDELTA" | bc` -eq 1 ] && exit 0
+[ -n "$localdelta" ] && localdelta=`expr "$localdelta" : ".* \([0-9.-]*\).*"`
+[ -z "$localdelta" ] && localdelta=0
 
 for ((i=0; i<${#servers[*]}; i++)); do
   echo -e -n "`find_name ${servers[$i]}`:   ${timedeltas[$i]}"
-  if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs(${timedeltas[$i]}) > abs($MAXDELTA)" | bc` -eq 1 ]; then
+  if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs(${timedeltas[$i]} + $localdelta) > abs($MAXDELTA)" | bc` -eq 1 ]; then
     "$M_ROOT"/helpers/mssh ${servers[$i]} $NTPD -gq >/dev/null 2>&1 && echo -e "\tfixed" || echo -e "\tfix failed"
   else
     echo
