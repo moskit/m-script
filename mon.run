@@ -154,7 +154,7 @@ function runactions() {
 IFS1=$IFS; IFS='
 '
   for action in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | cut -d'|' -f3 | sort | uniq` ; do
-    action_init=false
+    all_alerts_found=false
     
     for confline in `grep -E "\|${action}\||\|${action}$" "${rpath}/conf/actions.conf"` ; do
       pattern=`echo $confline | cut -d'|' -f1`
@@ -173,7 +173,7 @@ IFS1=$IFS; IFS='
       [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> "${rpath}/monitoring.log" && continue
       
       action_alert_found=false
-      all_alerts_found=false
+      alert_match=false
       
       [[ $level -eq 0 ]] && levelmax=0 || levelmax=3
 
@@ -181,11 +181,12 @@ IFS1=$IFS; IFS='
         while read line ; do
           if [ -z "$nalerts" ]; then
             if [[ $line =~ $pattern ]]; then
-              action_alert_found=true
+              alert_match=true
               break
             fi
           else
             if [[ $line =~ $pattern ]] ; then
+              action_alert_found=true
               if [ -z "$calerts" ]; then
                 calerts=1
               elif [ `expr "$calerts" : ".*[^0-9].*"` -ne 0 ]; then
@@ -194,16 +195,19 @@ IFS1=$IFS; IFS='
               fi
               calerts=`expr $calerts + 1`
               sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${M_TEMP}/consequent_alerts.tmp"
-              [[ $calerts -ge $nalerts ]] && action_alert_found=true && break
+              [[ $calerts -ge $nalerts ]] && alert_match=true && break
             fi
           fi
         done <"${rpath}/alert$i"
       done   ## <-- finished reading alerts
       
-      if $action_alert_found ; then
+      if $alert_match ; then
         # matching condition found, but conditions may be ANDed
         all_alerts_found=true
       else
+        all_alerts_found=false
+      fi
+      if ! $action_alert_found ; then
         # if no match, alert is not consequent and must be zeroed
         sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
       fi

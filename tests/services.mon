@@ -21,10 +21,9 @@ rpath=${0%/*}
 source "${rpath}/../conf/mon.conf"
 
 getprocessname() {
-  if [ -f "/proc/$1/comm" ] ; then
-    pcomm=`cat /proc/$1/comm`
-  else
-    pcomm=`cat /proc/$1/cmdline | sed 's|[^[:print:]]| |g' | cut -d' ' -f1`
+  if [ -d /proc/$1 ] ; then
+    pfull=`ps -wwo cmd $1`
+    pcomm=`echo $pfull | tr -d' ' -f1`
   fi
 }
 
@@ -38,7 +37,7 @@ checkpidfile() {
       printf "PID $pid"
       m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
       printf "${1}\n"
-      echo "${1}|$pid" >> /tmp/m_script/services.tmp
+      echo "${1}|$pid|$pfull" >> /tmp/m_script/services.tmp
     else
       echo "<***> Stale pidfile found: $1. Process with ID $pid doesn't exist. Removing."
       rm -f "$1"
