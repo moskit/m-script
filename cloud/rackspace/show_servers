@@ -25,6 +25,11 @@ LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 
+#debug=1
+
+[ -n "$debug" ] && debug=true || debug=false
+$debug && LOG="$M_ROOT/logs/show_servers.log"
+
 possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolveids"
 necessary_options=""
 
@@ -63,6 +68,7 @@ M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+$debug && source "$M_ROOT/lib/functions.sh"
 CURL="$CURL -s -k"
 declare -i icount
 
@@ -101,6 +107,7 @@ request() {
 }
 
 list_servers() {
+  $debug && [ -n "$update_servers_list" ] && echo -e "\n`date`\n=====================\n" >> $LOG
   IFS1=$IFS
   IFS='
 '
@@ -149,12 +156,15 @@ list_servers() {
         ip=${ip#* } ; ip=${ip% *}
         if [ -z "$icluster" ] ; then
           # servers having no cluster in metadata but added manually to servers.list
-          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+          $debug && [ -n "$update_servers_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed `[ -n "$icluster" ] && echo "$icluster" || echo "none"`"
+          break
         else
           # no icluster means that server will not be shown, but only if there
           # is no option --all. With this option, however, we want to see all
           # clusters assigned via metadata
           [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+          $debug && [ -n "$update_servers_list" ] && unset ecf
         fi
       done
       if [ -z "$update_servers_list" ] ; then
@@ -198,6 +208,7 @@ list_servers() {
               ip=${ip#* } ; ip=${ip% *}
               sed -i /^$ip\|/d "${rpath}/../../servers.list"
               echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+              $debug && [ -n "$update_servers_list" ] && [ -n "$ecf" ] && log "$ip ($name) added"
             done
           fi
         fi
