@@ -22,8 +22,8 @@ source "${rpath}/../conf/mon.conf"
 
 getprocessname() {
   if [ -d /proc/$1 ] ; then
-    pfull=`ps -wwo cmd $1`
-    pcomm=`echo $pfull | tr -d' ' -f1`
+    pfull=`ps -wwo cmd= $1`
+    pcomm=`echo $pfull | cut -d' ' -f1`
   fi
 }
 

@@ -68,6 +68,8 @@ source "${rpath}/../../lib/cloud_functions.sh"
 
 M_TEMP="$M_TEMP/cloud/ganeti"
 install -d "$M_TEMP"
+[ -z "$GANETI_CONF_FOLDER" ] && GANETI_CONF_FOLDER="/etc/ganeti"
+[ -d "$GANETI_CONF_FOLDER" ] && install -d "$GANETI_CONF_FOLDER"
 
 find_ip() {
   class=${GANETI_NETWORK%.*}
@@ -171,7 +173,7 @@ IFS='
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
 
-log "($CLOUD) checking cluster $cluster limit"
+log "checking cluster $cluster limit"
 res=`check_cluster_limit $verbose`
 [[ $res -ne 0 ]] && exit 5
 [ -z "$name" ] && name=`generate_name` && log "name auto-generated: $name"
@@ -194,21 +196,30 @@ $GNTC master-ping
 # If it's alive, we can get some info from it
 OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
+[ -z "$OSPATH" ] && OSPATH="$GANETI_FOLDERS_ROOT/os"
 # OS required for the new server
 OSNAME=`cat "${rpath}/../../conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
 [ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && exit 1
-# common.sh is supposed to be a file containing functions and default settings
-# it cannot be just sourced, but we need only two things anyway
+# for the default bootstrap OS
 OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`
 
-source "$OS_DEFAULT_CONF"
-log "$OS_DEFAULT_CONF sourced"
-HOOKS_DIR="$CUSTOMIZE_DIR"
-[ -z "$HOOKS_DIR" ] && HOOKS_DIR=`cat "$OSPATH/$OSNAME/common.sh" | grep 'CUSTOMIZE_DIR:=' | awk -F':=' '{print $2}' | cut -d'"' -f2`
+[ -f "$OS_DEFAULT_CONF" ] && source "$OS_DEFAULT_CONF" && log "$OS_DEFAULT_CONF sourced" || log "$OS_DEFAULT_CONF not found"
+
+CUSTOMIZE_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/hooks"
+VARIANTS_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/variants"
+
+echo -e "CUSTOMIZE_DIR=$CUSTOMIZE_DIR\nVARIANTS_DIR=$VARIANTS_DIR\nCDINSTALL=no\n" > "$M_TEMP/vars"
+
+[ -d "$CUSTOMIZE_DIR" ] || install -d "$CUSTOMIZE_DIR"
+[ -d "$VARIANTS_DIR" ] || install -d "$VARIANTS_DIR"
+[ -d "$IMAGE_DIR" ] || install -d "$IMAGE_DIR"
+
+[ -z "$HOOKS_DIR" ] && HOOKS_DIR="$CUSTOMIZE_DIR"
+[ -z "$HOOKS_DIR" ] && HOOKS_DIR="$M_TEMP/hooks"
+[ -d "$HOOKS_DIR" ] || install -d "$HOOKS_DIR"
 log "HOOKS_DIR: $HOOKS_DIR"
 
-[ -z "$HOOKS_DIR" ] && log "Unable to find a hooks directory" && exit 1
-
+export CUSTOMIZE_DIR VARIANTS_DIR IMAGE_DIR HOOKS_DIR
 [ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
 
 broadcast=`find_broadcast`

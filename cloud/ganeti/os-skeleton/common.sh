@@ -31,7 +31,10 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(cd "${rpath}/../../../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 [ -z "$M_TEMP" ] && source "$M_ROOT/conf/mon.conf"
-[ -z "$M_TEMP" ] && M_TEMP="$M_TEMP/cloud/ganeti"
+[ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
+M_TEMP="$M_TEMP/cloud/ganeti"
+
+source "$M_TEMP/vars"
 
 CLEANUP=( )
 
@@ -365,28 +368,6 @@ cleanup() {
 }
 
 trap cleanup EXIT
-
-# note: we don't set a default mirror since debian and ubuntu have
-# different defaults, and it's better to use the default
-
-# only if the user want to specify a mirror in the defaults file we
-# will use it, this declaration is to make sure the variable is set
-: ${CDINSTALL:="no"}
-: ${SWAP:="yes"}
-: ${SWAP_SIZE:="${INSTANCE_BE_memory}"}
-: ${FILESYSTEM:="ext3"}
-: ${KERNEL_ARGS=""}
-: ${OVERLAY=""}
-: ${IMAGE_NAME:=""}
-: ${IMAGE_TYPE:="dump"}
-: ${NOMOUNT:="no"}
-: ${ARCH:=""}
-: ${CUSTOMIZE_DIR:="$M_TEMP/hooks"}
-: ${VARIANTS_DIR:="$M_TEMP/variants"}
-: ${NETWORKS_DIR:="$M_TEMP/networks"}
-: ${OVERLAYS_DIR:="$M_TEMP/overlays"}
-: ${IMAGE_DIR:="/var/cache/ganeti-instance-image"}
-: ${IMAGE_DEBUG:="no"}
 
 SCRIPT_NAME=$(basename $0)
 KERNEL_PATH="$INSTANCE_HV_kernel_path"
