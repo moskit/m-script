@@ -216,7 +216,7 @@ IFS1=$IFS; IFS='
     if $all_alerts_found ; then
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a "${rpath}/logs/actions.log"
       eval $action >> "${rpath}/logs/actions.log" 2>&1 </dev/null &
-      sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
+      [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
     fi
 
   done
@@ -466,6 +466,7 @@ case ${1} in
     deltimeindex
   ;;
   -dry | --dry | --dry-run | -test | --test)
+    export TEST=1
     newtimeindex
     runscript SQL
     runactionstest

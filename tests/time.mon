@@ -22,12 +22,14 @@ rpath=${0%/*}
 
 source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
 source "$M_ROOT/conf/cloud.conf"
-source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/monitoring.log"
 
 [ -z "$CLUSTER" ] && CLUSTER="all"
 [ -x "/sbin/ntpd" ] && NTPD="/sbin/ntpd" || NTPD=`which ntpd 2>/dev/null`
+[ -z "$NTPD" ] && log "no NTP software found" && exit 0
+[ -n "$TEST" -o -n "$debug" -o -n "$verbose" ] && debug=true || debug=false
 
 echo -e "\nClock drift:\n------------\n"
 
@@ -81,7 +83,11 @@ fi
 for ((i=0; i<${#servers[*]}; i++)); do
   echo -e -n "`find_name ${servers[$i]}`:   ${timedeltas[$i]}"
   if [ `echo "define abs(n){if(n>=0)return(n);return(-n)}; abs(${timedeltas[$i]} + $localdelta) > abs($MAXDELTA)" | bc` -eq 1 ]; then
-    "$M_ROOT"/helpers/mssh ${servers[$i]} $NTPD -gq >/dev/null 2>&1 && echo -e "\tfixed" || echo -e "\tfix failed"
+    if [ -z "$TEST" ] ; then
+      "$M_ROOT"/helpers/mssh ${servers[$i]} $NTPD -gq >/dev/null 2>&1 && echo -e "\tfixed" || echo -e "\tfix failed"
+    else
+      echo -e "\tfix required"
+    fi
   else
     echo
   fi
