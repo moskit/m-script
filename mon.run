@@ -209,7 +209,7 @@ IFS1=$IFS; IFS='
       fi
       if ! $action_alert_found ; then
         # if no match, alert is not consequent and must be zeroed
-        sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
+        [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
       fi
     done   ## <-- finished reading config
     

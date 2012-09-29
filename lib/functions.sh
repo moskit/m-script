@@ -22,6 +22,8 @@ source "$M_ROOT/conf/mon.conf"
 SQL=`which sqlite3 2>/dev/null`
 
 store_results() {
+  # syntax:
+  # store_results fieldname1:datatype1,fieldname2:datatype2,...
   [ -z "$1" ] && echo "Fields are not defined" && exit 1
   [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
   if [ -z "$2" ]; then
@@ -46,9 +48,9 @@ store_results() {
   day=`date +"%Y%m%d"`
   [ -z "$dbtable" ] && echo "Unable to find out what table to store the data into" && exit 1
   [ -z "$dbfile" ] && echo "Database file definition is NULL" && exit 1
-  values="$(IFS=','; for f in $1; do f=${f%%:*}; eval "echo \$${f},"; done)"
+  values="$(IFS=','; for f in $1; do f=${f%%:*}; eval "echo -n \'\$${f}\',"; done)"
   values="${values%,}"
-  fields="$(IFS=','; for f in $1; do echo "${f%%:*},"; done)"
+  fields="$(IFS=','; for f in $1; do echo -n "${f%%:*},"; done)"
   fields="${fields%,}"
   if [ ! -f "$dbfile" ] || [ -f "$dbfile" -a -z "`$SQL "$dbfile" ".schema $dbtable"`" ]; then
     cfields="$(IFS=','; for f in $1; do echo -n "${f%%:*} `echo "${f}" | cut -d':' -f2`,"; done)"

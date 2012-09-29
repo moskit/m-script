@@ -293,7 +293,7 @@ for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
   master=`find_master ${configip} || echo ${configip}`
-  mongoses=`($MONGO ${master}/config --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | awk -F'|' '{print $2}' | sort -n`
+  mongoses=`($MONGO ${master}/config --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null) | "${rpath}/../../lib/json2txt" | awk -F'|' '{print $2}' | sort -n`
   [ -n "$gotit" ] && unset gotit master && break
 done
 

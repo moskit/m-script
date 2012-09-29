@@ -40,7 +40,7 @@ n=0
 deltasum=0
 for server in `"$M_ROOT"/cloud/common/get_ips --cluster=$CLUSTER` ; do
   deltaexpr="scale=2; `(time -p "$M_ROOT"/helpers/mssh $server date +"%s.%N") 2>&1 | grep -E '^[0-9]|^real' | cut -d' ' -f2 | tr '\n' '|' | sed 's_|$__;s_|_ + \(_;s|$| * 0.25\)|'` - `date +"%s.%N"`"
-  $debug && log "$deltaexpr"
+  $debug && log "$server \"$deltaexpr\""
   timedelta=$(echo -e "$deltaexpr" | bc 2>>"$LOG")
   if [ -n "$timedelta" ]; then
     servers+=( $server ) ; timedeltas+=( $timedelta )

@@ -71,7 +71,8 @@ if [ -z "$ln" ] ; then
   badpattern=false
   declare -i i ; i=0 ; ilimit=20 # safety limit
   while [[ "$timepattern" != "$timecurrent" ]]; do
-    dd=`date -d "$timepattern"`
+    dd=`date -d "$timepattern" 2>/dev/null`
+    [ -z "$dd" ] && echo "Unable to restore date/time using pattern: $timepattern" >> "$rpath/../monitoring.log" && break
     timepattern=`date -d "$dd +$res" +"$timeformat" 2>/dev/null || badpattern=true`
     $badpattern && break
     i+=1
