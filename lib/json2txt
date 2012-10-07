@@ -54,6 +54,8 @@ parseline() {
       printvalue "$value" && unset value
     fi
     i+=-1
+    # workaround for a mere list of objects, we want to count them
+    [ $i -eq 0 ] && index[$i]=`expr ${index[$i]} + 1`
     [ -n "$d" ] && showdebug
     return
   fi

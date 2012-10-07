@@ -23,6 +23,7 @@ SQLITE=`which sqlite3 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
+M_ROOT="$rpath"
 commline="$0 $*"
 echo "`date +"%H:%M:%S"` == Running ${commline} ==" >> ${rpath}/monitoring.log
 #*/ (this is needed to fool vi syntax highlighting)
@@ -453,7 +454,7 @@ function action() {
 }
 
 source ${rpath}/conf/mon.conf
-export M_TEMP FREQ
+export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP
 case ${1} in

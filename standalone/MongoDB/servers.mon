@@ -317,7 +317,7 @@ if [ -n "$shardhosts" ] ; then
   IFS='
 '
   nmax=`echo "$shardhosts" | tail -1 | cut -d'/' -f1`
-  for ((n=1; n<=$nmax; n++)) ; do
+  for ((n=0; n<=$nmax; n++)) ; do
     shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | awk -F'|' '{print $2}'`
     shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | awk -F'|' '{print $2}'`
     ifreplicaset=${shardhost%%/*}

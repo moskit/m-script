@@ -10,3 +10,5 @@ rpath=${rpath%/*}
 rm -f "${rpath}/../standalone/rc/"*".$1"
 rm -f "${rpath}/../standalone/${1}/rc"/*
 
+[ -x "/etc/init.d/monitorload" ] && /etc/init.d/monitorload restart
+

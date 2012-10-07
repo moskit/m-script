@@ -235,7 +235,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
 #    done
 #  done
   
-  for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
+  for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^0\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^1\/master_node "${rpath}/data/${escluster}.nodes" | grep -c "$clusternode"`
     nodehost=`grep "${clusternode}\/transport_address|" "${rpath}/data/${escluster}.nodes"`
@@ -295,9 +295,9 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   $debug && log "ES cluster ${escluster}: routing data collected"
   
   declare -i m
-  for shard in `cat "${rpath}/data/${escluster}.routing" | grep '^1/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
+  for shard in `cat "${rpath}/data/${escluster}.routing" | grep '^0/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
     rm -f "${rpath}/data/${escluster}.${shard}.routing"
-    m=0 ; cat "${rpath}/data/${escluster}.routing"  | grep "^1/routing_table/indices/streams/shards/${shard}/" | sed 's|^1/routing_table/indices/streams/shards/||g' | grep -v "^${shard}/shard " | while read routline ; do routlines=( ${routlines[*]} "${routline%%|*}" ) ; [[ "${routline%%|*}" == "${routlines[0]}" ]] && m+=1; echo "${m}/${routline#*/}" >> "${rpath}/data/${escluster}.${shard}.routing" ; done
+    m=0 ; cat "${rpath}/data/${escluster}.routing"  | grep "^0/routing_table/indices/streams/shards/${shard}/" | sed 's|^0/routing_table/indices/streams/shards/||g' | grep -v "^${shard}/shard " | while read routline ; do routlines=( ${routlines[*]} "${routline%%|*}" ) ; [[ "${routline%%|*}" == "${routlines[0]}" ]] && m+=1; echo "${m}/${routline#*/}" >> "${rpath}/data/${escluster}.${shard}.routing" ; done
     unset routlines
   done
   $debug && log "ES cluster ${escluster}: routing data processed"

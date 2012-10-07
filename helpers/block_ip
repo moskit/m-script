@@ -18,6 +18,10 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+source "$M_ROOT/lib/functions.sh"
+LOG="$M_ROOT/logs/block_ip.log"
 
 ips=`cat $1 | grep -v ^$ | sort | uniq`
 
@@ -76,9 +80,9 @@ source "${rpath}/../conf/mon.conf"
 
 [ -z "$method" ] && method=REJECT
 
-$IPT -L M_IPBLOCK_CONST >/dev/null 2>&1
+$IPT -L -n M_IPBLOCK_CONST >/dev/null 2>&1
 [[ $? -eq 1 ]] && $IPT -N M_IPBLOCK_CONST && $IPT -A INPUT -j M_IPBLOCK_CONST
-$IPT -L M_IPBLOCK_TMP >/dev/null 2>&1
+$IPT -L -n M_IPBLOCK_TMP >/dev/null 2>&1
 if [[ $? -eq 1 ]] ; then
   $IPT -N M_IPBLOCK_TMP
   $IPT -A INPUT -j M_IPBLOCK_TMP
@@ -92,14 +96,14 @@ if [ -n "$ips" ] ; then
     # Never block own IPs! :)
     if [[ `grep -c ^${ip}\| "${rpath}/../servers.list"` -eq 0 ]] ; then
       ipincl=`grep -c "^${ip}$" "${M_TEMP}/ip_block.tmp"` || ipincl=0
-echo "$ip :: $ipincl -gt $block_forever_after" >> /opt/m/ip_block.log
+      log "$ip :: $ipincl -gt $block_forever_after"
       if [[ $ipincl -gt $block_forever_after ]] ; then
         if [[ `grep -c "^${ip}$" "${M_TEMP}/ip_block.const"` -eq 0 ]] ; then
           echo $ip >> "${M_TEMP}/ip_block.const"
           $IPT -A M_IPBLOCK_CONST -s $ip -j $method
         fi
       else
-echo "$ip :: blocking temporarily"
+        log "$ip :: blocking temporarily"
         $IPT -A M_IPBLOCK_TMP -s $ip -j $method
       fi
     fi

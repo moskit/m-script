@@ -21,3 +21,5 @@ for mon in "${rpath}/../standalone/$1"/*.mon ; do
 done
 [ -x "${rpath}/../standalone/$1"/setup.run ] && "${rpath}/../standalone/$1"/setup.run
 
+[ -x "/etc/init.d/monitorload" ] && /etc/init.d/monitorload restart
+

@@ -37,7 +37,7 @@ checkpidfile() {
       printf "PID $pid"
       m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
       printf "${1}\n"
-      echo "${1}|$pid|$pfull" >> /tmp/m_script/services.tmp
+      echo "${1}|$pid|$pfull" >> "$M_TEMP"/services.tmp
     else
       echo "<***> Stale pidfile found: $1. Process with ID $pid doesn't exist. Removing."
       rm -f "$1"
@@ -102,19 +102,19 @@ if [ -n "$prevlist" -a -n "$currlist" ] ; then
       pid=`echo $LINE | cut -d'|' -f2`
       getprocessname $pid
       if [ $(echo "$prevlist" | grep -c "^$service") -eq 0 ] ; then
-        echo "<**> Service $pcomm with pidfile $service is a new service"
+        echo "<**> Service $pcomm pidfile $service is a new service"
       fi
     fi
   done
   for LINE in $prevlist ; do
-    if [ `echo "$currlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
+    if [ `echo "$currlist" | grep -c "^${LINE%%|*}|"` -eq 0 ] ; then
       service=`echo $LINE | cut -d'|' -f1`
       pid=`echo $LINE | cut -d'|' -f2`
       getprocessname $pid
       if [ $(echo "$currlist" | grep -c "^$service") -eq 0 ] ; then
-        echo "<***> Service $pcomm with pidfile $service stopped!"
+        echo "<***> Service $pcomm pidfile $service stopped!"
       else
-        echo "<**> Service $pcomm with pidfile $service restarted"
+        echo "<**> Service $pcomm pidfile $service restarted"
       fi
     fi
   done
