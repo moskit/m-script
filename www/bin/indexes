@@ -13,11 +13,12 @@ for index in `cat "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" 
   index_name=`echo "$index" | cut -d'/' -f3`
   index_size=`echo "$index" | cut -d'|' -f2`
   index_size=`expr $index_size / 1048576`
-    csunits="MB"
-    if [ ${#index_size} -gt 3 ] ; then
-      index_size=`expr $index_size / 1024` && csunits="GB"
-    fi
-    index_size="$index_size $csunits"
+  csunits="MB"
+  if [ ${#index_size} -gt 3 ] ; then
+    index_size=`expr $index_size / 1024` && csunits="GB"
+  fi
+  index_size="$index_size $csunits"
+  echo "<div style=\"display: table; width: 200px;\">$index_name</div><div style=\"display: table; width: 200px;\">$index_size</div>"
 done
 
 

@@ -13,7 +13,7 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
   dbname=${db%|*}
   #dbsize=${db#*|}  # It's a files total size
   
-  db_dat="${PWD}/../../standalone/${saname}/data"/${db}.dat
+  db_dat="${PWD}/../../standalone/${saname}/data"/${dbname}.dat
   total_ok=`cat "$db_dat" | grep ^0\/ok\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
   total_count=`cat $db_dat | grep ^0\/objects\| | cut -d'|' -f2`
@@ -35,14 +35,15 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
   total_datasize="$total_datasize $csunits"
   total_chunks=`cat $db_dat | grep ^0\/nchunks\| | cut -d'|' -f2`
   
-  open_cluster databases "$db"
+  open_cluster databases "$dbname"
   
   print_cluster_inline "total_status" "total_count" "total_datasize" "total_storsize" "total_indexsize" "total_chunks"
-  close_cluster_line "$db"
+  close_cluster_line "$dbname"
   
   for coll in "${PWD}/../../standalone/$saname/data"/${dbname}.*.dat ; do
     collinfo=`cat "$coll"`
     coll_name=`echo "$collinfo" | grep ^0\/ns\| | cut -d'|' -f2`
+    coll_name=${coll_name%%.*}
     print_line_title indexes "$coll_name"
     coll_ok=`echo "$collinfo" | grep ^0\/ok\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
