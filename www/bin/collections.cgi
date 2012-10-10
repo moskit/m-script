@@ -9,11 +9,14 @@ print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections" "mongo_logger|Log Monitor"
 print_page_title "Collection" "Status" "Primary" "Sharded" "Count" "Data Size" "Index Size"
 
+[ -f "${PWD}/../../standalone/$saname/data/databases.dat" ] || exit 0
+
 for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
   dbname=${db%|*}
   #dbsize=${db#*|}  # It's a files total size
   
   db_dat="${PWD}/../../standalone/${saname}/data"/${dbname}.dat
+  [ -f "$db_dat" ] || continue
   total_ok=`cat "$db_dat" | grep ^0\/ok\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
   total_count=`cat $db_dat | grep ^0\/objects\| | cut -d'|' -f2`

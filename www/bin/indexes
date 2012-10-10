@@ -8,7 +8,7 @@ chunksmax=0
 datasizemax=0
 indexsizemax=0
 echo "<div style=\"display: table; width: 800px;\">"
-
+[ -f "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" ] || exit 0
 for index in `cat "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" | grep ^0\/indexSizes\/` ; do
   index_name=`echo "$index" | cut -d'/' -f3`
   index_size=`echo "$index" | cut -d'|' -f2`
