@@ -1,0 +1,25 @@
+#/bin/bash
+
+cluster="$1"
+server="$2"
+IFS='
+'
+chunksmax=0
+datasizemax=0
+indexsizemax=0
+echo "<div style=\"display: table; width: 800px;\">"
+
+for index in `cat "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" | grep ^0\/indexSizes\/` ; do
+  index_name=`echo "$index" | cut -d'/' -f3`
+  index_size=`echo "$index" | cut -d'|' -f2`
+  index_size=`expr $index_size / 1048576`
+    csunits="MB"
+    if [ ${#index_size} -gt 3 ] ; then
+      index_size=`expr $index_size / 1024` && csunits="GB"
+    fi
+    index_size="$index_size $csunits"
+done
+
+
+echo "</div>"
+

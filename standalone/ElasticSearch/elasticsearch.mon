@@ -254,7 +254,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     fi
     eval "${escluster}nodes+=( \"${hostport}\" )"
     echo -e "clusternode_id|${clusternode}\nip|${nodehost}\nmaster|${ismaster}" > "${rpath}/data/${escluster}.${rname}.dat.tmp"
-    ($CURL -m 5 "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats" || $CURL -m 10 "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat.tmp"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
+    ($CURL -m 5 "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats?process&jvm&network" || $CURL -m 10 "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats?process&jvm&network") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat.tmp"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
     mv "${rpath}/data/${escluster}.${rname}.dat" "${rpath}/data/${escluster}.${rname}.dat.prev"
     mv "${rpath}/data/${escluster}.${rname}.dat.tmp" "${rpath}/data/${escluster}.${rname}.dat"
     $debug && log "    JSON stats parsed and saved to file"
