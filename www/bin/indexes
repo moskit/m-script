@@ -7,10 +7,10 @@ IFS='
 chunksmax=0
 datasizemax=0
 indexsizemax=0
-echo "<div style=\"display: table; width: 800px;\">"
+echo "<div style=\"display: table; width: 800px; margin-left: 100px;\">"
 [ -f "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" ] || exit 0
 for index in `cat "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" | grep ^0\/indexSizes\/` ; do
-  index_name=`echo "$index" | cut -d'/' -f3`
+  index_name=`echo "$index" | cut -d'/' -f3 | cut -d'|' -f1`
   index_size=`echo "$index" | cut -d'|' -f2`
   index_size=`expr $index_size / 1048576`
   csunits="MB"

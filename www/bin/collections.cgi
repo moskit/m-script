@@ -42,13 +42,13 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
   
   open_cluster databases "$dbname"
   
-  print_cluster_inline "total_status" "total_count" "total_datasize" "total_storsize" "total_indexsize" "total_chunks"
+  print_cluster_inline "total_status" "" "" "total_count" "total_datasize" "total_indexsize"
   close_cluster_line "$dbname"
   
   for coll in "${PWD}/../../standalone/$saname/data"/${dbname}.*.dat ; do
     collinfo=`cat "$coll"`
     coll_name=`echo "$collinfo" | grep ^0\/ns\| | cut -d'|' -f2`
-    coll_name=${coll_name%%.*}
+    coll_name=${coll_name#*.}
     print_line_title indexes "$coll_name"
     coll_ok=`echo "$collinfo" | grep ^0\/ok\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
@@ -68,9 +68,10 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
     fi
     coll_size="$coll_size $csunits"
     
-    print_inline "coll_status" "coll_sharded" "coll_primary" "coll_size" "coll_indexsize"
-    close_line "$coll"
+    print_inline "coll_status" "coll_sharded" "coll_primary" "coll_count" "coll_size" "coll_indexsize"
+    close_line "$coll_name"
     
   done
+  close_cluster
 done
 
