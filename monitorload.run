@@ -153,9 +153,11 @@ start)
           $satest >> "$safolder/report" 2>>"$rpath/logs/sa.log"
         done </dev/null &
       done
+      # Running actions from the queue
+      "${rpath}"/lib/mq.run </dev/null &
     else
 ## Tests that are always enabled
-      ${rpath}/mon.run mem.mon </dev/null &
+      "${rpath}"/mon.run mem.mon </dev/null &
     fi
 ###
   done >/dev/null 2>&1 </dev/null &

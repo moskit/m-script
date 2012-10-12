@@ -18,7 +18,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/block_ip.log"
@@ -96,11 +96,14 @@ if [ -n "$ips" ] ; then
     # Never block own IPs! :)
     if [[ `grep -c ^${ip}\| "${rpath}/../servers.list"` -eq 0 ]] ; then
       ipincl=`grep -c "^${ip}$" "${M_TEMP}/ip_block.tmp"` || ipincl=0
-      log "$ip :: $ipincl -gt $block_forever_after"
+      log "$ip :: logged: $ipincl times, forever after: $block_forever_after times"
       if [[ $ipincl -gt $block_forever_after ]] ; then
         if [[ `grep -c "^${ip}$" "${M_TEMP}/ip_block.const"` -eq 0 ]] ; then
           echo $ip >> "${M_TEMP}/ip_block.const"
           $IPT -A M_IPBLOCK_CONST -s $ip -j $method
+          log "$ip blocked for ever"
+        else
+          log "$ip found in ${M_TEMP}/ip_block.const, pls check your firewall"
         fi
       else
         log "$ip :: blocking temporarily"

@@ -1,0 +1,78 @@
+#!/bin/bash
+# Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+fpath=$(readlink -f "$BASH_SOURCE")
+fcomm=${fpath##*/}
+fpath=${fpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
+LOG="$M_ROOT/logs/actions.log"
+source "$M_ROOT/lib/functions.sh"
+
+possible_options="mode limit help"
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optname=`echo $s_optname | tr -d '-'`
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+  if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+if [ -n "$help" ]; then
+cat << "EOF"
+
+Usage: $fcomm <options>
+  where <options>:
+    
+    --mode=<distinct,all>
+    --limit=N
+    
+EOF
+exit 0
+fi
+
+[ -z "$mode" ] && mode="distinct"
+[ -z "$limit" ] && limit=5
+
+for ((n=0; n<$limit; n++)); do
+  JOB=`head -1 "$M_ROOT/actions.q"`
+  exec $JOB >> $LOG 2>&1
+  res=$?
+  if [ $res -ne 0 ] ; then
+    log "JOB $JOB has failed: exit status $res"
+    continue
+  else
+    log "JOB $JOB has finished successfully"
+  fi
+  if [ "$mode" == "distinct" ] ; then
+    sed -i "/^${JOB}$/d" "$M_ROOT"/actions.q
+  fi
+done
+
+
+
+

@@ -448,12 +448,11 @@ function timeshift() {
 }
 
 function action() {
-  # this function logs conditions satisfied for certain action request
-  echo "$@|pattern match|$pattern" >> "$rpath/actions.q"
+  grep "$@" "${rpath}/conf/actions.conf" | cut -d'|' -f3 >> "$rpath/actions.q"
   chmod 600 "$rpath/actions.q"
 }
 
-source ${rpath}/conf/mon.conf
+source "${rpath}/conf/mon.conf"
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP
