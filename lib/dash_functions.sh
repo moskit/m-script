@@ -63,6 +63,11 @@ open_cluster() {
 print_cluster_inline() {
   while [ -n "$1" ] ; do
     status="$1"
+    if [ "X$status" == "X-" ]; then
+      echo "<div id=\"${id}_status\" class=\"clusterstatus\">&dash;</div>"
+      shift
+      continue
+    fi
     [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
     [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}" && onclick="${onclick%%|*}"
     echo "<div id=\"${id}_status\" `[ -n "$onclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$style\">`eval echo \\$$status`</div>"
@@ -93,6 +98,11 @@ print_line_title() {
 print_inline() {
   while [ -n "$1" ] ; do
     status="$1"
+    if [ "X$status" == "X-" ]; then
+      echo "<div id=\"${id}_status\" class=\"clusterstatus\">&dash;</div>"
+      shift
+      continue
+    fi
     [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
     [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}"
     echo "<div class=\"status\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval echo \"\\$$status\"`</div>"

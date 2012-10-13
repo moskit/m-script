@@ -64,10 +64,12 @@ for ((n=0; n<$limit; n++)); do
   res=$?
   if [ $res -ne 0 ] ; then
     log "JOB $JOB has failed: exit status $res"
+    sed -i "1d" "$M_ROOT"/actions.q
     continue
   else
     log "JOB $JOB has finished successfully"
   fi
+  sed -i "1d" "$M_ROOT"/actions.q
   if [ "$mode" == "distinct" ] ; then
     sed -i "/^${JOB}$/d" "$M_ROOT"/actions.q
   fi

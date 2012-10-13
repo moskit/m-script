@@ -33,7 +33,7 @@ ${MONGO} ${hostport}/admin --eval "db.runCommand( { listDatabases : 1 } ).databa
 
 for db in `cat "${rpath}/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$"` ; do
   ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.dat"
-  (IFS=','; for coll in `${MONGO} "$hostport/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null` ; do ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.${coll}.dat"; done)
+  (IFS=','; for coll in `${MONGO} "$hostport/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.${coll}.dat"; done)
 done
 
 #mongo localhost/solariat_flask --quiet --eval "db.printCollectionStats()" | /opt/m/lib/json2txt | grep -E "\/ns\||\/size\||\/indexSizes\/|\/totalIndexSize\|" | grep -v \/shards\/ | while read LINE ; do if [[ $LINE =~ ^0\/ns ]] ; then echo ; echo "\"`echo $LINE | cut -d'|' -f2`\"" ; else echo "\"`echo $LINE | cut -d'|' -f1 | sed 's|0/||'`\",\"$(echo "scale=2; `echo $LINE | cut -d'|' -f2` / 1024 / 1024" | bc)\"" ; fi ; done > coll_stats1.csv

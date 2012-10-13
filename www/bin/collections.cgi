@@ -42,13 +42,15 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
   
   open_cluster databases "$dbname"
   
-  print_cluster_inline "total_status" "" "" "total_count" "total_datasize" "total_indexsize"
+  print_cluster_inline "total_status" "-" "-" "total_count" "total_datasize" "total_indexsize"
   close_cluster_line "$dbname"
   
   for coll in "${PWD}/../../standalone/$saname/data"/${dbname}.*.dat ; do
     collinfo=`cat "$coll"`
+    [ -z "$collinfo" ] && continue
     coll_name=`echo "$collinfo" | grep ^0\/ns\| | cut -d'|' -f2`
     coll_name=${coll_name#*.}
+    [ -z "$coll_name" ] && continue
     print_line_title indexes "$coll_name"
     coll_ok=`echo "$collinfo" | grep ^0\/ok\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
@@ -58,15 +60,23 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
     coll_size=`echo "$collinfo" | grep ^0\/size\| | cut -d'|' -f2`
     coll_indexsize=`echo "$collinfo" | grep ^0\/totalIndexSize\| | cut -d'|' -f2`
 
-    coll_size=`expr $coll_size / 1048576`
-    csunits="MB"
+    coll_size=`expr $coll_size / 1024`
+    csunits="KB"
     if [ ${#coll_size} -gt 3 ] ; then
-      coll_size=`expr $coll_size / 1024` && csunits="GB"
-      coll_indexsize="`expr $coll_indexsize / 1073741824` $csunits"
-    else
-      coll_indexsize="`expr $coll_indexsize / 1048576` $csunits"
+      coll_size=`expr $coll_size / 1024` && csunits="MB"
+    elif [ ${#coll_size} -gt 6 ] ; then
+      coll_size=`expr $coll_size / 1048576` && csunits="GB"
     fi
     coll_size="$coll_size $csunits"
+    
+    coll_indexsize=`expr $coll_indexsize / 1024`
+    csunits="KB"
+    if [ ${#coll_indexsize} -gt 3 ] ; then
+      coll_indexsize=`expr $coll_indexsize / 1024` && csunits="MB"
+    elif [ ${#coll_indexsize} -gt 6 ] ; then
+      coll_indexsize=`expr $coll_indexsize / 1048576` && csunits="GB"
+    fi
+    coll_indexsize="$coll_indexsize $csunits"
     
     print_inline "coll_status" "coll_sharded" "coll_primary" "coll_count" "coll_size" "coll_indexsize"
     close_line "$coll_name"
