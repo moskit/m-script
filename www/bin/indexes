@@ -7,18 +7,26 @@ IFS='
 chunksmax=0
 datasizemax=0
 indexsizemax=0
-echo "<div style=\"display: table; width: 800px; margin-left: 100px;\">"
+print_table_2() {
+  echo "<div class=\"tr\"><div class=\"td1\">${1}</div><div class=\"td2\">${2}</div></div>"
+}
+
+echo "<div style=\"display: table; width: 720px; margin-left: 60px;\">"
 [ -f "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" ] || exit 0
 for index in `cat "$PWD/../../standalone/MongoDB/data/${cluster}.${server}.dat" | grep ^0\/indexSizes\/` ; do
   index_name=`echo "$index" | cut -d'/' -f3 | cut -d'|' -f1`
   index_size=`echo "$index" | cut -d'|' -f2`
-  index_size=`expr $index_size / 1048576`
-  csunits="MB"
+  index_size=`expr $index_size / 1024`
+
+  csunits="KB"
   if [ ${#index_size} -gt 3 ] ; then
-    index_size=`expr $index_size / 1024` && csunits="GB"
+    index_size=`expr $index_size / 1024` && csunits="MB"
+  elif [ ${#index_size} -gt 6 ] ; then
+    index_size=`expr $index_size / 1048576` && csunits="GB"
   fi
   index_size="$index_size $csunits"
-  echo "<div style=\"display: table; width: 200px;\">$index_name</div><div style=\"display: table; width: 200px;\">$index_size</div>"
+  print_table_2 $index_name $index_size
+  
 done
 
 

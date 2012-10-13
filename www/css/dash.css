@@ -657,4 +657,31 @@ span.value {
   cursor: pointer;
 }
 
+/* Table */
+
+div.tr {
+  height: 2em;
+  width: 100%;
+  display: table;
+}
+
+div.td1 {
+  height: 2em;
+  width: 30%;
+  float: left;
+}
+
+div.td2 {
+  height: 2em;
+  width: 30%;
+  float: left;
+}
+
+
+
+
+
+
+
+
 

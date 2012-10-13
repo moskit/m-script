@@ -199,6 +199,9 @@ print_nav_bar() {
   echo -e "</ul>\n</div>"
 }
 
+print_table_2() {
+  echo "<div class=\"tr\"><div class=\"td1\">${1}</div><div class=\"td2\">${2}</div></div>"
+}
 
 load_css() {
   echo "<style type=\"text/css\">"
