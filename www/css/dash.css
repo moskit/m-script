@@ -663,18 +663,26 @@ div.tr {
   height: 2em;
   width: 100%;
   display: table;
+  background-color: #f2f2f2;
+  margin: 0 0 2px 0;
 }
 
 div.td1 {
   height: 2em;
-  width: 30%;
+  width: 40%;
   float: left;
+  margin: 0 2px 0 2px;
+  background-color: #fbfbfb;
+  padding: 0 2px 0 4px;
 }
 
 div.td2 {
   height: 2em;
-  width: 30%;
+  width: 40%;
   float: left;
+  margin: 0 2px 0 2px;
+  background-color: #fbfbfb;
+  padding: 0 2px 0 4px;
 }
 
 
