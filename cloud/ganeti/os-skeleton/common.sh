@@ -175,13 +175,13 @@ EOF
 }
 
 mkfs_disk0() {
-    local mkfs="mkfs.${FILESYSTEM}"
-    # Format /
-    $mkfs -Fq -L / $root_dev > /dev/null
-    # During reinstalls, ext4 needs a little time after a mkfs so add it here
-    # and also run a sync to be sure.
-    sync
-    sleep 2
+  local mkfs="mkfs.${FILESYSTEM}"
+  # Format /
+  $mkfs -Fq -L / $root_dev > /dev/null
+  # During reinstalls, ext4 needs a little time after a mkfs so add it here
+  # and also run a sync to be sure.
+  sync
+  sleep 2
 }
 
 mount_disk0() {

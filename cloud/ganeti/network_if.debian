@@ -15,7 +15,6 @@ fi
 
 echo "Creating network interfaces file..."
 mv "%{M_TEMP}%/interfaces" "$TARGET/etc/network/"
-mv "%{M_TEMP}%/setup.sh" "$TARGET/"
 echo "Installing SSH keys..."
 chroot "$TARGET" install -m 700 -d /root/.ssh
 cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
