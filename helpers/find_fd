@@ -1,0 +1,18 @@
+#!/bin/bash
+
+ptrn="$1"
+
+for sl in `find /proc -type l 2>/dev/null` ; do
+  rl=`readlink $sl`
+  [ `echo $rl | grep -c "$ptrn"` -gt 0 ] && echo $sl
+done | cut -d'/' -f3 | sort | uniq | while read P ; do
+  PLINE=`ps axo pid,cmd | grep "^$P "`
+  [ -z "$PLINE" ] && continue
+  echo -e "------------------\n$PLINE"
+  pid=`echo $PLINE | cut -d' ' -f1`
+  for pfd in `find /proc/$pid/fd -type l` ; do
+    prl=`readlink $pfd`
+    [ `echo $prl | grep -c "$ptrn"` -gt 0 ] && echo $prl
+  done
+done
+
