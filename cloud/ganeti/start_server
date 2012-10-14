@@ -276,8 +276,9 @@ else
 fi
 
 $SSHK -q -R "$ip" >/dev/null
-[ ! -f "$M_ROOT/keys/$thekey" ] && log "$M_ROOT/keys/$thekey not found, trying $M_ROOT/keys/${thekey}.pem" && thekey="${thekey}.pem"
-if [ ! -f "$M_ROOT/keys/$thekey" ]; then
+thekey="$M_ROOT/keys/$thekey"
+[ ! -f "$thekey" ] && log "$thekey not found, trying ${thekey}.pem" && thekey="${thekey}.pem"
+if [ ! -f "$thekey" ]; then
   log "the key defined in clusters.conf not found, trying keys from $HOME_ORIG/.ssh and $HOME/.ssh"
   if [ -n "$HOME_ORIG" ]; then
     thekey1="$HOME_ORIG/.ssh/id_rsa"

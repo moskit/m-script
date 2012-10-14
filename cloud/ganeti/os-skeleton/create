@@ -60,8 +60,8 @@ CLEANUP+=("umount $TARGET")
 root_dump="${IMAGE_FILE}"
 ( cd ${TARGET}; restore -r -y -f ${root_dump} > /dev/null )
 
-mv $TMPDIR/etc/fstab $TMPDIR/etc/fstab.orig || true
-cat > $TMPDIR/etc/fstab <<EOF
+mv $TARGET/etc/fstab $TARGET/etc/fstab.orig || true
+cat > $TARGET/etc/fstab <<EOF
 # /etc/fstab: static file system information.
 #
 # <file system>   <mount point>   <type>  <options>       <dump>  <pass>
