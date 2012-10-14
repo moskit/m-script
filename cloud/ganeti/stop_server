@@ -72,9 +72,17 @@ fi
 tscluster=$(cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4,5 | grep ^$name\| | cut -d'|' -f2)
 thekey=`cat "$M_ROOT/conf/clusters.conf" | grep ^$tscluster\| | cut -d'|' -f2`
 
-[ ! -f "$M_ROOT/keys/$thekey" ] && thekey="${thekey}.pem"
-[ ! -f "$M_ROOT/keys/$thekey" ] && thekey="$HOME/.ssh/id_rsa.pub"
-[ ! -f "$thekey" ] && thekey="$HOME/.ssh/id_dsa.pub"
+[ ! -f "$M_ROOT/keys/$thekey" ] && log "$M_ROOT/keys/$thekey not found, trying $M_ROOT/keys/${thekey}.pem" && thekey="${thekey}.pem"
+if [ ! -f "$M_ROOT/keys/$thekey" ]; then
+  log "the key defined in clusters.conf not found, trying keys from $HOME_ORIG/.ssh and $HOME/.ssh"
+  if [ -n "$HOME_ORIG" ]; then
+    thekey1="$HOME_ORIG/.ssh/id_rsa"
+    [ ! -f "$thekey1" ] && thekey1="$HOME_ORIG/.ssh/id_dsa"
+  fi
+  thekey2="$HOME/.ssh/id_rsa"
+  [ ! -f "$thekey2" ] && thekey2="$HOME/.ssh/id_rsa"
+  [ -f "$thekey1" ] && thekey=$thekey1 || thekey=$thekey2
+fi
 
 request() {
   ssh -i "$thekey" -o StrictHostKeyChecking=no root@$name \(swapoff -a \&\& poweroff\) >>"$LOG" 2>&1 </dev/null &

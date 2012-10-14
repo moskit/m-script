@@ -276,14 +276,15 @@ else
 fi
 
 $SSHK -q -R "$ip" >/dev/null
-[ ! -f "$M_ROOT/keys/$thekey" ] && thekey="${thekey}.pem"
+[ ! -f "$M_ROOT/keys/$thekey" ] && log "$M_ROOT/keys/$thekey not found, trying $M_ROOT/keys/${thekey}.pem" && thekey="${thekey}.pem"
 if [ ! -f "$M_ROOT/keys/$thekey" ]; then
+  log "the key defined in clusters.conf not found, trying keys from $HOME_ORIG/.ssh and $HOME/.ssh"
   if [ -n "$HOME_ORIG" ]; then
-    thekey1="$HOME_ORIG/.ssh/id_rsa.pub"
-    [ ! -f "$thekey1" ] && thekey1="$HOME_ORIG/.ssh/id_dsa.pub"
+    thekey1="$HOME_ORIG/.ssh/id_rsa"
+    [ ! -f "$thekey1" ] && thekey1="$HOME_ORIG/.ssh/id_dsa"
   fi
-  thekey2="$HOME/.ssh/id_rsa.pub"
-  [ ! -f "$thekey2" ] && thekey2="$HOME/.ssh/id_rsa.pub"
+  thekey2="$HOME/.ssh/id_rsa"
+  [ ! -f "$thekey2" ] && thekey2="$HOME/.ssh/id_rsa"
   [ -f "$thekey1" ] && thekey=$thekey1 || thekey=$thekey2
 fi
 if [ -f "$thekey" ]; then
@@ -299,6 +300,7 @@ if [ -f "$thekey" ]; then
   [ $? -ne 0 ] && exit 1
 else
   log "($CLOUD) WARNING: key not found, unable to test login!"
+  log "($CLOUD) last tried key was: $thekey"
 fi
 if [ -n "$return" ]; then
   echo
