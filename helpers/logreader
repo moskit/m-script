@@ -73,11 +73,12 @@ if [ -z "$ln" ] ; then
   while [[ "$timepattern" != "$timecurrent" ]]; do
     dd=`date -d "$timepattern" 2>/dev/null`
     [ -z "$dd" ] && echo "Unable to restore date/time using pattern: $timepattern" >> "$rpath/../monitoring.log" && break
-    timepattern=`date -d "$dd +$res" +"$timeformat" 2>/dev/null || badpattern=true`
-    $badpattern && break
+    timepattern=`date -d "$dd +$res" 2>/dev/null || badpattern=true`
+    timepatternf=`date -d "$timepattern" +"$timeformat" 2>/dev/null || badpattern=true`
     i+=1
     [ $i -gt $ilimit ] && break
-    ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
+    $badpattern && echo "Unable to restore date/time using pattern: $timepattern formatted as $timepatternf" >> "$rpath/../monitoring.log" && break
+    ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepatternf" | cut -d':' -f1`
     [ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
     [[ $ln -gt 0 ]] && break
   done

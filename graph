@@ -124,8 +124,8 @@ Options:
                         If not defined, it's the default big graph
                         
 --scale                 Used to create combined graphs with multiple metrics.
-                        This options scales graphs so that changes become visible
-                        and places graphs one under another.
+                        Makes exact values useless. Good only to see relative
+                        changes of various metrics.
                         
 --where=<field:value>   Additional WHERE clause for SQL query.
                         Add escaped quotes to value if needed: field:\'value\'
@@ -133,6 +133,9 @@ Options:
 --as=<name>             New name for metric. Especially useful if metric is an
                         ariphmetic expression like:
                         --metric=\"\(metric1+metric2\)\" --as=MyMetric
+                        
+--perpixel              Renders one value per pixel along X-Axis thus saving
+                        CPU cycles
                         
 --legendpos=<left|below>
 

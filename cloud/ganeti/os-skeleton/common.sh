@@ -35,6 +35,7 @@ LOG="$M_ROOT/logs/deploy.log"
 M_TEMP="$M_TEMP/cloud/ganeti"
 
 source "$M_TEMP/vars"
+[ -z "$VARIANTS_DIR" ] && exit 1
 
 CLEANUP=( )
 
@@ -168,55 +169,15 @@ get_os_release() {
 }
 
 format_disk0() {
-    local sfdisk_cmd="$SFDISK -uM -H 255 -S 63 --quiet --Linux --DOS $1"
-    if [  "${SWAP}" = "yes" -a -z "${KERNEL_PATH}" ] ; then
-        # Create three partitions:
-        # 1 - 100MB /boot, bootable
-        # 2 - Size of Memory, swap
-        # 3 - Rest
-        $sfdisk_cmd > /dev/null <<EOF
-,100,L,*
-,${SWAP_SIZE},S
-,,L
+  $SFDISK -H 255 -S 63 --quiet --Linux "$1" <<EOF
+0,,L,*
 EOF
-    elif [  "${SWAP}" = "no" -a -z "${KERNEL_PATH}" ] ; then
-        # Create two partitions:
-        # 1 - 100MB /boot, bootable
-        # 2 - Rest
-        $sfdisk_cmd > /dev/null <<EOF
-,100,L,*
-,,L
-EOF
-    elif [  "${SWAP}" = "yes" -a -n "${KERNEL_PATH}" ] ; then
-        # Create two partitions:
-        # 1 - Size of Memory, swap
-        # 2 - Rest
-        $sfdisk_cmd > /dev/null <<EOF
-,$SWAP_SIZE,S
-,,L
-EOF
-    elif [  "${SWAP}" = "no" -a -n "${KERNEL_PATH}" ] ; then
-        # Create two partitions:
-        # 1 - Whole
-        $sfdisk_cmd > /dev/null <<EOF
-,,L
-EOF
-    fi
 }
 
 mkfs_disk0() {
     local mkfs="mkfs.${FILESYSTEM}"
     # Format /
     $mkfs -Fq -L / $root_dev > /dev/null
-    # Format /boot
-    if [ -n "${boot_dev}" ] ; then
-        $mkfs -Fq -L /boot $boot_dev > /dev/null
-    fi
-    # Format swap
-    if [ -n "${swap_dev}" ] ; then
-        # Format swap
-        mkswap -f $swap_dev > /dev/null
-    fi
     # During reinstalls, ext4 needs a little time after a mkfs so add it here
     # and also run a sync to be sure.
     sync
@@ -224,97 +185,32 @@ mkfs_disk0() {
 }
 
 mount_disk0() {
-    local target=$1
-    mount $root_dev $target
-    CLEANUP+=("umount $target")
-    if [ -n "${boot_dev}" ] ; then
-        $MKDIR_P $target/boot
-        mount $boot_dev $target/boot
-        CLEANUP+=("umount $target/boot")
-    fi
-    # sync the file systems before unmounting to ensure everything is flushed
-    # out
-    CLEANUP+=("sync")
+  local target=$1
+  mount $root_dev $target
+  CLEANUP+=("umount $target")
+  # sync the file systems before unmounting to ensure everything is flushed
+  # out
+  CLEANUP+=("sync")
 }
 
 map_disk0() {
-    blockdev="$1"
-    filesystem_dev_base=`$KPARTX -l -p- $blockdev | \
-                            grep -m 1 -- "-1.*$blockdev" | \
-                            $AWK '{print $1}'`
-    if [ -z "$filesystem_dev_base" ]; then
-        log_error "Cannot interpret kpartx output and get partition mapping"
-        exit 1
-    fi
-    $KPARTX -a -p- $blockdev > /dev/null
-    filesystem_dev="/dev/mapper/${filesystem_dev_base/%-1/}"
-    if [ ! -b "/dev/mapper/$filesystem_dev_base" ]; then
-        log_error "Can't find kpartx mapped partition: /dev/mapper/$filesystem_dev_base"
-        exit 1
-    fi
-    echo "$filesystem_dev"
-}
-
-map_partition() {
-    filesystem_dev="$1"
-    partition="$2"
-    if [ "${SWAP}" = "yes" -a -z "${KERNEL_PATH}" ] ; then
-        boot_dev="${filesystem_dev}-1"
-        swap_dev="${filesystem_dev}-2"
-        root_dev="${filesystem_dev}-3"
-    elif [ "${SWAP}" = "no" -a -z "${KERNEL_PATH}" ] ; then
-        boot_dev="${filesystem_dev}-1"
-        root_dev="${filesystem_dev}-2"
-    elif [ "${SWAP}" = "yes" -a -n "${KERNEL_PATH}" ] ; then
-        swap_dev="${filesystem_dev}-1"
-        root_dev="${filesystem_dev}-2"
-    elif [ "${SWAP}" = "no" -a -n "${KERNEL_PATH}" ] ; then
-        root_dev="${filesystem_dev}-1"
-    fi
-    echo "$(eval "echo \${$(echo ${partition}_dev)"})"
+  blockdev="$1"
+  filesystem_dev_base=`$KPARTX -l -p- $blockdev | grep -m 1 -- "-1.*$blockdev" | $AWK '{print $1}'`
+  if [ -z "$filesystem_dev_base" ]; then
+    log_error "Cannot interpret kpartx output and get partition mapping"
+    exit 1
+  fi
+  $KPARTX -a -p- $blockdev > /dev/null
+  filesystem_dev="/dev/mapper/$filesystem_dev_base"
+  if [ ! -b "$filesystem_dev" ]; then
+    log_error "Can't find kpartx mapped partition: $filesystem_dev"
+    exit 1
+  fi
+  echo "$filesystem_dev"
 }
 
 unmap_disk0() {
   $KPARTX -d -p- $1
-}
-
-setup_fstab() {
-    local target=$1 fs=${FILESYSTEM}
-    get_os_type $target
-    cat > $target/etc/fstab <<EOF
-# /etc/fstab: static file system information.
-#
-# <file system>   <mount point>   <type>  <options>       <dump>  <pass>
-UUID=$root_uuid   /               $fs     defaults        0       1
-proc              /proc           proc    defaults        0       0
-EOF
-
-if [ -n "$boot_dev" -a -n "$boot_uuid" ] ; then
-    cat >> $target/etc/fstab <<EOF
-UUID=$boot_uuid   /boot           $fs     defaults        1       2
-EOF
-fi
-
-if [ -n "$swap_dev" -a -n "$swap_uuid" ] ; then
-    cat >> $target/etc/fstab <<EOF
-UUID=$swap_uuid   swap            swap    defaults        0       0
-EOF
-fi
-
-# OS Specific fstabs
-if [ "$OS_TYPE" = "redhat" ] ; then
-    cat >> $target/etc/fstab <<EOF
-tmpfs             /dev/shm        tmpfs   defaults        0       0
-devpts            /dev/pts        devpts  gid=5,mode=620  0       0
-sysfs             /sys            sysfs   defaults        0       0
-EOF
-fi
-
-if [ "$OS_TYPE" = "gentoo" ] ; then
-    cat >> $target/etc/fstab <<EOF
-shm               /dev/shm        tmpfs   nodev,nosuid,noexec 0   0
-EOF
-fi
 }
 
 setup_console() {
@@ -373,20 +269,20 @@ SCRIPT_NAME=$(basename $0)
 KERNEL_PATH="$INSTANCE_HV_kernel_path"
 
 if [ -f /sbin/blkid -a -x /sbin/blkid ]; then
-    VOL_ID="/sbin/blkid -c /dev/null -o value -s UUID"
-    VOL_TYPE="/sbin/blkid -c /dev/null -o value -s TYPE"
+  VOL_ID="/sbin/blkid -o value -s UUID"
+  VOL_TYPE="/sbin/blkid -o value -s TYPE"
 else
-    for dir in /lib/udev /sbin; do
-        if [ -f $dir/vol_id -a -x $dir/vol_id ]; then
-            VOL_ID="$dir/vol_id -u"
-            VOL_TYPE="$dir/vol_id -t"
-        fi
-    done
+  for dir in /lib/udev /sbin; do
+    if [ -f $dir/vol_id -a -x $dir/vol_id ]; then
+      VOL_ID="$dir/vol_id -u"
+      VOL_TYPE="$dir/vol_id -t"
+    fi
+  done
 fi
 
 if [ -z "$VOL_ID" ]; then
-    log_error "vol_id or blkid not found, please install udev or util-linux"
-    exit 1
+  log_error "vol_id or blkid not found, please install udev or util-linux"
+  exit 1
 fi
 
 

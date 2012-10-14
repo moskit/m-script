@@ -118,8 +118,9 @@ close_line() {
 }
 
 print_dashline() {
-  source=$1
-  shift
+  onclick=$1
+  source=$2
+  shift 2
   if [ -n "$source" ]; then
     case $source in
     folder)
