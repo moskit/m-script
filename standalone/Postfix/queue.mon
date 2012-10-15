@@ -18,16 +18,17 @@ rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
-echo "Running ${rpath}/${rcommand}" >> "${rpath}/../../sa.log"
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 
 source "${rpath}/postfix.conf"
-source "${rpath}/../../conf/mon.conf"
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/functions.sh"
 SQLITE=`which sqlite3 2>/dev/null`
-
 M_TEMP="${M_TEMP}/Postfix"
 install -d "${M_TEMP}"
 
+for q in deferred active maildrop ; do host=`hostname -f | hostname` ; qtype=${q} ; qlength=`find $SPOOLDIR/$q -type f | wc -l` ; store_results host:text qtype:text qlength:integer ; done
 

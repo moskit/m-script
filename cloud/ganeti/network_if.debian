@@ -19,6 +19,9 @@ echo "Installing SSH keys..."
 chroot "$TARGET" install -m 700 -d /root/.ssh
 cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
 chmod 600 "$TARGET/root/.ssh/authorized_keys"
+echo "Setting up hostname..."
+echo "%{ip}% %{name}%" >> "$TARGET/etc/hosts"
+[ -f "$TARGET/etc/hostname" ] && echo "%{name}%" > "$TARGET/etc/hostname"
 
 exit 0
 

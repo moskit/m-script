@@ -12,5 +12,6 @@ if [ "X$SQLITE3" == "X1" ] ; then
   $SQLITE "${rpath}/postfix.sql3" "CREATE INDEX thqt on queue (timeindex, host, qtype)"
 fi
 PCONF=`which postconf 2>/dev/null`
+sed -i "/^SPOOLDIR=/d" "${rpath}/postfix.conf"
 echo "SPOOLDIR=`$PCONF | grep queue_directory`" >> "${rpath}/postfix.conf"
 
