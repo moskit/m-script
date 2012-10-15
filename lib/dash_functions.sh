@@ -110,7 +110,7 @@ print_inline() {
   done
 }
 
-close_line() {
+close_line
  # id=$(echo ${@} | tr ' ' '_')
   id="${@}"
   echo "</div>"

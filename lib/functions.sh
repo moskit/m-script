@@ -61,6 +61,43 @@ store_results() {
 
 }
 
+check_results() {
+  # syntax:
+  # check_results var1<:datatype1>,var2<:datatype2>,...
+  # where datatype can be real (default, slower but more universal) or integer
+  [ -z "$1" ] && exit 1
+  caller=$(readlink -f "$0")
+  callername=${caller##*/}
+  callerconf="${caller%.mon}.conf"
+  [ "$callerconf" == "$caller" ] && log "Monitor script must have extension .mon" && exit 1
+  source "$callerconf"
+  for var2ck in `echo $1 | tr ',' ' '` ; do
+    varname=${var2ck%%:*}
+    vartype=${var2ck##*:}
+    [ "$varname" == "$vartype" ] && vartype=real
+    thr1=`eval "echo ${varname}_1"`
+    thr2=`eval "echo ${varname}_2"`
+    thr3=`eval "echo ${varname}_3"`
+    val=`eval "echo ${varname}"`
+    if [ "$vartype" == "real" ]; then
+      [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> $varname is $val" && continue
+      [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  $varname is $val" && continue
+      [ `echo "scale=2; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   $varname is $val" && continue
+    fi
+    if [ "$vartype" == "real4" ]; then
+      [ `echo "scale=4; $val >= $thr3" | bc` -eq 1 ] && echo "<***> $varname is $val" && continue
+      [ `echo "scale=4; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  $varname is $val" && continue
+      [ `echo "scale=4; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   $varname is $val" && continue
+    fi
+    if [ "$vartype" == "integer" ]; then
+      [ `expr $val \>= $thr3` -eq 1 ] && echo "<***> $varname is $val" && continue
+      [ `expr $val \>= $thr2` -eq 1 ] && echo "<**>  $varname is $val" && continue
+      [ `expr $val \>= $thr1` -eq 1 ] && echo "<*>   $varname is $val" && continue
+    fi
+    echo "<OK>  $varname is $val"
+  done
+}
+    
 function gendash() {
   indic="ok"
   [ -n "`grep '<\*>' "$1"`" ] && indic="w1"

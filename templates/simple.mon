@@ -1,0 +1,25 @@
+#!/bin/bash
+
+rpath=$(readlink -m "$BASH_SOURCE")
+rcomm=${rpath##*/}
+rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/                                              ^^^^^ adjust this
+source "$M_ROOT/lib/functions.sh"  # conf/mon.conf is sourced there
+conf="{rpath}/${rcomm%.mon}.conf"
+[ -f "$conf" ] && source "$conf"
+
+### time since the last run, if needed
+# timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
+# [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift))
+# [ -z $period -a -n "$FREQ" ] && period=$FREQ
+# [ -z $period ] && period=200
+
+### Here goes the monitor's logic
+### results are in e.g. var1 (integer) and var2 (real)
+check_results var1:integer,var2:real
+store_results var1:integer,var2:real
+
+# unset period timeshift / and other vars
+exit 0
+
