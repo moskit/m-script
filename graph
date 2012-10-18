@@ -310,7 +310,20 @@ if [ -n "$perpixel" ]; then
   expr $perpixel / 1 >/dev/null 2>&1 || perpixel=1
   limit=$(($areaH/$perpixel))
 ###### Getting min and max values from database
-  minmaxQ="select min($metric)*1000, max($metric)*1000 from (select $metric from $table order by timeindex desc limit $limit)"
+  if [ `expr $metric : .*,` -eq 0 ] ; then
+    minQ="min($metric)"
+    maxQ="max($metric)"
+  else
+    minQ="min("
+    maxQ="max("
+    for smetric in `echo $metric | tr ',' ' '` ; do
+      minQ="${minQ}min($smetric),"
+      maxQ="${maxQ}max($smetric),"
+    done
+    minQ="${minQ%,})"
+    maxQ="${maxQ%,})"
+  fi
+  minmaxQ="select $minQ, $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
   if [ "$sIP" == "localhost" ]; then
     minmax=`$SQL3 "${rpath}/$database" "$minmaxQ"`
   else
@@ -324,10 +337,26 @@ if [ -n "$perpixel" ]; then
   fi
   [ -z "$metricmin" ] && metricmin=0
   [ -z "$metricmax" ] && metricmax=$areaV
-  mp=`solve "$areaV / $metricmax * 1000"`
+  mp=`solve "$areaV / $metricmax"`
+  $debug && log "mp: $mp"
+  if [ `solve "$mp > 0"` -eq 0 ] ; then
+  # 1mln is a reasonable limit
+    for ((i=1; i<=2; i++)); do
+      [ `solve "$mp > 0"` -eq 0 ] && mp=`solve "1000 ^ $i * $areaV / $metricmax"`
+      $debug && log "mp: $mp"
+    done
+  fi
   to=`date +"%s"`
-  log "max value: $metricmax  vertical size: $areaV  coeff: $mp"
+  $debug && log "max value: $metricmax  vertical size: $areaV  coeff: $mp"
   QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
+  if [ `expr $metric : .*,` -eq 0 ] ; then
+    metricQ="${metric}*${mp}"
+  else
+    for smetric in `echo $metric | tr ',' ' '` ; do
+      metricQ="${metricQ}${smetric}*${mp},"
+    done
+    metricQ="${metricQ%,}"
+  fi
   QUERY="select ${metric}*${mp} from $table order by timeindex desc limit $limit"
 
   if [ "$sIP" == "localhost" ]; then
@@ -689,7 +718,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   else
     declare -i X
     X=`expr $padding + $legendH + $axis`
-    cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | while read LINE
+    tac ${M_TEMP}/graph.${sIP}.${dbname}.${name} | while read LINE
     do
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
       if [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi

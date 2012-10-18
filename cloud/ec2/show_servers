@@ -78,7 +78,7 @@ list_servers() {
   if [ -f "$M_TEMP/servers.${region}.ips" ] ; then
     [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.${region}.ips" && return
     for sn in `cat "$M_TEMP/servers.${region}.ips"` ; do
-      unset id name istatus extIP intIP IP imageId flavorId region icluster
+      unset id name istatus extIP intIP IP imageId flavorId icluster
       
       intIP=`echo $sn | cut -d'|' -f1`
       extIP=`echo $sn | cut -d'|' -f2`
@@ -118,19 +118,19 @@ list_servers() {
           [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
           case $view in
             list)
-              echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  AKI: $iaki  ARI: $iari  Size: $flavorId  Security group: $secgroup  Zone: $izone"
+              echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone"
               ;;
             table)
-              echo "${id}|${name}|${status}|${extIP}|${intIP}|${icluster}|${imageId}|${iaki}|${iari}|${flavorId}|${secgroup}|${izone}"
+              echo "${id}|${iname}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}|${iaki}|${iari}|${secgroup}|${izone}"
               ;;
             column)
-              echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\n"
+              echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\n"
               ;;
             none)
               ;;
             *)
               echo "------------------------------------------------------------------------------"
-              echo "Server ID: $id    Name: $name    Cluster: $icluster"
+              echo "Server ID: $id    Name: $iname    Cluster: $icluster"
               echo "Public IP: $extIP"
               echo "Private IP: $intIP"
               echo "Server image: $imageId AKI: $iaki  ARI: $iari"
@@ -144,10 +144,8 @@ list_servers() {
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
-            for ip in $IP ; do
-              ip=${ip#* } ; ip=${ip% *}
-              sed -i /^$ip\|/d "${rpath}/../../servers.list"
-              echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+            sed -i /^$IP\|/d "${rpath}/../../servers.list"
+            echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
             done
           fi
         fi
@@ -158,7 +156,7 @@ list_servers() {
     echo "No data. Run without --noupdate"
   fi
   for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|${listip}$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+    [ `grep -c \|${listip}\| "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
   done
   IFS=$IFS1
 }
@@ -225,6 +223,7 @@ install -d $M_TEMP
 
 [ -z "$region" ] && region=$EC2_REGION
 log "region: $region"
+[ -z "$status" ] && status="running"
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
