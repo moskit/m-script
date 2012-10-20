@@ -321,8 +321,15 @@ if [ -n "$perpixel" ]; then
     minQ="${minQ%,}"
     maxQ="${maxQ%,}"
   fi
-  minQ="select $minQ from (select $metric from $table order by timeindex desc limit $limit)"
-  maxQ="select $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
+  if [ -n "$where" ] ; then
+    field=${where%%:*}
+    value=${where#*:}
+    minQ="select $minQ from (select $metric from $table where field='$value' order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where field='$value' order by timeindex desc limit $limit)"
+  else
+    minQ="select $minQ from (select $metric from $table order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
+  fi
   if [ "$sIP" == "localhost" ]; then
     minres=`$SQL3 "${rpath}/$database" "$minQ"`
     maxres=`$SQL3 "${rpath}/$database" "$maxQ"`
@@ -360,10 +367,8 @@ if [ -n "$perpixel" ]; then
     metricQ="${metricQ%,}"
   fi
   if [ -n "$where" ] ; then
-    field=${where%%:*}
-    value=${where#*:}
-    QUERY="select ${metricQ} from $table WHERE $field=$value order by timeindex desc limit $limit"
-    QUERYFROM="select timeindex from $table WHERE $field=$value order by timeindex desc limit $limit"
+    QUERY="select ${metricQ} from $table WHERE $field='$value' order by timeindex desc limit $limit"
+    QUERYFROM="select timeindex from $table WHERE $field='$value' order by timeindex desc limit $limit"
   else
     QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
     QUERY="select ${metricQ} from $table order by timeindex desc limit $limit"
@@ -402,7 +407,7 @@ else
     if [ -n "$where" ] ; then
       field=${where%%:*}
       value=${where#*:}
-      QUERY="$QUERY AND $field=$value" 
+      QUERY="$QUERY AND $field='$value'" 
     fi
     if [ "X$sIP" == "Xlocalhost" ] ; then
       $debug && log "$SQL3 \"${rpath}/${database}\" \"${QUERY}\""
