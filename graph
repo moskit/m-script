@@ -314,23 +314,26 @@ if [ -n "$perpixel" ]; then
     minQ="min($metric)"
     maxQ="max($metric)"
   else
-    minQ="min("
-    maxQ="max("
     for smetric in `echo $metric | tr ',' ' '` ; do
       minQ="${minQ}min($smetric),"
       maxQ="${maxQ}max($smetric),"
     done
-    minQ="${minQ%,})"
-    maxQ="${maxQ%,})"
+    minQ="${minQ%,}"
+    maxQ="${maxQ%,}"
   fi
-  minmaxQ="select $minQ, $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
+  minQ="select $minQ from (select $metric from $table order by timeindex desc limit $limit)"
+  maxQ="select $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
   if [ "$sIP" == "localhost" ]; then
-    minmax=`$SQL3 "${rpath}/$database" "$minmaxQ"`
+    minres=`$SQL3 "${rpath}/$database" "$minQ"`
+    maxres=`$SQL3 "${rpath}/$database" "$maxQ"`
   else
-    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"$minmaxQ\""`
+    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"$minQ ; $maxQ\""`
+    minres=`echo "$minmax" | head -1`
+    maxres=`echo "$minmax" | tail -1`
   fi
-  metricminfp=`echo $minmax|cut -d'|' -f1` ; metricmin=${metricminfp%.*}
-  metricmaxfp=`echo $minmax|cut -d'|' -f2` ; metricmax=${metricmaxfp%.*}
+  Nmax=0 ; Nmin=0
+  metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+  metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*}
   if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
     log "Error getting minimum and maximum values for $metric $limit last values"
     exit 1
@@ -348,7 +351,6 @@ if [ -n "$perpixel" ]; then
   fi
   to=`date +"%s"`
   $debug && log "max value: $metricmax  vertical size: $areaV  coeff: $mp"
-  QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
   if [ `expr $metric : .*,` -eq 0 ] ; then
     metricQ="${metric}*${mp}"
   else
@@ -357,19 +359,26 @@ if [ -n "$perpixel" ]; then
     done
     metricQ="${metricQ%,}"
   fi
-  QUERY="select ${metric}*${mp} from $table order by timeindex desc limit $limit"
-
+  if [ -n "$where" ] ; then
+    field=${where%%:*}
+    value=${where#*:}
+    QUERY="select ${metricQ} from $table WHERE $field=$value order by timeindex desc limit $limit"
+    QUERYFROM="select timeindex from $table WHERE $field=$value order by timeindex desc limit $limit"
+  else
+    QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
+    QUERY="select ${metricQ} from $table order by timeindex desc limit $limit"
+  fi
+  $debug && log "$QUERY"
   if [ "$sIP" == "localhost" ]; then
-    $debug && log "$SQL3 \"${rpath}/$database\" \"$QUERY\" >> ${M_TEMP}/graph.${sIP}.${dbname}.${metric}"
-    $SQL3 "${rpath}/$database" "${QUERY}" > ${M_TEMP}/graph.${sIP}.${dbname}.${metric}
+    $SQL3 "${rpath}/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
     from=`$SQL3 "${rpath}/$database" "${QUERYFROM}" | tail -1`
   else
     $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${rpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${metric}
+    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${name}
     from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERYFROM}\"" \| tail -1`
   fi
   log "from: $from  to: $to"
-  if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${metric} | wc -l` -le 5 ] ; then
+  if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | wc -l` -le 5 ] ; then
     log "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated."
     exit 1
   fi
@@ -397,11 +406,11 @@ else
     fi
     if [ "X$sIP" == "Xlocalhost" ] ; then
       $debug && log "$SQL3 \"${rpath}/${database}\" \"${QUERY}\""
-      $SQL3 "${rpath}/${database}" "${QUERY}" > ${M_TEMP}/graph.${sIP}.${dbname}.${name} || log "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP"
+      $SQL3 "${rpath}/${database}" "${QUERY}" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP"
     else
     # -o StrictHostKeyChecking=no
       $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/${database}\" \"${QUERY}\""
-      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${name} || log "Problem getting data from ${rpath}/${database}, server $sIP"
+      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from ${rpath}/${database}, server $sIP"
     fi
     if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
       log "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated."
@@ -694,7 +703,7 @@ fi
 echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # first column is the X axis, data starts from the column 2
-n=2
+[ -z "$perpixel" ] && n=2 || n=1
 for smetric in `echo $metric | tr ',' ' '` ; do
 
   slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$slegendX\\" y=\\"$slegendY\\" >$smetric</text>"`"
@@ -718,9 +727,9 @@ for smetric in `echo $metric | tr ',' ' '` ; do
   else
     declare -i X
     X=`expr $padding + $legendH + $axis`
-    tac ${M_TEMP}/graph.${sIP}.${dbname}.${name} | while read LINE
+    tac ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | while read LINE
     do
-      Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
+      Y=${LINE%.*}
       if [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
       X+=1
       Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`

@@ -150,7 +150,9 @@ $debug && log "server lists updated"
 for node in `cat "${rpath}"/*.es_servers.list` ; do
   allclusters="$allclusters `$CURL -m 2 "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}"`"
 done
-$debug && log "ES cluster(s) found"
+[ -z "$allclusters" ] && log "no ES clusters found, exiting" && exit 1
+
+$debug && log "ES cluster(s) found: $allclusters"
 
 date > "${rpath}/report"
 echo -e "-----------------------------\n" >> "${rpath}/report"
