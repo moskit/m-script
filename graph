@@ -38,7 +38,7 @@ SSH=`which ssh 2>/dev/null`
 source "${rpath}/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug"
+possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
 necessary_options="metric"
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/dash.conf"
@@ -108,12 +108,7 @@ Options:
 
 --metric=<metric>       metric = database field name
                         Multiple metrics accepted, separated by comma, no spaces
-                    
---new                   forces getting the latest data from the server.
-                        Without this option a new graph is generated using the
-                        data received by the dashboard update daemon.
-                        Option --from always invokes this option
-                    
+                  
 --database=<path/to/database>
                         path to database file, relative to M-Script root folder
                         The default is sysdata
@@ -157,11 +152,6 @@ done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
   log "Necessary options: ${missing_options} not found"
-  exit 1
-fi
-if [ -n "$from" ] ; then new="yes" ; fi
-if [ -z "$new" ] && [ $RSYNC == "" ] ; then
-  log "Rsync is required if neither --new nor --from is present"
   exit 1
 fi
 
@@ -217,7 +207,7 @@ if [ "Xsize" == "Xthumbnail" ] ; then
   strokewidth=1
   pointsize=`expr $pointsize / 4`
 fi
-
+[ "X$min" == "Xauto" ] && minauto=true || minauto=false
 [ -z "$legendpos" ] && legendpos=left
 [ "$legendpos" == "left" ] && legendH=$legend && legendV=0
 [ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
@@ -264,14 +254,6 @@ fi
 #### Servers and clusters ####
 ##############################
 
-if [ ! -f "${rpath}/servers.list" ] ; then
-  log "Create ${rpath}/servers.list please"
-  exit 1
-fi
-if [ ! -f "${rpath}/conf/clusters.conf" ] ; then
-  log "Create ${rpath}/conf/clusters.conf please"
-  exit 1
-fi
 if [ -z "$localip" ] ; then
   server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
   if [ -z "$server" ] ; then
@@ -311,35 +293,41 @@ if [ -n "$perpixel" ]; then
   limit=$(($areaH/$perpixel))
 ###### Getting min and max values from database
   if [ `expr $metric : .*,` -eq 0 ] ; then
-    minQ="min($metric)"
+    $minauto && minQ="min($metric)"
     maxQ="max($metric)"
   else
     for smetric in `echo $metric | tr ',' ' '` ; do
-      minQ="${minQ}min($smetric),"
+      $minauto && minQ="${minQ}min($smetric),"
       maxQ="${maxQ}max($smetric),"
     done
-    minQ="${minQ%,}"
+    $minauto && minQ="${minQ%,}"
     maxQ="${maxQ%,}"
   fi
   if [ -n "$where" ] ; then
     field=${where%%:*}
     value=${where#*:}
-    minQ="select $minQ from (select $metric from $table where field='$value' order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where field='$value' order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table where $field=$value order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where $field=$value order by timeindex desc limit $limit)"
   else
-    minQ="select $minQ from (select $metric from $table order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table order by timeindex desc limit $limit)"
     maxQ="select $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
   fi
   if [ "$sIP" == "localhost" ]; then
-    minres=`$SQL3 "${rpath}/$database" "$minQ"`
+    $minauto && minres=`$SQL3 "${rpath}/$database" "$minQ"`
     maxres=`$SQL3 "${rpath}/$database" "$maxQ"`
   else
-    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"$minQ ; $maxQ\""`
-    minres=`echo "$minmax" | head -1`
-    maxres=`echo "$minmax" | tail -1`
+    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"$maxQ ; $minQ\""`
+    maxres=`echo "$minmax" | head -1`
+    $minauto && minres=`echo "$minmax" | tail -1`
   fi
-  Nmax=0 ; Nmin=0
-  metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+  Nmax=0
+  Nmin=0
+  if $minauto ; then
+    metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+  else
+    metricminfp=0
+    metricmin=0
+  fi
   metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*}
   if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
     log "Error getting minimum and maximum values for $metric $limit last values"
@@ -357,7 +345,7 @@ if [ -n "$perpixel" ]; then
     done
   fi
   to=`date +"%s"`
-  $debug && log "max value: $metricmax  vertical size: $areaV  coeff: $mp"
+  $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
   if [ `expr $metric : .*,` -eq 0 ] ; then
     metricQ="${metric}*${mp}"
   else
@@ -367,8 +355,8 @@ if [ -n "$perpixel" ]; then
     metricQ="${metricQ%,}"
   fi
   if [ -n "$where" ] ; then
-    QUERY="select ${metricQ} from $table WHERE $field='$value' order by timeindex desc limit $limit"
-    QUERYFROM="select timeindex from $table WHERE $field='$value' order by timeindex desc limit $limit"
+    QUERY="select ${metricQ} from $table WHERE $field=$value order by timeindex desc limit $limit"
+    QUERYFROM="select timeindex from $table WHERE $field=$value order by timeindex desc limit $limit"
   else
     QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
     QUERY="select ${metricQ} from $table order by timeindex desc limit $limit"
@@ -388,9 +376,8 @@ if [ -n "$perpixel" ]; then
     exit 1
   fi
 
-########
+######## non-perpixel
 else
-##  Same as above, but with getting min and max from the file
   $debug && log "scaled mode (per pixel mode disabled)"
   metricmin=0
   metricmax=0
@@ -422,47 +409,48 @@ else
       exit 1
     fi
   fi
-fi
 
 #############################
 #### Processing the data ####
 #############################
 
-declare -i n
-n=2
-for smetric in `echo $metric | tr ',' ' '` ; do
-  smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
-  smin=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
-  [[ $metricmax -eq 0 ]] && metricmin=$smax
-  [ -z "$metricmin" ] && metricmin=0
-  [[ $smax -gt $metricmax ]] && metricmax=$smax
-  [[ $smin -lt $metricmin ]] && metricmin=$smin
-  n+=1
-done
-sn=`echo $metric | tr ',' ' ' | wc -w`
-
-if [ "X$scale" == "Xyes" ] ; then
-  sadd=`solve "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve "$metricmax / $sn"` 2>/dev/null || sadd=10
-  snadd=0
+  declare -i n
   n=2
   for smetric in `echo $metric | tr ',' ' '` ; do
-    rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
-    smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
-    if [ -n "$smax" ] ; then
-      [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve "$metricmax / $smax / $sn / 1.2"` || sratio=1
-      for LINE in `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
-        st=`echo $LINE | cut -d'|' -f1`
-        [ -z "$st" ] && continue
-        sd=`echo $LINE | cut -d'|' -f2`
-        [ -z "$sd" ] && continue
-        sds=`solve "$sd * $sratio + $snadd"`
-        echo "${st}|${sds}" >> ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled
-      done
-    fi
-    snadd=`solve "$snadd + $sadd"`
+    smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
+    smin=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
+    [[ $metricmax -eq 0 ]] && metricmin=$smax
+    [ -z "$metricmin" ] && metricmin=0
+    [[ $smax -gt $metricmax ]] && metricmax=$smax
+    [[ $smin -lt $metricmin ]] && metricmin=$smin
     n+=1
   done
-fi
+  sn=`echo $metric | tr ',' ' ' | wc -w`
+
+  if [ "X$scale" == "Xyes" ] ; then
+    sadd=`solve "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve "$metricmax / $sn"` 2>/dev/null || sadd=10
+    snadd=0
+    n=2
+    for smetric in `echo $metric | tr ',' ' '` ; do
+      rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
+      smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
+      if [ -n "$smax" ] ; then
+        [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve "$metricmax / $smax / $sn / 1.2"` || sratio=1
+        for LINE in `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
+          st=`echo $LINE | cut -d'|' -f1`
+          [ -z "$st" ] && continue
+          sd=`echo $LINE | cut -d'|' -f2`
+          [ -z "$sd" ] && continue
+          sds=`solve "$sd * $sratio + $snadd"`
+          echo "${st}|${sds}" >> ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled
+        done
+      fi
+      snadd=`solve "$snadd + $sadd"`
+      n+=1
+    done
+  fi
+
+fi #### perpixel or not condition end
 
 #####################################
 #### Graph geometry calculations ####
@@ -472,10 +460,9 @@ fi
 countminX=20
 countminY=20
 
+# needed for both perpixel and non-perpixel modes
 perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
-#[[ $perdotY -lt 1 ]] && perdotY=1
 perdotX=`expr \( $to - $from \) / $areaH + 1`
-#[[ $perdotX -lt 1 ]] && perdotX=1
 
 # How many pixels one hour takes
 hourX=`expr 3600 / $perdotX`
@@ -503,6 +490,8 @@ axisYY=$padding
 #titleX=`expr \( $graphH - $tlength \) / 2`
 titleX=`expr $padding + $legendH + 20`
 titleY=`expr $graphV - \( $padding / 2 \)`
+
+########  Here begins the X-Axis marks definition part
 
 if [[ $hourX -lt $countminX ]] ; then
   # 1-hour marks would be too close to each other
@@ -622,6 +611,8 @@ fi
 
 unset nexthour theday themonth theyear themark currpoint hourX
 
+########  Here ends the X-Axis marks definition part
+
 # Now for Y
 # Finding out what per mark resolution might be
 a=`expr $perdotY \* $countminY`
@@ -636,6 +627,7 @@ if [[ $res -lt $a ]] ; then
     res=`expr $pof / 2`
   fi
 fi
+$debug && log "Y-Axis per-mark resolution is $res"
 
 ################
 ### Drawing ####
@@ -644,9 +636,14 @@ fi
 declare -i i
 declare -i imark
 # where the Y axis zero is
-imark=`expr $metricmin / $res \* $res`
-# how much above the axis zero the minimum value is
-shiftY=`expr $metricmin - $imark`
+if $minauto ; then
+  imark=`expr $metricmin / $res \* $res`
+  # how much above the axis zero the minimum value is
+  shiftY=`expr $metricmin - $imark`
+else
+  imark=0
+  shiftY=0
+fi
 ires=`expr $res / $perdotY`
 i=`expr $legendV + $padding + $axis`
 imax=`expr $i + $areaV`
@@ -660,7 +657,7 @@ do
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"$irev\\" x2=\\"$mY2\\" y2=\\"$irev\\" />"`"
   if [ "X$scale" != "Xyes" ] ; then
-    if [ -n "$mp" ] ; then
+    if [ -n "$mp" -a -z "$perpixel" ] ; then
       [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
     else
@@ -729,6 +726,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
       Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
       printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
     done
+#### drawing perpixel graph
   else
     declare -i X
     X=`expr $padding + $legendH + $axis`
@@ -737,7 +735,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
       Y=${LINE%.*}
       if [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
       X+=1
-      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
+      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \)`
       printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
     done
   fi
