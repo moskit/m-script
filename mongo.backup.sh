@@ -101,15 +101,16 @@ if [ -n "$mongodbpertableconf" ] ; then
         ;;
       periodic)
         [ -d "${rpath}/var/mongodb" ] || install -d "${rpath}/var/mongodb"
-        if [ -f "${rpath}/var/mongodb/${table}.lastid" ] ; then
-          lastid=`cat "${rpath}/var/mongodb/${table}.lastid"`
+        bkname=`echo "$table" | tr '|' '.'`
+        if [ -f "${rpath}/var/mongodb/${bkname}.lastid" ] ; then
+          lastid=`cat "${rpath}/var/mongodb/${bkname}.lastid"`
           if [ -n "$lastid" ] ; then
             echo "no op yet"
           else
-            echo "File ${rpath}/var/mongodb/${table}.lastid exists but empty. Collection $table is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > ${rpath}/var/mongodb/${table}.lastid)" | tee -a ${rpath}/m_backup.error
+            echo "File ${rpath}/var/mongodb/${bkname}.lastid exists but empty. Collection ${bkname%.*} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > ${rpath}/var/mongodb/${bkname}.lastid)" | tee -a ${rpath}/m_backup.error
           fi
         else
-          echo "File ${rpath}/var/mongodb/${table}.lastid doesn't exist. Collection $table is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > ${rpath}/var/mongodb/${table}.lastid)" | tee -a ${rpath}/m_backup.error
+          echo "File ${rpath}/var/mongodb/${bkname}.lastid doesn't exist. Collection ${bkname%.*} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > ${rpath}/var/mongodb/${bkname}.lastid)" | tee -a ${rpath}/m_backup.error
         fi
         ;;
       *)
