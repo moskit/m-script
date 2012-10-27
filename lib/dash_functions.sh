@@ -79,7 +79,6 @@ close_cluster_line() {
   id="${@}"
   echo "</div>"
   [ -n "$id" ] && echo "<div class=\"details\" id=\"${id}_details\"></div>"
-  
 }
 
 close_cluster() {

@@ -490,6 +490,14 @@ bconf=${backupconf##*/}
       [ "X$preserveperm" != "Xyes" ] || CPOPTS="${CPOPTS} --preserve=all"
       [ "X$samefs" != "Xyes" ] || CPOPTS="${CPOPTS} --one-file-system"
       CPOPTS="${cpoptions}"
+      if [ -n "$remotepath" ]; then
+        if [ `echo "$remotepath" | cut -b1` != '/' ]; then
+          remotepath="/var/m_backup/$remotepath"
+        fi
+      else
+        remotepath="/var/m_backup"
+      fi
+      [ -d "$remotepath" ] || install -d "$remotepath"
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && CPOPTS="${CPOPTS} -v" && echo "CP options are: ${CPOPTS}" >> ${rpath}/m_backup.log
       ltime=`(time -p cp ${CPOPTS} -r ${localbackuppath}/* ${remotepath} 2>$M_TEMP/$archname.local.log 1>>${rpath}/m_backup.log) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
       arcsize=`du -k -s ${localbackuppath} | cut -f1`
