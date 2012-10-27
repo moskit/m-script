@@ -18,11 +18,10 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$M_ROOT/conf/mon.conf" || exit 99
 source "${0%.mon}.conf" || exit 99
-
+     
 portstcp=( `cat "${rpath}/../ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
 portsudp=( `cat "${rpath}/../ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
 sockets=( `cat "${rpath}/../sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[[:space:]]*#'` )
@@ -46,17 +45,16 @@ fi
 [ -e "${rpath}/../conf/sockets.exclude" ] || touch "${rpath}/../conf/sockets.exclude"
 [ -e "${rpath}/../conf/ports.exclude" ] || touch "${rpath}/../conf/ports.exclude"
 
-chk_portexclusions() {
-  for exclport in `cat "${rpath}/../conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
-    exclportnum=${exclport%%%*}
-    exclportprog=${exclport#*%}
-    if [ "X$exclportprog" == "X" ] || [[ $exclportprog =~ $2 ]] ; then
-      if [ "X$exclportnum" == "X" ] ; then
+for exclport in `cat "${M_ROOT}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
+    exclportnum=${exclport%%|*}
+    exclportprog=${exclport#*|}
+    portif=${1%:*}
+    portnum=${1##*:}
+    if [ -z "$exclportprog" ] || [[ $exclportprog =~ $2 ]] ; then
+      if [ -z "$exclportnum" ] ; then
         skip=1 && break
       else
-        if [[ $exclportnum =~ [[0-9]]*-[[0-9]]* ]] ; then
-          portif=${1%:*}
-          portnum=${1##*:}
+        if [ `expr $exclportnum : [0-9]*-[0-9]*` -gt 0 ] ; then
           port1=${exclportnum%-*}
           port2=${exclportnum#*-}
           ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
@@ -65,8 +63,7 @@ chk_portexclusions() {
         fi
       fi
     fi
-  done
-}
+done
 
 echo
 echo "Listening ports and sockets:"
@@ -328,6 +325,13 @@ else
    echo '<***> Server is disconnected!'
    echo "<***> IP(s) ${failedip} unavailable"
   fi
+fi
+
+## Connections alerts number limit
+if [ -f $M_TEMP/conn_test_runs_count ] ; then
+  [ `cat $M_TEMP/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > $M_TEMP/conn_test_runs_count && ${rpath}/fixports.run || echo >> $M_TEMP/conn_test_runs_count
+else
+  echo > $M_TEMP/conn_test_runs_count
 fi
 
 unset failedip pingedip connip sockets socketfound sname i t portstcp portsudp portif portnum port1 port2 exclportnum exclportprog exclport inusetcp inuseudp testthrtcp testthrudp tcphead udphead

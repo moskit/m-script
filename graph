@@ -340,10 +340,39 @@ if [ -n "$perpixel" ]; then
   if [ `solve "$mp > 0"` -eq 0 ] ; then
   # 1mln is a reasonable limit
     for ((i=1; i<=2; i++)); do
-      [ `solve "$mp > 0"` -eq 0 ] && mp=`solve "1000 ^ $i * $areaV / $metricmax"`
+      [ `solve "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $i * $areaV / $metricmax" | bc`
       $debug && log "mp: $mp"
     done
   fi
+
+  mpl=${mp%%.*}
+  [ "X$mpl" == "X" ] && mpl=0
+  if [[ $mpl -eq 0 ]]; then
+    ll=${mp##*.}
+    ll=`expr $ll : 0*`
+    mpl="-$ll"
+  else
+    mpl=${#mpl}
+    ll=0
+  fi
+  mpl=`expr $mpl - 2`
+  d=`echo "scale=$ll+2; 10 ^ $mpl" | bc`
+log "d=$d"
+  bs=`echo "$mp / $d" | bc`
+  if [ `expr $bs \< 20` -eq 1 ]; then
+    mpr=10
+  elif [ `expr $bs \< 50` -eq 1 ]; then
+    mpr=20
+  elif [ `expr $bs \< 50` -eq 1 ]; then
+    mpr=50
+  else
+    mpr=100
+  fi
+  mp=`echo "$mpr * $d" | bc`
+  $debug && log "mp: $mp"
+  # recalc of the max with the new multiplier
+  metricmax=`solve "$areaV / $mp"`
+  metricmax=${metricmax%%.*}
   to=`date +"%s"`
   $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
   if [ `expr $metric : .*,` -eq 0 ] ; then
@@ -375,7 +404,7 @@ if [ -n "$perpixel" ]; then
     log "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated."
     exit 1
   fi
-
+  sn=`echo $metric | tr ',' ' ' | wc -w`
 ######## non-perpixel
 else
   $debug && log "scaled mode (per pixel mode disabled)"
@@ -461,8 +490,10 @@ countminX=20
 countminY=20
 
 # needed for both perpixel and non-perpixel modes
-perdotY=`expr \( $metricmax - $metricmin \) / $areaV + 1`
-perdotX=`expr \( $to - $from \) / $areaH + 1`
+perdotY=`expr 100 \* \( $metricmax - $metricmin \) / $areaV`
+[ $perdotY -eq 0 ] && perdotY=1
+perdotX=`expr \( $to - $from \) / $areaH`
+[ $perdotX -eq 0 ] && perdotX=1
 
 # How many pixels one hour takes
 hourX=`expr 3600 / $perdotX`
@@ -615,15 +646,15 @@ unset nexthour theday themonth theyear themark currpoint hourX
 
 # Now for Y
 # Finding out what per mark resolution might be
-a=`expr $perdotY \* $countminY`
-b=`expr 2 \* $a`
-s=`expr length $b`
+a=`solve "$perdotY * $countminY / 100"`
+b=`solve "2 * $a"`
+s=`expr length ${b%%.*}`
 pof=1
 for ((i=0; i<$s; i++)); do pof="${pof}0"; done
 res=`expr $pof / 10`
-if [[ $res -lt $a ]] ; then
+if [[ $res -lt ${a%%.*} ]] ; then
   res=`expr $pof / 4`
-  if [[ $res -lt $a ]] ; then
+  if [[ $res -lt ${a%%.*} ]] ; then
     res=`expr $pof / 2`
   fi
 fi
@@ -644,7 +675,7 @@ else
   imark=0
   shiftY=0
 fi
-ires=`expr $res / $perdotY`
+ires=`expr $res \* 100 / $perdotY`
 i=`expr $legendV + $padding + $axis`
 imax=`expr $i + $areaV`
 while true
@@ -657,7 +688,7 @@ do
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"$irev\\" x2=\\"$mY2\\" y2=\\"$irev\\" />"`"
   if [ "X$scale" != "Xyes" ] ; then
-    if [ -n "$mp" -a -z "$perpixel" ] ; then
+    if [ -n "$mp" ] ; then
       [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
     else
@@ -705,6 +736,7 @@ fi
 echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # first column is the X axis, data starts from the column 2
+declare -i n
 [ -z "$perpixel" ] && n=2 || n=1
 for smetric in `echo $metric | tr ',' ' '` ; do
 
@@ -721,9 +753,9 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     do
       X=`echo $LINE | cut -d'|' -f1`
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-      if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
+      if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then continue ; fi
       X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
-      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) / $perdotY`
+      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) \* 100 / $perdotY`
       printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
     done
 #### drawing perpixel graph
@@ -733,7 +765,7 @@ for smetric in `echo $metric | tr ',' ' '` ; do
     tac ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | while read LINE
     do
       Y=${LINE%.*}
-      if [ "X$Y" == "X" ] ; then echo "No data" ; continue ; fi
+      [ "X$Y" == "X" ] && continue
       X+=1
       Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \)`
       printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"

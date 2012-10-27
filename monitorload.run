@@ -112,12 +112,6 @@ start)
 
 ## Tests that are disabled if load average is too high
     if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
-    ## Connections alerts number limit
-      if [ -f /tmp/m_script/conn_test_runs_count ] ; then
-        [ `cat /tmp/m_script/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > /tmp/m_script/conn_test_runs_count && ${rpath}/fixports.run || echo >> /tmp/m_script/conn_test_runs_count
-      else
-        echo > /tmp/m_script/conn_test_runs_count
-      fi
     ## With dashboard enabled, it is necessary to run all tests in a single run
       ${rpath}/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ] ; then
