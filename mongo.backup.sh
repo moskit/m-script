@@ -19,6 +19,13 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
+full_coll_backup() {
+  $MONGODUMP --host $mongohost --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
+  [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${1}.${2}.${bktype}.${archname}.tar.${ext}" "${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
+  cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
+  rm -rf "$MBD/${1}.${2}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
+}
+
 [ -z "$M_ROOT" ] && M_ROOT=$rpath
 
 if [ -z "$1" ]; then
@@ -94,24 +101,30 @@ if [ -n "$mongodbpertableconf" ] ; then
     [ -n "$debugflag" ] && echo -e "\n>>> Database $db table $coll type $bktype\n" >> "$rpath/m_backup.log"
     case $bktype in
       full)
-        $MONGODUMP --host $mongohost --db $db --collection $coll $USER $PASS --out "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
-        [ -n "$TAR" ] && (IFS=$IFS1 ; $TAR "${MBD}/${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${MBD}/${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
-        cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
-        rm -rf "${MBD}/${db}.${coll}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
+        full_coll_backup "$db" "$coll"
         ;;
       periodic)
         [ -d "$rpath/var/mongodb" ] || install -d "$rpath/var/mongodb"
         bkname=`echo "$table" | tr '|' '.'`
         if [ -f "$rpath/var/mongodb/${bkname}.lastid" ] ; then
           lastid=`cat "$rpath/var/mongodb/${bkname}.lastid"`
-          if [ -n "$lastid" ] ; then
-            echo "no op yet"
-          else
-            echo "File $rpath/var/mongodb/${bkname}.lastid exists but empty. Collection ${bkname%.*} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > \"$rpath/var/mongodb/${bkname}.lastid\")" | tee -a "$rpath/m_backup.error"
-          fi
         else
-          echo "File $rpath/var/mongodb/${bkname}.lastid doesn't exist. Collection ${bkname%.*} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > \"$rpath/var/mongodb/${bkname}.lastid\")" | tee -a "$rpath/m_backup.error"
+          lastid=0
         fi
+        if [ -n "$lastid" ] ; then
+          bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
+          if [ "$lastid" == "0" ]; then
+            full_coll_backup "$db" "$coll"
+          else
+            $MONGODUMP --host $mongohost --db "$db" --collection "$coll" --query "{ _id : { \$gte : \"$lastid\" }}" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+          fi
+          [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
+          cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
+          rm -rf "$MBD/${db}.${coll}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
+        else
+          echo "File $rpath/var/mongodb/${bkname}.lastid exists but empty. Collection ${bkname%.*} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > \"$rpath/var/mongodb/${bkname}.lastid\")" | tee -a "$rpath/m_backup.error"
+        fi
+
         ;;
       *)
         echo "Don't know how to do $bktype backup" >> "$rpath/m_backup.error"
@@ -148,7 +161,7 @@ else
     # --------------------
     # 
       else
-        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "${MBD}/${db}.${archname}" 1>>"$stdinto" 2>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
         [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar.${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp"
         popd
         cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"

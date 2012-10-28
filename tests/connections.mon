@@ -45,25 +45,27 @@ fi
 [ -e "${rpath}/../conf/sockets.exclude" ] || touch "${rpath}/../conf/sockets.exclude"
 [ -e "${rpath}/../conf/ports.exclude" ] || touch "${rpath}/../conf/ports.exclude"
 
-for exclport in `cat "${M_ROOT}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
-    exclportnum=${exclport%%|*}
-    exclportprog=${exclport#*|}
-    portif=${1%:*}
-    portnum=${1##*:}
-    if [ -z "$exclportprog" ] || [[ $exclportprog =~ $2 ]] ; then
-      if [ -z "$exclportnum" ] ; then
-        skip=1 && break
-      else
-        if [ `expr $exclportnum : [0-9]*-[0-9]*` -gt 0 ] ; then
-          port1=${exclportnum%-*}
-          port2=${exclportnum#*-}
-          ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
+chk_portexclusions() {
+  for exclport in `cat "${M_ROOT}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
+      exclportnum=${exclport%%|*}
+      exclportprog=${exclport#*|}
+      portif=${1%:*}
+      portnum=${1##*:}
+      if [ -z "$exclportprog" ] || [ `expr $exclportprog : .*${2}` -ne 0 ] ; then
+        if [ -z "$exclportnum" ] ; then
+          skip=1 && break
         else
-          [[ $exclportnum -eq $portnum ]] && skip=1 && break
+          if [ `expr $exclportnum : [0-9]*-[0-9]*` -ne 0 ] ; then
+            port1=${exclportnum%-*}
+            port2=${exclportnum#*-}
+            ([[ $portnum -ge $port1 ]] && [[ $portnum -le $port2 ]]) && skip=1 && break
+          else
+            [[ $exclportnum -eq $portnum ]] && skip=1 && break
+          fi
         fi
       fi
-    fi
-done
+  done
+}
 
 echo
 echo "Listening ports and sockets:"
