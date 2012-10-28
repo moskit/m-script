@@ -45,9 +45,9 @@ full_coll_backup() {
   # storing the latest ID before dumping for the ID-based incremental backups.
   # Use --objcheck while restoring such backups if you care about duplicates.
   if [ "$3" == "_id" ]; then
-    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${2}.${bktype}.lastid"
+    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${1}.${2}.${bktype}.lastid"
   else
-    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1,_id:0}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${2}.${bktype}.lastid"
+    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1,_id:0}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${1}.${2}.${bktype}.lastid"
   fi
   $MONGODUMP --host $DBHOST --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
   [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${1}.${2}.${bktype}.${archname}.tar.${ext}" "${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
@@ -123,8 +123,8 @@ if [ -n "$mongodbpertableconf" ] ; then
       periodic)
         [ -n "$debugflag" ] && log "db: $db table: $coll per-table periodic backup"
         [ -d "$rpath/var/mongodb" ] || install -d "$rpath/var/mongodb"
-        if [ -f "$rpath/var/mongodb/${coll}.${bktype}.lastid" ] ; then
-          lastid=`cat "$rpath/var/mongodb/${coll}.${bktype}.lastid"`
+        if [ -f "$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid" ] ; then
+          lastid=`cat "$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid"`
         else
           lastid=0
         fi
@@ -137,7 +137,7 @@ if [ -n "$mongodbpertableconf" ] ; then
           else
             [ -n "$debugflag" ] && log "running periodic backup"
             bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
-            QUERY="{ $idfield : { \$gt : \"$lastid\" }}"
+            QUERY="{ $idfield : { \$gt : $lastid }}"
             [ -n "$debugflag" ] && log "$QUERY"
             $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
             [ -n "$debugflag" ] && log "archiving"
@@ -146,7 +146,7 @@ if [ -n "$mongodbpertableconf" ] ; then
             rm -rf "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 2>>"$rpath/m_backup.error"
           fi
         else
-          echo "File $rpath/var/mongodb/${coll}.${bktype}.lastid exists but empty. Collection ${coll} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > \"$rpath/var/mongodb/${coll}.${bktype}.lastid\")" | tee -a "$rpath/m_backup.error"
+          echo "File $rpath/var/mongodb/${db}.${coll}.${bktype}.lastid exists but empty. Collection ${coll} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > \"$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid\")" | tee -a "$rpath/m_backup.error"
         fi
 
         ;;
