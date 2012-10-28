@@ -39,8 +39,8 @@ BZIP2="$(which bzip2 2>/dev/null)"
 full_coll_backup() {
   # storing the latest ID before dumping for the ID-based incremental backups.
   # Use --objcheck while restoring such backups if you care about duplicates.
-  $MONGO "$mongohost/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${bkname}.lastid"
-  $MONGODUMP --host $mongohost --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
+  $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${bkname}.lastid"
+  $MONGODUMP --host $DBHOST --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
   [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${1}.${2}.${bktype}.${archname}.tar.${ext}" "${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
   cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
   rm -rf "$MBD/${1}.${2}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
@@ -122,7 +122,7 @@ if [ -n "$mongodbpertableconf" ] ; then
             bktype=full
             full_coll_backup "$db" "$coll" "$idfield"
           else
-            $MONGODUMP --host $mongohost --db "$db" --collection "$coll" --query "{ _id : { \$gte : \"$lastid\" }}" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+            $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "{ _id : { \$gte : \"$lastid\" }}" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
           fi
           [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
           cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
@@ -161,13 +161,13 @@ else
         install -d "$MBD/${db}.${archname}"
         if [ -n "$compress" ] ; then
           for collection in `$MONGO $DBHOST/$db --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
-            $MONGODUMP $USER $PASS --host $mongohost --db $db --collection $collection --out - | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$rpath/m_backup.error"
+            $MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$rpath/m_backup.error"
           done
         fi
     # --------------------
     # 
       else
-        $MONGODUMP --host $mongohost --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+        $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
         [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar.${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp"
         popd
         cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
