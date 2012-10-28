@@ -132,7 +132,9 @@ if [ -n "$mongodbpertableconf" ] ; then
           else
             log "running periodic backup"
             bkname="${bkname}.`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
-            $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "{ _id : { \$gte : \"$lastid\" }}" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+            QUERY="{ $idfield : { \$gt : \"$lastid\" }}"
+            log "$QUERY"
+            $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
           fi
           log "archiving"
           [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
