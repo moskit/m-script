@@ -98,7 +98,7 @@ check_results() {
   done
 }
     
-function gendash() {
+gendash() {
   indic="ok"
   [ -n "`grep '<\*>' "$1"`" ] && indic="w1"
   [ -n "`grep '<\*\*>' "$1"`" ] && indic="w2"
@@ -113,7 +113,7 @@ function gendash() {
   esac
 }
 
-function genreport() {
+genreport() {
   case $DASHBOARD in
     HTML)
       "${fpath}/genhtml" --type=report "$1" 2>>"$M_ROOT/logs/dashboard.log"

@@ -32,9 +32,14 @@ MONGO="$(which mongo 2>/dev/null)"
 MONGODUMP="$(which mongodump 2>/dev/null)"
 GZIP="$(which gzip 2>/dev/null)"
 BZIP2="$(which bzip2 2>/dev/null)"
+LOG="$rpath/m_backup.log"
 
 [ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
 [ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1
+
+log() {
+  echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: ${@}">>$LOG
+}
 
 full_coll_backup() {
   # storing the latest ID before dumping for the ID-based incremental backups.
@@ -109,21 +114,27 @@ if [ -n "$mongodbpertableconf" ] ; then
         full_coll_backup "$db" "$coll" "$idfield"
         ;;
       periodic)
+        log "db: $db table: $coll per-table periodic backup"
         [ -d "$rpath/var/mongodb" ] || install -d "$rpath/var/mongodb"
         bkname=`echo "$table" | tr '|' '.'`
+        log "backup name: $bkname"
         if [ -f "$rpath/var/mongodb/${bkname}.lastid" ] ; then
           lastid=`cat "$rpath/var/mongodb/${bkname}.lastid"`
         else
           lastid=0
         fi
+        log "last backuped ID: $lastid"
         if [ -n "$lastid" ] ; then
-          bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
           if [ "$lastid" == "0" ]; then
+            log "forcing full backup"
             bktype=full
             full_coll_backup "$db" "$coll" "$idfield"
           else
+            log "running periodic backup"
+            bkname="${bkname}.`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
             $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "{ _id : { \$gte : \"$lastid\" }}" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
           fi
+          log "archiving"
           [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
           cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
           rm -rf "$MBD/${db}.${coll}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
@@ -170,7 +181,7 @@ else
         $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
         [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar.${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp"
         popd
-        cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
+        cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error" && rm -f "$rpath/logs/mongo.backup.tmp"
         rm -rf "$MBD/${db}.${archname}" 2>>"$rpath/m_backup.error"
       fi
     fi
