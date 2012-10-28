@@ -19,13 +19,6 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-full_coll_backup() {
-  $MONGODUMP --host $mongohost --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
-  [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${1}.${2}.${bktype}.${archname}.tar.${ext}" "${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
-  cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
-  rm -rf "$MBD/${1}.${2}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
-}
-
 [ -z "$M_ROOT" ] && M_ROOT=$rpath
 
 if [ -z "$1" ]; then
@@ -42,6 +35,16 @@ BZIP2="$(which bzip2 2>/dev/null)"
 
 [ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
 [ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1
+
+full_coll_backup() {
+  # storing the latest ID before dumping for the ID-based incremental backups.
+  # Use --objcheck while restoring such backups if you care about duplicates.
+  $MONGO "$mongohost/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${bkname}.lastid"
+  $MONGODUMP --host $mongohost --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
+  [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${1}.${2}.${bktype}.${archname}.tar.${ext}" "${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
+  cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error"
+  rm -rf "$MBD/${1}.${2}.${bktype}.${archname}" 2>>"$rpath/m_backup.error"
+}
 
 [ -n $debugflag ] && stdinto="$rpath/m_backup.log" || stdinto=/dev/null
 
@@ -98,10 +101,12 @@ if [ -n "$mongodbpertableconf" ] ; then
     db=`echo $table | cut -d'|' -f1`
     coll=`echo $table | cut -d'|' -f2`
     bktype=`echo $table | cut -d'|' -f3`
+    idfield=`echo $table | cut -d'|' -f4`
+    [ -z "$idfield" ] && idfield="_id"
     [ -n "$debugflag" ] && echo -e "\n>>> Database $db table $coll type $bktype\n" >> "$rpath/m_backup.log"
     case $bktype in
       full)
-        full_coll_backup "$db" "$coll"
+        full_coll_backup "$db" "$coll" "$idfield"
         ;;
       periodic)
         [ -d "$rpath/var/mongodb" ] || install -d "$rpath/var/mongodb"
@@ -114,7 +119,8 @@ if [ -n "$mongodbpertableconf" ] ; then
         if [ -n "$lastid" ] ; then
           bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
           if [ "$lastid" == "0" ]; then
-            full_coll_backup "$db" "$coll"
+            bktype=full
+            full_coll_backup "$db" "$coll" "$idfield"
           else
             $MONGODUMP --host $mongohost --db "$db" --collection "$coll" --query "{ _id : { \$gte : \"$lastid\" }}" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
           fi
