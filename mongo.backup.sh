@@ -125,30 +125,27 @@ if [ -n "$mongodbpertableconf" ] ; then
         [ -d "$rpath/var/mongodb" ] || install -d "$rpath/var/mongodb"
         if [ -f "$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid" ] ; then
           lastid=`cat "$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid"`
+        elif [ -f "$rpath/var/mongodb/${db}.${coll}.full.lastid" ] ; then
+          lastid=`cat "$rpath/var/mongodb/${db}.${coll}.full.lastid"`
         else
           lastid=0
         fi
         [ -n "$debugflag" ] && log "last backuped ID: $lastid"
-        if [ -n "$lastid" ] ; then
-          if [ "$lastid" == "0" ]; then
-            [ -n "$debugflag" ] && log "forcing full backup"
-            bktype=full
-            full_coll_backup "$db" "$coll" "$idfield"
-          else
-            [ -n "$debugflag" ] && log "running periodic backup"
-            bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
-            QUERY="{ $idfield : { \$gt : $lastid }}"
-            [ -n "$debugflag" ] && log "$QUERY"
-            $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
-            [ -n "$debugflag" ] && log "archiving"
-            [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${bkname}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
-            cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error" && rm -f "$rpath/logs/mongo.backup.tmp"
-            rm -rf "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 2>>"$rpath/m_backup.error"
-          fi
+        if [ "$lastid" == "0" ]; then
+          [ -n "$debugflag" ] && log "forcing full backup"
+          bktype=full
+          full_coll_backup "$db" "$coll" "$idfield"
         else
-          echo "File $rpath/var/mongodb/${db}.${coll}.${bktype}.lastid exists but empty. Collection ${coll} is not backuped. Put 0 there to make the first-time whole table backup (echo 0 > \"$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid\")" | tee -a "$rpath/m_backup.error"
+          [ -n "$debugflag" ] && log "running periodic backup"
+          bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
+          QUERY="{ $idfield : { \$gt : $lastid }}"
+          [ -n "$debugflag" ] && log "$QUERY"
+          $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+          [ -n "$debugflag" ] && log "archiving"
+          [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${bkname}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
+          cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error" && rm -f "$rpath/logs/mongo.backup.tmp"
+          rm -rf "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 2>>"$rpath/m_backup.error"
         fi
-
         ;;
       *)
         echo "Don't know how to do $bktype backup" >> "$rpath/m_backup.error"

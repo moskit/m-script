@@ -38,7 +38,7 @@ echo "URL: $URL"
 if [ -n "$WGET" ] ; then
   [ -n "$2" ] && DEST="-P ${2}"
   if [ -n "$verbose" ]; then
-    echo "Fetching with wget"
+    echo "Fetching with Wget"
     $WGET -nH -N $DEST "${PROTO}://${URL}"
     res=$?
   else
@@ -58,13 +58,20 @@ fi
 
 if [ -n "$CURL" ] ; then
   [ -n "$2" ] && DEST="-o ${2}/$filename" || DEST="-o $filename"
-  $CURL -s -f "${PROTO}://${URL}" $DEST
-  res=$?
+  if [ -n "$verbose" ]; then
+    echo "Fetching with Curl"
+    $CURL -m 20 -f "${PROTO}://${URL}" $DEST
+    res=$?
+  else
+    $CURL -m 20 -s -f "${PROTO}://${URL}" $DEST
+    res=$?
+  fi
 fi
 [[ $res -eq 0 ]] && exit 0
 
 if [ -n "$LINKS" ] ; then
   [ -n "$2" ] && DEST="${2}/$filename" || DEST="$filename"
+  [ -n "$verbose" ] && echo "Fetching with Links"
   $LINKS -source 1 "${PROTO}://${URL}" > $DEST
   res=$?
 fi

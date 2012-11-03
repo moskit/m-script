@@ -330,10 +330,10 @@ else
 fi
 
 ## Connections alerts number limit
-if [ -f $M_TEMP/conn_test_runs_count ] ; then
-  [ `cat $M_TEMP/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > $M_TEMP/conn_test_runs_count && ${rpath}/fixports.run || echo >> $M_TEMP/conn_test_runs_count
+if [ -f "$M_TEMP"/conn_test_runs_count ] ; then
+  [ `cat "$M_TEMP"/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > "$M_TEMP"/conn_test_runs_count && "$M_ROOT"/fixports.run || echo >> "$M_TEMP"/conn_test_runs_count
 else
-  echo > $M_TEMP/conn_test_runs_count
+  echo > "$M_TEMP"/conn_test_runs_count
 fi
 
 unset failedip pingedip connip sockets socketfound sname i t portstcp portsudp portif portnum port1 port2 exclportnum exclportprog exclport inusetcp inuseudp testthrtcp testthrudp tcphead udphead

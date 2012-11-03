@@ -113,7 +113,7 @@ EOF
       exit 1
     fi
   ;;
-  configfile|configfiles)
+  config|configfile|configfiles)
     if [ "X$s_optarg" == "Xhelp" ]; then
       cat <<"EOF"
     You can create as many backup configuration files as you want and backup
@@ -138,11 +138,7 @@ EOF
       echo 'Wrong syntax! Use --configfiles=help to get more help' >> ${rpath}/m_backup.error
       exit 1
     fi
-    cfgfiles="`echo $s_optarg|sed 's|,| |g'`"
-    for conf in ${cfgfiles}
-    do
-      configfiles="${configfiles} $M_ROOT/conf/${conf}"
-    done
+    configfiles=( `echo $s_optarg|sed 's|,| |g'` )
   ;;
   replace|incremental|incr)
     replaceflag=1
@@ -171,7 +167,7 @@ done
 if [ -n "$debugflag" ]
 then
   stdinto="${rpath}/m_backup.log"
-  echo -e "OPTIONS:\nxferdirection = ${xferdirection}\nr_proto = ${r_proto}\nnonbackup = ${nonbackup}\nonlypickup = ${onlypickup}\nonlyclean = ${onlyclean}\nconfigfiles = ${configfiles}\nreplaceflag = ${replaceflag}\n" >> ${rpath}/m_backup.log
+  echo -e "OPTIONS:\nxferdirection = ${xferdirection}\nr_proto = ${r_proto}\nnonbackup = ${nonbackup}\nonlypickup = ${onlypickup}\nonlyclean = ${onlyclean}\nconfigfiles = ${configfiles[*]}\nreplaceflag = ${replaceflag}\n" >> ${rpath}/m_backup.log
 else
   stdinto="/dev/null"
 fi
@@ -179,7 +175,7 @@ export stdinto
 RSYNC_RSH_BK=$RSYNC_RSH
 
 ###################################################################
-# Main loop. Runs as many times as many backup.*.conf files used  #
+# Main loop. Runs as many times as many config files used  #
 ###################################################################
 
 source $M_ROOT/conf/mon.conf
@@ -191,22 +187,23 @@ declare -i res
 localbackuppath=${rpath}
 install -d "$M_TEMP" 2>&1>>${rpath}/m_backup.error
 # If config files collection is not set by option, we use all files having names
-# like backup*.conf
-if [ -z "$configfiles" ]
+# like backup*.conf from the conf folder
+if [ -z "$configfiles[*]" ]
 then
   configfiles=( )
-  for conf in $M_ROOT/conf/backup*.conf
+  for conf in "$M_ROOT"/conf/backup*.conf
   do
     configfiles+=("${conf}")
   done
   [ -n "$debugflag" ] && echo "configfiles not set, using default: ${configfiles[*]}" >> ${rpath}/m_backup.log
 fi
-#### Well, lets go
+#### lets go
 for backupconf in ${configfiles[*]}
 do
-bconf=${backupconf##*/}
-  
-  source ${backupconf}
+  bconf=${backupconf##*/}
+  backupconf="$M_ROOT/conf/$bconf"
+  [ -f "${backupconf}" ] || continue
+  source "${backupconf}"
 
   if [ "$r_proto" == "ftp" ]
   then
@@ -347,39 +344,41 @@ bconf=${backupconf##*/}
       fi
       [ -n "$debugflag" ] && echo "SET archname = ${archname}" >> ${rpath}/m_backup.log
   # Saving folders from backup.sources.list
-      while read LINE
-      do
-        if [ -n "${LINE}" ]; then
-          linetoname=`echo ${LINE} | sed 's|/|_|g'`
-          if [ "X${compression}" == "Xgzip" ]; then
-            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> ${rpath}/m_backup.log
-            tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-            splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
+      if [ -f "${backupconf}.list" ] ; then
+        while read LINE
+        do
+          if [ -n "${LINE}" ]; then
+            linetoname=`echo ${LINE} | sed 's|/|_|g'`
+            if [ "X${compression}" == "Xgzip" ]; then
+              [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> ${rpath}/m_backup.log
+              tar ${ARCOPTS} -c -z -f ${localbackuppath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+              splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
+            fi
+            if [ "X${compression}" == "Xbzip2" ]
+            then
+              [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> ${rpath}/m_backup.log
+              tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+              splitfile ${localbackuppath}/$archname.$linetoname.tar.bz2
+            fi
+            if [ "X${compression}" == "X" ]
+            then
+              [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> ${rpath}/m_backup.log
+            	tar ${ARCOPTS} -c -f ${localbackuppath}/$archname.$linetoname.tar ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
+              splitfile ${localbackuppath}/$archname.$linetoname.tar
+            fi
+            
+            if [ -f $M_TEMP/$archname.$linetoname.tar.log ]; then
+              tarerr=$(grep '^tar:' $M_TEMP/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
+              [ -n "$tarerr" ] && echo "$tarerr" >> "${rpath}/m_backup.error"
+              echo "Tar: ${LINE} copied with some errors, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
+              echo "Tar: ${LINE} copied `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
+            else
+              echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${rpath}/m_backup.log" 2>/dev/null
+              rm -f $M_TEMP/$archname.$linetoname.tar.log
+            fi
           fi
-          if [ "X${compression}" == "Xbzip2" ]
-          then
-            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> ${rpath}/m_backup.log
-            tar ${ARCOPTS} -c -j -f ${localbackuppath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-            splitfile ${localbackuppath}/$archname.$linetoname.tar.bz2
-          fi
-          if [ "X${compression}" == "X" ]
-          then
-            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> ${rpath}/m_backup.log
-          	tar ${ARCOPTS} -c -f ${localbackuppath}/$archname.$linetoname.tar ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log 1>>${rpath}/m_backup.log
-            splitfile ${localbackuppath}/$archname.$linetoname.tar
-          fi
-          
-          if [ -f $M_TEMP/$archname.$linetoname.tar.log ]; then
-            tarerr=$(grep '^tar:' $M_TEMP/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
-            [ -n "$tarerr" ] && echo "$tarerr" >> "${rpath}/m_backup.error"
-            echo "Tar: ${LINE} copied with some errors, see ${locallogpath}/logs/m_backup.error" >> ${rpath}/m_backup.log
-            echo "Tar: ${LINE} copied `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${rpath}/m_backup.log
-          else
-            echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${rpath}/m_backup.log" 2>/dev/null
-            rm -f $M_TEMP/$archname.$linetoname.tar.log
-          fi
-        fi
-      done < ${backupconf}.list
+        done < "${backupconf}.list"
+      fi
       #rm -f $M_TEMP/${archname}.${linetoname}.tar.log
   # Backuping databases (see the correspondent database backup scripts for details
       for DB in ${databases}
@@ -543,38 +542,39 @@ bconf=${backupconf##*/}
       do
         echo 'rm -f ${remotepath}/${DB}/*.tar*' >> ${rpath}/remote.backup.sh
       done
-      while read LINE ; do
-        if [ -n "${LINE}" ]; then
-          echo "LINE=${LINE}" >> ${rpath}/remote.backup.sh
-          linetoname=`echo ${LINE} | sed 's|/|_|g'`
-          echo "linetoname=${linetoname}" >> ${rpath}/remote.backup.sh
-          if [ "X${compression}" == "Xgzip" ]; then
-            echo 'tar ${ARCOPTS} -c -z -f ${remotepath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
-          fi
-          if [ "X${compression}" == "Xbzip2" ]; then
-            echo 'tar ${ARCOPTS} -c -j -f ${remotepath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
-          fi
-          cat >> ${rpath}/remote.backup.sh <<"EOF"
-if [ -f $M_TEMP/$archname.$linetoname.tar.log ]; then
-  tarerr=$(grep '^tar:' $M_TEMP/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
-  [ -n "$tarerr" ] && echo "$tarerr" >> "${remotepath}/m_backup.error"
-  echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${remotepath}/m_backup.log
-  echo "Tar: ${LINE} copied `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${remotepath}/m_backup.log
-else
-  echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${remotepath}/m_backup.log" 2>/dev/null
-  rm -f $M_TEMP/$archname.$linetoname.tar.log
-fi
-if [ X$keepremote == "Xyes" ]; then
-  cp -r ${remotepath}/* ${remotepath}/backup.local 2>>${remotepath}/m_backup.error
-fi
-if [ "X$removeoldremote" == "Xyes" ]; then
-  find ${remotepath}/backup.local -mtime +$keepremotedays | xargs rm -f
-fi
-echo ${archname} > ${remotepath}/m_backup.archname
+      if [ -f "${rpath}/${backupconf}.list" ]; then
+        while read LINE ; do
+          if [ -n "${LINE}" ]; then
+            echo "LINE=${LINE}" >> ${rpath}/remote.backup.sh
+            linetoname=`echo ${LINE} | sed 's|/|_|g'`
+            echo "linetoname=${linetoname}" >> ${rpath}/remote.backup.sh
+            if [ "X${compression}" == "Xgzip" ]; then
+              echo 'tar ${ARCOPTS} -c -z -f ${remotepath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
+            fi
+            if [ "X${compression}" == "Xbzip2" ]; then
+              echo 'tar ${ARCOPTS} -c -j -f ${remotepath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
+            fi
+            cat >> ${rpath}/remote.backup.sh <<"EOF"
+  if [ -f $M_TEMP/$archname.$linetoname.tar.log ]; then
+    tarerr=$(grep '^tar:' $M_TEMP/$archname.$linetoname.tar.log | grep -v 'Removing leading' | grep -v 'as we read')
+    [ -n "$tarerr" ] && echo "$tarerr" >> "${remotepath}/m_backup.error"
+    echo "Tar: ${LINE} copied with some errors, see ${localbackuppath}/logs/m_backup.error" >> ${remotepath}/m_backup.log
+    echo "Tar: ${LINE} copied `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>${remotepath}/m_backup.log
+  else
+    echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${remotepath}/m_backup.log" 2>/dev/null
+    rm -f $M_TEMP/$archname.$linetoname.tar.log
+  fi
+  if [ X$keepremote == "Xyes" ]; then
+    cp -r ${remotepath}/* ${remotepath}/backup.local 2>>${remotepath}/m_backup.error
+  fi
+  if [ "X$removeoldremote" == "Xyes" ]; then
+    find ${remotepath}/backup.local -mtime +$keepremotedays | xargs rm -f
+  fi
+  echo ${archname} > ${remotepath}/m_backup.archname
 EOF
-        fi
-      done < ${rpath}/${backupconf}.list
-      
+          fi
+        done < "${rpath}/${backupconf}.list"
+      fi
       cat >> ${rpath}/remote.backup.sh <<"EOF"
 for DB in ${databases} ; do
   [ -x ${remotepath}/${DB}.backup.sh ] && ${remotepath}/${DB}.backup.sh ${remotepath}/remote.${DB}.conf'
@@ -782,7 +782,7 @@ EOF
     if [ -n "${LINE}" ]; then
       cat ${rpath}/backup.report | mail -s "Server $(hostname -f) backup report" "${LINE}"
     fi
-  done < $M_ROOT/conf/mail.backup.list
+  done < "$M_ROOT/conf/mail.backup.list"
   
   if [ -n "$errlog" ]; then
     echo "*** `date` ***" >> ${locallogpath}/logs/m_backup.error

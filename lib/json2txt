@@ -114,76 +114,46 @@ parseline() {
   fi
   if [ -n "$line" ] ; then
     $emptyobj && emptyobj=false
-    #$emptystr && ${arrayi[*]} && emptystring=false && index[$i]=`expr ${index[$i]} + 1`
-    #printf "== $line == "
-    quotes=`expr "$line" : '.*".*'`
-    if [[ $quotes -ne 0 ]] ; then
-      f4=`echo $line | cut -d'"' -f4`
-      f3=`echo $line | cut -d'"' -f3`
-      f2=`echo $line | cut -d'"' -f2`
-      f1=`echo $line | cut -d'"' -f1`
-      # "string" : "string"
-
-      if [ -n "$f4" ] ; then
-        isclosed=`expr "$line" : '.*"[[:space:]]*:*[[:space:]]*$'`
-        [ $isclosed -eq 0 ] && openedby=quo
-        #echo '"string" : "string"'
-        if [ -n "$f2" ] ; then
-          index[$i]="$f2"
-          if [[ $f3 =~ ^[[:space:]]*\:[[:space:]]*$ ]] ; then
-            # if nothing but space after colon
-            value="$f4"
-          else
-            # there's colon and something; given that f4 is present, this means
-            # that value is not quoted, but contains a quoted part.
-            # so it needs putting quoted and non-quoted parts together
-            value="`echo "$f3" | cut -d':' -f2 | tr -d '^ *'`\"${f4}\"`echo "$line" | cut -d'"' -f5`"
+    
+    isvarvalueline=`expr "$line" : '.*:.*'`
+    if [ $isvarvalueline -eq 0 ] ; then
+      # it is not a var:value line
+      value="${value}${line}"
+      [ -n "$d" ] && showdebug
+      return
+    fi
+    
+    # on the left of the first colon there must be a variable name
+    varname="${line%%:*}"
+    # sanitizing it
+    varname=`expr "$varname" : "[[:space:]]*\"\(.*\)\""`
+    index[$i]="$varname"
+    # everything on the right (whatever it is)
+    value="${line#*:}" ; value=`expr "$value" : "[[:space:]]*\(.*\)"`
+    # now checking what it is
+    if [ `expr "$value" : "\"[^\"]*\"$"` -eq 0 ] ; then
+      # it is not just a quoted string value
+      if [ `expr "$value" : ".*\".*"` -ne 0 ] ; then
+      # but some quotes are there, so it may be (most probable first, for speed):
+      # e.g. var: foo("bar")
+        if [ `expr "$value" : "[^\"]*\".*[^\"]$"` -ne 0 ]; then
+          # e.g. var: "foo\"bar\""
+          isclosed=1
+        else
+          # assuming that it is a partial line
+          isclosed=0
+          # figuring out the opening symbol
+          # odd number of quotes
+          qn=`echo -n "$value" | sed 's|[^"]||g' | wc -m`
+          if [ `expr $qn % 2` -eq 1 ]; then
+            openedby="quo"
           fi
         fi
       else
-        # either of:
-        # notstring : notstring
-        if [ -z "$f2" ] ; then
-          if [ -z "$f1" ] ; then
-            isclosed=1
-          else
-            #echo "notstring : notstring"
-            index[$i]="`echo "$line" | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-            value="`echo "$line" | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-          fi
-        else
-        # notstring : "string"
-          if [ -n "$f1" ] ; then
-            #echo 'notstring : "string"'
-            index[$i]="`echo "$f1" | cut -d':' -f1 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-            if [ "X`echo $f1 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`" == "X" ] ; then
-              value="$f2"
-            else
-              value="`echo "$f1" | cut -d':' -f2`\"${f2}\"${f3}"
-            fi
-            
-          # "string" : notstring
-          else
-            # f4 empty, f1 empty, f2 not empty
-            # echo '"string" : notstring'
-            # no f3: might be an array
-            if [ -z "$f3" ] ; then
-              value=$f2
-              isclosed=1
-            else
-              # "string" :   - f3 still present, but no value, not closed
-              # "string" : notstring   - closed
-              isclosed=`expr "$line" : '.*"[[:space:]]*:.*[^[:space:]]'`
-              index[$i]=$f2
-              value="`echo $f3 | cut -d':' -f2 | sed 's|^[[:space:]]*||;s|[[:space:]]*$||;s|^"||;s|"$||'`"
-            fi
-          fi      
-        fi
-      
+        isclosed=1
       fi
-    
     else
-      value="${value}${line}"
+      isclosed=1
     fi
     [ -n "$d" ] && showdebug
 #    unset noprint
