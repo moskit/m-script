@@ -64,11 +64,10 @@ if [[ found -eq 1 ]]; then
 fi
 
 source "$M_ROOT/conf/mon.conf"
-M_TEMP="$M_TEMP"/cloud/rackspace
-install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-$debug && source "$M_ROOT/lib/functions.sh"
+M_TEMP="$M_TEMP"/cloud/rackspace
+install -d "$M_TEMP"
 CURL="$CURL -s -k"
 declare -i icount
 
@@ -123,6 +122,7 @@ list_servers() {
           done
         fi
         lvalue=`echo $LINE | cut -d'|' -f2`
+        lvalue=`eval "echo $lvalue"`
         case $lvar in
           imageId)
             [ -n "$resolveids" ] && imageId=`imageid $lvalue` || imageId=$lvalue
@@ -208,7 +208,7 @@ list_servers() {
               ip=${ip#* } ; ip=${ip% *}
               sed -i /^$ip\|/d "${rpath}/../../servers.list"
               echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
-              $debug && [ -n "$update_servers_list" ] && [ -n "$ecf" ] && log "$ip ($name) added"
+              $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
           fi
         fi
