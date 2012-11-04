@@ -71,10 +71,10 @@ for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v 
     find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > ${M_TEMP}/${ip}.${monitor}.local.dash.list
     nd=`diff ${M_TEMP}/${ip}.${monitor}.remote.dash.list ${M_TEMP}/${ip}.${monitor}.local.dash.list | grep ^\< | sed 's|^< ||'`
     if [ -n "$nd" ] ; then
-      nd+=( "$nd" dash.html report.html )
-      for dashfile in ${nd[*]} ; do
-        $SCP $SSH_TIMEOUT -i "${rpath}/keys/${key}" -P $SSHPORT ${ip}:${mpath}/www/$monitor/localhost/$dashfile "${rpath}/www/$monitor/${clustered_as}/${servername}/" >/dev/null 2>&1 </dev/null &
-      done
+      nd+=( dash.html report.html )
+#      for dashfile in ${nd[*]} ; do
+        $SCP $SSH_TIMEOUT -i "${rpath}/keys/${key}" -P $SSHPORT ${ip}:${mpath}/www/$monitor/localhost/`echo "{${nd[*]}}" | tr ' ' ','` "${rpath}/www/$monitor/${clustered_as}/${servername}/" >/dev/null 2>&1 </dev/null &
+#      done
       [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/notfound"
       [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/stopped"
     else

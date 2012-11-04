@@ -14,7 +14,7 @@ DIFF=`which diff 2>/dev/null`
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
 source "${rpath}/${rcommand%.mon}.conf"
-source "${rpath}/../../conf/mon.conf"
+source "$M_ROOT/conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" "${rpath}/mongo_shards.list" "${rpath}/mongo_servers.list"
 M_TEMP="${M_TEMP}/MongoDB"
@@ -38,7 +38,7 @@ function find_master() {
 function find_rsmemberrole() {
   rsmemberrole='|slave'
   master=`find_master "${1}"`
-  members=`mongo ${master}/config --quiet --eval "rs.conf().members.forEach(printjson)" | "${rpath}/../../lib/json2txt"`
+  members=`mongo ${master}/config --quiet --eval "rs.conf().members.forEach(printjson)" | "$M_ROOT/lib/json2txt"`
   membernum=`echo "$members" | grep "${1}" | cut -d'/' -f1`
   arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
   [ $arbiter -eq 1 ] && rsmemberrole='|arbiter'
@@ -208,7 +208,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   defaultport=27019
   MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
   for name in $MONGO_CONFIG_SERVERS ; do
-    if [ `grep -c ^${name}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+    if [ `grep -c ^${name}\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] ; then
       noncluster=1
     else
       cluster=1
@@ -218,7 +218,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   if [ "X$cluster" == "X1" ] ; then
     for name in $MONGO_CONFIG_SERVERS ; do
       port=${name#*:}
-      clusterips="$clusterips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+      clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
     done
     collect_hosts $clusterips
   else
@@ -238,7 +238,7 @@ else
   defaultport=27017
   MONGO_SERVERS=`echo $MONGO_SERVERS | sed 's|,| |g'`
   for name in $MONGO_SERVERS ; do
-    if [ `grep -c ^${name%:*}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+    if [ `grep -c ^${name%:*}\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] ; then
       noncluster=1
     else
       cluster=1
@@ -248,7 +248,7 @@ else
   if [ "X$cluster" == "X1" ] ; then
     for name in $MONGO_SERVERS ; do
       port=${name#*:}
-      clusterips="$clusterips `"${rpath}/../../cloud/ec2/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+      clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
     done
     collect_hosts $clusterips
   else
@@ -272,7 +272,7 @@ else
   # Getting hosts list for every found replica set
   for rs in `cat "${M_TEMP}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
     for rshost in `cat "${M_TEMP}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
 
@@ -292,23 +292,25 @@ fi
 for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
-  master=`find_master ${configip} || echo ${configip}`
-  mongoses=`($MONGO ${master}/config --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null) | "${rpath}/../../lib/json2txt" | awk -F'|' '{print $2}' | sort -n`
-  [ -n "$gotit" ] && unset gotit master && break
+#  master=`find_master ${configip} || echo ${configip}`
+  mongoses=`$MONGO ${configip}/config --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null`
+  res=$?
+  mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -d'|' -f2 | sort -n`
+  [ $res -eq 0 ] && break
 done
 
 if [ -n "$mongoses" ] ; then
   print_servers $mongoses > "${M_TEMP}/mongo_mongos_servers.list"
   [ -f "${M_TEMP}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
 else
-  echo > "${M_TEMP}/mongo_mongos_servers.list"
-  echo > "${M_TEMP}/mongo_mongos_servers.list"
+  echo > "${rpath}/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
-  master=`find_master ${configip} || echo ${configip}`
-  shardhosts=`($MONGO ${master}/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt"`
-  [ -n "$gotit" ] && unset gotit master && break
+  shardhosts=`$MONGO ${configip}/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null`
+  res=$?
+  shardhosts=`echo "$shardhosts" | "$M_ROOT"/lib/json2txt`
+  [ $res -eq 0 ] && break
 done
 
 if [ -n "$shardhosts" ] ; then
@@ -318,9 +320,10 @@ if [ -n "$shardhosts" ] ; then
 '
   nmax=`echo "$shardhosts" | tail -1 | cut -d'/' -f1`
   for ((n=0; n<=$nmax; n++)) ; do
-    shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | awk -F'|' '{print $2}'`
-    shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | awk -F'|' '{print $2}'`
-    ifreplicaset=${shardhost%%/*}
+    shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | cut -d'|' -f2`
+    shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | cut -d'|' -f2`
+    shard=`eval "echo $shard"` ; shardhost=`eval "echo $shardhost"`
+    #ifreplicaset=${shardhost%%/*}
     shardhost=${shardhost#*/}
     # might be multiple hosts here, not needed now, it'll be dealt with later
     shardhost=${shardhost%%,*}
@@ -336,7 +339,7 @@ if [ -n "$shardhosts" ] ; then
   for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
   
     for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "${rpath}/../../lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2`
+      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2`
       [ -n "$gotit" ] && unset gotit master && break
     done
       
@@ -357,41 +360,41 @@ fi
 
 if [ -e "${rpath}/mongo_config_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_config_servers.list"` ; do
-    [ -d "${rpath}/../../www/MongoDB/configservers/${cs}" ] || install -d "${rpath}/../../www/MongoDB/configservers/${cs}"
+    [ -d "$M_ROOT/www/MongoDB/configservers/${cs}" ] || install -d "$M_ROOT/www/MongoDB/configservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_config_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/MongoDB/configservers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    "$M_ROOT/lib/txt2html" "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/configservers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
 if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_mongos_servers.list"` ; do
-    install -d "${rpath}/../../www/MongoDB/balancers/${cs}"
+    install -d "$M_ROOT/www/MongoDB/balancers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_mongos_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/MongoDB/balancers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    "$M_ROOT/lib/txt2html" "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/balancers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
 if [ -e "${rpath}/mongo_shards.list" ] ; then
   for cs in `cat "${rpath}/mongo_shards.list" | cut -d'|' -f1` ; do
-    install -d "${rpath}/../../www/MongoDB/shardservers/${cs}"
+    install -d "$M_ROOT/www/MongoDB/shardservers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_shards.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath%/}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/MongoDB/shardservers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    "$M_ROOT"/lib/txt2html "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/shardservers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
 if [ -e "${rpath}/mongo_servers.list" ] ; then
   for cs in `cat "${rpath}/mongo_servers.list" | cut -d'|' -f1` ; do
-    install -d "${rpath}/../../www/MongoDB/servers/${cs}"
+    install -d "$M_ROOT/www/MongoDB/servers/${cs}"
     mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
     $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "${rpath}/../../lib/txt2html" "${rpath}/data/${cs}.report" > "${rpath}/../../www/MongoDB/servers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    "$M_ROOT/lib/txt2html" "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/servers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
