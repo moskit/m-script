@@ -272,8 +272,10 @@ else
   # Getting hosts list for every found replica set
   for rs in `cat "${M_TEMP}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
     for rshost in `cat "${M_TEMP}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2`
-      [ -n "$gotit" ] && unset gotit master && break
+      replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
+      res=$?
+      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2 | tr -d '"'`
+      [ $res -eq 0 ] && break
     done
 
     for replicahost in $replicahosts ; do
@@ -295,7 +297,7 @@ for configip in $configips ; do
 #  master=`find_master ${configip} || echo ${configip}`
   mongoses=`$MONGO ${configip}/config --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null`
   res=$?
-  mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -d'|' -f2 | sort -n`
+  mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -d'|' -f2 | tr -d '"' | sort -n`
   [ $res -eq 0 ] && break
 done
 
@@ -309,7 +311,7 @@ fi
 for configip in $configips ; do
   shardhosts=`$MONGO ${configip}/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null`
   res=$?
-  shardhosts=`echo "$shardhosts" | "$M_ROOT"/lib/json2txt`
+  shardhosts=`echo "$shardhosts" | "$M_ROOT"/lib/json2txt | tr -d '"'`
   [ $res -eq 0 ] && break
 done
 
@@ -339,8 +341,10 @@ if [ -n "$shardhosts" ] ; then
   for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
   
     for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
-      replicahosts=`(${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null && gotit=1) | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2`
-      [ -n "$gotit" ] && unset gotit master && break
+      replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
+      res=$?
+      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2 | tr -d '"'`
+      [ $res -eq 0 ] && break
     done
       
     for replicahost in $replicahosts ; do

@@ -30,7 +30,7 @@ confserver=`head -n $((RANDOM%$a+1)) "${rpath}/mongo_config_servers.list" 2>/dev
 
 #masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
 
-sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2`
+sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | cut -d'|' -f2 | tr -d '"'`
 
 #date > "${rpath}/sharding.report"
 #echo -e "---------------------------\n\nSharded collections\n-------------------" >> "${rpath}/sharding.report"
