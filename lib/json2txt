@@ -23,15 +23,17 @@ emptyobj=true
 #d=1
 declare -a arrayi
 declare -i ai
+quoopened=false
+quoclosed=false
 
 showdebug() {
   if [ -n "$1" ]; then
     echo "Parsing line = $line"
-    echo "  WAS: index = $i    var[$i] = ${index[$i]}    value = $value    openedby = $openedby"
-    echo "  WAS: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
+    echo "  WAS: index=$i  var[$i]=${index[$i]}  value=$value  quoopened=$quoopened  quoclosed=$quoclosed"
+    echo "  WAS: emptyobj=$emptyobj  isclosed=$isclosed  arrayi=${arrayi[*]}"
   else
-    echo "  NOW: index = $i    var[$i] = ${index[$i]}    value = $value    openedby = $openedby"
-    echo "  NOW: emptyobj = $emptyobj    isclosed = $isclosed    arrayi = ${arrayi[*]}"
+    echo "  NOW: index=$i  var[$i]=${index[$i]}  value=$value  quoopened=$quoopened  quoclosed=$quoclosed"
+    echo "  NOW: emptyobj=$emptyobj  isclosed=$isclosed  arrayi=${arrayi[*]}"
   fi
 }
 
@@ -73,7 +75,7 @@ parseline() {
   fi
   if [ "X$line" == "X]" ] ; then
     #arrayi=false
-    if [ "X$openedby" == "Xquo" ] ; then
+    if $quoopened ; then
       value="${value}${line}"
     else
       printvalue "$value" && unset value
@@ -91,8 +93,13 @@ parseline() {
     return
   fi
   if [ "X$line" == 'X"' ] ; then
-    unset openedby
-    isclosed=1
+    quoclosed=true
+    if $quoopened && $quoclosed ; then
+      isclosed=1
+      quoopened=false
+      quoclosed=false
+    fi
+    value="${value}${line}"
     [ -n "$d" ] && showdebug
     return
   fi
@@ -122,32 +129,28 @@ parseline() {
       [ -n "$d" ] && showdebug
       return
     fi
-    
-    # on the left of the first colon there must be a variable name
-    varname="${line%%:*}"
-    # sanitizing it
-    varname=`expr "$varname" : "[[:space:]]*\"\(.*\)\""`
-    index[$i]="$varname"
-    # everything on the right (whatever it is)
-    value="${line#*:}" ; value=`expr "$value" : "[[:space:]]*\(.*\)"`
+    # below is applicable only if it's not a part of a string value
+    if ! $quoopened ; then
+      # on the left of the first colon there must be a variable name
+      varname="${line%%:*}"
+      # sanitizing it
+      varname=`expr "$varname" : "[[:space:]]*\"\(.*\)\""`
+      index[$i]="$varname"
+      # everything on the right (whatever it is)
+      value="${line#*:}" ; value=`expr "$value" : "[[:space:]]*\(.*\)"`
+    else
+      value="${value}${line}"
+    fi
     # now checking what it is
     if [ `expr "$value" : "\"[^\"]*\"$"` -eq 0 ] ; then
       # it is not just a quoted string value
       if [ `expr "$value" : ".*\".*"` -ne 0 ] ; then
-      # but some quotes are there, so it may be (most probable first, for speed):
-      # e.g. var: foo("bar")
-        if [ `expr "$value" : "[^\"]*\".*[^\"]$"` -ne 0 ]; then
-          # e.g. var: "foo\"bar\""
-          isclosed=1
-        else
-          # assuming that it is a partial line
+        # but some quotes are there, so it all depends on the number of quotes
+        # if odd number of quotes
+        qn=`echo -n "$value" | sed 's|[^"]||g' | wc -m`
+        if [ `expr $qn % 2` -eq 1 ]; then
+          quoopened=true
           isclosed=0
-          # figuring out the opening symbol
-          # odd number of quotes
-          qn=`echo -n "$value" | sed 's|[^"]||g' | wc -m`
-          if [ `expr $qn % 2` -eq 1 ]; then
-            openedby="quo"
-          fi
         fi
       else
         isclosed=1
@@ -169,7 +172,9 @@ printvalue() {
   done
   valuename=${valuename%/}
   echo "${valuename}|${1}"
-  unset valuename openedby
+  unset valuename
+  quoopened=false
+  quoclosed=false
 }
 
 #( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
