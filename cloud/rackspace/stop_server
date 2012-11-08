@@ -59,7 +59,7 @@ removed=false
 
 find_by_ip() {
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
-    sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "\|\"${1}\"$" | cut -d'/' -f3`
+    sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "|\"${1}\"$" | cut -d'/' -f3`
     id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
@@ -86,7 +86,7 @@ if [ -z "$id" ] ; then
   fi
 else
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
-    sn=`grep \/id\| "${M_TEMP}/show_servers.resp" | grep "${id}$" | cut -d'/' -f3`
+    sn=`grep \/id\| "${M_TEMP}/show_servers.resp" | grep "|${id}$" | cut -d'/' -f3`
     name=`grep \/$sn\/name\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
     ipint=`grep \/$sn\/addresses\/private "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
     ipext=`grep \/$sn\/addresses\/public "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`

@@ -338,7 +338,7 @@ if [ -n "$shardhosts" ] ; then
     echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}" >> "${M_TEMP}/mongo_shards.list"
   done
   
-  for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
+  for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f3 | sort | uniq` ; do
   
     for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
       replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
