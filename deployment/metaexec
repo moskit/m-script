@@ -278,6 +278,7 @@ if [ -n "$newserver" ]; then
   
   for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
     startserver $T
+    [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
     [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]] && break
     [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
     [ $res -eq 6 ] && log "Failed to generate a name for the new server" && exit 1
@@ -285,7 +286,6 @@ if [ -n "$newserver" ]; then
     [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && exit 1
     [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
     [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
-    [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address."
     sleep $WAIT_BETWEEN_TRIES
   done
 fi
