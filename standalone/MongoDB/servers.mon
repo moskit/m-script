@@ -343,7 +343,7 @@ if [ -n "$shardhosts" ] ; then
     for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
       replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
-      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2 | tr -d '"'`
+      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2 | tr -d '"'`
       [ $res -eq 0 ] && break
     done
       
