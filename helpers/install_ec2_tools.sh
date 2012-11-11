@@ -25,8 +25,8 @@ LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 UNZIP=`which unzip 2>/dev/null`
 
-[ -n "$WGET" ] || (echo "Wget not found!" && exit 1)
-[ -n "$UNZIP" ] || (echo "Unzip not found!" && exit 1)
+[ -z "$WGET" ] && echo "Wget not found!" && exit 1
+[ -z "$UNZIP" ] && echo "Unzip not found!" && exit 1
 
 EC2_HOME="/opt/ec2-tools"
 [ -d $EC2_HOME ] && rm -rf "$EC2_HOME/*" || install -d $EC2_HOME

@@ -162,7 +162,7 @@ list_servers() {
 }
 
 
-possible_options="help region verbose cluster state filter short noupdate view update_servers_list forceupdate all status count resolveids"
+possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -223,6 +223,8 @@ install -d $M_TEMP
 
 [ -z "$region" ] && region=$EC2_REGION
 log "region: $region"
+
+[ -z "$status" ] && [ -n "$state" ] && status=$state
 [ -z "$status" ] && status="running"
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
@@ -232,7 +234,9 @@ changed=0
 [ -f $M_TEMP/servers.${region}.bdevs ] && mv $M_TEMP/servers.${region}.bdevs $M_TEMP/servers.${region}.bdevs.prev || touch $M_TEMP/servers.${region}.bdevs.prev
 [ ! -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] && log "ec2-describe-instances binary not found! Exiting.." && exit 1
 
-[ -z "$noupdate" ] && ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $region | sed 's/\t/|/g' > $M_TEMP/${rcommand}.resp
+if [ -z "$noupdate" ]; then
+  ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $region | sed 's/\t/|/g' > $M_TEMP/${rcommand}.resp || exit 1
+fi
 
 [ ! -f "$M_TEMP/${rcommand}.resp" ] && log "file $M_TEMP/${rcommand}.resp not found" && exit 1
 [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
