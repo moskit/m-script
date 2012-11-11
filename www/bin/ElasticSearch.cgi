@@ -27,7 +27,7 @@ for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name 
     else
       eshost="${eshostip}:9200"
     fi
-    [ -n "$CURL" ] && thisesstatus=`$CURL -m 2 -s "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2`
+    [ -n "$CURL" ] && thisesstatus=`$CURL -m 2 -s "http://${eshost}/_cluster/health" | "${PWD}/../../lib/json2txt" | grep '/status|' | cut -d'|' -f2 | tr -d '"'`
     if [ -n "$prevstatus" ] ; then
       [ "X$prevstatus" != "X$thisesstatus" ] && esstatus="$esstatus $thisesstatus"
     else
@@ -47,9 +47,9 @@ for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name 
       [ "X`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
       print_line_title $scriptname $node
 
-        echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^name\||cut -d'|' -f2`</div>"
-        echo "<div class=\"status\" id=\"${node}_mem\">`grep ^jvm\/mem\/heap_used\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb'` / `grep ^jvm\/mem\/heap_committed\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb'`</div>"
-        echo "<div class=\"status\" id=\"${node}_size\">`grep ^indices/store/size\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^name\||cut -d'|' -f2 | tr -d '"'`</div>"
+        echo "<div class=\"status\" id=\"${node}_mem\">`grep ^jvm\/mem\/heap_used\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'` / `grep ^jvm\/mem\/heap_committed\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'`</div>"
+        echo "<div class=\"status\" id=\"${node}_size\">`grep ^indices/store/size\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d '"'`</div>"
         echo "<div class=\"status\" id=\"${node}_docs\">`grep ^indices/docs/count\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^process/open_file_descriptors\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_conn\">`grep ^http/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^transport/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"

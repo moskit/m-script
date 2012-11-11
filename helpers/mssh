@@ -32,7 +32,11 @@ KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   KEY1="${KEY}.pem"
-  [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
+  if [ -f "$M_ROOT/keys/$KEY1" ]; then
+    KEY=$KEY1
+  else
+    KEY1="${KEY%.pem}"
+  fi
   [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
 fi
 
@@ -52,9 +56,13 @@ fi
 
 KEY="$M_ROOT/keys/$KEY"
 
-if [ -f "$KEY" ]; then
-  $SSH -i "$KEY" "$@"
-  [ $? -eq 255 ] && nextkey=true || exit 0
+if [ -n "$KEY" ] ; then
+  if [ -f "$KEY" ]; then
+    $SSH -i "$KEY" "$@"
+    [ $? -eq 255 ] && nextkey=true || exit 0
+  fi
+else
+  nextkey=true
 fi
 if $nextkey ; then
   if [ -f "$USERKEY1" ]; then
@@ -69,4 +77,5 @@ if $nextkey ; then
   fi
 fi
 
+echo "No matching key found, tried: $KEY, $USERKEY1, $USERKEY2"
 

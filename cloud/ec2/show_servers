@@ -58,8 +58,8 @@ add_server() {
     else
       sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
     fi
+    [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message
   fi
-  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message
   echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> "$M_TEMP/servers.${region}.ips"
   if [ -n "${bID[*]}" ]; then
     for ((i=0; i<${#bID[*]}; i++)) ; do echo "$iID|${bID[$i]}|${bdev[$i]}|${bstarted[$i]}" >> $M_TEMP/servers.${region}.bdevs ; done 
@@ -146,7 +146,7 @@ list_servers() {
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
             sed -i /^$IP\|/d "${rpath}/../../servers.list"
             echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
-            done
+
           fi
         fi
       fi
