@@ -93,12 +93,11 @@ if [ -n "$cluster" ] ; then
   else
     amiID=$ami
   fi
-  [ -n "$zone" ] || zone=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f3`
   [ -n "$type" ] || type=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f5`
 fi
 secgroup=`cat ${rpath}/../../conf/clusters.conf | grep ^$cluster\| | cut -d'|' -f4`
 
-[ -z "$number" ] && number=1 || snumber="-n $snumber"
+[ -z "$number" ] && number="-n 1" || snumber="-n $snumber"
 [ -n "$amiID" ] && log "Starting $number $type server(s) in region $EC2_REGION from image $amiID" || (log "AMI not defined" && exit 1)
 
 [ -z "$aki" ] || aki="--kernel $aki"
@@ -123,7 +122,7 @@ log "Waiting for the server ready"
 for ((i=0; i<10; i++)) ; do
   sleep 30
   for instance in $instances ; do
-    istate=`"${rpath}"/show_servers --id=$instance --filter=istate`
+    istate=`"${rpath}"/show_servers --view=table | grep ^$instance\| cut -d'|' -f3`
     [ -n "$verbose" ] && log "Instance $instance state: $istate"
     if [ "X$istate" == "Xrunning" ] ; then
       log "Instance $instance started"

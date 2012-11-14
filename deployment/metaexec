@@ -38,7 +38,7 @@ run_meta() {
     fi
     [ -z "$metatype" ] && echo "Meta type is not defined. Don't know how to run it." && exit 1
     if [ -n "$verbose" ] ; then
-      printf "\n  type: $metatype  script: $metascript\n"
+      printf "\n  type: $metatype  script: $metascript \n"
       V='--verbose'
     fi
     if [ -n "$debug" ] ; then
@@ -62,9 +62,9 @@ run_meta() {
         fi
       else
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[0m\n" || printf "  ..  \033[01;31mError\033[0m\n"
+          [ $res -eq 0 ] && printf " ..  \033[01;32mSuccess\033[0m\n" || printf " ..  \033[01;31mError\033[0m\n"
         else
-          [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
+          [ $res -eq 0 ] && echo " ..  Success" || echo " ..  ERROR"
         fi
       fi
       [ -n "$verbose" ] && echo
@@ -79,7 +79,7 @@ run_meta() {
     metascript=`echo $1 | awk '{print $2}'`
     metascript=`eval "echo $metascript"`
     if [ -n "$verbose" ] ; then
-      printf "\n  type: $metatype  script: $metascript\n"
+      printf "\n  type: $metatype  script: $metascript \n"
       V='--verbose'
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
@@ -100,9 +100,9 @@ run_meta() {
         fi
       else
         if [ -n "$use_color" ] ; then
-          [ $res -eq 0 ] && printf "  ..  \033[01;32mSuccess\033[0m\n" || printf "  ..  \033[01;31mError\033[0m\n"
+          [ $res -eq 0 ] && printf " ..  \033[01;32mSuccess\033[0m\n" || printf " ..  \033[01;31mError\033[0m\n"
         else
-          [ $res -eq 0 ] && echo "  ..  Success" || echo "  ..  ERROR"
+          [ $res -eq 0 ] && echo " ..  Success" || echo " ..  ERROR"
         fi
       fi
       [ -n "$verbose" ] && echo
@@ -280,7 +280,12 @@ if [ -n "$newserver" ]; then
     startserver $T
     [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
     [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]] && break
+    # breaking here (reason not known); will be test later
+    [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
+    # not breaking here: may be controversial commands, so let it start up if it
+    # gets an empty slot next time
     [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
+    # various weird errors below, exit 1 
     [ $res -eq 6 ] && log "Failed to generate a name for the new server" && exit 1
     [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && exit 1
     [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && exit 1

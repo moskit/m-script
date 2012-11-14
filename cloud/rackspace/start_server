@@ -93,9 +93,9 @@ save_details() {
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${M_TEMP}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
   chmod 600 "${rpath}/../rackspace.log"
   if [ "X$NETWORK" == "Xexternal" ] ; then
-    slip=`grep \/addresses\/public "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
+    slip=`grep \/addresses\/public "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   else
-    slip=`grep \/addresses\/private "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
+    slip=`grep \/addresses\/private "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
   echo "${slip}|${thekey}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
   return 0
@@ -113,7 +113,7 @@ wait_ready() {
     if [ -n "$1" ] ; then
       printf "Progress: `grep \/progress\| "${M_TEMP}/get_server_details.resp" | cut -d'|' -f2`     \r"
     fi
-    if [ "X`grep \/status\| "${M_TEMP}/get_server_details.resp" | cut -d'|' -f2`" == "XACTIVE" ] ; then
+    if [ "X`grep \/status\| "${M_TEMP}/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
       echo
       return 0
     fi
@@ -195,6 +195,7 @@ try_auth() {
 }
 
 source "${rpath}/../../conf/cloud.conf"
+exit_status=0
 
 if [ -z "$noupdate" ] ; then
   try_auth
@@ -219,12 +220,14 @@ newid=`grep \/id\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then
   save_details $verbose || true
   wait_ready $verbose
+  wait_res=$?
   [ -n "$return" ] && printreturn $return
+  [ $wait_res -eq 1 ] && exit_status=2
 else
   exit 1
 fi
 
-${rpath}/update_hosts_file && log "/etc/hosts updated"
+${rpath}/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
 
-exit 0
+exit $exit_status
 

@@ -71,10 +71,6 @@ list_servers() {
   IFS1=$IFS
   IFS='
 '
-# 10.241.34.245|72.44.58.102|i-d769d2b9|ami-ae49b7c7|running|gen_key|m1.small|default|2011-06-03T06:46:36+0000|us-east-1a|aki-407d9529||app001|rails
-# 10.62.6.14|23.20.222.75|i-69caab07|ami-6743ae0e|running|gen_key|t1.micro|default|2012-04-04T08:26:23+0000|us-east-1d|aki-5f15f636|ari-d5709dbc|Seliger|php
-# ||i-e5ce3382|ami-6743ae0e|stopped|gen_key|t1.micro|default|2012-04-04T08:17:00+0000|us-east-1d|aki-5f15f636|ari-d5709dbc||
-
   if [ -f "$M_TEMP/servers.${region}.ips" ] ; then
     [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.${region}.ips" && return
     for sn in `cat "$M_TEMP/servers.${region}.ips"` ; do
@@ -92,6 +88,7 @@ list_servers() {
       iari=`echo $sn | cut -d'|' -f12`
       iname=`echo $sn | cut -d'|' -f13`
       icluster=`echo $sn | cut -d'|' -f14`
+      ikey=`echo $sn | cut -d'|' -f6`
 
       if [ "X$NETWORK" == "Xexternal" ] ; then
         IP=$extIP
@@ -118,24 +115,23 @@ list_servers() {
           [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
           case $view in
             list)
-              echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone"
+              echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
               ;;
             table)
-              echo "${id}|${iname}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}|${iaki}|${iari}|${secgroup}|${izone}"
+              echo "${id}|${iname}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}|${iaki}|${iari}|${secgroup}|${izone}|${ikey}"
               ;;
             column)
-              echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\n"
+              echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
               ;;
             none)
               ;;
             *)
               echo "------------------------------------------------------------------------------"
               echo "Server ID: $id    Name: $iname    Cluster: $icluster"
-              echo "Public IP: $extIP"
-              echo "Private IP: $intIP"
-              echo "Server image: $imageId AKI: $iaki  ARI: $iari"
-              echo "Server size: $flavorId    Status: $istatus"
-              echo "Security group: $secgroup  Zone: $izone"
+              echo "Public IP: $extIP    Private IP: $intIP"
+              echo "Server image: $imageId    AKI: $iaki    ARI: $iari"
+              echo "Server size: $flavorId    Status: $istatus    Keypair: $ikey"
+              echo "Security group: $secgroup    Zone: $izone"
               ;;
           esac
           icount+=1
@@ -144,6 +140,7 @@ list_servers() {
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) doesn't match the one from the cloud metadata ($ikey)"
             sed -i /^$IP\|/d "${rpath}/../../servers.list"
             echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
 
