@@ -5,6 +5,7 @@ rpath=${0%/*}
 #*/
 M_ROOT=$(cd "${rpath}/../" && pwd)
 
+[ -d "$M_ROOT/rc" ] || install -d "$M_ROOT/rc"
 initlist="connections services bandwidth disk cpu mem servers cpu_eaters memory_eaters"
 
 declare -i i ; i=1

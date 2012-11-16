@@ -317,13 +317,11 @@ if [ -n "$perpixel" ]; then
     $minauto && minres=`$SQL3 "${rpath}/$database" "$minQ"`
     maxres=`$SQL3 "${rpath}/$database" "$maxQ"`
   else
-    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"$maxQ ; $minQ\""`
+    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$maxQ ; $minQ\""`
     maxres=`echo "$minmax" | head -1`
     $minauto && minres=`echo "$minmax" | tail -1`
   fi
-
-  $debug && log "$minmax"
-  $debug && log "$maxres"
+  [ -z "$maxres" ] && log "Was unable to find the maximum, exiting" && exit 1
 
   Nmax=0
   Nmin=0
@@ -333,7 +331,7 @@ if [ -n "$perpixel" ]; then
     metricminfp=0
     metricmin=0
   fi
-  metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*}
+  metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
   $debug && log "metricmaxfp: $metricmaxfp  metricmax: $metricmax"
 
   if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
@@ -403,9 +401,9 @@ log "d=$d"
     $SQL3 "${rpath}/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
     from=`$SQL3 "${rpath}/$database" "${QUERYFROM}" | tail -1`
   else
-    $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${rpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${name}
-    from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${rpath}/$database\" \"${QUERYFROM}\"" \| tail -1`
+    $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/$database\" \"${QUERY}\""
+    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${name}
+    from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/$database\" \"${QUERYFROM}\"" \| tail -1`
   fi
   log "from: $from  to: $to"
   if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | wc -l` -le 5 ] ; then
@@ -658,6 +656,7 @@ unset nexthour theday themonth theyear themark currpoint hourX
 a=`solve "$perdotY * $countminY / 100"`
 b=`solve "2 * $a"`
 s=`expr length ${b%%.*}`
+[ -z "$s" ] && s=1
 pof=1
 for ((i=0; i<$s; i++)); do pof="${pof}0"; done
 log "a=$a b=$b s=$s pof=$pof"
@@ -792,7 +791,8 @@ log "tac ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | while rea
     tac "${M_TEMP}/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | while read LINE
     do
       Y=${LINE%.*}
-      [ "X$Y" == "X" ] && continue
+      [ -z "$Y" ] && Y=$Yp || Yp=$Y
+      [ -z "$Y" ] && Y=0
       X+=1
       Y=`expr $shiftYY - $Y`
       printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"

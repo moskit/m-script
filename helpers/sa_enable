@@ -7,7 +7,7 @@ rpath=${rpath%/*}
 
 [ -z "$1" ] && echo "Usage: $rcommand testname" && exit 1
 
-${rpath}/sa_disable.run $1
+${rpath}/sa_disable $1
 install -d "${rpath}/../standalone/${1}/rc" "${rpath}/../standalone/rc"
 n=`ls -1 "${rpath}/../standalone/rc" | grep ^[0-9]*\. | cut -d'.' -f1 | tail -1`
 n=`expr $n + 1`

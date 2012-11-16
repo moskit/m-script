@@ -136,17 +136,19 @@ start)
         esac
       fi
       # Standalone tests, if any
-      for sa in `find ${rpath}/standalone/rc/ -maxdepth 1 -type l` ; do
-        [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-        safolder=$(readlink -f "$sa")
-        echo -e "`date`\n------------------------------\n" > "$safolder/report"
-        echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
-        for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
+      if [ -d "${rpath}/standalone/rc" ]; then
+        for sa in `find "${rpath}/standalone/rc/" -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-          echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
-          $satest >> "$safolder/report" 2>>"$rpath/logs/sa.log"
-        done </dev/null &
-      done
+          safolder=$(readlink -f "$sa")
+          echo -e "`date`\n------------------------------\n" > "$safolder/report"
+          echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
+          for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
+            [ -n "$RUNDELAY" ] && sleep $RUNDELAY
+            echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
+            $satest >> "$safolder/report" 2>>"$rpath/logs/sa.log"
+          done </dev/null &
+        done
+      fi
       # Running actions from the queue
       "${rpath}"/lib/mq.run </dev/null &
     else

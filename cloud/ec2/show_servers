@@ -97,7 +97,7 @@ list_servers() {
       fi
       if [ -z "$icluster" ] ; then
         # servers having no cluster in metadata but added manually to servers.list
-        icluster=`grep ^$IP\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+        icluster=`grep ^$IP\| "${rpath}/../../servers.list" | cut -d'|' -f5`
       else
         # no icluster means that server will not be shown, but only if there
         # is no option --all. With this option, however, we want to see all

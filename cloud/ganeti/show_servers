@@ -25,7 +25,7 @@ declare -i icount
 
 GNTI=`which gnt-instance 2>/dev/null`
 
-possible_options="cluster state filter node view all count update_servers_list forceupdate"
+possible_options="cluster state filter node view all count update_servers_list forceupdate noupdate"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -115,7 +115,7 @@ list_servers() {
               echo "Name: $name  State: $status  IPs: $nic_ips  Size: ${be_vcpus}/${be_memory}/${disk_sizes}  OS: $os  Nodes: ${pnode}+${snodes}  Started: $ctime"
               ;;
             table)
-              echo "${name}|${status}|${nic_ips}|${be_vcpus}/${be_memory}/${disk_sizes}|${os}|${pnode}+${snodes}|$ctime"
+              echo "${name}|${name}|${status}||${nic_ips}|${icluster}|${os}|${be_vcpus}/${be_memory}/${disk_sizes}|${pnode}+${snodes}|$ctime"
               ;;
             column)
               echo -e "Name: $name\nState: $status\nIPs: $nic_ips\nSize: ${be_vcpus}/${be_memory}/${disk_sizes}\nOS: $os\nNodes: ${pnode}+${snodes}\nStarted: $ctime"
@@ -157,7 +157,7 @@ list_servers() {
   IFS=$IFS1
 }
 
-request
+[ -z "$noupdate" ] && request
 list_servers
 
 [ -n "$count" ] && echo $icount || exit 0
