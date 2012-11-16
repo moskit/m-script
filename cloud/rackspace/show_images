@@ -30,7 +30,7 @@ WGET=`which wget 2>/dev/null`
 [ -n "$debug" ] && debug=true || debug=false
 $debug && LOG="$M_ROOT/logs/show_images.log"
 
-possible_options=""
+possible_options="noupdate"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -85,7 +85,7 @@ list_images() {
 '
   if [ -f "${M_TEMP}/images.resp" ] ; then
     for sn in `cat "${M_TEMP}/images.resp" | cut -d'/' -f3 | sort | uniq` ; do
-      unset id name istatus extIP intIP IP imageId flavorId region icluster
+      unset id name istatus created updated progress
       for LINE in `grep "/images/${sn}/" "${M_TEMP}/images.resp"` ; do
         LINE=`echo $LINE | awk -F"images/${sn}/" '{print $2}'`
         lvar=`echo $LINE | cut -d'|' -f1`
@@ -125,13 +125,13 @@ list_images() {
           echo "------------------------------------------------------------------------------"
           echo "Image ID: $id    Image name: $name"
           echo "Created: $created  Updated: $updated"
-          echo "Status: $status  $progress"
+          echo "Status: $istatus  $progress"
           ;;
       esac
       
     done
   else
-    log "response file ${M_TEMP}/images.list not found"
+    log "response file ${M_TEMP}/images.resp not found"
   fi
   IFS=$IFS1
 }
@@ -153,7 +153,7 @@ if [ -z "$noupdate" ] ; then
   request
   declare -i n
   n=0
-  while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+  while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/images.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
     [ $n -gt 1 ] && sleep 30
     rm -f "${M_TEMP}/auth.resp"
