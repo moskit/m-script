@@ -156,5 +156,9 @@ code=`grep \/code\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
 [ -n "$code" ] && echo -n "${code}: "
 grep \/message\| "${M_TEMP}/${rcommand}.resp"
 
+echo "Image name: `grep \/name\| | cut -d'|' -f2 | tr -d '"' "${M_TEMP}/${rcommand}.resp"` Status: `grep \/status\| | cut -d'|' -f2 | tr -d '"' "${M_TEMP}/${rcommand}.resp"`"
+echo -e "\n`date`\nsave_server\n\n" >> "$M_ROOT/cloud/rackspace.log"
+cat "${M_TEMP}/${rcommand}.resp" >> "$M_ROOT/cloud/rackspace.log"
+
 exit $exit_status
 

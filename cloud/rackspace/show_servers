@@ -180,13 +180,13 @@ list_servers() {
           intIP=${intIP#* } ; intIP=${intIP% *}
           case $view in
             list)
-              echo "ID: $id  Name: $name  Status: $status  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
+              echo "ID: $id  Name: $name  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
               ;;
             table)
-              echo "${id}|${name}|${status}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}"
+              echo "${id}|${name}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}"
               ;;
             column)
-              echo -e "ID: $id\nName: $name\nStatus: $status\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+              echo -e "ID: $id\nName: $name\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
               ;;
             none)
               ;;
