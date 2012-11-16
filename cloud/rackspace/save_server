@@ -117,7 +117,7 @@ request() {
   $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images" | "$M_ROOT/lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
 }
 
-cat "${rpath}/save_server.$V.json.1" | sed "s|SERVER_ID|$id|;s|IMAGE_NAME|$imagename|" > "$M_TEMP/${rcommand}.req"
+cat "${rpath}/save_server.$V.json" | sed "s|SERVER_ID|$id|;s|IMAGE_NAME|$imagename|" > "$M_TEMP/${rcommand}.req"
 
 log "request generated"
 $debug && log "`cat "$M_TEMP/${rcommand}.req"`"

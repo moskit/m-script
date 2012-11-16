@@ -1,0 +1,6 @@
+{
+  "image" : {
+    "serverId" : SERVER_ID,
+    "name" : "IMAGE_NAME"
+  }
+}
