@@ -306,11 +306,11 @@ if [ -n "$perpixel" ]; then
   if [ -n "$where" ] ; then
     field=${where%%:*}
     value=${where#*:}
-    $minauto && minQ="select $minQ from (select $metric from $table where $field=$value order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where $field=$value order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table where $metric<>'' and  $field=$value order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where $metric<>'' and $field=$value order by timeindex desc limit $limit)"
   else
-    $minauto && minQ="select $minQ from (select $metric from $table order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table where $metric<>'' order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where $metric<>'' order by timeindex desc limit $limit)"
   fi
   $debug && log "$maxQ"
   if [ "$sIP" == "localhost" ]; then
@@ -370,7 +370,7 @@ log "d=$d"
     mpr=10
   elif [ `expr $bs \< 50` -eq 1 ]; then
     mpr=20
-  elif [ `expr $bs \< 50` -eq 1 ]; then
+  elif [ `expr $bs \< 100` -eq 1 ]; then
     mpr=50
   else
     mpr=100

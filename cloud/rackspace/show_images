@@ -101,7 +101,7 @@ list_images() {
             istatus=`echo $lvalue | sed 's|.|\l&|g'`
             ;;
           progress)
-            [ "X$progress" == "X100" ] && progress="" || progress="Progress: $progress"
+            [ -n "$progress" ] && [ "X$lvalue" == "X100" ] && progress="" || progress="Progress: $lvalue"
             ;;
           *)
             eval "$lvar=\"$lvalue\""

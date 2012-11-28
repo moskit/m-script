@@ -110,7 +110,7 @@ ec2-run-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" -k $EC2_AK --region $EC2_
 
 instances=`cat "$M_TEMP"/start_server.resp | grep ^INSTANCE | awk '{print $2}' | sed 's/\n/ /g'`
 [ "X$instances" == "XERROR" ] && log "Error starting instances" && exit 1
-log "Instances started: $instances"
+log "Instances initiated: $instances"
 
 for instance in $instances ; do
   [ "X$cluster" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag cluster=${cluster} >/dev/null
@@ -118,14 +118,14 @@ for instance in $instances ; do
   [ "X$name" == "X" ] || ec2tag -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $instances --tag Name=${name} >/dev/null
 done
 
-log "Waiting for the server ready"
+log "Waiting for the instance ready"
 for ((i=0; i<10; i++)) ; do
   sleep 30
   for instance in $instances ; do
-    istate=`"${rpath}"/show_servers --view=table | grep ^$instance\| cut -d'|' -f3`
+    istate=`"${rpath}"/show_servers --view=table | grep ^$instance\| | cut -d'|' -f3`
     [ -n "$verbose" ] && log "Instance $instance state: $istate"
     if [ "X$istate" == "Xrunning" ] ; then
-      log "Instance $instance started"
+      log "Instance $instance has booted up"
       if [ -n "$return" ] ; then
         case $return in
           id|ids)

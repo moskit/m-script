@@ -252,7 +252,7 @@ then
   fi
 fi
 
-if [ "X${SQLITE}" == "X" ]
+if [ -z "${SQLITE}" ]
 then
   if [ -z "$defopt" ] ; then
     echo
@@ -300,12 +300,13 @@ then
     else
       exit 1
     fi
-  fi
-  if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
-  then
-    sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" "$rpath/conf/mon.conf"
-  else    
-    echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
+
+    if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
+    then
+      sed -i -e "s|SQLITE3=.*|SQLITE3=1|g" "$rpath/conf/mon.conf"
+    else    
+      echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
+    fi
   fi
   SQLITE=`which sqlite3 2>/dev/null`
   $SQLITE "$rpath/sysdata" 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'

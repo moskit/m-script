@@ -58,6 +58,7 @@ add_server() {
     else
       sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $inIP hostname 2>/dev/null` || sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $extIP hostname 2>/dev/null`
     fi
+    [ `expr "$sname" : .*[\"\t\s_,.\']` -ne 0 ] && unset sname
     [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message
   fi
   echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> "$M_TEMP/servers.${region}.ips"
@@ -219,7 +220,6 @@ M_TEMP=$M_TEMP/cloud/ec2
 install -d $M_TEMP
 
 [ -z "$region" ] && region=$EC2_REGION
-log "region: $region"
 
 [ -z "$status" ] && [ -n "$state" ] && status=$state
 [ -z "$status" ] && status="running"

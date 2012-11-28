@@ -30,6 +30,7 @@ KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
 # if target is hostname
 [ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${1}$ | cut -d'|' -f1`
 
+if [ -n "$KEY" ]; then
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   KEY1="${KEY}.pem"
   if [ -f "$M_ROOT/keys/$KEY1" ]; then
@@ -39,14 +40,21 @@ if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   fi
   [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
 fi
+else
+  echo "Server $1 not found" >&2
+fi
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  if [ ! -f "$M_ROOT/keys/$KEY" ]; then
-    KEY1="${KEY}.pem"
-    [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
-    [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+  if [ -n "$cluster" ] ; then
+    KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+    if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+      KEY1="${KEY}.pem"
+      [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
+      [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+    fi
+  else
+    echo "Cluster not found" >&2
   fi
   if [ ! -f "$M_ROOT/keys/$KEY" ]; then
     USERKEY1="~/.ssh/id_rsa"

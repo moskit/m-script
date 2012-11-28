@@ -23,12 +23,11 @@ SQLITE=`which sqlite3 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
-M_ROOT="$rpath"
+M_ROOT="$rpath" ; export M_ROOT
 commline="$0 $*"
 echo "`date +"%H:%M:%S"` == Running ${commline} ==" >> ${rpath}/monitoring.log
-#*/ (this is needed to fool vi syntax highlighting)
+#*/
 
-#[ "X$SAR" == "X" ] || $SAR -o $M_TEMP/sar.tmp 1 5 >/dev/null
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
 lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
