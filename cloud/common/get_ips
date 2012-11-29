@@ -21,7 +21,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 SSH=`which ssh 2>/dev/null`
-possible_options="cluster help region delimiter limit names quoted spaces thishost private public"
+possible_options="cluster help region delimiter limit names quoted spaces thishost private public local nolocal"
 IFS1=$IFS
 IFS='--'
 for s_option in "${@}"
@@ -80,25 +80,31 @@ function ip_to_name() {
   [ -n "$rname2" ] && [ ${#rname2} -lt ${#rname1} ] && rname=$rname2 || rname=$rname1
 }
 
-if [ -n "$thishost" ] ; then
+[ -n "$public" -a -n "$private" ] && unset public private
+[ -n "$thishost" ] && local="yes"
+
+if [ -n "$local" -o -n "$nolocal" ] ; then
   IFCFG=`which ifconfig 2>/dev/null`
   if [ -n "$IFCFG" ] ; then
-    IPS=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
+    localips=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
   else
     IFCFG=`which ip 2>/dev/null`
-    [ -n "$IFCFG" ] && IPS=`$IFCFG addr list | grep 'inet.*scope\ global' | while read L ; do expr "$L" : 'inet \(.*\)/' ; done`
+    [ -n "$IFCFG" ] && localips=`$IFCFG addr list | grep 'inet.*scope\ global' | while read L ; do expr "$L" : 'inet \(.*\)/' ; done`
   fi
-else
-  IPS=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#`
 fi
 
-[ -n "$public" -a -n "$private" ] && unset public private
-
-cluster=`echo -e $cluster | tr ',' '\n'`
-[ -n "$all" ] && cluster=all
-[ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
-[ -z "$cluster" ] && cluster=$M_CLUSTER
-[ -z "$cluster" ] && echo "No clusters found" && exit 1
+if [ -n "$local"] ; then
+  unset cluster
+  IPS=$localips
+else
+  IPS=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#`
+  [ -n "$nolocal" ] && localgrep=`echo "$localips" | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
+  cluster=`echo -e $cluster | tr ',' '\n'`
+  [ -n "$all" ] && cluster=all
+  [ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+  [ -z "$cluster" ] && cluster=$M_CLUSTER
+  [ -z "$cluster" ] && echo "No clusters found" && exit 1
+fi
 
 IFS1=$IFS
 IFS='
