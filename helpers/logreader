@@ -20,7 +20,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-possible_options="file maxlines period timeformat help verbose resolution"
+possible_options="file lines maxlines period timeformat help verbose resolution"
 necessary_options="file"
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 

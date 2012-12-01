@@ -93,12 +93,12 @@ if [ -n "$local" -o -n "$nolocal" ] ; then
   fi
 fi
 
-if [ -n "$local"] ; then
+if [ -n "$local" ] ; then
   unset cluster
   IPS=$localips
 else
   IPS=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#`
-  [ -n "$nolocal" ] && localgrep=`echo "$localips" | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
+  [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
   cluster=`echo -e $cluster | tr ',' '\n'`
   [ -n "$all" ] && cluster=all
   [ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`

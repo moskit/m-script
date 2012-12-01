@@ -51,7 +51,8 @@ fi
 
 IFS1=$IFS ; IFS='
 '
-for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "$SUPER_CLUSTER"` ; do
+for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
+  [ "X$cluster" == "X$SUPER_CLUSTER" ] && continue
   [ -n "$targetcluster" -a "$targetcluster" != "$cluster" ] && continue
   [ -z "$clustered_as" ] && clustered_as="$cluster"
   $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"

@@ -145,7 +145,7 @@ print_dashlines() {
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
 IFS1=$IFS; IFS='
 '
-      for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d` ; do
+      for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
         print_line_title $onclick "${server##*/}"
         cat "$dpath/../www/${@}/${server##*/}/dash.html"
         close_line "${server##*/}"

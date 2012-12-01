@@ -112,14 +112,12 @@ start)
 
 ## Tests that are disabled if load average is too high
     if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
-    ## With dashboard enabled, it is necessary to run all tests in a single run
-      ${rpath}/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
+      "${rpath}"/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ] ; then
       # means that we need to fetch reports from other servers
-        
         case $DASHBOARD_TRANSPORT in
           SSH)
-            ${rpath}/getdash.ssh 2>>"$rpath/logs/dashboard.log" </dev/null &
+            "${rpath}"/getdash.ssh 2>>"$rpath/logs/dashboard.log" </dev/null &
           ;;
           JSON)
           
