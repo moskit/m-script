@@ -303,14 +303,16 @@ if [ -n "$perpixel" ]; then
     $minauto && minQ="${minQ%,}"
     maxQ="${maxQ%,}"
   fi
+  nonempty=$(for smetric in `echo $metric | tr ',' ' '` ; do echo "$smetric<>''," ; done)
+  nonempty=${nonempty%,}
   if [ -n "$where" ] ; then
     field=${where%%:*}
     value=${where#*:}
-    $minauto && minQ="select $minQ from (select $metric from $table where $metric<>'' and  $field=$value order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where $metric<>'' and $field=$value order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table where $nonempty and  $field=$value order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where $nonempty and $field=$value order by timeindex desc limit $limit)"
   else
-    $minauto && minQ="select $minQ from (select $metric from $table where $metric<>'' order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where $metric<>'' order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table where $nonempty order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where $nonempty order by timeindex desc limit $limit)"
   fi
   $debug && log "$maxQ"
   if [ "$sIP" == "localhost" ]; then
