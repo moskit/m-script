@@ -121,7 +121,7 @@ function runscript() {
         mon="${rpath}/rc/`readlink $script`"
         if [ -x "$mon" ]; then
           echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
-          monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
+          monoutput=`${mon} $SQL 2>&1`
           echo "$monoutput" >> "${rpath}/monitoring.log"
           alert_blocked || echo "$monoutput" >> "${rpath}/report"
           time1=`date +"%s"`
@@ -136,7 +136,7 @@ function runscript() {
         mon="${rpath}/rc/`readlink $script`"
         if [ -x "$mon" ]; then
           echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
-          monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
+          monoutput=`${mon} $SQL 2>&1`
           echo "$monoutput" >> "${rpath}/monitoring.log"
           alert_blocked || echo "$monoutput" >> "${rpath}/report"
           time1=`date +"%s"`
