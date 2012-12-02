@@ -118,22 +118,31 @@ function runscript() {
       do
         [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         time0=`date +"%s"`
-        rscript=${rpath}/rc/`readlink $script`
-        echo "`date +"%H:%M:%S"` $rscript" >> "${rpath}/monitoring.log"
-        $rscript SQL
-        time1=`date +"%s"`
-        $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time2`')"
-      done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
+        mon="${rpath}/rc/`readlink $script`"
+        if [ -x "$mon" ]; then
+          echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
+          monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
+          echo "$monoutput" >> "${rpath}/monitoring.log"
+          alert_blocked || echo "$monoutput" >> "${rpath}/report"
+          time1=`date +"%s"`
+          $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+        fi
+      done
     else
       for script in ${rpath}/rc/*.mon  #*/
       do
         [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         time0=`date +"%s"`
-        rscript=${rpath}/rc/`readlink $script`
-        [ -f "$rscript" ] && echo "`date +"%H:%M:%S"` $rscript" >> "${rpath}/monitoring.log" && $rscript SQL
-        time1=`date +"%s"`
-        $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
-      done 2>&1 | tee -a "${rpath}/monitoring.log" | tee -a "${rpath}/report" >/dev/null
+        mon="${rpath}/rc/`readlink $script`"
+        if [ -x "$mon" ]; then
+          echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
+          monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
+          echo "$monoutput" >> "${rpath}/monitoring.log"
+          alert_blocked || echo "$monoutput" >> "${rpath}/report"
+          time1=`date +"%s"`
+          $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+        fi
+      done
     fi
   elif [ "X$1" != "X" ]; then
     date | tee "${rpath}/alert" >/dev/null
@@ -141,7 +150,12 @@ function runscript() {
     echo > "${rpath}/report"
     for mon in `echo ${1} | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-      [ -x "${rpath}/tests/${mon}" ] && echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log" && ${rpath}/tests/${mon} $SQL 2>&1 | tee -a "${rpath}/report" >/dev/null #*/
+      if [ -x "${rpath}/tests/${mon}" ]; then
+        echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
+        monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
+        echo "$monoutput" >> "${rpath}/monitoring.log"
+        alert_blocked || echo "$monoutput" >> "${rpath}/report"
+      fi
     done
   fi
   grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
