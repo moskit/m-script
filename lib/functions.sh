@@ -155,8 +155,30 @@ find_delta() {
   unset arrprev arrnames arrcurr arrval
 }
 
+block_alert() {
+  # block_alert <monitor.mon> <cycles>
+  [ -z "$M_ROOT" ] && log "M_ROOT is not defined" && echo "M_ROOT is not defined" >&2 && exit 1
+  echo $2 > "$M_ROOT/${1}.lock"
+}
 
+unblock_alert() {
+  rm "$M_ROOT/${1}.lock" 2>/dev/null
+}
 
+alert_blocked() {
+  if [ -f "$M_ROOT/${1}.lock" ] ; then
+    cyclesleft=`cat "$M_ROOT/${1}.lock"`
+    if [ "X$cyclesleft" == "X0" ]; then
+      unblock_alert && return true
+    else
+      cyclesleft=`expr $cyclesleft - 1 || echo 0`
+      echo $cyclesleft > "$M_ROOT/${1}.lock"
+      return false
+    fi
+  else
+    return true
+  fi
+}
 
 
 
