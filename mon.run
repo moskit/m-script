@@ -123,7 +123,7 @@ function runscript() {
           echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
           monoutput=`${mon} $SQL 2>&1`
           echo "$monoutput" >> "${rpath}/monitoring.log"
-          alert_blocked || echo "$monoutput" >> "${rpath}/report"
+          alert_blocked ${mon##*/} || echo "$monoutput" >> "${rpath}/report"
           time1=`date +"%s"`
           $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
@@ -138,7 +138,7 @@ function runscript() {
           echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
           monoutput=`${mon} $SQL 2>&1`
           echo "$monoutput" >> "${rpath}/monitoring.log"
-          alert_blocked || echo "$monoutput" >> "${rpath}/report"
+          alert_blocked ${mon##*/} || echo "$monoutput" >> "${rpath}/report"
           time1=`date +"%s"`
           $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
@@ -154,7 +154,7 @@ function runscript() {
         echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
         monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
         echo "$monoutput" >> "${rpath}/monitoring.log"
-        alert_blocked || echo "$monoutput" >> "${rpath}/report"
+        alert_blocked ${mon} || echo "$monoutput" >> "${rpath}/report"
       fi
     done
   fi
@@ -466,6 +466,8 @@ function action() {
 }
 
 source "${rpath}/conf/mon.conf"
+# needed for actions (only?)
+source "${rpath}/lib/functions.sh"
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP

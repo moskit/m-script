@@ -169,14 +169,14 @@ alert_blocked() {
   if [ -f "$M_ROOT/${1}.lock" ] ; then
     cyclesleft=`cat "$M_ROOT/${1}.lock"`
     if [ "X$cyclesleft" == "X0" ]; then
-      unblock_alert && return false
+      unblock_alert && return 1
     else
       cyclesleft=`expr $cyclesleft - 1 || echo 0`
       echo $cyclesleft > "$M_ROOT/${1}.lock"
-      return true
+      return 0
     fi
   else
-    return false
+    return 1
   fi
 }
 
