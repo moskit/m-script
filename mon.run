@@ -99,7 +99,6 @@ function mailalert() {
     done
   fi
   unset al aln
-  rm -f ${rpath}/alert* 2>/dev/null
 }
 
 function runscript() {
@@ -123,7 +122,7 @@ function runscript() {
           echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
           monoutput=`${mon} $SQL 2>&1`
           echo "$monoutput" >> "${rpath}/monitoring.log"
-          alert_blocked ${mon##*/} || echo "$monoutput" >> "${rpath}/report"
+          alert_blocked ${mon##*/} && echo "$monoutput" >> "${rpath}/report.blocked" || echo "$monoutput" >> "${rpath}/report"
           time1=`date +"%s"`
           $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
@@ -138,7 +137,7 @@ function runscript() {
           echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
           monoutput=`${mon} $SQL 2>&1`
           echo "$monoutput" >> "${rpath}/monitoring.log"
-          alert_blocked ${mon##*/} || echo "$monoutput" >> "${rpath}/report"
+          alert_blocked ${mon##*/} && echo "$monoutput" >> "${rpath}/report.blocked" || echo "$monoutput" >> "${rpath}/report"
           time1=`date +"%s"`
           $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
@@ -154,7 +153,7 @@ function runscript() {
         echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
         monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
         echo "$monoutput" >> "${rpath}/monitoring.log"
-        alert_blocked ${mon} || echo "$monoutput" >> "${rpath}/report"
+        alert_blocked ${mon} && echo "$monoutput" >> "${rpath}/report.blocked" || echo "$monoutput" >> "${rpath}/report"
       fi
     done
   fi
@@ -165,7 +164,13 @@ function runscript() {
 }
 
 function runactions() {
-IFS1=$IFS; IFS='
+  if [ -f "${rpath}/report.blocked" ]; then
+    grep '<\*\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*\*>||g' >> "${rpath}/alert3"
+    grep '<\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*>||g' >> "${rpath}/alert2"
+    grep '<\*>' "${rpath}/report.blocked" | sed 's|<\*>||g' >> "${rpath}/alert1"
+    grep '<OK>' "${rpath}/report.blocked" | sed 's|<OK>||g' >> "${rpath}/alert0"
+  fi
+  IFS1=$IFS; IFS='
 '
   for action in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | cut -d'|' -f3 | sort | uniq` ; do
     all_alerts_found=false
@@ -537,9 +542,9 @@ case ${1} in
   *.mon)
     newtimeindex
     runscript ${1} $SQL
-    runactions
     timeshift
     mailalert
+    runactions
     [ -n "$DASHBOARD" ] && gendash
     deltimeindex
   ;;
