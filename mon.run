@@ -73,32 +73,36 @@ function mailreport() {
 }
 
 function mailalert() {
-  if [ -f ${rpath}/alert1 ] && [ `cat ${rpath}/alert1 | wc -l` -ne 0 ]; then
+  if [ -f "${rpath}/alert1" ] && [ `cat "${rpath}/alert1" | wc -l` -ne 0 ]; then
     al='*' ; aln=1
     cat "${rpath}/conf/header.alert1" "${rpath}/alert1" >> "${rpath}/alert"
     echo >> "${rpath}/alert"
   fi
-  if [ -f ${rpath}/alert2 ] && [ `cat ${rpath}/alert2 | wc -l` -ne 0 ]; then
+  if [ -f "${rpath}/alert2" ] && [ `cat "${rpath}/alert2" | wc -l` -ne 0 ]; then
     al='**' ; aln=2
     cat "${rpath}/conf/header.alert2" "${rpath}/alert2" >> "${rpath}/alert"
     echo >> "${rpath}/alert"
   fi
-  if [ -f ${rpath}/alert3 ] && [ `cat ${rpath}/alert3 | wc -l` -ne 0 ]; then
+  if [ -f "${rpath}/alert3" ] && [ `cat "${rpath}/alert3" | wc -l` -ne 0 ]; then
     al='***' ; aln=3
     cat "${rpath}/conf/header.alert3" "${rpath}/alert3" >> "${rpath}/alert"
     echo >> "${rpath}/alert"
   fi
   if [ -n "$al" ] ; then
-    cat ${rpath}/alert >> ${rpath}/monitoring.log
+    cat "${rpath}/alert" >> "${rpath}/monitoring.log"
     for MLINE in `cat "${rpath}/conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
     do
-      recipn=`grep "^$MLINE" ${rpath}/conf/mail.alert.list | awk '{print $2}'`
+      recipn=`grep "^$MLINE" "${rpath}/conf/mail.alert.list" | awk '{print $2}'`
       if ([ -z "$recipn" ] || [ $recipn -le $aln ]) ; then
-        cat ${rpath}/alert | ${MAILX} -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" ${MLINE} >>${rpath}/monitoring.log 2>&1
+        cat "${rpath}/alert" | ${MAILX} -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" ${MLINE} >> "${rpath}/monitoring.log" 2>&1
       fi
     done
   fi
   unset al aln
+}
+
+function cleanup() {
+  rm -f "$rpath"/alert* 2>/dev/null
 }
 
 function runscript() {
@@ -480,10 +484,11 @@ case ${1} in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
     runscript SQL
-    runactions
     mailalert
+    runactions
     [ -n "$DASHBOARD" ] && gendash marked
     deltimeindex
+    cleanup
   ;;
   -dry | --dry | --dry-run | -test | --test)
     export TEST=1
@@ -491,17 +496,20 @@ case ${1} in
     runscript SQL
     runactionstest
     deltimeindex
-    cat ${rpath}/report
+    cat "${rpath}/report"
+    cleanup
   ;;
   -analyze-sys | -analyze-system | --analyze-system | -as)
     runsysanalyze
     mailreport
     mailalert
+    cleanup
   ;;
   -analyze-logs | --analyze-logs | -al)
     loganalysis
     mailreport
     mailalert
+    cleanup
   ;;
   -h | -help | --help)
     echo "Usage: mon.run --report"
@@ -528,6 +536,7 @@ case ${1} in
     mailalert
     [ -n "$DASHBOARD" ] && genreport
     deltimeindex
+    cleanup
   ;;
   --report=*)
     limit=${1#*=}
@@ -538,6 +547,7 @@ case ${1} in
     mailalert
     [ -n "$DASHBOARD" ] && genreport
     deltimeindex
+    cleanup
   ;;
   *.mon)
     newtimeindex
@@ -547,6 +557,7 @@ case ${1} in
     runactions
     [ -n "$DASHBOARD" ] && gendash
     deltimeindex
+    cleanup
   ;;
   *)
     echo "Run mon.run --help to see available options"
