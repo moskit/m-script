@@ -32,7 +32,7 @@ install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-possible_options="id name ip verbose force last first"
+possible_options="id name ip verbose force last first cluster"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -56,7 +56,13 @@ IFS=$IFS1
 
 [ -n "$force" ] && force=true || force=false
 removed=false
-
+if [ -n "$last" -o -n "$first" ]; then
+  [ -z "$cluster" ] && log "options --last and --first require --cluster" && exit 1
+  [ -n "$last" -a -n "$first" ] && log "both --last and --first defined" && exit 1
+  [ -n "$last" ] && name=`"$M_ROOT"/cloud/common/get_ips --cluster=$cluster --names | sort -n | tail -1`
+  [ -n "$first" ] && name=`"$M_ROOT"/cloud/common/get_ips --cluster=$cluster --names | sort -n | head -1`
+fi
+  
 find_by_ip() {
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
     sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "|\"${1}\"$" | cut -d'/' -f3`
