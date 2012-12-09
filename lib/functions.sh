@@ -188,7 +188,8 @@ block_action() {
 }
 
 unblock_action() {
-  sed -i "/^$period|/d" "$M_TEMP/actions.blocked"
+  ptrn=`echo "$1" | sed 's|/|\\\/|g;s| |\\\ |g'`
+  sed -i "/^${ptrn}|/d" "$M_TEMP/actions.blocked"
 }
 
 action_blocked() {

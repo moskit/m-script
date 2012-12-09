@@ -179,7 +179,7 @@ function runactions() {
 '
   for action in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | cut -d'|' -f3 | sort | uniq` ; do
     all_alerts_found=false
-    action_blocked "$action" && continue
+    action_blocked "$action" && echo "Action $action is blocked" && continue
     for confline in `grep -E "\|${action}\||\|${action}$" "${rpath}/conf/actions.conf"` ; do
       pattern=`echo $confline | cut -d'|' -f1`
       level=`echo $confline | cut -d'|' -f2`
@@ -241,7 +241,7 @@ function runactions() {
     if $all_alerts_found ; then
       [ -n "$blockccl" ] && block_action $blockccl "$action"
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a "${rpath}/logs/actions.log"
-      eval $action >> "${rpath}/logs/actions.log" 2>&1 </dev/null &
+      action $action
       [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
     fi
 

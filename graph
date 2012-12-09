@@ -696,23 +696,25 @@ i=`expr $legendV + $padding + $axis`
 log "i: $legendV + $padding + $axis = $i"
 imax=`expr $i + $areaV`
 log "imax: $i + $areaV = $imax"
+[ -z "$perpixel" ] && res=`solve "$res / 100"`
 
 while true
 do
   i+=$ires
   imark+=$res
+  
   [[ $i -gt $imax ]] && break
   # Freeing some room for axis Y title
-  [[ `expr $i + $ires` -gt $imax ]] && unset imark imarkfp
+  [[ `expr $i + $ires` -gt $imax ]] && unset imark
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"$irev\\" x2=\\"$mY2\\" y2=\\"$irev\\" />"`"
   if [ "X$scale" != "Xyes" ] ; then
-#    if [ -n "$mp" ] ; then
-#      [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
-#      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
-#    else
+    if [ -z "$perpixel" ] ; then
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
-#    fi
+    else
+      [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
+      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
+    fi
   fi
 done
 log "marks generated"
