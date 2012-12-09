@@ -184,6 +184,7 @@ function runactions() {
       pattern=`echo $confline | cut -d'|' -f1`
       level=`echo $confline | cut -d'|' -f2`
       nalerts=`echo $confline | cut -d'|' -f4`
+      blockccl=`echo $confline | cut -d'|' -f5`
       if [ -n "$nalerts" ] ; then
         [ -f "${M_TEMP}/consequent_alerts.tmp" ] && calerts=`cat "${M_TEMP}/consequent_alerts.tmp" | grep ^"${commline}"\|"$pattern"\|$level\| | tail -1`
         if [ -n "$calerts" ] ; then
@@ -238,6 +239,7 @@ function runactions() {
     done   ## <-- finished reading config
     
     if $all_alerts_found ; then
+      [ -n "$blockccl" ] && block_action $blockccl "$action"
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a "${rpath}/logs/actions.log"
       eval $action >> "${rpath}/logs/actions.log" 2>&1 </dev/null &
       [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"

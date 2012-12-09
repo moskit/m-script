@@ -182,12 +182,13 @@ alert_blocked() {
 
 block_action() {
   period=$1
+  [ -n "$1" ] && [ `expr "$1" : ".*[^0-9]"` -ne 0 ] && return 1
   shift
-  echo "${@}|$period" >> "$M_TEMP/actions.blocked" 
+  echo "${@}|$period" >> "$M_TEMP/actions.blocked"
 }
 
 unblock_action() {
-  sed -i "/^$period|/d" "$M_TEMP/actions.blocked" 
+  sed -i "/^$period|/d" "$M_TEMP/actions.blocked"
 }
 
 action_blocked() {
