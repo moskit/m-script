@@ -24,7 +24,7 @@ log() {
   [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${CLOUD}/${0##*/}: ${@}">>$LOG
 }
 
-get_lock() {
+lock_cloudops() {
   local -i i
   i=0
   while [ -f "$M_TEMP/cloud/$CLOUD/lock" ]; do
@@ -35,8 +35,12 @@ get_lock() {
   touch "$M_TEMP/cloud/$CLOUD/lock"
 }
 
-rm_lock() {
+unlock_cloudops() {
   rm -f "$M_TEMP/cloud/$CLOUD/lock"
+}
+
+cloudops_locked() {
+  [ -f "$M_TEMP/cloud/$CLOUD/lock" ] && return 0 || return 1
 }
 
 generate_name() {

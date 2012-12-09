@@ -20,6 +20,7 @@ fpath=${fpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
 source "$M_ROOT/conf/mon.conf"
 SQL=`which sqlite3 2>/dev/null`
+[ -z "$M_TEMP" ] && log "M_TEMP is not defined" && echo "M_TEMP is not defined" >&2 && exit 1
 
 store_results() {
   # syntax:
@@ -157,7 +158,6 @@ find_delta() {
 
 block_alert() {
   # block_alert <monitor.mon> <cycles>
-  [ -z "$M_ROOT" ] && log "M_ROOT is not defined" && echo "M_ROOT is not defined" >&2 && exit 1
   echo $2 > "$M_ROOT/${1}.lock"
 }
 
@@ -173,6 +173,32 @@ alert_blocked() {
     else
       cyclesleft=`expr $cyclesleft - 1 || echo 0`
       echo $cyclesleft > "$M_ROOT/${1}.lock"
+      return 0
+    fi
+  else
+    return 1
+  fi
+}
+
+block_action() {
+  period=$1
+  shift
+  echo "${@}|$period" >> "$M_TEMP/actions.blocked" 
+}
+
+unblock_action() {
+  sed -i "/^$period|/d" "$M_TEMP/actions.blocked" 
+}
+
+action_blocked() {
+  if [ -f "$M_TEMP/actions.blocked" ] ; then
+    cyclesleft=`grep "^${1}|" "$M_TEMP/actions.blocked" | cut -d'|' -f2`
+    if [ "X$cyclesleft" == "X0" ]; then
+      unblock_action "$1" && return 1
+    else
+      cyclesleft=`expr $cyclesleft - 1 || echo 0`
+      unblock_action "$1"
+      block_action $cyclesleft "$1"
       return 0
     fi
   else
