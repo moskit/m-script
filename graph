@@ -23,7 +23,7 @@ EOF
 
 addxmarks() {
   marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mX1\\" x2=\\"$1\\" y2=\\"$mX2\\" />"`"
-  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
+  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXLT\\" transform=\\"rotate(90,${1},${mXLT})\\" >$2</text>"`"
 }
 
 addxlongmark() {
@@ -625,10 +625,11 @@ if [[ $hourX -lt $countminX ]] ; then
       theday=`date -u -d "$currpointsec" +"%d"`
       if [ "X$theday" != "X$thedayprev" ]; then
         thedayprev=$theday
-        daymark=`date -u -d "$currpointsec -$thehour hour" +"%H" +"%s"`
+        daymark=`date -u -d "$currpointsec -$thehour hour" +"%s"`
         daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
       fi
       themonth=`date -u -d "$currpointsec" +"%m"`
+      longmonth=`date -u -d "$currpointsec" +"%b"`
       theyear=`date -u -d "$currpointsec" +"%Y"`
       themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
@@ -636,7 +637,7 @@ if [[ $hourX -lt $countminX ]] ; then
       textmark=`date -u -d "1970/01/01 +$currpoint sec"`
       textmark=`date -d "$textmark" +"%H"`
       addxmarks $themark $textmark
-      daytextmark="${theyear}/${themonth}/${theday}"
+      daytextmark="${longmonth} ${theday}"
       addxlongmark $daymark $daytextmark
     done
   fi
@@ -654,10 +655,11 @@ else
     theday=`date -u -d "$currpointsec" +"%d"`
     if [ "X$theday" != "X$thedayprev" ]; then
       thedayprev=$theday
-      daymark=`date -u -d "$currpointsec -$thehour hour" +"%H" +"%s"`
+      daymark=`date -u -d "$currpointsec -$thehour hour" +"%s"`
       daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
     fi
     themonth=`date -u -d "$currpointsec" +"%m"`
+    longmonth=`date -u -d "$currpointsec" +"%b"`
     theyear=`date -u -d "$currpointsec" +"%Y"`
     themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
@@ -665,7 +667,7 @@ else
     textmark=`date -u -d "1970/01/01 +$currpoint sec"`
     textmark=`date -d "$textmark" +"%H"`
     addxmarks $themark $textmark
-    daytextmark="${theyear}/${themonth}/${theday}"
+    daytextmark="${longmonth} ${theday}"
     addxlongmark $daymark $daytextmark
   done
 fi
