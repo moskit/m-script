@@ -23,12 +23,15 @@ EOF
 
 addxmarks() {
   marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mX1\\" x2=\\"$1\\" y2=\\"$mX2\\" />"`"
-  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXLT\\" transform=\\"rotate(90,${1},${mXLT})\\" >$2</text>"`"
+  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
 }
 
 addxlongmark() {
-  marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mXL\\" x2=\\"$1\\" y2=\\"$startY\\" />"`"
-  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
+  coord="$1"
+  shift
+  marksX="$marksX`echo "<line x1=\\"$coord\\" y1=\\"$mXL\\" x2=\\"$coord\\" y2=\\"$startY\\" />"`"
+  #textX="${textX}`echo "<text x=\\"$coord\\" y=\\"$mXLT\\" transform=\\"rotate(90,${coord},${mXLT})\\">$@</text>"`"
+  textX="${textX}`echo "<text x=\\"$coord\\" y=\\"$mXLT\\" >$@</text>"`"
 }
 
 rcommand=${0##*/}
@@ -518,12 +521,13 @@ currpoint=$from
 startX=`expr $legendH + $padding + $axis`
 startY=`expr $graphV - $legendV - $padding - $axis`
 # Vertical grid lines
-mX1=`expr $startY + 2`
+mX1=`expr $startY + 5`
 mXT1=`expr $mX1 + 14`
 mX2=$padding
 mXL=`expr $startY + 18`
+mXLT=`expr $startY + 32`
 # Horisontal grid lines
-mY1=`expr $startX - 2`
+mY1=`expr $startX - 5`
 mYT1=`expr $mY1 - 50`
 mY2=`expr $graphH - $padding`
 # Axis names coordinates
