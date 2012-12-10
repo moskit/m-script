@@ -627,7 +627,7 @@ if [[ $hourX -lt $countminX ]] ; then
       currpointsec=`date -u -d "1970/01/01 +$currpoint sec"`
       thehour=`date -u -d "$currpointsec" +"%H"`
       theday=`date -u -d "$currpointsec" +"%d"`
-      if [ "X$theday" != "X$thedayprev" ]; then
+      if [ -n "$thedayprev" ] && [ "X$theday" != "X$thedayprev" ]; then
         thedayprev=$theday
         daymark=`date -u -d "$currpointsec -$thehour hour" +"%s"`
         daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
@@ -657,7 +657,7 @@ else
     currpointsec=`date -u -d "1970/01/01 +$currpoint sec"`
     thehour=`date -u -d "$currpointsec" +"%H"`
     theday=`date -u -d "$currpointsec" +"%d"`
-    if [ "X$theday" != "X$thedayprev" ]; then
+    if [ -n "$thedayprev" ] && [ "X$theday" != "X$thedayprev" ]; then
       thedayprev=$theday
       daymark=`date -u -d "$currpointsec -$thehour hour" +"%s"`
       daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
