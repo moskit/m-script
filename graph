@@ -26,6 +26,11 @@ addxmarks() {
   textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
 }
 
+addxlongmark() {
+  marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mXL\\" x2=\\"$1\\" y2=\\"$startY\\" />"`"
+  textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
+}
+
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
@@ -516,6 +521,7 @@ startY=`expr $graphV - $legendV - $padding - $axis`
 mX1=`expr $startY + 2`
 mXT1=`expr $mX1 + 14`
 mX2=$padding
+mXL=`expr $startY + 18`
 # Horisontal grid lines
 mY1=`expr $startX - 2`
 mYT1=`expr $mY1 - 50`
@@ -614,16 +620,24 @@ if [[ $hourX -lt $countminX ]] ; then
     while [[ $currpoint -lt $to ]]
     do
       currpoint=`date -u -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
-      thehour=`date -u -d "1970/01/01 +$currpoint sec" +"%H"`
-      theday=`date -u -d "1970/01/01 +$currpoint sec" +"%d"`
-      themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
-      theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
+      currpointsec=`date -u -d "1970/01/01 +$currpoint sec"`
+      thehour=`date -u -d "$currpointsec" +"%H"`
+      theday=`date -u -d "$currpointsec" +"%d"`
+      if [ "X$theday" != "X$thedayprev" ]; then
+        thedayprev=$theday
+        daymark=`date -u -d "$currpointsec -$thehour hour" +"%H" +"%s"`
+        daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
+      fi
+      themonth=`date -u -d "$currpointsec" +"%m"`
+      theyear=`date -u -d "$currpointsec" +"%Y"`
       themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
       textmark=`date -u -d "1970/01/01 +$currpoint sec"`
-    textmark=`date -d "$textmark" +"%H"`
+      textmark=`date -d "$textmark" +"%H"`
       addxmarks $themark $textmark
+      daytextmark="${theyear}/${themonth}/${theday}"
+      addxlongmark $daymark $daytextmark
     done
   fi
   unset hourN
@@ -635,16 +649,24 @@ else
   while [[ $currpoint -lt $to ]]
   do
     currpoint=`date -u -d "1970/01/01 +$currpoint sec +$hourN hour" +"%s"`
-    thehour=`date -u -d "1970/01/01 +$currpoint sec" +"%H"`
-    theday=`date -u -d "1970/01/01 +$currpoint sec" +"%d"`
-    themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
-    theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
+    currpointsec=`date -u -d "1970/01/01 +$currpoint sec"`
+    thehour=`date -u -d "$currpointsec" +"%H"`
+    theday=`date -u -d "$currpointsec" +"%d"`
+    if [ "X$theday" != "X$thedayprev" ]; then
+      thedayprev=$theday
+      daymark=`date -u -d "$currpointsec -$thehour hour" +"%H" +"%s"`
+      daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
+    fi
+    themonth=`date -u -d "$currpointsec" +"%m"`
+    theyear=`date -u -d "$currpointsec" +"%Y"`
     themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
     textmark=`date -u -d "1970/01/01 +$currpoint sec"`
     textmark=`date -d "$textmark" +"%H"`
     addxmarks $themark $textmark
+    daytextmark="${theyear}/${themonth}/${theday}"
+    addxlongmark $daymark $daytextmark
   done
 fi
 
@@ -704,11 +726,11 @@ do
   
   [[ $i -gt $imax ]] && break
   # Freeing some room for axis Y title
-  [[ `expr $i + $ires` -gt $imax ]] && unset imark
+  [[ `expr $i + $ires` -gt $imax ]] && unset imark imarkfp
   irev=`expr ${graphV} - $i`
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"$irev\\" x2=\\"$mY2\\" y2=\\"$irev\\" />"`"
   if [ "X$scale" != "Xyes" ] ; then
-    if [ -z "$perpixel" ] ; then
+    if [ -n "$perpixel" ] ; then
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
     else
       [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
