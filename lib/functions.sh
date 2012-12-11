@@ -195,6 +195,7 @@ unblock_action() {
 action_blocked() {
   if [ -f "$M_TEMP/actions.blocked" ] ; then
     cyclesleft=`grep "^${@}|" "$M_TEMP/actions.blocked" | cut -d'|' -f2`
+    [ -z "$cyclesleft" ] && log "no blocks found for this action" && return 1
     if [ "X$cyclesleft" == "X0" ]; then
       unblock_action "$@" && log "action ${@} unblocked, zero cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
     else

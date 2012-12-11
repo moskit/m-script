@@ -449,7 +449,8 @@ function timeshift() {
 }
 
 function action() {
-  grep "$@" "${rpath}/conf/actions.conf" | cut -d'|' -f3 >> "$rpath/actions.q"
+  act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
+  grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3 >> "$rpath/actions.q" && log "JOB created: $@"
   chmod 600 "$rpath/actions.q"
 }
 
