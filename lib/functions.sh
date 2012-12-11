@@ -200,7 +200,7 @@ action_blocked() {
     else
       cyclesleft=`expr $cyclesleft - 1 || echo 0`
       unblock_action "$@" && log "action ${@} unblocked by checker"
-      block_action $cyclesleft "$@" && log "action ${@} blocked back with $cyclesleft cycles period"
+      [[ $cyclesleft -gt 0 ]] && block_action $cyclesleft "$@" && log "action ${@} blocked back with $cyclesleft cycles period"
       return 0
     fi
   else
