@@ -181,29 +181,30 @@ alert_blocked() {
 }
 
 block_action() {
-  period=$1
   [ -n "$1" ] && [ `expr "$1" : ".*[^0-9]"` -ne 0 ] && return 1
+  period=$1
   shift
-  echo "${@}|$period" >> "$M_TEMP/actions.blocked"
+  echo "${@}|$period" >> "$M_TEMP/actions.blocked" && log "action ${@} blocked for $period cycles" || log "error blocking action ${@} for $period cycles"
 }
 
 unblock_action() {
-  ptrn=`echo "$1" | sed 's|/|\\\/|g;s| |\\\ |g'`
-  sed -i "/^${ptrn}|/d" "$M_TEMP/actions.blocked"
+  ptrn=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
+  sed -i "/^${ptrn}|/d" "$M_TEMP/actions.blocked" && log "action ${@} unblocked" || log "error unblocking action ${@}"
 }
 
 action_blocked() {
   if [ -f "$M_TEMP/actions.blocked" ] ; then
-    cyclesleft=`grep "^${1}|" "$M_TEMP/actions.blocked" | cut -d'|' -f2`
+    cyclesleft=`grep "^${@}|" "$M_TEMP/actions.blocked" | cut -d'|' -f2`
     if [ "X$cyclesleft" == "X0" ]; then
-      unblock_action "$1" && return 1
+      unblock_action "$@" && log "action ${@} unblocked, zero cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
     else
       cyclesleft=`expr $cyclesleft - 1 || echo 0`
-      unblock_action "$1"
-      block_action $cyclesleft "$1"
+      unblock_action "$@" && log "action ${@} unblocked by checker"
+      block_action $cyclesleft "$@" && log "action ${@} blocked back with $cyclesleft cycles period"
       return 0
     fi
   else
+    log "no block list file found"
     return 1
   fi
 }

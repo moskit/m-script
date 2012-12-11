@@ -168,6 +168,7 @@ function runscript() {
 }
 
 function runactions() {
+  local LOG="$M_ROOT/logs/actions.log"
   if [ -f "${rpath}/report.blocked" ]; then
     grep '<\*\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*\*>||g' >> "${rpath}/alert3"
     grep '<\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*>||g' >> "${rpath}/alert2"

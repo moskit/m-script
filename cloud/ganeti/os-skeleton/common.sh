@@ -40,7 +40,7 @@ source "$M_TEMP/vars"
 CLEANUP=( )
 
 log_error() {
-  echo "$@" >&2
+  echo "$@" >>"$LOG"
 }
 
 debug() {
