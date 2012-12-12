@@ -106,6 +106,7 @@ function cleanup() {
 }
 
 function runscript() {
+  local LOG="${rpath}/monitoring.log"
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
@@ -113,9 +114,9 @@ function runscript() {
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
   if [ "X$1" == "XSQL" ]; then
-    echo "------------------------------" >> "${rpath}/monitoring.log"
-    date | tee -a "${rpath}/monitoring.log" | tee "${rpath}/report" | tee "${rpath}/alert" >/dev/null
-    echo "------------------------------" | tee -a "${rpath}/monitoring.log"  | tee -a ${rpath}/report | tee -a "${rpath}/alert" >/dev/null
+    echo "------------------------------" >> "$LOG"
+    date | tee -a "$LOG" | tee "${rpath}/report" | tee "${rpath}/alert" >/dev/null
+    echo "------------------------------" | tee -a "$LOG"  | tee -a ${rpath}/report | tee -a "${rpath}/alert" >/dev/null
     if [ -n "$2" ] ; then
       for script in `find ${rpath}/rc/ -maxdepth 1 -name "*.mon" | head -n $2`
       do
@@ -123,10 +124,15 @@ function runscript() {
         time0=`date +"%s"`
         mon="${rpath}/rc/`readlink $script`"
         if [ -x "$mon" ]; then
-          echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
+          log "$mon"
           monoutput=`${mon} $SQL 2>&1`
-          echo "$monoutput" >> "${rpath}/monitoring.log"
-          alert_blocked ${mon##*/} && echo "$monoutput" >> "${rpath}/report.blocked" || echo "$monoutput" >> "${rpath}/report"
+          echo "$monoutput" >> "$LOG"
+          if alert_blocked ${mon##*/} ; then
+            log "=== alert is blocked for $mon"
+            echo "$monoutput" >> "${rpath}/report.blocked"
+          else  
+            echo "$monoutput" >> "${rpath}/report"
+          fi
           time1=`date +"%s"`
           $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
@@ -138,10 +144,15 @@ function runscript() {
         time0=`date +"%s"`
         mon="${rpath}/rc/`readlink $script`"
         if [ -x "$mon" ]; then
-          echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
+          log "$mon"
           monoutput=`${mon} $SQL 2>&1`
-          echo "$monoutput" >> "${rpath}/monitoring.log"
-          alert_blocked ${mon##*/} && echo "$monoutput" >> "${rpath}/report.blocked" || echo "$monoutput" >> "${rpath}/report"
+          echo "$monoutput" >> "$LOG"
+          if alert_blocked ${mon##*/} ; then
+            log "=== alert is blocked for $mon"
+            echo "$monoutput" >> "${rpath}/report.blocked"
+          else  
+            echo "$monoutput" >> "${rpath}/report"
+          fi
           time1=`date +"%s"`
           $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
@@ -154,10 +165,15 @@ function runscript() {
     for mon in `echo ${1} | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       if [ -x "${rpath}/tests/${mon}" ]; then
-        echo "`date +"%H:%M:%S"` $mon" >> "${rpath}/monitoring.log"
+        log "$mon"
         monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
-        echo "$monoutput" >> "${rpath}/monitoring.log"
-        alert_blocked ${mon} && echo "$monoutput" >> "${rpath}/report.blocked" || echo "$monoutput" >> "${rpath}/report"
+        echo "$monoutput" >> "$LOG"
+        if alert_blocked ${mon##*/} ; then
+          log "=== alert is blocked for $mon"
+          echo "$monoutput" >> "${rpath}/report.blocked"
+        else  
+          echo "$monoutput" >> "${rpath}/report"
+        fi
       fi
     done
   fi
@@ -255,14 +271,14 @@ IFS=$IFS1
 function runactionstest() {
 IFS1=$IFS; IFS='
 '
-  for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
-    pattern=`echo $confline | cut -d'|' -f1`
-    level=`echo $confline | cut -d'|' -f2`
-    action=`echo $confline | cut -d'|' -f3`
-    while read line ; do
-      [[ $line =~ $pattern ]] && echo && echo "The alert message: \'$line\' would trigger the action: \'$action\'" && echo
-    done<"${rpath}/alert$level"
-  done
+for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+  pattern=`echo $confline | cut -d'|' -f1`
+  level=`echo $confline | cut -d'|' -f2`
+  action=`echo $confline | cut -d'|' -f3`
+  while read line ; do
+    [[ $line =~ $pattern ]] && echo && echo "The alert message: \'$line\' would trigger the action: \'$action\'" && echo
+  done<"${rpath}/alert$level"
+done
 IFS=$IFS1
 }
 

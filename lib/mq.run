@@ -61,19 +61,20 @@ fi
 
 for ((n=0; n<$limit; n++)); do
   JOB=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f1`
-  [ -z "$JOB" ] && continue
+  log "executing JOB: $JOB"
+  [ -z "$JOB" ] && sed -i "1d" "$M_ROOT"/actions.q && continue
+  sed -i "1d" "$M_ROOT"/actions.q && log "first line removed"
   $JOB >> $LOG 2>&1
+  res=$?
   if [ $res -ne 0 ] ; then
     log "JOB $JOB has failed: exit status $res"
-    sed -i "1d" "$M_ROOT"/actions.q
     continue
   else
     log "JOB $JOB has finished successfully"
   fi
-  sed -i "1d" "$M_ROOT"/actions.q
   if [ "$mode" == "distinct" ] ; then
-    JOB=`echo "$JOB" | sed 's|/|\\\/|g'`
-    echo "sed -i \"/^${JOB}$/d\" \"$M_ROOT\"/actions.q"
+    JOB=`echo "$JOB" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
+    log "removing from the queue jobs matching pattern: $JOB"
     sed -i "/^${JOB}$/d" "$M_ROOT"/actions.q
     sed -i "/^${JOB}\|/d" "$M_ROOT"/actions.q
   fi
