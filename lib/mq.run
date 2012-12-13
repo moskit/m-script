@@ -82,11 +82,12 @@ while read action ; do
   else
     JOBID="`echo "$action" | md5sum | cut -b 1,2,3,4,5`_`date +"%y%m%d%H%M%S"`"
   fi
-  [ -z "$JOBAUTH" ] && echo "$JOBID" >> "$M_ROOT"/conf/actions.auth.list
+  [ -z "$JOBAUTH" ] && echo "$JOBID" >> "$M_TEMP/actions.auth.list"
   JOBCMD_E=`echo "$JOBCMD" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
   job_allowed || exit 2
   echo "${JOBCMD}|${JOBID}" >> "$M_ROOT/actions.q"
-  sed -i "/^${action}|/d" "$M_ROOT"/actions.in
+  sed -i "/^${action}|/d" "$M_ROOT/actions.in"
+  sed -i "/^${JOBID}$/d" "$M_TEMP/actions.auth.list"
 done<"$M_ROOT/actions.in"
 
 $newfile && chmod 600 "$M_ROOT/actions.q"
