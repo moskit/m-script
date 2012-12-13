@@ -195,13 +195,13 @@ unblock_action() {
 action_blocked() {
   if [ -f "$M_TEMP/actions.blocked" ] ; then
     cyclesleft=`grep "^${@}|" "$M_TEMP/actions.blocked" | cut -d'|' -f2`
-    [ -z "$cyclesleft" ] && log "no blocks found for this action" && return 1
+    [ -z "$cyclesleft" ] && return 1
     if [ "X$cyclesleft" == "X0" ]; then
-      unblock_action "$@" && log "action ${@} unblocked, zero cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
+      unblock_action "$@" && log "unblocking action ${@} due to 0 cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
     else
       cyclesleft=`expr $cyclesleft - 1 || echo 0`
-      unblock_action "$@" && log "action ${@} unblocked by checker"
-      [[ $cyclesleft -gt 0 ]] && block_action $cyclesleft "$@" && log "action ${@} blocked back with $cyclesleft cycles period" || return 1
+      unblock_action "$@"
+      [[ $cyclesleft -gt 0 ]] && block_action $cyclesleft "$@" || return 1
       return 0
     fi
   else
