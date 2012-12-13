@@ -329,6 +329,7 @@ chown -R root:root "$rpath"
 install -d "$rpath/standalone/rc"
 install -m 700 -d "$rpath/keys"
 install -d "$rpath/logs"
+echo -e "$fpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/actions.allowed.list"
 "$rpath"/helpers/init_rc
 "$rpath"/fixports.run
 

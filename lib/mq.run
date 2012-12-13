@@ -70,20 +70,26 @@ job_allowed() {
 
 [ -z "$mode" ] && mode="distinct"
 [ -z "$limit" ] && limit=5
+newfile=false
+[ -f "$M_ROOT/actions.q" ] || newfile=true
 
 while read action ; do
   JOBINTIME=`echo "$action" | cut -d'|' -f2`
   JOBCMD=`echo "$action" | cut -d'|' -f1`
+  JOBAUTH=`echo "$action" | cut -d'|' -f3`
   if [ -n "$JOBINTIME" ] ; then
     JOBID="`echo "$action" | md5sum | cut -b 1,2,3,4,5`_${JOBINTIME}"
   else
     JOBID="`echo "$action" | md5sum | cut -b 1,2,3,4,5`_`date +"%y%m%d%H%M%S"`"
   fi
+  [ -z "$JOBAUTH" ] && echo "$JOBID" >> "$M_ROOT"/conf/actions.auth.list
   JOBCMD_E=`echo "$JOBCMD" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
   job_allowed || exit 2
   echo "${JOBCMD}|${JOBID}" >> "$M_ROOT/actions.q"
   sed -i "/^${action}$/d" "$M_ROOT"/actions.in
 done<"$M_ROOT/actions.in"
+
+$newfile && chmod 600 "$M_ROOT/actions.q"
 
 for ((n=0; n<$limit; n++)); do
   JOB=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f1`

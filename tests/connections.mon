@@ -331,7 +331,7 @@ fi
 
 ## Connections alerts number limit
 if [ -f "$M_TEMP"/conn_test_runs_count ] ; then
-  [ `cat "$M_TEMP"/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > "$M_TEMP"/conn_test_runs_count && echo "$M_ROOT"/fixports.run >> "$M_ROOT"/actions.q || echo >> "$M_TEMP"/conn_test_runs_count
+  [ `cat "$M_TEMP"/conn_test_runs_count|wc -l` -gt $PORTSMON_RUNS ] && echo > "$M_TEMP"/conn_test_runs_count && echo "$M_ROOT"/fixports.run >> "$M_ROOT"/actions.in || echo >> "$M_TEMP"/conn_test_runs_count
 else
   echo > "$M_TEMP"/conn_test_runs_count
 fi
