@@ -157,7 +157,7 @@ list_servers() {
         ip=${ip#* } ; ip=${ip% *}
         if [ -z "$icluster" ] ; then
           # servers having no cluster in metadata but added manually to servers.list
-          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+          icluster=`grep ^$ip\| "$M_ROOT/servers.list" | cut -d'|' -f5`
           $debug && [ -n "$update_servers_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed `[ -n "$icluster" ] && echo "$icluster" || echo "none"`"
           break
         else
@@ -207,8 +207,8 @@ list_servers() {
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
             for ip in $IP ; do
               ip=${ip#* } ; ip=${ip% *}
-              sed -i /^$ip\|/d "${rpath}/../../servers.list"
-              echo "${ip}|${key}|${region}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+              sed -i /^$ip\|/d "$M_ROOT/servers.list"
+              echo "${ip}|${key}|${region}|${name}|${icluster}" >> "$M_ROOT/servers.list"
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
           fi
@@ -220,7 +220,7 @@ list_servers() {
     echo "No data. Run without --noupdate"
     exit 0
   fi
-  for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+  for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
     [ `grep -c \|\"${listip}\"$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
   done
   IFS=$IFS1

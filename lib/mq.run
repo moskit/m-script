@@ -89,7 +89,7 @@ while read action ; do
   JOBCMD_E=`echo "$JOBCMD" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
   job_allowed || exit 2
   echo "${JOBCMD}|${JOBID}" >> "$M_ROOT/actions.q"
-  sed -i "/^${action}|/d" "$M_ROOT/actions.in"
+  sed -i "/^${JOBCMD_E}|$JOBINTIME/d" "$M_ROOT/actions.in"
   sed -i "/^${JOBID}$/d" "$M_TEMP/actions.auth.list"
 done<"$M_ROOT/actions.in"
 
@@ -108,7 +108,7 @@ for ((n=0; n<$limit; n++)); do
     log "job $JOB ID: $JOBID has failed: exit status $res"
     continue
   else
-    log "JOB $JOB ID: $JOBID has finished successfully"
+    log "job $JOB ID: $JOBID has finished successfully"
   fi
   if [ "$mode" == "distinct" ] ; then
     JOB=`echo "$JOB" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
