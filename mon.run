@@ -468,8 +468,8 @@ function action() {
   local newfile=false
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
   [ -f "$rpath/actions.in" ] || newfile=true
-  JOBID="`echo "$@" | md5sum | cut -b 1,2,3,4,5`_`date +"%y%m%d%H%M%S"`"
-  echo "`grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3`|${JOBID}|" >> "$rpath/actions.in" && log "JOB created: $@"
+  JOBINTIME=`date +"%y%m%d%H%M%S"`
+  echo "`grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3`|${JOBINTIME}|" >> "$rpath/actions.in" && log "JOB created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
 }
 

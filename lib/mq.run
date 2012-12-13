@@ -60,9 +60,11 @@ fi
 
 job_allowed() {
   if [ `grep -c $JOBCMD_E "$M_ROOT"/conf/actions.allowed.list` -ne 0 ] ; then
-    if [ `grep -c $JOBID "$M_ROOT"/conf/actions.auth.list` -ne 0 ] ; then
+    if [ `grep -c $JOBID "$M_TEMP/actions.auth.list"` -ne 0 ] ; then
+      log "job $JOBCMD_E ID $JOBID is allowed"
       return 0
     else
+      log "job $JOBCMD_E ID $JOBID is not allowed"
       return 1
     fi
   fi
@@ -74,6 +76,7 @@ newfile=false
 [ -f "$M_ROOT/actions.q" ] || newfile=true
 
 while read action ; do
+  [ -z "$action" ] && continue
   JOBINTIME=`echo "$action" | cut -d'|' -f2`
   JOBCMD=`echo "$action" | cut -d'|' -f1`
   JOBAUTH=`echo "$action" | cut -d'|' -f3`
@@ -96,20 +99,20 @@ for ((n=0; n<$limit; n++)); do
   JOB=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f1`
   JOBID=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f2`
   [ -z "$JOB" ] && sed -i "1d" "$M_ROOT"/actions.q && continue
-  log "executing JOB: $JOB ID: $JOBID"
+  log "executing job: $JOB ID: $JOBID"
   sed -i "1d" "$M_ROOT"/actions.q && log "first line removed"
   
   $JOB >> $LOG 2>&1
   res=$?
   if [ $res -ne 0 ] ; then
-    log "JOB $JOB ID: $JOBID has failed: exit status $res"
+    log "job $JOB ID: $JOBID has failed: exit status $res"
     continue
   else
     log "JOB $JOB ID: $JOBID has finished successfully"
   fi
   if [ "$mode" == "distinct" ] ; then
     JOB=`echo "$JOB" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
-    sed -i "/^${JOB}|/d" "$M_ROOT"/actions.q
+    sed -i "/^${JOB}|/d" "$M_ROOT"/actions.in
   fi
 done
 
