@@ -86,29 +86,29 @@ while read action ; do
   JOBCMD_E=`echo "$JOBCMD" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
   job_allowed || exit 2
   echo "${JOBCMD}|${JOBID}" >> "$M_ROOT/actions.q"
-  sed -i "/^${action}$/d" "$M_ROOT"/actions.in
+  sed -i "/^${action}|/d" "$M_ROOT"/actions.in
 done<"$M_ROOT/actions.in"
 
 $newfile && chmod 600 "$M_ROOT/actions.q"
 
 for ((n=0; n<$limit; n++)); do
   JOB=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f1`
-  log "executing JOB: $JOB"
+  JOBID=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f2`
   [ -z "$JOB" ] && sed -i "1d" "$M_ROOT"/actions.q && continue
-  
+  log "executing JOB: $JOB ID: $JOBID"
   sed -i "1d" "$M_ROOT"/actions.q && log "first line removed"
   
   $JOB >> $LOG 2>&1
   res=$?
   if [ $res -ne 0 ] ; then
-    log "JOB $JOB has failed: exit status $res"
+    log "JOB $JOB ID: $JOBID has failed: exit status $res"
     continue
   else
-    log "JOB $JOB has finished successfully"
+    log "JOB $JOB ID: $JOBID has finished successfully"
   fi
   if [ "$mode" == "distinct" ] ; then
     JOB=`echo "$JOB" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
-    sed -i "/^${JOB}$/d" "$M_ROOT"/actions.q
+    sed -i "/^${JOB}|/d" "$M_ROOT"/actions.q
   fi
 done
 
