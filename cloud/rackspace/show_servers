@@ -73,7 +73,7 @@ declare -i icount
 
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
-[ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp "${M_TEMP}"/${rcommand}.resp.prev
+[ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"

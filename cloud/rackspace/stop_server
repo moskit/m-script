@@ -54,6 +54,8 @@ do
 done
 IFS=$IFS1
 
+[ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && exit 1
+
 [ -n "$force" ] && force=true || force=false
 removed=false
 if [ -n "$last" -o -n "$first" ]; then
