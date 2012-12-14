@@ -106,14 +106,16 @@ for ((n=0; n<$limit; n++)); do
   [ -z "$JOB" ] && sed -i "1d" "$M_ROOT"/actions.q && continue
   JOBID=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f2`
   log "executing job: $JOB ID: $JOBID"
+  sed -i "1d" "$M_ROOT"/actions.q && log "job: $JOB ID: $JOBID removed from the queue"
   $JOB >> $LOG 2>&1
   res=$?
   if [ $res -ne 0 ] ; then
     log "job $JOB ID: $JOBID has failed: exit status $res"
+    echo "${JOB}|${JOBID}|$res" >> "$M_ROOT/actions.failed"
   else
     log "job $JOB ID: $JOBID has finished successfully"
   fi
-  sed -i "1d" "$M_ROOT"/actions.q && log "job: $JOB ID: $JOBID removed from the queue"
+  
 done
 
 

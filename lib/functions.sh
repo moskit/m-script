@@ -200,7 +200,7 @@ action_blocked() {
     if [ "X$cyclesleft" == "X0" ]; then
       unblock_action "$@" && log "unblocking action ${@} due to 0 cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
     else
-      cyclesleft=`expr $cyclesleft - 1 || echo 0`
+      cyclesleft=`expr $cyclesleft - 1 2>/dev/null || echo 0`
       unblock_action "$@"
       [[ $cyclesleft -gt 0 ]] && block_action $cyclesleft "$@" || return 1
       return 0
