@@ -61,10 +61,10 @@ fi
 job_allowed() {
   if [ `grep -c $JOBCMD_E "$M_ROOT"/conf/actions.allowed.list` -ne 0 ] ; then
     if [ `grep -c $JOBID "$M_TEMP/actions.auth.list"` -ne 0 ] ; then
-      log "job $JOBCMD_E ID $JOBID is allowed"
+      log "job $JOBCMD ID $JOBID is allowed"
       return 0
     else
-      log "job $JOBCMD_E ID $JOBID is not allowed"
+      log "job $JOBCMD ID $JOBID is not allowed"
       return 1
     fi
   fi
@@ -87,9 +87,11 @@ while read action ; do
   fi
   [ -z "$JOBAUTH" ] && echo "$JOBID" >> "$M_TEMP/actions.auth.list"
   JOBCMD_E=`echo "$JOBCMD" | sed 's|/|\\\\/|g;s| |\\\\ |g'`
-  job_allowed || exit 2
-  echo "${JOBCMD}|${JOBID}" >> "$M_ROOT/actions.q"
-  sed -i "/^${JOBCMD_E}|$JOBINTIME/d" "$M_ROOT/actions.in"
+  if job_allowed ; then
+    echo "${JOBCMD}|${JOBID}" >> "$M_ROOT/actions.q"
+  fi
+  sed -i "/^${JOBCMD_E}|${JOBINTIME}$/d" "$M_ROOT/actions.in"
+  sed -i "/^${JOBCMD_E}$/d" "$M_ROOT/actions.in"
   sed -i "/^${JOBID}$/d" "$M_TEMP/actions.auth.list"
 done<"$M_ROOT/actions.in"
 

@@ -163,6 +163,7 @@ block_alert() {
 
 unblock_alert() {
   rm "$M_ROOT/${1}.lock" 2>/dev/null
+  return 0
 }
 
 alert_blocked() {
