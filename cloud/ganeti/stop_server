@@ -24,6 +24,7 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 LOG="$M_ROOT/logs/cloud.log"
 source "$M_ROOT/lib/cloud_functions.sh"
+lock_cloudops || exit 1
 M_TEMP="${M_TEMP}/cloud/${CLOUD}"
 
 possible_options="id name ip verbose"

@@ -65,6 +65,7 @@ source "$M_ROOT/conf/cloud.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
+lock_cloudops || exit 1
 
 M_TEMP="$M_TEMP/cloud/ganeti"
 install -d "$M_TEMP"
