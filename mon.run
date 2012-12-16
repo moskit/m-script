@@ -469,7 +469,7 @@ function action() {
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
-  echo "`grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3`|${JOBINTIME}|" >> "$rpath/actions.in" && log "JOB created: $@"
+  echo "`grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3`|${JOBINTIME}|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
 }
 

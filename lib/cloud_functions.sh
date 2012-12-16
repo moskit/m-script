@@ -34,7 +34,7 @@ lock_cloudops() {
     [ $i -gt 100 ] && log "failed to acquire the lock" && return 1
   done
   touch "$M_TEMP/cloud/$CLOUD/lock"
-  log "cloud operations lock acquired"
+  log "cloud operations locked"
 }
 
 unlock_cloudops() {
@@ -85,6 +85,7 @@ check_cluster_limit() {
 
 check_cluster_minimum() {
   # double-check the cluster is defined
+  [ -z "$cluster" ] && cluster=$1
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && exit 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`

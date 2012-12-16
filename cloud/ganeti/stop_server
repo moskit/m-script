@@ -99,6 +99,7 @@ if [ "X$IPS" == "XERROR" ]; then
   echo "Error getting IPs of the instance ${name}. Non-existing instance?"
   exit 1
 fi
+check_cluster_minimum "$tscluster" || exit 5
 reqres=`request`
 
 if [[ $reqres -eq 0 ]] ; then

@@ -61,10 +61,10 @@ fi
 job_allowed() {
   if [ `grep -c $JOBCMD_E "$M_ROOT"/conf/actions.allowed.list` -ne 0 ] ; then
     if [ `grep -c $JOBID "$M_TEMP/actions.auth.list"` -ne 0 ] ; then
-      log "job $JOBCMD ID $JOBID is allowed"
+      log "job: $JOBCMD ID: $JOBID is allowed"
       return 0
     else
-      log "job $JOBCMD ID $JOBID is not allowed"
+      log "job: $JOBCMD ID: $JOBID is not allowed"
       return 1
     fi
   fi
@@ -105,15 +105,15 @@ for ((n=0; n<$limit; n++)); do
   JOB=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f1`
   [ -z "$JOB" ] && sed -i "1d" "$M_ROOT"/actions.q && continue
   JOBID=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f2`
-  log "executing job: $JOB ID: $JOBID"
+  log "--- executing job: $JOB ID: $JOBID"
   sed -i "1d" "$M_ROOT"/actions.q && log "job: $JOB ID: $JOBID removed from the queue"
   $JOB >> $LOG 2>&1
   res=$?
   if [ $res -ne 0 ] ; then
-    log "job $JOB ID: $JOBID has failed: exit status $res"
+    log "=== job: $JOB ID: $JOBID has failed: exit status $res"
     echo "${JOB}|${JOBID}|$res" >> "$M_ROOT/actions.failed"
   else
-    log "job $JOB ID: $JOBID has finished successfully"
+    log "=== job: $JOB ID: $JOBID has finished successfully"
   fi
   
 done

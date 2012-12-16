@@ -74,6 +74,27 @@ find_by_ip() {
   if [ -z "$id" ] ; then
     id=`${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
   fi
+  find_cluster "$1"
+}
+
+find_cluster() {
+  icluster=`grep ^${1}\| "$M_ROOT"/servers.list | cut -d'|' -f5`
+  if [ -z "$icluster" ]; then
+    if [ `grep -c ^${1}\| "$M_ROOT"/servers.list` -eq 0 ]; then
+      log "no records with this IP ($1) in the servers.list"
+    else
+      log "cluster for this IP ($1) seems not defined in the servers.list"
+    fi
+  else
+    if [ -n "$cluster" ]; then
+      if [ "$cluster" != "$icluster" ]; then
+        log "unknown error: cluster provided as option doesn't match the one found: $cluster != ${icluster}, re-assigning cluster=${icluster}"
+        cluster=${icluster}
+      fi
+    else
+      cluster=${icluster}
+    fi
+  fi
 }
 
 if [ -z "$id" ] ; then
@@ -83,7 +104,7 @@ if [ -z "$id" ] ; then
       exit 1
     else
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
-      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
+      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Use IP or ID to identify the server. Exiting." && exit 1
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
@@ -93,7 +114,8 @@ if [ -z "$id" ] ; then
   else
     find_by_ip $ip
   fi
-else
+fi
+if [ -n "$id" ] ; then
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
     sn=`grep \/id\| "${M_TEMP}/show_servers.resp" | grep "|${id}$" | cut -d'/' -f3`
     name=`grep \/$sn\/name\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
@@ -106,8 +128,15 @@ else
     ipext=`echo "$nameips" | cut -d'|' -f2`
     ipint=`echo "$nameips" | cut -d'|' -f3`
   fi
+  [ "X$NETWORK" == "Xexternal" ] && find_cluster "$ipext" || find_cluster "$ipint"
+  if [ -z "$cluster" ]; then
+    find_cluster "$ipint"
+    find_cluster "$ipext"
+  fi
+  [ -z "$cluster" ] && log "unable to find the cluster for this server, not checking the minimal number of servers in the cluster"
+else
+  echo "Unable to find ID of this server" && exit 1
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
 req="/servers/$id"
 
 request() {
@@ -127,26 +156,25 @@ try_auth() {
     i+=1
     sleep 10
   done
-  [ $i -ne 0 ] && log "$i additional auth requests due to no reply from API"
+  [ $i -ne 0 ] && log "$i auth requests sent to the Rackspace Cloud API"
 }
 
-if [ -z "$noupdate" ] ; then
+check_cluster_minimum "$cluster" || exit 5
+try_auth
+reqres=`request`
+[ $reqres -gt 0 ] && log "Curl request returned status $reqres"
+declare -i n
+n=0
+while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
+  [ $n -gt 1 ] && sleep 30
+  rm -f "${M_TEMP}/auth.resp"
   try_auth
   reqres=`request`
   [ $reqres -gt 0 ] && log "Curl request returned status $reqres"
-  declare -i n
-  n=0
-  while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
-    [ $n -gt 1 ] && sleep 30
-    rm -f "${M_TEMP}/auth.resp"
-    try_auth
-    reqres=`request`
-    [ $reqres -gt 0 ] && log "Curl request returned status $reqres"
-    n+=1
-  done
-  [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
-fi
+  n+=1
+done
+[ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
 cat "${M_TEMP}/${rcommand}.resp" >> "$LOG"
 
