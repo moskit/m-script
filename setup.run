@@ -36,6 +36,9 @@ MONGOOSE=`which mongoose 2>/dev/null`
 SED=`which sed 2>/dev/null`
 NETSTAT=`which netstat 2>/dev/null`
 
+createdb() {
+  $SQLITE "$rpath/sysdata" 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime integer, loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real); create table rootfolders(timeindex integer, foldername varchar(64), foldersize real); create table selfmon(timeindex integer, day varchar(8), monitor varchar(64), duration integer); create index tisys on sysdata (timeindex); create index tirf on rootfolders (timeindex); create index tiself on selfmon (timeindex)'
+}
 
 if [ -f /etc/debian_version ]; then OS="debian"; fi
 if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
@@ -309,8 +312,7 @@ then
     fi
   fi
   SQLITE=`which sqlite3 2>/dev/null`
-  $SQLITE "$rpath/sysdata" 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime varchar(20), loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
-  $SQLITE $rpath/sysdata 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
+  create_db
 else
   if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
   then
@@ -318,9 +320,7 @@ else
   else    
     echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
   fi
-  $SQLITE "$rpath/sysdata" 'create table sysdata(timeindex integer primary key, day varchar(8), totalram real, freeram real, activeram real, totalswap real, freeswap real, uptime integer, loadavg real, procnum smallint, diskusage real, diskiord real, diskiowr real, cpuusage real, cputemp real, cpufscale real, connections smallint, input real, output real, bwidthin real, bwidthout real)'
-  $SQLITE "$rpath/sysdata" 'create table rootfolders(timeindex integer, foldername varchar(64), foldersize real)'
-  $SQLITE "$rpath/sysdata" 'create table selfmon(timeindex integer, day varchar(8), monitor varchar(64), duration integer)'
+  create_db
 fi
 
 chmod 755 "$rpath/"*.run "$rpath/"*.sh

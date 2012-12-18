@@ -35,7 +35,7 @@ if [ "X$GIT" == "X" ]; then
     mv /tmp/m_script.$$/m/* /tmp/m_script/.update
   fi
 else
-  $GIT clone git://igorsimonov.com/m_script /tmp/m_script/.update
+  $GIT clone --depth 1 git://igorsimonov.com/m_script /tmp/m_script/.update
   gitts=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
 fi
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf

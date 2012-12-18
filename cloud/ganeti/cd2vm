@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "$M_ROOT/conf/mon.conf" || exit 99
+source "$M_ROOT/conf/cloud.conf" || exit 99
+source "$M_ROOT/cloud/$CLOUD/common.sh" || exit 99
+
+AWK=`which awk 2>/dev/null`
+LOSETUP=`which losetup 2>/dev/null`
+KPARTX=`which kpartx 2>/dev/null`
+GI=`which gnt-instance 2>/dev/null`
+
+[ -z "$AWK" ] && echo "no awk found" && exit 1
+[ -z "$LOSETUP" ] && echo "no losetup found" && exit 1
+[ -z "$KPARTX" ] && echo "no kpartx found" && exit 1
+[ -z "$GI" ] && echo "no gnt-instance found" && exit 1
+
+vm="$1"
+vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm"`
+[ "X`echo "$vmini" | cut -d'|' -f1`" != "XN" ] && echo "VM should exist and be stopped" && exit 1
+
+disktype="`echo "$vmini" | cut -d'|' -f2`"
+disksize="`echo "$vmini" | cut -d'|' -f3`"
+
+[ `expr "$disksize" : ".*[^[0-9]]*.*"` -ne 0 ] && echo "No disk found" && exit 1
+
+# now when we know that disk does exist, we can use a heavier tool to find its
+# file or device
+
+disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep ^State/Disks/disk/0/logical_id | cut -d'|' -f2 | tail -1`
+
+if [ ! -b "$disk" ]; then
+  blockdev=$($LOSETUP -f --show "$disk")
+  CLEANUP+=("$LOSETUP -d $blockdev")
+fi
+
+filesystem_dev=$(map_disk0 $blockdev)
+CLEANUP+=("unmap_disk0 $blockdev")
+
+TARGET=`mktemp -d` || exit 1
+CLEANUP+=("rmdir $TARGET")
+
+mount $filesystem_dev $TARGET || exit 1
+CLEANUP+=("umount $TARGET")
+CLEANUP+=("sync")
+
+read -p "Now cd to $TARGET in another terminal. When finished, press Enter here to unmount the disk" theenter
+
+cleanup
+trap - EXIT
+
+exit 0
+
+

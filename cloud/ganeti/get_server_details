@@ -76,8 +76,8 @@ for L in `$GNTI info "$name" 2>/dev/null` ; do
     [ "x$value" == "x$L" ] && unset value
     [ $e2 -eq 7 ] && subvar=$var 
     [ -n "$value" -a $e2 -eq 7 ] && echo "${sect}/${subsect}/${var}|${value}" && unset var value && continue
-    [ $e2 -eq 9 ] && (for v in `echo "$value" | sed 's|, |\n|g'`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "${sect}/${subsect}/${subvar}/${var}/${vvar}|${vval}" || echo "${sect}/${subsect}/${subvar}/${var}|${v}"; unset vvar vval; done) && unset var value && continue
-    [ $e3 -gt 3 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }" && (for v in `echo "$value" | sed 's|, |\n|g'`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "${sect}/${subsect}/${subvar}/${var}/${vvar}|${vval}" || echo "${sect}/${subsect}/${subvar}/${var}|${v}"; unset vvar vval; done) && unset var value
+    [ $e2 -eq 9 ] && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "${sect}/${subsect}/${subvar}/${var}/${vvar}|${vval}" || echo "${sect}/${subsect}/${subvar}/${var}|${v}"; unset vvar vval; done) && unset var value && continue
+    [ $e3 -gt 3 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }" && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "${sect}/${subsect}/${subvar}/${var}/${vvar}|${vval}" || echo "${sect}/${subsect}/${subvar}/${var}|${v}"; unset vvar vval; done) && unset var value
   fi
 done  > "${M_TEMP}/${rcommand}.resp"
 
