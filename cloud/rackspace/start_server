@@ -67,6 +67,12 @@ lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
+proper_exit() {
+  log "exit status: $1"
+  unlock_cloudops
+  exit $1
+}
+
 find_image() {
   [ -f "${M_TEMP}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${M_TEMP}/images.resp"` -gt 0 ] && imageid=$image && log "Image ID for the new server is $imageid (based on command-line option)" && return
   imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
@@ -150,13 +156,13 @@ printreturn() {
 
 log "Checking cluster $cluster limit..."
 res=`check_cluster_limit`
-[[ $res -ne 0 ]] && exit 5
+[[ $res -ne 0 ]] && proper_exit 5
 [ -z "$name" ] && name=`generate_name` && log "Name auto-generated: $name"
-[ -z "$name" ] && exit 6
+[ -z "$name" ] && proper_exit 6
 find_image
-[ -z "$imageid" ] && exit 7
+[ -z "$imageid" ] && proper_exit 7
 find_flavor
-[ -z "$flavorid" ] && exit 8
+[ -z "$flavorid" ] && proper_exit 8
 thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
 [ -f "${rpath}/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
 [ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
@@ -165,7 +171,7 @@ PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && proper_exit 1
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$M_TEMP/${rcommand}.req"
 echo "        \"personality\" : [" >> "$M_TEMP/${rcommand}.req"
@@ -186,7 +192,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1
     ${rpath}/auth
     i+=1
     sleep 10
@@ -205,7 +211,7 @@ request && log "Request sent"
 declare -i n
 n=0
 while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
-  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
+  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1
   [ $n -gt 1 ] && sleep 30
   rm -f "${M_TEMP}/auth.resp"
   try_auth
@@ -225,7 +231,7 @@ if [ -n "$newid" ] ; then
   [ -n "$return" ] && printreturn $return
   [ $wait_res -eq 1 ] && exit_status=2
 else
-  exit 1
+  proper_exit 1
 fi
 
 ${rpath}/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"

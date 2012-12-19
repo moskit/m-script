@@ -66,6 +66,13 @@ source "$M_ROOT/lib/cloud_functions.sh"
 lock_cloudops || exit 10
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
+
+proper_exit() {
+  log "exit status: $1"
+  unlock_cloudops
+  exit $1
+}
+
 find_by_ip() {
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
     sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
@@ -80,10 +87,10 @@ if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
     if [ -z "$name" ] ; then
       echo "One of id, ip or name is required to identify the server"
-      exit 1
+      proper_exit 1
     else
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
-      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
+      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && proper_exit 1
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
@@ -107,7 +114,7 @@ else
     ipint=`echo "$nameips" | cut -d'|' -f3`
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1
 req="/servers/$id/resize"
 
 request() {
@@ -145,7 +152,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1
     ${rpath}/auth
     i+=1
     sleep 10
@@ -163,7 +170,7 @@ request && log "Request sent"
 declare -i n
 n=0
 while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
-  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
+  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1
   [ $n -gt 1 ] && sleep 30
   rm -f "${M_TEMP}/auth.resp"
   try_auth

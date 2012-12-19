@@ -67,18 +67,25 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
+[ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 lock_cloudops || exit 10
 CURL="$CURL -s -k"
 declare -i icount
 
-[ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
+
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
+
+proper_exit() {
+  log "exit status: $1"
+  unlock_cloudops
+  exit $1
+}
 
 request() {
   local updateflavors updateimages
@@ -220,7 +227,7 @@ list_servers() {
     done
   else
     echo "No data. Run without --noupdate"
-    exit 0
+    proper_exit 0
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
     [ `grep -c \|\"${listip}\"$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
@@ -240,7 +247,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1
     ${rpath}/auth
     i+=1
     sleep 10
@@ -254,7 +261,7 @@ if [ -z "$noupdate" ] ; then
   declare -i n
   n=0
   while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
+    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1
     [ $n -gt 1 ] && sleep 30
     rm -f "${M_TEMP}/auth.resp"
     try_auth

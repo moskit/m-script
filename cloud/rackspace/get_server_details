@@ -73,11 +73,18 @@ source "${rpath}/../../conf/cloud.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 lock_cloudops || exit 10
 
+
+proper_exit() {
+  log "exit status: $1"
+  unlock_cloudops
+  exit $1
+}
+
 if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
     if [ -z "$name" ] ; then
       echo "One of id, ip or name is required to identify the server"
-      exit 1
+      proper_exit 1
     else
       ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       if [ -n "$ip" ] ; then
@@ -90,7 +97,7 @@ if [ -z "$id" ] ; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1
 
 req="/servers/$id"
 
