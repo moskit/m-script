@@ -28,6 +28,12 @@ lock_cloudops() {
   local -i i
   i=0
   log "trying to acquire the cloud operations lock"
+  [ -n "$MAXLOCK" ] || MAXLOCK=30 
+  lockfile=`find "$M_TEMP" -maxdepth 1 -name lock -mmin +$MAXLOCK`
+  if [ -n "$lockfile" ] ; then
+    log " *** Lock file is older than $MAXLOCK minutes, removing"
+    rm -f $lockfile
+  fi
   while [ -f "$M_TEMP/lock" ]; do
     sleep 5
     i+=1
