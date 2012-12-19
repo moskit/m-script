@@ -28,21 +28,21 @@ lock_cloudops() {
   local -i i
   i=0
   log "trying to acquire the cloud operations lock"
-  while [ -f "$M_TEMP/cloud/$CLOUD/lock" ]; do
+  while [ -f "$M_TEMP/lock" ]; do
     sleep 5
     i+=1
     [ $i -gt 100 ] && log "failed to acquire the lock" && return 1
   done
-  touch "$M_TEMP/cloud/$CLOUD/lock"
+  touch "$M_TEMP/lock"
   log "cloud operations locked"
 }
 
 unlock_cloudops() {
-  rm -f "$M_TEMP/cloud/$CLOUD/lock" && log "cloud operations unlocked"
+  rm -f "$M_TEMP/lock" && log "cloud operations unlocked"
 }
 
 cloudops_locked() {
-  [ -f "$M_TEMP/cloud/$CLOUD/lock" ] && return 0 || return 1
+  [ -f "$M_TEMP/lock" ] && return 0 || return 1
 }
 
 generate_name() {

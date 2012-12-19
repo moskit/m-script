@@ -22,7 +22,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf" || exit 99
 source "$M_ROOT/conf/cloud.conf" || exit 99
-source "$M_ROOT/cloud/$CLOUD/common.sh" || exit 99
+source "$M_ROOT/cloud/$CLOUD/functions.sh" || exit 99
 
 AWK=`which awk 2>/dev/null`
 LOSETUP=`which losetup 2>/dev/null`
@@ -60,10 +60,10 @@ TARGET=`mktemp -d` || exit 1
 CLEANUP+=("rmdir $TARGET")
 
 mount $filesystem_dev $TARGET || exit 1
-CLEANUP+=("umount $TARGET")
+CLEANUP+=("umount -l $TARGET")
 CLEANUP+=("sync")
 
-read -p "Now cd to $TARGET in another terminal. When finished, press Enter here to unmount the disk" theenter
+read -p "Now cd to $TARGET in another terminal. When finished, press Enter here to unmount the disk -> " theenter
 
 cleanup
 trap - EXIT
