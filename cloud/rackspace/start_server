@@ -63,7 +63,7 @@ M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-lock_cloudops || exit 1
+lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
@@ -229,6 +229,6 @@ else
 fi
 
 ${rpath}/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
-
+unlock_cloudops
 exit $exit_status
 

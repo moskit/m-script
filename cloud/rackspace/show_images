@@ -68,6 +68,7 @@ source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/rackspace"
 install -d "$M_TEMP"
+lock_cloudops || exit 10
 CURL="$CURL -s -k"
 
 request() {
@@ -163,6 +164,8 @@ if [ -z "$noupdate" ] ; then
   done
   [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 fi
+unlock_cloudops
+
 list_images
 
 exit 0

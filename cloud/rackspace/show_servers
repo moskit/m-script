@@ -66,9 +66,10 @@ fi
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-lock_cloudops || exit 1
+
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
+lock_cloudops || exit 10
 CURL="$CURL -s -k"
 declare -i icount
 
@@ -263,6 +264,7 @@ if [ -z "$noupdate" ] ; then
   [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 fi
 list_servers
+unlock_cloudops
 
 [ -n "$count" ] && echo $icount || exit 0
 

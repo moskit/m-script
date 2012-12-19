@@ -63,7 +63,7 @@ M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-
+lock_cloudops || exit 10
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
 find_by_ip() {
@@ -172,7 +172,9 @@ while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 
 done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
+unlock_cloudops
 code=`grep \/code\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
+
 [ -n "$code" ] && echo -n "${code}: "
 grep \/message\| "${M_TEMP}/${rcommand}.resp"
 

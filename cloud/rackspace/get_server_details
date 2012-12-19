@@ -30,7 +30,7 @@ possible_options="id name ip return verbose"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
-[ -z "$ARGV" ] && echo "Show server? Which one?" && exit 1
+[ -z "$ARGV" ] && echo "Server details? Which server?" && exit 1
 IFS1=$IFS
 IFS='|'
 for s_option in $ARGV
@@ -71,6 +71,7 @@ fi
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
+lock_cloudops || exit 10
 
 if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
@@ -105,6 +106,7 @@ if [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
+unlock_cloudops
 
 cat "${M_TEMP}/${rcommand}.resp"
 

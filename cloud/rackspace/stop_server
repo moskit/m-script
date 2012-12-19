@@ -31,7 +31,7 @@ M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-lock_cloudops || exit 1
+lock_cloudops || exit 10
 
 possible_options="id name ip verbose force last first cluster"
 necessary_options=""
@@ -159,6 +159,8 @@ try_auth() {
   [ $i -ne 0 ] && log "$i auth requests sent to the Rackspace Cloud API"
 }
 
+exit_status=0 # TODO
+
 check_cluster_minimum "$cluster" || exit 5
 try_auth
 reqres=`request`
@@ -210,7 +212,8 @@ if [ $removed -o $force ]; then
       esac
     fi
   fi
-
 fi
+unlock_cloudops
 
+exit $exit_status
 
