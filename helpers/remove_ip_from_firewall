@@ -18,7 +18,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 [ -n "$M_ROOT" ] || M_ROOT="${rpath%/*}"
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
@@ -50,7 +50,7 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
+  for option in `echo $possible_options | sed 's/,/ /g'`; do 
     [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
@@ -61,9 +61,13 @@ do
 done
 if [ "X$help" == "Xyes" ] ; then
   cat <<"EOF"
-Usage: ${0##*/} <options>
+Usage: ${0##*/} <options> IP
 
-Installs firewall rules allowing connections from one servers to another. 
+Removes IP from multiple servers' firewalls. 
+
+Useful for cleanup: when a server is terminated in a cloud environment, its IP
+should be removed from other servers' firewall rules, otherwise the number of
+existing rules may grow fast. 
 
 Options:
 
@@ -92,6 +96,8 @@ EOF
   exit 0
 fi
 
+[ -z "$s_param" ] && echo "Usage: ${0##*/} <options> IP" || IP=$s_param
+
 [ -z "$cluster" ] && echo "Target cluster must be defined! Use --cluster=all to specify all clusters." && exit 1
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
@@ -102,22 +108,9 @@ IFS1=$IFS
 IFS='
 '
 
-findchain_local() {
-  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | grep -v ^ACCEPT | grep -v ^REJECT | head -1 | awk '{print $1}'`
-  [ -n "$upperchain" ] && $IPT -L $upperchain >/dev/null && echo $upperchain
-}
-
-findchain_remote() {
-  upperchain=`$SSH -i "$3" -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -v ^ACCEPT | grep -v ^REJECT | head -1 | awk '{print \\$1}'"`
-  [ -n "$upperchain" ] && $SSH -i "$3" -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain
-}
-
 for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
-  IP=${dserver%%|*}
-  [ -n "$ip" ] && [ "X$IP" != "X$ip" ] && continue
-  KEY=`echo $dserver | cut -d'|' -f2`
-  [ ! -f "${rpath}/../keys/${KEY}" ] && KEY="${KEY}.pem"
-  [ ! -f "${rpath}/../keys/${KEY}" ] && echo "No key found for server: $dserver" && continue
+  dip=${dserver%%|*}
+  [ -n "$ip" ] && [ "X$dip" != "X$ip" ] && continue
   if [ -n "$region" ] ; then
     DREGION=`echo $dserver | cut -d'|' -f3`
     [ "X$DREGION" == "X$region" ] || continue
@@ -131,67 +124,21 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
     echo "### Server: $dserver"
     echo
   fi
-
-  for sserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
-    if [ -n "$fromregion" ] ; then
-    SREGION=`echo $sserver | cut -d'|' -f3`
-    [ "X$SREGION" == "X$fromregion" ] || continue
-    fi
-    SCLUSTER=`echo $sserver | cut -d'|' -f5`
-    if [ -n "$fromcluster" ] ; then
-      [ "X$SCLUSTER" == "X$fromcluster" ] || continue
-    fi
-    IP2UB=${sserver%%|*}
-    [ "X$SCLUSTER" == "X$SUPER_CLUSTER" ] && [ "X$DCLUSTER" != "X$SUPER_CLUSTER" ] && [ `echo $localip | grep -c $IP2UB` -eq 0 ] && continue
-
-    for mainchain in INPUT OUTPUT ; do
-      if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
-        [ -n "$IPT" ] || continue
-        rchain=`findchain_local $mainchain`
-        [ -n "$rchain" ] || continue
-        [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-        existing=`$IPTS | grep "\-A $rchain \-s $IP2UB \-j ACCEPT" | wc -l`
-        if [[ $existing -eq 0 ]] ; then
-          $IPT -I "$rchain" -s $IP2UB -j ACCEPT
-        else
-          dupes=`expr $existing - 1`
-          if [[ $dupes -gt 0 ]] ; then
-            echo -n "  removing duplicates"
-            for ((n=0; n<$dupes; n++)) ; do
-              printf "."
-              $IPT -D "$rchain" -s $IP2UB -j ACCEPT
-            done
-            echo
-          fi
-        fi
-      else
-        rchain=`findchain_remote $mainchain $IP "${rpath}/../keys/${KEY}"`
-        [ -n "$rchain" ] || continue
-        [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-        command="\`which iptables-save 2>/dev/null\` | grep \"\-A $rchain \-s $IP2UB \-j ACCEPT\" | wc -l"
-        existing=`$SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $IP "$command"`
-        if [[ $existing -eq 0 ]] ; then
-          command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
-          $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $IP "$command"
-        else
-          dupes=`expr $existing - 1`
-          if [[ $dupes -gt 0 ]] ; then
-            echo -n "  removing duplicates"
-            for ((n=0; n<$dupes; n++)) ; do
-              printf "."
-              command="\`which iptables 2>/dev/null\` -D \"$rchain\" -s $IP2UB -j ACCEPT"
-              $SSH -i "${rpath}/../keys/${KEY}" -o StrictHostKeyChecking=no $IP "$command"
-            done
-            echo
-          fi
-        fi
-      fi
-      unset rchain
+  
+  if [ `echo $localip | grep -c $dip` -eq 0 ]; then
+    lines=`$IPTS | grep " $IP " | sed "s|^-A|$IPT -D|g"`
+    for line in $lines ; do
+      echo -n "$line    "
+      $line && echo "OK" || echo "Error"
     done
-  done
-
+  else
+    lines=`"${rpath}"/mssh $dip $IPTS \| grep \"\ $IP\ \" \| sed \"s\|^-A\|$IPT -D\|g\"`
+    for line in $lines ; do
+      echo -n "$line    "
+      "${rpath}"/mssh $dip $line && echo "OK" || echo "Error"
+    done
+  fi
 done
 
 IFS=$IFS1
-
 

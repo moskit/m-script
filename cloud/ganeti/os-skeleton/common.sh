@@ -47,38 +47,6 @@ debug() {
     [ "$IMAGE_DEBUG" == "1" -o "$IMAGE_DEBUG" == "yes" ] &&  $@ || :
 }
 
-get_api5_arguments() {
-  GETOPT_RESULT=$*
-  eval set -- "$GETOPT_RESULT"
-  while true; do
-    case "$1" in
-      -i|-n) instance=$2; shift 2;;
-
-      -o) old_name=$2; shift 2;;
-
-      -b) blockdev=$2; shift 2;;
-
-      -s) swapdev=$2; shift 2;;
-
-      --) shift; break;;
-
-      *)  log_error "Internal error!" >&2; exit 1;;
-    esac
-  done
-  if [ -z "$instance" -o -z "$blockdev" ]; then
-    log_error "Missing OS API Argument (-i, -n, or -b)"
-    exit 1
-  fi
-  if [ "$SCRIPT_NAME" != "export" -a -z "$swapdev"  ]; then
-    log_error "Missing OS API Argument -s (swapdev)"
-    exit 1
-  fi
-  if [ "$SCRIPT_NAME" = "rename" -a -z "$old_name"  ]; then
-    log_error "Missing OS API Argument -o (old_name)"
-    exit 1
-  fi
-}
-
 get_api10_arguments() {
   if [ -z "$INSTANCE_NAME" -o -z "$HYPERVISOR" -o -z "$DISK_COUNT" ]; then
     log_error "Missing OS API Variable:"
@@ -107,65 +75,6 @@ get_api10_arguments() {
     log_error "Missing OS API Variable OLD_INSTANCE_NAME"
   fi
   old_name=$OLD_INSTANCE_NAME
-}
-
-get_os_type() {
-    target=$1
-    if [ -z "${target}" ] ; then
-        log_error "target is not set in get_os_type"
-        exit 1
-    fi
-    if [ -e ${target}/etc/redhat-release ] ; then
-        OS_TYPE="redhat"
-    elif [ -e ${target}/etc/debian_version ] ; then
-        OS_TYPE="debian"
-    elif [ -e ${target}/etc/gentoo-release ] ; then
-        OS_TYPE="gentoo"
-    elif [ -e ${target}/etc/SuSE-release ] ; then
-        OS_TYPE="suse"
-    fi
-}
-
-get_os() {
-    target=$1
-    if [ -z "${target}" ] ; then
-        log_error "target is not set in get_os"
-        exit 1
-    fi
-    lsb="/usr/bin/lsb_release"
-    if [ -e $lsb ] ; then
-        OPERATING_SYSTEM="$(chroot ${target} ${lsb} -i -s | tr "[:upper:]" "[:lower:]")"
-    elif [ -e ${target}/etc/debian_version ] ; then
-        OPERATING_SYSTEM="debian"
-    elif [ -e ${target}/etc/gentoo-release ] ; then
-        OPERATING_SYSTEM="gentoo"
-    elif [ -e ${target}/etc/fedora-release ] ; then
-        OPERATING_SYSTEM="fedora"
-    elif [ -e ${target}/etc/redhat-release ] ; then
-        if [ -n "$(grep -i centos ${target}/etc/redhat-release)" ] ; then
-            OPERATING_SYSTEM="centos"
-        else
-            OPERATING_SYSTEM="redhat"
-        fi
-    fi
-}
-
-get_os_release() {
-    target=$1
-    if [ -z "${target}" ] ; then
-        log_error "target is not set in get_os_release"
-        exit 1
-    fi
-    lsb="/usr/bin/lsb_release"
-    if [ -e $lsb ] ; then
-        OS_RELEASE="$(chroot ${target} ${lsb} -r -s | tr "[:upper:]" "[:lower:]")"
-    elif [ -e ${target}/etc/debian_version ] ; then
-        OS_RELEASE="$(cat ${target}/etc/debian_version)"
-    elif [ -e ${target}/etc/fedora-release ] ; then
-        OS_RELEASE="$(cat ${target}/etc/fedora-release | awk '{print $3}')"
-    elif [ -e ${$target}/etc/redhat-release ] ; then
-        OS_RELEASE="$(cat ${target}/etc/redhat-release | awk '{print $3}')"
-    fi
 }
 
 format_disk0() {
@@ -233,7 +142,7 @@ setup_console() {
         sed -ie 's/tty1/ttyS0/g' ${target}/etc/init/ttyS0.conf
         return
     fi
-    get_os $target
+
     case $OPERATING_SYSTEM in
         gentoo)
             sed -i -e 's/.*ttyS0.*/s0:12345:respawn:\/sbin\/agetty 115200 ttyS0 vt100/' \
@@ -285,39 +194,6 @@ if [ -z "$VOL_ID" ]; then
   exit 1
 fi
 
+get_api10_arguments
 
-if [ -z "$OS_API_VERSION" -o "$OS_API_VERSION" = "5" ]; then
-  OS_API_VERSION=5
-  GETOPT_RESULT=`getopt -o o:n:i:b:s: -n '$0' -- "$@"`
-  if [ $? != 0 ] ; then log_error "Terminating..."; exit 1 ; fi
-  get_api5_arguments $GETOPT_RESULT
-elif [ "$OS_API_VERSION" = "10" -o "$OS_API_VERSION" = "15" ]; then
-  get_api10_arguments
-else
-  log_error "Unknown OS API VERSION $OS_API_VERSION"
-  exit 1
-fi
-
-if [ -n "$OS_VARIANT" ]; then
-  if [ ! -d "$VARIANTS_DIR" ]; then
-    log_error "OS Variants directory $VARIANTS_DIR doesn't exist"
-    exit 1
-  fi
-  VARIANT_CONFIG="$VARIANTS_DIR/$OS_VARIANT.conf"
-  if [ -f "$VARIANT_CONFIG" ]; then
-    . "$VARIANT_CONFIG"
-  else
-    if grep -qxF "$OS_VARIANT" variants.list; then
-      log_error "ERROR: instance-image configuration error"
-      log_error "  Published variant $OS_VARIANT is missing its config file"
-      log_error "  Please create $VARIANT_CONFIG or unpublish the variant"
-      log_error "  (by removing $OS_VARIANT from variants.list)"
-    else
-      log_error "Unofficial variant $OS_VARIANT is unsupported"
-      log_error "Most probably this is a user error, forcing a wrong name"
-      log_error "To support this variant please create file $VARIANT_CONFIG"
-    fi
-    exit 1
-  fi
-fi
 

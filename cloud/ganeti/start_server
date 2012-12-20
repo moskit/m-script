@@ -65,7 +65,6 @@ source "$M_ROOT/conf/cloud.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
-lock_cloudops || exit 1
 
 M_TEMP="$M_TEMP/cloud/ganeti"
 install -d "$M_TEMP"
@@ -226,12 +225,37 @@ export CUSTOMIZE_DIR VARIANTS_DIR IMAGE_DIR HOOKS_DIR
 broadcast=`find_broadcast`
 log "gateway: $GANETI_GATEWAY  broadcast: $broadcast"
 
-# some logic to define the Linux flavor will be here
-# for now it's the default Debian debootstrap OS
-prepare_file "$rpath/network_if.debian.tmpl" "$M_TEMP/interfaces"
-[ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
-prepare_file "$rpath/network_if.debian" "$M_TEMP/network"
-[ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+lock_cloudops || exit 10
+
+flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11 | tail -1`
+flfound=false
+for flvar in gentoo debian redhat centos fedora suse mint ubuntu lfs ; do
+  [ `echo "$flavor" | grep -c -i "$flvar"` -ne 0 ] && flfound=true && break
+done
+$flfound || flvar=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f5 | cut -d'+' -f2 | tail -1`
+
+case $flvar in
+  debian|ubuntu|mint)
+    prepare_file "$rpath/network_if.debian.tmpl" "$M_TEMP/interfaces"
+    [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
+    prepare_file "$rpath/network_if.debian" "$M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+    ;;
+  redhat|centos|fedora)
+    prepare_file "$rpath/network_if.redhat.tmpl" "$M_TEMP/interfaces"
+    [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
+    prepare_file "$rpath/network_if.redhat" "$M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+    ;;
+  *)
+    prepare_file "$rpath/network_if.${flvar}.tmpl" "$M_TEMP/interfaces"
+    [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
+    prepare_file "$rpath/network_if.${flvar}" "$M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+    ;;
+esac
+export OPERATING_SYSTEM=$flvar
+
 # installing software via chroot has proven to be unreliable
 
 cp "$M_TEMP/network" "$HOOKS_DIR/"

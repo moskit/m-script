@@ -31,7 +31,6 @@ M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-lock_cloudops || exit 10
 
 possible_options="id name ip verbose force last first cluster"
 necessary_options=""
@@ -103,6 +102,9 @@ find_cluster() {
   fi
 }
 
+lock_cloudops || exit 10
+
+log "stopping server $@"
 if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
     if [ -z "$name" ] ; then
