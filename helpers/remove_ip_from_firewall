@@ -125,14 +125,14 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
     echo
   fi
   
-  if [ `echo $localip | grep -c $dip` -eq 0 ]; then
+  if [ `echo $localip | grep -c $dip` -ne 0 ]; then
     lines=`$IPTS | grep " $IP " | sed "s|^-A|$IPT -D|g"`
     for line in $lines ; do
       echo -n "$line    "
       $line && echo "OK" || echo "Error"
     done
   else
-    lines=`"${rpath}"/mssh $dip $IPTS \| grep \"\ $IP\ \" \| sed \"s\|^-A\|$IPT -D\|g\"`
+    lines=`"${rpath}"/mssh "$dip" "$IPTS \\| grep \\"\\ $IP\\ \\" | sed \"s\|^-A\|$IPT -D\|g\"`
     for line in $lines ; do
       echo -n "$line    "
       "${rpath}"/mssh $dip $line && echo "OK" || echo "Error"

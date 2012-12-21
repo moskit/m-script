@@ -38,7 +38,7 @@ then
 
 [ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat /tmp/m_script/timeindex`
 
-numconn=`${netstatbin} -s | grep 'connections established' | awk '{print $1}'`
+numconn=`${netstatbin} -s 2>/dev/null | grep 'connections established' | awk '{print $1}'`
 binputlast=`sqlite3 ${rpath}/../sysdata "select input from sysdata where timeindex='$lasttimeindex'"`
 boutputlast=`sqlite3 ${rpath}/../sysdata "select output from sysdata where timeindex='$lasttimeindex'"`
 

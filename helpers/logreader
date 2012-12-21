@@ -20,9 +20,14 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-possible_options="file lines maxlines period timeformat help verbose resolution"
+possible_options="file lines maxlines period timeformat help verbose resolution amendformat"
 necessary_options="file"
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+amend() {
+  amendcomm="echo \"$1\" | $amendformat"
+  eval "$amendcomm"
+}
 
 IFS1=$IFS
 IFS='|'
@@ -41,6 +46,9 @@ do
   found=0
 done
 IFS=$IFS1
+
+[ -n "$help" ] && echo -e "Possible options: $possible_options\nNecessary options: $necessary_options"
+[ -n "$verbose" ] && debug=true || debug=false
 
 source "${rpath}/../conf/mon.conf"
 # defaults
@@ -63,23 +71,46 @@ if [ -z "$res" ]; then
   [ "X$lastletter" == "XS" ] && res="1 sec"
 fi
 
+$debug && echo "resolution: $res"
+
 timepattern=`date -d "-${period}" +"$timeformat"`
 timecurrent=`date +"$timeformat"`
 
+$debug && echo "from: $timepattern to: $timecurrent"
+
 ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
+if $debug ; then
+  [ -z "$ln" ] && echo -e "Was unable to find the lines number, command was:\ntail -n $maxlines \"$file\" | grep -n -m 1 -h \"$timepattern\" | cut -d':' -f1"
+else
+  $debug && echo "lines number: $ln"
+fi
+
+if [ -n "$amendformat" ]; then
+  timepattern=`amend "$timepattern"`
+  timecurrent=`amend "$timecurrent"`
+  $debug && echo "Amended: from: $timepattern to: $timecurrent"
+fi
+
 if [ -z "$ln" ] ; then
+  $debug && echo "scanning the tail of the log with $res resolution"
   badpattern=false
   declare -i i ; i=0 ; ilimit=20 # safety limit
   while [[ "$timepattern" != "$timecurrent" ]]; do
     dd=`date -d "$timepattern" 2>/dev/null`
-    [ -z "$dd" ] && echo "Unable to restore date/time using pattern: $timepattern" >> "$rpath/../monitoring.log" && break
-    timepattern=`date -d "$dd +$res" 2>/dev/null || badpattern=true`
+    if [ -z "$dd" ]; then
+      $debug && echo -e "Empty date pattern, command was:\ndate -d \"$timepattern\""
+      echo "Unable to restore date/time using pattern: $timepattern" >> "$rpath/../monitoring.log" && break
+    else
+      $debug && echo "$dd"
+    fi
+    timepattern=`date -d "$dd + $res" 2>/dev/null || badpattern=true`
     timepatternf=`date -d "$timepattern" +"$timeformat" 2>/dev/null || badpattern=true`
     i+=1
+    $debug && echo "    $i :: $timepatternf"
     [ $i -gt $ilimit ] && break
     $badpattern && echo "Unable to restore date/time using pattern: $timepattern formatted as $timepatternf" >> "$rpath/../monitoring.log" && break
     ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepatternf" | cut -d':' -f1`
-    [ -n "$verbose" ] && echo "Datetime pattern: $timepattern Number of lines back: $ln"
+    $debug && echo "Datetime pattern: $timepattern Number of lines back: $ln"
     [[ $ln -gt 0 ]] && break
   done
 fi

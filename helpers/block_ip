@@ -39,7 +39,7 @@ $IPT -X M_IPBLOCK_CONST
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
 [ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
 
-possible_options="method cleanup block_forever_after"
+possible_options="method cleanup block_forever_after rate burst"
 necessary_options=""
 for s_option in $2 $3
 do
@@ -74,15 +74,22 @@ do
 done
 found=0
 
-source "${rpath}/../conf/mon.conf"
+source "$M_ROOT/conf/mon.conf"
 
 [ -n "$cleanup" ] && cleanup && exit $?
 
 [ -z "$method" ] && method=REJECT
+if [ "$method" == "limit" ]; then
+  [ -z "$rate" ] && rate="1/s"
+  [ -z "$burst" ] && burst="1/s"
+  method="-m limit --limit $rate --limit-burst $burst -j ACCEPT"
+else
+  method="-j $method"
+fi
 
-$IPT -L -n M_IPBLOCK_CONST >/dev/null 2>&1
+$IPT -L M_IPBLOCK_CONST -n >/dev/null 2>&1
 [[ $? -eq 1 ]] && $IPT -N M_IPBLOCK_CONST && $IPT -A INPUT -j M_IPBLOCK_CONST
-$IPT -L -n M_IPBLOCK_TMP >/dev/null 2>&1
+$IPT -L M_IPBLOCK_TMP -n >/dev/null 2>&1
 if [[ $? -eq 1 ]] ; then
   $IPT -N M_IPBLOCK_TMP
   $IPT -A INPUT -j M_IPBLOCK_TMP
@@ -92,22 +99,22 @@ fi
 [ -z "$block_forever_after" ] && block_forever_after=99999
 if [ -n "$ips" ] ; then
   for ip in $ips ; do
-  echo $ip >> "${M_TEMP}/ip_block.tmp"
+  echo $ip >> "$M_TEMP/ip_block.tmp"
     # Never block own IPs! :)
-    if [[ `grep -c ^${ip}\| "${rpath}/../servers.list"` -eq 0 ]] ; then
-      ipincl=`grep -c "^${ip}$" "${M_TEMP}/ip_block.tmp"` || ipincl=0
+    if [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -eq 0 ]] ; then
+      ipincl=`grep -c "^${ip}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
       log "$ip :: logged: $ipincl times, forever after: $block_forever_after times"
       if [[ $ipincl -gt $block_forever_after ]] ; then
-        if [[ `grep -c "^${ip}$" "${M_TEMP}/ip_block.const"` -eq 0 ]] ; then
-          echo $ip >> "${M_TEMP}/ip_block.const"
-          $IPT -A M_IPBLOCK_CONST -s $ip -j $method
+        if [[ `grep -c "^${ip}$" "$M_TEMP/ip_block.const"` -eq 0 ]] ; then
+          echo $ip >> "$M_TEMP/ip_block.const"
+          $IPT -A M_IPBLOCK_CONST -s $ip $method
           log "$ip blocked for ever"
         else
-          log "$ip found in ${M_TEMP}/ip_block.const, pls check your firewall"
+          log "$ip found in $M_TEMP/ip_block.const, pls check your firewall"
         fi
       else
         log "$ip :: blocking temporarily"
-        $IPT -A M_IPBLOCK_TMP -s $ip -j $method
+        $IPT -A M_IPBLOCK_TMP -s $ip $method
       fi
     fi
   done

@@ -22,17 +22,16 @@ rpath=${0%/*}
 source "$M_ROOT/conf/mon.conf" || exit 99
 source "${0%.mon}.conf" || exit 99
      
-portstcp=( `cat "${rpath}/../ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
-portsudp=( `cat "${rpath}/../ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
-sockets=( `cat "${rpath}/../sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[[:space:]]*#'` )
-[ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
-[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
+portstcp=( `cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
+portsudp=( `cat "$M_ROOT/ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
+sockets=( `cat "$M_ROOT/sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[[:space:]]*#'` )
+[ -x /bin/netstat ] && NETSTATCMD='/bin/netstat' || NETSTATCMD=`which netstat 2>/dev/null`
 
 if [ `uname` == "Linux" ]; then
-  [ "X$NETSTATCMD" == "X" ] && echo "Netstat utility not found! Aborting.." && exit 1
-  NETCONNSTCP="${NETSTATCMD} -tapn"
-  NETCONNSUDP="${NETSTATCMD} -uapn"
-  SOCKCONNS="${NETSTATCMD} -xlpn"
+  [ -z "$NETSTATCMD" ] && echo "Netstat utility not found! Aborting.." && exit 1
+  NETCONNSTCP="$NETSTATCMD -tapn"
+  NETCONNSUDP="$NETSTATCMD -uapn"
+  SOCKCONNS="$NETSTATCMD -xlpn"
 fi
 
 [ -x /bin/ping ] && PING='/bin/ping'
@@ -42,11 +41,11 @@ if [ `uname` == "Linux" ]; then
   ROUTE="$NETSTATCMD -rn"
 fi
 
-[ -e "${rpath}/../conf/sockets.exclude" ] || touch "${rpath}/../conf/sockets.exclude"
-[ -e "${rpath}/../conf/ports.exclude" ] || touch "${rpath}/../conf/ports.exclude"
+[ -e "$M_ROOT/conf/sockets.exclude" ] || touch "$M_ROOT/conf/sockets.exclude"
+[ -e "$M_ROOT/conf/ports.exclude" ] || touch "$M_ROOT/conf/ports.exclude"
 
 chk_portexclusions() {
-  for exclport in `cat "${M_ROOT}/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
+  for exclport in `cat "$M_ROOT/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'` ; do
       exclportnum=${exclport%%|*}
       exclportprog=${exclport#*|}
       portif=${1%:*}
@@ -83,7 +82,7 @@ echo
 ### this protocol registered with the kernel is greater than the number of
 ### current connections.
 
-if [ -e "${rpath}/../ports.tcp.list" ] ; then
+if [ -e "$M_ROOT/ports.tcp.list" ] ; then
   inusetcp=`cat /proc/net/protocols | grep ^TCP[[:space:]] | awk '{print $3}'`
   inusetcp=`expr $inusetcp + 2`
   tcphead=`cat /proc/net/tcp | grep ' 0A ' | head -n $inusetcp | wc -l`
@@ -96,21 +95,17 @@ if [ -e "${rpath}/../ports.tcp.list" ] ; then
   # them). If ANY of them overloaded, the monitor is disabled.
   if ([[ $tcphead -eq $inusetcp ]] || ([ -n "$inusetcp6" ] && [[ $tcp6head -eq $inusetcp6 ]])); then
     if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
-      echo "TCP ports monitor is disabled due to too many keepalive and/or waiting"
-      echo "connections."
-      echo "This is not an alert, these connections don't harm, but they make ports"
-      echo "monitoring too expensive."
-      echo
+      echo -e "TCP ports monitor is disabled due to too many keepalive and/or\nwaiting connections.\nThis is not an alert, these connections don't harm, but they\nmake detailed ports monitoring too expensive.\n"
     fi
     portstcp=""
   else
     # No point in parsing of more than 100 lines of LISTENING ports, increase this
     # if necessary
-    $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > "${M_TEMP}/ports.tcp.$$"
-    [ `cat "${M_TEMP}/ports.tcp.$$" | wc -l` -gt `cat "${M_TEMP}/ports.tcp.$$" | uniq | wc -l` ] && echo "connections.mon: TCP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/../monitoring.log" && rm -f "${M_TEMP}/ports.tcp.$$"
+    $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > "$M_TEMP/ports.tcp.$$"
+    [ `cat "$M_TEMP/ports.tcp.$$" | wc -l` -gt `cat "$M_TEMP/ports.tcp.$$" | uniq | wc -l` ] && echo "connections.mon: TCP ports monitor is disabled due to duplicates in netstat output" >> "$M_ROOT/monitoring.log" && rm -f "$M_TEMP/ports.tcp.$$"
   fi
 fi
-if [ -e "${rpath}/../ports.udp.list" ] ; then
+if [ -e "$M_ROOT/ports.udp.list" ] ; then
   inuseudp=`cat /proc/net/protocols | grep ^UDP[[:space:]] | awk '{print $3}'`
   inuseudp=`expr $inuseudp + 2`
   udphead=`cat /proc/net/udp | grep ' 0A ' | head -n $inuseudp | wc -l`
@@ -121,23 +116,19 @@ if [ -e "${rpath}/../ports.udp.list" ] ; then
   fi
   if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $inuseudp6 ]])); then
     if ([[ $inuseudp -ne 0 ]] && [[ $inuseudp6 -ne 0 ]]) ; then
-      echo "UDP ports monitor is disabled due to too many keepalive and/or waiting"
-      echo "connections."
-      echo "This is not an alert, these connections don't harm, but they make ports"
-      echo "monitoring too expensive."
-      echo
+      echo -e "UDP ports monitor is disabled due to too many keepalive and/or\nwaiting connections.\nThis is not an alert, these connections don't harm, but they\nmake detailed ports monitoring too expensive.\n"
     fi
     portsudp=""
   else
-    $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> "${M_TEMP}/ports.udp.$$"
-    [ `cat "${M_TEMP}/ports.udp.$$" | wc -l` -gt `cat "${M_TEMP}/ports.udp.$$" | uniq | wc -l` ] && echo "connections.mon: UDP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/../monitoring.log" && rm -f "${M_TEMP}/ports.udp.$$"
+    $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> "$M_TEMP/ports.udp.$$"
+    [ `cat "$M_TEMP/ports.udp.$$" | wc -l` -gt `cat "$M_TEMP/ports.udp.$$" | uniq | wc -l` ] && echo "connections.mon: UDP ports monitor is disabled due to duplicates in netstat output" >> "$M_ROOT/monitoring.log" && rm -f "$M_TEMP/ports.udp.$$"
   fi
 fi
 
 ### If other protocols are needed (see /etc/net/protocols), they can be added
 ### easily, just follow the pattern
 
-if [ -f "${M_TEMP}/ports.tcp.$$" ] ; then
+if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
   while read LINE
   do
     portstcp=( ${portstcp[*]} )
@@ -151,30 +142,30 @@ if [ -f "${M_TEMP}/ports.tcp.$$" ] ; then
     # now compare ports
     for ((i=0; i<${#portstcp[*]}; i++))
     do
-      if [ "X${portstcp[$i]}" == "X${t}" ]
+      if [ "X${portstcp[$i]}" == "X$t" ]
       then
         unset portstcp[$i]
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "${t}"
-        m=`expr length "${t}"`
+        printf "$t"
+        m=`expr length "$t"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSTCP | grep ":${t} " | wc -l`\n"
+        printf "`$NETCONNSTCP | grep "$t " | wc -l`\n"
         portfound=1
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored."
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is not being monitored."
     skip=0
-  done < "${M_TEMP}/ports.tcp.$$"
+  done < "$M_TEMP/ports.tcp.$$"
 
   if [[ ${#portstcp[*]} -gt 0 ]]
   then
     for t in ${portstcp[*]} ; do
-      prog=`grep "^${t}|" "${rpath}/../ports.tcp.list" | cut -d'|' -f2`
+      prog=`grep "^$t|" "$M_ROOT/ports.tcp.list" | cut -d'|' -f2`
       chk_portexclusions $t $prog
       [[ $skip -ne 1 ]] && echo "<***> There is no service listening on TCP: $t (was $prog)"
       skip=0
@@ -182,7 +173,7 @@ if [ -f "${M_TEMP}/ports.tcp.$$" ] ; then
   fi
 fi
 
-if [ -f "${M_TEMP}/ports.udp.$$" ] ; then
+if [ -f "$M_TEMP/ports.udp.$$" ] ; then
   while read LINE
   do
     portsudp=( ${portsudp[*]} )
@@ -196,30 +187,30 @@ if [ -f "${M_TEMP}/ports.udp.$$" ] ; then
     # now compare ports
     for ((i=0; i<${#portsudp[*]}; i++))
     do
-      if [ "X${portsudp[$i]}" == "X${t}" ]
+      if [ "X${portsudp[$i]}" == "X$t" ]
       then
         unset portsudp[$i]
         printf "$prog"
         m=`expr length $prog`
         l=`expr 20 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "${t}"
-        m=`expr length "${t}"`
+        printf "$t"
+        m=`expr length "$t"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSUDP | grep ":${t} " | wc -l`\n"
+        printf "`$NETCONNSUDP | grep "$t " | wc -l`\n"
         portfound=1
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service ${prog} listening on ${t} is not being monitored."
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is not being monitored."
     skip=0
-  done < "${M_TEMP}/ports.udp.$$"
+  done < "$M_TEMP/ports.udp.$$"
 
   if [[ ${#portsudp[*]} -gt 0 ]]
   then
     for t in ${portsudp[*]} ; do
-      prog=`grep "^${t}|" "${rpath}/../ports.udp.list" | cut -d'|' -f2`
+      prog=`grep "^$t|" "$M_ROOT/ports.udp.list" | cut -d'|' -f2`
       chk_portexclusions $t $prog
       [[ $skip -ne 1 ]] && echo "<***> There is no service listening on UDP: $t (was $prog)"
       skip=0
@@ -231,12 +222,12 @@ fi
 
 echo "  Name              Socket file"
 echo
-$SOCKCONNS | grep STREAM > "${M_TEMP}/sockets.$$"
+$SOCKCONNS | grep STREAM > "$M_TEMP/sockets.$$"
 
 while read LINE
 do
   sockets=( ${sockets[*]} )
-  for exclsocket in `cat "${rpath}/../conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+  for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
     [[ $LINE =~ $exclsocket ]] && skip=1 && break
   done
@@ -248,20 +239,20 @@ do
   # now compare sockets
   for ((i=0; i<${#sockets[*]}; i++))
   do
-    if [ "X${sockets[$i]}" == "X${t}" ]
+    if [ "X${sockets[$i]}" == "X$t" ]
     then
       unset sockets[$i]
       printf "$sname"
       m=`expr length $sname`
       l=`expr 20 - $m`
       for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "${t}\n"
+      printf "$t\n"
       socketfound=1
       break
     fi
   done
-  [[ $socketfound -ne 1 ]] && echo "<***> Service ${sname} listening on ${t} is not being monitored."
-done < "${M_TEMP}/sockets.$$"
+  [[ $socketfound -ne 1 ]] && echo "<***> Service $sname listening on $t is not being monitored."
+done < "$M_TEMP/sockets.$$"
 
 if [[ ${#sockets[*]} -gt 0 ]]
 then
