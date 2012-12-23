@@ -41,7 +41,8 @@ $IPT -X M_IPBLOCK_CONST
 
 possible_options="method cleanup block_forever_after rate burst"
 necessary_options=""
-for s_option in $2 $3
+shift
+for s_option in $@
 do
   found=0
   case ${s_option} in
@@ -81,7 +82,7 @@ source "$M_ROOT/conf/mon.conf"
 [ -z "$method" ] && method=REJECT
 if [ "$method" == "limit" ]; then
   [ -z "$rate" ] && rate="1/s"
-  [ -z "$burst" ] && burst="1/s"
+  [ -z "$burst" ] && burst=5
   method="-m limit --limit $rate --limit-burst $burst -j ACCEPT"
 else
   method="-j $method"

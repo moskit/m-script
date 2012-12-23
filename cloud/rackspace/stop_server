@@ -65,19 +65,13 @@ if [ -n "$last" -o -n "$first" ]; then
   [ -n "$first" ] && name=`"$M_ROOT"/cloud/common/get_ips --cluster=$cluster --names | sort -n | head -1`
 fi
 
-proper_exit() {
-  log "exit status: $1"
-  unlock_cloudops
-  exit $1
-}
-
 find_by_ip() {
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
     sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "|\"${1}\"$" | cut -d'/' -f3`
     id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
-    id=`${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
   fi
   find_cluster "$1"
 }
@@ -116,7 +110,7 @@ if [ -z "$id" ] ; then
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
-        id=`${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
+        id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
@@ -127,11 +121,11 @@ if [ -n "$id" ] ; then
   if [ -f "${M_TEMP}/show_servers.resp" ] ; then
     sn=`grep \/id\| "${M_TEMP}/show_servers.resp" | grep "|${id}$" | cut -d'/' -f3`
     name=`grep \/$sn\/name\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
-    ipint=`grep \/$sn\/addresses\/private "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
-    ipext=`grep \/$sn\/addresses\/public "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
+    ipint=`grep \/$sn\/addresses\/private "${M_TEMP}/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
+    ipext=`grep \/$sn\/addresses\/public "${M_TEMP}/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
   if [ -z "$name" ] ; then
-    nameips=`${rpath}/show_servers --forceupdate --view=table | grep ^${id}\| | cut -d'|' -f2,4,5`
+    nameips=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep ^${id}\| | cut -d'|' -f2,4,5`
     name=`echo "$nameips" | cut -d'|' -f1`
     ipext=`echo "$nameips" | cut -d'|' -f2`
     ipint=`echo "$nameips" | cut -d'|' -f3`
@@ -188,7 +182,7 @@ done
 
 cat "${M_TEMP}/${rcommand}.resp" >> "$LOG"
 
-IPS=( "${ipint}" "${ipext}" "${ip}" )
+IPS=( `echo -e "${ipint}\n${ipext}\n${ip}" | sort | uniq` )
 
 if [ $reqres -eq 0 -a `grep -c code\|4 "${M_TEMP}/${rcommand}.resp"` -eq 0 ]; then
   log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully"

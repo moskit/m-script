@@ -57,8 +57,8 @@ CLEANUP+=("rmdir $TARGET")
 mount $filesystem_dev $TARGET
 CLEANUP+=("umount $TARGET")
 
-root_dump="${IMAGE_FILE}"
-( cd ${TARGET}; restore -r -y -f ${root_dump} > /dev/null )
+root_dump="$IMAGE_FILE"
+( cd "$TARGET"; restore -r -y -f "$root_dump" > /dev/null )
 
 mv $TARGET/etc/fstab $TARGET/etc/fstab.orig || true
 cat > $TARGET/etc/fstab <<EOF

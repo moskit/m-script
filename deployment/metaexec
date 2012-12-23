@@ -110,13 +110,13 @@ run_meta() {
       return $res
     else
       echo "Error parsing the meta: $meta"
-      exit 1
+      proper_exit 1
     fi
   fi
 }
 
 startserver() {
-  ip=`"${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log | tail -1`
+  ip=`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log | tail -1`
   res=$?
   log "($CLOUD) start_server exited with status $res and returned this as IP: $ip"
 }
@@ -270,30 +270,39 @@ if [ -n "$newserver" ]; then
   log "bringing up new server in cloud $cloud"
   if [ -z "$test" ]; then
     log "updating servers list"
-    "${rpath}"/../cloud/${cloud}/update_servers_list
+    IAMACHILD=1 "${rpath}"/../cloud/${cloud}/update_servers_list
+    log "getting cloud operations lock"
+    source "${rpath}"/../lib/cloud_functions.sh
+    lock_cloudops || exit 10
+    log "initiating start server sequence"
+    
+    for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
+      startserver $T
+      [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
+      [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]] && break
+      # breaking here (reason not known); will be test later
+      [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
+      # not breaking here: may be controversial commands, so let it start up if it
+      # gets an empty slot next time
+      [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
+      # various weird errors below, exit 1 
+      [ $res -eq 6 ] && log "Failed to generate a name for the new server" && proper_exit 1
+      [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1
+      [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1
+      [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
+      [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
+      sleep $WAIT_BETWEEN_TRIES
+    done
   else
     echo "*** This is a test"
   fi
-  log "initiating start server sequence"
-  
-  for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
-    startserver $T
-    [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
-    [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]] && break
-    # breaking here (reason not known); will be test later
-    [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
-    # not breaking here: may be controversial commands, so let it start up if it
-    # gets an empty slot next time
-    [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
-    # various weird errors below, exit 1 
-    [ $res -eq 6 ] && log "Failed to generate a name for the new server" && exit 1
-    [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && exit 1
-    [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && exit 1
-    [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
-    [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
-    sleep $WAIT_BETWEEN_TRIES
-  done
 fi
+
+proper_exit() {
+  log "exit status: $1"
+  [ -n "$newserver" ] && unlock_cloudops
+  exit $1
+}
 
 # Default output is console, colored if colors are supported
 if [ -z "$output" ] ; then
@@ -314,10 +323,10 @@ fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && exit 1
-  [ -z "$SSH" ] && echo "SSH client not found!" && exit 1
+  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && proper_exit 1
+  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
-  [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && exit 1
+  [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && proper_exit 1
   if [ -z "$list" ] ; then
     #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"
@@ -333,7 +342,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
           break
         fi
       done
-      $loggedin || exit 1
+      $loggedin || proper_exit 1
     fi
     #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
 
@@ -389,7 +398,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
         fi
         if $runthis && ! $skipthis ; then
           run_meta "${meta}"
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && exit 1
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && proper_exit 1
         fi
       fi
       metan+=1

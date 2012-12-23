@@ -81,12 +81,6 @@ declare -i icount
 [ -z "$status" ] && status="active"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
-proper_exit() {
-  log "exit status: $1"
-  unlock_cloudops
-  exit $1
-}
-
 request() {
   local updateflavors updateimages
   updateflavors=false

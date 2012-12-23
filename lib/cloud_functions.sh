@@ -25,6 +25,7 @@ log() {
 }
 
 lock_cloudops() {
+  [ -n "$IAMACHILD" ] && return 0
   local -i i
   i=0
   log "trying to acquire the cloud operations lock"
@@ -45,9 +46,12 @@ lock_cloudops() {
 
 unlock_cloudops() {
   rm -f "$M_TEMP/lock" && log "cloud operations unlocked"
+  unset IAMACHILD
 }
 
 cloudops_locked() {
+  # we don't lock children
+  [ -n "$IAMACHILD" ] && return 1
   [ -f "$M_TEMP/lock" ] && return 0 || return 1
 }
 
@@ -101,6 +105,7 @@ check_cluster_minimum() {
   [ "$limit" == "0" ] && return 0
   # tmp file is assumed to be up-to-date
   n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
+  [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
   [ -z "$n" ] && n=0
   [ `expr $n \>= 0` -gt 0 ] || return 1
@@ -116,4 +121,9 @@ find_name() {
   echo "$NAME"
 }
 
+proper_exit() {
+  log "exit status: $1"
+  unlock_cloudops
+  exit $1
+}
 
