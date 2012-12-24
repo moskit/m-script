@@ -25,7 +25,7 @@ log() {
 }
 
 lock_cloudops() {
-  [ -n "$IAMACHILD" ] && return 0
+  [ -n "$IAMACHILD" ] && log "I am a child" && return 0
   local -i i
   i=0
   log "trying to acquire the cloud operations lock"
@@ -51,7 +51,7 @@ unlock_cloudops() {
 
 cloudops_locked() {
   # we don't lock children
-  [ -n "$IAMACHILD" ] && return 1
+  [ -n "$IAMACHILD" ] && log "I am a child" && return 1
   [ -f "$M_TEMP/lock" ] && return 0 || return 1
 }
 

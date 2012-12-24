@@ -100,24 +100,27 @@ fi
 [ -z "$block_forever_after" ] && block_forever_after=99999
 if [ -n "$ips" ] ; then
   for ip in $ips ; do
-  echo $ip >> "$M_TEMP/ip_block.tmp"
     # Never block own IPs! :)
-    if [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -eq 0 ]] ; then
-      ipincl=`grep -c "^${ip}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
-      log "$ip :: logged: $ipincl times, forever after: $block_forever_after times"
-      if [[ $ipincl -gt $block_forever_after ]] ; then
-        if [[ `grep -c "^${ip}$" "$M_TEMP/ip_block.const"` -eq 0 ]] ; then
-          echo $ip >> "$M_TEMP/ip_block.const"
-          $IPT -A M_IPBLOCK_CONST -s $ip $method
-          log "$ip blocked for ever"
-        else
-          log "$ip found in $M_TEMP/ip_block.const, pls check your firewall"
-        fi
+    [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -ne 0 ]] && continue
+    # Whitelist
+    [[ `grep -c ^$ip "$M_ROOT/conf/ip.white.list"` -ne 0 ]] && continue
+    echo $ip >> "$M_TEMP/ip_block.tmp"
+
+    ipincl=`grep -c "^${ip}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
+    log "$ip :: logged: $ipincl times, forever after: $block_forever_after times"
+    if [[ $ipincl -gt $block_forever_after ]] ; then
+      if [[ `grep -c "^${ip}$" "$M_TEMP/ip_block.const"` -eq 0 ]] ; then
+        echo $ip >> "$M_TEMP/ip_block.const"
+        $IPT -A M_IPBLOCK_CONST -s $ip $method
+        log "$ip blocked for ever"
       else
-        log "$ip :: blocking temporarily"
-        $IPT -A M_IPBLOCK_TMP -s $ip $method
+        log "$ip found in $M_TEMP/ip_block.const, pls check your firewall"
       fi
+    else
+      log "$ip :: blocking temporarily"
+      $IPT -A M_IPBLOCK_TMP -s $ip $method
     fi
+
   done
 fi
 

@@ -74,7 +74,6 @@ lock_cloudops || exit 10
 CURL="$CURL -s -k"
 declare -i icount
 
-
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp
 [ -z "$status" -a -n "$state" ] && status=$state
