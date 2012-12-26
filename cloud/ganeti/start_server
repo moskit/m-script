@@ -208,6 +208,8 @@ OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d
 CUSTOMIZE_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/hooks"
 VARIANTS_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/variants"
 
+IMAGE_DIR="$M_ROOT/cloud/ganeti/os-images"
+
 echo -e "CUSTOMIZE_DIR=$CUSTOMIZE_DIR\nVARIANTS_DIR=$VARIANTS_DIR\nCDINSTALL=no\n" > "$M_TEMP/vars"
 
 [ -d "$CUSTOMIZE_DIR" ] || install -d "$CUSTOMIZE_DIR"

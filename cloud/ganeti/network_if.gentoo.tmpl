@@ -1,0 +1,7 @@
+config_eth0="%{ip}% netmask 255.255.255.0 brd %{broadcast}%"
+
+routes_eth0=(
+       "default via %{GANETI_GATEWAY}%"
+       "%{GANETI_NETWORK}% via %{GANETI_GATEWAY}%"
+)
+

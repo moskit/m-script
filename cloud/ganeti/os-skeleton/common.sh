@@ -24,12 +24,26 @@ KPARTX=`which kpartx 2>/dev/null`
 SFDISK=`which sfdisk 2>/dev/null`
 QEMU_IMG=`which qemu-img 2>/dev/null`
 MKDIR_P="`which install 2>/dev/null` -d"
-
+: ${MIRROR:=""}
+: ${PROXY:=""}
+: ${SUITE:="lenny"}
+: ${ARCH:=""}
+: ${EXTRA_PKGS:=""}
+: ${CUSTOMIZE_DIR:="/etc/ganeti/instance-debootstrap/hooks"}
+: ${VARIANTS_DIR:="/etc/ganeti/instance-debootstrap/variants"}
+: ${GENERATE_CACHE:="yes"}
+: ${CLEAN_CACHE:="14"} # number of days to keep a cache file
+if [ -z "$OS_API_VERSION" -o "$OS_API_VERSION" = "5" ]; then
+  DEFAULT_PARTITION_STYLE="none"
+else
+  DEFAULT_PARTITION_STYLE="msdos"
+fi
+: ${PARTITION_STYLE:=$DEFAULT_PARTITION_STYLE}
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(cd "${rpath}/../../../" && pwd)
-LOG="$M_ROOT/logs/deploy.log"
+LOG="$M_ROOT/logs/cloud.log"
 [ -z "$M_TEMP" ] && source "$M_ROOT/conf/mon.conf"
 [ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
 M_TEMP="$M_TEMP/cloud/ganeti"

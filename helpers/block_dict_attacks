@@ -26,7 +26,7 @@ LOG="$M_ROOT/logs/block_ip.log"
 ## This is a try aimed to eventually come to an automated logreader options
 ## generation
 
-possible_options="file period maxlines maxinvalid"
+possible_options="file period maxlines maxinvalid method"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -49,7 +49,7 @@ do
 done
 IFS=$IFS1
 
-[ -z "$file" ] && log "file is not defined" && exit 1
+[ -z "$file" ] && echo "file is not defined" >&2 && exit 1
 timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=10
 freqdef=`expr $FREQ + $timeshift` || freqdef=210
 [ -z "$period" ] && period="$freqdef sec"
