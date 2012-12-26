@@ -24,6 +24,10 @@
 
 CLEANUP=( )
 
+log_error() {
+  echo "$@" >>"$LOG"
+}
+
 map_disk0() {
   blockdev="$1"
   filesystem_dev_base=`kpartx -l -p- $blockdev | \
