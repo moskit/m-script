@@ -25,7 +25,7 @@
 CLEANUP=( )
 
 log_error() {
-  echo "$@" >>"$LOG"
+  echo "$@" >&2
 }
 
 map_disk0() {
