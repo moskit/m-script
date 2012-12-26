@@ -20,7 +20,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-possible_options="file lines maxlines period timeformat help verbose resolution amendformat"
+possible_options="file lines maxlines period timeformat help verbose resolution amendformat safetylimit"
 necessary_options="file"
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
 
@@ -53,6 +53,7 @@ IFS=$IFS1
 source "${rpath}/../conf/mon.conf"
 # defaults
 [ -z "$maxlines" ] && maxlines=1000
+[ -z "$safetylimit" ] && safetylimit=50
 [ -z "$period" ] && period="$FREQ sec"
 [ -z "$timeformat" ] && timeformat='%b %e %H:%M'
 if [ -n "$resolution" ]; then
@@ -94,7 +95,7 @@ fi
 if [ -z "$ln" ] ; then
   $debug && echo "scanning the tail of the log with $res resolution"
   badpattern=false
-  declare -i i ; i=0 ; ilimit=20 # safety limit
+  declare -i i ; i=0 ; ilimit=$safetylimit # safety limit
   while [[ "$timepattern" != "$timecurrent" ]]; do
     dd=`date -d "$timepattern" 2>/dev/null`
     if [ -z "$dd" ]; then

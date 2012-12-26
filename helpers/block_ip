@@ -23,7 +23,7 @@ rpath=${0%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/block_ip.log"
 
-ips=`cat $1 | grep -v ^$ | sort | uniq`
+ips=`cat $1 2>/dev/null | grep -v ^$ | sort | uniq`
 
 cleanup() {
 
@@ -39,9 +39,9 @@ $IPT -X M_IPBLOCK_CONST
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
 [ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
 
-possible_options="method cleanup block_forever_after rate burst"
+possible_options="method cleanup block_forever_after rate burst help"
 necessary_options=""
-shift
+[ -n "$ips" ] && shift
 for s_option in $@
 do
   found=0

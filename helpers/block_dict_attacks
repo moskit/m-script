@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+
+source "$M_ROOT/lib/functions.sh"
+LOG="$M_ROOT/logs/block_ip.log"
+
+## This is a try aimed to eventually come to an automated logreader options
+## generation
+
+possible_options="file period maxlines maxinvalid"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optname=`echo $s_optname | tr -d '-'`
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -z "$file" ] && log "file is not defined" && exit 1
+timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=10
+freqdef=`expr $FREQ + $timeshift` || freqdef=210
+[ -z "$period" ] && period="$freqdef sec"
+[ -z "$maxlines" ] && maxlines=500
+[ -z "$maxinvalid" ] && maxinvalid=5
+
+logged=`"$M_ROOT"/helpers/logreader --file=/var/log/secure --timeformat='%b %d %H:%M:%S' --maxlines=$maxlines --period=$period | grep "Invalid\\ user" | awk -F'from ' '{print $2}' | sort | uniq -c | sed "s|^[[:space:]]*||g" | tr ' ' '|'`
+
+for ip in `echo "$logged"` ; do
+  invalid=`echo "$ip" | cit -d'|' -f1`
+  [ `expr "$invalid" : .*[^0-9].*` -ne 0 ] && log "wrong invalid user number for IP $ip" && continue
+  previnvalid=`grep \|${ip}$ "$M_TEMP"/dict.attacks.tmp`
+  if [ -z "$previnvalid" ]; then
+    echo "$ip" >> "$M_TEMP"/dict.attacks.tmp
+  else
+    nowinvalid=`expr $previnvalid + $invalid 2>/dev/null`
+    if [ -n "$nowinvalid" ]; then
+      [ `expr $nowinvalid \> $maxinvalid` -eq 1 ] && echo "$ip" | cit -d'|' -f2 | "$M_ROOT"/helpers/block_ip - --method=DROP --block_forever_after=5 && sed -i "/$previnvalid/d" "$M_TEMP"/dict.attacks.tmp
+    else
+      sed -i "/$previnvalid/s/^[0-9]*|/${nowinvalid}|/" "$M_TEMP"/dict.attacks.tmp
+    fi
+  fi
+done
+
+
+
