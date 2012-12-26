@@ -61,6 +61,7 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+[ -n "$verbose" ] && debug=1
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
@@ -220,7 +221,7 @@ VARIANTS_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/variants"
 IMAGE_DIR="$M_ROOT/cloud/ganeti/os-images"
 IMAGE_FILE="$IMAGE_DIR/${OSNAME}.img"
 
-echo -e "CUSTOMIZE_DIR=$CUSTOMIZE_DIR\nVARIANTS_DIR=$VARIANTS_DIR\nCDINSTALL=no\n" > "$M_TEMP/vars"
+echo -e "CUSTOMIZE_DIR=$CUSTOMIZE_DIR\nVARIANTS_DIR=$VARIANTS_DIR\nCDINSTALL=no\nIMAGE_FILE=$IMAGE_FILE" > "$M_TEMP/vars"
 
 [ -d "$CUSTOMIZE_DIR" ] || install -d "$CUSTOMIZE_DIR"
 [ -d "$VARIANTS_DIR" ] || install -d "$VARIANTS_DIR"
