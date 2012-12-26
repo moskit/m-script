@@ -18,6 +18,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+export M_ROOT
 GNTI=`which gnt-instance 2>/dev/null`
 GNTC=`which gnt-cluster 2>/dev/null`
 ROUTE=`which route 2>/dev/null`
