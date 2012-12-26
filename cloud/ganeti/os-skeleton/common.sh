@@ -33,6 +33,7 @@ fi
 : ${PARTITION_STYLE:=$DEFAULT_PARTITION_STYLE}
 
 M_ROOT=%{M_ROOT}%
+IMAGE_FILE="%{IMAGE_DIR}%/%{OSNAME}%.img"
 
 [ -z "$M_ROOT" ] && echo "M_ROOT environment variable is not defined" && exit 1
 LOG="$M_ROOT/logs/cloud.log"
