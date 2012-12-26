@@ -58,8 +58,10 @@ freqdef=`expr $FREQ + $timeshift` || freqdef=210
 
 logged=`"$M_ROOT"/helpers/logreader --file=/var/log/secure --timeformat='%b %d %H:%M:%S' --maxlines=$maxlines --period=$period | grep "Invalid\\ user" | awk -F'from ' '{print $2}' | sort | uniq -c | sed "s|^[[:space:]]*||g" | tr ' ' '|'`
 
+[ -n "$logged" ] && echo -e "These IP addresses have been blocked due to dictionary attacks detected from them:\n---------------------------------------------------------------------------------\n"
+
 for ip in `echo "$logged"` ; do
-  invalid=`echo "$ip" | cit -d'|' -f1`
+  invalid=`echo "$ip" | cut -d'|' -f1`
   [ `expr "$invalid" : .*[^0-9].*` -ne 0 ] && log "wrong invalid user number for IP $ip" && continue
   previnvalid=`grep \|${ip}$ "$M_TEMP"/dict.attacks.tmp`
   if [ -z "$previnvalid" ]; then
@@ -67,7 +69,8 @@ for ip in `echo "$logged"` ; do
   else
     nowinvalid=`expr $previnvalid + $invalid 2>/dev/null`
     if [ -n "$nowinvalid" ]; then
-      [ `expr $nowinvalid \> $maxinvalid` -eq 1 ] && echo "$ip" | cit -d'|' -f2 | "$M_ROOT"/helpers/block_ip - --method=DROP --block_forever_after=5 && sed -i "/$previnvalid/d" "$M_TEMP"/dict.attacks.tmp
+      ipaddr=`echo "$ip" | cut -d'|' -f2`
+      [ `expr $nowinvalid \> $maxinvalid` -eq 1 ] && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method=DROP --block_forever_after=5 && sed -i "/$previnvalid/d" "$M_TEMP"/dict.attacks.tmp && echo "$ipaddr for $nowinvalid login tries using invalid user name"
     else
       sed -i "/$previnvalid/s/^[0-9]*|/${nowinvalid}|/" "$M_TEMP"/dict.attacks.tmp
     fi
