@@ -203,11 +203,11 @@ OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | 
 [ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && exit 1
 if [ -d "$OSPATH/$OSNAME" ]; then
   [ -f "$OSPATH/$OSNAME/create" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/create"
-  [ -f "$OSPATH/$OSNAME/common.sh" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/common.sh"
   [ -f "$OSPATH/$OSNAME/variants.list" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/variants.list"
 else
   cp -r "$M_ROOT/cloud/ganeti/os-skeleton" "$OSPATH/$OSNAME"
 fi
+prepare_file "$M_ROOT/cloud/ganeti/os-skeleton/common.sh" "$OSPATH/$OSNAME/common.sh"
 
 # for the default bootstrap OS
 OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`

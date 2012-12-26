@@ -32,6 +32,8 @@ else
 fi
 : ${PARTITION_STYLE:=$DEFAULT_PARTITION_STYLE}
 
+M_ROOT=%{M_ROOT}%
+
 [ -z "$M_ROOT" ] && echo "M_ROOT environment variable is not defined" && exit 1
 LOG="$M_ROOT/logs/cloud.log"
 [ -z "$M_TEMP" ] && source "$M_ROOT/conf/mon.conf"
