@@ -32,14 +32,14 @@ print_mongo_server() {
     
     echo "<div class=\"status\" id=\"${id}_mem\">`echo "$rawdata" | grep ^memRes\| | cut -d'|' -f2` / `echo "$rawdata" | grep ^memVir\| | cut -d'|' -f2`</div>"
     
-    bwinout=`echo "$report" | grep '^Bandwidth '  | cut -d':' -f2 | sed 's| *||g'`
+    bwinout=`echo "$report" | grep '^Bandwidth ' | cut -d':' -f2 | sed 's| *||g'`
     echo "<div class=\"status\" id=\"${id}_bw\">`echo "$bwinout" | head -1` / `echo "$bwinout" | tail -1`</div>"
     qps=`echo "$report" | grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g'`
     [ -n "$qps" ] || rps=`echo "$report" | grep '^Total' | awk '{print $2}'`
     
     echo "<div class=\"status\" id=\"${id}_qps\" onclick=\"showDetails('${id}_qps','mongoqps')\">$qps</div>"
     
-    locktime=`echo "$report" | grep '^Lock time '`
+    locktime=`echo "$report" | grep '^Lock time ' | cut -d':' -f2 | sed 's| *||g'`
     echo "<div class=\"status\" id=\"${id}_locks\" onclick=\"showDetails('${id}_locks','mongolocks')\">`echo "$locktime" | head -1` / `echo "$locktime" | tail -1`</div>"
     
   echo "</div>"
