@@ -25,8 +25,8 @@ log "Running ${rpath}/${rcommand}"
 #  ${MONGO} ${1}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '   ' + Math.round(d.sizeOnDisk / 1048576) + ' MB' ) } ); print( '=totalSize   ' + Math.round(db.runCommand( { listDatabases : 1 } ).totalSize / 1048576) + ' MB' )" | grep ^= | tr -d '^='
 #}
 
-[ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list"`
-[ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`head -1 "$rpath/mongo_servers.list"`
+[ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
+[ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`head -1 "$rpath/mongo_servers.list" | cut -d'|' -f1`
 [ -z "$hostport" ] && echo "No servers found" && exit 1
 
 ${MONGO} ${hostport}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "${rpath}/data/databases.dat"

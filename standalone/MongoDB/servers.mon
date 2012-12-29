@@ -270,7 +270,7 @@ else
   done
   
   # Getting hosts list for every found replica set
-  for rs in `cat "${M_TEMP}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
+  for rs in `cat "${M_TEMP}/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
     for rshost in `cat "${M_TEMP}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
       replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
@@ -341,7 +341,7 @@ if [ -n "$shardhosts" ] ; then
   
   for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
 
-    for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
+    for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
       replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
       replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2 | tr -d '"'`
@@ -352,7 +352,7 @@ if [ -n "$shardhosts" ] ; then
       [ `grep -c "^${replicahost}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
       [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
-      find_rsmemberrole "${shardhost}"
+      find_rsmemberrole "${replicahost}"
       echo "${replicahost}|${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
     done
 

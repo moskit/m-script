@@ -25,7 +25,7 @@ timeindexnow=`date +"%s"`
 a=`cat "${rpath}/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && a=1
 
-confserver=`head -n $((RANDOM%$a+1)) "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1`
+confserver=`head -n $((RANDOM%$a+1)) "${rpath}/mongo_config_servers.list" 2>/dev/null | tail -1 | cut -d'|' -f1`
 [ -z "$confserver" ] && log "No configuration servers found" && exit 1
 
 #masters=`a=0 ; $MONGO "$confserver"/config --quiet --eval "db.databases.find( { "partitioned" : true }, { "primary" : 1 } ).forEach(printjson)" | "${rpath}"/../../lib/json2txt | while read LINE ; do i=${LINE%%/*} ; if [[ "$i" == "$a" ]] ; then echo -n -e "|${LINE##*|}" ; else echo -n -e "\n${LINE##*|}" ; a=$i ; fi  ; done ; echo ; unset a`
