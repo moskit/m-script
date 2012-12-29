@@ -459,6 +459,10 @@ span.indent {
   background: -moz-linear-gradient(bottom,  #fcfcfc,  #f0f0f0)
 }
 
+.status_short {
+  width: 44px;
+}
+
 .statusok {
   background-color: #f8fff8;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#e0ffe0', endColorstr='#fafffa'); 

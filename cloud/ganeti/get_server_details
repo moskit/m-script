@@ -64,7 +64,7 @@ IFS='
 for L in `$GNTI info "$name" 2>/dev/null` ; do
 #echo "    sect: $sect   subsect: $subsect"
   e1=`expr "$L" : '^[[:space:]]*[A-Z]'`
-  e2=`expr "$L" : '^[[:space:]]*-\ [a-z]'`
+  e2=`expr "$L" : '^[[:space:]]*-\ [a-zA-Z]'`
   e3=`expr "$L" : '^[[:space:]]*[a-z]'`
 #echo "=== $e1 $e2 $e3 ::: \"$L\""
   [ $e1 -lt 7 -a $e1 -gt 0 ] && unset subvar

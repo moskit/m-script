@@ -188,7 +188,7 @@ localbackuppath=${rpath}
 install -d "$M_TEMP" 2>&1>>${rpath}/m_backup.error
 # If config files collection is not set by option, we use all files having names
 # like backup*.conf from the conf folder
-if [ -z "$configfiles[*]" ]
+if [ -z "${configfiles[*]}" ]
 then
   configfiles=( )
   for conf in "$M_ROOT"/conf/backup*.conf

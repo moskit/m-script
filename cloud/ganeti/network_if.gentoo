@@ -21,7 +21,7 @@ cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
 chmod 600 "$TARGET/root/.ssh/authorized_keys"
 echo "Setting up hostname..."
 echo "%{ip}% %{name}%" >> "$TARGET/etc/hosts"
-echo "%{name}%" > "$TARGET/etc/conf.d/hostname"
+echo "hostname=\"%{name}%\"" > "$TARGET/etc/conf.d/hostname"
 
 exit 0
 
