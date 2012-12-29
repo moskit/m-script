@@ -584,16 +584,19 @@ div.right {
 .master {
   color: red;
   float: right;
+  margin-left: 10px;
 }
 
 .slave {
   color: blue;
   float: right;
+  margin-left: 10px;
 }
 
 .arbiter {
   color: gray;
   float: right;
+  margin-left: 10px;
 }
 
 div.json {

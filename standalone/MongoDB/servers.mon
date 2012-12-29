@@ -70,26 +70,10 @@ function parse_data() {
   for d in `cat "${rpath}/data/${1}.dat" | grep \|` ; do
     eval "`echo "$d" | sed 's_|_=_'`"
   done
-  echo "Server ${1} ** `date`"
-  echo "-----------------------------------------"
-  echo
-  echo " Status"
-  echo
+  echo -e "Server ${1} ** `date`\n-----------------------------------------\n\n Status\n"
   echo "Status:   ${status}" | sed 's|1|OK|;s|0|Error|'
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
-  echo
-  echo " Memory"
-  echo
-  echo "Resident (MB):   ${memRes-0}"
-  echo "Virtual (MB):   ${memVir-0}"
-  echo "Mapped (MB):   ${memMapped-0}"
-  echo "Mapped with journal (MB):   ${memMappedWJournal-0}"
-  echo "Heap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`"
-  echo
-  echo " Network"
-  echo
-  echo "Current connections:   ${connCurrent-0}"
-  echo "Available connections:   ${connAvailable-0}"
+  echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
   netIn_prev=`grep ^netIn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
   bw_in=`echo "scale=2; (${netIn-0} - ${netIn_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576" | bc`
   netOut_prev=`grep ^netOut\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
@@ -100,9 +84,7 @@ function parse_data() {
   net_reqps=`echo "scale=1; ($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)" | bc`
   echo "Network requests per second:   $net_reqps"
   if [ -n "$lockTime" ] ; then
-    echo
-    echo " Global lock"
-    echo
+    echo -e"\n Global lock\n"
     lockTime_prev=`grep ^lockTime\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
     lockTime=`echo "scale=2; (${lockTime} - ${lockTime_prev}) / ($timeindexnow - $lasttimeindex) / 10000" | bc`
     echo "Lock time current, percents:   $lockTime"
@@ -200,7 +182,7 @@ function parse_data() {
   if [ "X$SQLITE3" == "X1" ] ; then
     $SQLITE "${rpath}/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}')" 2>>"$LOG"
   fi
-  
+  unset cs status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable bw_in bw_out net_reqps ops_insertsps ops_queriesps ops_updatesps ops_deletesps ops_getmoresps ops_commandsps ops_insertsps_sharded ops_queriesps_sharded ops_updatesps_sharded ops_deletesps_sharded ops_getmoresps_sharded ops_commandsps_sharded ops_insertsps_notsharded ops_queriesps_notsharded ops_updatesps_notsharded ops_deletesps_notsharded ops_getmoresps_notsharded ops_commandsps_notsharded ops_totalqps ops_totalqps_sharded ops_totalqps_notsharded lockRatio lockTime lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters
 }
 
 ### The script begins here :)
@@ -336,8 +318,8 @@ if [ -n "$shardhosts" ] ; then
     fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
-    find_rsmemberrole "${shardhost}"
-    echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
+    find_rsmemberrole "${shardhost}:${shardport}"
+    echo "${shardhost}:${shardport}|${shard}|${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
   done
   
   for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do

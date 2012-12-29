@@ -5,7 +5,7 @@ scriptname=${scriptname##*/}
 source "${PWD}/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections" "mongo_logger|Log Monitor"
-print_page_title "host:port" "Status" "Memory Res/Virt" "Bandwidth In/Out" "Requests / sec"
+print_page_title "host:port" "Status" "Memory Res/Virt" "Bandwidth In/Out" "Requests / sec" "Locks, %  Curr/Overall"
 
 print_mongo_server() {
   local host=`echo "$1" | cut -d'|' -f1`
@@ -85,7 +85,7 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt
 
   open_cluster "shardservers|Shard Servers"
   close_cluster_line
-    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"|cut -d'|' -f1` ; do
+    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"` ; do
       print_mongo_server "$s"
     done
     
