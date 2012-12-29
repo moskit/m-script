@@ -22,7 +22,7 @@ install -d "${M_TEMP}"
 
 function print_servers() {
   for host in $@ ; do
-    echo "$host"
+    echo "${host}|||"
   done
 }
 
@@ -106,7 +106,7 @@ function parse_data() {
     lockTime_prev=`grep ^lockTime\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
     lockTime=`echo "scale=4; (${lockTime} - ${lockTime_prev}) / ($timeindexnow - $lasttimeindex) / 10000" | bc`
     echo "Lock time current, percents:   $lockTime"
-    echo "Lock time overall, percents:   `echo "scale=4; $lockRatio * 100" | bc`"
+    echo "Lock time overall, percents:   `echo "scale=4; $lockRatio * 100 / 1" | bc`"
     echo "Lock queue total:   $lockQueueTotal"
     echo "Lock queue readers:   $lockQueueReaders"
     echo "Lock queue writers:   $lockQueueWriters"
@@ -266,7 +266,7 @@ else
       replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
       find_rsmemberrole "${mongohost}:${mongoport}"
     fi
-    echo "${mongohost}:${mongoport}|${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
+    echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
   done
   
   # Getting hosts list for every found replica set
@@ -283,7 +283,7 @@ else
       ip_to_name ${replicahost}
       [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_servers.list"` -gt 0 ] && continue
       find_rsmemberrole "${replicahost}"
-      echo "${rname}:${replicahost##*:}|${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
+      echo "${rname}:${replicahost##*:}||${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
     done
 
   done
@@ -335,23 +335,25 @@ if [ -n "$shardhosts" ] ; then
     fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
-    echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}" >> "${M_TEMP}/mongo_shards.list"
+    find_rsmemberrole "${shardhost}"
+    echo "${shardhost%:*}:${shardport}|${shard}|${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
   done
   
-  for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f3 | sort | uniq` ; do
-  
+  for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
+
     for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}$" | cut -d'|' -f1` ; do
       replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
       replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2 | tr -d '"'`
       [ $res -eq 0 ] && break
     done
-      
+
     for replicahost in $replicahosts ; do
       [ `grep -c "^${replicahost}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
       [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
-      echo "${replicahost}|${rs}" >> "${M_TEMP}/mongo_shards.list"
+      find_rsmemberrole "${shardhost}"
+      echo "${replicahost}|${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
     done
 
   done
