@@ -36,7 +36,7 @@ GI=`which gnt-instance 2>/dev/null`
 
 vm="$1"
 vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm"`
-[ "X`echo "$vmini" | cut -d'|' -f1`" != "XN" ] && echo "VM should exist and be stopped" && exit 1
+[ "X`echo "$vmini" | cut -d'|' -f1`" != "XN" ] && echo "VM must exist and be stopped" && exit 1
 
 disktype="`echo "$vmini" | cut -d'|' -f2`"
 disksize="`echo "$vmini" | cut -d'|' -f3`"
@@ -46,7 +46,8 @@ disksize="`echo "$vmini" | cut -d'|' -f3`"
 # now when we know that disk does exist, we can use a heavier tool to find its
 # file or device
 
-disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep ^State/Disks/disk/0/logical_id | cut -d'|' -f2 | tail -1`
+disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep '^State/Disks/disk/0/on primary' | cut -d'|' -f2 | tail -1`
+disk=`expr "$disk" : "\(.*\) ("`
 
 if [ ! -b "$disk" ]; then
   blockdev=$($LOSETUP -f --show "$disk")

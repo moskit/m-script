@@ -20,10 +20,12 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
-
-possible_options="name aki region"
-necessary_options="name"
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+QEMU_IMG=`which qemu-img 2>/dev/null`
+[ -z "$QEMU_IMG" ] && echo "qemu-img utility is not found" >&2 && exit 1
+possible_options="name ip id imagename help verbose"
+necessary_options=""
+IFS1=$IFS
+IFS='--'
 for s_option in "${@}"
 do
   found=0
@@ -46,24 +48,42 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  for option in `echo $possible_options | sed 's/ /--/g'`; do
+    if [ "X$s_optname" == "X$option" ]; then
+      if [ -n "$s_optarg" ]; then
+        eval "$s_optname=\"$s_optarg\""
+      else
+        [ -z "$(eval echo \$$option)" ] && eval "$option="
+      fi
+      found=1
+    fi
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
+  [ -n "$s_param" ] && params="$params $s_param" && unset s_param
 done
-found=0
+IFS=$IFS1
+if [ "X$help" == "Xyes" ] ; then
+  cat <<"EOF"
+Usage: ${0##*/} <options> or ${0##*/} <options> [image name]
 
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
-  exit 1
+Image name can be defined as a long-option --imagename or as a positional parameter
+
+Options:
+
+  --name=NAME              - name of the source instance
+  --ip=IP                  - ip of the source instance
+  --id=NAME                - for compatibility; same as name in Ganeti
+  --cluster=CLUSTER        - save under name of the base image of this cluster
+                             (as defined in conf/clusters.conf)
+  --verbose                - shows some additional details
+  --help                   - this help
+  
+EOF
+  exit 0
 fi
 
 source "$M_ROOT/conf/cloud.conf"
@@ -71,15 +91,17 @@ source "$M_ROOT/conf/mon.conf"
 [ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
 M_TEMP="$M_TEMP/cloud/ganeti"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
-[ -d "$SAVED_FILES_PATH" ] || install -d "$SAVED_FILES_PATH"
 
-[ "X$name" == "X" ] && log "name is mandatory, not saving" && exit 1
+if [ -z "$imagename" ]; then
+  if [ -n "$cluster" ]; then
+    imagename=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
+  else
+    [ -z "$imagename" ] && imagename="$params"
+  fi
+fi
+[ -z "$imagename" ] && log "image name is mandatory, not saving" && exit 1
 
-[ -f "${SAVED_FILES_PATH%/}/${name}.dump" ] && rm -rf "${SAVED_FILES_PATH%/}/${name}.dump"
 
-ec2-bundle-vol -r $ARCH --prefix "${name}" -d ${SAVED_FILES_PATH} --user $EC2_USERID $EXCLUDE -k $EC2_PRIVATE_KEY -c $EC2_CERT "$aki"
-ec2-upload-bundle -b "${BUCKETNAME}" -m "${SAVED_FILES_PATH%/}/${name}".manifest.xml -a $AWS_ACCESS_KEY_ID -s $AWS_SECRET_ACCESS_KEY --location $EC2_REGION
-amiID=`ec2-describe-images -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION | grep ^IMAGE | awk '{print $2" "$3}' | grep "${name}" | head -1 | awk '{print $1}'`
-[ -n "$amiID" ] && echo "The name ${name} is registered. De-registering first" && echo "Deregistered: `ec2-deregister -K $EC2_PRIVATE_KEY -C $EC2_CERT --region $EC2_REGION $amiID | cut -d' ' -f2`" 
-echo "Registered: `ec2-register -K $EC2_PRIVATE_KEY -C $EC2_CERT --region $EC2_REGION ${BUCKETNAME}/${name}.manifest.xml -n ${name} | cut -d' ' -f2`"
+  
+
 

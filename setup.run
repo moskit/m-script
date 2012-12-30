@@ -320,7 +320,7 @@ else
   else    
     echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
   fi
-  create_db
+  createdb
 fi
 
 chmod 755 "$rpath/"*.run "$rpath/"*.sh
