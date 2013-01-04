@@ -88,8 +88,9 @@ check_cluster_limit() {
   n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   [ -z "$n" ] && n=0
-  [ `expr $n \>= 0` -gt 0 ] || return 1
-  [ `expr $limit \> $n` -gt 0 ] && return 0
+  #[ `expr $n \>= 0` -gt 0 ] || return 1
+  [ `expr $limit \> $n` -gt 0 ] && echo 0 && return 0
+  echo 1
   return 1
 }
 
@@ -108,8 +109,9 @@ check_cluster_minimum() {
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
   [ -z "$n" ] && n=0
-  [ `expr $n \>= 0` -gt 0 ] || return 1
-  [ `expr $limit \< $n` -gt 0 ] && return 0
+  #[ `expr $n \>= 0` -gt 0 ] || return 1
+  [ `expr $limit \< $n` -gt 0 ] && echo 0 && return 0
+  echo 1
   return 1
 }
 

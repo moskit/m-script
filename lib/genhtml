@@ -19,6 +19,11 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
+STAT=`which stat 2>/dev/null`
+DATE=`which date 2>/dev/null`
+[ -z "$STAT" ] && echo "stat utility not found" && exit 1
+[ -z "$DATE" ] && echo "date utility not found" && exit 1
+
 possible_options="type css folder"
 necessary_options="type"
 [ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -59,7 +64,7 @@ if [ "X$help" == "Xyes" ] ; then
   echo
   echo "  --type=<type>            - dash, report, alert"
   echo "                             default is dash."
-  echo "  --css=<CSS class>        - dash slot class (dash only)"
+  echo "  --css=<CSS class>        - dash slot class (dash type only)"
   exit 0
 fi
 
@@ -83,8 +88,28 @@ case $type in
         sed -i '1d' "${rpath}/../www/$folder/dash.html" 2>>"$rpath/../logs/dashboard.log"
       done
     fi
-    timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
-    find "${rpath}/../www/$folder/" -mmin +$timerange -exec rm '{}' \;
+    oldestchunk=`head -1 "${rpath}/../www/$folder/dash.html"`
+    oldestfile="`expr "$oldestchunk" : '<div id=\"\(.*\)\" title'`".html
+    badluck=false # we are lucky by default
+    if [ -f "$oldestfile" ]; then
+      oldestfiledate=`$STAT -c "%z" "$oldestfile"`
+      # sanitizing, just in case
+      oldestfiledate=`$DATE -d "$oldestfiledate" +"%s" 2>/dev/null`
+      [ -z "$oldestfiledate" ] && badluck=true
+    else
+      badluck=true
+    fi
+    if $badluck
+      timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
+    else
+      timenow=`date +"%s"`
+      timerange=`expr $timenow - $oldestfiledate`
+    fi
+    if [ `expr $timerange : .*[^0-9]` -eq 0 ]; then
+      find "${rpath}/../www/$folder/" -type f -mmin +$timerange -exec rm '{}' \;
+    else
+      echo "ERROR: old files not removed from ${rpath}/../www/$folder" >> "$rpath/../logs/dashboard.log"
+    fi
     ;;
   report)
     "${rpath}/../lib/txt2html" "$textfile" >> "${rpath}/../www/$folder/report.html" 2>>"$rpath/../logs/dashboard.log"

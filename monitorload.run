@@ -51,6 +51,7 @@ start)
   echo $$ > $pidfile
   echo 0 > $tempfile
   
+  [ -n "$FREQ" ] && FREQ=`expr $FREQ - 10` || FREQ=200
   if [ "X$MONGOOSE" == "X1" ] ; then
     printf "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
@@ -91,14 +92,16 @@ start)
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
 
 ##### Running tests #####
-
+    sleep 10
+    # Running actions from the queue
+    "${rpath}"/lib/mq.run </dev/null &
+    
 ### Tests that run if load has changed - we're interested in various metrics here
     if [ "X$x" == "X1" ]; then
 ## A pause is necessary here, because it is practically the same moment as test
 ## at line 114 from the previous run, so lock file doesn't really work.
 ## But the full cycle is not a good idea because we want to know what caused
 ## the load. So we need just some delay to secure the lock.
-      sleep 10
 ## If load is not too high, all tests run
       if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
         ${rpath}/mon.run -ao </dev/null &
@@ -108,6 +111,7 @@ start)
       fi
     fi
 
+    
     sleep $FREQ
 
 ## Tests that are disabled if load average is too high
@@ -147,8 +151,6 @@ start)
           done </dev/null &
         done
       fi
-      # Running actions from the queue
-      "${rpath}"/lib/mq.run </dev/null &
     else
 ## Tests that are always enabled
       "${rpath}"/mon.run mem.mon </dev/null &

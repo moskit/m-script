@@ -29,12 +29,12 @@ log_error() {
 }
 
 map_disk0() {
+  [ -z "$1" ] && log_error "argument to map_disk0 is empty" && return 1
   blockdev="$1"
-  filesystem_dev_base=`kpartx -l -p- $blockdev | \
-                       grep -m 1 -- "-1.*$blockdev" | \
-                       awk '{print $1}'`
+  filesystem_dev_base=`kpartx -l -p- $blockdev | grep -m 1 -- "-1.*$blockdev" | awk '{print $1}'`
   if [ -z "$filesystem_dev_base" ]; then
-    log_error "Cannot interpret kpartx output and get partition mapping"
+    log_error "Cannot interpret kpartx output and get partition mapping using command:"
+    log_error "kpartx -l -p- $blockdev | grep -m 1 -- \"-1.*$blockdev\" | awk '{print $1}'"
     exit 1
   fi
   kpartx -a -p- $blockdev > /dev/null

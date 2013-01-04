@@ -52,6 +52,8 @@ disk=`expr "$disk" : "\(.*\) ("`
 if [ ! -b "$disk" ]; then
   blockdev=$($LOSETUP -f --show "$disk")
   CLEANUP+=("$LOSETUP -d $blockdev")
+else
+  blockdev="$disk"
 fi
 
 filesystem_dev=$(map_disk0 $blockdev)

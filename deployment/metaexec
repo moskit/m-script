@@ -262,6 +262,9 @@ if [ -z "$flavor" ] ; then
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
 
+[ -z "$SERVER_CHECKS_NUMBER" ] && SERVER_CHECKS_NUMBER=20
+[ -z "$SERVER_CHECKS_PERIOD" ] && SERVER_CHECKS_PERIOD=30
+
 if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
   [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
@@ -331,12 +334,12 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"
     if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
-      for ((k=0; k<10; k++)); do
+      for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
         $SSH -i "${rpath}/../keys/${KEY}" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
         if [ $? -ne 0 ]; then
           echo "Unable to login to the server $ip using the key ${rpath}/../keys/${KEY}, trying again...">>"$LOG"
           loggedin=false
-          sleep 30
+          sleep $SERVER_CHECKS_PERIOD
         else
           loggedin=true
           break
