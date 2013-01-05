@@ -99,7 +99,7 @@ case $type in
     else
       badluck=true
     fi
-    if $badluck
+    if $badluck ; then
       timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
     else
       timenow=`date +"%s"`
