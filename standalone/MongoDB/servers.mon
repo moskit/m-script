@@ -20,6 +20,23 @@ touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" 
 M_TEMP="${M_TEMP}/MongoDB"
 install -d "${M_TEMP}"
 
+solve() {
+sc=$1
+shift
+bc << EOF
+scale=${sc};
+a = $@;
+define b (x) {
+  if (x < 1) {
+    print "0";
+  }
+  return x;
+}
+print b(a);
+print "\n";
+EOF
+}
+
 function print_servers() {
   for host in $@ ; do
     echo "${host}|||"
@@ -74,20 +91,20 @@ function parse_data() {
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
   netIn_prev=`grep ^netIn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
-  bw_in=`echo "scale=2; (${netIn-0} - ${netIn_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576" | bc`
+  bw_in=`solve 2 "(${netIn-0} - ${netIn_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576"`
   netOut_prev=`grep ^netOut\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
-  bw_out=`echo "scale=2; (${netOut-0} - ${netOut_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576" | bc`
+  bw_out=`solve 2 "(${netOut-0} - ${netOut_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576"`
   echo "Bandwidth in (MB/sec):   ${bw_in}"
   echo "Bandwidth out (MB/sec):   ${bw_out}"
   netReqn_prev=`grep ^netReqn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netReqn_prev=$netReqn
-  net_reqps=`echo "scale=1; ($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  net_reqps=`solve 1 "($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)"`
   echo "Network requests per second:   $net_reqps"
   if [ -n "$lockTime" ] ; then
     echo -e"\n Global lock\n"
     lockTime_prev=`grep ^lockTime\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
-    lockTime=`echo "scale=2; (${lockTime} - ${lockTime_prev}) / ($timeindexnow - $lasttimeindex) / 10000" | bc`
+    lockTime=`solve 2 "(${lockTime} - ${lockTime_prev}) / ($timeindexnow - $lasttimeindex) / 10000"`
     echo "Lock time current, percents:   $lockTime"
-    echo "Lock time overall, percents:   `echo "scale=2; $lockRatio * 100 / 1" | bc`"
+    echo "Lock time overall, percents:   `solve 2 "$lockRatio * 100 / 1"`"
     echo "Lock queue total:   $lockQueueTotal"
     echo "Lock queue readers:   $lockQueueReaders"
     echo "Lock queue writers:   $lockQueueWriters"
@@ -107,68 +124,68 @@ function parse_data() {
   # Total
   
   opcountersQuery_prev=`grep ^opcountersQuery\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersQuery_prev=$opcountersQuery
-  [ -n "$opcountersQuery" ] && ops_queriesps=`echo "scale=1; ($opcountersQuery >= $opcountersQuery_prev) * ($opcountersQuery - $opcountersQuery_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opcountersQuery" ] && ops_queriesps=`solve 1 "($opcountersQuery >= $opcountersQuery_prev) * ($opcountersQuery - $opcountersQuery_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opcountersInsert_prev=`grep ^opcountersInsert\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersInsert_prev=$opcountersInsert
-  [ -n "$opcountersInsert" ] && ops_insertsps=`echo "scale=1; ($opcountersInsert >= $opcountersInsert_prev) * ($opcountersInsert - $opcountersInsert_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opcountersInsert" ] && ops_insertsps=`solve 1 "($opcountersInsert >= $opcountersInsert_prev) * ($opcountersInsert - $opcountersInsert_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opcountersUpdate_prev=`grep ^opcountersUpdate\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersUpdate_prev=$opcountersUpdate
-  [ -n "$opcountersUpdate" ] && ops_updatesps=`echo "scale=1; ($opcountersUpdate >= $opcountersUpdate_prev) * ($opcountersUpdate - $opcountersUpdate_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opcountersUpdate" ] && ops_updatesps=`solve 1 "($opcountersUpdate >= $opcountersUpdate_prev) * ($opcountersUpdate - $opcountersUpdate_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opcountersDelete_prev=`grep ^opcountersDelete\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersDelete_prev=$opcountersDelete
-  [ -n "$opcountersDelete" ] && ops_deletesps=`echo "scale=1; ($opcountersDelete >= $opcountersDelete_prev) * ($opcountersDelete - $opcountersDelete_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opcountersDelete" ] && ops_deletesps=`solve 1 "($opcountersDelete >= $opcountersDelete_prev) * ($opcountersDelete - $opcountersDelete_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opcountersGetmore_prev=`grep ^opcountersGetmore\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersGetmore_prev=$opcountersGetmore
-  [ -n "$opcountersGetmore" ] && ops_getmoresps=`echo "scale=1; ($opcountersGetmore >= $opcountersGetmore_prev) * ($opcountersGetmore - $opcountersGetmore_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opcountersGetmore" ] && ops_getmoresps=`solve 1 "($opcountersGetmore >= $opcountersGetmore_prev) * ($opcountersGetmore - $opcountersGetmore_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opcountersCommand_prev=`grep ^opcountersCommand\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersCommand_prev=$opcountersCommand
-  [ -n "$opcountersCommand" ] && ops_commandsps=`echo "scale=1; ($opcountersCommand >= $opcountersCommand_prev) * ($opcountersCommand - $opcountersCommand_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opcountersCommand" ] && ops_commandsps=`solve 1 "($opcountersCommand >= $opcountersCommand_prev) * ($opcountersCommand - $opcountersCommand_prev) / ($timeindexnow - $lasttimeindex)"`
   
-  [ -n "$opcountersQuery" ] && ops_totalqps=`echo "scale=1; $ops_queriesps + $ops_insertsps + $ops_updatesps + $ops_deletesps + $ops_getmoresps + $ops_commandsps" | bc`
+  [ -n "$opcountersQuery" ] && ops_totalqps=`solve 1 "$ops_queriesps + $ops_insertsps + $ops_updatesps + $ops_deletesps + $ops_getmoresps + $ops_commandsps"`
   
   # Sharded
   
   opsShardedQuery_prev=`grep ^opsShardedQuery\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsShardedQuery_prev=$opsShardedQuery
-  [ -n "$opsShardedQuery" ] && ops_queriesps_sharded=`echo "scale=1; ($opsShardedQuery >= $opsShardedQuery_prev) * ($opsShardedQuery - $opsShardedQuery_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsShardedQuery" ] && ops_queriesps_sharded=`solve 1 "($opsShardedQuery >= $opsShardedQuery_prev) * ($opsShardedQuery - $opsShardedQuery_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsShardedInsert_prev=`grep ^opsShardedInsert\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsShardedInsert_prev=$opsShardedInsert
-  [ -n "$opsShardedInsert" ] && ops_insertsps_sharded=`echo "scale=1; ($opsShardedInsert >= $opsShardedInsert_prev) * ($opsShardedInsert - $opsShardedInsert_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsShardedInsert" ] && ops_insertsps_sharded=`solve 1 "($opsShardedInsert >= $opsShardedInsert_prev) * ($opsShardedInsert - $opsShardedInsert_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsShardedUpdate_prev=`grep ^opsShardedUpdate\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsShardedUpdate_prev=$opsShardedUpdate
-  [ -n "$opsShardedUpdate" ] && ops_updatesps_sharded=`echo "scale=1; ($opsShardedUpdate >= $opsShardedUpdate_prev) * ($opsShardedUpdate - $opsShardedUpdate_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsShardedUpdate" ] && ops_updatesps_sharded=`solve 1 "($opsShardedUpdate >= $opsShardedUpdate_prev) * ($opsShardedUpdate - $opsShardedUpdate_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsShardedDelete_prev=`grep ^opsShardedDelete\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsShardedDelete_prev=$opsShardedDelete
-  [ -n "$opsShardedDelete" ] && ops_deletesps_sharded=`echo "scale=1; ($opsShardedDelete >= $opsShardedDelete_prev) * ($opsShardedDelete - $opsShardedDelete_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsShardedDelete" ] && ops_deletesps_sharded=`solve 1 "($opsShardedDelete >= $opsShardedDelete_prev) * ($opsShardedDelete - $opsShardedDelete_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsShardedGetmore_prev=`grep ^opsShardedGetmore\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsShardedGetmore_prev=$opsShardedGetmore
-  [ -n "$opsShardedGetmore" ] && ops_getmoresps_sharded=`echo "scale=1; ($opsShardedGetmore >= $opsShardedGetmore_prev) * ($opsShardedGetmore - $opsShardedGetmore_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsShardedGetmore" ] && ops_getmoresps_sharded=`solve 1 "($opsShardedGetmore >= $opsShardedGetmore_prev) * ($opsShardedGetmore - $opsShardedGetmore_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsShardedCommand_prev=`grep ^opsShardedCommand\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsShardedCommand_prev=$opsShardedCommand
-  [ -n "$opsShardedCommand" ] && ops_commandsps_sharded=`echo "scale=1; ($opsShardedCommand >= $opsShardedCommand_prev) * ($opsShardedCommand - $opsShardedCommand_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsShardedCommand" ] && ops_commandsps_sharded=`solve 1 "($opsShardedCommand >= $opsShardedCommand_prev) * ($opsShardedCommand - $opsShardedCommand_prev) / ($timeindexnow - $lasttimeindex)"`
   
-  [ -n "$opsShardedQuery" ] && ops_totalqps_sharded=`echo "scale=1; $ops_queriesps_sharded + $ops_insertsps_sharded + $ops_updatesps_sharded + $ops_deletesps_sharded + $ops_getmoresps_sharded + $ops_commandsps_sharded" | bc`
+  [ -n "$opsShardedQuery" ] && ops_totalqps_sharded=`solve 1 "$ops_queriesps_sharded + $ops_insertsps_sharded + $ops_updatesps_sharded + $ops_deletesps_sharded + $ops_getmoresps_sharded + $ops_commandsps_sharded"`
   
   # Not Sharded
   
   opsNotShardedQuery_prev=`grep ^opsNotShardedQuery\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedQuery_prev=$opsNotShardedQuery
-  [ -n "$opsNotShardedQuery" ] && ops_queriesps_notsharded=`echo "scale=1; ($opsNotShardedQuery >= $opsNotShardedQuery_prev) * ($opsNotShardedQuery - $opsNotShardedQuery_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsNotShardedQuery" ] && ops_queriesps_notsharded=`solve 1; "($opsNotShardedQuery >= $opsNotShardedQuery_prev) * ($opsNotShardedQuery - $opsNotShardedQuery_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsNotShardedInsert_prev=`grep ^opsNotShardedInsert\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedInsert_prev=$opsNotShardedInsert
-  [ -n "$opsNotShardedInsert" ] && ops_insertsps_notsharded=`echo "scale=1; ($opsNotShardedInsert >= $opsNotShardedInsert_prev) * ($opsNotShardedInsert - $opsNotShardedInsert_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsNotShardedInsert" ] && ops_insertsps_notsharded=`solve 1 "($opsNotShardedInsert >= $opsNotShardedInsert_prev) * ($opsNotShardedInsert - $opsNotShardedInsert_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsNotShardedUpdate_prev=`grep ^opsNotShardedUpdate\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedUpdate_prev=$opsNotShardedUpdate
-  [ -n "$opsNotShardedUpdate" ] && ops_updatesps_notsharded=`echo "scale=1; ($opsNotShardedUpdate >= $opsNotShardedUpdate_prev) * ($opsNotShardedUpdate - $opsNotShardedUpdate_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsNotShardedUpdate" ] && ops_updatesps_notsharded=`solve 1 "($opsNotShardedUpdate >= $opsNotShardedUpdate_prev) * ($opsNotShardedUpdate - $opsNotShardedUpdate_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsNotShardedDelete_prev=`grep ^opsNotShardedDelete\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedDelete_prev=$opsNotShardedDelete
-  [ -n "$opsNotShardedDelete" ] && ops_deletesps_notsharded=`echo "scale=1; ($opsNotShardedDelete >= $opsNotShardedDelete_prev) * ($opsNotShardedDelete - $opsNotShardedDelete_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsNotShardedDelete" ] && ops_deletesps_notsharded=`solve 1 "($opsNotShardedDelete >= $opsNotShardedDelete_prev) * ($opsNotShardedDelete - $opsNotShardedDelete_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsNotShardedGetmore_prev=`grep ^opsNotShardedGetmore\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedGetmore_prev=$opsNotShardedGetmore
-  [ -n "$opsNotShardedGetmore" ] && ops_getmoresps_notsharded=`echo "scale=1; ($opsNotShardedGetmore >= $opsNotShardedGetmore_prev) * ($opsNotShardedGetmore - $opsNotShardedGetmore_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsNotShardedGetmore" ] && ops_getmoresps_notsharded=`solve 1 "($opsNotShardedGetmore >= $opsNotShardedGetmore_prev) * ($opsNotShardedGetmore - $opsNotShardedGetmore_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsNotShardedCommand_prev=`grep ^opsNotShardedCommand\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedCommand_prev=$opsNotShardedCommand
-  [ -n "$opsNotShardedCommand" ] && ops_commandsps_notsharded=`echo "scale=1; ($opsNotShardedCommand >= $opsNotShardedCommand_prev) * ($opsNotShardedCommand - $opsNotShardedCommand_prev) / ($timeindexnow - $lasttimeindex)" | bc`
+  [ -n "$opsNotShardedCommand" ] && ops_commandsps_notsharded=`solve 1 "($opsNotShardedCommand >= $opsNotShardedCommand_prev) * ($opsNotShardedCommand - $opsNotShardedCommand_prev) / ($timeindexnow - $lasttimeindex)"`
   
-  [ -n "$opsNotShardedQuery" ] && ops_totalqps_notsharded=`echo "scale=1; $ops_queriesps_notsharded + $ops_insertsps_notsharded + $ops_updatesps_notsharded + $ops_deletesps_notsharded + $ops_getmoresps_notsharded + $ops_commandsps_notsharded" | bc`
+  [ -n "$opsNotShardedQuery" ] && ops_totalqps_notsharded=`solve 1 "$ops_queriesps_notsharded + $ops_insertsps_notsharded + $ops_updatesps_notsharded + $ops_deletesps_notsharded + $ops_getmoresps_notsharded + $ops_commandsps_notsharded"`
   
   echo "Query               $ops_queriesps      $ops_queriesps_sharded      $ops_queriesps_notsharded"
   echo "Insert              $ops_insertsps      $ops_insertsps_sharded     $ops_insertsps_notsharded"

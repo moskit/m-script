@@ -16,10 +16,19 @@
 
 solve() {
 bc << EOF
-scale=2
-${1}
+scale=2;
+a = $@;
+define b (x) {
+  if (x < 1) {
+    print "0";
+  }
+  return x;
+}
+print b(a);
+print "\n";
 EOF
 }
+
 PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}

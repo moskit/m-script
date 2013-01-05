@@ -311,7 +311,8 @@ if [ -n "$perpixel" ]; then
     $minauto && minQ="${minQ%,}"
     maxQ="${maxQ%,}"
   fi
-  nonempty=`echo $metric | sed 's|,| and |g'`
+  nonempty=`echo $metric | sed "s|,|\<\>'' and |g"`
+  nonempty="${nonempty}<>''"
   if [ -n "$where" ] ; then
     field=${where%%:*}
     value=${where#*:}
