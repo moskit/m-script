@@ -70,7 +70,9 @@ source "$M_ROOT/lib/cloud_functions.sh"
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
-lock_cloudops || exit 10
+if [ -z "$IAMACHILD" ]; then
+  lock_cloudops || exit 10
+fi
 CURL="$CURL -s -k"
 declare -i icount
 

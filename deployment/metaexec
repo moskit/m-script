@@ -325,7 +325,8 @@ if [ -z "$output" ] ; then
 fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
-  KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  #KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  KEY=`find_key cluster "$cluster"`
   [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && proper_exit 1
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1
   [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem

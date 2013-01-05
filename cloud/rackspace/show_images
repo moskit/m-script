@@ -68,7 +68,9 @@ source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/rackspace"
 install -d "$M_TEMP"
-lock_cloudops || exit 10
+if [ -z "$IAMACHILD" ]; then
+  lock_cloudops || exit 10
+fi
 CURL="$CURL -s -k"
 
 proper_exit() {

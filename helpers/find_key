@@ -1,0 +1,127 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${BASH_SOURCE##*/}
+rpath=${BASH_SOURCE%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../") && export M_ROOT
+#*/
+
+log() {
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: ${@}">>$LOG
+}
+
+find_cluster_key() {
+  KEY=`grep "^${1}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+    KEY1="${KEY}.pem"
+    [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
+    [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+  fi
+  [ -f "$M_ROOT/keys/$KEY" ] && return 0 || return 1
+}
+
+find_server_key() {
+  # if target is IP
+  KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
+  # if target is hostname
+  [ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${1}$ | cut -d'|' -f1`
+
+  if [ -n "$KEY" ]; then
+    if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+      KEY1="${KEY}.pem"
+      if [ -f "$M_ROOT/keys/$KEY1" ]; then
+        KEY=$KEY1
+      else
+        KEY1="${KEY%.pem}"
+      fi
+      [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+      return 0
+    else
+      return 1
+    fi
+  fi
+}
+
+LOG="$M_ROOT/logs/cloud.log"
+
+where=$1
+shift
+case $where in
+  cluster)
+    find_cluster_key "$cluster" && echo "$KEY" && exit 0
+  ;;
+  server)
+    nextkey=false
+    find_server_key "$1" && echo "$KEY" && exit 0
+    log "trying server $1 cluster key"
+    if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+      cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+      if [ -n "$cluster" ] ; then
+        find_cluster_key "$cluster" && echo "$KEY" && exit 0
+      else
+        echo "Cluster not found for server $1" >&2
+      fi
+      if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+        log "trying ${USER}'s keys"
+        USERKEY1="~/.ssh/id_rsa"
+        USERKEY2="~/.ssh/id_dsa"
+      fi
+    fi
+  ;;
+  *)
+    echo "No idea how to find the key for $where"
+    exit 1
+  ;;
+esac  
+
+KEY="$M_ROOT/keys/$KEY"
+
+if [ -n "$KEY" ] ; then
+  if [ -f "$KEY" ]; then
+    echo "$KEY"
+  fi
+else
+  log "trying other probable keys"
+  nextkey=true
+fi
+if $nextkey ; then
+  if [ -f "$USERKEY1" ]; then
+    log "   ...$USERKEY1"
+    $SSH -i "$USERKEY1" "/bin/ls \>/dev/null"
+    if [ $? -ne 255 ]; then
+      echo "$USERKEY1"
+      exit 0
+    fi
+  fi
+fi
+if $nextkey ; then
+  if [ -f "$USERKEY2" ]; then
+    log "   ...$USERKEY2"
+    $SSH -i "$USERKEY2" "/bin/ls \>/dev/null"
+    if [ $? -ne 255 ]; then
+      echo "$USERKEY2"
+      exit 0
+    fi
+  fi
+fi
+
+log "No matching key found, tried: $KEY, $USERKEY1, $USERKEY2"
+
+exit 1
+
+

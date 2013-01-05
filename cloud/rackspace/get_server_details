@@ -71,7 +71,9 @@ fi
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
-lock_cloudops || exit 10
+if [ -z "$IAMACHILD" ]; then
+  lock_cloudops || exit 10
+fi
 
 
 proper_exit() {
