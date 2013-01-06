@@ -197,13 +197,19 @@ action_blocked() {
   if [ -f "$M_TEMP/actions.blocked" ] ; then
     cyclesleft=`grep "^${@}|" "$M_TEMP/actions.blocked" | cut -d'|' -f2`
     [ -z "$cyclesleft" ] && return 1
-    [ `expr "$cyclesleft" : ".*[^[0-9]]*.*"` -ne 0 ] && log "value of cycles left is not a number" && return 1
+    if [ `echo "$cyclesleft" | wc -l` -gt 1 ];then
+      cyclesleft=`echo "$cyclesleft" | sort -n | tail -1`
+    fi
     if [ "X$cyclesleft" == "X0" ]; then
       unblock_action "$@" && log "unblocking action ${@} due to 0 cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
     else
-      cyclesleft=`expr $cyclesleft - 1 2>/dev/null || echo 0`
+      cyclesleft=`expr $cyclesleft - 1 2>/dev/null` || cyclesleft=0
       unblock_action "$@"
-      [[ $cyclesleft -gt 0 ]] && block_action $cyclesleft "$@" || return 1
+      if [ $cyclesleft -gt 0 ] 2>"$LOG"; then
+        block_action $cyclesleft "$@"
+      else
+        return 1
+      fi
       return 0
     fi
   else
