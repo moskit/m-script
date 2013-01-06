@@ -45,9 +45,9 @@ full_coll_backup() {
   # storing the latest ID before dumping for the ID-based incremental backups.
   # Use --objcheck while restoring such backups if you care about duplicates.
   if [ "$3" == "_id" ]; then
-    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${1}.${2}.${bktype}.lastid"
+    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | "$rpath"/lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${1}.${2}.${bktype}.lastid"
   else
-    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1,_id:0}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${1}.${2}.${bktype}.lastid"
+    $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1,_id:0}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | "$rpath"/lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${1}.${2}.${bktype}.lastid"
   fi
   $MONGODUMP --host $DBHOST --db "$1" --collection "$2" $USER $PASS --out "$MBD/${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $1 dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $1 dump failed" >>"$rpath/m_backup.log"
   [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${1}.${2}.${bktype}.${archname}.tar.${ext}" "${1}.${2}.${bktype}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
@@ -140,7 +140,17 @@ if [ -n "$mongodbpertableconf" ] ; then
           bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
           QUERY="{ $idfield : { \$gt : $lastid }}"
           [ -n "$debugflag" ] && log "$QUERY"
-          $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log" || echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+          $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp"
+          if [ $? -eq 0 ]; then
+            if [ "$idfield" == "_id" ]; then
+              $MONGO "$DBHOST/$db" --quiet --eval "db.$coll.find({},{$idfield:1}).sort({$idfield:-1}).limit(1).forEach(printjson)" 2>/dev/null | "$rpath"/lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid"
+            else
+              $MONGO "$DBHOST/$db" --quiet --eval "db.$coll.find({},{$idfield:1,_id:0}).sort({$idfield:-1}).limit(1).forEach(printjson)" 2>/dev/null | "$rpath"/lib/json2txt | cut -d'|' -f2 > "$rpath/var/mongodb/${db}.${coll}.${bktype}.lastid"
+            fi
+            echo "mongo: $db dumped successfully" >>"$rpath/m_backup.log"
+          else
+            echo "mongo: $db dump failed" >>"$rpath/m_backup.log"
+          fi
           [ -n "$debugflag" ] && log "archiving"
           [ -n "$TAR" ] && (IFS=$IFS1 ; cd "$MBD" ; $TAR "${db}.${coll}.${bktype}.${bkname}.${archname}.tar.${ext}" "${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp")
           cat "$rpath/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$rpath/m_backup.error" && rm -f "$rpath/logs/mongo.backup.tmp"

@@ -138,6 +138,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
     chk_portexclusions $t $prog
+    [ "${t%:*}" == "0.0.0.0" ] && mtch="${t#*:} " || mtch="$t "
     
     # now compare ports
     for ((i=0; i<${#portstcp[*]}; i++))
@@ -153,7 +154,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
         m=`expr length "$t"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSTCP | grep "$t " | wc -l`\n"
+        printf "`$NETCONNSTCP | grep "$mtch" | wc -l`\n"
         portfound=1
         break
       fi
@@ -183,6 +184,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
     chk_portexclusions $t $prog
+    [ "${t%:*}" == "0.0.0.0" ] && mtch="${t#*:} " || mtch="$t "
     
     # now compare ports
     for ((i=0; i<${#portsudp[*]}; i++))
@@ -198,7 +200,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
         m=`expr length "$t"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSUDP | grep "$t " | wc -l`\n"
+        printf "`$NETCONNSUDP | grep "$match" | wc -l`\n"
         portfound=1
         break
       fi
