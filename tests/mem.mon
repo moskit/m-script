@@ -14,47 +14,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# bc workaround to make it work with floating point numbers
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
-
 FREE=`which free 2>/dev/null`
 PS=`which ps 2>/dev/null`
 UPTIME=`which uptime 2>/dev/null`
 VMSTAT=`which vmstat 2>/dev/null`
 rcommand=${0##*/}
 rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/ (this is needed to fix vi syntax highlighting)
 timeindexnow=`cat /tmp/m_script/timeindex`
 source "${rpath}/../conf/mon.conf"
 source "${0%.mon}.conf"
+source "$M_ROOT/lib/functions.sh"
 ruptime=`cat /proc/uptime | cut -d'.' -f1`
 rfreeram=`cat /proc/meminfo | grep ^MemFree | awk '{ print $2 }'`
-mfreeram=`solve "$rfreeram / 1024"`
+mfreeram=`solve 2 "$rfreeram / 1024"`
 ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
 if [ -n "$ractiveram" ] ; then
-mactiveram=`solve "$ractiveram / 1024"`
+mactiveram=`solve 2 "$ractiveram / 1024"`
 else
 ractiveram=0
 mactiveram=0
 fi
 rtotalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
-mtotalram=`solve "$rtotalram / 1024"`
+mtotalram=`solve 2 "$rtotalram / 1024"`
 rusedram=`expr $rtotalram - $rfreeram`
-musedram=`solve "$mtotalram - $mfreeram"`
+musedram=`solve 2 "$mtotalram - $mfreeram"`
 rfreeswap=`cat /proc/meminfo | grep ^SwapFree | awk '{ print $2 }'`
-mfreeswap=`solve "$rfreeswap / 1024"`
+mfreeswap=`solve 2 "$rfreeswap / 1024"`
 rtotalswap=`cat /proc/meminfo | grep ^SwapTotal | awk '{ print $2 }'`
-mtotalswap=`solve "$rtotalswap / 1024"`
+mtotalswap=`solve 2 "$rtotalswap / 1024"`
 rusedswap=`expr $rtotalswap - $rfreeswap`
 musedswap=`solve "$mtotalswap - $mfreeswap"`
 rtotalmemfree=`expr $rfreeram + $rfreeswap`
-mtotalmemfree=`solve "$rtotalmemfree / 1024"`
+mtotalmemfree=`solve 2 "$rtotalmemfree / 1024"`
 rtotalprocess="$($PS axu | grep -vE "^USER|grep|ps" | wc -l)"
 rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
 
@@ -90,8 +83,8 @@ warnind='<OK> '
 [ "$y3" == "1" ] && warnind='<***>'
 echo "${warnind} 5 min load average is $x"
 
-totalmemused=`solve "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
-totalramused=`solve "$ractiveram / $rtotalram * 100"`
+totalmemused=`solve 2 "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
+totalramused=`solve 2 "$ractiveram / $rtotalram * 100"`
 
 y1="$(echo "$totalmemused >= $MEM_WARN_1" | bc)"
 y2="$(echo "$totalmemused >= $MEM_WARN_2" | bc)"

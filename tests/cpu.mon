@@ -14,24 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
-
 VMSTAT=`which vmstat`
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
 timeindexnow=`cat /tmp/m_script/timeindex`
 source "${rpath}/../conf/mon.conf"
 source "${0%.mon}.conf"
+source "$M_ROOT/lib/functions.sh"
 
-## Not in mon.conf, not sure it is needed there
-CPUUPERIOD=1
-CPUUSAMPLES=5
+[ -z "$CPUUPERIOD" ] && CPUUPERIOD=1
+[ -z "$CPUUSAMPLES" ] && CPUUSAMPLES=5
 
 $VMSTAT -n $CPUUPERIOD $CPUUSAMPLES | awk '{ print $13"|"$14"|"$16 }' | tail -5 > /tmp/m_script/cpuusage
 
@@ -45,14 +39,14 @@ do
   wa=`echo $LINE | cut -d'|' -f3`
   # if anything > 100, it's an error
   [ $us -gt 100 -o $sy -gt 100 -o $wa -gt 100 ] && exit 0
-  usavg=`solve "$usavg + $us"`
-  syavg=`solve "$syavg + $sy"`
-  waavg=`solve "$waavg + $wa"`
+  usavg=`solve 2 "$usavg + $us"`
+  syavg=`solve 2 "$syavg + $sy"`
+  waavg=`solve 2 "$waavg + $wa"`
 done < /tmp/m_script/cpuusage
-usavg=`solve "$usavg / $CPUUSAMPLES"`
-syavg=`solve "$syavg / $CPUUSAMPLES"`
-waavg=`solve "$waavg / $CPUUSAMPLES"`
-cpuusage=`solve "$usavg + $syavg + $waavg"`
+usavg=`solve 2 "$usavg / $CPUUSAMPLES"`
+syavg=`solve 2 "$syavg / $CPUUSAMPLES"`
+waavg=`solve 2 "$waavg / $CPUUSAMPLES"`
+cpuusage=`solve 2 "$usavg + $syavg + $waavg"`
 
 y1="$(echo "$cpuusage >= $CPU_USAGE_1" | bc)"
 y2="$(echo "$cpuusage >= $CPU_USAGE_2" | bc)"
@@ -90,7 +84,7 @@ then
         if [ "X`cat /proc/acpi/processor/$cpu/throttling | grep 'T0:' | awk '{print $2}'`" == 'X100%' ] ; then isnormal=''; else isnormal=' scaled down by' ; fi
         thrstate=`cat /proc/acpi/processor/$cpu/throttling | grep '\*' | awk '{ print $1}' | sed 's_*__'`
         thr=`cat /proc/acpi/processor/$cpu/throttling | grep '\*' | awk '{ print $2}' | sed "s|%$||" | sed "s|^0||"`
-        thrt=`solve "$thrt + $thr"`
+        thrt=`solve 2 "$thrt + $thr"`
         if [ "X${thr}" == "X0" ]; then
           warnind='<OK> '
         else
@@ -102,7 +96,7 @@ then
         fi
         echo "${warnind} $cpu frequency is$isnormal ${thr} %"
       done
-      thrt=`solve "$thrt / $cpunum"`
+      thrt=`solve 2 "$thrt / $cpunum"`
     fi
   fi
 fi

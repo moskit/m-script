@@ -14,20 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
-
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
 timeindexnow=`cat /tmp/m_script/timeindex`
 source "${rpath}/../conf/mon.conf"
 source "${0%.mon}.conf"
-
+source "$M_ROOT/lib/functions.sh"
 
 if [ -d /proc/acpi/thermal_zone ]
 then
@@ -41,7 +35,7 @@ then
       for thrm in `ls /proc/acpi/thermal_zone`
       do
         tmpr=`cat /proc/acpi/thermal_zone/$thrm/temperature  | awk '{ print $2}'`
-        tmprt=`solve "$tmprt + $tmpr"`
+        CPU_TEMP=`solve 2 "$tmprt + $tmpr"`
         y1="$(echo "$tmpr >= $CPU_TEMP_1" | bc)"
         y2="$(echo "$tmpr >= $CPU_TEMP_2" | bc)"
         y3="$(echo "$tmpr >= $CPU_TEMP_3" | bc)"
@@ -52,7 +46,7 @@ then
         [ "$y3" == "1" ] && warnind='<***>'
         echo "${warnind} The $thrm zone temperature is ${tmpr} Centigrade"
       done
-      tmprt=`solve "$tmprt / $thrmnum"`
+      CPU_TEMP=`solve 2 "$CPU_TEMP / $thrmnum"`
     fi
   fi
 fi

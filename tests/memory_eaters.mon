@@ -1,12 +1,5 @@
 #!/bin/bash
 
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
-
 PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
@@ -15,6 +8,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$M_ROOT/conf/mon.conf" || exit 99
 source "${0%.mon}.conf" || exit 99
+source "$M_ROOT/lib/functions.sh"
 
 [ -z "$CMD_LENGTH" ] && CMD_LENGTH=256
 [ -z "$CMD_ARGS" ] && CMD_ARGS=2
@@ -77,8 +71,8 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
     unset usageprev warnind
     procname=${proc#* }
     usage=${proc%% *}
-    usagemb=`solve "$usage / 1024"`
-    usageperc=`solve "$usage / $totalram * 100"`
+    usagemb=`solve 2 "$usage / 1024"`
+    usageperc=`solve 2 "$usage / $totalram * 100"`
     if [[ `echo "$usageperc >= $TOTALS_MEM_RES_MIN" | bc` -eq 1 ]] ; then
       warnind='<OK> '
       [ -n "$TOTALS_MEM_RES_3" ] && y3="$(echo "$usageperc >= $TOTALS_MEM_RES_3" | bc)"
@@ -91,14 +85,14 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       unset y1 y2 y3 warnind
     fi
     [ -f ${M_TEMP}/ps.prev.totals.res ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.totals.res | cut -d' ' -f1 | tail -1` || continue
-    [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
+    [ -n "$usageprev" ] && usageprevperc=`solve 2 "$usageprev / $totalram * 100"` || continue
     if [ -n "$usageprevperc" ] ; then
       if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
         direction="increased"
-        usagediff=`solve "$usageperc - $usageprevperc"`
+        usagediff=`solve 2 "$usageperc - $usageprevperc"`
       else
         direction="decreased"
-        usagediff=`solve "$usageprevperc - $usageperc"`
+        usagediff=`solve 2 "$usageprevperc - $usageperc"`
       fi
       [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
       y3="$(echo "$usagediff >= $TOTALS_MEM_RES_DELTA_3" | bc)"
@@ -116,8 +110,8 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
     unset usageprev warnind
     procname=${proc#* }
     usage=${proc%% *}
-    usagemb=`solve "$usage / 1024"`
-    usageperc=`solve "$usage / $totalmem * 100"`
+    usagemb=`solve 2 "$usage / 1024"`
+    usageperc=`solve 2 "$usage / $totalmem * 100"`
     if [[ `echo "$usageperc >= $TOTALS_MEM_VIR_MIN" | bc` -eq 1 ]] ; then
       warnind='<OK> '
       [ -n "$TOTALS_MEM_VIR_3" ] && y3="$(echo "$usageperc >= $TOTALS_MEM_VIR_3" | bc)"
@@ -130,14 +124,14 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       unset y1 y2 y3 warnind
     fi
     [ -f ${M_TEMP}/ps.prev.totals.vir ] && usageprev=`grep " ${procname}$" ${M_TEMP}/ps.prev.totals.vir | cut -d' ' -f1 | tail -1` || continue
-    [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
+    [ -n "$usageprev" ] && usageprevperc=`solve 2 "$usageprev / $totalmem * 100"` || continue
     if [ -n "$usageprevperc" ] ; then
       if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
         direction="increased"
-        usagediff=`solve "$usageperc - $usageprevperc"`
+        usagediff=`solve 2 "$usageperc - $usageprevperc"`
       else
         direction="decreased"
-        usagediff=`solve "$usageprevperc - $usageperc"`
+        usagediff=`solve 2 "$usageprevperc - $usageperc"`
       fi
       [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
       y3="$(echo "$usagediff >= $TOTALS_MEM_VIR_DELTA_3" | bc)"
@@ -173,8 +167,8 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
   prochumanname="${procname#* }"
   owner="${prochumanname%% *}"
   prochumanname="${prochumanname#* }"
-  usagemb=`solve "$usage / 1024"`
-  usageperc=`solve "$usage / $totalram * 100"`
+  usagemb=`solve 2 "$usage / 1024"`
+  usageperc=`solve 2 "$usage / $totalram * 100"`
   if [[ `echo "$usageperc >= $MEM_RES_MIN" | bc` -eq 1 ]]; then
     warnind='<OK> '
     [ -n "$MEM_RES_3" ] && y3="$(echo "$usageperc >= $MEM_RES_3" | bc)"
@@ -187,14 +181,14 @@ for proc in `cat ${M_TEMP}/ps.list.res` ; do
     unset y1 y2 y3 warnind
   fi
   [ -f "${M_TEMP}/ps.prev.res" ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
-  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalram * 100"` || continue
+  [ -n "$usageprev" ] && usageprevperc=`solve 2 "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
-      usagediff=`solve "$usageperc - $usageprevperc"`
+      usagediff=`solve 2 "$usageperc - $usageprevperc"`
     else
       direction="decreased"
-      usagediff=`solve "$usageprevperc - $usageperc"`
+      usagediff=`solve 2 "$usageprevperc - $usageperc"`
     fi
     [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
     y3="$(echo "$usagediff >= $MEM_RES_DELTA_3" | bc)"
@@ -218,8 +212,8 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   prochumanname="${procname#* }"
   owner="${prochumanname%% *}"
   prochumanname="${prochumanname#* }"
-  usagemb=`solve "$usage / 1024"`
-  usageperc=`solve "$usage / $totalmem * 100"`
+  usagemb=`solve 2 "$usage / 1024"`
+  usageperc=`solve 2 "$usage / $totalmem * 100"`
   if [[ `echo "$usageperc >= $MEM_VIR_MIN" | bc` -eq 1 ]]; then
     warnind='<OK> '
     [ -n "$MEM_VIR_3" ] && y3="$(echo "$usageperc >= $MEM_VIR_3" | bc)"
@@ -232,14 +226,14 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
     unset y1 y2 y3 warnind
   fi
   [ -f ${M_TEMP}/ps.prev.vir ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.vir | cut -d' ' -f1 | tail -1` || continue
-  [ -n "$usageprev" ] && usageprevperc=`solve "$usageprev / $totalmem * 100"` || continue
+  [ -n "$usageprev" ] && usageprevperc=`solve 2 "$usageprev / $totalmem * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then
       direction="increased"
-      usagediff=`solve "$usageperc - $usageprevperc"`
+      usagediff=`solve 2 "$usageperc - $usageprevperc"`
     else
       direction="decreased"
-      usagediff=`solve "$usageprevperc - $usageperc"`
+      usagediff=`solve 2 "$usageprevperc - $usageperc"`
     fi
     [ -n "$SHOW_OK_DELTA" ] && warnind='<OK> '
     y3="$(echo "$usagediff >= $MEM_VIR_DELTA_3" | bc)"

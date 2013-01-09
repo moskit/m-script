@@ -18,6 +18,7 @@ rm -rf /tmp/m_script/.update/
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
 timeindex=`date -u +"%s"`
 GIT=`which git 2>/dev/null`
@@ -117,3 +118,8 @@ else
 fi
 rm -rf /tmp/m_script/.update/
 echo $timeindex >> "${rpath}/../upgrade.log"
+
+echo -e "Showing files that are not updated and saved with the .new extension added. Note that configuration files are not shown! Use this to find all files if you wish:\n\nfind \"$M_ROOT\" -name \"*.new\"\n\nUse the unnew helper script to overwrite specific files with their new version:\n\nunnew </path/to/file1.new /path/to/file2.new ...>\n\n"
+find "$M_ROOT" -name "*.new" | grep -vE "\.conf\.|/conf/"
+
+

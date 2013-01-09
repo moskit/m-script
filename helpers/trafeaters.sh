@@ -22,14 +22,9 @@ class=24  # means CIDR notation ( /${class} )
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
-
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+source "$M_ROOT/lib/functions.sh"
 
 cleanup() {
 rm -f ${M_TEMP}/trafeaters.report ${M_TEMP}/ips.* ${M_TEMP}/ipt.in ${M_TEMP}/ipt.out $M_TEMP/nmap.sp.* 2>/dev/null
@@ -181,8 +176,8 @@ $IPT -L M_ACCT_OUT -x -n -v | tail -n +2 | awk '{print $7" "$2}' > ${M_TEMP}/ipt
 $IPT -L M_ACCT_IN -x -n -v | tail -n +2 | awk '{print $8" "$2}' > ${M_TEMP}/ipt.in
 
 for ip in `cat ${M_TEMP}/ips.list`; do
-  trin=`cat ${M_TEMP}/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve "$trin / 800000"`
-  trout=`cat ${M_TEMP}/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve "$trout / 800000"`
+  trin=`cat ${M_TEMP}/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve 2 "$trin / 800000"`
+  trout=`cat ${M_TEMP}/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve 2 "$trout / 800000"`
   if [[ `echo "( $trin - $threshold ) > 0" | bc` -eq 1  ]] || [[ `echo "( $trout - $threshold ) > 0" | bc` -eq 1 ]]; then
     echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" >> ${M_TEMP}/trafeaters.report
 #    $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> ${M_TEMP}/trafeaters.report 2>&1

@@ -65,11 +65,11 @@ check_results() {
   # syntax:
   # check_results var1<:datatype1>,var2<:datatype2>,...
   # where datatype can be real (default, slower but more universal) or integer
-  [ -z "$1" ] && exit 1
+  [ -z "$1" ] && return 1
   caller=$(readlink -f "$0")
   callername=${caller##*/}
   callerconf="${caller%.mon}.conf"
-  [ "$callerconf" == "$caller" ] && log "Monitor script must have extension .mon" && exit 1
+  [ "$callerconf" == "$caller" ] && log "Monitor script must have extension .mon" && return 1
   source "$callerconf"
   for var2ck in `echo $1 | tr ',' ' '` ; do
     varname=${var2ck%%:*}
@@ -228,5 +228,21 @@ dbquery() {
   [ $? -eq 5 -o $? -eq 6 ] && sleep 15 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
 }
 
+solve() {
+sc=$1
+shift
+bc << EOF
+scale=${sc};
+a = $@;
+define b (x) {
+  if (x < 1 && x > 0) {
+    print "0";
+  }
+  return x;
+}
+print b(a);
+print "\n";
+EOF
+}
 
 

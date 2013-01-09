@@ -14,27 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-solve() {
-bc << EOF
-scale=2;
-a = $@;
-define b (x) {
-  if (x < 1) {
-    print "0";
-  }
-  return x;
-}
-print b(a);
-print "\n";
-EOF
-}
-
 PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
-source "${rpath}/../conf/mon.conf"
+source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
+source "$M_ROOT/lib/functions.sh"
 
 netstatbin=`which netstat 2>/dev/null`
 iptablesbin=`which iptables 2>/dev/null`
@@ -100,13 +87,13 @@ if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
     # GB/month 
     # Number 2.5 represents approximately average number of seconds in one
     # month divided by 1024 twice
-    diffbwin=`solve "25 * ($binput - $binputlast) / ($diffsec * 10240)"`
-    diffbwout=`solve "25 * ($boutput - $boutputlast) / ($diffsec * 10240)"`
+    diffbwin=`solve 2 "25 * ($binput - $binputlast) / ($diffsec * 10240)"`
+    diffbwout=`solve 2 "25 * ($boutput - $boutputlast) / ($diffsec * 10240)"`
     unitname='GB/month'
   else
     # Mbytes/sec
-    diffbwin=`solve "($binput - $binputlast) / ($diffsec * 1048576)"`
-    diffbwout=`solve "($boutput - $boutputlast) / ($diffsec * 1048576)"`
+    diffbwin=`solve 2 "($binput - $binputlast) / ($diffsec * 1048576)"`
+    diffbwout=`solve 2 "($boutput - $boutputlast) / ($diffsec * 1048576)"`
     unitname='MB/sec'
   fi
 else

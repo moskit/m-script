@@ -20,23 +20,6 @@ touch "${rpath}/mongo_mongos_servers.list" "${rpath}/mongo_config_servers.list" 
 M_TEMP="${M_TEMP}/MongoDB"
 install -d "${M_TEMP}"
 
-solve() {
-sc=$1
-shift
-bc << EOF
-scale=${sc};
-a = $@;
-define b (x) {
-  if (x < 1) {
-    print "0";
-  }
-  return x;
-}
-print b(a);
-print "\n";
-EOF
-}
-
 function print_servers() {
   for host in $@ ; do
     echo "${host}|||"

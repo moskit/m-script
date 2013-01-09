@@ -14,13 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
-
 addxmarks() {
   marksX="$marksX`echo "<line x1=\\"$1\\" y1=\\"$mX1\\" x2=\\"$1\\" y2=\\"$mX2\\" />"`"
   textX="${textX}`echo "<text x=\\"$1\\" y=\\"$mXT1\\" >$2</text>"`"
@@ -336,12 +329,12 @@ if [ -n "$perpixel" ]; then
   Nmax=0
   Nmin=0
   if $minauto ; then
-    metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+    metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve 2 "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
   else
     metricminfp=0
     metricmin=0
   fi
-  metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
+  metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve 2 "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
   $debug && log "metricmaxfp: $metricmaxfp  metricmax: $metricmax"
 
   if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
@@ -350,14 +343,14 @@ if [ -n "$perpixel" ]; then
   fi
   [ -z "$metricmin" ] && metricmin=0
   [ -z "$metricmax" ] && metricmax=$areaV
-  mp=`solve "$areaV / $metricmax"`
+  mp=`solve 2 "$areaV / $metricmax"`
 
   $debug && log "mp: $mp"
 
-  if [ `solve "$mp > 0"` -eq 0 ] ; then
+  if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
   # 1mln is a reasonable limit
     for ((i=1; i<=2; i++)); do
-      [ `solve "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $i * $areaV / $metricmax" | bc`
+      [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $i * $areaV / $metricmax" | bc`
       $debug && log "mp: $mp"
     done
   fi
@@ -387,7 +380,7 @@ log "d=$d"
   fi
   mp=`echo "$mpr * $d" | bc`
   $debug && log "mp: $mp"
-  metricmax=`solve "$areaV / $mp"`
+  metricmax=`solve 2 "$areaV / $mp"`
   metricmax=${metricmax%%.*}
   to=`date +"%s"`
   $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
@@ -474,24 +467,24 @@ else
   sn=`echo $metric | tr ',' ' ' | wc -w`
 
   if [ "X$scale" == "Xyes" ] ; then
-    sadd=`solve "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve "$metricmax / $sn"` 2>/dev/null || sadd=10
+    sadd=`solve 2 "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve 2 "$metricmax / $sn"` 2>/dev/null || sadd=10
     snadd=0
     n=2
     for smetric in `echo $metric | tr ',' ' '` ; do
       rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
       smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
       if [ -n "$smax" ] ; then
-        [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve "$metricmax / $smax / $sn / 1.2"` || sratio=1
+        [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve 2 "$metricmax / $smax / $sn / 1.2"` || sratio=1
         for LINE in `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
           st=`echo $LINE | cut -d'|' -f1`
           [ -z "$st" ] && continue
           sd=`echo $LINE | cut -d'|' -f2`
           [ -z "$sd" ] && continue
-          sds=`solve "$sd * $sratio + $snadd"`
+          sds=`solve 2 "$sd * $sratio + $snadd"`
           echo "${st}|${sds}" >> ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled
         done
       fi
-      snadd=`solve "$snadd + $sadd"`
+      snadd=`solve 2 "$snadd + $sadd"`
       n+=1
     done
   fi
@@ -687,8 +680,8 @@ unset nexthour theday themonth theyear themark currpoint hourX
 
 # Now for Y
 # Finding out what per mark resolution might be
-a=`solve "$perdotY * $countminY / 100"`
-b=`solve "2 * $a"`
+a=`solve 2 "$perdotY * $countminY / 100"`
+b=`solve 2 "2 * $a"`
 s=`expr length ${b%%.*}`
 [ -z "$s" ] && s=1
 pof=1
@@ -744,7 +737,7 @@ do
     if [ -n "$perpixel" ] ; then
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
     else
-      [ -n "$imark" ] && imarkfp=`solve "$imark/$mp"`
+      [ -n "$imark" ] && imarkfp=`solve 2 "$imark/$mp"`
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imarkfp</text>"`"
     fi
   fi
@@ -779,7 +772,7 @@ echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
 # Graphs
 i=0
 if [ "$legendpos" == "left" ]; then
-  slegendX=`solve "$startX - $legend"`
+  slegendX=`solve 2 "$startX - $legend"`
   slegendY=$startY
   sadd=`expr \( $graphV - $padding \) / $sn`
 else

@@ -14,21 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# bc workaround to make it work with floating point numbers
-solve() {
-bc << EOF
-scale=2
-${1}
-EOF
-}
-
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "${rpath}/../conf/mon.conf"
 source "${0%.mon}.conf"
+source "$M_ROOT/lib/functions.sh"
+
 timeindexnow=`cat $M_TEMP/timeindex`
 lasttimeindex=`cat $M_TEMP/lasttimeindex.disk`
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
@@ -140,7 +133,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
     drtime=$(echo $M_TEMP/diskstat.tmp | grep "^${disk} " | awk '{ print $5 }')
     
     if [[ $drtime -gt 100 ]]; then
-      drspeed=`solve "($dr / 2048) / ($drtime / 1000)"`
+      drspeed=`solve 2 "($dr / 2048) / ($drtime / 1000)"`
     else
       drspeed=0
     fi
@@ -153,7 +146,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
     dw=$($DISKSTAT | grep "^${disk} " | awk '{ print $8 }')
     dwtime=$($DISKSTAT | grep "^${disk} " | awk '{ print $9 }')
     if [[ $dwtime -gt 100 ]]; then
-      dwspeed=`solve "($dw / 2048) / ($dwtime / 1000)"`
+      dwspeed=`solve 2 "($dw / 2048) / ($dwtime / 1000)"`
     else
       dwspeed=0
     fi
@@ -173,19 +166,19 @@ if [ "X${DISKSTAT}" != "X" ]; then
       unset tablefound
       [[ `sqlite3 ${rpath}/../sysdata "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into '$diskname' (timeindex) values ('$timeindexnow')"
       [ -n "$dr" ] || dr=0
-      diskreads=`solve "($dr / 2048)"`
+      diskreads=`solve 2 "($dr / 2048)"`
       diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
       [ -n "$diskreadslast" ] || diskreadslast=0
-      drspeed=`solve "($diskreads - $diskreadslast) / $diffsec"`
+      drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
       m=`expr length "$replinerd"`
       l=`expr 60 - $m`
       for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
       replinerd=`printf "${replinerd}${drspeed}\n"`
       [ -n "$dw" ] || dw=0
-      diskwrites=`solve "($dw / 2048)"`
+      diskwrites=`solve 2 "($dw / 2048)"`
       diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
       [ -n "$diskwriteslast" ] || diskwriteslast=0
-      dwspeed=`solve "($diskwrites - $diskwriteslast) / $diffsec"`
+      dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
       m=`expr length "$replinerw"`
       l=`expr 60 - $m`
       for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
@@ -205,25 +198,25 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
   diskusage=0
   if [ -f $M_TEMP/diskusage ]; then
     while read LINE; do
-      diskusage=`solve "$diskusage + $LINE"`
+      diskusage=`solve 2 "$diskusage + $LINE"`
     done < $M_TEMP/diskusage
-    diskusage=`solve "$diskusage / $disksnum"`
+    diskusage=`solve 2 "$diskusage / $disksnum"`
   fi
   diskiord=0
   if [ -f $M_TEMP/diskiord ]; then
     disksnum=`cat $M_TEMP/diskiord | wc -l`
     while read LINE; do
-      diskiord=`solve "$diskiord + $LINE"`
+      diskiord=`solve 2 "$diskiord + $LINE"`
     done < $M_TEMP/diskiord
-    diskiord=`solve "$diskiord / $disksnum"`
+    diskiord=`solve 2 "$diskiord / $disksnum"`
   fi
   diskiowr=0
   if [ -f $M_TEMP/diskiowr ]; then
     disksnum=`cat $M_TEMP/diskiowr | wc -l`
     while read LINE; do
-      diskiowr=`solve "$diskiowr + $LINE"`
+      diskiowr=`solve 2 "$diskiowr + $LINE"`
     done < $M_TEMP/diskiowr
-    diskiowr=`solve "$diskiowr / $disksnum"`
+    diskiowr=`solve 2 "$diskiowr / $disksnum"`
   fi
 
   sqlite3 ${rpath}/../sysdata "update sysdata set diskusage='${diskusage}', diskiord='${diskiord}', diskiowr='${diskiowr}' where timeindex='$timeindexnow'"
