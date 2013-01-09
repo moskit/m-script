@@ -58,8 +58,7 @@ store_results() {
     cfields="${cfields%,}"
     $SQL -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
-  $SQL "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)" 2>>$M_ROOT/monitoring.log
-
+  dbquery "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)"
 }
 
 check_results() {
@@ -218,6 +217,16 @@ action_blocked() {
   fi
 }
 
+dbquery() {
+  local dbfile
+  local dbquery
+  dbfile="$1"
+  shift
+  dbquery="$@"
+  $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
+  [ $? -eq 5 -o $? -eq 6 ] && sleep 5 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
+  [ $? -eq 5 -o $? -eq 6 ] && sleep 15 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
+}
 
 
 

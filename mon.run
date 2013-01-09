@@ -18,7 +18,7 @@ currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 MAILX=`which mail 2>/dev/null`
 HOSTNAME=`which hostname 2>/dev/null`
-SQLITE=`which sqlite3 2>/dev/null`
+SQLBIN=`which sqlite3 2>/dev/null`
 #SAR=`which sar 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
@@ -110,7 +110,6 @@ function runscript() {
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
-    $SQLITE "${rpath}/sysdata" "select max(timeindex) from sysdata" > "${M_TEMP}/lasttimeindex"
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
   if [ "X$1" == "XSQL" ]; then
@@ -476,6 +475,7 @@ function action() {
 source "${rpath}/conf/mon.conf"
 # needed for actions (only?)
 source "${rpath}/lib/functions.sh"
+SQLITE=dbquery
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP

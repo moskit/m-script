@@ -154,7 +154,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
         m=`expr length "$t"`
         l=`expr 40 - $m`
         for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSTCP | grep "$mtch" | wc -l`\n"
+        printf "`$NETCONNSTCP | grep -v LISTEN | grep "$mtch" | wc -l`\n"
         portfound=1
         break
       fi

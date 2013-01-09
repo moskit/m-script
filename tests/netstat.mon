@@ -21,7 +21,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
-
+LOG="$M_ROOT/monitoring.log"
 netstatbin=`which netstat 2>/dev/null`
  
 timeindexnow=`cat /tmp/m_script/timeindex 2>/dev/null`
@@ -47,7 +47,7 @@ rm -f "$M_TEMP/netstat.dat"
 for st in $curr_values ; do eval $st ; echo $st >> "$M_TEMP/netstat.dat" ; done
 curr_values_arr=( $curr_values )
 
-[ ${#prev_values_arr[*]} -eq 0 ] && echo "`date +"%H:%M:%S"` $rcommand: previous data not found" >> "$M_ROOT/monitoring.log" && exit 1
+[ ${#prev_values_arr[*]} -eq 0 ] && log "previous data not found" && exit 1
 dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \\( \\\$${var} - \\\$${var}_prev \\) \\\\* 60 / $monperiod"`"; done) )
 
 for st in ${dat_arr[*]} ; do

@@ -138,7 +138,7 @@ if [ -n "$mongodbpertableconf" ] ; then
         else
           [ -n "$debugflag" ] && log "running periodic backup"
           bkname="`echo "$lastid" | tr '|():' '_' | tr -d '"{}[]$ '`"
-          QUERY="{ $idfield : { \$gt : $lastid }}"
+          QUERY="{ $idfield : { \\$gt : $lastid }}"
           [ -n "$debugflag" ] && log "$QUERY"
           $MONGODUMP --host $DBHOST --db "$db" --collection "$coll" --query "$QUERY" $USER $PASS --out "$MBD/${db}.${coll}.${bktype}.${bkname}.${archname}" 1>>"$stdinto" 2>>"$rpath/logs/mongo.backup.tmp"
           if [ $? -eq 0 ]; then
