@@ -19,7 +19,7 @@ fpath=${fpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
 source "$M_ROOT/conf/mon.conf"
-SQL=`which sqlite3 2>/dev/null`
+SQLBIN=`which sqlite3 2>/dev/null`
 [ -z "$M_TEMP" ] && log "M_TEMP is not defined" && echo "M_TEMP is not defined" >&2 && exit 1
 
 store_results() {

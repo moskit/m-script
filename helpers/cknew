@@ -4,7 +4,10 @@
 [ ! -d "$M_ROOT" ] && echo "M_ROOT does not exist" && exit 1
 
 for f in $@ ; do
-  [ -f "$M_ROOT/$f" ] || continue
-  diff $M_ROOT/$f $M_ROOT/${f%.new}
+  if [ -f "$M_ROOT/$f" ]; then
+    diff $M_ROOT/$f $M_ROOT/${f%.new}
+  else
+    diff $f ${f%.new}
+  fi
 done
 
