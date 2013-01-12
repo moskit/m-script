@@ -191,6 +191,11 @@ for option in `echo $possible_options | sed 's/,/ /g'`; do
   echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
 done
 IFS=$IFS2
+# and some other variables
+M_ROOT_REMOTE=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f8`
+[ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
+echo "M_ROOT_REMOTE=$M_ROOT_REMOTE" >> ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var
+
 # now prepare the script
 source "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
 for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
@@ -200,11 +205,7 @@ for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
   a=`eval "echo \"$ELINE\"" 2>/dev/null`
   [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$LINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}"
 done
-
-M_ROOT_REMOTE=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f8`
-[ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
-echo "M_ROOT_REMOTE=$M_ROOT_REMOTE" >> ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var
-  
+ 
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
     cluster=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f5`
