@@ -135,11 +135,7 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-echo >> "${rpath}/../logs/deploy.log"
-date >> "${rpath}/../logs/deploy.log"
-echo "-------------------" >> "${rpath}/../logs/deploy.log"
-echo "${0} $*" >> "${rpath}/../logs/deploy.log"
-echo >> "${rpath}/../logs/deploy.log"
+echo -e "\n\n-------------------\n${0} $*\n" >> "${rpath}/../logs/deploy.log"
 
 source "${rpath}/../conf/deployment.conf" || exit 99
 source "${rpath}/../conf/cloud.conf" || exit 99
@@ -212,12 +208,14 @@ if [ "$type" == "remote" ] ; then
   fi
   M_ROOT_REMOTE=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f8`
   [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
-  [ -n "$key" ] || key=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  if [ -n "$ip" ] && [ -z "$key" ] ; then
-    key=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f2`
+  
+  if [ -n "$ip" ] ; then
+    key=`"$M_ROOT"/helpers/find_key server "$ip"`
+  else
+    key=`"$M_ROOT"/helpers/find_key cluster "$cluster"`
   fi
-  [ -f "${rpath}/../keys/${key}" ] || key=${key}.pem
-  [ -f "${rpath}/../keys/${key}" ] || (echo "Key $key not found" >> "${rpath}/../logs/deploy.log" ; exit 1)
+  [ -z "$key" ] && echo "Key not found" >> "${rpath}/../logs/deploy.log" && exit 1
+  
   echo "`date +"%H:%M:%S"` REMOTE $file" >> "${rpath}/../logs/deploy.log"
   if [ -z "$ip" ] ; then
     if [ -n "$dry" ] ; then
@@ -232,17 +230,17 @@ if [ "$type" == "remote" ] ; then
     for IP in $ips ; do
       find_name $IP
       # install remote workdir
-      $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
+      $SSH -p $SSHPORT -i "$key" $IP install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
       # copy the script to remote server
-      $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
+      $SCP -P $SSHPORT -i "$key" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
       # copy config to remote server
-      $SCP -P $SSHPORT -i "${rpath}/../keys/${key}" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../logs/deploy.log" 2>&1
-      $SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP echo -e "ip=$IP\nservername=$NAME" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
+      $SCP -P $SSHPORT -i "$key" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../logs/deploy.log" 2>&1
+      $SSH -p $SSHPORT -i "$key" $IP echo -e "ip=$IP\nservername=$NAME" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
       if [ -n "$dry" ] ; then
-        result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+        result=`$SSH -p $SSHPORT -i "$key" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
       else
         # run the script, catch the output, exit if non-zero status
-        result=`$SSH -p $SSHPORT -i "${rpath}/../keys/${key}" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+        result=`$SSH -p $SSHPORT -i "$key" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
       fi
       print_result
     done

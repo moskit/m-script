@@ -179,8 +179,9 @@ EOF
   esac
 done
 
-stdinto=$stdinto
-stderrto="$stderrto"
+stdinto="$rpath/m_backup.log"
+stderrto="$rpath/m_error.log"
+
 if [ -n "$debugflag" ]
 then
   echo -e "OPTIONS:\nxferdirection = ${xferdirection}\nr_proto = ${r_proto}\nnonbackup = ${nonbackup}\nonlypickup = ${onlypickup}\nonlyclean = ${onlyclean}\nconfigfiles = ${configfiles[*]}\nreplaceflag = ${replaceflag}\n" >> $stdinto
