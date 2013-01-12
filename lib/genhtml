@@ -105,7 +105,7 @@ case $type in
       timenow=`date +"%s"`
       timerange=`expr $timenow - $oldestfiledate`
     fi
-    if [ `expr $timerange : .*[^0-9]` -eq 0 ]; then
+    if [ `expr "$timerange" : ".*[^0-9]"` -eq 0 ]; then
       find "${rpath}/../www/$folder/" -type f -mmin +$timerange -exec rm '{}' \;
     else
       echo "ERROR: old files not removed from ${rpath}/../www/$folder" >> "$rpath/../logs/dashboard.log"

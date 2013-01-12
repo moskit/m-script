@@ -7,8 +7,6 @@ rpath=${0%/*}
 source ${rpath}/../conf/mon.conf
 source ${0%.mon}.conf
 
-echo ""
-echo "CPU eaters:"
-echo "-----------"
+echo -e "\nCPU eaters:\n-----------"
 
 ps -ef | awk '{print $4" "$8" "$9" "$10" "$11" "$12}' | grep -v ^0.0 | grep -v COMMAND | while read LINE; do a=${LINE%% *}; a=${a#*.}; if [[ $a -gt $CPU_EATERS_MIN ]]; then echo $LINE; fi | while read LINE; do echo "<**> Process \"${LINE#* }\" is using ${a}% of CPU"; done; done
