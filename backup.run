@@ -190,7 +190,11 @@ else
   dbginto="/dev/null"
 fi
 
-[ -n "$fgflag" ] && stdinto="&1" && stderrto="&2"
+touch $stdinto $stderrto
+if [ -n "$fgflag" ]; then
+  tail -f $stdinto $stderrto &
+  echo $! > "$M_TEMP/backup.fg.pid"
+fi
 export stdinto stderrto
 
 RSYNC_RSH_BK=$RSYNC_RSH
@@ -826,4 +830,6 @@ EOF
 ### Now it's time to restore some environment variables
   export RSYNC_RSH="${RSYNC_RSH_BK}"
 done
+[ -n "$fgflag" ] && kill `cat "$M_TEMP/backup.fg.pid"`
+
 
