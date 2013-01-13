@@ -223,6 +223,7 @@ dbquery() {
   dbfile="$1"
   shift
   dbquery="$@"
+  [ -z "$LOG" ] && LOG="$M_ROOT/monitoring.log"
   $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
   [ $? -eq 5 -o $? -eq 6 ] && sleep 5 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
   [ $? -eq 5 -o $? -eq 6 ] && sleep 15 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
@@ -233,14 +234,13 @@ sc=$1
 shift
 bc << EOF
 scale=${sc};
-a = $@;
 define b (x) {
   if (x < 1 && x > 0) {
     print "0";
   }
   return x;
 }
-print b(a);
+print b($@);
 print "\n";
 EOF
 }

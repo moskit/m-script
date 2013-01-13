@@ -35,28 +35,31 @@ necessary_options="action"
 
 IFS1=$IFS
 IFS='--'
-for s_option in "${@}"
+for s_option in "$@"
 do
+  found=false
+  s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
   [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
-  for option in `echo $possible_options | sed 's/ /--/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+
+  for option in ${possible_options// /--} ; do
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
-   if [[ $found -ne 1 ]]; then 
+  
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
 done
 IFS=$IFS1
 
-found=0
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+found=false
+for option in $necessary_options ; do
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options} --${option}," && found=true
 done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+if $found ; then
+  echo "Necessary options: ${missing_options/%,/} not found"
   exit 1
 fi
 
