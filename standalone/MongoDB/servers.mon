@@ -151,7 +151,7 @@ function parse_data() {
   # Not Sharded
   
   opsNotShardedQuery_prev=`grep ^opsNotShardedQuery\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedQuery_prev=$opsNotShardedQuery
-  [ -n "$opsNotShardedQuery" ] && ops_queriesps_notsharded=`solve 1; "($opsNotShardedQuery >= $opsNotShardedQuery_prev) * ($opsNotShardedQuery - $opsNotShardedQuery_prev) / ($timeindexnow - $lasttimeindex)"`
+  [ -n "$opsNotShardedQuery" ] && ops_queriesps_notsharded=`solve 1 "($opsNotShardedQuery >= $opsNotShardedQuery_prev) * ($opsNotShardedQuery - $opsNotShardedQuery_prev) / ($timeindexnow - $lasttimeindex)"`
   
   opsNotShardedInsert_prev=`grep ^opsNotShardedInsert\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || opsNotShardedInsert_prev=$opsNotShardedInsert
   [ -n "$opsNotShardedInsert" ] && ops_insertsps_notsharded=`solve 1 "($opsNotShardedInsert >= $opsNotShardedInsert_prev) * ($opsNotShardedInsert - $opsNotShardedInsert_prev) / ($timeindexnow - $lasttimeindex)"`

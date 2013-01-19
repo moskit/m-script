@@ -130,6 +130,9 @@ if [ -n "$mongodbpertableconf" ] ; then
         else
           lastid=0
         fi
+        lastid=${lastid#*(}
+        lastid=${lastid%)*}
+        lastid=`echo "$lastid" | sed 's|"|\\"|g'`
         [ -n "$debugflag" ] && log "last backuped ID: $lastid"
         if [ "$lastid" == "0" ]; then
           [ -n "$debugflag" ] && log "forcing full backup"

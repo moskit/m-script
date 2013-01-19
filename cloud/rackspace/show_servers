@@ -70,9 +70,9 @@ source "$M_ROOT/lib/cloud_functions.sh"
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
-if [ -z "$IAMACHILD" ]; then
-  lock_cloudops || exit 10
-fi
+export IAMACHILD
+lock_cloudops || exit 1
+
 CURL="$CURL -s -k"
 declare -i icount
 
@@ -266,7 +266,7 @@ if [ -z "$noupdate" ] ; then
   [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 fi
 list_servers
-unlock_cloudops
+[ -z "$IAMACHILD" ] && unlock_cloudops
 
 [ -n "$count" ] && echo $icount || exit 0
 

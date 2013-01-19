@@ -53,10 +53,10 @@ store_results() {
   values="${values%,}"
   fields="$(IFS=','; for f in $1; do echo -n "${f%%:*},"; done)"
   fields="${fields%,}"
-  if [ ! -f "$dbfile" ] || [ -f "$dbfile" -a -z "`$SQL "$dbfile" ".schema $dbtable"`" ]; then
+  if [ ! -f "$dbfile" ] || [ -f "$dbfile" -a -z "`$SQLBIN "$dbfile" ".schema $dbtable"`" ]; then
     cfields="$(IFS=','; for f in $1; do echo -n "${f%%:*} `echo "${f}" | cut -d':' -f2`,"; done)"
     cfields="${cfields%,}"
-    $SQL -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
+    $SQLBIN -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
   dbquery "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)"
 }
