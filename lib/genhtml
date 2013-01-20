@@ -94,8 +94,8 @@ case $type in
     oldestchunk=`head -1 "${rpath}/../www/$folder/dash.html"`
     oldestfile="`expr "$oldestchunk" : '<div id=\"\(.*\)\" title'`".html
     badluck=false # we are lucky by default
-    if [ -f "$oldestfile" ]; then
-      oldestfiledate=`$STAT -c "%z" "$oldestfile"`
+    if [ -f "${rpath}/../www/$folder/$oldestfile" ]; then
+      oldestfiledate=`$STAT -c "%z" "${rpath}/../www/$folder/$oldestfile"`
       # sanitizing, just in case
       oldestfiledate=`$DATE -d "$oldestfiledate" +"%s" 2>/dev/null`
       [ -z "$oldestfiledate" ] && badluck=true
