@@ -441,11 +441,11 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 
 function newtimeindex() {
   timeindexnow=$(date +"%s")
-  echo $timeindexnow > ${M_TEMP}/timeindex
+  echo $timeindexnow > "${M_TEMP}/timeindex"
 }
 
 function deltimeindex() {
-  rm -f ${M_TEMP}/timeindex
+  mv "${M_TEMP}/timeindex" "${M_TEMP}/lasttimeindex"
 }
 
 function timeshift() {

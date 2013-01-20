@@ -28,8 +28,8 @@ timeindexnow=`cat /tmp/m_script/timeindex 2>/dev/null`
 lasttimeindex=`cat /tmp/m_script/lasttimeindex 2>/dev/null`
 
 [ -n "$timeindexnow" ] || timeindexnow=`date +"%s"`
-monperiod=`expr $timeindexnow - $lasttimeindex`
-[ -z "$monperiod" -o $monperiod -le 0 ] && timeshift=`cat "$M_TEMP/timeshift"` && monperiod=`expr $FREQ + $timeshift`
+monperiod=`expr $timeindexnow - $lasttimeindex 2>/dev/null`
+[ -z "$monperiod" -o $monperiod -le 0 ] 2>/dev/null && timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` && monperiod=`expr $FREQ + $timeshift || echo 200`
 
 IFS1=$IFS ; IFS='
 '
