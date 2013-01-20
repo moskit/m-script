@@ -97,7 +97,7 @@ case $type in
     if [ -f "${rpath}/../www/$folder/$oldestfile" ]; then
       oldestfiledate=`$STAT -c "%z" "${rpath}/../www/$folder/$oldestfile"`
       # sanitizing, just in case
-      oldestfiledate=`$DATE -d "$oldestfiledate" +"%s" 2>/dev/null`
+      oldestfiledate=`date -d "$oldestfiledate" +"%s" 2>/dev/null`
       [ -z "$oldestfiledate" ] && badluck=true
     else
       badluck=true
