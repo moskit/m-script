@@ -20,9 +20,8 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
 STAT=`which stat 2>/dev/null`
-DATE=`which date 2>/dev/null`
 [ -z "$STAT" ] && echo "stat utility not found" && exit 1
-[ -z "$DATE" ] && echo "date utility not found" && exit 1
+LOG="$M_ROOT/logs/dashboard.log"
 
 possible_options="type css folder"
 necessary_options="type"
@@ -68,6 +67,10 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
+log() {
+  echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: ${@}">>$LOG
+}
+
 [ -z "$folder" ] && folder="servers/localhost"
 [ -d "${rpath}/../www/$folder" ] || install -d "${rpath}/../www/$folder"
 source "${rpath}/../conf/dash.conf"
@@ -100,8 +103,10 @@ case $type in
       badluck=true
     fi
     if $badluck ; then
+      log "unable to find the oldest file in folder ${folder}. Using calculation based on frequency"
       timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
     else
+      log "oldest file timestamp for folder ${folder}: $oldestfiledate"
       timenow=`date +"%s"`
       timerange=`expr $timenow - $oldestfiledate`
     fi

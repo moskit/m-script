@@ -83,7 +83,7 @@ function parse_data() {
   net_reqps=`solve 1 "($netReqn - $netReqn_prev) / ($timeindexnow - $lasttimeindex)"`
   echo "Network requests per second:   $net_reqps"
   if [ -n "$lockTime" ] ; then
-    echo -e"\n Global lock\n"
+    echo -e "\n Global lock\n"
     lockTime_prev=`grep ^lockTime\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
     lockTime=`solve 2 "(${lockTime} - ${lockTime_prev}) / ($timeindexnow - $lasttimeindex) / 10000"`
     echo "Lock time current, percents:   $lockTime"
