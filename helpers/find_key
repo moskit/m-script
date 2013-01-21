@@ -67,12 +67,12 @@ case $where in
   ;;
   server)
     nextkey=false
-    find_server_key "$1" && echo "$KEY" && exit 0
+    find_server_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
     log "trying server $1 cluster key"
     if [ ! -f "$M_ROOT/keys/$KEY" ]; then
       cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
       if [ -n "$cluster" ] ; then
-        find_cluster_key "$cluster" && echo "$KEY" && exit 0
+        find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
       else
         echo "Cluster not found for server $1" >&2
       fi
