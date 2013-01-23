@@ -1,9 +1,10 @@
 #!/bin/bash
+ba=`which bash >/dev/null`
+[ $? -ne 0 ] && echo -e "\nBash is required" && exit 1
 rpath=$(readlink -f "$BASH_SOURCE")
 rpath=${rpath%/*}
 M_ROOT="$rpath"
 export M_ROOT
 #*/
-ba=`which bash` ; [ $? -ne 0 ] && exit 1
 $ba --rcfile "$rpath"/m.rc
 

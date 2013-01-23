@@ -52,7 +52,7 @@ IFS=$IFS1
 removed=false
 
 find_by_ip() {
-  show_servers >/dev/null
+  IAMACHILD=1 show_servers >/dev/null
   id=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${1}\| | cut -d'|' -f2`
   [ -z "$id" ] && id=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${1}\| | cut -d'|' -f2`
 }
@@ -76,7 +76,7 @@ if [ -z "$id" ] ; then
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
-        show_servers >/dev/null
+        IAMACHILD=1 show_servers >/dev/null
         id=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
@@ -85,7 +85,7 @@ if [ -z "$id" ] ; then
   fi
 else
   if [ -f "${M_TEMP}/servers.${EC2_REGION}.ips" ] ; then
-    show_servers >/dev/null
+    IAMACHILD=1 show_servers >/dev/null
   fi
   name=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
   ipint=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`

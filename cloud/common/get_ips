@@ -156,3 +156,4 @@ done
 IFS=$IFS1
 
 [ -n "$ips" ] && echo "${ips}" | sed "s|${delimiter}$||" || exit 0
+

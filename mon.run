@@ -258,7 +258,7 @@ function runactions() {
     if $all_alerts_found ; then
       log "all alerts found for action: $action ; block enabled, cycles: $blockccl"
       [ -n "$blockccl" ] && block_action $blockccl "$action"
-      echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a "${rpath}/logs/actions.log"
+      echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a $LOG
       action $action
       [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
     fi

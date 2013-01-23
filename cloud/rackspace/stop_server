@@ -57,6 +57,7 @@ do
 done
 IFS=$IFS1
 
+lock_cloudops || exit 10
 [ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && exit 1
 
 [ -n "$force" ] && force=true || force=false
@@ -98,8 +99,6 @@ find_cluster() {
     fi
   fi
 }
-
-lock_cloudops || exit 10
 
 log "stopping server $@"
 if [ -z "$id" ] ; then

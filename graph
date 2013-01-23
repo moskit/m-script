@@ -27,8 +27,10 @@ addxlongmark() {
   textX="${textX}`echo "<text x=\\"$coord\\" y=\\"$mXLT\\" >$@</text>"`"
 }
 
-rcommand=${0##*/}
-rpath=${0%/*}
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath")
 #*/
 
 # to enable debug logging even without command-line option

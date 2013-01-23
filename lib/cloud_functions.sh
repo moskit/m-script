@@ -85,7 +85,7 @@ check_cluster_limit() {
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
   # tmp file is assumed to be up-to-date
-  n=`${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
+  n=`IAMACHILD=1 ${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   [ -z "$n" ] && n=0
   #[ `expr $n \>= 0` -gt 0 ] || return 1
