@@ -1,5 +1,5 @@
 #!/bin/bash
-ba=`which bash >/dev/null`
+ba=`which bash 2>/dev/null`
 [ $? -ne 0 ] && echo -e "\nBash is required" && exit 1
 rpath=$(readlink -f "$BASH_SOURCE")
 rpath=${rpath%/*}

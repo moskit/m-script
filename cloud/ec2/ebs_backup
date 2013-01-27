@@ -18,12 +18,14 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
 MAILX=`which mail 2>/dev/null`
 currtime=`date`
-echo $currtime > ${rpath}/../../ebs_backup.report
-echo "------------------------" >> ${rpath}/../../ebs_backup.report
-echo >> ${rpath}/../../ebs_backup.report
+echo $currtime > "$M_ROOT"/ebs_backup.report
+echo -e "------------------------\n" >> "$M_ROOT"/ebs_backup.report
+
 possible_options="keep cluster ami state filter noupdate help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
@@ -50,7 +52,7 @@ do
     ;;
   esac
   for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
@@ -65,7 +67,7 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: $missing_options not found"
   exit 1
 fi
 
@@ -91,28 +93,28 @@ if [ -n "$help" ] ; then
     ;;
     *)
       echo "Use help=option"
-      echo "  Possible options are: ${possible_options}"
+      echo "  Possible options are: $possible_options"
     ;;
   esac
   exit 0
 fi
 
-source ${rpath}/../../conf/cloud.conf
+source "$M_ROOT"/conf/cloud.conf
 for var in EC2_TOOLS_BIN_PATH JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_AK ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 
-M_TEMP=/tmp/m_script/cloud/ec2
-install -d $M_TEMP
+M_TEMP="$M_TEMP/cloud/ec2"
+install -d "$M_TEMP"
 [ -n "$noupdate" ] && noupdate="--noupdate"
 [ -n "$region" ] && region="--region=$region"
 [ -n "$cluster" ] && cluster="--cluster=$cluster"
 [ -n "$ami" ] && ami="--ami=$ami"
 [ -n "$state" ] && state="--state=$state"
 
-${rpath}/../show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $M_TEMP/volumes.list
+$rpath/show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $M_TEMP/volumes.list
 if [ -n "$keep" ] ; then
   outdated=`date -d "$currtime - $keep days" +"%s"`
   ec2-describe-snapshots $region > $M_TEMP/snapshots.list
@@ -122,24 +124,24 @@ if [ -n "$keep" ] ; then
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
       snaptime=`date -d "$snaptime" +"%s"`
       if [[ $snaptime -lt $outdated ]] ; then
-        printf "Deleting snapshot $snapID created at $snaptime ... " >> ${rpath}/../../ebs_backup.report
-        printf "`ec2-delete-snapshot $snapID >/dev/null` ... " >> ${rpath}/../../ebs_backup.report && echo "DONE" >> ${rpath}/../../ebs_backup.report || echo "ERROR" >> ${rpath}/../../ebs_backup.report
+        printf "Deleting snapshot $snapID created at $snaptime ... " >> "$M_ROOT"/ebs_backup.report
+        printf "`ec2-delete-snapshot $snapID >/dev/null` ... " >> "$M_ROOT"/ebs_backup.report && echo "DONE" >> "$M_ROOT"/ebs_backup.report || echo "ERROR" >> "$M_ROOT"/ebs_backup.report
       fi
     done
-    printf "Creating snapshot of volume $ebs ... " >> ${rpath}/../../ebs_backup.report
-    printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> ${rpath}/../../ebs_backup.report && echo "DONE" >> ${rpath}/../../ebs_backup.report || echo "ERROR" >> ${rpath}/../../ebs_backup.report
+    printf "Creating snapshot of volume $ebs ... " >> "$M_ROOT"/ebs_backup.report
+    printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> "$M_ROOT"/ebs_backup.report && echo "DONE" >> "$M_ROOT"/ebs_backup.report || echo "ERROR" >> "$M_ROOT"/ebs_backup.report
   done
 else
   for ebs in `cat $M_TEMP/volumes.list` ; do
-    printf "Creating snapshot of volume $ebs ... " >> ${rpath}/../../ebs_backup.report
-    printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> ${rpath}/../../ebs_backup.report && echo "DONE" >> ${rpath}/../../ebs_backup.report || echo "ERROR" >> ${rpath}/../../ebs_backup.report
+    printf "Creating snapshot of volume $ebs ... " >> "$M_ROOT"/ebs_backup.report
+    printf "`ec2-create-snapshot $ebs >/dev/null` ... " >> "$M_ROOT"/ebs_backup.report && echo "DONE" >> "$M_ROOT"/ebs_backup.report || echo "ERROR" >> "$M_ROOT"/ebs_backup.report
   done
 fi
 if [ -n "$MAILX" ] ; then
   while read RLINE
   do
-    if [ -n "${RLINE}" ]; then
-      cat ${rpath}/../../ebs_backup.report | ${MAILX} -s "Server $(hostname -f) EBS volume backup report" ${RLINE}
+    if [ -n "$RLINE" ]; then
+      cat "$M_ROOT"/ebs_backup.report | $MAILX -s "Server $(hostname -f) EBS volume backup report" "$RLINE"
     fi
-  done < ${rpath}/../conf/mail.backup.list
+  done < "$M_ROOT"/conf/mail.backup.list
 fi

@@ -87,13 +87,13 @@ EOF
     ;;
     esac
   ;;
-  only-pickup)
+  only-pickup|no-tar|notar|no-archive)
     nonbackup='yes'
     onlypickup='yes'
     if [ X$s_optarg == 'Xhelp' ]; then
       cat <<"EOF"
     This option makes the program skip the backup creation part and only pick up
-  backup files already created and transfer them to (from) another host.
+  files and transfer them to (from) another location.
     This option doesn't make sense without --to-remote or --from-remote
   option.
   Usage: --only-pickup or --only-pickup=yes or --only-pickup=/path/to/files,
@@ -346,20 +346,74 @@ do
     echo "SET localbackuppath = $localbackuppath" >> $dbginto
     [ -n "$remotebackuppath" ] && echo "SET remotebackuppath = $remotebackuppath" >> $dbginto
   fi
-# If no direction is set..
   if [ -z "$xferdirection" ]; then
-# ..it means that no --from-remote nor --to-remote options are set either
-# Here is the place where other possible options go to.
-# Tests for other options are inverted, i.e. if some options ARE set, we do NOT
-# make local backups, which should run only if no options set at all.
     if [ -z "$nonbackup" ]; then
-# If no options set at all, we make local backup:
-      archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
-      echo -e "Neither --from-remote nor --to-remote option is set, so this is a local backup.\nMaking local backup to $localbackuppath/backup.local...\n" >> $stdinto
-      xferdirection="to-remote"
-      r_proto="local"
+      echo -e "No options set, doing nothing.\nUse option --help to get help."
     fi
   fi
+
+###################################
+# Archiving files and dumping dbs #
+###################################
+
+  if [ -z "$nonbackup" ]; then
+# Removing tmp files created during the previous run
+    [ -d "$localbackuppath" ] && rm -rf "$localbackuppath"/*  #*/
+    if [ -z "$replaceflag" ] || [ ! -f ${rpath}/lastbackup.${bconf}.archname ]; then
+      archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
+      echo "$archname" > "$rpath/lastbackup.${bconf}.archname"
+    else
+      archname=`cat "$rpath/lastbackup.${bconf}.archname"`
+    fi
+    [ -n "$debugflag" ] && echo "SET archname = $archname" >> $dbginto
+# Saving folders from backup.sources.list
+    if [ -f "${backupconf}.list" ] ; then
+      while read LINE
+      do
+        if [ -n "$LINE" ]; then
+          linetoname=`echo "$LINE" | sed 's|/|_|g'`
+          if [ "X$compression" == "Xgzip" ]; then
+            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> $dbginto
+            tar $ARCOPTS -c -z -f "$localbackuppath/$archname.$linetoname.tar.gz" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
+            splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
+          fi
+          if [ "X$compression" == "Xbzip2" ]
+          then
+            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> $dbginto
+            tar $ARCOPTS -c -j -f "$localbackuppath/$archname.$linetoname.tar.bz2" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
+            splitfile "$localbackuppath/$archname.$linetoname.tar.bz2"
+          fi
+          if [ "X$compression" == "X" ]
+          then
+            [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> $dbginto
+          	tar $ARCOPTS -c -f "$localbackuppath/$archname.$linetoname.tar" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
+            splitfile "$localbackuppath/$archname.$linetoname.tar"
+          fi
+          
+          if [ -f "$M_TEMP/$archname.$linetoname.tar.log" ]; then
+            tarerr=$(grep '^tar:' "$M_TEMP/$archname.$linetoname.tar.log" | grep -v 'Removing leading' | grep -v 'as we read')
+            [ -n "$tarerr" ] && echo "$tarerr" >> $stderrto
+            echo "Tar: ${LINE} copied with some errors, see $locallogpath/logs/m_backup.error" >> $stdinto
+            echo "Tar: $LINE copied `grep '^Total bytes written:' "$M_TEMP/$archname.$linetoname.tar.log" | cut -d' ' -f5,6`" >>$stdinto
+          else
+            echo "Tar: $LINE copied successfully `grep '^Total bytes written:' "$M_TEMP/$archname.$linetoname.tar.log" | cut -d' ' -f5,6`" >>$stdinto 2>/dev/null
+            rm -f "$M_TEMP/$archname.$linetoname.tar.log"
+          fi
+        fi
+      done < "${backupconf}.list"
+    fi
+    #rm -f $M_TEMP/${archname}.${linetoname}.tar.log
+# Backuping databases (see the correspondent database backup scripts for details
+    for DB in $databases
+    do
+      [ -x "$rpath"/${DB}.backup.sh ] && "$rpath"/${DB}.backup.sh "$backupconf" "$archname" 1>>$stdinto 2>>$stderrto
+    done
+  else
+    archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
+    [ -n "$debugflag" ] && echo "SET archname = $archname" >> $dbginto
+  fi   
+# --- ending non-backup condition inverted
+
 
 ###############################
 # Local backup                #
@@ -432,63 +486,6 @@ do
 
   if [ "$xferdirection" == "to-remote" ]
   then
-# --- Starting nonbackup condition inverted
-    if [ -z "$nonbackup" ]; then
-# Removing tmp files created during the previous run
-      [ -d "$localbackuppath" ] && rm -rf "$localbackuppath"/*  #*/
-      if [ -z "$replaceflag" ] || [ ! -f ${rpath}/lastbackup.${bconf}.archname ]; then
-        archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
-        echo "$archname" > "$rpath/lastbackup.${bconf}.archname"
-      else
-        archname=`cat "$rpath/lastbackup.${bconf}.archname"`
-      fi
-      [ -n "$debugflag" ] && echo "SET archname = $archname" >> $dbginto
-  # Saving folders from backup.sources.list
-      if [ -f "${backupconf}.list" ] ; then
-        while read LINE
-        do
-          if [ -n "$LINE" ]; then
-            linetoname=`echo "$LINE" | sed 's|/|_|g'`
-            if [ "X$compression" == "Xgzip" ]; then
-              [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> $dbginto
-              tar $ARCOPTS -c -z -f "$localbackuppath/$archname.$linetoname.tar.gz" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
-              splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
-            fi
-            if [ "X$compression" == "Xbzip2" ]
-            then
-              [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> $dbginto
-              tar $ARCOPTS -c -j -f "$localbackuppath/$archname.$linetoname.tar.bz2" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
-              splitfile "$localbackuppath/$archname.$linetoname.tar.bz2"
-            fi
-            if [ "X$compression" == "X" ]
-            then
-              [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> $dbginto
-            	tar $ARCOPTS -c -f "$localbackuppath/$archname.$linetoname.tar" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
-              splitfile "$localbackuppath/$archname.$linetoname.tar"
-            fi
-            
-            if [ -f "$M_TEMP/$archname.$linetoname.tar.log" ]; then
-              tarerr=$(grep '^tar:' "$M_TEMP/$archname.$linetoname.tar.log" | grep -v 'Removing leading' | grep -v 'as we read')
-              [ -n "$tarerr" ] && echo "$tarerr" >> $stderrto
-              echo "Tar: ${LINE} copied with some errors, see $locallogpath/logs/m_backup.error" >> $stdinto
-              echo "Tar: $LINE copied `grep '^Total bytes written:' "$M_TEMP/$archname.$linetoname.tar.log" | cut -d' ' -f5,6`" >>$stdinto
-            else
-              echo "Tar: $LINE copied successfully `grep '^Total bytes written:' "$M_TEMP/$archname.$linetoname.tar.log" | cut -d' ' -f5,6`" >>$stdinto 2>/dev/null
-              rm -f "$M_TEMP/$archname.$linetoname.tar.log"
-            fi
-          fi
-        done < "${backupconf}.list"
-      fi
-      #rm -f $M_TEMP/${archname}.${linetoname}.tar.log
-  # Backuping databases (see the correspondent database backup scripts for details
-      for DB in $databases
-      do
-        [ -x "$rpath"/${DB}.backup.sh ] && "$rpath"/${DB}.backup.sh "$backupconf" "$archname" 1>>$stdinto 2>>$stderrto
-      done
-    else
-      archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
-    fi   
-# --- ending non-backup condition inverted
 
 # Starting files transfer
     case $r_proto in 
