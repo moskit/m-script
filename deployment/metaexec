@@ -326,11 +326,9 @@ fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   #KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  KEY=`find_key cluster "$cluster"`
+  KEY=`find_key cluster "$cluster"` || proper_exit 1
   [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && proper_exit 1
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1
-  [ -f "${rpath}/../keys/${KEY}" ] || KEY=${KEY}.pem
-  [ ! -f "${rpath}/../keys/${KEY}" ] && echo "Key $KEY not found" && proper_exit 1
   if [ -z "$list" ] ; then
     #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"

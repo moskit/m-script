@@ -27,6 +27,7 @@ log() {
 
 find_cluster_key() {
   KEY=`grep "^${1}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+  [ -z "$KEY" ] && log "key not found for cluster $1"
   if [ ! -f "$M_ROOT/keys/$KEY" ]; then
     KEY1="${KEY}.pem"
     [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
@@ -63,7 +64,7 @@ where=$1
 shift
 case $where in
   cluster)
-    find_cluster_key "$cluster" && echo "$KEY" && exit 0
+    find_cluster_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
   ;;
   server)
     nextkey=false

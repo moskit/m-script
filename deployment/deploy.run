@@ -217,7 +217,8 @@ if [ "$type" == "remote" ] ; then
     key=`"$M_ROOT"/helpers/find_key cluster "$cluster"`
   fi
   [ -z "$key" ] && echo "Key not found" >> "${rpath}/../logs/deploy.log" && exit 1
-
+  [ ! -f "$key" ] && echo "Key $key does not exist" >> "${rpath}/../logs/deploy.log" && exit 1
+  echo "using key $key" >> "${rpath}/../logs/deploy.log"
   echo "`date +"%H:%M:%S"` REMOTE $file" >> "${rpath}/../logs/deploy.log"
   if [ -z "$ip" ] ; then
     if [ -n "$dry" ] ; then
