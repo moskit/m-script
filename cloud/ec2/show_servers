@@ -90,7 +90,8 @@ list_servers() {
       iname=`echo $sn | cut -d'|' -f13`
       icluster=`echo $sn | cut -d'|' -f14`
       ikey=`echo $sn | cut -d'|' -f6`
-
+      bdevs=`grep ^$id\| "$M_TEMP/servers.${region}.bdevs"`
+      
       if [ "X$NETWORK" == "Xexternal" ] ; then
         IP=$extIP
       else
@@ -117,12 +118,15 @@ list_servers() {
           case $view in
             list)
               echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
+              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
             table)
               echo "${id}|${iname}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}|${iaki}|${iari}|${secgroup}|${izone}|${ikey}"
+              echo "$bdevs" | sed 's_^_EBS: _g'
               ;;
             column)
               echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
+              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
             none)
               ;;
@@ -133,6 +137,7 @@ list_servers() {
               echo "Server image: $imageId    AKI: $iaki    ARI: $iari"
               echo "Server size: $flavorId    Status: $istatus    Keypair: $ikey"
               echo "Security group: $secgroup    Zone: $izone"
+              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
           esac
           icount+=1
@@ -270,10 +275,10 @@ do
     [ "X$tag" == "Xcluster" ] && cluster=`echo $SERVER | cut -d'|' -f5`
     [ "X$tag" == "XName" ] && altname=`echo $SERVER | cut -d'|' -f5`
   fi
-  if [[ ${1} =~ ^BLOCKDEVICE ]] ; then
-    bdev+=("`echo ${1} | cut -d'|' -f2`")
-    bID+=("`echo ${1} | cut -d'|' -f3`")
-    bstarted+=("`echo ${1} | cut -d'|' -f4`")
+  if [[ $SERVER =~ ^BLOCKDEVICE ]] ; then
+    bdev+=("`echo $SERVER | cut -d'|' -f2`")
+    bID+=("`echo $SERVER | cut -d'|' -f3`")
+    bstarted+=("`echo $SERVER | cut -d'|' -f4`")
   fi
 done
 add_server

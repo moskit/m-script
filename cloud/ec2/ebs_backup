@@ -26,7 +26,7 @@ currtime=`date`
 echo $currtime > "$M_ROOT"/ebs_backup.report
 echo -e "------------------------\n" >> "$M_ROOT"/ebs_backup.report
 
-possible_options="keep cluster ami state filter noupdate help region"
+possible_options="keep cluster id state filter noupdate help region"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
@@ -78,9 +78,9 @@ if [ -n "$help" ] ; then
       echo "  Backups volumes belonging to this cluster only"
       echo "  (attached to instances tagged with \"cluster=<cluster name>\")"
     ;;
-    ami)
-      echo "Usage: --ami=<ami_id>"
-      echo "  Backups volumes attached to instances with this AMI ID"
+    id)
+      echo "Usage: --id=<server ID>"
+      echo "  Backups volumes attached to instances with this ID"
     ;;
     state)
       echo "Usage: --state=<state>"
@@ -111,7 +111,6 @@ install -d "$M_TEMP"
 [ -n "$noupdate" ] && noupdate="--noupdate"
 [ -n "$region" ] && region="--region=$region"
 [ -n "$cluster" ] && cluster="--cluster=$cluster"
-[ -n "$ami" ] && ami="--ami=$ami"
 [ -n "$state" ] && state="--state=$state"
 
 $rpath/show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $M_TEMP/volumes.list
