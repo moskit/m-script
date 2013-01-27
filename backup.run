@@ -302,8 +302,7 @@ do
 
   echo "Using configuration file ${backupconf}..." >> $stdinto
   if [ -z "$remotehost" ]; then
-    r_proto="local"
-    echo -e "Connection to remote host is not setup in $backupconf\nTransfer method is forced to 'local'\n" >> $stdinto
+    [ "X$xferdirection" != "Xto-local" ] && echo "Backup is set to be $xferdirection but remote host is not set" >> $stderrto && exit 1
   fi
   ARCOPTS=""
   
