@@ -113,12 +113,13 @@ install -d "$M_TEMP"
 [ -n "$cluster" ] && cluster="--cluster=$cluster"
 [ -n "$state" ] && state="--state=$state"
 
-$rpath/show_servers "$noupdate" "$region" "$cluster" "$ami" "$state" --filter=bID > $M_TEMP/volumes.list
+"$rpath"/show_servers "$noupdate" "$region" "$cluster" "$state" --view=table | grep "^EBS: $id" | cut -d'|' -f2 > "$M_TEMP/volumes.list"
+
 if [ -n "$keep" ] ; then
   outdated=`date -d "$currtime - $keep days" +"%s"`
-  ec2-describe-snapshots $region > $M_TEMP/snapshots.list
-  for ebs in `cat $M_TEMP/volumes.list` ; do
-    cat $M_TEMP/snapshots.list | grep "[[:space:]]$ebs[[:space:]]" | while read snap ; do
+  ec2-describe-snapshots $region > "$M_TEMP/snapshots.list"
+  for ebs in `cat "$M_TEMP/volumes.list"` ; do
+    cat "$M_TEMP/snapshots.list" | grep "[[:space:]]$ebs[[:space:]]" | while read snap ; do
       snapID=`echo $snap | awk '{print $2}'`
       snaptime=`echo $snap | awk '{print $5}' | sed 's|T| |'`
       snaptime=`date -d "$snaptime" +"%s"`
