@@ -41,8 +41,6 @@ prev_values_arr=( `cat "$M_TEMP/netstat.dat" 2>/dev/null` )
 
 curr_values=$($netstatbin -s | grep -E "$metrics" | sed 's|^ *||' | while read L ; do val=${L%% *}; var=`echo "${config[*]}" | cut -d'|' -f1,2 | grep "${L#* }" | cut -d'|' -f1`; eval "echo \"${var}=${val}\""; done)
 
-IFS=$IFS1
-
 rm -f "$M_TEMP/netstat.dat"
 for st in $curr_values ; do eval $st ; echo $st >> "$M_TEMP/netstat.dat" ; done
 curr_values_arr=( $curr_values )
@@ -58,6 +56,7 @@ done
 
 echo -e "\nNetwork stats\n-------------\n\n"
 
+IFS=$IFS1
 IFS1=$IFS ; IFS='
 '
 for l3 in `echo "${config[*]}" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; do
@@ -66,9 +65,13 @@ for l3 in `echo "${config[*]}" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; d
   thr2=`echo $l3 | cut -d'|' -f3`
   thr3=`echo $l3 | cut -d'|' -f4`
   val=`echo "${dat_arr[*]}" | tr ' ' '\n' | grep ^${var}= | cut -d'=' -f2`
-  [[ `expr $val \> $thr3` -eq 1 ]] && echo "<***> `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
-  [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
-  [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
+  if [ -n "$val" ]; then
+    [[ `expr $val \> $thr3` -eq 1 ]] && echo "<***> `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
+    [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
+    [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
+  else
+    log "this netstat metric is empty: ${var}, so you can as well remove it from conf/netstat.conf"
+  fi
 done
 IFS=$IFS1
 

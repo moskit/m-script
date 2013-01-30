@@ -26,10 +26,14 @@ rpath=${xcommand%/*}
 SSH_TIMEOUT="-o ConnectTimeout=$SSH_TIMEOUT"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-SQLITE=`which sqlite3 2>/dev/null`
+
 source "${rpath}/conf/mon.conf"
 source "${rpath}/conf/cloud.conf"
 source "${rpath}/lib/functions.sh"
+
+SQLITE=dbquery
+#SQLITE=`which sqlite3 2>/dev/null`
+
 LOG="$rpath/logs/dashboard.log"
 [ -n "$debug" ] && debug=false || debug=true
 

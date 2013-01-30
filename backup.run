@@ -804,9 +804,9 @@ EOF
         exit 1
       fi
       [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
-      ${SSH} "${remoteuser}"@"${remotehost}" "find ${remotepath} -mtime +$keepremotedays -type f" 2>>$stderrto > $M_TEMP/remote_files_to_remove.list
+      $SSH "$remoteuser"@"$remotehost" "find $remotepath -mtime +$keepremotedays -type f" 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
       res=0
-      for LINE in `cat $M_TEMP/remote_files_to_remove.list`
+      for LINE in `cat "$M_TEMP/remote_files_to_remove.list"`
       do
         [ -n "$debugflag" ] && rmv='-v'
         ${SSH} "${remoteuser}"@"${remotehost}" "rm "$rmv" -f \"${LINE}\"" 2>>$stderrto >> $dbginto
@@ -827,22 +827,22 @@ EOF
 
   echo -e "          Backup operations report\n--------------------------------------------------------------\nDate: `date`\n\n" > ${rpath}/backup.report
   if [ -z "$nonbackup" ]; then
-    echo -e "Archive file name pattern: ${archname}\n--------------------------------------------------------------\n\n" >> ${rpath}/backup.report
+    echo -e "Archive file name pattern: ${archname}\n--------------------------------------------------------------\n\n" >> "$rpath/backup.report"
   fi
-  [ -f "$stderrto" ] && cat $stderrto >> "${locallogpath}/logs/m_backup.error"
+  [ -f "$stderrto" ] && cat $stderrto >> "$locallogpath/logs/m_backup.error"
   
   errlog=`grep "\*\*\*" $stderrto`
   if [ -n "$errlog" ]; then
     if [ -n "$debugflag" ]; then
-      [ -f "$stderrto" ] && cat $stderrto >> ${rpath}/backup.report
+      [ -f "$stderrto" ] && cat $stderrto >> "$rpath/backup.report"
     else
-      echo "*** There were errors during this backup:" >> ${rpath}/backup.report
+      echo "*** There were errors during this backup:" >> "$rpath/backup.report"
       if [ -f "$stderrto" ]; then
         for command in "cp scp rsync debug mv rm mysql pgsql ncftpput tar s3cmd"
         do
-          grep -i -m 3 "^${command}" $stderrto >> ${rpath}/backup.report
+          grep -i -m 3 "^$command" $stderrto >> "$rpath/backup.report"
         done
-        echo -e "*** Note that errors shown are limited to 3 errors for every operation\nFull error log is available at ${locallogpath}/logs/m_backup.error\n" >> "${rpath}/backup.report"
+        echo -e "*** Note that errors shown are limited to 3 errors for every operation\nFull error log is available at $locallogpath/logs/m_backup.error\n" >> "$rpath/backup.report"
       fi
     fi
   fi
@@ -864,13 +864,13 @@ EOF
   
   if [ -n "$errlog" ]; then
     echo "*** `date` ***" >> "${locallogpath}/logs/m_backup.error"
-    if [ "X$nonbackup" == "X" ]; then
+    if [ -z "$nonbackup" ]; then
       echo "*** ${archname} ***" >> "${locallogpath}/logs/m_backup.error"
     fi
     [ -f "$stderrto" ] && cat $stderrto >> "${locallogpath}/logs/m_backup.error"
   fi
   echo "*** `date` ***" >> "${locallogpath}/logs/m_backup.log"
-  if [ "X$nonbackup" == "X" ]; then
+  if [ -z "$nonbackup" ]; then
     echo "*** ${archname} ***" >> "${locallogpath}/logs/m_backup.log"
   fi
   
