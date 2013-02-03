@@ -57,8 +57,6 @@ do
 done
 IFS=$IFS1
 
-lock_cloudops || exit 10
-
 [ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && exit 1
 
 [ -n "$force" ] && force=true || force=false
@@ -100,6 +98,8 @@ find_cluster() {
     fi
   fi
 }
+
+lock_cloudops || exit 10
 
 log "stopping server $@"
 if [ -z "$id" ] ; then
@@ -189,7 +189,7 @@ IPS=( `echo -e "${ipint}\n${ipext}\n${ip}" | sort | uniq` )
 
 if [ $reqres -eq 0 -a `grep -c code\|4 "${M_TEMP}/${rcommand}.resp"` -eq 0 ]; then
   log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully"
-  echo "Server ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
+  echo -e "`date`\n\nServer ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
   removed=true
 fi
 

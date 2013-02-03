@@ -59,6 +59,7 @@ exit 0
 fi
 
 job_allowed() {
+  [ -f "$M_ROOT"/conf/actions.allowed.list ] || return 0
   if [ `grep -c $JOBCMD_E "$M_ROOT"/conf/actions.allowed.list` -ne 0 ] ; then
     if [ `grep -c $JOBID "$M_TEMP/actions.auth.list"` -ne 0 ] ; then
       log "job: $JOBCMD ID: $JOBID is allowed"

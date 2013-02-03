@@ -94,7 +94,7 @@ start)
 ##### Running tests #####
     sleep 10
     # Running actions from the queue
-    "${rpath}"/lib/mq.run </dev/null &
+    "${rpath}"/lib/mq.run &
     
 ### Tests that run if load has changed - we're interested in various metrics here
     if [ "X$x" == "X1" ]; then
