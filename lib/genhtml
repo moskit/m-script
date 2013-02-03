@@ -20,8 +20,8 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 
 STAT=`which stat 2>/dev/null`
-[ -z "$STAT" ] && echo "stat utility not found" && exit 1
 LOG="$M_ROOT/logs/dashboard.log"
+[ -z "$STAT" ] && log "stat utility not found" && exit 1
 
 possible_options="type css folder"
 necessary_options="type"
@@ -108,7 +108,7 @@ case $type in
     else
       log "oldest file timestamp for folder ${folder}: $oldestfiledate"
       timenow=`date +"%s"`
-      timerange=`expr $timenow - $oldestfiledate`
+      timerange=`expr \( $timenow - $oldestfiledate \) / 60 + 1`
     fi
     if [ `expr "$timerange" : ".*[^0-9]"` -eq 0 ]; then
       find "${rpath}/../www/$folder/" -type f -mmin +$timerange -exec rm '{}' \;

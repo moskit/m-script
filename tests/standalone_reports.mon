@@ -22,7 +22,6 @@ rpath=${0%/*}
 source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
 
-echo > "$M_ROOT/report"
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
   cat "$M_ROOT/standalone/$sa/report" >> "$M_ROOT/report"
 done

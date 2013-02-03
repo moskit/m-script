@@ -470,6 +470,7 @@ function action() {
   JOBINTIME=`date +"%y%m%d%H%M%S"`
   echo "`grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3`|${JOBINTIME}|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
+  "${rpath}"/lib/mq.run </dev/null &
 }
 
 source "${rpath}/conf/mon.conf"
