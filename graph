@@ -350,9 +350,9 @@ if [ -n "$perpixel" ]; then
   $debug && log "mp: $mp"
 
   if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
-  # 1mln is a reasonable limit
+  # 1mln is a reasonable limit (scale 2 x 3); make i<=3 to make it a billion
     for ((i=1; i<=2; i++)); do
-      [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $i * $areaV / $metricmax" | bc`
+      [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / $metricmax" | bc`
       $debug && log "mp: $mp"
     done
   fi

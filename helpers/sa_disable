@@ -10,5 +10,6 @@ rpath=${rpath%/*}
 rm -f "${rpath}/../standalone/rc/"*".$1"
 rm -f "${rpath}/../standalone/${1}/rc"/*
 
-[ -x "/etc/init.d/monitorload" ] && /etc/init.d/monitorload restart
+[ -f "${rpath}/../standalone/${1}/report" ] && rm -f "${rpath}/../standalone/${1}/report"
+[ -z "$IAMACHILD" ] && [ -x "/etc/init.d/monitorload" ] && /etc/init.d/monitorload restart
 

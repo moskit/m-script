@@ -281,9 +281,12 @@ if [ -n "$newserver" ]; then
     
     for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
       startserver $T
-      [ -z "$ip" ] && log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
-      [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]] && break
-      # breaking here (reason not known); will be test later
+      if [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]]; then
+        break
+      elif [ -z "$ip" ]
+        log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
+      fi
+      # breaking here (reason not known); will be tested later
       [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
       # not breaking here: may be controversial commands, so let it start up if it
       # gets an empty slot next time
@@ -296,6 +299,7 @@ if [ -n "$newserver" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       sleep $WAIT_BETWEEN_TRIES
     done
+    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1
   else
     echo "*** This is a test"
   fi
@@ -334,9 +338,9 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     $debug && log "ensuring the target server $ip is accessible"
     if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
-        $SSH -i "${rpath}/../keys/${KEY}" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
+        $SSH -i "${KEY}" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
         if [ $? -ne 0 ]; then
-          echo "Unable to login to the server $ip using the key ${rpath}/../keys/${KEY}, trying again...">>"$LOG"
+          echo "Unable to login to the server $ip using the key ${KEY}, trying again...">>"$LOG"
           loggedin=false
           sleep $SERVER_CHECKS_PERIOD
         else
@@ -350,7 +354,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
 
     #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
 
-    if [ -z "$timestamp" ];then
+    if [ -z "$timestamp" ]; then
     ## Saving arguments to make re-run simpler
       $debug && log "saving command-line arguments for possible repeat of the sequence"
       IFS2=$IFS ; IFS=$' \t\n'

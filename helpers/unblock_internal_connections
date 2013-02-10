@@ -188,7 +188,7 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
       fi
       unset rchain
     done
-  done
+  done &
 
 done
 
