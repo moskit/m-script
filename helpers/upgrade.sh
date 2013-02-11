@@ -39,6 +39,7 @@ else
   $GIT clone --depth 1 git://igorsimonov.com/m_script /tmp/m_script/.update
   gitts=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
 fi
+[ "X$1" == "Xfull" ] && fullupgrade=true || fullupgrade=false
 find /tmp/m_script/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
 for script in `find "/tmp/m_script/.update" -type d`; do
