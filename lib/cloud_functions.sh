@@ -58,7 +58,7 @@ cloudops_locked() {
 generate_name() {
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && log "Cluster is not defined, exiting" && exit 1
+  [ -z "$cluster" ] && log "Cluster is not defined, exiting" && return 1
   nam=$(cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | grep \|${cluster}[[:space:]]*$ | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
   am=0 ; lm=0
@@ -79,7 +79,7 @@ generate_name() {
 check_cluster_limit() {
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && log "cluster is not defined, exiting" && exit 1
+  [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
@@ -98,7 +98,7 @@ check_cluster_minimum() {
   # double-check the cluster is defined
   [ -z "$cluster" ] && cluster=$1
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && log "cluster is not defined, exiting" && exit 1
+  [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0

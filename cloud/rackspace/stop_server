@@ -166,7 +166,7 @@ try_auth() {
 
 exit_status=0 # TODO
 
-check_cluster_minimum "$cluster" || proper_exit 5
+check_cluster_minimum "$cluster" || proper_exit 13
 try_auth
 reqres=`request`
 [ $reqres -gt 0 ] && log "Curl request returned status $reqres"

@@ -204,7 +204,7 @@ action_blocked() {
     else
       cyclesleft=`expr $cyclesleft - 1 2>/dev/null` || cyclesleft=0
       unblock_action "$@"
-      if [ $cyclesleft -gt 0 ] 2>"$LOG"; then
+      if [ $cyclesleft -gt 0 ] 2>>"$LOG"; then
         block_action $cyclesleft "$@"
       else
         return 1

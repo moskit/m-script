@@ -156,7 +156,7 @@ printreturn() {
 
 log "Checking cluster $cluster limit..."
 res=`check_cluster_limit`
-[[ $res -ne 0 ]] && proper_exit 5
+[[ $res -ne 0 ]] && proper_exit 13
 [ -z "$name" ] && name=`generate_name` && log "Name auto-generated: $name"
 [ -z "$name" ] && proper_exit 6
 find_image

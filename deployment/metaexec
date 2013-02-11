@@ -277,13 +277,13 @@ if [ -n "$newserver" ]; then
     log "getting cloud operations lock"
     source "${rpath}"/../lib/cloud_functions.sh
     lock_cloudops || exit 10
-    log "initiating start server sequence"
+    log "initiating server start sequence"
     
     for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
       startserver $T
       if [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]]; then
         break
-      elif [ -z "$ip" ]
+      elif [ -z "$ip" ]; then
         log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
       fi
       # breaking here (reason not known); will be tested later
@@ -348,7 +348,11 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
           break
         fi
       done
-      $loggedin || proper_exit 1
+      if ! $loggedin && [ -n "$newserver" ]; then
+        # stop useless server and tell the parent process that something's wrong
+        "$M_ROOT"/cloud/$CLOUD/stop_server --ip=$ip
+        proper_exit 13
+      fi
     fi
     #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
 

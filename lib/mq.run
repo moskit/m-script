@@ -116,7 +116,12 @@ for ((n=0; n<$limit; n++)); do
   else
     log "=== job: $JOB ID: $JOBID has finished successfully"
   fi
-  
+  # exit status 13 is a special status allowing to block the script for
+  # additional $BLOCK_ERR13 
+  if [ $res -eq 13 ] ; then
+    cclbl=`grep -c "^${JOBCMD_E}|" "$M_TEMP/actions.blocked"`
+    [ $cclbl -ne 0 ] && [ -n "$BLOCK_ERR13" ] && sed -i "/^${JOBCMD_E}|/d" "$M_TEMP/actions.blocked" && echo "${JOB}|$BLOCK_ERR13" >> "$M_TEMP/actions.blocked"
+  fi
 done
 
 
