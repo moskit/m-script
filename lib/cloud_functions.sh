@@ -125,7 +125,7 @@ find_name() {
 
 proper_exit() {
   log "exit status: $1"
-  unlock_cloudops
+  [ -z "$IAMACHILD" ] && unlock_cloudops
   exit $1
 }
 

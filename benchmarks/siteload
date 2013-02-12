@@ -1,0 +1,173 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand="${rpath##*/}"
+rpath="${rpath%/*}"
+[ -n "$M_ROOT" ] || M_ROOT="${rpath%/*}"
+#*/
+
+CURL=`which curl 2>/dev/null`
+[ "X$CURL" == "X" ] && echo "Curl not found" && exit 1
+
+function randword() {
+  i=`echo $RANDOM | sed 's|.|& |g'` ; j=`expr $RANDOM / 11000 + 1`; for n in $i ; do l=`expr $n \* $j` ; printf "${aa[$l]}" ; done ; printf "\n"
+}
+
+possible_options="total concurrency scenario randomurl randomword verbose scenariodelay url"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -n "$help" ] && echo -e "\nUsage: $rcommand <options>\n\n    Possible options: $possible options\n"
+
+$randomword && aa=( a a b c d e e f g h i j k l m n n o o p q r s t u v w x y z )
+
+source "$M_ROOT/conf.mon.conf"
+M_TEMP="$M_TEMP/benchmark"
+
+declare -i a
+rm -f "$M_TEMP"/*log 2>/dev/null
+cycles=`expr $totallimit / $concurrency`
+goon=1
+
+if [ -n "$randomurl" ]; then
+  [ ! -f "$randomurl" ] && echo "No URLs file found" && exit 1
+  urln=`cat "$randomurl" | wc -l`
+  urlr=$((RANDOM%$urln))
+fi
+if [ -n "$scenario" ]; then
+  [ ! -f "$scenario" ] && echo "No scenario file found" && exit 1
+fi
+
+while true ; do
+#  [ -n "$allcycles" ] && unset goon
+  for ((n=1; n<=$cycles; n++)) ; do
+    activecycles=0
+    finished=0
+    activecycles=`ls "$M_TEMP"/c*.log|wc -l 2>/dev/null` || activecycles=$cycles
+    finished=`cat "$M_TEMP"/c*.log|wc -l 2>/dev/null` || finished=0
+    running=`expr $activecycles \* $concurrency - $finished`
+    if [[ $running -gt $concurrency ]] ; then
+      printf " ZZZ "
+      sleep 5
+    else
+      if [ -n "$allcycles" ] ; then
+        unset goon
+      else
+        if [ -n "$scenario" ]; then
+          for ((k=1; k<=$concurrency; k++)) ; do
+            while read line ; do
+              t=`(time -p ($line >/dev/null 2>&1 && printf "." >> "$M_TEMP"/s.log || printf "." >> "$M_TEMP"/e.log)) 2>&1 | grep 'real' | cut -d' ' -f2`
+              [ -n "$scenariodelay" ] && sleep $scenariodelay
+              ts=`echo "scale=2; $ts + $t" | bc`
+            done<"$scenario"
+            echo $ts >> "$M_TEMP"/c${n}.log
+            printf "."
+          done &
+        else
+          for ((k=1; k<=$concurrency; k++)) ; do
+            if $randomword ; then
+              word=`randword`
+            fi
+            if [ -n "$randomurl" ]; then
+              url=`head -n $urlr "$randomurl" "$randomurl" | tail -1`
+            fi
+            t=`(time -p (curl -s "$url" && printf "." >> "$M_TEMP"/s.log || printf "." >> "$M_TEMP"/e.log)) 2>&1 | grep 'real' | cut -d' ' -f2`
+            echo $t >> "$M_TEMP"/c${n}.log
+            printf "."
+          done &
+        fi
+      fi
+    fi
+    # needed to avoid burst-like requests number growth
+    sleep 1
+    
+    if [ -e "$M_TEMP/c1.log" ] && [ `ls "$M_TEMP"/c*.log|wc -l` -eq $cycles ] ; then
+      allcycles=1
+      for log in "$M_TEMP"/c*.log ; do
+        if [ `cat $log|wc -l` -lt $concurrency ] ; then
+          printf "*" && goon=1
+        fi
+      done
+      if [ -n "$goon" ] ; then
+        printf "=>"
+        continue
+      else
+        cat "$M_TEMP"/c*.log >> "$M_TEMP"/t.log
+        rm -f "$M_TEMP"/c*.log
+        break
+      fi
+    fi
+  done
+  [ -z "$goon" ] && echo "no more going on" && break
+done
+while true ; do
+  activecycles=`ls "$M_TEMP"/c*.log|wc -l 2>/dev/null` || activecycles=$cycles
+  finished=`cat "$M_TEMP"/c*.log|wc -l 2>/dev/null` || finished=0
+  running=`expr $activecycles \* $concurrency - $finished`
+  if [[ $running -gt 0 ]] ; then
+    printf "  $running    \r"
+    sleep 2
+  else
+    break
+  fi
+done
+totaltime=0
+average=0
+mintime=0
+[ -e "$M_TEMP"/t.log ] && mintime=`head -1 "$M_TEMP"/t.log`
+maxtime=$mintime
+success=0
+[ -e "$M_TEMP"/s.log ] && success=`cat "$M_TEMP"/s.log | wc -m`
+error=0
+[ -e "$M_TEMP"/e.log ] && error=`cat "$M_TEMP"/e.log | wc -m`
+number=`cat "$M_TEMP"/t.log|wc -l`
+while read tt ; do
+  totaltime=`scale=2; echo "$totaltime + $tt" | bc`
+  [[ `echo "$mintime >= $tt" | bc` -eq 1 ]] && mintime=$tt
+  [[ `echo "$maxtime <= $tt" | bc` -eq 1 ]] && maxtime=$tt
+done < "$M_TEMP"/t.log
+averagetime=`scale=2; echo "$totaltime / $number" | bc`
+persecond=`scale=2; echo "$success / ($totaltime + 0.1)" | bc`
+
+echo "Total queries: $number"
+echo "Successful queries: $success"
+echo "Failed queries: $error"
+echo "Total time: $totaltime"
+echo "Average query time: $averagetime"
+echo "Shortest query: $mintime"
+echo "Longest query: $maxtime"
+echo "QPS: $persecond"
+
+

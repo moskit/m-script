@@ -54,7 +54,7 @@ find_by_ip() {
     id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
-    id=`${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
   fi
 }
 
@@ -70,17 +70,11 @@ fi
 
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../conf/cloud.conf"
+source "${rpath}/../../lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 if [ -z "$IAMACHILD" ]; then
   lock_cloudops || exit 10
 fi
-
-
-proper_exit() {
-  log "exit status: $1"
-  unlock_cloudops
-  exit $1
-}
 
 if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
@@ -92,7 +86,7 @@ if [ -z "$id" ] ; then
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
-        id=`${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
+        id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
@@ -115,7 +109,7 @@ if [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
-unlock_cloudops
+[ -z "$IAMACHILD" ] && unlock_cloudops
 
 cat "${M_TEMP}/${rcommand}.resp"
 
