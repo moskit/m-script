@@ -70,21 +70,25 @@ if [ -n "$randomurl" ]; then
 fi
 if [ -n "$scenario" ]; then
   [ ! -f "$scenario" ] && echo "No scenario file found" && exit 1
+  scqn=`cat "$scenario" | grep -v ^$ | grep -v ^# | grep -v [[:space:]]*# | wc -l`
+  [ -n "$scenariodelay" ] && ccdelay=`expr 5 \* $scqn \* $scenariodelay` || ccdelay=`expr 5 \* $scqn`
 fi
 activecycles=1
 while true ; do
 #  [ -n "$allcycles" ] && unset goon
   for ((n=1; n<=$cycles; n++)) ; do
+    [ $activecycles -eq 0 ] && echo "Preparing..."
     while [ $activecycles -eq 0 ]; do
       activecycles=`ls "$M_TEMP"/c*.log 2>/dev/null|wc -l`
       sleep 1
     done
+    echo "   started"
     activecycles=`ls "$M_TEMP"/c*.log 2>/dev/null|wc -l`
     finished=`cat "$M_TEMP"/c*.log 2>/dev/null|wc -l` || finished=0
     running=`expr $activecycles \* $concurrency - $finished`
     if [[ $running -gt $concurrency ]] ; then
       echo "   concurrency reached"
-      sleep 5
+      sleep $ccdelay
     else
       if [ -n "$allcycles" ] ; then
         unset goon
@@ -100,7 +104,7 @@ while true ; do
               ts=`echo "scale=2; $ts + $t" | bc`
             done<"$scenario"
             echo $ts >> "$M_TEMP"/c${n}.log
-            echo -n "   scenario $k finished"
+            echo "   scenario $k finished"
           done &
         else
           for ((k=1; k<=$concurrency; k++)) ; do
@@ -174,7 +178,7 @@ averagetime=`scale=2; echo "$totaltime / $number" | bc`
 persecond=`scale=2; echo "$success / ($totaltime + 0.1)" | bc`
 
 if [ -n "$scenario" ]; then
-  scqn=`cat "$scenario" | grep -v ^$ | grep -v ^# | grep -v [[:space:]]*# | wc -l`
+  
   [ -n "$scenariodelay" ] && scpersecond=`scale=2; echo "$success / ($totaltime + ($scenariodelay * $scqn - 1))" | bc`
   echo "Total scenarios: $number"
 else
