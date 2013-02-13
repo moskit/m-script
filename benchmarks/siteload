@@ -60,6 +60,7 @@ declare -i a
 rm -f "$M_TEMP"/*log 2>/dev/null
 cycles=`expr $total / $concurrency`
 goon=1
+curlog=/dev/null
 
 if [ -n "$randomurl" ]; then
   [ ! -f "$randomurl" ] && echo "No URLs file found" && exit 1
@@ -69,16 +70,15 @@ fi
 if [ -n "$scenario" ]; then
   [ ! -f "$scenario" ] && echo "No scenario file found" && exit 1
 fi
-
+activecycles=1
 while true ; do
 #  [ -n "$allcycles" ] && unset goon
   for ((n=1; n<=$cycles; n++)) ; do
-    activecycles=0
-    finished=0
     while [ $activecycles -eq 0 ]; do
       activecycles=`ls "$M_TEMP"/c*.log 2>/dev/null|wc -l`
       sleep 1
     done
+    activecycles=`ls "$M_TEMP"/c*.log 2>/dev/null|wc -l`
     finished=`cat "$M_TEMP"/c*.log 2>/dev/null|wc -l` || finished=0
     running=`expr $activecycles \* $concurrency - $finished`
     if [[ $running -gt $concurrency ]] ; then
@@ -90,8 +90,9 @@ while true ; do
       else
         if [ -n "$scenario" ]; then
           for ((k=1; k<=$concurrency; k++)) ; do
+            ts=0
             while read line ; do
-              t=`(time -p ($line >/dev/null 2>&1 && printf "." >> "$M_TEMP"/s.log || printf "." >> "$M_TEMP"/e.log)) 2>&1 | grep 'real' | cut -d' ' -f2`
+              t=`(time -p ($line >$curlog 2>&1 && printf "." >> "$M_TEMP"/s.log || printf "." >> "$M_TEMP"/e.log)) 2>&1 | grep 'real' | cut -d' ' -f2`
               [ -n "$scenariodelay" ] && sleep $scenariodelay
               ts=`echo "scale=2; $ts + $t" | bc`
             done<"$scenario"
@@ -168,13 +169,24 @@ done < "$M_TEMP"/t.log
 averagetime=`scale=2; echo "$totaltime / $number" | bc`
 persecond=`scale=2; echo "$success / ($totaltime + 0.1)" | bc`
 
-echo "Total queries: $number"
+if [ -n "$scenario" ]; then
+  scqn=`cat "$scenario" | grep -v ^$ | grep -v ^# | grep -v [[:space:]]*# | wc -l`
+  [ -n "$scenariodelay" ] && scpersecond=`scale=2; echo "$success / ($totaltime + ($scenariodelay * $scqn - 1))" | bc`
+  echo "Total scenarios: $number"
+else
+  echo "Total queries: $number"
+fi
 echo "Successful queries: $success"
 echo "Failed queries: $error"
 echo "Total time: $totaltime"
 echo "Average query time: $averagetime"
 echo "Shortest query: $mintime"
 echo "Longest query: $maxtime"
-echo "QPS: $persecond"
 
+if [ -n "$scenario" ]; then
+  echo "QPS based on total request time: $persecond"
+  [ -n "$scenariodelay" ] && echo "QPS based on overall time: $scpersecond"
+else
+  echo "QPS: $persecond"
+fi
 
