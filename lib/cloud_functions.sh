@@ -25,7 +25,8 @@ log() {
 }
 
 lock_cloudops() {
-  [ -n "$IAMACHILD" ] && log "I am a child" && return 0
+  local LOG="$M_ROOT/logs/cloud.log"
+  [ -n "$IAMACHILD" ] && log "I am a child, don't lock me up" && return 0
   local -i i
   i=0
   log "trying to acquire the cloud operations lock"
@@ -45,13 +46,15 @@ lock_cloudops() {
 }
 
 unlock_cloudops() {
+  local LOG="$M_ROOT/logs/cloud.log"
   rm -f "$M_TEMP/lock" && log "cloud operations unlocked"
   unset IAMACHILD
 }
 
 cloudops_locked() {
-  # we don't lock children
-  [ -n "$IAMACHILD" ] && log "I am a child" && return 1
+  local LOG="$M_ROOT/logs/cloud.log"
+  # we don't lock up children
+  [ -n "$IAMACHILD" ] && log "I am a child, I am not locked up" && return 1
   [ -f "$M_TEMP/lock" ] && return 0 || return 1
 }
 

@@ -57,6 +57,7 @@ do
 done
 IFS=$IFS1
 
+[ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && exit 1
 
 [ -n "$force" ] && force=true || force=false
@@ -85,12 +86,12 @@ find_cluster() {
     if [ `grep -c ^${1}\| "$M_ROOT"/servers.list` -eq 0 ]; then
       log "no records with this IP ($1) in the servers.list"
     else
-      log "cluster for this IP ($1) seems not defined in the servers.list"
+      log "cluster for this IP ($1) does not seem defined in the servers.list"
     fi
   else
     if [ -n "$cluster" ]; then
       if [ "$cluster" != "$icluster" ]; then
-        log "unknown error: cluster provided as option doesn't match the one found: $cluster != ${icluster}, re-assigning cluster=${icluster}"
+        log "unknown error: cluster provided as option doesn't match the found one: $cluster != ${icluster}, re-assigning cluster=${icluster}"
         cluster=${icluster}
       fi
     else
@@ -156,7 +157,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1
     ${rpath}/auth
     i+=1
     sleep 10
@@ -166,7 +167,7 @@ try_auth() {
 
 exit_status=0 # TODO
 
-check_cluster_minimum "$cluster" || proper_exit 13
+check_cluster_minimum "$cluster" || proper_exit 5
 try_auth
 reqres=`request`
 [ $reqres -gt 0 ] && log "Curl request returned status $reqres"

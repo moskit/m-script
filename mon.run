@@ -202,7 +202,8 @@ function runactions() {
       nalerts=`echo $confline | cut -d'|' -f4`
       blockccl=`echo $confline | cut -d'|' -f5`
       BLOCK_ERR13=`echo $confline | cut -d'|' -f6`
-      export BLOCK_ERR13
+      BLOCK_ERR5=`echo $confline | cut -d'|' -f7`
+      export BLOCK_ERR13 BLOCK_ERR5
       if [ -n "$nalerts" ] ; then
         [ -f "${M_TEMP}/consequent_alerts.tmp" ] && calerts=`cat "${M_TEMP}/consequent_alerts.tmp" | grep ^"${commline}"\|"$pattern"\|$level\| | tail -1`
         if [ -n "$calerts" ] ; then
