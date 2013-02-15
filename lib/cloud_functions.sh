@@ -89,8 +89,8 @@ check_cluster_limit() {
   [ "$limit" == "0" ] && return 0
   # tmp file is assumed to be up-to-date
   n=`IAMACHILD=1 ${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
-  log "cluster $cluster limit is ${limit}, current servers number is $n"
   [ -z "$n" ] && n=0
+  log "cluster $cluster limit is ${limit}, current servers number is $n"
   #[ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \> $n` -gt 0 ] && echo 0 && return 0
   echo 1
@@ -111,7 +111,6 @@ check_cluster_minimum() {
   n=`IAMACHILD=1 ${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
-  [ -z "$n" ] && n=0
   #[ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \< $n` -gt 0 ] && echo 0 && return 0
   echo 1

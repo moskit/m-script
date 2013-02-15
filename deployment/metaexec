@@ -116,8 +116,7 @@ run_meta() {
 }
 
 startserver() {
-  ip=`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log | tail -1`
-  res=$?
+  ip=`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log || echo $? | tail -1`
   log "($CLOUD) start_server exited with status $res and returned this as IP: $ip"
 }
 
@@ -281,21 +280,22 @@ if [ -n "$newserver" ]; then
     
     for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
       startserver $T
-      if [ $res -eq 0 ] && [[ `expr $ip : [0-9.]*$` -ne 0 ]]; then
+      if [[ `expr "$ip" : "[0-9]*\.[0-9.]*$"` -ne 0 ]]; then
         break
-      elif [ -z "$ip" ]; then
-        log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
+      else
+        # assuming it's the exit status (see the function)
+        res=$ip
       fi
-      # breaking here (reason not known); will be tested later
       [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
-      # not breaking here: may be controversial commands, so let it start up if it
-      # gets an empty slot next time
-      [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server"
+      [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5
       # various weird errors below, exit 1 
       [ $res -eq 6 ] && log "Failed to generate a name for the new server" && proper_exit 1
       [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1
       [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1
       [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
+      if [ -z "$ip" ]; then
+        log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
+      fi
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       sleep $WAIT_BETWEEN_TRIES
     done

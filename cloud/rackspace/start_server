@@ -186,7 +186,7 @@ echo "            }" >> "$M_TEMP/${rcommand}.req"
 echo "        ]" >> "$M_TEMP/${rcommand}.req"
 echo "    }" >> "$M_TEMP/${rcommand}.req"
 echo "}" >> "$M_TEMP/${rcommand}.req"
-log "request generated"
+log "Request generated"
 
 try_auth() {
   local -i i

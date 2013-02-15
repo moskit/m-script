@@ -159,8 +159,7 @@ function runscript() {
     fi
   elif [ "X$1" != "X" ]; then
     date | tee "${rpath}/alert" >/dev/null
-    echo "------------------------------" | tee -a "${rpath}/alert" >/dev/null
-    echo > "${rpath}/report"
+    echo -e "------------------------------\n" | tee -a "${rpath}/alert" >/dev/null
     for mon in `echo ${1} | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       if [ -x "${rpath}/tests/${mon}" ]; then
