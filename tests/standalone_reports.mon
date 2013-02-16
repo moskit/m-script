@@ -23,6 +23,6 @@ source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
 
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
-  cat "$M_ROOT/standalone/$sa/report" >> "$M_ROOT/report"
+  cat "$M_ROOT/standalone/$sa/report"
 done
 

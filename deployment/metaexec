@@ -116,8 +116,9 @@ run_meta() {
 }
 
 startserver() {
-  ip=`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log || echo $? | tail -1`
-  log "($CLOUD) start_server exited with status $res and returned this as IP: $ip"
+  ip=0
+  ip="`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log || echo $? | tail -1`"
+  log "($CLOUD) start_server returned this: $ip"
 }
 
 SSH=`which ssh 2>/dev/null`

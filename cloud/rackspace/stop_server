@@ -57,8 +57,8 @@ do
 done
 IFS=$IFS1
 
+[ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && log "No cluster $cluster in servers.list" && exit 1
 [ -z "$cluster" ] && cluster=$M_CLUSTER
-[ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && exit 1
 
 [ -n "$force" ] && force=true || force=false
 removed=false
