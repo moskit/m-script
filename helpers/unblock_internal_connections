@@ -108,8 +108,8 @@ findchain_local() {
 }
 
 findchain_remote() {
-  upperchain=`$SSH -i "$3" -o ConnectTimeout=5,StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -v ^ACCEPT | grep -v ^REJECT | head -1 | awk '{print \\$1}'"`
-  [ -n "$upperchain" ] && $SSH -i "$3" -o ConnectTimeout=5,StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain
+  upperchain=`$SSH -i "$3" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -v ^ACCEPT | grep -v ^REJECT | head -1 | awk '{print \\$1}'"`
+  [ -n "$upperchain" ] && $SSH -i "$3" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain
 }
 
 for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
@@ -169,10 +169,10 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
         [ -n "$rchain" ] || continue
         [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
         command="\`which iptables-save 2>/dev/null\` | grep \"\-A $rchain \-s $IP2UB \-j ACCEPT\" | wc -l"
-        existing=`$SSH -i "${rpath}/../keys/${KEY}" -o ConnectTimeout=5,StrictHostKeyChecking=no $IP "$command"`
+        existing=`$SSH -i "${rpath}/../keys/${KEY}" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"`
         if [[ $existing -eq 0 ]] ; then
           command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
-          $SSH -i "${rpath}/../keys/${KEY}" -o ConnectTimeout=5,StrictHostKeyChecking=no $IP "$command"
+          $SSH -i "${rpath}/../keys/${KEY}" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"
         else
           dupes=`expr $existing - 1`
           if [[ $dupes -gt 0 ]] ; then
@@ -180,7 +180,7 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
             for ((n=0; n<$dupes; n++)) ; do
               printf "."
               command="\`which iptables 2>/dev/null\` -D \"$rchain\" -s $IP2UB -j ACCEPT"
-              $SSH -i "${rpath}/../keys/${KEY}" -o ConnectTimeout=5,StrictHostKeyChecking=no $IP "$command"
+              $SSH -i "${rpath}/../keys/${KEY}" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"
             done
             echo
           fi

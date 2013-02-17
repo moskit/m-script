@@ -236,6 +236,12 @@ changed=0
 [ -f $M_TEMP/servers.${region}.bdevs ] && mv $M_TEMP/servers.${region}.bdevs $M_TEMP/servers.${region}.bdevs.prev || touch $M_TEMP/servers.${region}.bdevs.prev
 [ ! -x ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances ] && log "ec2-describe-instances binary not found! Exiting.." && exit 1
 
+# force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
+# if no setting, force update is disabled
+if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
+  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/${rcommand}.resp || echo 0` || echo 86400)
+  [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
+fi
 if [ -z "$noupdate" ]; then
   ${EC2_TOOLS_BIN_PATH}/ec2-describe-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $region | sed 's/\t/|/g' > $M_TEMP/${rcommand}.resp || exit 1
 fi

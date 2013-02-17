@@ -117,7 +117,7 @@ run_meta() {
 
 startserver() {
   ip=0
-  ip="`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log || echo $? | tail -1`"
+  ip="`IAMACHILD=1 "${rpath}"/../cloud/${cloud}/start_server --cluster=${cluster} --return=ip "$V" "$T" 2>>"${rpath}"/../logs/cloud.log | grep -v ^$ || echo $? | tail -1`"
   log "($CLOUD) start_server returned this: $ip"
 }
 
