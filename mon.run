@@ -112,10 +112,11 @@ function runscript() {
   then
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
+  echo "------------------------------" >> "$LOG"
+  date | tee -a "$LOG" | tee "${rpath}/report" | tee "${rpath}/alert"
+  echo "------------------------------" | tee -a "$LOG"  | tee -a ${rpath}/report | tee -a "${rpath}/alert"
   if [ "X$1" == "XSQL" ]; then
-    echo "------------------------------" >> "$LOG"
-    date | tee -a "$LOG" | tee "${rpath}/report" | tee "${rpath}/alert" >/dev/null
-    echo "------------------------------" | tee -a "$LOG"  | tee -a ${rpath}/report | tee -a "${rpath}/alert" >/dev/null
+    
     if [ -n "$2" ] ; then
       for script in `find ${rpath}/rc/ -maxdepth 1 -name "*.mon" | head -n $2`
       do
@@ -157,9 +158,7 @@ function runscript() {
         fi
       done
     fi
-  elif [ "X$1" != "X" ]; then
-    date | tee "${rpath}/alert" >/dev/null
-    echo -e "------------------------------\n" | tee -a "${rpath}/alert" >/dev/null
+  elif [ -z "$1" ]; then
     for mon in `echo ${1} | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       if [ -x "${rpath}/tests/${mon}" ]; then
