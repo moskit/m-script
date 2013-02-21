@@ -79,7 +79,7 @@ EOF
     help | *)
       cat <<"EOF"
   Files transfer method.
-  Usage: --from-remote=method or --to-remote=method
+  Usage: --to-local=method
   Supported methods are:
   cp rsync
 EOF
@@ -826,7 +826,8 @@ EOF
   then
     if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ]; then
       [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
-      find $remotepath -mtime +$keepremotedays -type f 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
+      find "$remotepath" -mtime +$keepremotedays -type f 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
+      declare -i res
       res=0
       for LINE in `cat "$M_TEMP/remote_files_to_remove.list"`
       do
@@ -835,9 +836,9 @@ EOF
         res+=$?
       done
       if [ $res -eq 0 ]; then
-        echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> $stdinto
+        echo "Outdated backups at $remotepath have been removed" >> $stdinto
       else
-        echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >>$stdinto
+        echo "Outdated backups at $remotepath have not been removed" >>$stdinto
       fi
     fi
   fi
