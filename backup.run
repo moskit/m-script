@@ -751,76 +751,97 @@ EOF
     [ -n "$debugflag" ] && rmv='-v'
     find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>$stderrto >> $stdinto && echo "Outdated backups at ${localrmpath} have been removed" >> $stdinto
   fi
-#  echo "if X\$r_proto=X$r_proto"
-  if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ "X$r_proto" != "Xlocal" ] && [ -n "${remotehost}" ]; then
-    case $r_proto in 
-    ftp)
-      echo "Removing remote files via FTP is not (yet) supported." >>$stderrto
-    ;;
-    s3)
-      remotepath1="${s3target}"
-      while true; do
-        `which s3cmd` ls "${remotepath1}" > $M_TEMP/s3list.$$
-        if [ -n "$debugflag" ]; then
-          echo "=== In ${remotepath1} `cat $M_TEMP/s3list.$$|wc -l` objects found" >> $dbginto
-        fi
-        grep DIR $M_TEMP/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $M_TEMP/s3dirs.$$
-        if [ -n "$debugflag" ]; then
-          echo "=== `cat $M_TEMP/s3dirs.$$|wc -l` are directories" >> $dbginto
-        fi
-        grep -v ^[[:space:]]*DIR[[:space:]]* $M_TEMP/s3list.$$ >> $M_TEMP/s3files.$$
-        if [ -n "$debugflag" ]; then
-          echo "=== `cat $M_TEMP/s3files.$$|wc -l` are files" >> $dbginto
-        fi
-        for ((i=0; i < $keepremotedays; i++)); do
-          d2k=$(date -d "`date +"%Y/%m/%d"` - $i days" +"%Y-%m-%d")
-          sed -i -e "/$d2k/d" $M_TEMP/s3files.$$
-        done
-        if [ -n "$debugflag" ]; then
-          echo "=== `cat $M_TEMP/s3files.$$|wc -l` files have been marked for removal" >> $dbginto
-        fi
-        for s3file in `cat $M_TEMP/s3files.$$ | awk -F's3://' '{print $2}'`; do
-          `which s3cmd` del "s3://${s3file}" 2>>$stderrto 1>>$stdinto
-        done
-        if [ `cat $M_TEMP/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
-          remotepath1="`head -1 $M_TEMP/s3dirs.$$`"
-          sed -i -e '1d' $M_TEMP/s3dirs.$$ 2>>$stderrto 1>>$stdinto
+  if [ "$xferdirection" == "to-remote" ]
+  then
+    if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ -n "${remotehost}" ]; then
+      case $r_proto in 
+      ftp)
+        echo "Removing remote files via FTP is not (yet) supported." >>$stderrto
+      ;;
+      s3)
+        remotepath1="${s3target}"
+        while true; do
+          `which s3cmd` ls "${remotepath1}" > $M_TEMP/s3list.$$
           if [ -n "$debugflag" ]; then
-            echo "=== Entering $remotepath1 directory" >> $dbginto
+            echo "=== In ${remotepath1} `cat $M_TEMP/s3list.$$|wc -l` objects found" >> $dbginto
           fi
-          continue
-        else
-          break
+          grep DIR $M_TEMP/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $M_TEMP/s3dirs.$$
+          if [ -n "$debugflag" ]; then
+            echo "=== `cat $M_TEMP/s3dirs.$$|wc -l` are directories" >> $dbginto
+          fi
+          grep -v ^[[:space:]]*DIR[[:space:]]* $M_TEMP/s3list.$$ >> $M_TEMP/s3files.$$
+          if [ -n "$debugflag" ]; then
+            echo "=== `cat $M_TEMP/s3files.$$|wc -l` are files" >> $dbginto
+          fi
+          for ((i=0; i < $keepremotedays; i++)); do
+            d2k=$(date -d "`date +"%Y/%m/%d"` - $i days" +"%Y-%m-%d")
+            sed -i -e "/$d2k/d" $M_TEMP/s3files.$$
+          done
+          if [ -n "$debugflag" ]; then
+            echo "=== `cat $M_TEMP/s3files.$$|wc -l` files have been marked for removal" >> $dbginto
+          fi
+          for s3file in `cat $M_TEMP/s3files.$$ | awk -F's3://' '{print $2}'`; do
+            `which s3cmd` del "s3://${s3file}" 2>>$stderrto 1>>$stdinto
+          done
+          if [ `cat $M_TEMP/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
+            remotepath1="`head -1 $M_TEMP/s3dirs.$$`"
+            sed -i -e '1d' $M_TEMP/s3dirs.$$ 2>>$stderrto 1>>$stdinto
+            if [ -n "$debugflag" ]; then
+              echo "=== Entering $remotepath1 directory" >> $dbginto
+            fi
+            continue
+          else
+            break
+          fi
+        done
+        rm -f $M_TEMP/s3dirs.$$ $M_TEMP/s3files.$$ $M_TEMP/s3list.$$
+      ;;
+      *)
+        SSH=`which ssh`
+    #      echo "if \$xferdirection=$xferdirection \|\| X\$onlyclean=X$onlyclean"
+        # For --from-remote removing see line 339
+        if [ -z "$SSH" ]; then
+          echo "No SSH client found! It is impossible to remove outdated backups on remote hosts." >>$stderrto
+          exit 1
         fi
-      done
-      rm -f $M_TEMP/s3dirs.$$ $M_TEMP/s3files.$$ $M_TEMP/s3list.$$
-    ;;
-    *)
-      SSH=`which ssh`
-  #      echo "if \$xferdirection=$xferdirection \|\| X\$onlyclean=X$onlyclean"
-      # For --from-remote removing see line 339
-      if [ -z "$SSH" ]; then
-        echo "No SSH client found! It is impossible to remove outdated backups on remote hosts." >>$stderrto
-        exit 1
-      fi
+        [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
+        $SSH "$remoteuser"@"$remotehost" "find $remotepath -mtime +$keepremotedays -type f" 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
+        res=0
+        for LINE in `cat "$M_TEMP/remote_files_to_remove.list"`
+        do
+          [ -n "$debugflag" ] && rmv='-v'
+          ${SSH} "${remoteuser}"@"${remotehost}" "rm "$rmv" -f \"${LINE}\"" 2>>$stderrto >> $dbginto
+          res+=$?
+        done
+        if [ $res -eq 0 ]; then
+          echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> $stdinto
+        else
+          echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >>$stdinto
+        fi
+      ;;
+      esac
+    fi
+  fi
+  if [ "$xferdirection" == "to-local" ]
+  then
+    if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ]; then
       [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
-      $SSH "$remoteuser"@"$remotehost" "find $remotepath -mtime +$keepremotedays -type f" 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
+      find $remotepath -mtime +$keepremotedays -type f 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
       res=0
       for LINE in `cat "$M_TEMP/remote_files_to_remove.list"`
       do
         [ -n "$debugflag" ] && rmv='-v'
-        ${SSH} "${remoteuser}"@"${remotehost}" "rm "$rmv" -f \"${LINE}\"" 2>>$stderrto >> $dbginto
+        rm "$rmv" -f \"${LINE}\" 2>>$stderrto >> $dbginto
         res+=$?
       done
       if [ $res -eq 0 ]; then
         echo "Outdated backups at ${remotehost}:${remotepath} have been removed" >> $stdinto
       else
-        echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >>stdinto
+        echo "Outdated backups at ${remotehost}:${remotepath} have not been removed" >>$stdinto
       fi
-    ;;
-    esac
+    fi
   fi
-
+  
 #########################
 # Reporting and logging #
 #########################

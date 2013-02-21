@@ -129,9 +129,6 @@ case $s_param in
   stop)
     if [ -z "$config" ] ; then
       echo "Configuration file is not defined, guessing PID file... "
-      config="${rpath}/${rcommand##*/}.conf"
-      [ -e "$config" ] || config="/etc/${rcommand##*/}.conf"
-      [ -e "$config" ] && echo "Using configuration file $config" && source $config
       [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
       if [ -e "$pidfile" ] ; then
         echo "Using PID file $pidfile"
