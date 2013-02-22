@@ -158,7 +158,7 @@ function runscript() {
         fi
       done
     fi
-  elif [ -z "$1" ]; then
+  elif [ -n "$1" ]; then
     for mon in `echo ${1} | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       if [ -x "${rpath}/tests/${mon}" ]; then
