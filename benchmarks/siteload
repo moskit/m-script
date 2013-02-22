@@ -85,8 +85,8 @@ while true ; do
       done
     fi
     activecycles=`ls "$M_TEMP"/c*.log 2>/dev/null|wc -l`
-    finished=`cat "$M_TEMP"/c*.log 2>/dev/null|wc -l` || finished=0
-    running=`expr $activecycles \* $concurrency - $finished`
+    finished=`cat "$M_TEMP"/c*.log "$M_TEMP"/t.log 2>/dev/null|wc -l` || finished=0
+    running=`expr $cycles \* $concurrency - $finished`
     if [[ $running -ge $concurrency ]] ; then
       echo "   concurrency reached"
       sleep $ccdelay
