@@ -76,17 +76,14 @@ function mailalert() {
   if [ -f "${rpath}/alert1" ] && [ `cat "${rpath}/alert1" | wc -l` -ne 0 ]; then
     al='*' ; aln=1
     cat "${rpath}/conf/header.alert1" "${rpath}/alert1" >> "${rpath}/alert"
-    echo >> "${rpath}/alert"
   fi
   if [ -f "${rpath}/alert2" ] && [ `cat "${rpath}/alert2" | wc -l` -ne 0 ]; then
     al='**' ; aln=2
     cat "${rpath}/conf/header.alert2" "${rpath}/alert2" >> "${rpath}/alert"
-    echo >> "${rpath}/alert"
   fi
   if [ -f "${rpath}/alert3" ] && [ `cat "${rpath}/alert3" | wc -l` -ne 0 ]; then
     al='***' ; aln=3
     cat "${rpath}/conf/header.alert3" "${rpath}/alert3" >> "${rpath}/alert"
-    echo >> "${rpath}/alert"
   fi
   if [ -n "$al" ] ; then
     cat "${rpath}/alert" >> "${rpath}/monitoring.log"
@@ -112,9 +109,10 @@ function runscript() {
   then
     $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
-  echo "------------------------------" >> "$LOG"
-  date | tee -a "$LOG" | tee "${rpath}/report" | tee "${rpath}/alert"
-  echo "------------------------------" | tee -a "$LOG"  | tee -a ${rpath}/report | tee -a "${rpath}/alert"
+
+  echo -e "$etitle" >> "$LOG"
+  echo -e "$etitle" > "${rpath}/report"
+
   if [ "X$1" == "XSQL" ]; then
     
     if [ -n "$2" ] ; then
@@ -174,15 +172,22 @@ function runscript() {
       fi
     done
   fi
-  grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
-  grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
-  grep '<\*>' "${rpath}/report" | sed 's|<\*>||g' > "${rpath}/alert1"
-  grep '<OK>' "${rpath}/report" | sed 's|<OK>||g' > "${rpath}/alert0"
+  al3=`grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g'` > "${rpath}/alert3"
+  al2=`grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g'` > "${rpath}/alert2"
+  al1=`grep '<\*>' "${rpath}/report" | sed 's|<\*>||g'` > "${rpath}/alert1"
+  al0=`grep '<OK>' "${rpath}/report" | sed 's|<OK>||g'` > "${rpath}/alert0"
+  [ -n "$al3" -o -n "$al2" -o -n "$al1" -o -n "$alok" ] && echo -e "$etitle" > "${rpath}/alert"
+  [ -n "$al3" ] && echo -e "$al3\n" > "${rpath}/alert3"
+  [ -n "$al2" ] && echo -e "$al2\n" > "${rpath}/alert2"
+  [ -n "$al1" ] && echo -e "$al1\n" > "${rpath}/alert1"
+  [ -n "$al0" ] && echo -e "$al0\n" > "${rpath}/alert0"
 }
 
 function runactions() {
   local LOG="$M_ROOT/logs/actions.log"
   if [ -f "${rpath}/report.blocked" ]; then
+    log "blocked alerts found"
+    
     grep '<\*\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*\*>||g' >> "${rpath}/alert3"
     grep '<\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*>||g' >> "${rpath}/alert2"
     grep '<\*>' "${rpath}/report.blocked" | sed 's|<\*>||g' >> "${rpath}/alert1"
@@ -482,6 +487,8 @@ SQLITE=dbquery
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP
+etitle="------------------------------\n`date`\n------------------------------"
+
 case ${1} in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
