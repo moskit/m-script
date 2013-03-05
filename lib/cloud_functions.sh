@@ -81,7 +81,7 @@ generate_name() {
 
 check_cluster_limit() {
   # double-check the cluster is defined
-  [ -z "$cluster" ] && cluster=$1
+  [ -z "$cluster" ] && cluster="$*"
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
@@ -98,7 +98,7 @@ check_cluster_limit() {
 
 check_cluster_minimum() {
   # double-check the cluster is defined
-  [ -z "$cluster" ] && cluster=$1
+  [ -z "$cluster" ] && cluster="$*"
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
@@ -106,11 +106,9 @@ check_cluster_minimum() {
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
   limit=${limit%:*}
   [ "$limit" == "0" ] && return 0
-  # tmp file is assumed to be up-to-date
-  n=`IAMACHILD=1 ${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
+  n=`IAMACHILD=1 ${rpath}/show_servers --view=none --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
-  #[ `expr $n \>= 0` -gt 0 ] || return 1
   [ `expr $limit \< $n` -gt 0 ] && echo 0 && return 0
   echo 1
   return 1
