@@ -3,10 +3,27 @@
 PATH="/sbin:/usr/sbin:${PATH}"
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
-source ${rpath}/../conf/mon.conf
-source ${0%.mon}.conf
+#*/
+source "${rpath}/../conf/mon.conf" || exit 1
+[ -f "${rpath}/../tests/cpu.conf" ] && source "${rpath}/../tests/cpu.conf"
+source ${0%.mon}.conf || exit 1
 
 echo -e "\nCPU eaters:\n-----------"
 
+[ -z "$CPU_USAGE_1" ] && CPU_USAGE_1=50
+[ -z "$CPU_USAGE_2" ] && CPU_USAGE_2=70
+[ -z "$CPU_USAGE_3" ] && CPU_USAGE_3=90
+
 ps -ef | awk '{print $4" "$8" "$9" "$10" "$11" "$12}' | grep -v ^0.0 | grep -v COMMAND | while read LINE; do a=${LINE%% *}; a=${a#*.}; if [[ $a -gt $CPU_EATERS_MIN ]]; then echo $LINE; fi | while read LINE; do echo "<**> Process \"${LINE#* }\" is using ${a}% of CPU"; done; done
+
+ps haxo pcpu,cmd | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0\.' | while read LINE; do
+  a=${LINE%% *}; a=${a#*.}
+  pr=${LINE#* }
+  if [[ $a -gt $CPU_EATERS_MIN ]]; then
+    [ `expr $a \>= $CPU_USAGE_3` -eq 1 ] && echo "<***> Process \"$pr\" is using ${a}% of CPU"
+    [ `expr $a \>= $CPU_USAGE_2` -eq 1 ] && echo "<**> Process \"$pr\" is using ${a}% of CPU"
+    [ `expr $a \>= $CPU_USAGE_1` -eq 1 ] && echo "<*> Process \"$pr\" is using ${a}% of CPU"
+    [ `expr $a \<= $CPU_USAGE_1` -eq 1 ] && echo "<OK> Process \"$pr\" is using ${a}% of CPU"
+  fi
+done
+
