@@ -106,7 +106,7 @@ check_cluster_minimum() {
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
   limit=${limit%:*}
   [ "$limit" == "0" ] && return 0
-  n=`IAMACHILD=1 ${rpath}/show_servers --view=none --count --cluster=$cluster`
+  n=`IAMACHILD=1 ${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
   [ `expr $limit \< $n` -gt 0 ] && echo 0 && return 0

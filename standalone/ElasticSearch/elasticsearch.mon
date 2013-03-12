@@ -27,7 +27,6 @@ if [ -n "`find "$rpath" -maxdepth 1 -mmin +30 -type f -name lock`" ]; then
   rm -f "$rpath/lock"
 fi
 [ -f "$rpath/lock" ] && log "Another process running" && exit 0
-echo $pid > "$rpath/lock"
 
 echo "Running ${rpath}/${rcommand}" >> $LOG
 
@@ -153,6 +152,8 @@ done
 [ -z "$allclusters" ] && log "no ES clusters found, exiting" && exit 1
 
 $debug && log "ES cluster(s) found: $allclusters"
+
+echo $pid > "$rpath/lock"
 
 date > "${rpath}/report"
 echo -e "-----------------------------\n" >> "${rpath}/report"
