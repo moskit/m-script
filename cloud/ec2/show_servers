@@ -46,7 +46,7 @@ get_hostname() {
   else
     sname=`$SSH -i "$M_ROOT/keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
   fi
-  [ `expr "$sname" : .*[\"\t\s_,.\']` -ne 0 ] && unset sname
+  [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname
   [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $intIP|$extIP$message" && unset message && return 1
   return 0
 }
