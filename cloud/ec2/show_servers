@@ -39,12 +39,12 @@ get_hostname() {
     sname=`$SSH -i "${rpath}/../../keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
   fi
   [ `expr "$sname" : .*[\"\t\s_,.\']` -ne 0 ] && unset sname
-  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $inIP|$extIP$message" && unset message && return 1
+  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $intIP|$extIP$message" && unset message && return 1
   return 0
 }
 
 add_server() {
-  if [ "X$NETWORK" == "Xexternal" ] ; then
+  if [ "X$NETWORK" == "Xexternal" ]; then
     IP=$extIP
   else
     IP=$intIP
@@ -71,11 +71,11 @@ add_server() {
       [ -n "$altname" ] && sname=$altname || sname=unknown
     fi
   fi
-  echo "$inIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> "$M_TEMP/servers.${region}.ips"
+  echo "$intIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> "$M_TEMP/servers.${region}.ips"
   if [ -n "${bID[*]}" ]; then
     for ((i=0; i<${#bID[*]}; i++)) ; do echo "$iID|${bID[$i]}|${bdev[$i]}|${bstarted[$i]}" >> $M_TEMP/servers.${region}.bdevs ; done 
   fi
-  unset inIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname bID bdev bstarted
+  unset intIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname bID bdev bstarted
 }
 
 list_servers() {
@@ -158,7 +158,7 @@ list_servers() {
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
             [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) doesn't match the one from the cloud metadata ($ikey)"
             sed -i /^$IP\|/d "${rpath}/../../servers.list"
-            echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
+            [ "X$istatus" == "Xrunning" ] && echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
 
           fi
         fi
@@ -274,7 +274,7 @@ do
     secgroup=`echo $SERVER | cut -d'|' -f4`
   fi
   if [[ $SERVER =~ ^INSTANCE ]] ; then
-    inIP=`echo $SERVER | cut -d'|' -f18`
+    intIP=`echo $SERVER | cut -d'|' -f18`
     extIP=`echo $SERVER | cut -d'|' -f17`
     iID=`echo $SERVER | cut -d'|' -f2`
     ami=`echo $SERVER | cut -d'|' -f3`
