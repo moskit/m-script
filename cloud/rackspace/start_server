@@ -67,12 +67,6 @@ lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
-proper_exit() {
-  log "exit status: $1"
-  unlock_cloudops
-  exit $1
-}
-
 find_image() {
   [ -f "${M_TEMP}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${M_TEMP}/images.resp"` -gt 0 ] && imageid=$image && log "Image ID for the new server is $imageid (based on command-line option)" && return
   imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
