@@ -109,7 +109,8 @@ if [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ]
   ${rpath}/auth
   request
 fi
-[ -z "$IAMACHILD" ] && unlock_cloudops
 
 cat "${M_TEMP}/${rcommand}.resp"
+
+proper_exit 0
 

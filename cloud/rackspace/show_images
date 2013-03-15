@@ -68,16 +68,10 @@ source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/rackspace"
 install -d "$M_TEMP"
-if [ -z "$IAMACHILD" ]; then
-  lock_cloudops || exit 10
-fi
-CURL="$CURL -s -k"
+export IAMACHILD
+lock_cloudops || exit 10
 
-proper_exit() {
-  log "exit status: $1"
-  unlock_cloudops
-  exit $1
-}
+CURL="$CURL -s -k"
 
 request() {
   URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
@@ -172,9 +166,8 @@ if [ -z "$noupdate" ] ; then
   done
   [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 fi
-unlock_cloudops
 
 list_images
 
-exit 0
+proper_exit 0
 

@@ -272,7 +272,7 @@ if [ -z "$noupdate" ] ; then
   [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 fi
 list_servers
-[ -z "$IAMACHILD" ] && unlock_cloudops
 
-[ -n "$count" ] && echo $icount || exit 0
+[ -n "$count" ] && echo $icount
+proper_exit 0
 

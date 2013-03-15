@@ -234,6 +234,5 @@ else
 fi
 
 ${rpath}/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
-unlock_cloudops
-exit $exit_status
+proper_exit $exit_status
 
