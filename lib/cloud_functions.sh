@@ -31,25 +31,25 @@ lock_cloudops() {
   i=0
   log "trying to acquire the cloud operations lock"
   [ -n "$MAXLOCK" ] || MAXLOCK=30 
-  lockfile=`find "$M_TEMP" -maxdepth 1 -name lock -mmin +$MAXLOCK`
+  lockfile=`find "$M_ROOT/cloud/" -maxdepth 0 -mindepth 0 -name "cloud.${CLOUD}.lock" -mmin +$MAXLOCK`
   if [ -n "$lockfile" ] ; then
     log " *** Lock file is older than $MAXLOCK minutes, removing"
     rm -f $lockfile
   fi
-  while [ -f "$M_TEMP/lock" ]; do
+  while [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; do
     sleep 10
     i+=1
     log "$i :: cloud operations locked"
     [ $i -gt 50 ] && log "failed to acquire the lock" && return 1
   done
-  touch "$M_TEMP/lock"
+  touch "$M_ROOT/cloud/cloud.${CLOUD}.lock"
   log "cloud operations locked"
 }
 
 unlock_cloudops() {
   local LOG="$M_ROOT/logs/cloud.log"
-  if [ -f "$M_TEMP/lock" ]; then
-    rm -f "$M_TEMP/lock" && log "cloud operations unlocked" || log "error removing lock"
+  if [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; then
+    rm -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" && log "cloud operations unlocked" || log "error removing lock"
   else
     log "unlocking: cloud operations were not locked"
   fi
@@ -60,7 +60,7 @@ cloudops_locked() {
   local LOG="$M_ROOT/logs/cloud.log"
   # we don't lock up children
   [ -n "$IAMACHILD" ] && log "I am a child, I am not locked up" && return 1
-  [ -f "$M_TEMP/lock" ] && return 0 || return 1
+  [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ] && return 0 || return 1
 }
 
 generate_name() {
@@ -114,8 +114,7 @@ check_cluster_minimum() {
   n=`IAMACHILD=1 ${rpath}/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
-  [ `expr $limit \< $n` -gt 0 ] && echo 0 && return 0
-  echo 1
+  [ `expr $limit \< $n` -gt 0 ] && return 0
   return 1
 }
 

@@ -175,7 +175,7 @@ list_servers() {
 }
 
 
-possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids"
+possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id"
 necessary_options=""
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 for s_option in "${@}"
