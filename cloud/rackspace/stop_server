@@ -75,6 +75,7 @@ find_by_ip() {
     id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
+    log "** warning: server ID not found for IP ${1}, getting servers list from the API"
     id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
   fi
   find_cluster "$1"
@@ -114,6 +115,7 @@ if [ -z "$id" ] ; then
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
+        log "** warning: server IP not found for name ${name}, getting servers list from the API"
         id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
@@ -129,6 +131,7 @@ if [ -n "$id" ] ; then
     ipext=`grep \/$sn\/addresses\/public "${M_TEMP}/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
   if [ -z "$name" ] ; then
+    log "** warning: server name not found for id ${id}, getting servers list from the API"
     nameips=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep ^${id}\| | cut -d'|' -f2,4,5`
     name=`echo "$nameips" | cut -d'|' -f1`
     ipext=`echo "$nameips" | cut -d'|' -f2`
@@ -219,7 +222,6 @@ if [ $removed -o $force ]; then
     fi
   fi
 fi
-unlock_cloudops
 
-exit $exit_status
+proper_exit $exit_status 223
 
