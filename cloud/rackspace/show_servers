@@ -71,7 +71,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
 export IAMACHILD M_TEMP
-lock_cloudops || exit 1
+lock_cloudops || exit 10
 
 CURL="$CURL -s -k"
 declare -i icount
@@ -222,7 +222,7 @@ list_servers() {
     done
   else
     echo "No data. Run without --noupdate"
-    proper_exit 0
+    proper_exit 0 225
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
     [ `grep -c \|\"${listip}\"$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
@@ -242,7 +242,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 245
     ${rpath}/auth
     i+=1
     sleep 10
@@ -262,7 +262,7 @@ if [ -z "$noupdate" ] ; then
   declare -i n
   n=0
   while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1
+    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 265
     [ $n -gt 1 ] && sleep 30
     rm -f "${M_TEMP}/auth.resp"
     try_auth
@@ -274,5 +274,5 @@ fi
 list_servers
 
 [ -n "$count" ] && echo $icount
-proper_exit 0
+proper_exit 0 277
 

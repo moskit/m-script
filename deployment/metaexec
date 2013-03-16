@@ -110,7 +110,7 @@ run_meta() {
       return $res
     else
       echo "Error parsing the meta: $meta"
-      proper_exit 1
+      proper_exit 1 113
     fi
   fi
 }
@@ -180,6 +180,8 @@ fi
 source "${rpath}/../conf/deployment.conf"
 source "${rpath}/../conf/cloud.conf"
 source "${rpath}/../lib/functions.sh"
+source "${rpath}/../lib/cloud_functions.sh"
+
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
 
@@ -288,11 +290,11 @@ if [ -n "$newserver" ]; then
         res=$ip
       fi
       [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
-      [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5
+      [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 291
       # various weird errors below, exit 1 
-      [ $res -eq 6 ] && log "Failed to generate a name for the new server" && proper_exit 1
-      [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1
-      [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1
+      [ $res -eq 6 ] && log "Failed to generate a name for the new server" && proper_exit 1 293
+      [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 294
+      [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 295
       [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
       if [ -z "$ip" ]; then
         log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
@@ -300,20 +302,16 @@ if [ -n "$newserver" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       sleep $WAIT_BETWEEN_TRIES
     done
-    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1
+    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 303
   else
     echo "*** This is a test"
   fi
 fi
 
-proper_exit() {
-  log "exit status: $1"
-  [ -n "$newserver" ] && unlock_cloudops
-  exit $1
-}
-
 # Default output is console, colored if colors are supported
-if [ -z "$output" ] ; then
+[ -z "$output" ] && output=console
+use_color=false
+if [ "$output" == "console" ] ; then
    if [ -z "$M_COLOR" ]; then
     # Thanks to Gentoo guys for this part, I couldn't do better
     safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
@@ -331,9 +329,9 @@ fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   #KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  KEY=`find_key cluster "$cluster"` || proper_exit 1
-  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && proper_exit 1
-  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1
+  KEY=`find_key cluster "$cluster"` || proper_exit 1 336
+  [ -z "$KEY" ] && echo "Either cluster ${cluster} or its key not found in ${rpath}/../conf/clusters.conf" && proper_exit 1 337
+  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 338
   if [ -z "$list" ] ; then
     #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"
@@ -352,7 +350,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       if ! $loggedin && [ -n "$newserver" ]; then
         # stop useless server and tell the parent process that something's wrong
         "$M_ROOT"/cloud/$CLOUD/stop_server --ip=$ip
-        proper_exit 13
+        proper_exit 13 357
       fi
     fi
     #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
@@ -409,7 +407,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
         fi
         if $runthis && ! $skipthis ; then
           run_meta "${meta}"
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && proper_exit 1
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: ${WORK_DIR}/${role}.${task}.${timestampact}\n" && proper_exit 1 414
         fi
       fi
       metan+=1

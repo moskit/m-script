@@ -86,7 +86,9 @@ function mailalert() {
     cat "${rpath}/conf/header.alert3" "${rpath}/alert3" >> "${rpath}/alert"
   fi
   if [ -n "$al" ] ; then
+    echo "================ sending alert =================" >> "${rpath}/monitoring.log"
     cat "${rpath}/alert" >> "${rpath}/monitoring.log"
+    echo "================================================" >> "${rpath}/monitoring.log"
     for MLINE in `cat "${rpath}/conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
     do
       recipn=`grep "^$MLINE" "${rpath}/conf/mail.alert.list" | awk '{print $2}'`
@@ -543,7 +545,7 @@ case ${1} in
     runscript SQL
     mailreport
     mailalert
-    [ -n "$DASHBOARD" ] && genreport "$M_ROOT/report"
+    [ -n "$DASHBOARD" ] && genreport "$M_ROOT/report" servers
     deltimeindex
     cleanup
   ;;
@@ -554,7 +556,7 @@ case ${1} in
     runscript SQL $limit
     mailreport
     mailalert
-    [ -n "$DASHBOARD" ] && genreport "$M_ROOT/report"
+    [ -n "$DASHBOARD" ] && genreport "$M_ROOT/report" servers
     deltimeindex
     cleanup
   ;;

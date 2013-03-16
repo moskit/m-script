@@ -37,9 +37,10 @@ lock_cloudops() {
     rm -f $lockfile
   fi
   while [ -f "$M_TEMP/lock" ]; do
-    sleep 5
+    sleep 10
     i+=1
-    [ $i -gt 100 ] && log "failed to acquire the lock" && return 1
+    log "$i :: cloud operations locked"
+    [ $i -gt 50 ] && log "failed to acquire the lock" && return 1
   done
   touch "$M_TEMP/lock"
   log "cloud operations locked"
@@ -47,7 +48,11 @@ lock_cloudops() {
 
 unlock_cloudops() {
   local LOG="$M_ROOT/logs/cloud.log"
-  rm -f "$M_TEMP/lock" && log "cloud operations unlocked"
+  if [ -f "$M_TEMP/lock" ]; then
+    rm -f "$M_TEMP/lock" && log "cloud operations unlocked" || log "error removing lock"
+  else
+    log "unlocking: cloud operations were not locked"
+  fi
   unset IAMACHILD
 }
 
@@ -123,8 +128,8 @@ find_name() {
 }
 
 proper_exit() {
-  log "exit status: $1"
-  [ -z "$IAMACHILD" ] && unlock_cloudops
+  log "exit at line: $2 status: $1"
+  [ -z "$IAMACHILD" ] && log "not a child, unlocking" && unlock_cloudops
   exit $1
 }
 
