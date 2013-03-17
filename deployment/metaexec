@@ -424,7 +424,9 @@ if [ -z "$list" ] ; then
   find "$WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +${KEEP_DEPLOYTMP} -exec rm -rf {} \;
 fi
 echo
-
+if [ -n "$newserver" ]; then
+  proper_exit 0 428
+fi
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then
 #  echo "Using existing key"

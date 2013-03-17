@@ -156,7 +156,7 @@ list_servers() {
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
-            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) doesn't match the one from the cloud metadata ($ikey)"
+            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)"
             sed -i /^$IP\|/d "${rpath}/../../servers.list"
             [ "X$istatus" == "Xrunning" ] && echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
 

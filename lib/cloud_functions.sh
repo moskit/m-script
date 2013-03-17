@@ -31,7 +31,7 @@ lock_cloudops() {
   i=0
   log "trying to acquire the cloud operations lock"
   [ -n "$MAXLOCK" ] || MAXLOCK=30 
-  lockfile=`find "$M_ROOT/cloud/" -maxdepth 0 -mindepth 0 -name "cloud.${CLOUD}.lock" -mmin +$MAXLOCK`
+  lockfile=`find "$M_ROOT/cloud/" -maxdepth 1 -mindepth 1 -name "cloud.${CLOUD}.lock" -mmin +$MAXLOCK`
   if [ -n "$lockfile" ] ; then
     log " *** Lock file is older than $MAXLOCK minutes, removing"
     rm -f $lockfile
@@ -128,7 +128,7 @@ find_name() {
 
 proper_exit() {
   log "exit at line: $2 status: $1"
-  [ -z "$IAMACHILD" ] && log "not a child, unlocking" && unlock_cloudops
+  [ -z "$IAMACHILD" ] && log "not a child, unlocking" && unlock_cloudops || log "I am a child, cannot unlock"
   exit $1
 }
 
