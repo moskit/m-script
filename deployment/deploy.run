@@ -83,7 +83,7 @@ possible_options="help verbose debug ip cluster type file key role flavor timest
 necessary_options="file type task role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
-IFS='--'
+IFS='-'
 for s_option in "${@}"
 do
   found=0
@@ -106,7 +106,7 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/ /--/g'`; do
+  for option in `echo $possible_options | sed 's/ /-/g'`; do
     if [ "X$s_optname" == "X$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""

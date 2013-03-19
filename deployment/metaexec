@@ -125,7 +125,7 @@ SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="help verbose debug flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip"
-[ "X$*" == "X" ] && echo "Can't work without options. Possible options are: ${possible_options}" && exit 1
+[ "X$*" == "X" ] && echo "Can't work without options. Possible options are: $possible_options" && exit 1
 
 IFS1=$IFS
 IFS='-'

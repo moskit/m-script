@@ -47,10 +47,6 @@ do
 done
 IFS=$IFS1
 
-for option in $possible_options ; do
-  eval "echo ${option}=\$${option}"
-done
-
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
