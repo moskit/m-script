@@ -23,7 +23,7 @@ rpath=${0%/*}
 SSH=`which ssh 2>/dev/null`
 possible_options="cluster help region delimiter limit names quoted spaces thishost private public local nolocal"
 IFS1=$IFS
-IFS='--'
+IFS='-'
 for s_option in "${@}"
 do
   found=0
@@ -46,7 +46,7 @@ do
     s_optarg=''
     ;;
   esac
-  for option in `echo $possible_options | sed 's/ /--/g'`; do
+  for option in `echo $possible_options | sed 's/ /-/g'`; do
     if [ "X$s_optname" == "X$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""

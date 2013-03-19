@@ -71,7 +71,7 @@ add_server() {
       [ -n "$altname" ] && sname=$altname || sname=unknown
     fi
   fi
-  echo "$intIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster" >> "$M_TEMP/servers.${region}.ips"
+  echo "$intIP|$extIP|$iID|$ami|$state|$keypair|$isize|$secgroup|$started|$zone|$aki|$ari|$sname|$cluster|$altname" >> "$M_TEMP/servers.${region}.ips"
   if [ -n "${bID[*]}" ]; then
     for ((i=0; i<${#bID[*]}; i++)) ; do echo "$iID|${bID[$i]}|${bdev[$i]}|${bstarted[$i]}" >> $M_TEMP/servers.${region}.bdevs ; done 
   fi
@@ -99,6 +99,7 @@ list_servers() {
       iari=`echo $sn | cut -d'|' -f12`
       iname=`echo $sn | cut -d'|' -f13`
       icluster=`echo $sn | cut -d'|' -f14`
+      altname=`echo $sn | cut -d'|' -f15`
       ikey=`echo $sn | cut -d'|' -f6`
       bdevs=`grep ^$id\| "$M_TEMP/servers.${region}.bdevs"`
       
@@ -131,7 +132,7 @@ list_servers() {
               echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
             table)
-              echo "${id}|${iname}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}|${iaki}|${iari}|${secgroup}|${izone}|${ikey}"
+              echo "$id|$iname|$altname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
               echo "$bdevs" | sed 's_^_EBS: _g'
               ;;
             column)
@@ -141,12 +142,7 @@ list_servers() {
             none)
               ;;
             *)
-              echo "------------------------------------------------------------------------------"
-              echo "Server ID: $id    Name: $iname    Cluster: $icluster"
-              echo "Public IP: $extIP    Private IP: $intIP"
-              echo "Server image: $imageId    AKI: $iaki    ARI: $iari"
-              echo "Server size: $flavorId    Status: $istatus    Keypair: $ikey"
-              echo "Security group: $secgroup    Zone: $izone"
+              echo -e "------------------------------------------------------------------------------\nServer ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIP    Private IP: $intIP\nServer image: $imageId    AKI: $iaki    ARI: $iari\nServer size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
               echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
           esac
@@ -175,7 +171,7 @@ list_servers() {
 }
 
 
-possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id"
+possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id name_source"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -227,6 +223,8 @@ install -d $M_TEMP
 
 [ -z "$status" ] && [ -n "$state" ] && status=$state
 [ -z "$status" ] && status="running"
+
+[ -n "$name_source" ] && NAME_SOURCE=$name_source
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
