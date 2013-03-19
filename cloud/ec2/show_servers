@@ -177,38 +177,27 @@ list_servers() {
 
 possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id"
 necessary_options=""
-#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
-for s_option in "${@}"
+IFS1=$IFS
+IFS='-'
+for s_option in "$@"
 do
-  found=0
-  case ${s_option} in
-  --*=*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
-    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
-    ;;
-  --*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-    s_optarg='yes' 
-    ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
-  *)
-    s_param=${s_option}
-    s_optname=''
-    s_optarg=''
-    ;;
-  esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  found=false
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+
+  for option in ${possible_options// /-} ; do
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
-  if [[ $found -ne 1 ]]; then 
+  
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
 done
+IFS=$IFS1
+
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
   echo 

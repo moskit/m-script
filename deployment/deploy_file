@@ -138,31 +138,19 @@ RSYNC=`which rsync 2>/dev/null`
 possible_options="cluster help region verbose debug flavor role ip test dry cloud timestamp local"
 
 IFS1=$IFS
-IFS='--'
-for s_option in "${@}"
+IFS='-'
+for s_option in "$@"
 do
   found=false
-  case ${s_option} in
-  --*=*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
-    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
-    ;;
-  --*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-    s_optarg='yes'
-    ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
-  *)
-    [ -z "$from" ] && from=${s_option} || to=${s_option}
-    shift
-    ;;
-  esac
-  for option in ${possible_options// /--} ; do
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+
+  for option in ${possible_options// /-} ; do
     [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
+  
   if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1

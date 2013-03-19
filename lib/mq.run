@@ -26,7 +26,7 @@ source "$M_ROOT/lib/functions.sh"
 
 possible_options="mode limit help"
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
 
 IFS1=$IFS
 IFS='|'

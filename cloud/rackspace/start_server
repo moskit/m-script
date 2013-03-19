@@ -29,8 +29,7 @@ V="v1.0"
 possible_options="region flavor cluster image name return verbose"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
-
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
 IFS1=$IFS
 IFS='|'
 for s_option in $ARGV
@@ -48,15 +47,9 @@ do
 done
 IFS=$IFS1
 
-found=0
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+for option in $possible_options ; do
+  eval "echo ${option}=\$${option}"
 done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
-  exit 1
-fi
 
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP"/cloud/rackspace
