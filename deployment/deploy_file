@@ -141,38 +141,29 @@ IFS1=$IFS
 IFS='-'
 for s_option in "${@}"
 do
-  found=0
+  found=false
   case ${s_option} in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
-    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
     ;;
   --*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-    s_optarg='yes' 
+    s_optarg='yes'
     ;;
   *=*)
     echo "Wrong syntax: options must start with a double dash"
     exit 1
     ;;
   *)
-    s_param=$s_option
-    s_optname=''
-    s_optarg=''
+    [ -z "$from" ] && from=${s_option} || to=${s_option}
+    shift
     ;;
   esac
-  for option in `echo $possible_options | sed 's/ /-/g'`; do
-    if [ "X$s_optname" == "X$option" ]; then
-      if [ -n "$s_optarg" ]; then
-        eval "$s_optname=\"$s_optarg\""
-      else
-        [ -z "$(eval echo \$$option)" ] && eval "$option="
-      fi
-      found=1
-    fi
+  for option in ${possible_options// /-} ; do
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
-  if [[ $found -ne 1 ]]; then 
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
