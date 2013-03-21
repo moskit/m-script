@@ -132,7 +132,7 @@ list_servers() {
               echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
             table)
-              echo "$id|$iname|$altname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
+              echo "$id|$iname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
               echo "$bdevs" | sed 's_^_EBS: _g'
               ;;
             column)
