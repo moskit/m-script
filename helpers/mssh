@@ -73,17 +73,23 @@ else
   nextkey=true
 fi
 if $nextkey ; then
+  nextkey=false
   if [ -f "$USERKEY1" ]; then
     $SSH -i "$USERKEY1" "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 fi
 if $nextkey ; then
+  nextkey=false
   if [ -f "$USERKEY2" ]; then
     $SSH -i "$USERKEY2" "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 fi
 
-echo "No matching key found, tried: $KEY, $USERKEY1, $USERKEY2"
+if $nextkey ; then
+  echo "No matching key found, tried: $KEY, $USERKEY1, $USERKEY2"
+fi
+
+exit 0
 

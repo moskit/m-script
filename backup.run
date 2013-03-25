@@ -195,7 +195,7 @@ EOF
 done
 
 stdinto="$rpath/m_backup.log"
-stderrto="$rpath/m_error.log"
+stderrto="$rpath/m_backup.error"
 
 if [ -n "$debugflag" ]
 then
@@ -749,21 +749,21 @@ EOF
   then
     [ $keeplocaldays -gt 0 ] && keeplocaldays=`expr $keeplocaldays - 1`
     [ -n "$debugflag" ] && rmv='-v'
-    find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>$stderrto >> $stdinto && echo "Outdated backups at ${localrmpath} have been removed" >> $stdinto
+    find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>$stderrto >> $stdinto && echo "Outdated backups at $localrmpath have been removed" >> $stdinto
   fi
   if [ "$xferdirection" == "to-remote" ]
   then
-    if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ -n "${remotehost}" ]; then
+    if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ -n "$remotehost" ]; then
       case $r_proto in 
       ftp)
         echo "Removing remote files via FTP is not (yet) supported." >>$stderrto
       ;;
       s3)
-        remotepath1="${s3target}"
+        remotepath1="$s3target"
         while true; do
-          `which s3cmd` ls "${remotepath1}" > $M_TEMP/s3list.$$
+          `which s3cmd` ls "$remotepath1" > $M_TEMP/s3list.$$
           if [ -n "$debugflag" ]; then
-            echo "=== In ${remotepath1} `cat $M_TEMP/s3list.$$|wc -l` objects found" >> $dbginto
+            echo "=== In $remotepath1 `cat $M_TEMP/s3list.$$|wc -l` objects found" >> $dbginto
           fi
           grep DIR $M_TEMP/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $M_TEMP/s3dirs.$$
           if [ -n "$debugflag" ]; then
@@ -775,7 +775,7 @@ EOF
           fi
           for ((i=0; i < $keepremotedays; i++)); do
             d2k=$(date -d "`date +"%Y/%m/%d"` - $i days" +"%Y-%m-%d")
-            sed -i -e "/$d2k/d" $M_TEMP/s3files.$$
+            sed -i "/$d2k/d" $M_TEMP/s3files.$$
           done
           if [ -n "$debugflag" ]; then
             echo "=== `cat $M_TEMP/s3files.$$|wc -l` files have been marked for removal" >> $dbginto
@@ -785,7 +785,7 @@ EOF
           done
           if [ `cat $M_TEMP/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
             remotepath1="`head -1 $M_TEMP/s3dirs.$$`"
-            sed -i -e '1d' $M_TEMP/s3dirs.$$ 2>>$stderrto 1>>$stdinto
+            sed -i '1d' $M_TEMP/s3dirs.$$ 2>>$stderrto 1>>$stdinto
             if [ -n "$debugflag" ]; then
               echo "=== Entering $remotepath1 directory" >> $dbginto
             fi

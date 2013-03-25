@@ -79,7 +79,7 @@ print_result() {
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud"
+possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster"
 necessary_options="file type task role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
@@ -153,7 +153,7 @@ export debug verbose dry
 export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "${rpath}/../logs/deploy.log" && exit 1
-[ -n "$cluster" ] && [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
+[ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}

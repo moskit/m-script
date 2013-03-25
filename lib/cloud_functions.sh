@@ -39,17 +39,17 @@ lock_cloudops() {
   while [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; do
     sleep 10
     i+=1
-    log "$i :: cloud operations locked"
+    log "$i :: cloud operations are locked"
     [ $i -gt 50 ] && log "failed to acquire the lock" && return 1
   done
   touch "$M_ROOT/cloud/cloud.${CLOUD}.lock"
-  log "cloud operations locked"
+  log "locking cloud operations"
 }
 
 unlock_cloudops() {
   local LOG="$M_ROOT/logs/cloud.log"
   if [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; then
-    rm -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" && log "cloud operations unlocked" || log "error removing lock"
+    rm -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" && log "unlocking cloud operations" || log "error removing lock"
   else
     log "unlocking: cloud operations were not locked"
   fi

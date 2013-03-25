@@ -89,14 +89,17 @@ else
 fi
 
 $IPT -L M_IPBLOCK_CONST -n >/dev/null 2>&1
-[[ $? -eq 1 ]] && $IPT -N M_IPBLOCK_CONST && $IPT -A INPUT -j M_IPBLOCK_CONST
+[ $? -eq 1 ] && $IPT -N M_IPBLOCK_CONST
+[ `$IPT -L INPUT | grep -c ^M_IPBLOCK_CONST` -eq 0 ] && $IPT -A INPUT -j M_IPBLOCK_CONST
+
 $IPT -L M_IPBLOCK_TMP -n >/dev/null 2>&1
-if [[ $? -eq 1 ]] ; then
+if [ $? -eq 1 ] ; then
   $IPT -N M_IPBLOCK_TMP
-  $IPT -A INPUT -j M_IPBLOCK_TMP
 else
   $IPT -F M_IPBLOCK_TMP
 fi
+[ `$IPT -L INPUT | grep -c ^M_IPBLOCK_TMP` -eq 0 ] && $IPT -A INPUT -j M_IPBLOCK_TMP
+
 [ -z "$block_forever_after" ] && block_forever_after=99999
 if [ -n "$ips" ] ; then
   for ip in $ips ; do

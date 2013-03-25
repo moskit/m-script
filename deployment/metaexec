@@ -44,11 +44,14 @@ run_meta() {
     if [ -n "$debug" ] ; then
       D='--debug'
     fi
+    if [ -n "$ignoreemptycluster" ] ; then
+      I="--ignoreemptycluster"
+    fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
       if [ -e "${ROLES_ROOT}/$metascript" ] ; then
         [ -e "${WORK_DIR}/${role}.${task}.${timestampact}/$metascript" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestampact}/$metascript"
         [ -e "${WORK_DIR}/${role}.${task}.${timestampact}/${metascript}.var" ] && rm -f "${WORK_DIR}/${role}.${task}.${timestampact}/${metascript}.var"
-        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" --dry $V $D
+        deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" --dry $V $D $I
         res=$?
       else
         echo "${ROLES_ROOT}/$metascript not found"
@@ -124,7 +127,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip"
+possible_options="help verbose debug flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster"
 [ "X$*" == "X" ] && echo "Can't work without options. Possible options are: $possible_options" && exit 1
 
 IFS1=$IFS
