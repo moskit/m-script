@@ -66,17 +66,6 @@ find_name() {
   [ -n "$DNAME" ] && NAME=$DNAME || NAME=`echo $NAME | awk '{print $2}' | cut -d'.' -f1`
 }
 
-print_result() {
-  if [ -n "$verbose" ] ; then
-    echo "--------------------------------------------------------------------------------"
-    echo "${result}" | tee -a "${rpath}/../logs/deploy.log"
-    echo "--------------------------------------------------------------------------------"
-  else
-    echo "${result}" >> "${rpath}/../logs/deploy.log"
-  fi
-  [ `echo "${result}" | grep -c ${timestamp}_ERROR` -gt 0 ] && RETVAL+=1 && return 1
-}
-
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster"
@@ -240,18 +229,21 @@ if [ "$type" == "remote" ] ; then
       $SCP -P $SSHPORT -i "$key" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../logs/deploy.log" 2>&1
       $SSH -p $SSHPORT -i "$key" $IP echo -e "ip=$IP\nservername=$NAME" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
       if [ -n "$dry" ] ; then
-        result=`$SSH -p $SSHPORT -i "$key" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})"`
+      [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
+        $SSH -p $SSHPORT -i "$key" $IP "(source \"$WORK_DIR/${role}.${task}.$timestamp/${file}.var\" && cat \"$WORK_DIR/${role}.${task}.$timestamp/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ] && RETVAL+=1 ; done
+        [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
       else
-        # run the script, catch the output, exit if non-zero status
-        result=`$SSH -p $SSHPORT -i "$key" $IP "(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)"`
+        [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
+        $SSH -p $SSHPORT -i "$key" $IP "(source \"$WORK_DIR/${role}.${task}.$timestamp/${file}.var\" && bash \"$WORK_DIR/${role}.${task}.$timestamp/$file\" 2>&1 || echo \"${timestamp}_ERROR\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ] && RETVAL+=1 ; done
+        [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
       fi
-      print_result
     done
   else
     if [ -n "$dry" ] ; then
       echo "Remote servers not found, testing locally" | tee -a "${rpath}/../logs/deploy.log"
-      result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file})`
-      print_result
+      [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
+      (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ] && RETVAL+=1 ; done
+    [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
     else
       echo "Remote servers not found, exiting" | tee -a "${rpath}/../logs/deploy.log"
       RETVAL+=1
@@ -260,12 +252,15 @@ if [ "$type" == "remote" ] ; then
 elif [ "$type" == "local" ] ; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../logs/deploy.log"
   if [ -n "$dry" ] ; then
-    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file} && cat ${WORK_DIR}/${role}.${task}.${timestamp}/${file} | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash)`
+    [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
+    (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ] && RETVAL+=1 ; done
+    [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
   else
+    [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
     # running the script
-    result=`(source ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var && bash ${WORK_DIR}/${role}.${task}.${timestamp}/${file} 2>&1 || echo ${timestamp}_ERROR)`
+    (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && bash "$WORK_DIR/${role}.${task}.$timestamp/$file" 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ] && RETVAL+=1 ; done
+    [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
   fi
-  print_result
 else
   echo "type: \"$type\" not supported"
   exit 1
