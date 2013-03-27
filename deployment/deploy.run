@@ -20,17 +20,18 @@ rpath=${0%/*}
 #*/
 
 store_vars() {
-  varfile="${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
-  local role="${1}"
+  varfile="$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
+  local role="$1"
   if [ -f "$varfile" ]; then
     [ -n "$verbose" ] && echo "Reading existing variables"
     source "$varfile"
   fi
-  [ -n "$verbose" ] && echo "Sourcing ${ROLES_ROOT}/${role}/role.conf"
-  for LINE in `cat "${ROLES_ROOT}/common/role.conf" "${ROLES_ROOT}/${role}/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+  [ -n "$verbose" ] && echo "Sourcing $ROLES_ROOT/$role/role.conf"
+  ### Note that common role.conf is read first
+  for LINE in `cat "$ROLES_ROOT/$role/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     # to respect environment variables and variables passed from command line
     pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
-    [ -n "`eval echo "\\$$pvar"`" ] && echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
+    [ -n "$pvar" -a -n "`eval echo "\\$$pvar"`" ] && echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
     
     [ -n "$debug" ] && echo "  == $LINE"
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
@@ -126,8 +127,8 @@ fi
 
 echo -e "\n\n-------------------\n${0} $*\n" >> "${rpath}/../logs/deploy.log"
 
-source "${rpath}/../conf/deployment.conf" || exit 99
-source "${rpath}/../conf/cloud.conf" || exit 99
+source "$rpath/../conf/deployment.conf" || exit 99
+source "$rpath/../conf/cloud.conf" || exit 99
 
 [ -n "$debug" ] && verbose="yes"
 [ -n "$dry" -o -n "$test" ] && dry="yes"
@@ -138,8 +139,8 @@ export debug verbose dry
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-[ -z "$M_ROOT" ] && M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
+[ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
+export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "${rpath}/../logs/deploy.log" && exit 1
 [ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
@@ -161,7 +162,7 @@ IFS1=$IFS; IFS='
 # too.
 roleincluded=${file%%/*} #*/
 if [ "X$roleincluded" != "X$role" ] ; then
-  if [ -e "${ROLES_ROOT}/${roleincluded}/role.conf" ] ; then
+  if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ] ; then
     store_vars $roleincluded
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
     export ROLEINCL=$roleincluded
@@ -169,7 +170,7 @@ if [ "X$roleincluded" != "X$role" ] ; then
 fi
 # The actual role is the last one. This way it has the last word and overwrites
 # variables of the same name from the roles included above
-if [ -e "${ROLES_ROOT}/${role}/role.conf" ] ; then
+if [ -e "$ROLES_ROOT/$role/role.conf" ] ; then
   store_vars $role
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
@@ -177,28 +178,28 @@ fi
 # command-line options (variables from this script) should be saved too
 IFS2=$IFS ; IFS=$' \t\n'
 for option in `echo $possible_options | sed 's/,/ /g'`; do
-  echo "${option}=`eval "echo \\$${option}"`" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
+  echo "${option}=`eval "echo \\$${option}"`" >> "$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
 done
 IFS=$IFS2
 # and some other variables
-M_ROOT_REMOTE=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f8`
+M_ROOT_REMOTE=`grep "^$cluster|" "$rpath/../conf/clusters.conf" | cut -d'|' -f8`
 [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
-echo "M_ROOT_REMOTE=$M_ROOT_REMOTE" >> ${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var
+echo "M_ROOT_REMOTE=$M_ROOT_REMOTE" >> $WORK_DIR/${role}.${task}.$timestamp/${file}.var
 
 # now prepare the script
-source "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
-for LINE in `cat "${ROLES_ROOT}/${file}"` ; do
+source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
+for LINE in `cat "$ROLES_ROOT/$file"` ; do
   ELINE=$(echo "$LINE" | \
   sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g')
   a=`eval "echo \"$ELINE\"" 2>/dev/null`
-  [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" || echo "$LINE" >> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}"
+  [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "$WORK_DIR/${role}.${task}.$timestamp/$file" || echo "$LINE" >> "$WORK_DIR/${role}.${task}.$timestamp/$file"
 done
  
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
-    cluster=`grep "^${ip}|" "${rpath}/../servers.list" | cut -d'|' -f5`
-    [ -z "$cluster" ] && echo "Unable to find cluster name" >> "${rpath}/../logs/deploy.log" && exit 1
+    cluster=`grep "^$ip|" "$rpath/../servers.list" | cut -d'|' -f5`
+    [ -z "$cluster" ] && echo "Unable to find cluster name" >> "$rpath/../logs/deploy.log" && exit 1
   fi
   if [ -n "$ip" ] ; then
     key=`"$M_ROOT"/helpers/find_key server "$ip"`
@@ -222,11 +223,11 @@ if [ "$type" == "remote" ] ; then
     for IP in $ips ; do
       find_name $IP
       # install remote workdir
-      $SSH -p $SSHPORT -i "$key" $IP install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
+      $SSH -p $SSHPORT -i "$key" $IP install -d "$WORK_DIR/${role}.${task}.$timestamp/${file%/*}" >> "$rpath/../logs/deploy.log" 2>&1 || exit 1
       # copy the script to remote server
-      $SCP -P $SSHPORT -i "$key" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
+      $SCP -P $SSHPORT -i "$key" "$WORK_DIR/${role}.${task}.$timestamp/$file" "${IP}:$WORK_DIR/${role}.${task}.$timestamp/$file" >> "$rpath/../logs/deploy.log" 2>&1 || exit 1
       # copy config to remote server
-      $SCP -P $SSHPORT -i "$key" "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../logs/deploy.log" 2>&1
+      $SCP -P $SSHPORT -i "$key" "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" "${IP}:${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var" >> "${rpath}/../logs/deploy.log" 2>&1
       $SSH -p $SSHPORT -i "$key" $IP echo -e "ip=$IP\nservername=$NAME" \>\> "${WORK_DIR}/${role}.${task}.${timestamp}/${file}.var"
       if [ -n "$dry" ] ; then
       [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
