@@ -398,8 +398,8 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
           done
         fi
         if $runthis && ! $skipthis ; then
-          run_meta "${meta}"
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 414
+          run_meta "$meta"
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 402
         fi
       fi
       metan+=1
