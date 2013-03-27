@@ -49,12 +49,12 @@ done
 IFS=$IFS1
 
 find_by_ip() {
-  if [ -f "${M_TEMP}/show_servers.resp" ] ; then
-    sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
-    id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
+  if [ -f "$M_TEMP/show_servers.resp" ] ; then
+    sn=`grep addresses "$M_TEMP/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    id=`grep \/$sn\/id\| "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
-    id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 $rpath/show_servers --forceupdate --view=table | grep \|$1\| | cut -d'|' -f1`
   fi
 }
 
@@ -64,13 +64,13 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ $found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: $missing_options not found"
   exit 1
 fi
 
-source "${rpath}/../../conf/mon.conf"
-source "${rpath}/../../conf/cloud.conf"
-source "${rpath}/../../lib/cloud_functions.sh"
+source "$rpath/../../conf/mon.conf"
+source "$rpath/../../conf/cloud.conf"
+source "$rpath/../../lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 if [ -z "$IAMACHILD" ]; then
   lock_cloudops || exit 10
@@ -98,19 +98,19 @@ fi
 req="/servers/$id"
 
 request() {
-  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
+  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  TOKEN=`grep ^0\/auth\/token\/id "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}$req" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
 }
 
-[ -f "${M_TEMP}/auth.resp" ] || ${rpath}/auth
+[ -f "$M_TEMP/auth.resp" ] || "$rpath"/auth
 request
-if [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; then
-  ${rpath}/auth
+if [ `grep -c ^0\/unauthorized\/code\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
+  "$rpath"/auth
   request
 fi
 
-cat "${M_TEMP}/${rcommand}.resp"
+cat "$M_TEMP/${rcommand}.resp"
 
 proper_exit 0 115
 
