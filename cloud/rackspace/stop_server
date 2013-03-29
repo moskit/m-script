@@ -192,7 +192,7 @@ cat "${M_TEMP}/${rcommand}.resp" >> "$LOG"
 IPS=( `echo -e "${ipint}\n${ipext}\n${ip}" | sort | uniq` )
 
 if [ $reqres -eq 0 -a `grep -c code\|4 "${M_TEMP}/${rcommand}.resp"` -eq 0 ]; then
-  log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated succesfully"
+  log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated successfully"
   echo -e "`date`\n\nServer ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
   removed=true
 fi

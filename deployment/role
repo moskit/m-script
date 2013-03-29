@@ -46,8 +46,8 @@ commfound=false
 subcommfound=false
 
 IFS1=$IFS
-IFS='--'
-for s_option in "${@}"
+IFS='-'
+for s_option in "$@"
 do
   found=false
   case ${s_option} in
@@ -69,7 +69,7 @@ do
     s_optarg=''
     case $ppn in
       1)
-        for comm in ${possible_commands// /--}; do
+        for comm in ${possible_commands// /-}; do
           if [ "X$s_param" == "X$comm" ]; then
             if $commfound ; then
               echo "Only one command can be executed!"
@@ -88,9 +88,9 @@ do
         command1=$s_param
         ;;
       2)
-        for subcomm in ${possible_subcommands// /--}; do
+        for subcomm in ${possible_subcommands// /-}; do
           [ "X${subcomm%%:*}" == "X$command1" ] && subcommands=${subcomm#*:}
-          for sub in ${subcommands//,/--}; do
+          for sub in ${subcommands//,/-}; do
             if [ "X$s_param" == "X$sub" ]; then
               if $subcommfound ; then
                 echo "Only one subcommand can be executed!"
@@ -134,7 +134,7 @@ do
     ppn+=1
     ;;
   esac
-  for option in `echo $possible_options | sed 's| |--|g'`; do
+  for option in `echo $possible_options | sed 's| |-|g'`; do
     if [ "X$s_optname" == "X$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""
@@ -205,7 +205,7 @@ case $command1 in
         printcol "Script"
         printcol "Meta"
         echo "Role"
-        for sc in `find "$ROLES_ROOT/$param1"/*/ -maxdepth 1 -type f -o -type l` ; do
+        for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
           scr="${sc/$ROLES_ROOT\//}" && scr="${scr/$param1\//}"
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
@@ -252,11 +252,9 @@ case $command1 in
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "File"
         echo "Script"
-        for fl in `find "$ROLES_ROOT/$param1"/*/files/ -maxdepth 1 -type f -o -type l` ; do
-          for flv in `find "$ROLES_ROOT/$param1/" -maxdepth 1 -type d` ; do
-            for sc in `find "$ROLES_ROOT/$param1/${flv##*/}/" -maxdepth 1 -type f -o -type l` ; do
-              [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${flv##*/}/${sc##*/}"
-            done
+        for fl in `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` ; do
+          for sc in `find "$ROLES_ROOT/$param1/${flv##*/}/" -maxdepth 1 -type f -o -type l` ; do
+            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci ${flv##*/}/${sc##*/}"
           done
           if [ -n "$sci" ]; then
             for scis in $sci ; do

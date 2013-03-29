@@ -202,7 +202,7 @@ function runactions() {
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
     touch "${M_TEMP}/consequent_alerts.tmp"
-    for confline in `grep -E "\|${action}\||\|${action}$" "${rpath}/conf/actions.conf"` ; do
+    for confline in `grep -E "\|${action}\||\|${action}$" "${rpath}/conf/actions.conf" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
       pattern=`echo $confline | cut -d'|' -f1`
       level=`echo $confline | cut -d'|' -f2`
       nalerts=`echo $confline | cut -d'|' -f4`
