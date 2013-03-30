@@ -70,7 +70,7 @@ if [ "X$compression" == "Xbzip2" ] && [ -n "$BZIP2" ] ; then
 fi
 
 [ "X$mongohosts" == "X" ] && echo "Error: database host not defined" >> "$rpath/m_backup.error" && exit 1
-[ "X${localbackuppath}" != "X" ] && DEST="${localbackuppath}" || DEST=$rpath
+[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST=$rpath
 
 MBD="$DEST/backup.tmp/mongo"
 
@@ -89,8 +89,11 @@ fi
 
 for mongohost in $mongohosts ; do
   DBHOST=$($MONGO --host $mongohost --quiet --eval "var im = rs.isMaster(); if(im.ismaster && im.hosts) { im.hosts[1] } else { '$mongohost' }" | tail -1) 2>>"$rpath/m_backup.error"
-  [ $? -eq 0 ] && break
+  res=$?
+  [ $res -eq 0 ] && break
 done
+
+[ $res -ne 0 ] && echo -e "\n*** Was unable to find a MongoDB host, exiting\n" >> "$rpath/m_backup.error" && exit 1
  
 echo "Host $DBHOST selected." >>"$rpath/m_backup.log"
 if [ "X${2}" == "X" ]; then

@@ -21,6 +21,8 @@ M_ROOT=$(cd "${rpath}/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
 run_meta() {
+  declare -i res
+  res=0
   [ `grep -c "^${1}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "$LOG" && return 0
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[0m" || printf "META: $1"
   if [ -n "$test" -o -n "$dry" ] ; then
@@ -48,14 +50,55 @@ run_meta() {
       I="--ignoreemptycluster"
     fi
     if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-      if [ -e "$ROLES_ROOT/$metascript" ] ; then
+      if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
+        thescript=${metascript##*/}
+        therest=${metascript%/*}
+        therest=`expr "$therest" : "\.*/\(.*\)"`
+        if [ -z "$therest" ]; then
+          if [ -e "$ROLES_ROOT/$role/$flavor/$thescript" ]; then
+            metascript="$ROLES_ROOT/$role/$flavor/$thescript"
+          else
+            metascript=`find "$ROLES_ROOT" -name "$thescript"`
+            if [ -z "$metascript" ]; then
+              echo "$ROLES_ROOT/$metascript not found"
+              res=1
+            else
+              if [ `echo "$metascript" | wc -l` -gt 1 ]; then
+                echo "Found more than one scripts with the name ${thescript}:"
+                echo "$metascript"
+                echo "Please narrow the search conditions"
+                res=1
+              fi
+            fi
+          fi
+        else
+          therole=`echo "$therest" | cut -d'/' -s -f1`
+          theflavor=`echo "$therest" | cut -d'/' -s -f2`
+          [ -z "$therole" -a -z "$theflavor" ] && theflavor="$therest"
+          if [ -n "$therole" ]; then
+            msfoundinrole=`find "$ROLES_ROOT/$therole" -name "$thescript"`
+            msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
+            echo "Script $metascript not found"
+            [ -n "$msfoundinrole" ] && echo "  Found: $msfoundinrole"
+            [ -n "$msfoundinflavor" ] && echo "  Found: $msfoundinflavor"
+            res=1
+          else
+            if [ -e "$ROLES_ROOT/$role/$theflavor/$thescript" ]; then
+              metascript="$ROLES_ROOT/$role/$theflavor/$thescript"
+            else
+              msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
+              echo "Script $metascript not found"
+              [ -n "$msfoundinflavor" ] && echo "  Found: $msfoundinflavor"
+              res=1
+            fi
+          fi
+        fi
+      fi
+      if [ $res -eq 0 ]; then
         [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/$metascript"
         [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript.var" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/${metascript}.var"
         deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" --dry $V $D $I
         res=$?
-      else
-        echo "$ROLES_ROOT/$metascript not found"
-        res=1
       fi
       if [ -n "$verbose" ] ; then
         if [ -n "$use_color" ] ; then
