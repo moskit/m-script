@@ -54,14 +54,14 @@ run_meta() {
     if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
       thescript=${metascript##*/}
       therest=${metascript%/*}
-      therest=`expr "$therest" : "\.*/\(.*\)"`
+      [ `expr "$therest" : "\.*/"` -gt 0 ] && therest=`expr "$therest" : "\.*/\(.*\)"`
       if [ -z "$therest" ]; then
         if [ -e "$ROLES_ROOT/$role/$flavor/$thescript" ]; then
-          metascript="$ROLES_ROOT/$role/$flavor/$thescript"
+          metascript="$role/$flavor/$thescript"
         else
           metascript=`find "$ROLES_ROOT" -name "$thescript"`
           if [ -z "$metascript" ]; then
-            echo "$ROLES_ROOT/$metascript not found"
+            echo "$metascript not found"
             res=1
           else
             echo -e "\n$ROLES_ROOT/$role/$flavor/$thescript not found"
@@ -89,7 +89,7 @@ run_meta() {
           res=1
         else
           if [ -e "$ROLES_ROOT/$role/$theflavor/$thescript" ]; then
-            metascript="$ROLES_ROOT/$role/$theflavor/$thescript"
+            metascript="$role/$theflavor/$thescript"
           else
             msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
             echo "Script $metascript not found"
