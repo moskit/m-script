@@ -64,10 +64,14 @@ run_meta() {
             echo "$ROLES_ROOT/$metascript not found"
             res=1
           else
+            echo -e "\n$ROLES_ROOT/$role/$flavor/$thescript not found"
             if [ `echo "$metascript" | wc -l` -gt 1 ]; then
               echo "Found more than one scripts with the name ${thescript}:"
               echo "$metascript"
               echo "Please narrow the search conditions"
+              res=1
+            else
+              echo "Found: $metascript"
               res=1
             fi
           fi
