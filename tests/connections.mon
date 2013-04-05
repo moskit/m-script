@@ -159,7 +159,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is not being monitored."
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is a new service"
     skip=0
   done < "$M_TEMP/ports.tcp.$$"
 
@@ -205,7 +205,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is not being monitored."
+    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is a new service"
     skip=0
   done < "$M_TEMP/ports.udp.$$"
 
@@ -253,7 +253,7 @@ do
       break
     fi
   done
-  [[ $socketfound -ne 1 ]] && echo "<***> Service $sname listening on $t is not being monitored."
+  [[ $socketfound -ne 1 ]] && echo "<***> Service $sname listening on $t is a new service"
 done < "$M_TEMP/sockets.$$"
 
 if [[ ${#sockets[*]} -gt 0 ]]

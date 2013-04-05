@@ -1,0 +1,9 @@
+rm /dev/mapper/ganeti--vg-e633*
+dmsetup info -c /dev/ganeti-vg/e633f5d2-b6fd-4b19-8b23-4085b1720f3b.disk0
+dmsetup info -c ganeti--vg-e633f5d2--b6fd--4b19--8b23--4085b1720f3b.disk0-1
+dmsetup remove ganeti--vg-e633f5d2--b6fd--4b19--8b23--4085b1720f3b.disk0-1
+lvchange -an /dev/ganeti-vg/e633f5d2-b6fd-4b19-8b23-4085b1720f3b.disk0
+lvremove -f -v /dev/ganeti-vg/e633f5d2-b6fd-4b19-8b23-4085b1720f3b.disk0
+gnt-instance remove test001
+
+

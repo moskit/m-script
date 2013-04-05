@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,8 @@
 # This allows to start this script on boot
 # Just create a symlink like this:
 # ln -s /path-to/monitoringload.run /etc/init.d
-# (or /etc/rc.d/init.d if you have FHS compliant distro)
+# chkconfig:   - 99 1
+# LSB headers are in a separate file that is copied over to its place by setup
 
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
@@ -30,49 +31,46 @@ rpath=${rpath%/*}
 ## is not.
 export M_ROOT="$rpath"
 
-tempfile=/tmp/avgload-$$
 pidfile=/var/run/monitorload.pid
 mgpidfile=/var/run/mongoose.pid
-touch ${tempfile}
-trap "rm -f $tempfile; exit" 0
-trap "rm -f $tempfile; exit" 3
-trap "rm -f $tempfile; exit" 15
+[ -f "$rpath/conf/mon.conf" ] && source "$rpath/conf/mon.conf" || exit 1
+
+set +h
 
 case $1 in
 start)
 
-  [ -f $pidfile ] && [ -d /proc/$pidfile ] && echo "Already running (PID `cat $pidfile`)" | tee -a "${rpath}/monitoring.log" && exit 0
+  [ -f $pidfile ] && [ -d /proc/`cat $pidfile` ] && echo "Already running (PID `cat $pidfile`)" | tee -a "$rpath/monitoring.log" && exit 0
   
-  [ -f "${rpath}/mon.run.lock" ] && rm -f "${rpath}/mon.run.lock"
-  [ -f "${rpath}/conf/mon.conf" ] && source "${rpath}/conf/mon.conf" || exit 1
+  [ -f "$rpath/mon.run.lock" ] && rm -f "$rpath/mon.run.lock"
+  
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
-  install -d $M_TEMP
+  install -d "$M_TEMP"
   [ -z "$BASIC_SEQUENCE" ] &&  BASIC_SEQUENCE=connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,servers.mon,netstat.mon
   echo $$ > $pidfile
-  echo 0 > $tempfile
   
   [ -n "$FREQ" ] && FREQ=`expr $FREQ - 10` || FREQ=200
   if [ "X$MONGOOSE" == "X1" ] ; then
     printf "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
-    if [ "X$MG" == "X" ] ; then
-      if [ -f ${rpath}/mongoose ] ; then
-        MG="${rpath}/mongoose"
+    if [ -z "$MG" ] ; then
+      if [ -f "$rpath/mongoose" ] ; then
+        MG="$rpath/mongoose"
       else
         echo "Error"
-        echo "Mongoose is enabled in ${rpath}/conf/mon.conf but not found"
+        echo "Mongoose is enabled in $rpath/conf/mon.conf but not found"
         exit 1
       fi
     fi
-    [ -f ${rpath}/conf/htaccess ] || ($MG -A ${rpath}/conf/htaccess ${MONGOOSE_HOSTNAME} admin admin && printf "access file ${rpath}/conf/htaccess not found, created with login: admin, password: admin; use $MG -A ${rpath}/conf/htaccess <realm> <user> <passwd> to change credentials  ")
-    MGOPTS=$(for opt in `cat ${rpath}/conf/mongoose.conf | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
-    echo "`date` -- Starting $MG ${MGOPTS} -R ${MONGOOSE_HOSTNAME}" >> ${rpath}/mongoose.log
-    $MG ${MGOPTS} -R ${MONGOOSE_HOSTNAME} >> ${rpath}/mongoose.log 2>&1 </dev/null &
+    [ -f "$rpath/conf/htaccess" ] || ($MG -A "$rpath/conf/htaccess" "$MONGOOSE_HOSTNAME" admin admin && printf "access file $rpath/conf/htaccess not found, created with login: admin, password: admin; use $MG -A $rpath/conf/htaccess <realm> <user> <passwd> to change credentials  ")
+    MGOPTS=$(for opt in `cat "$rpath/conf/mongoose.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
+    echo "`date` -- Starting $MG $MGOPTS -R $MONGOOSE_HOSTNAME" >> "$rpath/mongoose.log"
+    $MG $MGOPTS -R $MONGOOSE_HOSTNAME >> "$rpath/mongoose.log" 2>&1 </dev/null &
     succ=$?
     echo $! > $mgpidfile
     if [[ $succ -eq 0 ]]; then
       echo "done"
-      echo "Mongoose server started" >> "${rpath}/monitoring.log"
+      echo "Mongoose server started" >> "$rpath/monitoring.log"
     else
       echo "error"
     fi
@@ -84,9 +82,9 @@ start)
   while true
   do
   # Checking how much load average has changed
-    rloadprev=`cat ${tempfile} 2>/dev/null` || rloadprev=0
-    rload="$(cat /proc/loadavg | cut -d' ' -f2 | tee $tempfile)"
-    rloadabs=${rload%.*} ; [ "X$rloadabs" == "X" ] && rloadabs=0
+    [ -z "$rload" ] && rloadprev=$rload || rloadprev=0
+    rload="$(cat /proc/loadavg | cut -d' ' -f2)"
+    rloadabs=${rload%.*} ; [ -z "$rloadabs" ] && rloadabs=0
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
@@ -94,7 +92,7 @@ start)
 ##### Running tests #####
     sleep 10
     # Running actions from the queue
-    "${rpath}"/lib/mq.run &
+    "$rpath"/lib/mq.run &
     
 ### Tests that run if load has changed - we're interested in various metrics here
     if [ "X$x" == "X1" ]; then
@@ -104,10 +102,10 @@ start)
 ## the load. So we need just some delay to secure the lock.
 ## If load is not too high, all tests run
       if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
-        ${rpath}/mon.run -ao </dev/null &
+        "$rpath"/mon.run -ao </dev/null &
       else
 ## otherwise, these tests only
-        ${rpath}/mon.run mem.mon </dev/null &
+        "$rpath"/mon.run mem.mon </dev/null &
       fi
     fi
 
@@ -116,12 +114,12 @@ start)
 
 ## Tests that are disabled if load average is too high
     if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
-      "${rpath}"/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
+      "$rpath"/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ] ; then
       # means that we need to fetch reports from other servers
         case $DASHBOARD_TRANSPORT in
           SSH)
-            "${rpath}"/getdash.ssh 2>>"$rpath/logs/dashboard.log" </dev/null &
+            "$rpath"/getdash.ssh 2>>"$rpath/logs/dashboard.log" </dev/null &
           ;;
           JSON)
           
@@ -138,13 +136,13 @@ start)
         esac
       fi
       # Standalone tests, if any
-      if [ -d "${rpath}/standalone/rc" ]; then
-        for sa in `find "${rpath}/standalone/rc/" -maxdepth 1 -type l` ; do
+      if [ -d "$rpath/standalone/rc" ]; then
+        for sa in `find "$rpath/standalone/rc/" -maxdepth 1 -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           safolder=$(readlink -f "$sa")
           echo -e "`date`\n------------------------------\n" > "$safolder/report"
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
-          for satest in `find ${sa}/rc/ -maxdepth 1 -type l` ; do
+          for satest in `find "$sa/rc/" -maxdepth 1 -type l` ; do
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             $satest >> "$safolder/report" 2>>"$rpath/logs/sa.log"
@@ -153,7 +151,7 @@ start)
       fi
     else
 ## Tests that are always enabled
-      "${rpath}"/mon.run mem.mon </dev/null &
+      "$rpath"/mon.run mem.mon </dev/null &
     fi
 ###
   done >/dev/null 2>&1 </dev/null &
@@ -162,7 +160,7 @@ start)
   succ=$?
   echo $! > $pidfile
   if [[ $succ -eq 0 ]]; then
-    echo "Monitorload daemon started" >> "${rpath}/monitoring.log"
+    echo "Monitorload daemon started" >> "$rpath/monitoring.log"
     echo "done"
   else
     echo "error"
@@ -170,18 +168,18 @@ start)
   exit 0
   ;;
 stop)
-  if [ -f ${pidfile} ]; then
-    pid=`cat ${pidfile}|tail -1`
+  if [ -f "$pidfile" ]; then
+    pid=`cat "$pidfile"|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
     rm -f $pidfile
-    kill -15 $pid && rm -f $tempfile && echo "done" && echo "Monitorload daemon stopped" >> "${rpath}/monitoring.log"
+    kill -15 $pid && echo "done" && echo "Monitorload daemon stopped" >> "$rpath/monitoring.log"
   else
-    echo "${pidfile} not found!"
+    echo "$pidfile not found!"
   fi
   if [ -f $mgpidfile ] ; then
     pid=`cat $mgpidfile|tail -1`
     printf "Stopping web interface (pid $pid)...       "
-    kill -15 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "${rpath}/monitoring.log"
+    kill -15 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log"
   fi
   ;;
 restart)
@@ -190,8 +188,8 @@ restart)
   $0 start
   ;;
 status)
-  if [ -f ${pidfile} ]; then
-    pid=`cat ${pidfile}|tail -1`
+  if [ -f "$pidfile" ]; then
+    pid=`cat "$pidfile"|tail -1`
     echo "${0##*/} is running (pid $pid)"
   else
     echo "${0##*/} is not running"

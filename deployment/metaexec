@@ -318,12 +318,12 @@ if [ "$output" == "console" ] ; then
     # Thanks to Gentoo guys for this part, I couldn't do better
     safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
     match_lhs=""
-    [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
-    [[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
-    [[ -z ${match_lhs}    ]] \
+    [ -f ~/.dir_colors   ] && match_lhs="${match_lhs}$(<~/.dir_colors)"
+    [ -f /etc/DIR_COLORS ] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
+    [ -z "$match_lhs" ] \
 	    && type -P dircolors >/dev/null \
 	    && match_lhs=$(dircolors --print-database)
-    [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
+    [[ $'\n'$match_lhs == *$'\n'"TERM "${safe_term}* ]] && use_color=true
   else
     use_color=true
   fi
@@ -377,7 +377,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   echo
   if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9]*$"` -eq 0 ]]; then
     meta="$command"
-    run_meta "${meta}"
+    run_meta "$meta"
   else
     IFS1=$IFS
     IFS='

@@ -7,9 +7,8 @@ rpath=${rpath%/*}
 
 [ -z "$1" ] && echo "Usage: $rcommand testname" && exit 1
 
-rm -f "${rpath}/../standalone/rc/"*".$1"
-rm -f "${rpath}/../standalone/${1}/rc"/*
+rm -f "$rpath/../standalone/rc/"*".$1"
+rm -f "$rpath/../standalone/$1/rc"/*
 
-[ -f "${rpath}/../standalone/${1}/report" ] && rm -f "${rpath}/../standalone/${1}/report"
-[ -z "$IAMACHILD" ] && [ -x "/etc/init.d/monitorload" ] && /etc/init.d/monitorload restart
+[ -f "$rpath/../standalone/$1/report" ] && rm -f "$rpath/../standalone/$1/report"
 

@@ -57,22 +57,22 @@ lock_cloudops || exit 10
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 
 find_image() {
-  [ -f "${M_TEMP}/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "${M_TEMP}/images.resp"` -gt 0 ] && imageid=$image && log "Image ID for the new server is $imageid (based on command-line option)" && return
-  imageid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f6`
+  [ -f "$M_TEMP/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "$M_TEMP/images.resp"` -gt 0 ] && imageid=$image && log "Image ID for the new server is $imageid (based on command-line option)" && return
+  imageid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f6`
   log "Image ID for the new server is $imageid (based on the cluster $cluster default)"
 }
 
 find_flavor() {
-  [ -f "${M_TEMP}/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "${M_TEMP}/flavors.resp"` -gt 0 ] && flavorid=$flavor && log "flavor ID for the new server is $flavorid (based on command-line option)" && return
-  flavorid=`grep ^$cluster\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f5`
+  [ -f "$M_TEMP/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "$M_TEMP/flavors.resp"` -gt 0 ] && flavorid=$flavor && log "flavor ID for the new server is $flavorid (based on command-line option)" && return
+  flavorid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f5`
   log "Flavor ID for the new server is $flavorid (based on the cluster $cluster default)"
 }
 
 request() {
   log "Sending request..."
-  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/servers" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
+  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  TOKEN=`grep ^0\/auth\/token\/id "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/servers" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
 }
@@ -80,14 +80,14 @@ request() {
 save_details() {
   log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
-  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "${M_TEMP}/${rcommand}.resp"`\n" >> "${rpath}/../rackspace.log"
-  chmod 600 "${rpath}/../rackspace.log"
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
+  chmod 600 "$rpath/../rackspace.log"
   if [ "X$NETWORK" == "Xexternal" ] ; then
-    slip=`grep \/addresses\/public "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
+    slip=`grep \/addresses\/public "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   else
-    slip=`grep \/addresses\/private "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
+    slip=`grep \/addresses\/private "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
-  echo "${slip}|${thekey}|${region}|${name}|${cluster}" >> "${rpath}/../../servers.list"
+  echo "$slip|$thekey|$region|$name|$cluster" >> "$rpath/../../servers.list"
   return 0
 }
 
@@ -101,9 +101,9 @@ wait_ready() {
     sleep $waitperiod
     "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
     if [ -n "$1" ] ; then
-      printf "Progress: `grep \/progress\| "${M_TEMP}/get_server_details.resp" | cut -d'|' -f2`     \r"
+      printf "Progress: `grep \/progress\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`     \r"
     fi
-    if [ "X`grep \/status\| "${M_TEMP}/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
+    if [ "X`grep \/status\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
       echo
       return 0
     fi
@@ -116,22 +116,22 @@ printreturn() {
     case $res in
       ip)
         if [ "X$NETWORK" == "Xexternal" ] ; then
-          grep \/addresses\/public "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+          grep \/addresses\/public "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         else
-          grep \/addresses\/private "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+          grep \/addresses\/private "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         fi
         ;;
       ipext)
-        grep \/addresses\/public "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/addresses\/public "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
       ipint)
-        grep \/addresses\/private "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/addresses\/private "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
       id)
-        grep \/id\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/id\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
       pass|password)
-        grep \/adminPass "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/adminPass "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
     esac
   done
@@ -145,24 +145,24 @@ find_image
 [ -z "$imageid" ] && proper_exit 7 156
 find_flavor
 [ -z "$flavorid" ] && proper_exit 8 158
-thekey=`cat "${rpath}/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "${rpath}/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
-[ -f "${rpath}/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
-PUBLIC_KEY=`cat "${rpath}/../../keys/$pubkey" 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_dsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_dsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat ${HOME_ORIG}/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried ${rpath}/../../keys/${pubkey}, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && proper_exit 1 167
+thekey=`cat "$rpath/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
+[ -f "$rpath/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
+[ -f "$rpath/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
+PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $rpath/../../keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 167
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
-cat "${rpath}/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$M_TEMP/${rcommand}.req"
+cat "$rpath/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$M_TEMP/${rcommand}.req"
 echo "        \"personality\" : [" >> "$M_TEMP/${rcommand}.req"
 echo "            {" >> "$M_TEMP/${rcommand}.req"
 echo -n "                \"path\" : " >> "$M_TEMP/${rcommand}.req"
 echo "\"/root/.ssh/authorized_keys\"," >> "$M_TEMP/${rcommand}.req"
 echo -n "                \"contents\" : " >> "$M_TEMP/${rcommand}.req"
 echo -n "\"" >> "$M_TEMP/${rcommand}.req"
-echo -n ${PUBLIC_KEY} >> "$M_TEMP/${rcommand}.req"
+echo -n "$PUBLIC_KEY" >> "$M_TEMP/${rcommand}.req"
 echo "\"" >> "$M_TEMP/${rcommand}.req"
 echo "            }" >> "$M_TEMP/${rcommand}.req"
 echo "        ]" >> "$M_TEMP/${rcommand}.req"
@@ -173,9 +173,9 @@ log "Request generated"
 try_auth() {
   local -i i
   i=0
-  while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 188
-    ${rpath}/auth
+    "$rpath"/auth
     i+=1
     sleep 10
   done
@@ -183,7 +183,7 @@ try_auth() {
   [ $i -gt 0 ] && log "$i additional auth requests due to no reply from API"
 }
 
-source "${rpath}/../../conf/cloud.conf"
+source "$rpath/../../conf/cloud.conf"
 exit_status=0
 
 if [ -z "$noupdate" ] ; then
@@ -192,20 +192,20 @@ fi
 request && log "Request sent"
 declare -i n
 n=0
-while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+while [ `grep -c ^0\/unauthorized\/code\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
   [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 207
   [ $n -gt 1 ] && sleep 30
-  rm -f "${M_TEMP}/auth.resp"
+  rm -f "$M_TEMP/auth.resp"
   try_auth
   request && log "Request sent"
   n+=1
 done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
-code=`grep \/code\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
+code=`grep \/code\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 [ -n "$code" ] && echo -n "${code}: "
-grep \/message\| "${M_TEMP}/${rcommand}.resp"
-newid=`grep \/id\| "${M_TEMP}/${rcommand}.resp" | cut -d'|' -f2`
+grep \/message\| "$M_TEMP/${rcommand}.resp"
+newid=`grep \/id\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then
   save_details $verbose || true
   wait_ready $verbose
@@ -216,6 +216,6 @@ else
   proper_exit 1 227
 fi
 
-${rpath}/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+"$rpath"/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
 proper_exit $exit_status 231
 
