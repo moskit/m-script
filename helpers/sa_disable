@@ -3,12 +3,18 @@
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
 
 [ -z "$1" ] && echo "Usage: $rcommand testname" && exit 1
 
-rm -f "$rpath/../standalone/rc/"*".$1"
-rm -f "$rpath/../standalone/$1/rc"/*
+if [ -d "$M_ROOT/standalone/$1" ]; then
+  rm -f "$M_ROOT/standalone/rc/"*".$1" 2>/dev/null
+  rm -f "$M_ROOT/standalone/$1/rc"/* 2>/dev/null
+  [ -f "$M_ROOT/standalone/$1/report" ] && rm -f "$rpath/../standalone/$1/report"
+else
+  echo "Folder standalone/$1 not found" && exit 1
+fi
 
-[ -f "$rpath/../standalone/$1/report" ] && rm -f "$rpath/../standalone/$1/report"
+exit 0
 
