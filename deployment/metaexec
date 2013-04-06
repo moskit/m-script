@@ -119,6 +119,7 @@ run_meta() {
       fi
     fi
     [ -n "$verbose" ] && echo
+    [ $res -eq 0 ] && echo "$meta" >> "$WORK_DIR/${role}.${task}.$timestampact/log"
     return $res
   else
     [ -n "$use_color" ] && printf "\033[01;31m"

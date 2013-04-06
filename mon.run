@@ -105,104 +105,104 @@ function cleanup() {
 }
 
 function runscript() {
-  local LOG="${rpath}/monitoring.log"
+  local LOG="$rpath/monitoring.log"
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
-    $SQLITE "${rpath}/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
+    $SQLITE "$rpath/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
 
   echo -e "$etitle" >> "$LOG"
-  echo -e "$etitle" > "${rpath}/report"
+  echo -e "$etitle" > "$rpath/report"
 
   if [ "X$1" == "XSQL" ]; then
     
     if [ -n "$2" ] ; then
-      for script in `find ${rpath}/rc/ -maxdepth 1 -name "*.mon" | head -n $2`
+      for script in `find "$rpath/rc/" -maxdepth 1 -name "*.mon" | head -n $2`
       do
         [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         time0=`date +"%s"`
-        mon="${rpath}/rc/`readlink $script`"
+        mon="$rpath/rc/`readlink $script`"
         if [ -x "$mon" ]; then
           log "$mon"
-          monoutput=`${mon} $SQL 2>&1`
+          monoutput=`$mon $SQL 2>&1`
           echo "$monoutput" >> "$LOG"
           if alert_blocked ${mon##*/} ; then
             log "=== alert is blocked for $mon"
-            echo "$monoutput" >> "${rpath}/report.blocked"
+            echo "$monoutput" >> "$rpath/report.blocked"
           else  
-            echo "$monoutput" >> "${rpath}/report"
+            echo "$monoutput" >> "$rpath/report"
           fi
           time1=`date +"%s"`
-          $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+          $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
       done
     else
-      for script in ${rpath}/rc/*.mon  #*/
+      for script in "$rpath/rc/"*.mon  #*/
       do
         [ -n "$RUNDELAY" ] && sleep $RUNDELAY
         time0=`date +"%s"`
-        mon="${rpath}/rc/`readlink $script`"
+        mon="$rpath/rc/`readlink $script`"
         if [ -x "$mon" ]; then
           log "$mon"
-          monoutput=`${mon} $SQL 2>&1`
+          monoutput=`$mon $SQL 2>&1`
           echo "$monoutput" >> "$LOG"
           if alert_blocked ${mon##*/} ; then
             log "=== alert is blocked for $mon"
-            echo "$monoutput" >> "${rpath}/report.blocked"
+            echo "$monoutput" >> "$rpath/report.blocked"
           else  
-            echo "$monoutput" >> "${rpath}/report"
+            echo "$monoutput" >> "$rpath/report"
           fi
           time1=`date +"%s"`
-          $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+          $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
         fi
       done
     fi
   elif [ -n "$1" ]; then
-    for mon in `echo ${1} | sed 's|,| |g'` ; do
+    for mon in `echo $1 | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-      if [ -x "${rpath}/tests/${mon}" ]; then
+      if [ -x "$rpath/tests/$mon" ]; then
         log "$mon"
-        monoutput=`"${rpath}"/tests/${mon} $SQL 2>&1`
+        monoutput=`"$rpath"/tests/$mon $SQL 2>&1`
         echo "$monoutput" >> "$LOG"
         if alert_blocked ${mon##*/} ; then
           log "=== alert is blocked for $mon"
-          echo "$monoutput" >> "${rpath}/report.blocked"
+          echo "$monoutput" >> "$rpath/report.blocked"
         else  
-          echo "$monoutput" >> "${rpath}/report"
+          echo "$monoutput" >> "$rpath/report"
         fi
       fi
     done
   fi
-  al3=`grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g'` > "${rpath}/alert3"
-  al2=`grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g'` > "${rpath}/alert2"
-  al1=`grep '<\*>' "${rpath}/report" | sed 's|<\*>||g'` > "${rpath}/alert1"
-  al0=`grep '<OK>' "${rpath}/report" | sed 's|<OK>||g'` > "${rpath}/alert0"
-  [ -n "$al3" -o -n "$al2" -o -n "$al1" -o -n "$alok" ] && echo -e "$etitle" > "${rpath}/alert"
-  [ -n "$al3" ] && echo -e "$al3\n" > "${rpath}/alert3"
-  [ -n "$al2" ] && echo -e "$al2\n" > "${rpath}/alert2"
-  [ -n "$al1" ] && echo -e "$al1\n" > "${rpath}/alert1"
-  [ -n "$al0" ] && echo -e "$al0\n" > "${rpath}/alert0"
+  al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'` > "$rpath/alert3"
+  al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'` > "$rpath/alert2"
+  al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'` > "$rpath/alert1"
+  al0=`grep '<OK>' "$rpath/report" | sed 's|<OK>||g'` > "$rpath/alert0"
+  [ -n "$al3" -o -n "$al2" -o -n "$al1" -o -n "$alok" ] && echo -e "$etitle" > "$rpath/alert"
+  [ -n "$al3" ] && echo -e "$al3\n" > "$rpath/alert3"
+  [ -n "$al2" ] && echo -e "$al2\n" > "$rpath/alert2"
+  [ -n "$al1" ] && echo -e "$al1\n" > "$rpath/alert1"
+  [ -n "$al0" ] && echo -e "$al0\n" > "$rpath/alert0"
 }
 
 function runactions() {
   local LOG="$M_ROOT/logs/actions.log"
-  if [ -f "${rpath}/report.blocked" ]; then
+  if [ -f "$rpath/report.blocked" ]; then
     log "blocked alerts found"
     
-    grep '<\*\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*\*>||g' >> "${rpath}/alert3"
-    grep '<\*\*>' "${rpath}/report.blocked" | sed 's|<\*\*>||g' >> "${rpath}/alert2"
-    grep '<\*>' "${rpath}/report.blocked" | sed 's|<\*>||g' >> "${rpath}/alert1"
-    grep '<OK>' "${rpath}/report.blocked" | sed 's|<OK>||g' >> "${rpath}/alert0"
+    grep '<\*\*\*>' "$rpath/report.blocked" | sed 's|<\*\*\*>||g' >> "$rpath/alert3"
+    grep '<\*\*>' "$rpath/report.blocked" | sed 's|<\*\*>||g' >> "$rpath/alert2"
+    grep '<\*>' "$rpath/report.blocked" | sed 's|<\*>||g' >> "$rpath/alert1"
+    grep '<OK>' "$rpath/report.blocked" | sed 's|<OK>||g' >> "$rpath/alert0"
   fi
-  rm -f "${rpath}/report.blocked"
+  rm -f "$rpath/report.blocked"
   IFS1=$IFS; IFS='
 '
-  for action in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | cut -d'|' -f3 | sort | uniq` ; do
+  for action in `cat "$rpath/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | cut -d'|' -f3 | sort | uniq` ; do
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
-    touch "${M_TEMP}/consequent_alerts.tmp"
-    for confline in `grep -E "\|${action}\||\|${action}$" "${rpath}/conf/actions.conf" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+    touch "$M_TEMP/consequent_alerts.tmp"
+    for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
       pattern=`echo $confline | cut -d'|' -f1`
       level=`echo $confline | cut -d'|' -f2`
       nalerts=`echo $confline | cut -d'|' -f4`
@@ -211,16 +211,16 @@ function runactions() {
       BLOCK_ERR5=`echo $confline | cut -d'|' -f7`
       export BLOCK_ERR13 BLOCK_ERR5
       if [ -n "$nalerts" ] ; then
-        calerts=`cat "${M_TEMP}/consequent_alerts.tmp" | grep ^"${commline}"\|"$pattern"\|$level\| | tail -1`
+        calerts=`cat "$M_TEMP/consequent_alerts.tmp" | grep ^"$commline"\|"$pattern"\|$level\| | tail -1`
         if [ -n "$calerts" ] ; then
           calerts=`echo "$calerts" | cut -d'|' -f4`
         else
-          echo "${commline}|$pattern|$level|0" >> "${M_TEMP}/consequent_alerts.tmp"
+          echo "$commline|$pattern|$level|0" >> "$M_TEMP/consequent_alerts.tmp"
         fi
       fi
       
-      [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> "${rpath}/monitoring.log" && continue
-      [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> "${rpath}/monitoring.log" && continue
+      [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> "$rpath/monitoring.log" && continue
+      [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> "$rpath/monitoring.log" && continue
       
       action_alert_found=false
       alert_match=false
@@ -244,11 +244,11 @@ function runactions() {
                 calerts=1
               fi
               calerts=`expr $calerts + 1`
-              sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|${calerts}%" "${M_TEMP}/consequent_alerts.tmp"
+              sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}%" "$M_TEMP/consequent_alerts.tmp"
               [[ $calerts -ge $nalerts ]] && alert_match=true && break
             fi
           fi
-        done <"${rpath}/alert$i"
+        done <"$rpath/alert$i"
       done   ## <-- finished reading alerts
       
       if $alert_match ; then
@@ -260,7 +260,7 @@ function runactions() {
       fi
       if ! $action_alert_found ; then
         # if no match, alert is not consequent and must be zeroed
-        [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
+        [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
       fi
     done   ## <-- finished reading config
     
@@ -269,7 +269,7 @@ function runactions() {
       [ -n "$blockccl" ] && block_action $blockccl "$action"
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a $LOG
       action $action
-      [ -n "$nalerts" ] && sed -i "s%^${commline}|${pattern}|${level}|.*%${commline}|${pattern}|${level}|0%" "${M_TEMP}/consequent_alerts.tmp"
+      [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
     fi
 
   done
@@ -279,26 +279,26 @@ IFS=$IFS1
 function runactionstest() {
 IFS1=$IFS; IFS='
 '
-for confline in `cat "${rpath}/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+for confline in `cat "$rpath/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   pattern=`echo $confline | cut -d'|' -f1`
   level=`echo $confline | cut -d'|' -f2`
   action=`echo $confline | cut -d'|' -f3`
   while read line ; do
     [[ $line =~ $pattern ]] && echo && echo "The alert message: \'$line\' would trigger the action: \'$action\'" && echo
-  done<"${rpath}/alert$level"
+  done<"$rpath/alert$level"
 done
 IFS=$IFS1
 }
 
 function runsysanalyze() {
-  source ${rpath}/conf/analysis.conf
-  echo "------------------------------" >> ${rpath}/monitoring.log
-  date | tee -a ${rpath}/monitoring.log | tee ${rpath}/report | tee ${rpath}/alert >/dev/null
-  echo "------------------------------" | tee -a ${rpath}/monitoring.log  | tee -a ${rpath}/report | tee -a ${rpath}/alert >/dev/null
-  sysanalysis 2>&1 | tee -a ${rpath}/monitoring.log | tee -a ${rpath}/report >/dev/null
-  grep '<\*\*\*>' ${rpath}/report | sed 's|<\*\*\*>||g' > ${rpath}/alert3
-  grep '<\*\*>' ${rpath}/report | sed 's|<\*\*>||g' > ${rpath}/alert2
-  grep '<\*>' ${rpath}/report | sed 's|<\*>||g' > ${rpath}/alert1
+  source "$rpath/conf/analysis.conf"
+  echo "------------------------------" >> "$rpath/monitoring.log"
+  date | tee -a "$rpath/monitoring.log" | tee "$rpath/report" | tee "$rpath/alert" >/dev/null
+  echo "------------------------------" | tee -a "$rpath/monitoring.log"  | tee -a "$rpath/report" | tee -a "$rpath/alert" >/dev/null
+  sysanalysis 2>&1 | tee -a "$rpath/monitoring.log" | tee -a "$rpath/report" >/dev/null
+  grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g' > "$rpath/alert3"
+  grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g' > "$rpath/alert2"
+  grep '<\*>' "$rpath/report" | sed 's|<\*>||g' > "$rpath/alert1"
 }
 
 function analyzesysparams() {
@@ -308,12 +308,12 @@ function analyzesysparams() {
   then
     partotal=""
   else
-    partotal=`$SQLITE ${rpath}/sysdata "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
+    partotal=`$SQLITE "$rpath/sysdata" "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
   fi
 
   for ((n=1; n <= $ANALYS_DAYS; n++))
   do
-    results[$n]=`$SQLITE ${rpath}/sysdata "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
+    results[$n]=`$SQLITE "$rpath/sysdata" "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
     #echo "== n=$n; date: $afrdatefirst; result: ${results[$n]}"
     afrdayfirst=`date -d "$afrdayfirst + 1 day" +"%Y%m%d"`
   done
@@ -350,7 +350,7 @@ function analyzesysparams() {
   #echo "changespeed=$changespeed; days=$days2"
   x1="$(echo "$changespeed > 0" | bc)"
   x2="$(echo "$changespeed < 0" | bc)"
-  if [ "${x1}" == "1" ]
+  if [ "$x1" == "1" ]
   then
     if [ "X$4" == "X" ]
     then
@@ -366,18 +366,18 @@ function analyzesysparams() {
        [ "X$(eval echo \$${6}_2)" != "X" ] &&
        [ "X$(eval echo \$${6}_3)" != "X" ]
     then
-      y1="$(echo "$changes ${7} $(eval echo \$${6}_1)" | bc)"
-      y2="$(echo "$changes ${7} $(eval echo \$${6}_2)" | bc)"
-      y3="$(echo "$changes ${7} $(eval echo \$${6}_3)" | bc)"
+      y1="$(echo "$changes $7 $(eval echo \$${6}_1)" | bc)"
+      y2="$(echo "$changes $7 $(eval echo \$${6}_2)" | bc)"
+      y3="$(echo "$changes $7 $(eval echo \$${6}_3)" | bc)"
       warnind='(OK) '
       [ "$y1" == "1" ] && warnind=' <*> '
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
     else
-      echo "${6} is not set correctly. Check conf/mon.conf please."
+      echo "$6 is not set correctly. Check conf/mon.conf please."
       echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
     fi
-    echo "${warnind} ${5} has been increasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during last $daysnum days"
+    echo "$warnind $5 has been increasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 $changespeedperc a day during last $daysnum days"
   elif [ "$x2" == "1" ]
   then
     if [ "X$4" == "X" ]
@@ -396,18 +396,18 @@ function analyzesysparams() {
        [ "X$(eval echo \$${6}_2)" != "X" ] &&
        [ "X$(eval echo \$${6}_3)" != "X" ]
     then
-      y1="$(echo "$changes ${7} $(eval echo \$${6}_1)" | bc)"
-      y2="$(echo "$changes ${7} $(eval echo \$${6}_2)" | bc)"
-      y3="$(echo "$changes ${7} $(eval echo \$${6}_3)" | bc)"
+      y1="$(echo "$changes $7 $(eval echo \$${6}_1)" | bc)"
+      y2="$(echo "$changes $7 $(eval echo \$${6}_2)" | bc)"
+      y3="$(echo "$changes $7 $(eval echo \$${6}_3)" | bc)"
       warnind='(OK) '
       [ "$y1" == "1" ] && warnind=' <*> '
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
     else
-      echo "${6} is not set correctly. Check conf/mon.conf please."
+      echo "$6 is not set correctly. Check conf/mon.conf please."
       echo "Note that *three* levels must be set: ${6}_1, ${6}_2 and ${6}_3."
     fi
-    echo "${warnind} ${5} has been decreasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 ${changespeedperc} a day during the last $daysnum days"
+    echo "$warnind $5 has been decreasing by `echo $changespeed | sed "s|0*$||" | sed "s|\.$|\.0|"` $2 $changespeedperc a day during the last $daysnum days"
   else
     echo "(OK)  $5 hasn't been changing during the last $daysnum days"
   fi
@@ -427,7 +427,7 @@ function sysanalysis() {
     exit 1
   fi
   dayfirst=`date -d "- 7 day" +"%Y%m%d"`
-  testdays=`$SQLITE ${rpath}/sysdata "select day from sysdata where day='$dayfirst'"`
+  testdays=`$SQLITE "$rpath/sysdata" "select day from sysdata where day='$dayfirst'"`
   if [ "X$testdays" != "X" ]
   then
 #   ------------ Database -- un -- "From" - DB column  - Human  ----- Warning level - Con
@@ -450,11 +450,11 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 
 function newtimeindex() {
   timeindexnow=$(date +"%s")
-  echo $timeindexnow > "${M_TEMP}/timeindex"
+  echo $timeindexnow > "$M_TEMP/timeindex"
 }
 
 function deltimeindex() {
-  mv "${M_TEMP}/timeindex" "${M_TEMP}/lasttimeindex"
+  mv "$M_TEMP/timeindex" "$M_TEMP/lasttimeindex"
 }
 
 function timeshift() {
@@ -477,21 +477,21 @@ function action() {
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
-  echo "`grep "$act" "${rpath}/conf/actions.conf" | cut -d'|' -f3`|${JOBINTIME}|" >> "$rpath/actions.in" && log "=== job created: $@"
+  echo "`grep "$act" "$rpath/conf/actions.conf" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
-  "${rpath}"/lib/mq.run &
+  "$rpath"/lib/mq.run &
 }
 
-source "${rpath}/conf/mon.conf"
+source "$rpath/conf/mon.conf"
 # needed for actions (only?)
-source "${rpath}/lib/functions.sh"
+source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 install -d $M_TEMP
 etitle="------------------------------\n`date`\n------------------------------"
 
-case ${1} in
+case $1 in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
     runscript SQL
@@ -507,7 +507,7 @@ case ${1} in
     runscript SQL
     runactionstest
     deltimeindex
-    cat "${rpath}/report"
+    cat "$rpath/report"
     cleanup
   ;;
   -analyze-sys | -analyze-system | --analyze-system | -as)
@@ -562,7 +562,7 @@ case ${1} in
   ;;
   *.mon)
     newtimeindex
-    runscript ${1} $SQL
+    runscript "$1" $SQL
     timeshift
     mailalert
     [ -n "$DASHBOARD" ] && gendash "$M_ROOT/report" servers
@@ -574,9 +574,9 @@ case ${1} in
     echo "Run mon.run --help to see available options"
   ;;
 esac
-rm -f ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` <<< unlocking by ${commline}" >> ${rpath}/monitoring.log
-echo  >> ${rpath}/monitoring.log
-#rm -f ${M_TEMP}/sar.tmp
-chmod 666 ${rpath}/alert* 2>/dev/null
-export LC_MESSAGES=`echo ${currentlocale}`
+rm -f "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` <<< unlocking by $commline" >> "$rpath/monitoring.log"
+echo  >> "$rpath/monitoring.log"
+#rm -f $M_TEMP/sar.tmp
+chmod 666 "$rpath"/alert* 2>/dev/null
+export LC_MESSAGES=`echo $currentlocale`
 

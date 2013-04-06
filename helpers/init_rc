@@ -6,10 +6,11 @@ rpath=${0%/*}
 M_ROOT=$(cd "${rpath}/../" && pwd)
 
 [ -d "$M_ROOT/rc" ] || install -d "$M_ROOT/rc"
-initlist="connections services bandwidth disk cpu mem servers cpu_eaters memory_eaters"
+initlist="connections services bandwidth disk cpu mem files servers cpu_eaters memory_eaters"
 
 declare -i i ; i=1
 for mon in $initlist ; do
+  find "$M_ROOT/rc" -name "*.$mon" -exec rm {} \;
   [[ `expr length $i` -eq 1 ]] && n="0$i" || n=$i
   ln -s ../tests/${mon}.mon "$M_ROOT/rc/${n}.${mon}.mon"
   i+=1
