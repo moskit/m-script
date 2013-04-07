@@ -106,7 +106,8 @@ if [ -n "$ips" ] ; then
     # Never block own IPs! :)
     [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -ne 0 ]] && continue
     # Whitelist
-    [[ `grep -c ^$ip "$M_ROOT/conf/ip.white.list"` -ne 0 ]] && continue
+    whitelisted=$(for wl in `cat "$M_ROOT/conf/ip.white.list"`; do expr "$ip" : ^$wl ; done | grep -v ^0$ | wc -l)
+    [ $whitelisted -ne 0 ] && continue
     echo $ip >> "$M_TEMP/ip_block.tmp"
 
     ipincl=`grep -c "^${ip}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
