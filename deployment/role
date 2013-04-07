@@ -205,7 +205,7 @@ case $command1 in
         printcol "Script"
         printcol "Meta"
         echo "Role"
-        for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
+        for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l`; do
           scr="${sc/$ROLES_ROOT\//}" && scr="${scr/$param1\//}"
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
@@ -252,7 +252,7 @@ case $command1 in
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "File"
         echo "Script"
-        for fl in `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` ; do
+        for fl in `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/files/" -maxdepth 1 -type f -o -type l` ; do
           for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
             [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
           done
@@ -281,11 +281,11 @@ case $command1 in
           r=${r##*/}
           [[ $r =~ '^\.' ]] && continue
           for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
-            printcol "${r}"
-            printcol "${cl}"
+            printcol "$r"
+            printcol "$cl"
             ln=`cat "$M_ROOT/conf/clusters.conf" | grep "^$cl"`
             fl=`echo "$ln" | cut -d'|' -f11`
-            printcol "${fl}"
+            printcol "$fl"
             im=`echo "$ln" | cut -d'|' -f6`
             echo "$im"
             unset r
