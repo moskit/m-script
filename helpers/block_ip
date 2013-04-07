@@ -79,6 +79,7 @@ source "$M_ROOT/conf/mon.conf"
 
 [ -n "$cleanup" ] && cleanup && exit $?
 
+[ -z "$BLOCK_CALLER" ] && BLOCK_CALLER="unknown"
 [ -z "$method" ] && method=REJECT
 if [ "$method" == "limit" ]; then
   [ -z "$rate" ] && rate="1/s"
@@ -107,21 +108,21 @@ if [ -n "$ips" ] ; then
     [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -ne 0 ]] && continue
     # Whitelist
     whitelisted=$(for wl in `cat "$M_ROOT/conf/ip.white.list"`; do expr "$ip" : ^$wl ; done | grep -v ^0$ | wc -l)
-    [ $whitelisted -ne 0 ] && continue
-    echo $ip >> "$M_TEMP/ip_block.tmp"
+    [ $whitelisted -ne 0 ] && log "IP $ip is in the whitelist" && continue
+    echo "$ip|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
 
-    ipincl=`grep -c "^${ip}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
+    ipincl=`grep -c "^$ip|${BLOCK_CALLER}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
     log "$ip :: logged: $ipincl times, forever after: $block_forever_after times"
     if [[ $ipincl -gt $block_forever_after ]] ; then
-      if [[ `grep -c "^${ip}$" "$M_TEMP/ip_block.const"` -eq 0 ]] ; then
-        echo $ip >> "$M_TEMP/ip_block.const"
+      if [[ `grep -c "^$ip|${BLOCK_CALLER}$" "$M_TEMP/ip_block.const"` -eq 0 ]] ; then
+        echo "$ip|$BLOCK_CALLER" >> "$M_TEMP/ip_block.const"
         $IPT -A M_IPBLOCK_CONST -s $ip $method
-        log "$ip blocked for ever"
+        log "$ip blocked for ever by $BLOCK_CALLER"
       else
         log "$ip found in $M_TEMP/ip_block.const, pls check your firewall"
       fi
     else
-      log "$ip :: blocking temporarily"
+      log "$ip :: blocking temporarily by $BLOCK_CALLER"
       $IPT -A M_IPBLOCK_TMP -s $ip $method
     fi
 
