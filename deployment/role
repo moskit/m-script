@@ -21,7 +21,7 @@ rpath="${rpath%/*}"
 #*/
 
 possible_commands="help list clone create edit show"
-possible_subcommands="list:metas,scripts,files edit:meta,script,file show:meta,script,file"
+possible_subcommands="list:metas,scripts,files,roles edit:meta,script,file show:meta,script,file"
 possible_options="role cluster flavor method all strip"
 
 printcol() {
@@ -166,6 +166,7 @@ case $command1 in
     case $command2 in
       metas)
         [ -z "$param1" ] && param1="$role"
+        [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "Meta"
@@ -200,6 +201,7 @@ case $command1 in
       ;;
       scripts)
         [ -z "$param1" ] && param1="$role"
+        [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "Script"
@@ -248,6 +250,7 @@ case $command1 in
       ;;
       files)
         [ -z "$param1" ] && param1="$role"
+        [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "File"
@@ -270,7 +273,7 @@ case $command1 in
           unset sci
         done
       ;;
-      *)
+      roles|'')
         COL=`tput cols 2>/dev/null`
         [ -n "$COL" ] && col=$((COL/3-4)) || col=${col-20}
         printcol "Role"
@@ -292,6 +295,9 @@ case $command1 in
           done
           [ -n "$r" ] && echo "$r"
         done
+      ;;
+      *)
+      echo -e "Usage: $rcommand list <metas|scripts|files|roles> <--all>\n"
       ;;
     esac
     ;;

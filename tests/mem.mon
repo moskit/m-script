@@ -49,7 +49,7 @@ rusedswap=`expr $rtotalswap - $rfreeswap`
 musedswap=`solve 2 "$mtotalswap - $mfreeswap"`
 rtotalmemfree=`expr $rfreeram + $rfreeswap`
 mtotalmemfree=`solve 2 "$rtotalmemfree / 1024"`
-rtotalprocess="$($PS axu | grep -vE "^USER|grep|ps" | wc -l)"
+rtotalprocess="$($PS axo pid | grep -vE "^USER|grep|ps" | wc -l)"
 rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
 
 echo
@@ -82,7 +82,7 @@ warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-echo "${warnind} 5 min load average is $x"
+echo "$warnind 5 min load average is $x"
 
 totalmemused=`solve 2 "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
 totalramused=`solve 2 "$ractiveram / $rtotalram * 100"`
@@ -95,7 +95,7 @@ warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-echo "${warnind} Free system memory is ${mtotalmemfree} MB, ${totalmemused}% used"
+echo "$warnind Free system memory is $mtotalmemfree MB, ${totalmemused}% used"
 
 y1="$(echo "$totalramused >= $RAM_WARN_1" | bc)"
 y2="$(echo "$totalramused >= $RAM_WARN_2" | bc)"
@@ -105,9 +105,9 @@ warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-echo "${warnind} Active memory is ${mactiveram} MB, ${totalramused}% of total RAM"
+echo "$warnind Active memory is $mactiveram MB, ${totalramused}% of total RAM"
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
 then
-  sqlite3 ${rpath}/../sysdata "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime=$ruptime, loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
+  sqlite3 "$rpath/../sysdata" "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime=$ruptime, loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi

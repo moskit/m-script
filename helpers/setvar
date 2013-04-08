@@ -2,12 +2,13 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/..")
 
 possible_options="help verbose debug ip cluster role flavor add uncomment"
 necessary_options=""
 
 IFS1=$IFS
-IFS='--'
+IFS='-'
 for s_option in "${@}"
 do
   found=false
@@ -24,7 +25,7 @@ do
     [ -z "$ARG" ] && ARG=$s_option && found=true
     ;;
   esac
-  for option in `echo $possible_options | sed 's/ /--/g'`; do
+  for option in `echo $possible_options | sed 's/ /-/g'`; do
     if [ "X$s_optname" == "X$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""
@@ -66,13 +67,39 @@ set_var() {
   fi
 }
 
-for conf in `grep -l "${s_var}=" ${rpath}/../conf/*.conf` ; do
-  printf "Found in $conf ...   "
-  set_var
-done
-for conf in `grep -l "${s_var}=" ${rpath}/../tests/*.conf` ; do
-  printf "Found in $conf ...   "
-  set_var
-done
+if [ `expr "$s_var" : ".*_[0-9]$"` -ne 0 ]; then
+  s_value3=`echo "$s_value" | cut -d',' -f3`
+  if [ -z "$s_value3" ]; then
+    echo -e "Syntax for non-indexed variable is:\n\nVAR=val1,val2,val3\n\n"
+    exit 1
+  else
+    s_value1=`echo "$s_value" | cut -d',' -f1`
+    s_value2=`echo "$s_value" | cut -d',' -f2`
+    nivar=$s_var
+  fi
+  for ((i=1; i<=3; i++)) ; do
+    s_var=${nivar}_$i
+    s_val=${s_value}$i
+    for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
+      echo -n "Found in $conf ...   "
+      set_var
+    done
+    for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
+      echo -n "Found in $conf ...   "
+      set_var
+    done
+  done
+else
+  for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
+    echo -n "Found in $conf ...   "
+    set_var
+  done
+  for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
+    echo -n "Found in $conf ...   "
+    set_var
+  done
+fi
+
+
 
 
