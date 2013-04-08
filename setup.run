@@ -195,11 +195,11 @@ then
   fi
   if [ `grep -c "^g " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
-    echo "g ${fpath}/conf/htaccess" >> "$rpath/conf/mongoose.conf"
+    echo "g $fpath/conf/htaccess" >> "$rpath/conf/mongoose.conf"
   fi
   if [ `grep -c "^r " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
-    echo "r ${fpath}/www" >> "$rpath/conf/mongoose.conf"
+    echo "r $fpath/www" >> "$rpath/conf/mongoose.conf"
   fi
   echo
   echo "You may want to adjust access settings for the web interface."
@@ -255,7 +255,7 @@ then
   fi
 fi
 
-if [ -z "${SQLITE}" ]
+if [ -z "$SQLITE" ]
 then
   if [ -z "$defopt" ] ; then
     echo
@@ -368,7 +368,6 @@ if [ `echo $bootmon | grep -c -i "^y"` -ne 0 ]
 then
 if [ -n "`which insserv 2>/dev/null`" ] ; then
   echo "insserv is found, putting LSB headers override to /etc/insserv/overrides/monitorload.run"
-  echo "If you see insserv errors below related to monitorload init script, you'll have to setup boot script manually, sorry."
   cat > /etc/insserv/overrides/monitorload.run << "EOF"
 ### BEGIN INIT INFO
 # Provides:          monitorload

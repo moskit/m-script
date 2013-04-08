@@ -4,15 +4,15 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/..")
 
-possible_options="help verbose debug ip cluster role flavor add uncomment"
+possible_options="help add uncomment"
 necessary_options=""
 
 IFS1=$IFS
 IFS='-'
-for s_option in "${@}"
+for s_option in $@
 do
   found=false
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
@@ -61,13 +61,13 @@ set_var() {
     sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=&|g" "$conf" && echo "uncommented"
   fi
   if [ -n "$add" ] ; then
-    sed -i "s|${s_var}=\(.*\)|${s_var}=&,${s_value}|g" "$conf" && echo "added"
+    sed -i "s|${s_var}=\(.*\)|${s_var}=&,${s_val}|g" "$conf" && echo "added"
   else
-    sed -i "s|${s_var}=.*|${s_var}=${s_value}|g" "$conf" && echo "changed"
+    sed -i "s|${s_var}=.*|${s_var}=${s_val}|g" "$conf" && echo "changed"
   fi
 }
 
-if [ `expr "$s_var" : ".*_[0-9]$"` -ne 0 ]; then
+if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
   s_value3=`echo "$s_value" | cut -d',' -f3`
   if [ -z "$s_value3" ]; then
     echo -e "Syntax for non-indexed variable is:\n\nVAR=val1,val2,val3\n\n"
@@ -79,7 +79,7 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -ne 0 ]; then
   fi
   for ((i=1; i<=3; i++)) ; do
     s_var=${nivar}_$i
-    s_val=${s_value}$i
+    s_val=`eval "echo \\$s_value$i"`
     for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
       echo -n "Found in $conf ...   "
       set_var
@@ -90,6 +90,7 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -ne 0 ]; then
     done
   done
 else
+  s_val=$s_value
   for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
     echo -n "Found in $conf ...   "
     set_var
