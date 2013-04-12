@@ -139,10 +139,10 @@ possible_options="cluster help region verbose debug flavor role ip test dry clou
 
 IFS1=$IFS
 IFS='-'
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=false
-  case ${s_option} in
+  case "$s_option" in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
@@ -156,7 +156,7 @@ do
     exit 1
     ;;
   *)
-    [ -z "$from" ] && from=${s_option} || to=${s_option}
+    [ -z "$from" ] && from="$s_option" || to="$s_option"
     shift
     ;;
   esac
@@ -203,22 +203,22 @@ fi
 
 [ -z "$from" -o -z "$to" ] && echo "Usage: ${0##*/} <options> <local path> <remote path>" && exit 1
 
-source "${rpath}/../conf/mon.conf"
-source "${rpath}/../conf/deployment.conf"
-source "${rpath}/../conf/cloud.conf"
+source "$rpath/../conf/mon.conf"
+source "$rpath/../conf/deployment.conf"
+source "$rpath/../conf/cloud.conf"
 [ -n "$debug" ] && verbose="yes"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-[ -n "$M_ROOT" ] || M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
+[ -n "$M_ROOT" ] || M_ROOT=$(cd "$rpath/../" && pwd)
+export PATH="$M_ROOT/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-install -d ${M_TEMP}/deployment/
+install -d "$M_TEMP/deployment/"
 IFS1=$IFS
 IFS='
 '
 
-[ -z "$role" ] && [ -n "$cluster" ] && role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
+[ -z "$role" ] && [ -n "$cluster" ] && role=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f10`
 if [ -z "$cluster" ] ; then
   if [ -z "$role" ] ; then
     if [ -n "$M_ROLE" ] ; then

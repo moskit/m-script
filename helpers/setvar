@@ -9,7 +9,7 @@ necessary_options=""
 
 IFS1=$IFS
 IFS='-'
-for s_option in $@
+for s_option in "$@"
 do
   found=false
   case $s_option in
@@ -22,19 +22,21 @@ do
     s_optarg='yes' 
     ;;
   *)
-    [ -z "$ARG" ] && ARG=$s_option && found=true
+    [ -z "$ARG" ] && ARG="$s_option" && found=true && unset s_optname
     ;;
   esac
-  for option in `echo $possible_options | sed 's/ /-/g'`; do
-    if [ "X$s_optname" == "X$option" ]; then
-      if [ -n "$s_optarg" ]; then
-        eval "$s_optname=\"$s_optarg\""
-      else
-        [ -z "$(eval echo \$$option)" ] && eval "$option="
+  if [ -n "$s_optname" ]; then
+    for option in `echo $possible_options | sed 's/ /-/g'`; do
+      if [ "X$s_optname" == "X$option" ]; then
+        if [ -n "$s_optarg" ]; then
+          eval "$s_optname=\"$s_optarg\""
+        else
+          [ -z "$(eval echo \$$option)" ] && eval "$option="
+        fi
+        found=true
       fi
-      found=true
-    fi
-  done
+    done
+  fi
   if ! $found; then 
     echo "Unknown option: $s_optname"
     exit 1
@@ -58,66 +60,80 @@ s_value=`expr "X$ARG" : 'X[^=]*=\(.*\)'`
 
 set_var() {
   if [ -n "$uncomment" ] ; then
-    sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=&|g" "$conf" && echo "uncommented"
+    sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=&|g" "$conf" && echo "uncommented" && return 0
   fi
   if [ -n "$add" ] ; then
-    sed -i "s|${s_var}=\(.*\)|${s_var}=&,${s_val}|g" "$conf" && echo "added"
+    sed -i "s|${s_var}=\(.*\)|${s_var}=&,${s_val}|g" "$conf" && echo "added" && return 0
   else
-    sed -i "s|${s_var}=.*|${s_var}=${s_val}|g" "$conf" && echo "changed"
+    sed -i "s|${s_var}=.*|${s_var}=${s_val}|g" "$conf" && echo "changed" && return 0
   fi
+  return 1
 }
 
 set_var_table() {
   [ -z "$table" ] && echo "It's a table config, so it requires the option --table to be set" && exit 1
   [ `expr "$table" : ".*[^0-9]"` -ne 0 ] && echo "Option --table requires a number" && exit 1
   [ $table -le 1 ] && echo "Option --table can't be less than 2" && exit 1
-  columns=$(for ((i=1; i<$table; i++)); do echo -n "${i},"
+  columns=$(for ((i=1; i<$table; i++)); do echo -n "${i},"; done)
   columns="-f${columns%,}"
-  confline=`grep "^$s_var|" "$conf" | tail -1`
+  confline=`grep "^$nivar|" "$conf" | tail -1`
   varline=`echo "$confline" | cut -d'|' $columns`
   valline=$(for val in `echo "$s_val" | tr ',' ' '`; do echo -n "$val|"; done)
   valline=${valline%|}
-  sed -i "/^$s_var|/s/$varline|.*/$varline|$valline/" "$conf"
+  sed -i "/^$nivar|/s/$varline|.*/$varline|$valline/" "$conf" && echo "changed" && return 0
+  return 1
 }
 
+commonvar=false
 if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
   s_value3=`echo "$s_value" | cut -d',' -f3`
-  if [ -z "$s_value3" ]; then
-    echo -e "Syntax for non-indexed variable is:\n\nVAR=val1,val2,val3\n\n"
-    exit 1
+  if [ -z "$s_value3" -o -n "$table" ]; then
+    commonvar=true
   else
     s_value1=`echo "$s_value" | cut -d',' -f1`
     s_value2=`echo "$s_value" | cut -d',' -f2`
     nivar=$s_var
   fi
-  for ((i=1; i<=3; i++)) ; do
-    s_var=${nivar}_$i
-    s_val=`eval "echo \\$s_value$i"`
+  if $commonvar ; then
     for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
       echo -n "Found in $conf ...   "
-      set_var
+      set_var || exit 1
     done
     for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
       echo -n "Found in $conf ...   "
-      set_var
+      set_var || exit 1
     done
     for conf in `grep -l "^${s_var}|" "$M_ROOT/tests"/*.conf` ; do
       echo -n "Found in $conf ...   "
-      set_var_table
+      set_var_table || exit 1
     done
-  done
+  else
+    for ((i=1; i<=3; i++)) ; do
+      s_var=${nivar}_$i
+      s_val=`eval "echo \\$s_value$i"`
+      for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
+        echo -n "Found in $conf ...   "
+        set_var || exit 1
+      done
+      for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
+        echo -n "Found in $conf ...   "
+        set_var || exit 1
+      done
+    done
+  fi
+
 else
   s_val=$s_value
   for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
     echo -n "Found in $conf ...   "
-    set_var
+    set_var || exit 1
   done
   for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
     echo -n "Found in $conf ...   "
-    set_var
+    set_var || exit 1
   done
 fi
 
-
+exit 0
 
 
