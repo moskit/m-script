@@ -86,7 +86,7 @@ set_var_table() {
 
 commonvar=false
 if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
-  s_value3=`echo "$s_value" | cut -d',' -f3`
+  s_value3=`echo "$s_value" | cut -s -d',' -f3`
   if [ -z "$s_value3" -o -n "$table" ]; then
     commonvar=true
   else
