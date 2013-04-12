@@ -76,11 +76,11 @@ set_var_table() {
   [ $table -le 1 ] && echo "Option --table can't be less than 2" && exit 1
   columns=$(for ((i=1; i<$table; i++)); do echo -n "${i},"; done)
   columns="-f${columns%,}"
-  confline=`grep "^$nivar|" "$conf" | tail -1`
+  confline=`grep "^$s_var|" "$conf" | tail -1`
   varline=`echo "$confline" | cut -d'|' $columns`
-  valline=$(for val in `echo "$s_val" | tr ',' ' '`; do echo -n "$val|"; done)
+  valline=$(for val in `echo "$s_value" | tr ',' ' '`; do echo -n "$val|"; done)
   valline=${valline%|}
-  sed -i "/^$nivar|/s/$varline|.*/$varline|$valline/" "$conf" && echo "changed" && return 0
+  sed -i "/^$s_var|/s/$varline|.*/$varline|$valline/" "$conf" && echo "changed" && return 0
   return 1
 }
 
