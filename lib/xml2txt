@@ -19,11 +19,12 @@ declare -i i
 i=0
 declare -a branch
 declare -a index
+debug=false
 
 addnode() {
   nd=$1
   [[ "$nd" =~ ^\? ]] && return 0
-#echo "=== ${nd}"
+  $debug && echo "=== $nd"
   index[$i]="$nd"
   unset ndcont
   if [ $i -gt 1 ] ; then
@@ -32,20 +33,20 @@ addnode() {
     fi
   fi
   n=${#branch[*]}
-  #echo "$i | $n  --  $ndcont"
+  $debug && echo "$i | $n  --  $ndcont"
   if [ -n "$ndcont" ] ; then
     for ((l=0; l<$n; l++)) ; do
       if [ $l -eq `expr $n - 1` ] ; then
-        printf "${branch[$l]}\n"
+        echo "${branch[$l]}"
       elif [ $l -eq `expr $n - 2` ] ; then
-        printf "${branch[$l]% *} "
+        echo -n "${branch[$l]}|"
       else
-        printf "${branch[$l]% *}_"
+        echo -n "${branch[$l]}_"
       fi
     done
     unset branch[$n-1]; unset branch[$n-2]
   else
-    branch[$n]=$nd
+    branch[$n]="$nd"
     for ((l=0; l<=$n; l++)) ; do
       if [ "X${branch[$l]}" == "X${nd#/}" ] ; then
         for ((m=0; m<`expr $n - $l`; m++)) ; do unset branch[$l+$m+1] ; done
@@ -55,7 +56,7 @@ addnode() {
   i+=1
 }
 
-( IFS='<>' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read node ; do ([ "$node" != "" ] && [ "$node" != "|" ]) && addnode "$node"; done
+( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ ) | while read node ; do ([ -n "$node" ] && [ "$node" != "|" ]) && addnode "$node"; done
 
 unset branch index ndcont cont i LINE node
 

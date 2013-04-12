@@ -148,7 +148,7 @@ done
 
 if [ -n "$role" ]; then
   if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
-    echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly. Add a cluster for this role to $M_ROOT/conf/clusters.conf if you want to avoid this."
+    echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
   fi
 fi
 

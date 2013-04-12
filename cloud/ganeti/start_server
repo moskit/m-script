@@ -32,7 +32,7 @@ necessary_options="cluster"
 LOG="$M_ROOT/logs/cloud.log"
 SSHK=`which ssh-keygen 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//' | sed 's/ --/|/g'`
 
 IFS1=$IFS
 IFS='|'
@@ -57,7 +57,7 @@ for option in `echo $necessary_options | sed 's/,/ /g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: $missing_options not found"
   exit 1
 fi
 
@@ -123,18 +123,18 @@ wait_ready() {
 }
 
 request() {
-  node=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f3`
-  ios=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5`
-  iparams=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f6`
-  sed -i "/^${ip}/d" /etc/hosts
+  node=`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f3`
+  ios=`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f5`
+  iparams=`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6`
+  sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
   #echo "$GNTI add -n $node -o $iparams $name"
   $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1
 }
 
 find_idev() {
-  if [ "`cat "${M_TEMP}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
-    link=`cat "${M_TEMP}/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
+  if [ "`cat "$M_TEMP/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
+    link=`cat "$M_TEMP/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
   fi
   $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
 }
@@ -143,7 +143,7 @@ prepare_file() {
 IFS1=$IFS
 IFS='
 '
-  rm -f "${2}" "${2}.orig"
+  rm -f "$2" "${2}.orig"
 
   cat "$1" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
@@ -300,10 +300,10 @@ if [ -z "$test" ]; then
   fi
 
   # adding to the list
-  $GNTI add-tags $name cluster:$cluster
+  $GNTI add-tags $name "cluster:$cluster"
   if [ $? -eq 0 ]; then
     log "Tag cluster:$cluster added"
-    "$rpath/show_servers" --update_servers_list
+    "$rpath"/show_servers --update_servers_list
   else
     log "Adding tag cluster:$cluster failed"
     echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"

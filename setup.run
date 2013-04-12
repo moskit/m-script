@@ -312,7 +312,7 @@ then
     fi
   fi
   SQLITE=`which sqlite3 2>/dev/null`
-  create_db
+  createdb
 else
   if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` -ne 0 ]
   then
@@ -328,7 +328,7 @@ chmod 600 "$rpath/conf/backup.conf"
 chown -R root:root "$rpath"
 install -d "$rpath/standalone/rc"
 install -m 700 -d "$rpath/keys"
-install -d "$rpath/logs"
+install -d "$rpath/logs" "$rpath/deployment/roles"
 echo -e "$fpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/actions.allowed.list"
 "$rpath"/helpers/init_rc
 "$rpath"/fixports.run

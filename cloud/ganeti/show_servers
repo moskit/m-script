@@ -17,7 +17,8 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-source "${rpath}/../../conf/mon.conf"
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "$M_ROOT/conf/mon.conf"
 M_TEMP=$M_TEMP/cloud/ganeti
 install -d $M_TEMP
 
@@ -54,12 +55,12 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: $missing_options not found"
   exit 1
 fi
 
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
-[ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp
+[ -n "$forceupdate" ] && rm -f "$M_TEMP"/${rcommand}.resp
 [ -z "$state" -a -n "$status" ] && state=$status
 [ -z "$state" ] && state="running"
 [ -n "$filter" ] && filter="${filter},nic_ips,cluster"
@@ -68,16 +69,16 @@ PARS="name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,ta
 PARR=( `echo "$PARS" | tr './' '_' | tr ',' ' '` )
 
 request() {
-  $GNTI list --separator='|' --no-headers -o $PARS > "${M_TEMP}/${rcommand}.resp"
+  $GNTI list --separator='|' --no-headers -o $PARS > "$M_TEMP/${rcommand}.resp"
 }
 
 list_servers() {
   IFS1=$IFS
   IFS='
 '
-  if [ -f "${M_TEMP}/${rcommand}.resp" ] ; then
+  if [ -f "$M_TEMP/${rcommand}.resp" ] ; then
   
-    for LINE in `cat "${M_TEMP}/${rcommand}.resp"` ; do
+    for LINE in `cat "$M_TEMP/${rcommand}.resp"` ; do
       
       LARR=( `echo -e "$LINE" | sed 's/^/"/;s/$/"/' | sed 's/|/"\n"/g'` )
       
@@ -96,9 +97,9 @@ list_servers() {
       [ -z "$snodes" ] && snodes="none"
       for ip in `echo -e "$nic_ips" | tr ',' '\n'` ; do
         if [ -z "$icluster" ] ; then
-          icluster=`grep ^$ip\| "${rpath}/../../servers.list" | cut -d'|' -f5` && break
+          icluster=`grep ^$ip\| "$M_ROOT/servers.list" | cut -d'|' -f5` && break
         else
-          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] && unset icluster
+          [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && unset icluster
         fi
       done
       
@@ -112,13 +113,13 @@ list_servers() {
           [ "X$state" != "X$status" ] && [ "X$state" != "Xall" ] && continue
           case $view in
             list)
-              echo "Name: $name  State: $status  IPs: $nic_ips  Size: ${be_vcpus}/${be_memory}/${disk_sizes}  OS: $os  Nodes: ${pnode}+${snodes}  Started: $ctime"
+              echo "Name: $name  State: $status  IPs: $nic_ips  Size: $be_vcpus/$be_memory/$disk_sizes  OS: $os  Nodes: ${pnode}+${snodes}  Started: $ctime"
               ;;
             table)
-              echo "${name}|${name}|${status}||${nic_ips}|${icluster}|${os}|${be_vcpus}/${be_memory}/${disk_sizes}|${pnode}+${snodes}|$ctime"
+              echo "$name|$name|$status||$nic_ips|$icluster|$os|$be_vcpus/$be_memory/$disk_sizes|${pnode}+${snodes}|$ctime"
               ;;
             column)
-              echo -e "Name: $name\nState: $status\nIPs: $nic_ips\nSize: ${be_vcpus}/${be_memory}/${disk_sizes}\nOS: $os\nNodes: ${pnode}+${snodes}\nStarted: $ctime"
+              echo -e "Name: $name\nState: $status\nIPs: $nic_ips\nSize: $be_vcpus/$be_memory/$disk_sizes\nOS: $os\nNodes: ${pnode}+${snodes}\nStarted: $ctime"
               ;;
             none)
               ;;
@@ -127,9 +128,9 @@ list_servers() {
               #echo "Server ID: $id"
               echo "Server name: $name    Cluster: $icluster"
               echo "IPs: $nic_ips"
-              echo "Server OS: $os  Server size: ${be_vcpus}/${be_memory}/${disk_sizes}"
+              echo "Server OS: $os  Server size: $be_vcpus/$be_memory/$disk_sizes"
               echo "Status: $status  Started: $ctime"
-              echo "Nodes: primary: ${pnode} secondary: ${snodes}"
+              echo "Nodes: primary: $pnode secondary: $snodes"
               echo
               ;;
           esac
@@ -137,13 +138,13 @@ list_servers() {
         fi
       else
         if [ -n "$icluster" ] ; then
-          if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
-            key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
-            sed -i /^$nic_ip_0\|/d "${rpath}/../../servers.list"
-            echo "${nic_ip_0}|${key}|${pnode}|${name}|${icluster}" >> "${rpath}/../../servers.list"
+          if [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
+            sed -i /^$nic_ip_0\|/d "$M_ROOT/servers.list"
+            echo "$nic_ip_0|$key|$pnode|$name|$icluster" >> "$M_ROOT/servers.list"
             usedips=`$GNTI list -o nic.ip/0`
-            for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-              [ `echo $usedips | tr ' ' '\n' | grep -c ^${listip}$` -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+            for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+              [ `echo $usedips | tr ' ' '\n' | grep -c ^${listip}$` -eq 0 ] && sed -i /^$listip\|/d "$M_ROOT/servers.list"
             done
             
           fi

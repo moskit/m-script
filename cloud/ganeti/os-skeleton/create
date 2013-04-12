@@ -39,12 +39,12 @@ fi
 #format_disk0 $blockdev
 
 # deploying something like a windows image, skip the rest
-if [ "${NOMOUNT}" = "yes" ] ; then
+if [ "$NOMOUNT" = "yes" ] ; then
   cleanup
   exit 0
 fi
 
-${QEMU_IMG} convert ${IMAGE_FILE} -O host_device ${blockdev} > /dev/null
+$QEMU_IMG convert "$IMAGE_FILE" -O host_device "$blockdev" > /dev/null
 
 filesystem_dev=$(map_disk0 $blockdev)
 CLEANUP+=("unmap_disk0 $blockdev")
@@ -70,7 +70,7 @@ UUID=$root_uuid   /               ext3    defaults        0       1
 proc              /proc           proc    defaults        0       0
 EOF
 
-if [ "${INSTANCE_HV_serial_console}" = "True" ] ; then
+if [ "$INSTANCE_HV_serial_console" = "True" ] ; then
   setup_console $TARGET
 fi
 

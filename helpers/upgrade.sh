@@ -36,7 +36,7 @@ if [ "X$GIT" == "X" ]; then
     mv /tmp/m_script.$$/m/* /tmp/m_script/.update
   fi
 else
-  $GIT clone --depth 1 git://igorsimonov.com/m_script /tmp/m_script/.update
+  $GIT clone --depth 1 git://igorsimonov.com/m_script /tmp/m_script/.update || exit 1
   gitts=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
 fi
 [ "X$1" == "Xfull" ] && fullupgrade=true || fullupgrade=false

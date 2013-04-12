@@ -4,7 +4,7 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/..")
 
-possible_options="help add uncomment"
+possible_options="help add uncomment table"
 necessary_options=""
 
 IFS1=$IFS
@@ -67,6 +67,19 @@ set_var() {
   fi
 }
 
+set_var_table() {
+  [ -z "$table" ] && echo "It's a table config, so it requires the option --table to be set" && exit 1
+  [ `expr "$table" : ".*[^0-9]"` -ne 0 ] && echo "Option --table requires a number" && exit 1
+  [ $table -le 1 ] && echo "Option --table can't be less than 2" && exit 1
+  columns=$(for ((i=1; i<$table; i++)); do echo -n "${i},"
+  columns="-f${columns%,}"
+  confline=`grep "^$s_var|" "$conf" | tail -1`
+  varline=`echo "$confline" | cut -d'|' $columns`
+  valline=$(for val in `echo "$s_val" | tr ',' ' '`; do echo -n "$val|"; done)
+  valline=${valline%|}
+  sed -i "/^$s_var|/s/$varline|.*/$varline|$valline/" "$conf"
+}
+
 if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
   s_value3=`echo "$s_value" | cut -d',' -f3`
   if [ -z "$s_value3" ]; then
@@ -87,6 +100,10 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
     for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
       echo -n "Found in $conf ...   "
       set_var
+    done
+    for conf in `grep -l "^${s_var}|" "$M_ROOT/tests"/*.conf` ; do
+      echo -n "Found in $conf ...   "
+      set_var_table
     done
   done
 else

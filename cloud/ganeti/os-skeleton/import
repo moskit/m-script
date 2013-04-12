@@ -36,7 +36,7 @@ CLEANUP+=("rmdir $TARGET")
 DUMPDIR=`mktemp -d` || exit 1
 CLEANUP+=("rm -rf $DUMPDIR")
 
-if [ ! "${NOMOUNT}" = "yes" ] ; then
+if [ ! "$NOMOUNT" = "yes" ] ; then
     format_disk0 $blockdev
     filesystem_dev=$(map_disk0 $blockdev)
     CLEANUP+=("unmap_disk0 $blockdev")
@@ -53,23 +53,23 @@ if [ ! "${NOMOUNT}" = "yes" ] ; then
 fi
 
 # import dumps from tar file
-( cd $DUMPDIR; tar -xf - )
+( cd "$DUMPDIR"; tar -xf - )
 
-if [ "${NOMOUNT}" = "yes" ] ; then
-    ( $QEMU_IMG convert ${DUMPDIR}/disk.img -O host_device ${blockdev} )
+if [ "$NOMOUNT" = "yes" ] ; then
+    ( $QEMU_IMG convert "$DUMPDIR/disk.img" -O host_device "$blockdev" )
 else
-    ( cd $TARGET ; restore -r -y -f ${DUMPDIR}/root.dump )
-    if [ -n "${boot_dev}" ] ; then
-        ( cd ${TARGET}/boot ; restore -r -y -f ${DUMPDIR}/boot.dump )
+    ( cd "$TARGET" ; restore -r -y -f "$DUMPDIR/root.dump" )
+    if [ -n "$boot_dev" ] ; then
+        ( cd "$TARGET/boot" ; restore -r -y -f "$DUMPDIR/boot.dump" )
     fi
 
-    setup_fstab $TARGET
+    setup_fstab "$TARGET"
 
-    if [ "${INSTANCE_HV_serial_console}" = "True" ] ; then
-        setup_console $TARGET
+    if [ "$INSTANCE_HV_serial_console" = "True" ] ; then
+        setup_console "$TARGET"
     fi
 
-    rm -f $TARGET/etc/udev/rules.d/z*_persistent-net.rules
+    rm -f "$TARGET/etc/udev/rules.d"/z*_persistent-net.rules
 
     if [ -n "$CUSTOMIZE_DIR" -a -d "$CUSTOMIZE_DIR" -a -x "$CUSTOMIZE_DIR/grub" ] ; then
         TARGET=$TARGET
@@ -79,7 +79,7 @@ else
         IMPORT_SCRIPT="1"
         export TARGET SUITE BLOCKDEV ROOT_DEV BOOT_DEV IMPORT_SCRIPT
         # Install grub since we're not deploying via qemu-img
-        ${CUSTOMIZE_DIR}/grub
+        "$CUSTOMIZE_DIR"/grub
     fi
 fi
 
