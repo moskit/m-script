@@ -161,9 +161,9 @@ if [ "X$command" != "X" ] ; then
       if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
         [ -z "$nolocalhost" ] && eval $command
       else
-        KEY=`find_key server $server`
+        KEY=`find_key server $IP`
         [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
-        $SSH -i "$M_ROOT/keys/$KEY" -p $SSHPORT $IP "(test -e \"$M_ROOT_REMOTE/m.rc\" \&\& source \"$M_ROOT_REMOTE/m.rc\" \; $command)"
+        $SSH -i "$KEY" -p $SSHPORT $IP \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
       fi
       n+=1
     done
