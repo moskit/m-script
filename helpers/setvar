@@ -95,6 +95,7 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
     nivar=$s_var
   fi
   if $commonvar ; then
+    s_val=$s_value
     for conf in `grep -l "${s_var}=" "$M_ROOT/conf"/*.conf` ; do
       echo -n "Found in $conf ...   "
       set_var || exit 1
