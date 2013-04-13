@@ -17,7 +17,8 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
 STAT=`which stat 2>/dev/null`
 LOG="$M_ROOT/logs/dashboard.log"
@@ -27,7 +28,7 @@ possible_options="type css folder"
 necessary_options="type"
 [ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 IFS1=$IFS
-IFS='--'
+IFS='-'
 for s_option in "${@}"
 do
   found=0
@@ -47,7 +48,7 @@ do
     ;;
   esac
 
-  for option in `echo $possible_options | sed 's/ /--/g'`; do 
+  for option in `echo $possible_options | sed 's/ /-/g'`; do 
     [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
@@ -72,30 +73,30 @@ log() {
 }
 
 [ -z "$folder" ] && folder="servers/localhost"
-[ -d "${rpath}/../www/$folder" ] || install -d "${rpath}/../www/$folder"
-source "${rpath}/../conf/dash.conf"
-source "${rpath}/../conf/mon.conf"
+[ -d "$M_ROOT/www/$folder" ] || install -d "$M_ROOT/www/$folder"
+source "$M_ROOT/conf/dash.conf"
+source "$M_ROOT/conf/mon.conf"
 [ -z "$freqdef" ] && freqdef=$FREQ
 
-textfile="${s_param}"
+textfile="$s_param"
 case $type in
   dash)
     id="`date +"%m.%d_%H:%M:%S"`"
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
-    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk ${css}\" onclick=\"showData('${id}_${serverid}','/${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "${rpath}/../www/$folder/dash.html" 2>>"$rpath/../logs/dashboard.log"
-    "${rpath}/../lib/txt2html" "$textfile" >> "${rpath}/../www/$folder/${id}_${serverid}.html"
-    exc=`cat "${rpath}/../www/$folder/dash.html" | wc -l` 2>>"$rpath/../logs/dashboard.log"
+    echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk $css\" onclick=\"showData('${id}_${serverid}','/${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
+    "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
+    exc=`cat "$M_ROOT/www/$folder/dash.html" | wc -l` 2>>"$M_ROOT/logs/dashboard.log"
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
       for ((i=1; i<=${exc}; i++)) ; do
-        sed -i '1d' "${rpath}/../www/$folder/dash.html" 2>>"$rpath/../logs/dashboard.log"
+        sed -i '1d' "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
       done
     fi
-    oldestchunk=`head -1 "${rpath}/../www/$folder/dash.html"`
+    oldestchunk=`head -1 "$M_ROOT/www/$folder/dash.html"`
     oldestfile="`expr "$oldestchunk" : '<div id=\"\(.*\)\" title'`".html
     badluck=false # we are lucky by default
-    if [ -f "${rpath}/../www/$folder/$oldestfile" ]; then
-      oldestfiledate=`$STAT -c "%z" "${rpath}/../www/$folder/$oldestfile"`
+    if [ -f "$M_ROOT/www/$folder/$oldestfile" ]; then
+      oldestfiledate=`$STAT -c "%z" "$M_ROOT/www/$folder/$oldestfile"`
       # sanitizing, just in case
       oldestfiledate=`date -d "$oldestfiledate" +"%s" 2>/dev/null`
       [ -z "$oldestfiledate" ] && badluck=true
@@ -111,13 +112,13 @@ case $type in
       timerange=`expr \( $timenow - $oldestfiledate \) / 60 + 1`
     fi
     if [ `expr "$timerange" : ".*[^0-9]"` -eq 0 ]; then
-      find "${rpath}/../www/$folder/" -type f -mmin +$timerange -exec rm '{}' \;
+      find "$M_ROOT/www/$folder/" -type f -mmin +$timerange -exec rm '{}' \;
     else
-      echo "ERROR: old files not removed from ${rpath}/../www/$folder" >> "$rpath/../logs/dashboard.log"
+      echo "ERROR: old files not removed from $M_ROOT/www/$folder" >> "$M_ROOT/logs/dashboard.log"
     fi
     ;;
   report)
-    "${rpath}/../lib/txt2html" "$textfile" >> "${rpath}/../www/$folder/report.html" 2>>"$rpath/../logs/dashboard.log"
+    "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/report.html" 2>>"$M_ROOT/logs/dashboard.log"
     ;;
 esac
 IFS=$IFS1

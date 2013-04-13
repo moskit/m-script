@@ -63,9 +63,9 @@ set_var() {
     sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=&|g" "$conf" && echo "uncommented" && return 0
   fi
   if [ -n "$add" ] ; then
-    sed -i "s|${s_var}=\(.*\)|${s_var}=&,${s_val}|g" "$conf" && echo "added" && return 0
+    sed -i "s|^[[:space:]]*${s_var}=\(.*\)|${s_var}=&,${s_val}|g" "$conf" && echo "added" && return 0
   else
-    sed -i "s|${s_var}=.*|${s_var}=${s_val}|g" "$conf" && echo "changed" && return 0
+    sed -i "s|^[[:space:]]*${s_var}=.*|${s_var}=${s_val}|g" "$conf" && echo "changed" && return 0
   fi
   return 1
 }
