@@ -113,7 +113,7 @@ fi
 if $nextkey ; then
   if [ -f "$USERKEY2" ]; then
     log "   ...$USERKEY2"
-    $SSH -i "$USERKEY2" "/bin/ls \>/dev/null"
+    $SSH -i "$USERKEY2" "echo \>/dev/null"
     if [ $? -ne 255 ]; then
       echo "$USERKEY2"
       exit 0

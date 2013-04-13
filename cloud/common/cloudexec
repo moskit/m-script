@@ -20,8 +20,8 @@ rpath=${0%/*}
 #*/
 
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
-source "${rpath}/../../conf/mon.conf" || exit 99
-source "${rpath}/../../conf/cloud.conf" || exit 99
+source "$M_ROOT/conf/mon.conf" || exit 99
+source "$M_ROOT/conf/cloud.conf" || exit 99
 
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
@@ -42,7 +42,7 @@ do
     ;;
   --*)
     if [ "$commflag" == "1" ] ; then
-      command="$command ${s_option}"
+      command="$command $s_option"
     else
       s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
       s_optarg='yes'
@@ -50,19 +50,19 @@ do
     ;;
   *=*)
     commflag=1
-    command="$command ${s_option}"
+    command="$command $s_option"
     ;;
   *)
     if [ "$commflag" == "1" ] ; then
-      command="$command ${s_option}"
+      command="$command $s_option"
     else
       commflag=1
-      command="${s_option}"
+      command="$s_option"
     fi
     ;;
   esac
   for option in `echo $possible_options`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg"
   done
 done
 if [ "X$help" == "Xyes" ] ; then
@@ -103,18 +103,18 @@ fi
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 if [ -n "$ip" ] ; then
   cluster= ; region=
-  if [ `grep -c "^$ip|" "${rpath}/../../servers.list"` -eq 0 ] ; then
+  if [ `grep -c "^$ip|" "$M_ROOT/servers.list"` -eq 0 ] ; then
     # if name passed as ip
-    if [ `cat "${rpath}/../../servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+    if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
       echo "Unable to find $ip in servers.list"
       exit 1
     else
-      ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+      ip=`cat "$M_ROOT/servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
       [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
     fi
   else
     # cluster is still needed for some cases
-    server=`grep "^$ip|" "${rpath}/../../servers.list"`
+    server=`grep "^$ip|" "$M_ROOT/servers.list"`
     cluster=`echo "$server" | cut -d'|' -f5`
     region=`echo "$server" | cut -d'|' -f3`
   fi
@@ -123,7 +123,7 @@ fi
 [ -n "$all" ] && cluster=all
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "No clusters found" && exit 1
-[ "x$cluster" == "xall" ] && clusters=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+[ "x$cluster" == "xall" ] && clusters=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
 declare -i n
 IFS1=$IFS
@@ -131,16 +131,16 @@ IFS='
 '
 [ -n "$verbose" ] && echo "### Command: $command"
 if [ "X$command" != "X" ] ; then
-  for icluster in `printf "${clusters}\n"|sed 's|,|\n|g'` ; do
+  for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
     n=0
-    unset CLUSTER KEY REGION NAME
-    for server in `cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+    unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
+    M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
+    for server in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
       [ -n "$limit" ] && [[ $n -ge $limit ]] && break
       IP=${server%%|*}
       if [ -n "$ip" ] ; then
         [ "X$ip" == "X$IP" ] || continue
       fi
-      KEY=`echo $server | cut -d'|' -f2`
       if [ -n "$region" ] ; then
         REGION=`echo $server | cut -d'|' -f3`
         [ "X$REGION" == "X$region" ] || continue
@@ -161,12 +161,12 @@ if [ "X$command" != "X" ] ; then
       if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
         [ -z "$nolocalhost" ] && eval $command
       else
-        [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
-        [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
-        $SSH -i "${rpath}/../../keys/${KEY}" -p $SSHPORT $IP "$command"
+        KEY=`find_key server $server`
+        [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
+        $SSH -i "$M_ROOT/keys/$KEY" -p $SSHPORT $IP "(test -e \"$M_ROOT_REMOTE/m.rc\" \&\& source \"$M_ROOT_REMOTE/m.rc\" \; $command)"
       fi
+      n+=1
     done
-    n+=1
   done
 fi
 IFS=$IFS1
