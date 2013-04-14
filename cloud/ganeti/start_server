@@ -198,6 +198,10 @@ $GNTC master-ping
 # If it's alive, we can get some info from it
 OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
+OSPATH=`echo "$OSPATH" | sed 's|^[[:space:]]*||;s|,[[:space:]]*|,|g'`
+for choice in `echo "$OSPATH" | tr ',' ' '` ; do
+  [ -d "$choice" ] && OSPATH=$choice && break
+done
 [ -z "$OSPATH" ] && OSPATH="$GANETI_FOLDERS_ROOT/os"
 # OS required for the new server
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
