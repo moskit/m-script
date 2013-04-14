@@ -186,6 +186,13 @@ res=`check_cluster_limit $verbose`
 
 thekey=`find_key cluster $cluster`
 [ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 188
+[ -f "$M_ROOT/keys/${thekey}.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$M_ROOT/keys/${thekey}.pem.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pem.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_dsa.pub
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
+[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
+[ -z "$PUBLIC_KEY" ] && log "No public key found. Tried $M_ROOT/keys/${thekey}.\*, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
@@ -209,7 +216,6 @@ else
 fi
 prepare_file "$M_ROOT/cloud/ganeti/os-skeleton/common.sh" "$OSPATH/$OSNAME/common.sh"
 
-# for the default bootstrap OS
 OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`
 
 [ -f "$OS_DEFAULT_CONF" ] && source "$OS_DEFAULT_CONF" && log "OS default configuration $OS_DEFAULT_CONF sourced" || log "OS default configuration $OS_DEFAULT_CONF not found"
