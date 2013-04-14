@@ -285,6 +285,7 @@ if [ -n "$newserver" ]; then
     log "initiating server start sequence"
     
     for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
+      [ $i -eq 0 ] || sleep $WAIT_BETWEEN_TRIES
       startserver $T
       if [[ `expr "$ip" : "[0-9]*\.[0-9.]*$"` -ne 0 ]]; then
         break
@@ -303,7 +304,7 @@ if [ -n "$newserver" ]; then
         log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
       fi
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
-      sleep $WAIT_BETWEEN_TRIES
+      echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
     [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 303
   else
@@ -422,7 +423,7 @@ else
 fi
 if [ -z "$list" ] ; then
   echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n"
-  # the best moment for this seems to be here
+  # the best place for this seems to be here
   [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30
   find "$WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
 fi
