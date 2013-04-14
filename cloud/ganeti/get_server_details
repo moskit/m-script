@@ -17,6 +17,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 possible_options="id name ip return verbose"
 necessary_options=""
@@ -51,10 +52,12 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source "${rpath}/../../conf/cloud.conf"
-source "${rpath}/../../conf/mon.conf"
+source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/ganeti"
 install -d "$M_TEMP"
+
+source "$M_ROOT/lib/cloud_functions.sh"
 
 request() {
 rm -f "$M_TEMP/${rcommand}.resp"
