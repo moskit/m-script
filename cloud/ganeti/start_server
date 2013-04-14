@@ -79,7 +79,7 @@ find_ip() {
   maxip=`cat "$M_ROOT/servers.list" | cut -d'|' -f1 | grep ^$class | sort | uniq | tail -1`
   maxip=${maxip##*.}
   if [ -n "$maxip" ]; then
-    [ "$maxip" == "254" ] && echo "No more IPs available!" && exit 1
+    [ "$maxip" == "254" ] && echo "No more IPs available!" && proper_exit 1 82
     echo "${class}.$((maxip+1))"
   else
     echo "${class}.2"
@@ -100,8 +100,8 @@ find_broadcast() {
 
 save_details() {
   [ -n "$1" ] && echo "Saving details..."
-  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "${rpath}/../ganeti.log"
-  echo "${ip}|${thekey}||${name}|${cluster}" >> "$M_ROOT/servers.list"
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "$rpath/../ganeti.log"
+  echo "$ip|$thekey||$name|$cluster" >> "$M_ROOT/servers.list"
   return 0
 }
 
@@ -114,7 +114,7 @@ wait_ready() {
     sleep $waitperiod
     [ -n "$1" ] && echo -n '.'
     "$rpath"/get_server_details --name=$name >/dev/null 2>&1
-    if [ `cat "${M_TEMP}/get_server_details.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
+    if [ `cat "$M_TEMP/get_server_details.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
       echo
       return 0
     fi
@@ -175,26 +175,21 @@ IFS='
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
 
+lock_cloudops || exit 10
 log "checking cluster $cluster limit"
 res=`check_cluster_limit $verbose`
-[[ $res -ne 0 ]] && exit 5
+[[ $res -ne 0 ]] && proper_exit 5 181
 [ -z "$name" ] && name=`generate_name` && log "name auto-generated: $name"
-[ -z "$name" ] && exit 6
+[ -z "$name" ] && proper_exit 6 183
 [ -z "$ip" ] && ip=`find_ip` && log "IP that will be used: $ip"
-[ -z "$ip" ] && exit 4
+[ -z "$ip" ] && proper_exit 4 185
 
-thekey=`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "$M_ROOT/keys/${thekey}.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pub"
-[ -z "$PUBLIC_KEY" ] && [ -f "$M_ROOT/keys/${thekey}.pem.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pem.pub"
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_dsa.pub
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
-[ -z "$PUBLIC_KEY" ] && log "No public key found. Tried $M_ROOT/keys/${thekey}.\*, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+thekey=`find_key cluster $cluster`
+[ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 188
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
-[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && exit 1
+[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && proper_exit 1 192
 # If it's alive, we can get some info from it
 OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
@@ -205,7 +200,7 @@ done
 [ -z "$OSPATH" ] && OSPATH="$GANETI_FOLDERS_ROOT/os"
 # OS required for the new server
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
-[ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && exit 1
+[ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && proper_exit 1 203
 if [ -d "$OSPATH/$OSNAME" ]; then
   [ -f "$OSPATH/$OSNAME/create" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/create"
   [ -f "$OSPATH/$OSNAME/variants.list" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/variants.list"
@@ -241,8 +236,6 @@ export CUSTOMIZE_DIR VARIANTS_DIR IMAGE_DIR HOOKS_DIR IMAGE_FILE
 
 broadcast=`find_broadcast`
 log "gateway: $GANETI_GATEWAY  broadcast: $broadcast"
-
-lock_cloudops || exit 10
 
 flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11 | tail -1`
 flfound=false
@@ -286,21 +279,21 @@ if [ -z "$test" ]; then
     sleep 20
   else
     log "request returned status $reqexit"
-    exit 1
+    proper_exit 1 282
   fi
   wait_ready $V 
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
       $ROUTE add -host $ip dev $idev
-      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && exit 1
+      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 289
     else
       log "Instance started, but tap device doesn't exist"
-      exit 1
+      proper_exit 1 292
     fi
   else
     log "Timeout while waiting for the server is up"
-    exit 1
+    proper_exit 1 296
   fi
 
   # adding to the list
@@ -314,22 +307,10 @@ if [ -z "$test" ]; then
   fi
 else
   log "This was a test, not sending request, exiting"
-  exit 0
+  proper_exit 0 310
 fi
 
 $SSHK -q -R "$ip" >/dev/null
-thekey="$M_ROOT/keys/$thekey"
-[ ! -f "$thekey" ] && log "$thekey not found, trying ${thekey}.pem" && thekey="${thekey}.pem"
-if [ ! -f "$thekey" ]; then
-  log "the key defined in clusters.conf not found, trying keys from $HOME_ORIG/.ssh and $HOME/.ssh"
-  if [ -n "$HOME_ORIG" ]; then
-    thekey1="$HOME_ORIG/.ssh/id_rsa"
-    [ ! -f "$thekey1" ] && thekey1="$HOME_ORIG/.ssh/id_dsa"
-  fi
-  thekey2="$HOME/.ssh/id_rsa"
-  [ ! -f "$thekey2" ] && thekey2="$HOME/.ssh/id_rsa"
-  [ -f "$thekey1" ] && thekey=$thekey1 || thekey=$thekey2
-fi
 if [ -f "$thekey" ]; then
   $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo 2>/dev/null
   if [ $? -ne 0 ]; then
@@ -340,10 +321,9 @@ if [ -f "$thekey" ]; then
       sleep 5
     done
   fi
-  [ $? -ne 0 ] && exit 1
+  [ $? -ne 0 ] && proper_exit 1 324
 else
   log "($CLOUD) WARNING: key not found, unable to test login!"
-  log "($CLOUD) last tried key was: $thekey"
 fi
 if [ -n "$return" ]; then
   echo
@@ -365,5 +345,5 @@ if [ -n "$return" ]; then
   done
 fi
 
-exit $existatus
+proper_exit $existatus 348
 

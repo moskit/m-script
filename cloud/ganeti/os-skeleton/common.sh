@@ -129,38 +129,38 @@ unmap_disk0() {
 }
 
 setup_console() {
-    local target=$1
+    local target="$1"
     if [ -z "$target" ] ; then
         log_error "target not set for setup_console"
         exit 1
     fi
     # Upstart is on this system, so do this instead
-    if [ -e ${target}/etc/event.d/tty1 ] ; then
-        cat ${target}/etc/event.d/tty1 | sed -re 's/tty1/ttyS0/' \
-            > ${target}/etc/event.d/ttyS0
+    if [ -e "$target/etc/event.d/tty1" ] ; then
+        cat "$target/etc/event.d/tty1" | sed -re 's/tty1/ttyS0/' \
+            > "$target/etc/event.d/ttyS0"
         return
     fi
     # upstart in karmic and newer
-    if [ -e ${target}/etc/init/tty1.conf ] ; then
-        cat ${target}/etc/init/tty1.conf | \
+    if [ -e "$target/etc/init/tty1.conf" ] ; then
+        cat "$target/etc/init/tty1.conf" | \
         sed -re 's/^exec.*/exec \/sbin\/getty -L 115200 ttyS0 vt102/' \
-            > ${target}/etc/init/ttyS0.conf
-        sed -ie 's/tty1/ttyS0/g' ${target}/etc/init/ttyS0.conf
+            > "$target/etc/init/ttyS0.conf"
+        sed -ie 's/tty1/ttyS0/g' "$target/etc/init/ttyS0.conf"
         return
     fi
 
     case $OPERATING_SYSTEM in
         gentoo)
             sed -i -e 's/.*ttyS0.*/s0:12345:respawn:\/sbin\/agetty 115200 ttyS0 vt100/' \
-                ${target}/etc/inittab
+                "$target/etc/inittab"
             ;;
         centos)
             echo "s0:12345:respawn:/sbin/agetty 115200 ttyS0 vt100" >> \
-                ${target}/etc/inittab
+                "$target/etc/inittab"
             ;;
         debian|ubuntu)
             sed -i -e 's/.*T0.*/T0:23:respawn:\/sbin\/getty -L ttyS0 115200 vt100/' \
-                ${target}/etc/inittab
+                "$target/etc/inittab"
             ;;
         *)
             echo "No support for your OS in instance-image, skipping..."
@@ -171,7 +171,7 @@ setup_console() {
 cleanup() {
   if [ ${#CLEANUP[*]} -gt 0 ]; then
     LAST_ELEMENT=$((${#CLEANUP[*]}-1))
-    REVERSE_INDEXES=$(seq ${LAST_ELEMENT} -1 0)
+    REVERSE_INDEXES=$(seq $LAST_ELEMENT -1 0)
     for i in $REVERSE_INDEXES; do
       ${CLEANUP[$i]}
     done
