@@ -14,12 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rm -rf /tmp/m_script/.update/
+
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
+source "$M_ROOT/conf/mon.conf"
+rm -rf "$M_TEMP"/.update/
 timeindex=`date -u +"%s"`
 GIT=`which git 2>/dev/null`
 WGET=`which wget 2>/dev/null`
@@ -29,31 +31,31 @@ if [ "X$GIT" == "X" ]; then
     echo "Wget not found! Giving up, sorry..."
     exit 1
   else
-    install -d /tmp/m_script/.update /tmp/m_script.$$
-    $WGET -nH -P /tmp/m_script http://igorsimonov.com/m_script.latest.tar.gz
-    `which tar` -xzf /tmp/m_script/m_script.latest.tar.gz -C /tmp/m_script.$$
-    rm -f /tmp/m_script/m_script.latest.tar.gz
-    mv /tmp/m_script.$$/m/* /tmp/m_script/.update
+    install -d "$M_TEMP"/.update "$M_TEMP".$$
+    $WGET -nH -P "$M_TEMP" http://igorsimonov.com/m_script.latest.tar.gz
+    `which tar` -xzf "$M_TEMP"/m_script.latest.tar.gz -C "$M_TEMP".$$
+    rm -f "$M_TEMP"/m_script.latest.tar.gz
+    mv "$M_TEMP".$$/m/* "$M_TEMP"/.update
   fi
 else
-  $GIT clone --depth 1 git://igorsimonov.com/m_script /tmp/m_script/.update || exit 1
-  gitts=$(cd /tmp/m_script/.update && $GIT log -n1 --format=%at | tail -1)
+  $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update || exit 1
+  gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
 fi
 [ "X$1" == "Xfull" ] && fullupgrade=true || fullupgrade=false
-find /tmp/m_script/.update -type d -name .git | xargs rm -rf
+find "$M_TEMP"/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
-for script in `find "/tmp/m_script/.update" -type d`; do
+for script in `find ""$M_TEMP"/.update" -type d`; do
   printf "${script##*/} ... "
-  oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|$rpath/../|"`
+  oldscript=`echo "$script" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
   if [ ! -e "$oldscript" ]; then
     printf "copying ... "
     cp -r "$script" "$oldscript" && chown -R `id -un`:`id -gn` "$oldscript" && echo "OK"
   fi
 done
 echo "Checking files:"
-for script in `find "/tmp/m_script/.update" -type f`; do
+for script in `find ""$M_TEMP"/.update" -type f`; do
   echo -n " -- ${script##*/} ... "
-  oldscript=`echo "$script" | sed "s|/tmp/m_script/.update/|$rpath/../|"`
+  oldscript=`echo "$script" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
   if [ -x "$oldscript" ]; then
     if [ "$script" -nt "$oldscript" ]; then
       cp "$script" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
@@ -71,9 +73,9 @@ for script in `find "/tmp/m_script/.update" -type f`; do
   fi
 done
 echo "Checking symlinks:"
-for symlink in `find "/tmp/m_script/.update" -type l`; do
+for symlink in `find ""$M_TEMP"/.update" -type l`; do
   echo -n " -- ${symlink##*/} ... "
-  oldsymlink=`echo "$symlink" | sed "s|/tmp/m_script/.update/|$rpath/../|"`
+  oldsymlink=`echo "$symlink" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
   cp -P "$symlink" "$oldsymlink" && chown `id -un`:`id -gn` "$oldsymlink" && echo "OK"
 done
 printf "Removing .new files that have zero difference with the local files ..."
@@ -117,7 +119,7 @@ if [ -f "$rpath/../this_upgrade_actions" ] ; then
 else
   echo "not found"
 fi
-rm -rf /tmp/m_script/.update/
+rm -rf "$M_TEMP"/.update/
 echo $timeindex >> "$rpath/../upgrade.log"
 
 
