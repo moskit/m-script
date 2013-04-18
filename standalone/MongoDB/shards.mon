@@ -6,6 +6,7 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 source "$M_ROOT/lib/functions.sh"
+LOG="$M_ROOT/logs/sa.log"
 log "Starting..."
 
 MONGO=`which mongo 2>/dev/null`
@@ -28,13 +29,13 @@ a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/null | tail -1 | cut -d'|' -f1`
 [ -z "$confserver" ] && log "No configuration servers found" && exit 1
 
-sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"'`
+sharded=`$MONGO "$confserver"/config --quiet --eval "db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"' 2>>$LOG`
 
 for coll in $sharded ; do
 
   database=${coll%%.*}
   rm -f "$rpath/data/shards.$coll"
-  shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"$coll\" , \"shard\" : c }).count() ) } )" 2>$LOG`
+  shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"$coll\" , \"shard\" : c }).count() ) } )" 2>>$LOG`
   for shard in $shards ; do
     shname=`echo $shard | cut -d'|' -f1`
     shchunks=`echo $shard | cut -d'|' -f2`
