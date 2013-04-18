@@ -17,7 +17,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-M_ROOT=$(cd "${rpath}/../" && pwd)
+M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
 run_meta() {
@@ -25,6 +25,7 @@ run_meta() {
   res=0
   [ `grep -c "^${1}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "$LOG" && return 0
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[0m" || printf "META: $1"
+  [ -z "$verbose" ] && echo -n " .. "
   [ -n "$test" -o -n "$dry" ] && dry="--dry"
   
   metatype=`echo $1 | awk '{print $1}'`
@@ -83,17 +84,17 @@ run_meta() {
         if [ -n "$therole" ]; then
           msfoundinrole=`find "$ROLES_ROOT/$therole" -name "$thescript"`
           msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
-          echo "Script $metascript not found"
-          [ -n "$msfoundinrole" ] && echo "  Found: $msfoundinrole"
-          [ -n "$msfoundinflavor" ] && echo "  Found: $msfoundinflavor"
+          echo -e -n "Script $metascript not found "
+          [ -n "$msfoundinrole" ] && echo -e "\n  Found: $msfoundinrole"
+          [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
           res=1
         else
           if [ -e "$ROLES_ROOT/$role/$theflavor/$thescript" ]; then
             metascript="$role/$theflavor/$thescript"
           else
             msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
-            echo "Script $metascript not found"
-            [ -n "$msfoundinflavor" ] && echo "  Found: $msfoundinflavor"
+            echo -e -n "Script $metascript not found"
+            [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
             res=1
           fi
         fi
@@ -107,23 +108,22 @@ run_meta() {
     fi
     if [ -n "$verbose" ] ; then
       if [ -n "$use_color" ] ; then
-        [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[0m\n" || printf "\033[01;31mError\033[0m\n"
+        [ $res -eq 0 ] && printf "\033[01;32mSuccess\033[0m\n\n" || printf "\033[01;31mError\033[0m\n\n"
       else
-        [ $res -eq 0 ] && echo "Success" || echo "ERROR"
+        [ $res -eq 0 ] && echo -e "Success\n" || echo "ERROR\n"
       fi
     else
       if [ -n "$use_color" ] ; then
-        [ $res -eq 0 ] && printf " ..  \033[01;32mSuccess\033[0m\n" || printf " ..  \033[01;31mError\033[0m\n"
+        [ $res -eq 0 ] && printf " \033[01;32mSuccess\033[0m\n" || printf " \033[01;31mError\033[0m\n"
       else
-        [ $res -eq 0 ] && echo " ..  Success" || echo " ..  ERROR"
+        [ $res -eq 0 ] && echo " Success" || echo " ERROR"
       fi
     fi
-    [ -n "$verbose" ] && echo
     [ $res -eq 0 ] && echo "$meta" >> "$WORK_DIR/${role}.${task}.$timestampact/log"
     return $res
   else
     [ -n "$use_color" ] && printf "\033[01;31m"
-    echo "Error parsing the meta: $meta"
+    echo "Error parsing meta: $meta"
     [ -n "$use_color" ] && printf "\033[0m"
     [ -z "$dry" ] && proper_exit 1 124
   fi
@@ -180,10 +180,10 @@ if [ "X$help" == "Xyes" ] ; then
   exit 0
 fi
 
-source "$rpath/../conf/deployment.conf"
-source "$rpath/../conf/cloud.conf"
-source "$rpath/../lib/functions.sh"
-source "$rpath/../lib/cloud_functions.sh"
+source "$M_ROOT/conf/deployment.conf"
+source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
@@ -222,7 +222,7 @@ if [ -n "$ip" ] ; then
     echo "Something's wrong with IP: $ip"
     exit 1
   fi
-  ipcluster=`grep "^$ip|" "$rpath/../servers.list" | cut -d'|' -f5`
+  ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
   [ -z "$ipcluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ] ; then
     [ "$cluster" != "$ipcluster" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
@@ -238,7 +238,7 @@ else
         cluster=$M_CLUSTER
       fi
     else
-      [ -z "$cluster" ] && cluster=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
       [ -n "$cluster" ] && echo "Using cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??
@@ -249,7 +249,7 @@ else
   else
     # role by cluster
     if [ -z "$role" ] ; then
-      role=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f10`
+      role=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10`
       echo "Using role ${role}, default for cluster $cluster"
       [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
     fi
@@ -262,7 +262,7 @@ install $V -d "$WORK_DIR/${role}.${task}.$timestampact"
 touch "$WORK_DIR/${role}.${task}.$timestampact/log"
 
 if [ -z "$flavor" ] ; then
-  flavor=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f11`
+  flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11`
   echo "Using flavor $flavor, default for cluster $cluster"
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
 fi
@@ -278,9 +278,9 @@ if [ -n "$newserver" ]; then
   log "bringing up new server in cloud $cloud"
   if [ -z "$test" ]; then
     log "updating servers list"
-    IAMACHILD=1 "$rpath"/../cloud/$cloud/update_servers_list
+    IAMACHILD=1 "$M_ROOT/cloud/$cloud/update_servers_list"
     log "getting cloud operations lock"
-    source "$rpath"/../lib/cloud_functions.sh
+    source "$M_ROOT/lib/cloud_functions.sh"
     lock_cloudops || exit 10
     log "initiating server start sequence"
     

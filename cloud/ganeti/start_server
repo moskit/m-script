@@ -67,6 +67,7 @@ source "$M_ROOT/conf/cloud.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
+exit_status=0
 
 M_TEMP="$M_TEMP/cloud/ganeti"
 install -d "$M_TEMP"
@@ -320,14 +321,14 @@ $SSHK -q -R "$ip" >/dev/null
 if [ -f "$thekey" ]; then
   $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo 2>/dev/null
   if [ $? -ne 0 ]; then
+    exit_status=2
     log "($CLOUD) Unable to login to the server $ip using the key $thekey, trying again..."
     for ((k=0; k<3; k++)); do
       $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo >/dev/null
-      [ $? -eq 0 ] && $SSH -i "$thekey" -o StrictHostKeyChecking=no $name echo >/dev/null && break
-      sleep 5
+      [ $? -eq 0 ] && exit_status=0 && break
+      sleep 10
     done
   fi
-  [ $? -ne 0 ] && proper_exit 1 324
 else
   log "($CLOUD) WARNING: key not found, unable to test login!"
 fi
@@ -351,5 +352,5 @@ if [ -n "$return" ]; then
   done
 fi
 
-proper_exit $existatus 348
+proper_exit $exit_status 348
 
