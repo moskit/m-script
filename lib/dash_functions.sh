@@ -90,8 +90,10 @@ print_line_title() {
     onclick=$1
     shift
   fi
-  id="${@}"
-  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">${@}</div>"
+  title="$1"
+  shift
+  [ -n "$1" ] && id="$1" || id="$title"
+  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">$title</div>"
 }
 
 print_inline() {

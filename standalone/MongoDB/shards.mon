@@ -34,13 +34,13 @@ for coll in $sharded ; do
 
   database=${coll%%.*}
   rm -f "$rpath/data/shards.$coll"
-  shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"$coll\" , \"shard\" : c }).count() ) } )"`
+  shards=`$MONGO "$confserver"/config --quiet --eval "db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"$coll\" , \"shard\" : c }).count() ) } )" 2>$LOG`
   for shard in $shards ; do
     shname=`echo $shard | cut -d'|' -f1`
     shchunks=`echo $shard | cut -d'|' -f2`
     shhost=`grep \|$shname\| "$rpath"/mongo_shards.list 2>/dev/null | grep \|master$ | cut -d'|' -f1`
-    shdatasize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()"`
-    shindexsize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()"`
+    shdatasize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()" 2>$LOG`
+    shindexsize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()" 2>$LOG`
     echo "$shname|$shhost|$shchunks|$shdatasize|$shindexsize" >> "$rpath/data/shards.$coll"
     if [ "X$SQLITE3" == "X1" ] ; then
       $SQLITE "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
