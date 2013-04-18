@@ -36,16 +36,16 @@ for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name 
     prevstatus=$thisesstatus
   done
   
-  print_line_title eshealth ${clustername}
+  print_line_title eshealth "$clustername" "$clustername"
       for esst in $esstatus ; do
         echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
-  close_line ${clustername}
+  close_line "$clustername" "$clustername"
 
     for node in `cat ${PWD}/../../standalone/${scriptname}/${clustername}.nodes.list | sort` ; do
       [ "X`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
-      print_line_title $scriptname $node
+      print_line_title "$scriptname" "$node" "$clustername"
 
         echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat"|grep ^name\||cut -d'|' -f2 | tr -d '"'`</div>"
         echo "<div class=\"status\" id=\"${node}_mem\">`grep ^jvm\/mem\/heap_used\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'` / `grep ^jvm\/mem\/heap_committed\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'`</div>"
@@ -54,7 +54,7 @@ for cluster in `find "${PWD}/../../standalone/${scriptname}/data" -type f -name 
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^process/open_file_descriptors\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_conn\">`grep ^http/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^transport/server_open\| "${PWD}/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         
-      close_line $node
+      close_line "$node" "$clustername"
     done
     
 close_cluster

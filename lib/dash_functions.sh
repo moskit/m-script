@@ -86,14 +86,15 @@ close_cluster() {
 }
 
 print_line_title() {
-  if [ -n "$2" ]; then
+  if [ -n "$3" ]; then
     onclick=$1
     shift
   fi
-  title="$1"
+  parent="$1"
   shift
-  [ -n "$1" ] && id="$1" || id="$title"
-  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">$title</div>"
+  node="$1"
+  id="${parent}.${node}"
+  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">$node</div>"
 }
 
 print_inline() {
@@ -113,7 +114,10 @@ print_inline() {
 
 close_line() {
  # id=$(echo ${@} | tr ' ' '_')
-  id="${@}"
+  parent="$1"
+  shift
+  node="$1"
+  id="${parent}.${node}"
   echo "</div>"
   echo "<div class=\"details\" id=\"${id}_details\"></div>"
 }

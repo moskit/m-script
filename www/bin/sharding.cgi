@@ -39,7 +39,7 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
   for coll in "${PWD}/../../standalone/${saname}/data"/shards.${db}.* ; do
     coll=`echo $coll | sed "s|${PWD}/../../standalone/${saname}/data/shards.${db}.||"`
     coll_dat="${PWD}/../../standalone/${saname}/data"/${db}.${coll}.dat
-    print_line_title shards "$coll" "${db}_${coll}"
+    print_line_title shards "$db" "$coll"
     coll_ok=`cat $coll_dat | grep ^0\/ok\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
     coll_count=`cat $coll_dat | grep ^0\/count\| | cut -d'|' -f2`
@@ -61,7 +61,7 @@ for db in `find "${PWD}/../../standalone/${saname}/data" -mindepth 1 -maxdepth 1
     coll_chunks=`cat $coll_dat | grep ^0\/nchunks\| | cut -d'|' -f2`
 
     print_inline "coll_status" "coll_count" "coll_size" "stor_size" "coll_indexsize" "coll_chunks"
-    close_line "${db}_${coll}"
+    close_line "$db" "$coll"
   done
   close_cluster
 done

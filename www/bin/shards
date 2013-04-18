@@ -1,7 +1,7 @@
 #/bin/bash
 
-cluster="$1"
-server="$2"
+parent="$1"
+node="$2"
 IFS='
 '
 chunksmax=0
@@ -9,7 +9,7 @@ datasizemax=0
 indexsizemax=0
 echo "<div style=\"display: table; width: 800px;\">"
 
-for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server}"` ; do
+for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${node}"` ; do
   chunks=`echo $shard | cut -d'|' -f3`
   [[ $chunks -gt $chunksmax ]] && chunksmax=$chunks
   datasize=`echo $shard | cut -d'|' -f4`
@@ -22,7 +22,7 @@ chunkspp=`echo "scale=4; $chunksmax / (500 / 5)" | bc 2>/dev/null`
 datasizepp=`echo "scale=4; $datasizemax / (500 / 5 * 2)" | bc 2>/dev/null`
 indexsizepp=`echo "scale=4; $indexsizemax / (500 / 5 * 2)" | bc 2>/dev/null`
 
-for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${cluster}.${server}"` ; do
+for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${node}"` ; do
   chunks=`echo $shard | cut -d'|' -f3`
   datasize=`echo $shard | cut -d'|' -f4`
   datasize_m=$(($datasize / 1048576))
