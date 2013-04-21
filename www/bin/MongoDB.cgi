@@ -2,7 +2,7 @@
 
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-source "${PWD}/../../lib/dash_functions.sh"
+source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections" "mongo_logger|Log Monitor"
 print_page_title "host:port" "Status" "Memory Res/Virt" "Bandwidth In/Out" "Requests / sec" "Locks, %  Curr/Overall"
@@ -13,11 +13,11 @@ print_mongo_server() {
   port=${host##*:}
   name=${host%:*}
   id="${name}_${port}"
-  install -d "${PWD}/../${scriptname}/balancers/${id}"
+  install -d "$PWD/../$scriptname/balancers/$id"
   [ -n "$port" ] && wport=`expr $port + 1000`
   
-  report=`cat "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.report"`
-  rawdata=`cat "${PWD}/../../standalone/${scriptname}/data/${name}:${port}.dat"`
+  report=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.report"`
+  rawdata=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.dat"`
   
   echo "<div class=\"server\" id=\"${name}:${port}\">"
   
@@ -49,31 +49,31 @@ print_mongo_server() {
 IFS1=$IFS
 IFS='
 '
-if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list" | wc -l` -gt 0 ] ; then
+if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" | wc -l` -gt 0 ] ; then
 
   open_cluster "configservers|Configuration Servers"
   close_cluster_line
-  for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_config_servers.list"` ; do
+  for s in `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list"` ; do
     print_mongo_server "$s"
   done
     
   close_cluster
   
 # Standalone servers
-elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` -gt 0 ] ; then
+elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | wc -l` -gt 0 ] ; then
   
   open_cluster "mongoservers|MongoDB Servers"
   close_cluster_line
-    for rs in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
-      echo "<div class=\"server\" id=\"${rs}\">"
+    for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f2 | sort | uniq` ; do
+      echo "<div class=\"server\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"
-      for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1,3` ; do
+      for s in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1,3` ; do
         print_mongo_server "$s"
       done
     done
 ### Not members of any RS
-    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | grep ^.*\|$` ; do
+    for s in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | grep ^.*\|$` ; do
       print_mongo_server "$s"
     done
     
@@ -81,11 +81,11 @@ elif [ `cat "${PWD}/../../standalone/${scriptname}/mongo_servers.list" | wc -l` 
   
 fi
 
-if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt 0 ] ; then
+if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | wc -l` -gt 0 ] ; then
 
   open_cluster "shardservers|Shard Servers"
   close_cluster_line
-    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list"` ; do
+    for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list"` ; do
       print_mongo_server "$s"
     done
     
@@ -93,12 +93,12 @@ if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_shards.list" | wc -l` -gt
   
 fi
 
-if [ `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
+if [ `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list" | wc -l` -gt 0 ] ; then
 
   open_cluster "balancers|Balancers"
   close_cluster_line
   
-    for s in `cat "${PWD}/../../standalone/${scriptname}/mongo_mongos_servers.list"` ; do
+    for s in `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list"` ; do
       print_mongo_server "$s"
     done
     
