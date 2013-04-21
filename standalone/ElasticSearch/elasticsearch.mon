@@ -210,7 +210,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
 #  done
   
   for clusternode in `cat "$rpath/data/${escluster}.nodes" | grep ^0\/\"nodes\"\/ | cut -d'/' -f3 | sort | uniq` ; do
-    clusternode=`echo $clusternode | sed 's|-|\\\-|g'`
+    clusternode=`echo $clusternode | sed 's|-|\\\-|g;s|"||g'`
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^0\/\"master_node\" "$rpath/data/${escluster}.nodes" | grep -c "$clusternode"`
     nodehost=`grep "$clusternode\/transport_address|" "$rpath/data/${escluster}.nodes"`
