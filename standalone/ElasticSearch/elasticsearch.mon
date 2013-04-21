@@ -149,7 +149,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   IFS1=$IFS
   IFS='
 '
-  for LINE in `cat "$rpath/${escluster}.dat" 2>/dev/null | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
+  for LINE in `cat "$rpath/${escluster}.dat" 2>/dev/null | cut -d'/' -f2 | sed 's_|_=_g;s_^"__;s_"=_=_'` ; do eval $LINE ; done
   IFS=$IFS1
   
   $debug && log "ES cluster ${escluster}: health data parsed"

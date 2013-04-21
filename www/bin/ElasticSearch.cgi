@@ -15,7 +15,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
   open_cluster "$clustername"
   close_cluster_line
   clusterdat=`ls -1t "$PWD/../../standalone/$scriptname/data/${clustername}."*.dat`
-  esip=`cat $clusterdat | grep ^\"ip\"\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
+  esip=`cat "$clusterdat" 2>/dev/null | grep ^\"ip\"\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do
     eshostname=`grep ^$eshostip\| "$PWD/../../servers.list" | cut -d'|' -f4`
     if [ -n "$eshostname" ] ; then
@@ -47,7 +47,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
       [ "X`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^\"master\"\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
       print_line_title "$scriptname" "$node" "$clustername"
 
-        echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^name\||cut -d'|' -f2 | tr -d '"'`</div>"
+        echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" 2>/dev/null | grep ^\"name\"\||cut -d'|' -f2 | tr -d '"'`</div>"
         echo "<div class=\"status\" id=\"${node}_mem\">`grep ^\"jvm\"\/\"mem\"\/\"heap_used\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'` / `grep ^\"jvm\"\/\"mem\"\/\"heap_committed\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'`</div>"
         echo "<div class=\"status\" id=\"${node}_size\">`grep ^\"indices\"/\"store\"/\"size\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d '"'`</div>"
         echo "<div class=\"status\" id=\"${node}_docs\">`grep ^\"indices\"/\"docs\"/\"count\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
