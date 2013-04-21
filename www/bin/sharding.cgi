@@ -12,6 +12,7 @@ print_page_title "Collection" "Status" "Count" "Data Size" "Size on Disk" "Index
 for db in `find "$PWD/../../standalone/$saname/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|$PWD/../../standalone/$saname/data/shards.||g" | cut -d'.' -f1 | sort | uniq | grep -v ^$` ; do
 
   db_dat="$PWD/../../standalone/$saname/data"/${db}.dat
+  [ -f "$db_dat" ] || continue
   total_ok=`cat "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
   total_count=`cat $db_dat | grep ^0\/\"objects\"\| | cut -d'|' -f2`

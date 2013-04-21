@@ -3,19 +3,19 @@
 saname="MongoDB"
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-source "${PWD}/../../lib/dash_functions.sh"
+source "$PWD/../../lib/dash_functions.sh"
 
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections" "mongo_logger|Log Monitor"
 print_page_title "Collection" "Status" "Sharded" "Primary" "Records" "Data Size" "Index Size"
 
-[ -f "${PWD}/../../standalone/$saname/data/databases.dat" ] || exit 0
+[ -f "$PWD/../../standalone/$saname/data/databases.dat" ] || exit 0
 
-for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
+for db in `cat "$PWD/../../standalone/$saname/data/databases.dat"` ; do
   dbname=${db%|*}
   #dbsize=${db#*|}  # It's a files total size
   
-  db_dat="${PWD}/../../standalone/${saname}/data"/${dbname}.dat
+  db_dat="$PWD/../../standalone/$saname/data"/${dbname}.dat
   [ -f "$db_dat" ] || continue
   total_datasize=`cat $db_dat | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`
   [ "X$total_datasize" == "X0" ] && continue
@@ -45,7 +45,7 @@ for db in `cat "${PWD}/../../standalone/$saname/data/databases.dat"` ; do
   print_cluster_inline "total_status" "-" "-" "total_count" "total_datasize" "total_indexsize"
   close_cluster_line "$dbname"
   
-  for coll in "${PWD}/../../standalone/$saname/data"/${dbname}.*.dat ; do
+  for coll in "$PWD/../../standalone/$saname/data"/${dbname}.*.dat ; do
     collinfo=`cat "$coll"`
     [ -z "$collinfo" ] && continue
     coll_name=`echo "$collinfo" | grep ^0\/\"ns\"\| | cut -d'|' -f2 | tr -d '"'`
