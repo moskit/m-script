@@ -287,18 +287,18 @@ if [ -n "$mongoses" ] ; then
   print_servers $mongoses > "${M_TEMP}/mongo_mongos_servers.list"
   [ -f "${M_TEMP}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
 else
-  echo > "${rpath}/mongo_mongos_servers.list"
+  echo > "$rpath/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
-  shardhosts=`$MONGO ${configip}/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null`
+  shardhosts=`$MONGO "$configip"/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>/dev/null`
   res=$?
   shardhosts=`echo "$shardhosts" | "$M_ROOT"/lib/json2txt | tr -d '"'`
   [ $res -eq 0 ] && break
 done
 
 if [ -n "$shardhosts" ] ; then
-  [ -f "${M_TEMP}/mongo_shards.list" ] && rm -f "${M_TEMP}/mongo_shards.list"
+  [ -f "$M_TEMP/mongo_shards.list" ] && rm -f "$M_TEMP/mongo_shards.list"
   IFS1=$IFS
   IFS='
 '
@@ -313,54 +313,54 @@ if [ -n "$shardhosts" ] ; then
     shardhost=${shardhost%%,*}
     shardport=${shardhost#*:}
     if [ "X`${MONGO} ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
-      replicaset=`${MONGO} ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()._id" | tail -1`
+      replicaset=`$MONGO ${shardhost%:*}:${shardport}/config --quiet --eval "rs.conf()._id" | tail -1`
     fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
     find_rsmemberrole "${shardhost}:${shardport}"
-    echo "${shardhost}:${shardport}|${shard}|${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
+    echo "${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_shards.list"
   done
   
-  for rs in `cat "${M_TEMP}/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
+  for rs in `cat "$M_TEMP/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
 
-    for rshost in `cat "${M_TEMP}/mongo_shards.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
-      replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
+    for rshost in `cat "$M_TEMP/mongo_shards.list" | grep "|$rs|" | cut -d'|' -f1` ; do
+      replicahosts=`$MONGO "$rshost"/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
-      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d'|' -f2 | tr -d '"'`
+      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
       [ $res -eq 0 ] && break
     done
 
     for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
+      [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
       ip_to_name ${replicahost}
-      [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_shards.list"` -gt 0 ] && continue
-      find_rsmemberrole "${replicahost}"
-      echo "${replicahost}|${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_shards.list"
+      [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
+      find_rsmemberrole "$replicahost"
+      echo "$replicahost|${rs}${rsmemberrole}" >> "$M_TEMP/mongo_shards.list"
     done
 
   done
   
-  [ -f "${M_TEMP}/mongo_shards.list" ] && [ -f "${rpath}/mongo_shards.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_shards.list" "${rpath}/mongo_shards.list"`" ] && mv "${M_TEMP}/mongo_shards.list" "${rpath}/mongo_shards.list"
+  [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"`" ] && mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
 IFS=$IFS1
 else
-  echo > "${M_TEMP}/mongo_shards.list"
+  echo > "$M_TEMP/mongo_shards.list"
 fi
 
-if [ -e "${rpath}/mongo_config_servers.list" ] ; then
-  for cs in `cat "${rpath}/mongo_config_servers.list" | cut -d'|' -f1` ; do
-    [ -d "$M_ROOT/www/MongoDB/configservers/${cs}" ] || install -d "$M_ROOT/www/MongoDB/configservers/${cs}"
-    mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_config_servers.list"
-    parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "$M_ROOT/lib/txt2html" "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/configservers/${cs}/${cs%:*}_${cs#*:}_name.html"
+if [ -e "$rpath/mongo_config_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_config_servers.list" | cut -d'|' -f1` ; do
+    [ -d "$M_ROOT/www/MongoDB/configservers/$cs" ] || install -d "$M_ROOT/www/MongoDB/configservers/$cs"
+    mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    $MONGO "$cs"/admin --quiet "$rpath/serverstatus.js" > "$rpath/data/${cs}.dat" 2>/dev/null || sed -i "/$cs/d" "$rpath/mongo_config_servers.list"
+    parse_data "$cs" > "$rpath/data/${cs}.report"
+    "$M_ROOT/lib/txt2html" "$rpath/data/${cs}.report" > "$M_ROOT/www/MongoDB/configservers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
-if [ -e "${rpath}/mongo_mongos_servers.list" ] ; then
-  for cs in `cat "${rpath}/mongo_mongos_servers.list" | cut -d'|' -f1` ; do
-    install -d "$M_ROOT/www/MongoDB/balancers/${cs}"
-    mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_mongos_servers.list"
+if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1` ; do
+    install -d "$M_ROOT/www/MongoDB/balancers/$cs"
+    mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    $MONGO "$cs"/admin --quiet "$rpath/serverstatus.js" > "$rpath/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_mongos_servers.list"
     parse_data "${cs}" > "${rpath}/data/${cs}.report"
     "$M_ROOT/lib/txt2html" "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/balancers/${cs}/${cs%:*}_${cs#*:}_name.html"
   done

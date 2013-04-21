@@ -40,6 +40,7 @@ for coll in $sharded ; do
     shname=`echo $shard | cut -d'|' -f1`
     shchunks=`echo $shard | cut -d'|' -f2`
     shhost=`grep \|$shname\| "$rpath"/mongo_shards.list 2>/dev/null | grep \|master$ | cut -d'|' -f1`
+    [ -z "$shhost" ] && continue
     shdatasize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()" 2>>$LOG`
     shindexsize=`$MONGO "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()" 2>>$LOG`
     echo "$shname|$shhost|$shchunks|$shdatasize|$shindexsize" >> "$rpath/data/shards.$coll"
