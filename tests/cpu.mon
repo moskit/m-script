@@ -28,7 +28,7 @@ timeindexnow=`cat "$M_TEMP/timeindex"`
 [ -z "$CPUUPERIOD" ] && CPUUPERIOD=1
 [ -z "$CPUUSAMPLES" ] && CPUUSAMPLES=5
 
-$VMSTAT -n $CPUUPERIOD $CPUUSAMPLES | awk '{ print $13"|"$14"|"$16 }' | tail -5 > /tmp/m_script/cpuusage
+$VMSTAT -n $CPUUPERIOD $CPUUSAMPLES | awk '{ print $13"|"$14"|"$16 }' | tail -5 > $M_TEMP/cpuusage
 
 usavg=0
 syavg=0
@@ -43,7 +43,7 @@ do
   usavg=`solve 2 "$usavg + $us"`
   syavg=`solve 2 "$syavg + $sy"`
   waavg=`solve 2 "$waavg + $wa"`
-done < /tmp/m_script/cpuusage
+done < $M_TEMP/cpuusage
 usavg=`solve 2 "$usavg / $CPUUSAMPLES"`
 syavg=`solve 2 "$syavg / $CPUUSAMPLES"`
 waavg=`solve 2 "$waavg / $CPUUSAMPLES"`

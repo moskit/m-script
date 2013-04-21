@@ -26,13 +26,13 @@ source "$M_ROOT/lib/functions.sh"
 netstatbin=`which netstat 2>/dev/null`
 iptablesbin=`which iptables 2>/dev/null`
  
-timeindexnow=`cat /tmp/m_script/timeindex 2>/dev/null`
-lasttimeindex=`cat /tmp/m_script/lasttimeindex 2>/dev/null`
+timeindexnow=`cat $M_TEMP/timeindex 2>/dev/null`
+lasttimeindex=`cat $M_TEMP/lasttimeindex 2>/dev/null`
 
 if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
 then
 
-[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat /tmp/m_script/timeindex`
+[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat $M_TEMP/timeindex`
 
 numconn=`${netstatbin} -s 2>/dev/null | grep 'connections established' | awk '{print $1}'`
 binputlast=`sqlite3 ${rpath}/../sysdata "select input from sysdata where timeindex='$lasttimeindex'"`
