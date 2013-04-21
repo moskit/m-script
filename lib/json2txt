@@ -142,7 +142,11 @@ parseline() {
     return
   fi
   if [ "X$line" == "X:" ] ; then
-    $quoclosed && [ -z "${index[$i]}" ] && [ -n "$value" ] && index[$i]="$value" && unset value
+    if $quoclosed ; then
+      [ -z "${index[$i]}" ] && [ -n "$value" ] && index[$i]="$value" && unset value
+    else
+      value="${value}${line}"
+    fi
     [ -n "$d" ] && showdebug
     return
   fi
