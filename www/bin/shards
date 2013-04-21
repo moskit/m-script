@@ -24,9 +24,12 @@ indexsizepp=`echo "scale=4; $indexsizemax / (500 / 5 * 2)" | bc 2>/dev/null`
 
 for shard in `cat "$PWD/../../standalone/MongoDB/data/shards.${node}"` ; do
   chunks=`echo $shard | cut -d'|' -f3`
+  [ -z "$chunks" ] && chunks=0
   datasize=`echo $shard | cut -d'|' -f4`
+  [ -z "$datasize" ] && datasize=0
   datasize_m=$(($datasize / 1048576))
   indexsize=`echo $shard | cut -d'|' -f5`
+  [ -z "$indexsize" ] && indexsize=0
   indexsize_m=$(($indexsize / 1048576))
   shname=`echo $shard | cut -d'|' -f1`
   shhost=`echo $shard | cut -d'|' -f2`
