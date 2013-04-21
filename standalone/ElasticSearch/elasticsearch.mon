@@ -4,18 +4,19 @@ rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found, exiting..  " && exit 1
 CURL="$CURL -s"
-source "${rpath}/../../conf/mon.conf" || exit 1
-source "${rpath}/${rcommand%.mon}.conf"
+source "$M_ROOT/conf/mon.conf" || exit 1
+source "$rpath/${rcommand%.mon}.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 MAILX=`which mail 2>/dev/null`
-M_TEMP="${M_TEMP}/elasticsearch"
-LOG="${rpath}/../../logs/sa.log"
+M_TEMP="$M_TEMP/elasticsearch"
+LOG="$M_ROOT/logs/sa.log"
 log() {
 echo "`date +"%H:%M:%S"` $rcommand ($pid): ${@}">>$LOG
 }
@@ -28,42 +29,12 @@ if [ -n "`find "$rpath" -maxdepth 1 -mmin +30 -type f -name lock`" ]; then
 fi
 [ -f "$rpath/lock" ] && log "Another process running" && exit 0
 
-echo "Running ${rpath}/${rcommand}" >> $LOG
+echo "Running $rpath/$rcommand" >> $LOG
 
-install -d "${M_TEMP}"
+install -d "$M_TEMP"
 timeindexnow=`date +"%s"`
 ### Uncomment to debug
 debug=true
-
-function mailalert() {
-  if [ -f ${rpath}/alert1 ] && [ `cat ${rpath}/alert1 | wc -l` -ne 0 ]; then
-    al='*' ; aln=1
-    cat "${rpath}/../../conf/header.alert1" "${rpath}/alert1" >> "${rpath}/alert"
-    echo >> "${rpath}/alert"
-  fi
-  if [ -f ${rpath}/alert2 ] && [ `cat ${rpath}/alert2 | wc -l` -ne 0 ]; then
-    al='**' ; aln=2
-    cat "${rpath}/../../conf/header.alert2" "${rpath}/alert2" >> "${rpath}/alert"
-    echo >> "${rpath}/alert"
-  fi
-  if [ -f ${rpath}/alert3 ] && [ `cat ${rpath}/alert3 | wc -l` -ne 0 ]; then
-    al='***' ; aln=3
-    cat "${rpath}/../../conf/header.alert3" "${rpath}/alert3" >> "${rpath}/alert"
-    echo >> "${rpath}/alert"
-  fi
-  if [ -n "$al" ] ; then
-    cat ${rpath}/alert >> ${rpath}/../../monitoring.log
-    for MLINE in `cat "${rpath}/../../conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
-    do
-      recipn=`grep "^$MLINE" ${rpath}/../../conf/mail.alert.list | awk '{print $2}'`
-      if ([ -z "$recipn" ] || [ "X$recipn" == "X$aln" ]) ; then
-        cat ${rpath}/alert | ${MAILX} -s "$al ElasticSearch alert" ${MLINE} >>${rpath}/../../monitoring.log 2>&1
-      fi
-    done
-  fi
-  unset al aln
-  rm -f ${rpath}/alert* 2>/dev/null
-}
 
 function ip_to_name() {
   rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
@@ -92,13 +63,13 @@ if [ -n "$ES_SERVERS" ] ; then
   defaultport=9200
   ES_SERVERS=`echo $ES_SERVERS | sed 's|,| |g'`
   for name in $ES_SERVERS ; do
-    if [ `grep -c ^${name}\| "${rpath}/../../conf/clusters.conf"` -eq 0 ] ; then
+    if [ `grep -c ^$name\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] ; then
       noncluster=1
     else
       cluster=1
     fi
     # In case some server has the same name as cluster
-    if [ `grep -c "|${name}|${name}" "${rpath}/../../servers.list"` -gt 0 ] ; then
+    if [ `grep -c "|$name|$name" "$M_ROOT/servers.list"` -gt 0 ] ; then
       unset cluster
     fi
   done
@@ -110,10 +81,10 @@ if [ -n "$ES_SERVERS" ] ; then
       port=":${server#*:}"
       host=${server%:*}
       [ "X$port" == "X:$host" ] && unset port
-      clustername=`cat "${rpath}/../../servers.list" | grep -E "\|${host}\||^${host}\|" | cut -d'|' -f5`
+      clustername=`cat "$M_ROOT/servers.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
       [ "X$clustername" == "X$clusternameprev" ] && continue
       
-      clusterips=`"${rpath}/../../cloud/ec2/get_ips" --cluster="${clustername}"|sed "s|$|$port|g"`
+      clusterips=`"$M_ROOT/cloud/ec2/get_ips" --cluster="$clustername" | sed "s|$|$port|g"`
       
       clusternameprev=$clustername
       clusternames="$clusternames $clustername"
@@ -126,7 +97,7 @@ if [ -n "$ES_SERVERS" ] ; then
       clustername=${name%:*}
       port=":${name#*:}"
       [ "X$port" == "X:$clustername" ] && unset port
-      clusterips=`"${rpath}/../../cloud/ec2/get_ips" --cluster="${clustername}"|sed "s|$|${port}|g"`
+      clusterips=`"$M_ROOT/cloud/ec2/get_ips" --cluster="$clustername" | sed "s|$|$port|g"`
       collect_hosts $clusterips
       eval "${clustername}ips=\"$configips\""
       unset clusterips configips
@@ -141,13 +112,13 @@ $debug && log "hosts collected"
 
 # These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
-  touch "${rpath}/${cluster}.es_servers.list"
-  [ -n "`eval echo -e \$${cluster}ips | tr ' ' '\n' | sort | $DIFF -q - "${rpath}/${cluster}.es_servers.list"`" ] && eval echo -e \$${cluster}ips | tr ' ' '\n' | sort > "${rpath}/${cluster}.es_servers.list"
+  touch "$rpath/${cluster}.es_servers.list"
+  [ -n "`eval echo -e \$${cluster}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_servers.list"`" ] && eval echo -e \$${cluster}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_servers.list"
 done
 $debug && log "server lists updated"
 
-for node in `cat "${rpath}"/*.es_servers.list` ; do
-  allclusters="$allclusters `$CURL -m 2 "http://${node}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|${rpath}/../../lib/json2txt | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"${node}|\\" \\$2}" | tr -d '"'`"
+for node in `cat "$rpath"/*.es_servers.list` ; do
+  allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"$node|\\" \\$2}" | tr -d '"'`"
 done
 [ -z "$allclusters" ] && log "no ES clusters found, exiting" && exit 1
 
@@ -155,13 +126,13 @@ $debug && log "ES cluster(s) found: $allclusters"
 
 echo $pid > "$rpath/lock"
 
-date > "${rpath}/report"
-echo -e "-----------------------------\n" >> "${rpath}/report"
+date > "$rpath/report"
+echo -e "-----------------------------\n" >> "$rpath/report"
 
 ### allclusters and escluster mean ES cluster, not servers cluster!
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
-  #rm -f "${rpath}/${escluster}.nodes.list"
-  #mv "${rpath}/${escluster}.dat" "${rpath}/${escluster}.dat.prev"
+  #rm -f "$rpath/${escluster}.nodes.list"
+  #mv "$rpath/${escluster}.dat" "$rpath/${escluster}.dat.prev"
   clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
   clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
   clusterport1=${clusterhost1#*:}
@@ -170,25 +141,25 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   [ -n "$clusterport1" ] && clusterport="$clusterport1" || clusterport="$clusterport2"
   $debug && log "ES cluster ${escluster}: 2 random hosts selected: $clusterhost1 and $clusterhost2"
   
-  ($CURL -m 2 "http://${clusterhost1}/_cluster/health" || $CURL -m 5 "http://${clusterhost2}/_cluster/health") | ${rpath}/../../lib/json2txt > "${rpath}/${escluster}.dat.tmp"
-  mv "${rpath}/${escluster}.dat" "${rpath}/${escluster}.dat.prev"
-  mv "${rpath}/${escluster}.dat.tmp" "${rpath}/${escluster}.dat"
+  ($CURL -m 2 "http://$clusterhost1/_cluster/health" || $CURL -m 5 "http://$clusterhost2/_cluster/health") | "$M_ROOT"/lib/json2txt > "$rpath/${escluster}.dat.tmp"
+  mv "$rpath/${escluster}.dat" "$rpath/${escluster}.dat.prev"
+  mv "$rpath/${escluster}.dat.tmp" "$rpath/${escluster}.dat"
   $debug && log "ES cluster ${escluster}: health data collected"
   
   IFS1=$IFS
   IFS='
 '
-  for LINE in `cat "${rpath}/${escluster}.dat"  | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
+  for LINE in `cat "$rpath/${escluster}.dat"  | cut -d'/' -f2 | sed 's_|_=_g'` ; do eval $LINE ; done
   IFS=$IFS1
   
   $debug && log "ES cluster ${escluster}: health data parsed"
   
-  number_of_nodes_was=`grep 'number_of_nodes|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
-  number_of_data_nodes_was=`grep 'number_of_data_nodes|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
-  active_primary_shards_was=`grep 'active_primary_shards|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
-  active_shards_was=`grep 'active_shards|' "${rpath}/${escluster}.dat.prev" | cut -d'|' -f2`
+  number_of_nodes_was=`grep '"number_of_nodes"|' "$rpath/${escluster}.dat.prev" | cut -d'|' -f2`
+  number_of_data_nodes_was=`grep '"number_of_data_nodes"|' "$rpath/${escluster}.dat.prev" | cut -d'|' -f2`
+  active_primary_shards_was=`grep '"active_primary_shards"|' "$rpath/${escluster}.dat.prev" | cut -d'|' -f2`
+  active_shards_was=`grep '"active_shards"|' "$rpath/${escluster}.dat.prev" | cut -d'|' -f2`
 
-  echo -e "Cluster: $escluster\n-------------------\n" > "${rpath}/${escluster}.report"
+  echo -e "Cluster: $escluster\n-------------------\n" > "$rpath/${escluster}.report"
   
   if [ "X$status" == "Xgreen" ] ; then
     warnind='<OK> '
@@ -198,51 +169,51 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     warnind='<***>'
   fi
   
-  echo "${warnind} Cluster status: $status" >> "${rpath}/${escluster}.report"
+  echo "$warnind Cluster status: $status" >> "$rpath/${escluster}.report"
   [ "X$timed_out" == "Xfalse" ] && warnind='<OK> ' || warnind='<***>'
-  echo "${warnind} Timed out: $timed_out" >> "${rpath}/${escluster}.report"
+  echo "$warnind Timed out: $timed_out" >> "$rpath/${escluster}.report"
   [ "X$number_of_nodes" == "X$number_of_nodes_was" ] && warnind='<OK> ' || warnind=' <*> '
-  echo "${warnind} Number of nodes: $number_of_nodes" >> "${rpath}/${escluster}.report"
+  echo "$warnind Number of nodes: $number_of_nodes" >> "$rpath/${escluster}.report"
   [ "X$number_of_data_nodes" == "X$number_of_data_nodes_was" ] && warnind='<OK> ' || warnind=' <*> '
-  echo "${warnind} Number of data nodes: $number_of_data_nodes" >> "${rpath}/${escluster}.report"
+  echo "$warnind Number of data nodes: $number_of_data_nodes" >> "$rpath/${escluster}.report"
   [ "X$active_primary_shards" == "X$active_primary_shards_was" ] && warnind='<OK> ' || warnind=' <*> '
-  echo "${warnind} Active primary shards: $active_primary_shards" >> "${rpath}/${escluster}.report"
+  echo "$warnind Active primary shards: $active_primary_shards" >> "$rpath/${escluster}.report"
   [ "X$active_shards" == "X$active_shards_was" ] && warnind='<OK> ' || warnind=' <*> '
-  echo "${warnind} Active shards: $active_shards" >> "${rpath}/${escluster}.report"
+  echo "$warnind Active shards: $active_shards" >> "$rpath/${escluster}.report"
   [ "X$relocating_shards" == "X0" ] && warnind='<OK> ' || warnind=' <*> '
-  echo "${warnind} Relocating shards: $relocating_shards" >> "${rpath}/${escluster}.report"
+  echo "$warnind Relocating shards: $relocating_shards" >> "$rpath/${escluster}.report"
   [ "X$initializing_shards" == "X0" ] && warnind='<OK> ' || warnind=' <*> '
-  echo "${warnind} Initializing shards: $initializing_shards" >> "${rpath}/${escluster}.report"
+  echo "$warnind Initializing shards: $initializing_shards" >> "$rpath/${escluster}.report"
   [ "X$unassigned_shards" == "X0" ] && warnind='<OK> ' || warnind='<***>'
-  echo "${warnind} Unassigned shards: $unassigned_shards" >> "${rpath}/${escluster}.report"
+  echo "$warnind Unassigned shards: $unassigned_shards" >> "$rpath/${escluster}.report"
   $debug && log "ES cluster ${escluster}: health report generated"
   
   if [ "X$SQLITE3" == "X1" ] ; then
-    $SQLITE "${rpath}/elasticsearch.sql3" "INSERT INTO cluster (timeindex, day, name, status, timed_out, number_of_nodes, number_of_data_nodes, active_primary_shards, active_shards, relocating_shards, initializing_shards, unassigned_shards) values ($timeindexnow, '`date +"%Y%m%d"`', '$cluster_name', '$status', '$timed_out', $number_of_nodes, $number_of_data_nodes, $active_primary_shards, $active_shards, $relocating_shards, $initializing_shards, $unassigned_shards)"
+    $SQLITE "$rpath/elasticsearch.sql3" "INSERT INTO cluster (timeindex, day, name, status, timed_out, number_of_nodes, number_of_data_nodes, active_primary_shards, active_shards, relocating_shards, initializing_shards, unassigned_shards) values ($timeindexnow, '`date +"%Y%m%d"`', '$cluster_name', '$status', '$timed_out', $number_of_nodes, $number_of_data_nodes, $active_primary_shards, $active_shards, $relocating_shards, $initializing_shards, $unassigned_shards)"
     unset name status timed_out number_of_nodes number_of_data_nodes active_primary_shards active_shards relocating_shards initializing_shards unassigned_shards
   fi
   $debug && log "ES cluster ${escluster}: health data stored in database"
   
-  ($CURL -m 3 "http://${clusterhost1}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://${clusterhost2}/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.nodes.tmp"
-  mv "${rpath}/data/${escluster}.nodes.tmp" "${rpath}/data/${escluster}.nodes"
+  ($CURL -m 3 "http://$clusterhost1/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://$clusterhost2/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt > "$rpath/data/${escluster}.nodes.tmp"
+  mv "$rpath/data/${escluster}.nodes.tmp" "$rpath/data/${escluster}.nodes"
   $debug && log "ES cluster ${escluster}: nodes list compiled"
   # at last, the full list of nodes for ES cluster (might be scattered across
   # different servers clusters and clusters might not all be defined in .conf)
   
   ## This dumb test is needed to ensure that there is no ghost clusters that could form because of connectivity problems.
 #  for clusterhost in "$clusterhost1" "$clusterhost2" ; do
-#    for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
+#    for clusternode in `cat "$rpath/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
   
-#    thisnodename=`$CURL -m 2 -s "http://${clusterhost}/_cluster/nodes" | "${rpath}/../../lib/json2txt" | grep "/nodes/$clusternode/name|" | cut -d'|' -f2`
+#    thisnodename=`$CURL -m 2 -s "http://${clusterhost}/_cluster/nodes" | "$M_ROOT/lib/json2txt" | grep "/nodes/$clusternode/name|" | cut -d'|' -f2`
 #    [ -z "$thisnodename" ] && echo "<***> Node $clusternode not known to the node located on the host ${clusterhost}" >> "$rpath/report"
 #    done
 #  done
   
-  for clusternode in `cat "${rpath}/data/${escluster}.nodes" | grep ^0\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
+  for clusternode in `cat "$rpath/data/${escluster}.nodes" | grep ^0\/\"nodes\"\/ | cut -d'/' -f3 | sort | uniq` ; do
     clusternode=`echo $clusternode | sed 's|-|\\\-|g'`
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
-    ismaster=`grep ^1\/master_node "${rpath}/data/${escluster}.nodes" | grep -c "$clusternode"`
-    nodehost=`grep "${clusternode}\/transport_address|" "${rpath}/data/${escluster}.nodes"`
+    ismaster=`grep ^0\/\"master_node\" "$rpath/data/${escluster}.nodes" | grep -c "$clusternode"`
+    nodehost=`grep "$clusternode\/transport_address|" "$rpath/data/${escluster}.nodes"`
     nodehost=${nodehost#/transport_address|}
     nodehost=${nodehost%:*}
     nodehost=${nodehost##*/}
@@ -257,36 +228,36 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
       rname="$nodehost"
     fi
     eval "${escluster}nodes+=( \"${hostport}\" )"
-    echo -e "clusternode_id|${clusternode}\nip|${nodehost}\nmaster|${ismaster}" > "${rpath}/data/${escluster}.${rname}.dat.tmp"
-    ($CURL -m 5 "http://${clusterhost1}/_cluster/nodes/${clusternode}/stats?process&jvm&network" || $CURL -m 10 "http://${clusterhost2}/_cluster/nodes/${clusternode}/stats?process&jvm&network") | ${rpath}/../../lib/json2txt | awk -F"${clusternode}/" '{print $2}' >> "${rpath}/data/${escluster}.${rname}.dat.tmp"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
-    mv "${rpath}/data/${escluster}.${rname}.dat" "${rpath}/data/${escluster}.${rname}.dat.prev"
-    mv "${rpath}/data/${escluster}.${rname}.dat.tmp" "${rpath}/data/${escluster}.${rname}.dat"
+    echo -e "clusternode_id|$clusternode\nip|$nodehost\nmaster|$ismaster" > "$rpath/data/${escluster}.${rname}.dat.tmp"
+    ($CURL -m 5 "http://$clusterhost1/_cluster/nodes/$clusternode/stats?process&jvm&network" || $CURL -m 10 "http://$clusterhost2/_cluster/nodes/$clusternode/stats?process&jvm&network") | "$M_ROOT"/lib/json2txt | awk -F"$clusternode/" '{print $2}' >> "$rpath/data/${escluster}.${rname}.dat.tmp"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
+    mv "$rpath/data/${escluster}.${rname}.dat" "$rpath/data/${escluster}.${rname}.dat.prev"
+    mv "$rpath/data/${escluster}.${rname}.dat.tmp" "$rpath/data/${escluster}.${rname}.dat"
     $debug && log "    JSON stats parsed and saved to file"
     
     if [ "X$SQLITE3" == "X1" ] ; then
-      master=`grep ^master\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_size=`grep ^indices\/store\/size_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      ind_docsnum=`grep ^indices\/docs\/count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      master=`grep ^\"master\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      ind_size=`grep ^\"indices\"\/\"store\"\/\"size_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      ind_docsnum=`grep ^\"indices\"\/\"docs\"\/\"count\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
 
-      open_file_descriptors=`grep ^process\/open_file_descriptors\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_cpu_sys=$(expr \( `grep ^process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^process\/cpu/sys_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_sys=0
-      proc_cpu_user=$(expr \( `grep ^process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^process\/cpu\/user_in_millis\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_user=0
-      proc_mem_res=`grep ^process\/mem\/resident_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_mem_share=`grep ^process\/mem\/share_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      proc_mem_virt=`grep ^process\/mem\/total_virtual_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_uptime=$(expr `grep ^jvm\/uptime_in_millis\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` / 1000 2>/dev/null) || jvm_uptime=0
-      jvm_mem_heap_used=`grep ^jvm\/mem\/heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_mem_heap_committed=`grep ^jvm\/mem\/heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_mem_nonheap_used=`grep ^jvm\/mem\/non_heap_used_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_mem_nonheap_committed=`grep ^jvm\/mem\/non_heap_committed_in_bytes\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      jvm_threads=`grep ^jvm\/threads\/count\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      network_active_opens=$(expr `grep ^network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^network\/tcp\/active_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` 2>/dev/null) ||network_active_opens=0
-      network_passive_opens=$(expr `grep ^network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^network\/tcp\/passive_opens\| ${rpath}/data/${escluster}.${rname}.dat.prev | cut -d'|' -f2` 2>/dev/null) || network_passive_opens=0
-      network_curr_estab=`grep ^network\/tcp\/curr_estab\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      transport_server_open=`grep ^transport\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
-      http_server_open=`grep ^http\/server_open\| ${rpath}/data/${escluster}.${rname}.dat | cut -d'|' -f2`
+      open_file_descriptors=`grep ^\"process\"\/\"open_file_descriptors\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      proc_cpu_sys=$(expr \( `grep ^\"process\"\/\"cpu\"/\"sys_in_millis\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2` - `grep ^\"process\"\/\"cpu\"/\"sys_in_millis\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_sys=0
+      proc_cpu_user=$(expr \( `grep ^\"process\"\/\"cpu\"\/\"user_in_millis\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2` - `grep ^\"process\"\/\"cpu\"\/\"user_in_millis\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` \) / 1000 2>/dev/null) || proc_cpu_user=0
+      proc_mem_res=`grep ^\"process\"\/\"mem\"\/\"resident_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      proc_mem_share=`grep ^\"process\"\/\"mem\"\/\"share_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      proc_mem_virt=`grep ^\"process\"\/\"mem\"\/\"total_virtual_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      jvm_uptime=$(expr `grep ^\"jvm\"\/\"uptime_in_millis\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2` / 1000 2>/dev/null) || jvm_uptime=0
+      jvm_mem_heap_used=`grep ^\"jvm\"\/\"mem\"\/\"heap_used_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      jvm_mem_heap_committed=`grep ^\"jvm\"\/\"mem\"\/\"heap_committed_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      jvm_mem_nonheap_used=`grep ^\"jvm\"\/\"mem\"\/\"non_heap_used_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      jvm_mem_nonheap_committed=`grep ^\"jvm\"\/\"mem\"\/\"non_heap_committed_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      jvm_threads=`grep ^\"jvm\"\/\"threads\"\/\"count\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      network_active_opens=$(expr `grep ^\"network\"\/\"tcp\"\/\"active_opens\"\| $rpath/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^\"network\"\/\"tcp\"\/\"active_opens\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` 2>/dev/null) ||network_active_opens=0
+      network_passive_opens=$(expr `grep ^\"network\"\/\"tcp\"\/\"passive_opens\"\| $rpath/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^\"network\"\/\"tcp\"\/\"passive_opens\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` 2>/dev/null) || network_passive_opens=0
+      network_curr_estab=`grep ^\"network\"\/\"tcp\"\/\"curr_estab\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      transport_server_open=`grep ^\"transport\"\/\"server_open\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      http_server_open=`grep ^\"http\"\/\"server_open\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       $debug && log "    stats put to variables"
-      $SQLITE "${rpath}/elasticsearch.sql3" "INSERT INTO nodes (timeindex, day, hostport, master, ind_size, ind_docsnum, ind_cache_field_evictions, ind_cache_field_size, ind_cache_filter_count, ind_cache_filter_evictions, ind_cache_filter_size, ind_merges, ind_merges_time, open_file_descriptors, proc_cpu_sys, proc_cpu_user, proc_mem_res, proc_mem_share, proc_mem_virt, jvm_uptime, jvm_mem_heap_used, jvm_mem_heap_committed, jvm_mem_nonheap_used, jvm_mem_nonheap_committed, jvm_threads, network_active_opens, network_passive_opens, network_curr_estab, transport_server_open, http_server_open) values ($timeindexnow, '`date +"%Y%m%d"`', '${hostport}', $master, $ind_size, $ind_docsnum, $ind_cache_field_evictions, $ind_cache_field_size, $ind_cache_filter_count, $ind_cache_filter_evictions, $ind_cache_filter_size, $ind_merges, $ind_merges_time, $open_file_descriptors, $proc_cpu_sys, $proc_cpu_user, $proc_mem_res, $proc_mem_share, $proc_mem_virt, $jvm_uptime, $jvm_mem_heap_used, $jvm_mem_heap_committed, $jvm_mem_nonheap_used, $jvm_mem_nonheap_committed, $jvm_threads, $network_active_opens, $network_passive_opens, $network_curr_estab, $transport_server_open, $http_server_open)"
+      $SQLITE "$rpath/elasticsearch.sql3" "INSERT INTO nodes (timeindex, day, hostport, master, ind_size, ind_docsnum, ind_cache_field_evictions, ind_cache_field_size, ind_cache_filter_count, ind_cache_filter_evictions, ind_cache_filter_size, ind_merges, ind_merges_time, open_file_descriptors, proc_cpu_sys, proc_cpu_user, proc_mem_res, proc_mem_share, proc_mem_virt, jvm_uptime, jvm_mem_heap_used, jvm_mem_heap_committed, jvm_mem_nonheap_used, jvm_mem_nonheap_committed, jvm_threads, network_active_opens, network_passive_opens, network_curr_estab, transport_server_open, http_server_open) values ($timeindexnow, '`date +"%Y%m%d"`', '${hostport}', $master, $ind_size, $ind_docsnum, $ind_cache_field_evictions, $ind_cache_field_size, $ind_cache_filter_count, $ind_cache_filter_evictions, $ind_cache_filter_size, $ind_merges, $ind_merges_time, $open_file_descriptors, $proc_cpu_sys, $proc_cpu_user, $proc_mem_res, $proc_mem_share, $proc_mem_virt, $jvm_uptime, $jvm_mem_heap_used, $jvm_mem_heap_committed, $jvm_mem_nonheap_used, $jvm_mem_nonheap_committed, $jvm_threads, $network_active_opens, $network_passive_opens, $network_curr_estab, $transport_server_open, $http_server_open)"
       unset hostport master ind_size ind_docsnum ind_cache_field_evictions ind_cache_field_size ind_cache_filter_count ind_cache_filter_evictions ind_cache_filter_size ind_merges ind_merges_time open_file_descriptors proc_cpu_sys proc_cpu_user proc_mem_res proc_mem_share proc_mem_virt jvm_uptime jvm_mem_heap_used jvm_mem_heap_committed jvm_mem_nonheap_used jvm_mem_nonheap_committed jvm_threads network_active_opens network_passive_opens network_curr_estab transport_server_open http_server_open
       $debug && log "    stats stored in database, variables unset"
     fi
@@ -295,34 +266,27 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   
   eval echo -e \${${escluster}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${escluster}.nodes.list
   
-  ($CURL -m 5 "http://${clusterhost1}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://${clusterhost2}/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | ${rpath}/../../lib/json2txt > "${rpath}/data/${escluster}.routing"
+  ($CURL -m 5 "http://$clusterhost1/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://$clusterhost2/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt > "$rpath/data/${escluster}.routing"
   $debug && log "ES cluster ${escluster}: routing data collected"
   
   declare -i m
-  for shard in `cat "${rpath}/data/${escluster}.routing" | grep '^0/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
-    rm -f "${rpath}/data/${escluster}.${shard}.routing"
-    m=0 ; cat "${rpath}/data/${escluster}.routing"  | grep "^0/routing_table/indices/streams/shards/${shard}/" | sed 's|^0/routing_table/indices/streams/shards/||g' | grep -v "^${shard}/shard " | while read routline ; do routlines=( ${routlines[*]} "${routline%%|*}" ) ; [[ "${routline%%|*}" == "${routlines[0]}" ]] && m+=1; echo "${m}/${routline#*/}" >> "${rpath}/data/${escluster}.${shard}.routing" ; done
+  for shard in `cat "$rpath/data/${escluster}.routing" | grep '^0/routing_table/indices/streams/shards/' | cut -d'/' -f6 | grep ^[0-9] | sort | uniq` ; do
+    rm -f "$rpath/data/${escluster}.${shard}.routing"
+    m=0 ; cat "$rpath/data/${escluster}.routing"  | grep "^0/routing_table/indices/streams/shards/$shard/" | sed 's|^0/routing_table/indices/streams/shards/||g' | grep -v "^$shard/shard " | while read routline ; do routlines=( ${routlines[*]} "${routline%%|*}" ) ; [[ "${routline%%|*}" == "${routlines[0]}" ]] && m+=1; echo "$m/${routline#*/}" >> "$rpath/data/${escluster}.${shard}.routing" ; done
     unset routlines
   done
   $debug && log "ES cluster ${escluster}: routing data processed"
   
-  cat "${rpath}/${escluster}.report" >> "${rpath}/report"
+  cat "$rpath/${escluster}.report" >> "$rpath/report"
 done
 $debug && log "done with clusters"
 
-grep '<\*\*\*>' "${rpath}/report" | sed 's|<\*\*\*>||g' > "${rpath}/alert3"
-grep '<\*\*>' "${rpath}/report" | sed 's|<\*\*>||g' > "${rpath}/alert2"
-grep '<\*>' "${rpath}/report" | sed 's|<\*>||g' > "${rpath}/alert1"
-
-mailalert
-$debug && log "alerts generated and sent"
-
 # lazily removing stale data (terminated clusters etc)
-find "${rpath}/data/" -type f -mmin +60 -exec rm {} \;
-find "${rpath}/" -name "*.dat" -o -name "*.dat.prev" -o -name "*.nodes.list" -mmin +60 -exec rm {} \;
+find "$rpath/data/" -type f -mmin +60 -exec rm {} \;
+find "$rpath/" -name "*.dat" -o -name "*.dat.prev" -o -name "*.nodes.list" -mmin +60 -exec rm {} \;
 # keeping report for 1 day, it may contain something useful
 # ( the last known state of a disappeared cluster :) )
-find "${rpath}/" -name "*.report" -mtime +1 -exec rm {} \;
+find "$rpath/" -name "*.report" -mtime +1 -exec rm {} \;
 $debug && log "finish"
 rm -f "$rpath/lock"
 
