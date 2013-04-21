@@ -23,24 +23,31 @@ emptyobj=true
 #d=1
 declare -a arrayi
 declare -i ai
+ai=0
 quoopened=false
-quoclosed=false
+quoclosed=true
+objclosed=true
+arrclosed=false
 
 showdebug() {
   if [ -n "$1" ]; then
-    echo "Parsing line = $line"
-    echo "  WAS: index=$i  var[$i]=${index[$i]}  value=$value  quoopened=$quoopened  quoclosed=$quoclosed"
-    echo "  WAS: emptyobj=$emptyobj  isclosed=$isclosed  arrayi=${arrayi[*]}"
+    echo "  Parsing line \"$line\""
+    echo "    < index=$i  var[$i]=${index[$i]}  value=$value"
+    echo "    < quoopened=$quoopened  quoclosed=$quoclosed  arrclosed=$arrclosed  objclosed=$objclosed"
+    echo "    < emptyobj=$emptyobj  arrayi=${arrayi[*]}  ai=$ai"
   else
-    echo "  NOW: index=$i  var[$i]=${index[$i]}  value=$value  quoopened=$quoopened  quoclosed=$quoclosed"
-    echo "  NOW: emptyobj=$emptyobj  isclosed=$isclosed  arrayi=${arrayi[*]}"
+    echo "    > index=$i  var[$i]=${index[$i]}  value=$value"
+    echo "    > quoopened=$quoopened  quoclosed=$quoclosed  arrclosed=$arrclosed  objclosed=$objclosed"
+    echo "    > emptyobj=$emptyobj  arrayi=${arrayi[*]}  ai=$ai"
   fi
 }
 
 parseline() {
-  line=$1
+  line="$1"
+  $quoclosed && $quoopened && quoopened=false
   [ -n "$d" ] && showdebug was
   if [ "X$line" == "X{" ] ; then
+    objclosed=false
     #$emptyobj || index[$i]=`expr ${index[$i]} + 1`
     if [ -n "$value" ] ; then
       printvalue "$value" && unset value
@@ -51,10 +58,11 @@ parseline() {
   fi
   if [ "X$line" == "X}" ] ; then
     emptyobj=true
-    isclosed=1
+    $quoclosed && objclosed=true
     if [ -n "$value" ] ; then
       printvalue "$value" && unset value
     fi
+    unset index[$i]
     i+=-1
     # workaround for a mere list of objects, we want to count them
     [ $i -eq 0 ] && index[$i]=`expr ${index[$i]} + 1`
@@ -63,7 +71,8 @@ parseline() {
   fi
   if [ "X$line" == "X[" ] ; then
     # it is an array only if it's a beginning of a new value
-    if [[ $isclosed -ne 0 ]] || [ -z "$value" ] ; then
+    if $quoclosed || [ -z "$value" ] ; then
+      arrclosed=false
       i+=1
       arrayi=( ${arrayi[*]} $i )
       index[$i]=0
@@ -75,43 +84,56 @@ parseline() {
   fi
   if [ "X$line" == "X]" ] ; then
     #arrayi=false
-    if $quoopened ; then
-      value="${value}${line}"
-    else
+    if $quoclosed ; then
       printvalue "$value" && unset value
+      arrclosed=true
       ai=${#arrayi[*]} ; ai+=-1
       if [ -n "$ai" ] ; then
         if [[ ${arrayi[$ai]} -eq $i ]] ; then
-          i+=-1
           unset arrayi[$ai]
-        else
-          i+=-1
         fi
+        unset index[$i]
+        i+=-1
       fi
+      
+    else
+      value="${value}${line}"
     fi
     [ -n "$d" ] && showdebug
     return
   fi
   if [ "X$line" == 'X"' ] ; then
-    quoclosed=true
-    if $quoopened && $quoclosed ; then
-      isclosed=1
-      quoopened=false
+    if ! $quoopened ; then
+      quoopened=true
       quoclosed=false
+    else
+      quoclosed=true
     fi
     value="${value}${line}"
     [ -n "$d" ] && showdebug
     return
   fi
   if [ "X$line" == "X," ] ; then
-    #emptystr=true
-    if [[ $isclosed -ne 0 ]] ; then
+    if $quoclosed ; then
       printvalue "$value" && unset value
-      ai=${#arrayi[*]} ; ai+=-1
-      if [ $ai -ge 0 ] ; then
-        if [[ ${arrayi[$ai]} -eq $i ]] ; then
-          index[$i]=`expr ${index[$i]} + 1`
+      if ! $arrclosed ; then
+        if [ -n "${arrayi[*]}" ] ; then
+          ai=${#arrayi[*]} ; ai+=-1
+          if [ $ai -ge 0 ] ; then
+            if [[ ${arrayi[$ai]} -eq $i ]] ; then
+              index[$i]=`expr ${index[$i]} + 1`
+            else
+              unset index[$i]
+            fi
+          else
+            unset index[$i]
+          fi
+        else
+          unset index[$i]
         fi
+      else
+        unset index[$i]
+        arrclosed=false
       fi
     else
       value="${value}${line}"
@@ -119,9 +141,14 @@ parseline() {
     [ -n "$d" ] && showdebug
     return
   fi
+  if [ "X$line" == "X:" ] ; then
+    $quoclosed && [ -z "${index[$i]}" ] && [ -n "$value" ] && index[$i]="$value" && unset value
+    [ -n "$d" ] && showdebug
+    return
+  fi
   if [ -n "$line" ] ; then
     $emptyobj && emptyobj=false
-    
+    [ -n "$d" ] && echo "        no conditions met"
     isvarvalueline=`expr "$line" : '.*:.*'`
     if [ $isvarvalueline -eq 0 ] ; then
       # it is not a var:value line
@@ -130,33 +157,16 @@ parseline() {
       return
     fi
     # below is applicable only if it's not a part of a string value
-    if ! $quoopened ; then
+    if $quoclosed ; then
       # on the left of the first colon there must be a variable name
       varname="${line%%:*}"
       # sanitizing it
       varname=`expr "$varname" : "[[:space:]]*\"\(.*\)\""`
       index[$i]="$varname"
       # everything on the right (whatever it is)
-      value="${line#*:}" ; value=`expr "$value" : "[[:space:]]*\(.*\)"`
+      value="${line##*:}" ; value=`expr "$value" : "[[:space:]]*\(.*\)"`
     else
       value="${value}${line}"
-    fi
-    # now checking what it is
-    if [ `expr "$value" : "\"[^\"]*\"$"` -eq 0 ] ; then
-      # it is not just a quoted string value
-      if [ `expr "$value" : ".*\".*"` -ne 0 ] ; then
-        # but some quotes are there, so it all depends on the number of quotes
-        # if odd number of quotes
-        qn=`echo -n "$value" | sed 's|[^"]||g' | wc -m`
-        if [ `expr $qn % 2` -eq 1 ]; then
-          quoopened=true
-          isclosed=0
-        fi
-      else
-        isclosed=1
-      fi
-    else
-      isclosed=1
     fi
     [ -n "$d" ] && showdebug
 #    unset noprint
@@ -168,16 +178,16 @@ printvalue() {
   [ -z "$1" ] && return
   valuename="${index[0]}"
   for ((n=1; n<=$i; n++)) ; do
-    valuename="${valuename}/${index[$n]}"
+    valuename="$valuename/${index[$n]}"
   done
   valuename=${valuename%/}
-  echo "${valuename}|${1}"
+  echo "$valuename|${1}"
   unset valuename
   quoopened=false
-  quoclosed=false
+  objclosed=false
 }
 
 #( IFS='' ; for LINE in `cat $1` ; do echo "${LINE}" ; done ) | while read L ; do a=`printf "$L"|sed 's|{|\n{\n|g;s|}|\n}\n|g;s|,|\n|g'` ; echo "$a" | while read b ; do parseline $b ; echo ">>> $i $z" ; z=$i ; done ; done
-cat $1|sed 's|{|\n{\n|g;s|},|\n}\n,\n|g;s|}|\n}\n|g;s|",|"\n,\n|g;s|,"|\n,\n"|g;s|,$|\n,|g;s|,[[:space:]]"|\n,\n"|g;s|\[|\n\[\n|g;s|\],|\n\]\n,\n|g;s|\]|\n\]\n|g' | grep -v ^$ | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
+cat $1|sed 's|{|\n{\n|g;s|},|\n}\n,\n|g;s|}|\n}\n|g;s|"|\n"\n|g;s|,|\n,\n|g;s|,$|\n,|g;s|,[[:space:]]"|\n,\n"|g;s|\[|\n\[\n|g;s|\],|\n\]\n,\n|g;s|\]|\n\]\n|g;s|:|\n:\n|g' | grep -v ^$ | while read b ; do [ -n "$b" ] && parseline "${b}" ; done
 unset branch index ndcont cont i LINE node
 

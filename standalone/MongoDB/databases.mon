@@ -9,18 +9,18 @@ LOG="$M_ROOT/logs/sa.log"
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
-source "${rpath}/${rcommand%.mon}.conf" 2>/dev/null
+source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
-log "Running ${rpath}/${rcommand}"
+log "Running $rpath/$rcommand"
 
 [ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
 [ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`head -1 "$rpath/mongo_servers.list" | cut -d'|' -f1`
 [ -z "$hostport" ] && echo "No servers found" && exit 1
 
-${MONGO} ${hostport}/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "${rpath}/data/databases.dat"
+$MONGO "$hostport/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' > "$rpath/data/databases.dat"
 
-for db in `cat "${rpath}/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$"` ; do
-  ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.dat"
-  (IFS=','; for coll in `${MONGO} "$hostport/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do ${MONGO} "$hostport/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "${rpath}/data/${db}.${coll}.dat"; done)
+for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$"` ; do
+  $MONGO "$hostport/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "$rpath/data/${db}.dat"
+  (IFS=','; for coll in `$MONGO "$hostport/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do $MONGO "$hostport/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "$rpath/data/${db}.${coll}.dat"; done)
 done
 
