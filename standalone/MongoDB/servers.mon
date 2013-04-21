@@ -331,8 +331,8 @@ if [ -n "$shardhosts" ] ; then
     done
 
     for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
-      ip_to_name ${replicahost}
+      [ `grep -c "^$replicahost|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
+      ip_to_name "$replicahost"
       [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
       find_rsmemberrole "$replicahost"
       echo "$replicahost|${rs}${rsmemberrole}" >> "$M_TEMP/mongo_shards.list"

@@ -81,7 +81,7 @@ elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null |
   
 fi
 
-if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list"2>/dev/null | wc -l` -gt 0 ] ; then
+if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
   open_cluster "shardservers|Shard Servers"
   close_cluster_line
