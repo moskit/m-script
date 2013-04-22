@@ -95,6 +95,7 @@ print_line_title() {
   node="$1"
   id="${parent}.${node}"
   echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">$node</div>"
+  unset parent node id onclick
 }
 
 print_inline() {
@@ -110,6 +111,7 @@ print_inline() {
     echo "<div class=\"status\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval echo \"\\$$status\"`</div>"
     shift
   done
+  unset status onclick style
 }
 
 close_line() {
@@ -120,6 +122,7 @@ close_line() {
   id="${parent}.${node}"
   echo "</div>"
   echo "<div class=\"details\" id=\"${id}_details\"></div>"
+  unset parent node id
 }
 
 print_dashline() {
@@ -139,6 +142,7 @@ print_dashline() {
       ;;
     esac
   fi
+  unset onclick source dbpath dbtable
 }
 
 print_dashlines() {
@@ -168,6 +172,7 @@ IFS=$IFS1
       ;;
     esac
   fi
+  unset onclick source dbpath dbtable
 }
 
 print_timeline() {
@@ -186,6 +191,7 @@ print_timeline() {
     fi
   done
   echo -e "</div>\n</div>"
+  unset oldest hour timediff timestamp hournew
 }
 
 print_nav_bar() {
@@ -203,6 +209,7 @@ print_nav_bar() {
       shift
     done
   echo -e "</ul>\n</div>"
+  unset active
 }
 
 print_table_2() {
