@@ -42,43 +42,43 @@ print_page_title() {
   echo -e "<div class=\"dashtitle\">\n  <div class=\"server\">\n    <div class=\"servername\" id=\"title1\">${1}</div>"
   shift
   while [ -n "$1" ] ; do
-    id=$(echo "$1" | tr -d '<>/' | tr ' ' '_')
-    echo "<div class=\"status\" id=\"${id}\"><b>${1}</b></div>"
+    dfpptid=$(echo "$1" | tr -d '<>/' | tr ' ' '_')
+    echo "<div class=\"status\" id=\"$dfpptid\"><b>${1}</b></div>"
     shift
   done
   echo -e "  </div>\n</div>"
+  unset dfpptid
 }
 
 open_cluster() {
   if [ -n "$2" ]; then
-    onclick=$1
+    dfoconclick=$1
     shift
   fi
-  id="${@}"
-  echo "<div class=\"cluster\" id=\"${id%%|*}\">"
-  echo -e "<div class=\"clustername\"><span id=\"${id}_name\" `[ -n "$onclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"indent\\""`>${id#*|}</span>"
-  unset onclick
+  dfocid="${@}"
+  echo "<div class=\"cluster\" id=\"${dfocid%%|*}\">"
+  echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid#*|}</span>"
+  unset dfoconclick dfocid
 }
 
 print_cluster_inline() {
   while [ -n "$1" ] ; do
-    status="$1"
-    if [ "X$status" == "X-" ]; then
-      echo "<div id=\"${id}_status\" class=\"clusterstatus\">&dash;</div>"
+    dfpcistatus="$1"
+    if [ "X$dfpcistatus" == "X-" ]; then
+      echo "<div id=\"${dfocid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
     fi
-    [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
-    [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}" && onclick="${onclick%%|*}"
-    echo "<div id=\"${id}_status\" `[ -n "$onclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${id}_name','${onclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$style\">`eval echo \\$$status`</div>"
+    [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}"
+    [ -n "$dfpcionclick" -a "${dfpcionclick%%|*}" != "${dfpcionclick#*|}" ] && dfpcistyle="${dfpcionclick#*|}" && dfpcionclick="${dfpcionclick%%|*}"
+    echo "<div id=\"${dfocid}_status\" `[ -n "$dfpcionclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfpcionclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$dfpcistyle\">`eval echo \\$$dfpcistatus`</div>"
     shift
   done
 }
 
 close_cluster_line() {
-  id="${@}"
   echo "</div>"
-  [ -n "$id" ] && echo "<div class=\"details\" id=\"${id}_details\"></div>"
+  [ -n "$dfocid" ] && echo "<div class=\"details\" id=\"${dfocid}_details\"></div>" && unset dfocid
 }
 
 close_cluster() {
@@ -87,76 +87,71 @@ close_cluster() {
 
 print_line_title() {
   if [ -n "$3" ]; then
-    onclick=$1
+    dfpltonclick=$1
     shift
   fi
-  parent="$1"
+  dfpltparent="$1"
   shift
-  node="$1"
-  id="${parent}.${node}"
-  echo -e "<div class=\"server\" id=\"${id}\">\n<div class=\"servername\" id=\"${id}_name\" onclick=\"showDetails('${id}_name','${onclick}')\">$node</div>"
-  unset parent node id onclick
+  dfpltnode="$1"
+  dfpltid="${dfpltparent}.${dfpltnode}"
+  echo -e "<div class=\"server\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnode</div>"
+  unset dfpltparent dfpltnode dfpltonclick
 }
 
 print_inline() {
   while [ -n "$1" ] ; do
-    status="$1"
-    if [ "X$status" == "X-" ]; then
-      echo "<div id=\"${id}_status\" class=\"clusterstatus\">&dash;</div>"
+    dfpistatus="$1"
+    if [ "X$dfpistatus" == "X-" ]; then
+      echo "<div id=\"${dfpltid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
     fi
-    [ "${status%%|*}" != "${status#*|}" ] && onclick="${status#*|}" && status="${status%%|*}"
-    [ -n "$onclick" -a "${onclick%%|*}" != "${onclick#*|}" ] && style="${onclick#*|}"
-    echo "<div class=\"status\" id=\"${clustername}_$status\" onclick=\"showDetails('${clustername}_name','$onclick')\" style=\"$style\">`eval echo \"\\$$status\"`</div>"
+    [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}"
+    [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}"
+    echo "<div class=\"status\" id=\"${clustername}_$dfpistatus\" onclick=\"showDetails('${clustername}_name','$dfpionclick')\" style=\"$dfpistyle\">`eval echo \"\\$$dfpistatus\"`</div>"
     shift
   done
-  unset status onclick style
+  unset dfpistatus dfpionclick dfpistyle
 }
 
 close_line() {
- # id=$(echo ${@} | tr ' ' '_')
-  parent="$1"
-  shift
-  node="$1"
-  id="${parent}.${node}"
   echo "</div>"
-  echo "<div class=\"details\" id=\"${id}_details\"></div>"
-  unset parent node id
+  echo "<div class=\"details\" id=\"${dfpltid}_details\"></div>"
+  unset dfpltid
 }
 
 print_dashline() {
-  onclick=$1
-  source=$2
+  dfpdonclick=$1
+  dfpdsource=$2
   shift 2
-  if [ -n "$source" ]; then
-    case $source in
+  if [ -n "$dfpdsource" ]; then
+    case $dfpdsource in
     folder)
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
       cat "$dpath/../www/${@}/dash.html"
       ;;
     database)
-      dbpath=$1
+      dfpddbpath=$1
       shift
-      dbtable=$1
+      dfpddbtable=$1
       ;;
     esac
   fi
-  unset onclick source dbpath dbtable
+  unset dfpdsource dfpddbpath dfpddbtable
 }
 
 print_dashlines() {
-  onclick=$1
-  source=$2
+  dfpdsonclick=$1
+  dfpdssource=$2
   shift 2
-  if [ -n "$source" ]; then
-    case $source in
+  if [ -n "$dfpdssource" ]; then
+    case $dfpdssource in
     folder)
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
 IFS1=$IFS; IFS='
 '
       for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
-        print_line_title $onclick "${server##*/}"
+        print_line_title $dfpdsonclick "${server##*/}"
         cat "$dpath/../www/${@}/${server##*/}/dash.html"
         close_line "${server##*/}"
       done
@@ -164,34 +159,34 @@ IFS=$IFS1
       ;;
     database)
       shift
-      dbpath=$1
+      dfpdsdbpath=$1
       shift
-      dbtable=$1
+      dfpdsdbtable=$1
       
       
       ;;
     esac
   fi
-  unset onclick source dbpath dbtable
+  unset dfpdsonclick dfpdssource dfpdsdbpath dfpdsdbtable
 }
 
 print_timeline() {
-  oldest=`date -d "-$timerange sec"`
-  hour=`date -d "$oldest" +"%H"`
+  dfptoldest=`date -d "-$timerange sec"`
+  dfpthour=`date -d "$dfptoldest" +"%H"`
   echo -e "<div class=\"dashtitle\">\n<div class=\"clustername\"><span class=\"indent\">${1}</span></div>\n<div class=\"server\">\n<span class=\"servername\">${2}</span>\n"
   for ((n=0; n<$slotline_length; n++)) ; do
-    timediff=`expr $n \* \( $freqdef - $timeshift \)`
-    timestamp=`date -d "$oldest +$timediff sec"`
-    hournew=`date -d "$timestamp" +"%H"`
-    if [ "X$hournew" == "X$hour" ] ; then
+    dfpttimediff=`expr $n \* \( $freqdef - $timeshift \)`
+    dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`
+    dfpthournew=`date -d "$dfpttimestamp" +"%H"`
+    if [ "X$dfpthournew" == "X$dfpthour" ] ; then
       echo "<div class=\"chunk\">&nbsp;</div>"
     else
-      echo "<div class=\"chunk hour\">${hournew}:00</div>"
-      hour=$hournew
+      echo "<div class=\"chunk hour\">${dfpthournew}:00</div>"
+      dfpthour=$dfpthournew
     fi
   done
   echo -e "</div>\n</div>"
-  unset oldest hour timediff timestamp hournew
+  unset dfptoldest dfpthour dfpttimediff dfpttimestamp dfpthournew
 }
 
 print_nav_bar() {
@@ -199,17 +194,17 @@ print_nav_bar() {
   # that is, clicking it is the same as clicking the corresponding upper tab
   # other buttons IDs become CGI scripts names (with .cgi extension)
   [ -z "$1" ] && exit 0
-  [ "${1%%|*}" == "${0%.cgi}" ] && active=" active"
-  echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$active\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
+  [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
+  echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
     shift
     while [ -n "$1" ]; do
-      unset active
-      [ "${1%%|*}" == "${0%.cgi}" ] && active=" active"
+      unset dfpnbactive
+      [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
       echo -e "<li class=\"viewsbutton$active\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
       shift
     done
   echo -e "</ul>\n</div>"
-  unset active
+  unset dfpnbactive
 }
 
 print_table_2() {

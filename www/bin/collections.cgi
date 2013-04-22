@@ -79,7 +79,7 @@ for db in `cat "$PWD/../../standalone/$saname/data/databases.dat"` ; do
     coll_indexsize="$coll_indexsize $csunits"
     
     print_inline "coll_status" "coll_sharded" "coll_primary" "coll_count" "coll_size" "coll_indexsize"
-    close_line "$dbname" "$coll_name"
+    close_line
     
   done
   close_cluster

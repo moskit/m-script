@@ -41,7 +41,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
         echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
-  close_line "$clustername" "$clustername"
+  close_line
 
     for node in `cat $PWD/../../standalone/$scriptname/${clustername}.nodes.list | sort` ; do
       [ "X`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
@@ -54,7 +54,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^\\"process\\"/\\"open_file_descriptors\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_conn\">`grep ^\\"http\\"/\\"server_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^\\"transport\\"/\\"server_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         
-      close_line "$node" "$clustername"
+      close_line
     done
     
 close_cluster

@@ -70,7 +70,7 @@ for db in `find "$PWD/../../standalone/$saname/data" -mindepth 1 -maxdepth 1 -ty
       coll_chunks="-"
     fi
     print_inline "coll_status" "coll_count" "coll_size" "stor_size" "coll_indexsize" "coll_chunks"
-    close_line "$db" "$coll"
+    close_line
   done
   close_cluster
 done
