@@ -235,7 +235,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     $debug && log "    JSON stats parsed and saved to file"
     
     if [ "X$SQLITE3" == "X1" ] ; then
-      master=`grep ^\"master\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      master=`grep ^master\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       ind_size=`grep ^\"indices\"\/\"store\"\/\"size_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       ind_docsnum=`grep ^\"indices\"\/\"docs\"\/\"count\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
 
