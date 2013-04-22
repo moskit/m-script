@@ -200,7 +200,7 @@ print_nav_bar() {
     while [ -n "$1" ]; do
       unset dfpnbactive
       [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
-      echo -e "<li class=\"viewsbutton$active\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
+      echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
       shift
     done
   echo -e "</ul>\n</div>"
