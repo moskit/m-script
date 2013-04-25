@@ -116,22 +116,22 @@ printreturn() {
     case $res in
       ip)
         if [ "X$NETWORK" == "Xexternal" ] ; then
-          grep \/addresses\/public "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+          grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         else
-          grep \/addresses\/private "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+          grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         fi
         ;;
       ipext)
-        grep \/addresses\/public "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
       ipint)
-        grep \/addresses\/private "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
       id)
-        grep \/id\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/\"id\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
       pass|password)
-        grep \/adminPass "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        grep \/\"adminPass\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
         ;;
     esac
   done
@@ -204,8 +204,8 @@ done
 
 code=`grep \/\"code\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 [ -n "$code" ] && echo -n "${code}: "
-grep \/message\| "$M_TEMP/${rcommand}.resp"
-newid=`grep \/id\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+grep \/\"message\"\| "$M_TEMP/${rcommand}.resp"
+newid=`grep \/\"id\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then
   save_details $verbose || true
   wait_ready $verbose
