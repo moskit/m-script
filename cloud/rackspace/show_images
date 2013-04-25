@@ -91,7 +91,7 @@ list_images() {
       unset id name istatus created updated progress
       for LINE in `grep "/\"images\"/$sn/" "$M_TEMP/images.resp"` ; do
         LINE=`echo $LINE | awk -F"\"images\"/$sn/" '{print $2}'`
-        lvar=`echo $LINE | cut -d'|' -f1`
+        lvar=`echo $LINE | cut -d'|' -f1 | tr -d '"'`
         if [ -n "$filter" ] ; then
           for fvar in `echo -e $filter | tr ',' '\n'` ; do            
             [[ $lvar =~ $fvar ]] || continue 2

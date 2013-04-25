@@ -77,7 +77,7 @@ CURL="$CURL -s -k"
 declare -i icount
 
 [ -n "$short" ] && req='/servers' || req='/servers/detail'
-[ -n "$forceupdate" ] && rm -f "${M_TEMP}"/${rcommand}.resp
+[ -n "$forceupdate" ] && rm -f "$M_TEMP"/${rcommand}.resp
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
@@ -87,27 +87,27 @@ request() {
   updateflavors=false
   updateimages=false
   URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/id "$M_TEMP/auth.resp" | cut -d'|' -f2`
   URL=`eval "echo $URL"` ; TOKEN=`eval "echo $TOKEN"`
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
-  if [ -n "`find "${M_TEMP}" -mtime -2 -name flavors.resp`" ]; then
-    if grep -q code\|401$ "${M_TEMP}/flavors.resp" ; then
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  if [ -n "`find "$M_TEMP" -mtime -2 -name flavors.resp`" ]; then
+    if grep -q code\|401$ "$M_TEMP/flavors.resp" ; then
       updateflavors=true
     fi
   else
     updateflavors=true
   fi
-  if [ -n "`find "${M_TEMP}" -mtime -2 -name images.resp`" ]; then
-    if grep -q code\|401$ "${M_TEMP}/images.resp" ; then
+  if [ -n "`find "$M_TEMP" -mtime -2 -name images.resp`" ]; then
+    if grep -q code\|401$ "$M_TEMP/images.resp" ; then
       updateimages=true
     fi
   else
     updateimages=true
   fi
-  $updateflavors && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
-  (nump=0; f=false ; cat "${M_TEMP}/flavors.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "${M_TEMP}/flavors.list"
-  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
-  (nump=0; f=false ; cat "${M_TEMP}/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "${M_TEMP}/images.list"
+  $updateflavors && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/flavors/detail" | "${rpath}/../../lib/json2txt" > "$M_TEMP/flavors.resp"
+  (nump=0; f=false ; cat "$M_TEMP/flavors.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/flavors.list"
+  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/images.resp"
+  (nump=0; f=false ; cat "$M_TEMP/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/images.list"
 }
 
 list_servers() {
@@ -115,14 +115,14 @@ list_servers() {
   IFS1=$IFS
   IFS='
 '
-  if [ -f "${M_TEMP}/${rcommand}.resp" ] ; then
-    for sn in `cat "${M_TEMP}/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
+  if [ -f "$M_TEMP/${rcommand}.resp" ] ; then
+    for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
-      for LINE in `grep "/servers/${sn}/" "${M_TEMP}/${rcommand}.resp"` ; do
-        LINE=`echo $LINE | awk -F"servers/${sn}/" '{print $2}'`
-        lvar=`echo $LINE | cut -d'|' -f1`
+      for LINE in `grep "/\"servers\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
+        LINE=`echo $LINE | awk -F"\"servers\"/$sn/" '{print $2}'`
+        lvar=`echo $LINE | cut -d'|' -f1 | tr -d '"'`
         if [ -n "$filter" ] ; then
-          for fvar in `echo -e ${filter} | tr ',' '\n'` ; do            
+          for fvar in `echo -e $filter | tr ',' '\n'` ; do            
             [[ $lvar =~ $fvar ]] || continue 2
           done
         fi
@@ -168,7 +168,7 @@ list_servers() {
           # no icluster means that server will not be shown, but only if there
           # is no option --all. With this option, however, we want to see all
           # clusters assigned via metadata
-          [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+          [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
           $debug && [ -n "$update_servers_list" ] && unset ecf
         fi
       done
@@ -187,7 +187,7 @@ list_servers() {
               echo "ID: $id  Name: $name  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
               ;;
             table)
-              echo "${id}|${name}|${istatus}|${extIP}|${intIP}|${icluster}|${imageId}|${flavorId}"
+              echo "$id|$name|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId"
               ;;
             column)
               echo -e "ID: $id\nName: $name\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
