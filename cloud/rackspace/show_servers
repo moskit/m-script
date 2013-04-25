@@ -86,19 +86,19 @@ request() {
   local updateflavors updateimages
   updateflavors=false
   updateimages=false
-  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/id "$M_TEMP/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
   URL=`eval "echo $URL"` ; TOKEN=`eval "echo $TOKEN"`
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   if [ -n "`find "$M_TEMP" -mtime -2 -name flavors.resp`" ]; then
-    if grep -q code\|401$ "$M_TEMP/flavors.resp" ; then
+    if grep -q \"code\"\|401$ "$M_TEMP/flavors.resp" ; then
       updateflavors=true
     fi
   else
     updateflavors=true
   fi
   if [ -n "`find "$M_TEMP" -mtime -2 -name images.resp`" ]; then
-    if grep -q code\|401$ "$M_TEMP/images.resp" ; then
+    if grep -q \"code\"\|401$ "$M_TEMP/images.resp" ; then
       updateimages=true
     fi
   else
@@ -106,7 +106,7 @@ request() {
   fi
   $updateflavors && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/flavors/detail" | "${rpath}/../../lib/json2txt" > "$M_TEMP/flavors.resp"
   (nump=0; f=false ; cat "$M_TEMP/flavors.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/flavors.list"
-  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/images.resp"
+  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/images/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/images.resp"
   (nump=0; f=false ; cat "$M_TEMP/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/images.list"
 }
 
@@ -235,7 +235,7 @@ imageid() {
 }
 
 flavorid() {
-  grep ^$1\| "${M_TEMP}/flavors.list" | cut -d'|' -f2
+  grep ^$1\| "$M_TEMP/flavors.list" | cut -d'|' -f2
 }
 
 try_auth() {
@@ -261,10 +261,10 @@ if [ -z "$noupdate" ] ; then
   request
   declare -i n
   n=0
-  while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+  while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 265
     [ $n -gt 1 ] && sleep 30
-    rm -f "${M_TEMP}/auth.resp"
+    rm -f "$M_TEMP/auth.resp"
     try_auth
     request
     n+=1
