@@ -71,7 +71,7 @@ find_flavor() {
 request() {
   log "Sending request..."
   URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/id "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
   $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/servers" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"

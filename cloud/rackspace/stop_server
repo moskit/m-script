@@ -149,10 +149,10 @@ fi
 req="/servers/$id"
 
 request() {
-  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
   log "Sending DELETE to \"${URL}${req}\""
-  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2| tr -d '"'`
-  $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2| tr -d '"'`
+  $CURL -X DELETE -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   echo $?
 }
 
@@ -176,10 +176,10 @@ reqres=`request`
 [ $reqres -gt 0 ] && log "Curl request returned status $reqres"
 declare -i n
 n=0
-while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
   [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 177
   [ $n -gt 1 ] && sleep 30
-  rm -f "${M_TEMP}/auth.resp"
+  rm -f "$M_TEMP/auth.resp"
   try_auth
   reqres=`request`
   [ $reqres -gt 0 ] && log "Curl request returned status $reqres"
@@ -187,11 +187,11 @@ while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 
 done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
-cat "${M_TEMP}/${rcommand}.resp" >> "$LOG"
+cat "$M_TEMP/${rcommand}.resp" >> "$LOG"
 
-IPS=( `echo -e "${ipint}\n${ipext}\n${ip}" | sort | uniq` )
+IPS=( `echo -e "$ipint\n$ipext\n$ip" | sort | uniq` )
 
-if [ $reqres -eq 0 -a `grep -c code\|4 "${M_TEMP}/${rcommand}.resp"` -eq 0 ]; then
+if [ $reqres -eq 0 -a `grep -c \"code\"\|4 "$M_TEMP/${rcommand}.resp"` -eq 0 ]; then
   log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated successfully"
   echo -e "`date`\n\nServer ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
   removed=true
@@ -204,7 +204,7 @@ if [ $removed -o $force ]; then
   for ipa in ${IPS[*]} ; do
     if [ -n "$ipa" ] ; then
       $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "$ipa removed from known_hosts"
-      sed -i "/^$ipa|/d" "${rpath}/../../servers.list" && log "$ipa removed from servers.list"
+      sed -i "/^$ipa|/d" "$rpath/../../servers.list" && log "$ipa removed from servers.list"
       sed -i "/^$ipa /d" /etc/hosts && log "$ipa removed from /etc/hosts"
     fi
   done
