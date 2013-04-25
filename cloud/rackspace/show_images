@@ -33,7 +33,7 @@ $debug && LOG="$M_ROOT/logs/show_images.log"
 possible_options="noupdate"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo ${@} | sed 's/^--//;s/ --/|/g'`
 
 IFS1=$IFS
 IFS='|'
@@ -74,26 +74,26 @@ lock_cloudops || exit 10
 CURL="$CURL -s -k"
 
 request() {
-  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
   URL=`eval "echo $URL"` ; TOKEN=`eval "echo $TOKEN"`
   
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
-  (nump=0; f=false ; cat "${M_TEMP}/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "${M_TEMP}/images.list"
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/images/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/images.resp"
+  (nump=0; f=false ; cat "$M_TEMP/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/images.list"
 }
 
 list_images() {
   IFS1=$IFS
   IFS='
 '
-  if [ -f "${M_TEMP}/images.resp" ] ; then
-    for sn in `cat "${M_TEMP}/images.resp" | cut -d'/' -f3 | sort | uniq` ; do
+  if [ -f "$M_TEMP/images.resp" ] ; then
+    for sn in `cat "$M_TEMP/images.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus created updated progress
-      for LINE in `grep "/images/${sn}/" "${M_TEMP}/images.resp"` ; do
-        LINE=`echo $LINE | awk -F"images/${sn}/" '{print $2}'`
+      for LINE in `grep "/\"images\"/$sn/" "$M_TEMP/images.resp"` ; do
+        LINE=`echo $LINE | awk -F"\"images\"/$sn/" '{print $2}'`
         lvar=`echo $LINE | cut -d'|' -f1`
         if [ -n "$filter" ] ; then
-          for fvar in `echo -e ${filter} | tr ',' '\n'` ; do            
+          for fvar in `echo -e $filter | tr ',' '\n'` ; do            
             [[ $lvar =~ $fvar ]] || continue 2
           done
         fi
@@ -117,7 +117,7 @@ list_images() {
           echo "ID: $id  Name: $name  Status: $istatus  Created: $created  Updated: $updated  $progress"
           ;;
         table)
-          echo "${id}|${name}|${istatus}|$created|$updated|$progress"
+          echo "$id|$name|$istatus|$created|$updated|$progress"
           ;;
         column)
           echo -e "ID: $id\nName: $name\nStatus: $istatus\nCreated: $created\n Updated: $updated\n$progress\n"
@@ -134,7 +134,7 @@ list_images() {
       
     done
   else
-    log "response file ${M_TEMP}/images.resp not found"
+    log "response file $M_TEMP/images.resp not found"
   fi
   IFS=$IFS1
 }
@@ -142,7 +142,7 @@ list_images() {
 try_auth() {
   local -i i
   i=0
-  while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 146
     ${rpath}/auth
     i+=1
@@ -156,10 +156,10 @@ if [ -z "$noupdate" ] ; then
   request
   declare -i n
   n=0
-  while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "${M_TEMP}/images.resp"` -eq 1 ] ; do
+  while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/images.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 160
     [ $n -gt 1 ] && sleep 30
-    rm -f "${M_TEMP}/auth.resp"
+    rm -f "$M_TEMP/auth.resp"
     try_auth
     request
     n+=1
