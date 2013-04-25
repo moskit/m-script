@@ -86,8 +86,8 @@ request() {
   local updateflavors updateimages
   updateflavors=false
   updateimages=false
-  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
   URL=`eval "echo $URL"` ; TOKEN=`eval "echo $TOKEN"`
   $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/${rcommand}.resp"
   if [ -n "`find "${M_TEMP}" -mtime -2 -name flavors.resp`" ]; then
@@ -261,7 +261,7 @@ if [ -z "$noupdate" ] ; then
   request
   declare -i n
   n=0
-  while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
+  while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "${M_TEMP}/${rcommand}.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 265
     [ $n -gt 1 ] && sleep 30
     rm -f "${M_TEMP}/auth.resp"

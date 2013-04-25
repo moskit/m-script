@@ -70,8 +70,8 @@ find_flavor() {
 
 request() {
   log "Sending request..."
-  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  TOKEN=`grep ^0\/auth\/token\/id "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/id "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
   $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/servers" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
   #[ -n "`find "${M_TEMP}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
@@ -83,9 +83,9 @@ save_details() {
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/id\||\/imageId\||\/flavorId\||\/adminPass\||\/addresses\/public|\/addresses\/private" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
   chmod 600 "$rpath/../rackspace.log"
   if [ "X$NETWORK" == "Xexternal" ] ; then
-    slip=`grep \/addresses\/public "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
+    slip=`grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   else
-    slip=`grep \/addresses\/private "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
+    slip=`grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
   echo "$slip|$thekey|$region|$name|$cluster" >> "$rpath/../../servers.list"
   return 0
@@ -101,9 +101,9 @@ wait_ready() {
     sleep $waitperiod
     "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
     if [ -n "$1" ] ; then
-      printf "Progress: `grep \/progress\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`     \r"
+      printf "Progress: `grep \/\"progress\"\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`     \r"
     fi
-    if [ "X`grep \/status\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
+    if [ "X`grep \/\"status\"\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
       echo
       return 0
     fi
@@ -192,7 +192,7 @@ fi
 request && log "Request sent"
 declare -i n
 n=0
-while [ `grep -c ^0\/unauthorized\/code\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
+while [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
   [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 207
   [ $n -gt 1 ] && sleep 30
   rm -f "$M_TEMP/auth.resp"
@@ -202,7 +202,7 @@ while [ `grep -c ^0\/unauthorized\/code\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 
 done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
-code=`grep \/code\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+code=`grep \/\"code\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 [ -n "$code" ] && echo -n "${code}: "
 grep \/message\| "$M_TEMP/${rcommand}.resp"
 newid=`grep \/id\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
