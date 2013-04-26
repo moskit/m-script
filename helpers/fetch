@@ -54,7 +54,8 @@ else
     res=$?
   fi
 fi
-[[ $res -eq 0 ]] && exit 0
+[ $res -eq 0 ] && exit 0
+[ $res -ne 1 ] && exit 1
 
 if [ -n "$CURL" ] ; then
   [ -n "$2" ] && DEST="-o ${2}/$filename" || DEST="-o $filename"
@@ -67,7 +68,8 @@ if [ -n "$CURL" ] ; then
     res=$?
   fi
 fi
-[[ $res -eq 0 ]] && exit 0
+[ $res -eq 0 ] && exit 0
+[ $res -ne 1 ] && exit 1
 
 if [ -n "$LINKS" ] ; then
   [ -n "$2" ] && DEST="${2}/$filename" || DEST="$filename"
