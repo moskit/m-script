@@ -1,5 +1,7 @@
 h1. Introduction
 
+"M-Script":http://m-script.org is a project intended to combine the flexibility of traditional Unix approach, simplicity of Unix shell and power of native Linux system utilities to a single server management solution.
+
 M-Script is, basically, a collection of shell scripts for various server management tasks. Each of the scripts can be run separately when/if needed, but bound together they form a well-integrated solution, still flexible because it is easy to combine/pipe/edit shell scripts to make them do exactly what you need.
 
 It is based upon the main "Unix Way principles":http://en.wikipedia.org/wiki/Unix_philosophy :
@@ -15,33 +17,34 @@ M-Script is designed to help in:
 
 * Monitoring
 * Backups
-* Cloud management: auto-scalability based on monitoring
+* Administration tasks scripting
+* Cloud and clusters management: auto-scalability based on monitoring, tasks execution on multiple servers, synchronizing files and folders across multiple servers (clusters, super-clusters, cluster groups, regions, clouds)
 
 h2. Features
 
 * Pluggable monitoring modules
-* 3-level alerting system
+* 3-level alerting system with filtering
 * Easy watchdogs creation
-* Database for monitoring data (SQLite)
-* Graphs for monitoring data
-* Databases and files backups, local and/or remote
+* Monitoring data database (SQLite)
+* Monitoring data graphs
+* Flexible multi-config databases/files backups, local and/or remote
 * Remote backups: to/from, FTP, SCP, Rsync, S3, EC2 EBS snapshots
-* Cloud servers management: start, stop, save, list, load balancing (Nginx), EC2 Route53 DNS support
-* Dashboard web interface
+* Cloud servers management: servers and images creation/deletion, auto-scalability, programmable deployment system, load balancing, EC2 Route53 DNS support
+* Dashboard web interface, easily scriptable to allow custom monitors/actions integration
 
-h2. Usage Example
+h2. Usage Example - Auto-scalability
 
-You found out that you get the users activity peak each time it gets rainy in London. To prevent possible servers overload and your website slowing down you want to start additional application servers automatically, depending on the current weather in London.
+You found out that you get the users activity peak each time it gets rainy in London. So what you want is to start one additional Amazon EC2 instance and add it to your application servers cluster.
 
 First you need a custom monitoring plugin. In our case it is going to be a London weather monitoring plugin.
 
-All it has to do is provide output lines starting with @<OK>@ if the weather is sunny, or one of three alert levels if not, like this:
-* @<OK>@ Weather in London: Sunny
-* @<*>@ Weather in London: Rainy
-* @<**>@ Weather in London: Heavy Rain
-* @<***>@ Weather in London: Rain / Thunder
+All it has to do is provide output lines starting with <OK> if the weather is sunny, or one of three alert levels if not, like this:
+* <OK> Weather in London: Sunny
+* <*> Weather in London: Rainy
+* <**> Weather in London: Heavy Rain
+* <***> Weather in London: Rain / Thunder
 
-So here is the plugin (Shell, but you can use whatever you think is a better fit):
+So here is the plugin (in Unix shell, but you can use whatever you think is a better fit):
 
 <pre><code class="sh">
 #!/bin/bash
@@ -59,12 +62,15 @@ echo "<OK> Weather in London: Cloudy"
 Now, you want to start one additional application server if it becomes rainy, two servers if the rain is heavy, and three servers if it's a thunderstorm. This is done in the actions configuration file conf/actions.conf:
 
 <pre><code class="sh">
-Weather\ in\ London%1%cloud/ec2/start_server --cluster=application --number=1
-Weather\ in\ London%2%cloud/ec2/start_server --cluster=application --number=2
-Weather\ in\ London%3%cloud/ec2/start_server --cluster=application --number=3
+Weather\ in\ London|1|start_server --cluster=application --number=1
+Weather\ in\ London|2|start_server --cluster=application --number=2
+Weather\ in\ London|3|start_server --cluster=application --number=3
+Weather\ in\ London|0|stop_server --cluster=application --last
 </code></pre>
+
+where 'application' is your application servers cluster name defined in conf/cluster.conf
 
 That's all.
 
-You don't have to stop servers if the weather is sunny: you start them to address possible load peak beforehand. If the peak doesn't come or has finished, additional servers stop automatically because the load is low.
+This is only one of possible scalability scenarios. You can make it less aggressive starting up one server at a time, define how often servers can start, minimal and maximal numbers and so on. See "M-Script Wiki":http://www.m-script.org/projects/m-script/wiki for details.
 
