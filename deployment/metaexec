@@ -306,7 +306,7 @@ if [ -n "$newserver" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
-    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 303
+    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 309
   else
     echo "*** This is a test"
   fi
@@ -411,7 +411,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
         fi
         if $runthis && ! $skipthis ; then
           run_meta "$meta"
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 402
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 414
         fi
       fi
       metan+=1
@@ -429,7 +429,7 @@ if [ -z "$list" ] ; then
 fi
 echo
 if [ -n "$newserver" ]; then
-  proper_exit 0 428
+  proper_exit 0 432
 fi
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then

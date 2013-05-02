@@ -103,7 +103,7 @@ wait_ready() {
     if [ -n "$1" ] ; then
       printf "Progress: `grep \/\"progress\"\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`     \r"
     fi
-    if [ "X`grep \/\"status\"\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
+    if [ "X`grep \/\\"status\\"\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
       echo
       return 0
     fi

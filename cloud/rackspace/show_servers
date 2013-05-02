@@ -207,12 +207,12 @@ list_servers() {
         fi
       else
         if [ -n "$icluster" ] ; then
-          if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
-            key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
+          if [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^$icluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
             for ip in $IP ; do
               ip=${ip#* } ; ip=${ip% *}
               sed -i /^$ip\|/d "$M_ROOT/servers.list"
-              echo "${ip}|${key}|${region}|${name}|${icluster}" >> "$M_ROOT/servers.list"
+              echo "$ip|$key|$region|$name|$icluster" >> "$M_ROOT/servers.list"
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
           fi
@@ -225,13 +225,13 @@ list_servers() {
     proper_exit 0 225
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|\"${listip}\"$ "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
+    [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^$listip\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^$listip\|/d "$M_ROOT/servers.list"
   done
   IFS=$IFS1
 }
 
 imageid() {
-  grep ^$1\| "${M_TEMP}/images.list" | cut -d'|' -f2
+  grep ^$1\| "$M_TEMP/images.list" | cut -d'|' -f2
 }
 
 flavorid() {

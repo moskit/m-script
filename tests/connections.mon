@@ -261,7 +261,7 @@ then
  echo "<***> There is no services listening on unix sockets: ${sockets[*]}"
 fi
 
-rm -f "${M_TEMP}"/ports.*.$$ "${M_TEMP}"/sockets.$$
+rm -f "$M_TEMP"/ports.*.$$ "$M_TEMP"/sockets.$$
 # End of netstat test
 
 echo
@@ -276,33 +276,33 @@ cat /proc/net/protocols | tail -n +2 | awk '{printf "%-24s %s\n", $1, $3}'
 if [ "X$CONNTEST_IP" == "X" ]
 then
   if [ "X$ROUTE" != "X" ]; then
-    $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' > "${M_TEMP}/ping.tmp"
+    $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' | grep -v ^127.0.0.1$ > "$M_TEMP/ping.tmp"
   fi
-  [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> "${M_TEMP}/ping.tmp"
-  [ -f "${M_TEMP}/ping.tmp" ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
+  [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> "$M_TEMP/ping.tmp"
+  [ -f "$M_TEMP/ping.tmp" ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
   failedip=""
   pingedip=""
   while read LINE
   do
-   [ "X${LINE}" == "X" ] || $PING -c1 $LINE >/dev/null
+   [ -z "$LINE" ] || $PING -c1 $LINE >/dev/null
    if [ "$?" != "0" ] ; then
-    failedip="${failedip} ${LINE}"
+    failedip="$failedip $LINE"
    else
-    pingedip="${pingedip} ${LINE}"
+    pingedip="$pingedip $LINE"
    fi
-  done < "${M_TEMP}/ping.tmp"
+  done < "$M_TEMP/ping.tmp"
 else
-  for connip in ${CONNTEST_IP}
+  for connip in $CONNTEST_IP
   do
-    [ "X${connip}" == "X" ] || $PING -c1 ${connip} >/dev/null
+    [ "X$connip" == "X" ] || $PING -c1 $connip >/dev/null
     if [ "$?" != "0" ] ; then
-      failedip="${failedip} ${LINE}"
+      failedip="$failedip $LINE"
     else
-      pingedip="${pingedip} ${LINE}"
+      pingedip="$pingedip $LINE"
     fi
   done
 fi
-rm -f "${M_TEMP}/ping.tmp"
+rm -f "$M_TEMP/ping.tmp"
 if [ "X$CONNTEST_IP" == "X127.0.0.1" ] || [ "X$CONNTEST_IP" == "Xlocalhost" ]; then
   if [ -n "$pingedip" ]; then
    echo ""
@@ -318,7 +318,7 @@ else
    [ -n "$failedip" ] && echo "Ping to $failedip failed"
   else
    echo '<***> Server is disconnected!'
-   echo "<***> IP(s) ${failedip} unavailable"
+   echo "<***> IP(s) $failedip unavailable"
   fi
 fi
 
