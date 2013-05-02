@@ -187,6 +187,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
+[ -n "$SSHPORT" ] || SSHPORT=22
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
@@ -341,7 +342,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     $debug && log "ensuring the target server $ip is accessible"
     if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
-        $SSH -i "$KEY" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
+        $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
         if [ $? -ne 0 ]; then
           echo "Unable to login to the server $ip using the key ${KEY}, trying again...">>"$LOG"
           loggedin=false
