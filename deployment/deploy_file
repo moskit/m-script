@@ -209,7 +209,7 @@ source "$rpath/../conf/cloud.conf"
 [ -n "$debug" ] && verbose="yes"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-[ -n "$M_ROOT" ] || M_ROOT=$(cd "$rpath/../" && pwd)
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 export PATH="$M_ROOT/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
 [ -n "$SSHPORT" ] || SSHPORT=22
 

@@ -17,13 +17,16 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
-
-source "${rpath}/../conf/mon.conf"
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+source "$M_ROOT/conf/mon.conf"
 
 getprocessname() {
   if [ -d /proc/$1 ] ; then
     pfull=`ps -wwo cmd= $1`
     pcomm=`echo $pfull | cut -d' ' -f1`
+  else
+    pfull="unknown"
+    pcomm="unknown"
   fi
 }
 
@@ -57,7 +60,7 @@ echo "----------------"
 echo
 echo "  Process           PID                     PID file"
 echo
-for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+for LINE in `cat "$M_ROOT/conf/services.conf"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
   LINE=`echo "$LINE" | sed 's|[[:space:]]*$||'`
   thepath=`echo "$LINE" | sed 's|[[:space:]]*recursive||'`
   # to workaround the weird idea of some OS packagers to have /var/run in
@@ -66,7 +69,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
   if [ -d "$thepath" ] ; then
     if [[ "$LINE" =~ [[:space:]]*recursive$ ]] ; then
       find "$thepath" -name "*\.pid" | while read pidfile ; do
-        for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
+        for exclpidfile in `cat "$M_ROOT/conf/pidfiles.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
         do
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
@@ -77,7 +80,7 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
       done
     else
       find "$thepath" -maxdepth 1 -name "*\.pid" | while read pidfile ; do
-        for exclpidfile in `cat ${rpath}/../conf/pidfiles.exclude | grep -v '^#' | grep -v '^[[:space:]]*#'`
+        for exclpidfile in `cat "$M_ROOT/conf/pidfiles.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
         do
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
@@ -93,8 +96,8 @@ for LINE in `cat "${rpath}/../conf/services.conf"|grep -v ^$|grep -v ^#|grep -v 
     echo "<***> Path ${thepath%/} doesn't exist!"
   fi
 done
-[ -f "${rpath}/../services.list" ] && prevlist=`cat "${rpath}/../services.list" 2>/dev/null` || echo "services.list not found" >> "${rpath}/../monitoring.log"
-[ -f "${M_TEMP}/services.tmp" ] && currlist=`cat ${M_TEMP}/services.tmp 2>/dev/null` || echo "services.tmp not found" >> "${rpath}/../monitoring.log"
+[ -f "$M_ROOT/services.list" ] && prevlist=`cat "$M_ROOT/services.list" 2>/dev/null` || echo "services.list not found" >> "$M_ROOT/monitoring.log"
+[ -f "$M_TEMP/services.tmp" ] && currlist=`cat "$M_TEMP/services.tmp" 2>/dev/null` || echo "services.tmp not found" >> "$M_ROOT/monitoring.log"
 if [ -n "$prevlist" -a -n "$currlist" ] ; then
   for LINE in $currlist ; do
     if [ `echo "$prevlist" | grep -c "^${LINE}$"` -eq 0 ] ; then
@@ -119,9 +122,9 @@ if [ -n "$prevlist" -a -n "$currlist" ] ; then
     fi
   done
 else
-  echo "${rcommand} failed to compare services lists: one of the lists is empty" >> "${rpath}/../monitoring.log"
+  echo "$rcommand failed to compare services lists: one of the lists is empty" >> "$M_ROOT/monitoring.log"
 fi
-[ -f "${M_TEMP}/services.tmp" ] && cat ${M_TEMP}/services.tmp > "${rpath}/../services.list"
-rm -f ${M_TEMP}/services.tmp 2>&1
+[ -f "$M_TEMP/services.tmp" ] && cat "$M_TEMP/services.tmp" > "$M_ROOT/services.list"
+rm -f "$M_TEMP/services.tmp" 2>&1
 IFS=$IFS1
 
