@@ -97,6 +97,8 @@ fi
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/cloud.conf"
+[ -z "$SSHPORT" ] && SSHPORT=22
 
 IFS1=$IFS
 IFS='
@@ -112,9 +114,9 @@ findchain_local() {
 }
 
 findchain_remote() {
-  upperchain=`$SSH -i "$3" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -vE \"^ACCEPT|^REJECT|^DROP|^LOG\" | head -1 | awk '{print \\$1}'"`
+  upperchain=`$SSH -i "$3" -p $SSHPORT -o ConnectTimeout=5 -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -vE \"^ACCEPT|^REJECT|^DROP|^LOG\" | head -1 | awk '{print \\$1}'"`
   if [ -n "$upperchain" ] ; then
-    $SSH -i "$3" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain  || echo $1
+    $SSH -i "$3" -p $SSHPORT -o ConnectTimeout=5 -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain  || echo $1
   else
     echo $1
   fi
@@ -175,10 +177,10 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
         [ -n "$rchain" ] || continue
         [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
         command="\`which iptables-save 2>/dev/null\` | grep -E \"\-A $rchain \-s $IP2UB \-j ACCEPT\|\-A $rchain \-s $IP2UB/[0-9]\* \-j ACCEPT\" | wc -l"
-        existing=`$SSH -i "$KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"`
+        existing=`$SSH -i "$KEY" -p $SSHPORT -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"`
         if [[ $existing -eq 0 ]] ; then
           command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
-          $SSH -i "$KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"
+          $SSH -i "$KEY" -p $SSHPORT -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"
         else
           dupes=`expr $existing - 1`
           if [[ $dupes -gt 0 ]] ; then
@@ -186,7 +188,7 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
             for ((n=0; n<$dupes; n++)) ; do
               printf "."
               command="\`which iptables 2>/dev/null\` -D \"$rchain\" -s $IP2UB -j ACCEPT"
-              $SSH -i "$KEY" -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"
+              $SSH -i "$KEY" -p $SSHPORT -o ConnectTimeout=5 -o StrictHostKeyChecking=no $IP "$command"
             done
             echo
           fi
