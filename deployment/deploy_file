@@ -57,14 +57,14 @@ find_source() {
   if [ -f "$from" ] ; then
     fullfrom=$from
   else
-    if [ -f "${ROLES_ROOT}/${role}/${flavor}/files/$from" ] ; then
-      fullfrom="${ROLES_ROOT}/${role}/${flavor}/files/${from}"
+    if [ -f "$ROLES_ROOT/$role/$flavor/files/$from" ] ; then
+      fullfrom="$ROLES_ROOT/$role/$flavor/files/$from"
     else
-      echo -n "${rcommand}: neither $from nor ${ROLES_ROOT}/${role}/${flavor}/files/$from is found, "
+      echo -n "${rcommand}: neither $from nor $ROLES_ROOT/$role/$flavor/files/$from is found, "
       if [[ "$flavor" != "common" ]] ; then echo -n "guessing flavor=common ... "
-        if [ -f "${ROLES_ROOT}/${role}/common/files/$from" ] ; then
+        if [ -f "$ROLES_ROOT/$role/common/files/$from" ] ; then
           echo "found"
-          fullfrom="${ROLES_ROOT}/${role}/common/files/${from}"
+          fullfrom="$ROLES_ROOT/$role/common/files/$from"
         else
           echo -n "not found ... "
           notfound=1
@@ -74,13 +74,13 @@ find_source() {
         echo -n "checking if another role is included ... "
         [ -n "$ROLEINCL" ] && echo -n "included role $ROLEINCL found ... "
         if [[ "$role" != "$ROLEINCL" ]] ; then
-          if [ -f "${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from" ] ; then
-            fullfrom="${ROLES_ROOT}/${ROLEINCL}/${flavor}/files/$from"
-            echo "the file is found in included role ${ROLEINCL} ... good"
+          if [ -f "$ROLES_ROOT/$ROLEINCL/$flavor/files/$from" ] ; then
+            fullfrom="$ROLES_ROOT/$ROLEINCL/$flavor/files/$from"
+            echo "the file is found in included role $ROLEINCL ... good"
             realrole=$ROLEINCL
-          elif [ -f "${ROLES_ROOT}/${ROLEINCL}/common/files/$from" ] ; then
-            fullfrom="${ROLES_ROOT}/${ROLEINCL}/common/files/$from"
-            echo "the file is found in included role ${ROLEINCL} ... good"
+          elif [ -f "$ROLES_ROOT/$ROLEINCL/common/files/$from" ] ; then
+            fullfrom="$ROLES_ROOT/$ROLEINCL/common/files/$from"
+            echo "the file is found in included role $ROLEINCL ... good"
             realrole=$ROLEINCL
           else
             echo "file not found, giving up"
@@ -96,9 +96,9 @@ find_source() {
 
 prepare_file() {
   [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
-  [ -f "${ROLES_ROOT}/${role}/role.conf" ] && store_vars "${ROLES_ROOT}/${role}/role.conf"
+  [ -f "$ROLES_ROOT/$role/role.conf" ] && store_vars "$ROLES_ROOT/$role/role.conf"
   source "${tmpfile}.var"
-  rm -f "${tmpfile}" "${tmpfile}.orig"
+  rm -f "$tmpfile" "${tmpfile}.orig"
   cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
     sed 's|\\"|\\\\"|g' | \
@@ -114,19 +114,19 @@ prepare_file() {
     else
       LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
       unset KEEP
-      a=`eval "echo \"$LINE\"" 2>>"${rpath}/../logs/deploy.log"`
+      a=`eval "echo \"$LINE\"" 2>>"$rpath/../logs/deploy.log"`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
-        echo "$a" >> "${tmpfile}"
+        echo "$a" >> "$tmpfile"
       else
-        echo "$LINE" >> "${tmpfile}"
+        echo "$LINE" >> "$tmpfile"
       fi
-      [ -n "$debug" ] && tail -1 "${tmpfile}" || true
+      [ -n "$debug" ] && tail -1 "$tmpfile" || true
     fi
   done
   if [ -n "$role" -a -n "$task" -a -n "$timestamp" ] ; then
-    install -d "${WORK_DIR}/${role}.${task}.${timestamp}/files"
-    cp "${tmpfile}" "${WORK_DIR}/${role}.${task}.${timestamp}/files/"
-    cp "${tmpfile}".{var,orig} "${WORK_DIR}/${role}.${task}.${timestamp}/files/"
+    install -d "$WORK_DIR/${role}.${task}.${timestamp}/files"
+    cp "$tmpfile" "$WORK_DIR/${role}.${task}.${timestamp}/files/"
+    cp "$tmpfile".{var,orig} "$WORK_DIR/${role}.${task}.${timestamp}/files/"
   fi
 }
 
@@ -232,7 +232,7 @@ if [ -z "$cluster" ] ; then
       exit 1
     fi
   else
-    cluster=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+    cluster=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
     [ -z "$cluster" ] && echo "${rcommand}: cluster not defined for role $role" && exit 1
   fi
 fi

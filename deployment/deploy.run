@@ -159,8 +159,10 @@ IFS1=$IFS; IFS='
 [[ "$role" == "common" ]] || store_vars common
 [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
 # if some other role's script is included in meta script, source its variables
-# too.
-roleincluded=${file%%/*} #*/
+# too. Same for scripts symlinked from other roles.
+[ -f "$file" ] && realfile="$file" || realfile=`readlink -f "$file"`
+realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/||"`
+roleincluded=${realfile%%/*} #*/
 if [ "X$roleincluded" != "X$role" ] ; then
   if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ] ; then
     store_vars $roleincluded
