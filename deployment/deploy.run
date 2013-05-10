@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -142,14 +142,14 @@ export debug verbose dry
 [ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 
-[ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "${rpath}/../logs/deploy.log" && exit 1
-[ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
+[ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "$rpath/../logs/deploy.log" && exit 1
+[ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `cat "$rpath/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
 [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
 export role task timestamp   ## exports the working dir
-install -d "${WORK_DIR}/${role}.${task}.${timestamp}/${file%/*}" >> "${rpath}/../logs/deploy.log" 2>&1 || exit 1
+install -d "$WORK_DIR/${role}.${task}.${timestamp}/${file%/*}" >> "$rpath/../logs/deploy.log" 2>&1 || exit 1
 declare -i RETVAL
 RETVAL=0
 IFS1=$IFS; IFS='
@@ -160,7 +160,7 @@ IFS1=$IFS; IFS='
 [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
 # if some other role's script is included in meta script, source its variables
 # too. Same for scripts symlinked from other roles.
-[ -f "$file" ] && realfile="$file" || realfile=`readlink -f "$file"`
+[ -h "$ROLES_ROOT/$file" ] && realfile=`readlink -f "$ROLES_ROOT/$file"` || realfile="$ROLES_ROOT/$file"
 realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/||"`
 roleincluded=${realfile%%/*} #*/
 if [ "X$roleincluded" != "X$role" ] ; then
