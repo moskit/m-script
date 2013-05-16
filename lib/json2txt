@@ -153,7 +153,8 @@ parseline() {
   if [ -n "$line" ] ; then
     $emptyobj && emptyobj=false
     [ -n "$d" ] && echo "        no conditions met"
-    isvarvalueline=`expr "$line" : '.*:.*'`
+    isvarvalueline=`expr "$line" : '.*:.*' 2>/dev/null`
+    [ -z "$isvarvalueline" ] && isvarvalueline=0
     if [ $isvarvalueline -eq 0 ] ; then
       # it is not a var:value line
       value="${value}${line}"

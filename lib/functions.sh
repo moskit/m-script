@@ -37,7 +37,7 @@ store_results() {
     elif [ -n "$callerfolder" -a "${callerfolder##*/}" == "tests" ]; then
       dbfile="$callerfolder/../sysdata"
     else
-      echo "Non-standard file location, unable to determine where the database is"
+      log "Non-standard file location, unable to determine where the database is, caller parent folder is ${callerparent##*/}, caller folder is ${callerfolder##*/}"
       exit 1
     fi
     dbtable="${callername%.mon}"
