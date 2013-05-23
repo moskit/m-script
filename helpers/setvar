@@ -60,12 +60,14 @@ s_value=`expr "X$ARG" : 'X[^=]*=\(.*\)'`
 
 set_var() {
   if [ -n "$uncomment" ] ; then
-    sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=&|g" "$conf" && echo "uncommented" && return 0
+    sed -i "s|^[[:space:]]*#*[[:space:]]*${s_var}=\(.*\)|${s_var}=\1|" "$conf" && echo "uncommented"
+    [ -n "$s_val" ] && sed -i "s|^[[:space:]]*${s_var}=.*|${s_var}=${s_val}|" "$conf" && echo "changed"
+    return 0
   fi
   if [ -n "$add" ] ; then
-    sed -i "s|^[[:space:]]*${s_var}=\(.*\)|${s_var}=&,${s_val}|g" "$conf" && echo "added" && return 0
+    sed -i "s|^[[:space:]]*${s_var}=\(.*\)|${s_var}=\1,${s_val}|" "$conf" && echo "added" && return 0
   else
-    sed -i "s|^[[:space:]]*${s_var}=.*|${s_var}=${s_val}|g" "$conf" && echo "changed" && return 0
+    sed -i "s|^[[:space:]]*${s_var}=.*|${s_var}=${s_val}|" "$conf" && echo "changed" && return 0
   fi
   return 1
 }

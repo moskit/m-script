@@ -276,11 +276,11 @@ then
   else
     if [ -z "$defopt" ] ; then
       echo
-      read -p "Do you want me to install it now?  [y/N] " installsqlite
+      read -p "Do you want me to install it now?  [Y/n] " installsqlite
     else
       installsqlite="y"
     fi
-    if [ `echo $installsqlite | grep -c -i "^y"` -ne 0 ]
+    if [ `echo $installsqlite | grep -c -i "^n"` -eq 0 ]
     then
       case $OS in
       debian)
