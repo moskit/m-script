@@ -18,8 +18,18 @@
 # This allows to start this script on boot
 # Just create a symlink like this:
 # ln -s /path-to/monitoringload.run /etc/init.d
-# chkconfig:   - 99 1
-# LSB headers are in a separate file that is copied over to its place by setup
+### For chkconfig:
+# chkconfig:   2345 99 1
+# description: monitorload
+# processname: monitorload.run
+
+### BEGIN INIT INFO
+# Provides:          monitorload
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Required-Start:
+# Required-Stop:
+### END INIT INFO
 
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
