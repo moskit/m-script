@@ -238,54 +238,53 @@ else
   fi
   
   ## Collecting servers list
-  rm -f "${M_TEMP}/mongo_servers.list"
+  rm -f "$M_TEMP/mongo_servers.list"
   # For hosts from servers.conf
   for mongohost in $configips ; do
     mongoport=${mongohost##*:}
     mongohost="${mongohost%:*}"
     # Is it a part of replica set?
-    if [ "X`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
-      replicaset=`${MONGO} ${mongohost}:${mongoport}/config --quiet --eval "rs.conf()._id" | tail -1`
+    if [ "X`$MONGO "${mongohost}:${mongoport}/config" --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
+      replicaset=`$MONGO "${mongohost}:${mongoport}/config" --quiet --eval "rs.conf()._id" | tail -1`
       find_rsmemberrole "${mongohost}:${mongoport}"
     fi
-    echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
+    echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
   done
   
   # Getting hosts list for every found replica set
-  for rs in `cat "${M_TEMP}/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
-    for rshost in `cat "${M_TEMP}/mongo_servers.list" | grep "|${rs}|" | cut -d'|' -f1` ; do
-      replicahosts=`${MONGO} ${rshost}/config --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
+  for rs in `cat "$M_TEMP/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
+    for rshost in `cat "$M_TEMP/mongo_servers.list" | grep "|$rs|" | cut -d'|' -f1` ; do
+      replicahosts=`$MONGO "$rshost/config" --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
-      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/host | cut -d' ' -f2 | tr -d '"'`
+      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d' ' -f2 | tr -d '"'`
       [ $res -eq 0 ] && break
     done
 
     for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "${M_TEMP}/mongo_servers.list"` -gt 0 ] && continue
-      ip_to_name ${replicahost}
-      [ `grep -c "^${rname}:${replicahost##*:}|" "${M_TEMP}/mongo_servers.list"` -gt 0 ] && continue
-      find_rsmemberrole "${replicahost}"
-      echo "${rname}:${replicahost##*:}||${rs}${rsmemberrole}" >> "${M_TEMP}/mongo_servers.list"
+      [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
+      ip_to_name "$replicahost"
+      [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
+      find_rsmemberrole "$replicahost"
+      echo "${rname}:${replicahost##*:}||${rs}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
     done
-
   done
-  
-  [ -f "${M_TEMP}/mongo_servers.list" ] && [ -f "${rpath}/mongo_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_servers.list" "${rpath}/mongo_servers.list"`" ] && mv "${M_TEMP}/mongo_servers.list" "${rpath}/mongo_servers.list"
+
+  [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"`" ] && mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
 fi
   
 for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
-#  master=`find_master ${configip} || echo ${configip}`
-  mongoses=`$MONGO ${configip}/config --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null`
+# master=`find_master ${configip} || echo ${configip}`
+  mongoses=`$MONGO "$configip/config" --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>/dev/null`
   res=$?
   mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -d'|' -f2 | tr -d '"' | sort -n`
   [ $res -eq 0 ] && break
 done
 
 if [ -n "$mongoses" ] ; then
-  print_servers $mongoses > "${M_TEMP}/mongo_mongos_servers.list"
-  [ -f "${M_TEMP}/mongo_mongos_servers.list" ] && [ -f "${rpath}/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"`" ] && mv "${M_TEMP}/mongo_mongos_servers.list" "${rpath}/mongo_mongos_servers.list"
+  print_servers $mongoses > "$M_TEMP/mongo_mongos_servers.list"
+  [ -f "$M_TEMP/mongo_mongos_servers.list" ] && [ -f "$rpath/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"`" ] && mv "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"
 else
   echo > "$rpath/mongo_mongos_servers.list"
 fi

@@ -371,7 +371,6 @@ if [ -n "`which insserv 2>/dev/null`" ] ; then
 else
   case $OS in
   debian)
-    `which update-rc.d` monitorload defaults
     `which update-rc.d` enable
     ;;
   gentoo)

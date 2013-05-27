@@ -51,7 +51,7 @@ do
     s_optarg='yes' 
     ;;
   *)
-    s_param=${s_option}
+    s_param="$s_option"
     s_optname=''
     s_optarg=''
     ;;
@@ -81,10 +81,10 @@ trap 'exit' 0
 trap 'exit' 3
 trap 'exit' 15
 
-[ -n "$config" ] || config="${rpath}/${rcommand##*/}.conf"
+[ -n "$config" ] || config="$rpath/${rcommand##*/}.conf"
 [ -e "$config" ] || config="/etc/${rcommand##*/}.conf"
 if [ -e "$config" ] ; then
-  source $config
+  source "$config"
 fi
 [ -n "$logfile" ] || logfile="/var/log/${rcommand##*/}.log"
 [ -n "$errlogfile" ] || errlogfile=$logfile
@@ -101,7 +101,7 @@ fi
 [ -n "$wait" ] || wait=0
 case $s_param in
   start)
-    [ -f "$pidfile" ] && [ -n "`cat ${pidfile}|grep -v ^$|tail -1`" ] && [ -d "/proc/`cat ${pidfile}|grep -v ^$|tail -1`" ] &&  echo "Already running (PID `cat ${pidfile}|grep -v ^$|tail -1`, file $pidfile)." && exit 0
+    [ -f "$pidfile" ] && [ -n "`cat "$pidfile"|grep -v ^$|tail -1`" ] && [ -d "/proc/`cat "$pidfile"|grep -v ^$|tail -1`" ] &&  echo "Already running (PID `cat "$pidfile"|grep -v ^$|tail -1`, file $pidfile)." && exit 0
     printf "Starting ${0##*/}...   " | tee -a $logfile
     if [ -e "$config" ] ; then
       echo "Using configuration file $config" >>"$logfile"
@@ -110,26 +110,26 @@ case $s_param in
     fi
     [ -n "$chdir" ] && cd "$chdir"
     if [ -n "$user" -a "$UID" == "0" ] ; then
-      su $user -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
+      su $user -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null" &
       succ=$?
-      echo $! > $pidfile
+      echo $! > "$pidfile"
     elif [ -n "$group" -a "$UID" == "0" ] ; then
-      sg $group -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>$logfile 2>>$errlogfile </dev/null" &
+      sg $group -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null" &
       succ=$?
       echo $! > $pidfile
     else
-      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>$logfile 2>&1 </dev/null &
+      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
       succ=$?
-      echo $! > $pidfile
+      echo $! > "$pidfile"
     fi
 
-    [[ $succ -eq 0 ]] && [ -n "`cat ${pidfile}|grep -v ^$|tail -1`" ] && echo "done (PID `cat ${pidfile}|grep -v ^$|tail -1`)" || echo "error" | tee -a $logfile
+    [[ $succ -eq 0 ]] && [ -n "`cat "$pidfile"|grep -v ^$|tail -1`" ] && echo "done (PID `cat "$pidfile"|grep -v ^$|tail -1`)" || echo "error" | tee -a "$logfile"
     [ -n "$cdback" ] && cd "$cdback"
     ;;
   stop)
     if [ -z "$config" ] ; then
       echo "Configuration file is not defined, guessing PID file... "
-      [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
+      [ -e "$pidfile" ] || pidfile="$rpath/${rcommand##*/}.pid"
       if [ -e "$pidfile" ] ; then
         echo "Using PID file $pidfile"
       else
@@ -138,10 +138,10 @@ case $s_param in
       fi
     else
       [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
-      [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
+      [ -e "$pidfile" ] || pidfile="$rpath/${rcommand##*/}.pid"
     fi
-    if [ -f ${pidfile} ]; then
-      pid=`cat ${pidfile}|grep -v ^$|tail -1`
+    if [ -f "$pidfile" ]; then
+      pid=`cat "$pidfile"|grep -v ^$|tail -1`
       if [ -n "$pid" ] ; then
         printf "Stopping $rcommand (pid $pid)...      "
         kill -15 $pid
@@ -160,14 +160,14 @@ case $s_param in
             echo "error"
           fi
         else
-          rm -f $pidfile
+          rm -f "$pidfile"
           echo "done"
         fi
       else
         echo "Unable to stop ${rcommand}, PID file is empty"
       fi
     else
-      echo "${pidfile} not found!"
+      echo "$pidfile not found!"
     fi
     ;;
   restart)
@@ -177,9 +177,9 @@ case $s_param in
     ;;
   status)
     [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
-    [ -e "$pidfile" ] || pidfile="${rpath}/${rcommand##*/}.pid"
-    if [ -f ${pidfile} ]; then
-      pid=`cat ${pidfile}|grep -v ^$|tail -1`
+    [ -e "$pidfile" ] || pidfile="$rpath/${rcommand##*/}.pid"
+    if [ -f "$pidfile" ]; then
+      pid=`cat "$pidfile"|grep -v ^$|tail -1`
       if [ -n "$pid" ] ; then
         [ -d "/proc/$pid" ] && echo "${0##*/} is running (pid $pid)" || echo "pidfile exists, but process $pid is not running"
       else
