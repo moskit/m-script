@@ -238,7 +238,7 @@ else
   fi
   
   ## Collecting servers list
-  rm -f "$M_TEMP/mongo_servers.list"
+  [ -f "$M_TEMP/mongo_servers.list" ] && rm -f "$M_TEMP/mongo_servers.list"
   # For hosts from servers.conf
   for mongohost in $configips ; do
     mongoport=${mongohost##*:}
@@ -256,7 +256,7 @@ else
     for rshost in `cat "$M_TEMP/mongo_servers.list" | grep "|$rs|" | cut -d'|' -f1` ; do
       replicahosts=`$MONGO "$rshost/config" --quiet --eval "rs.conf().members.forEach(printjson)" 2>/dev/null`
       res=$?
-      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d' ' -f2 | tr -d '"'`
+      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
       [ $res -eq 0 ] && break
     done
 
@@ -286,7 +286,7 @@ if [ -n "$mongoses" ] ; then
   print_servers $mongoses > "$M_TEMP/mongo_mongos_servers.list"
   [ -f "$M_TEMP/mongo_mongos_servers.list" ] && [ -f "$rpath/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"`" ] && mv "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"
 else
-  echo > "$rpath/mongo_mongos_servers.list"
+  echo -n > "$rpath/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
