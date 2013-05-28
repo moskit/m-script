@@ -23,10 +23,10 @@ for hp in $hostport ; do
 $MONGO "$hp/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' >> "$rpath/data/databases.dat"
 done
 
-for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$"` ; do
-  [ -f "$rpath/data/${db}.${coll}.dat" ] && rm -f "$rpath/data/${db}.${coll}.dat"
+for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$|^local$" | sort | uniq` ; do
+  rm -f "$rpath"/data/${db}.*.dat
   for hp in $hostport ; do
-    $MONGO "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | $M_ROOT/lib/json2txt > "$rpath/data/${db}.dat"
+    $MONGO "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | $M_ROOT/lib/json2txt >> "$rpath/data/${db}.dat"
     (IFS=','; for coll in `$MONGO "$hp/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do $MONGO "$hp/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | $M_ROOT/lib/json2txt >> "$rpath/data/${db}.${coll}.dat"; done)
   done
 done
