@@ -405,7 +405,7 @@ case $command1 in
           1)
           if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
             if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-              echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+              echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors. If it is a new script, use full notation (role/flavor/scriptname) or create it directly: $ED \"$ROLES_ROOT/$role/$flavor/$param1\" or $ED \"$ROLES_ROOT/$role/common/$param1\"." && exit 1
             else
               $ED "$ROLES_ROOT/$role/common/$param1"
             fi
@@ -424,7 +424,7 @@ case $command1 in
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
-        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors. If you intended to create a new file, just create it directly: $ED \"$ROLES_ROOT/$role/$flavor/files/$param1\" or $ED \"$ROLES_ROOT/$role/common/files/$param1\"." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           $ED "$rf"
         else

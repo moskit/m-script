@@ -73,38 +73,39 @@ if [ -z "$output" ] ; then
   [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 fi
 
-source "${rpath}/../conf/deployment.conf"
-source "${rpath}/../conf/cloud.conf"
+source "$rpath/../conf/deployment.conf"
+source "$rpath/../conf/cloud.conf"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-M_ROOT=$(cd "${rpath}/../" && pwd)
-export PATH=${M_ROOT}/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}
+M_ROOT=$(cd "$rpath/../" && pwd)
+export PATH=$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH
 [ -z "$role" ] && role=$M_ROLE
-[ -z "$flavor" ] && flavor=`cat "${rpath}/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^${role}\| | cut -d'|' -f2`
+[ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
 if [ -z "$role" -o -z "$flavor" ] ; then
   [ -z "$cluster" -a -z "$ip" ] && echo "Either role or flavor not found. In this case either ip or cluster is necessary." && exit 1
 fi
-[ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "${rpath}/../servers.list" | cut -d'|' -f5`
+[ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "$rpath/../servers.list" | cut -d'|' -f5`
 [ -n "$cluster" -a -z "$ip" ] && ip="127.0.0.1"
 declare -i RETVAL
 RETVAL=0
 good=true
 if [ -z "$role" ] ; then
-  role=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f10`
+  role=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f10`
   [ -z "$role" ] && echo "Unable to find the role of this cluster/server. Define one of role, cluster, ip or check if you have a default role defined for this cluster in conf/clusters.conf" && exit 1
 fi
 if [ -z "$flavor" ] ; then
-  flavor=`grep ^$cluster\| "${rpath}/../conf/clusters.conf" | cut -d'|' -f11`
+  flavor=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f11`
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS. Define it as a command-line option or check if this cluster has a default flavor set in conf/cluster.conf" && exit 1
 fi
-source "${ROLES_ROOT}/${role}/role.conf"
+source "$ROLES_ROOT/$role/role.conf"
 IFS1=$IFS
 IFS='
 '
 declare -i n
 n=0
-[ -e "${ROLES_ROOT}/${role}/meta.${task}" ] || RETVAL=255
-for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
+[ ! -e "$ROLES_ROOT/$role/meta.$task" ] && echo "Task $task not found!" && exit 255
+
+for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
   n+=1
   ([[ $meta =~ ^# ]] || [[ $meta =~ ^$ ]] || [[ $meta =~ ^[[:space:]]*# ]]) && continue
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$meta\033[00;39m" || printf "META: $meta"
@@ -113,9 +114,9 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
   metascript=`eval "echo $metascript"`
   echo -e "\n type: $metatype  script: $metascript\n"
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-    if [ ! -e "${ROLES_ROOT}/$metascript" ] ; then
+    if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
       [ -n "$use_color" ] && printf "\033[01;31m"
-      echo "  ERROR :: line $n :: ${ROLES_ROOT}/$metascript doesn't exist"
+      echo "  ERROR :: line $n :: $ROLES_ROOT/$metascript doesn't exist"
       [ -n "$use_color" ] && printf "\033[00;39m"
       RETVAL+=1
       echo
@@ -125,11 +126,11 @@ for meta in `cat "${ROLES_ROOT}/${role}/meta.${task}"` ; do # | grep -v ^# | gre
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=(){}[]`"' ; for l in `cat "${ROLES_ROOT}/${metascript}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | sort | uniq ; IFS=$IFS2) ; do
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]`"' ; for l in `cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | sort | uniq) ; do
       printf "$var :: "
       a=`eval "echo \$var"`
       if [ -z "$a" ] ; then
-        if [ `grep -c "${var}=" "${ROLES_ROOT}/${metascript}"` -gt 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "${ROLES_ROOT}/${metascript}"` -gt 0 ] ; then
+        if [ `grep -c "${var}=" "$ROLES_ROOT/$metascript"` -gt 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "$ROLES_ROOT/$metascript"` -gt 0 ] ; then
           [ -n "$use_color" ] && printf "\033[01;31m"
           echo -e "\nERROR :: line $n :: $metascript :: variable $var is null"
           RETVAL+=1
