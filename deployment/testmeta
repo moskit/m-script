@@ -131,7 +131,7 @@ for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^
       a=`eval "echo \"$var\""`
       if [ -z "$a" ] ; then
         if [ `grep -c "${var}=" "$ROLES_ROOT/$metascript"` -eq 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "$ROLES_ROOT/$metascript"` -eq 0 ] ; then
-          if [ `grep -c "${var}=" "$ROLES_ROOT/${metascript%%/*}"` -eq 0 ]; then
+          if [ `grep -c "${var}=" "$ROLES_ROOT/${metascript%%/*}/role.conf"` -eq 0 ]; then
             [ -n "$use_color" ] && printf "\033[01;31m"
             echo -e "\nERROR :: line $n :: $metascript :: variable $var is not defined"
             RETVAL+=1
