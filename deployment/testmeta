@@ -126,16 +126,22 @@ for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]`"' ; for l in `cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | sort | uniq) ; do
-      printf "$var :: "
-      a=`eval "echo \$var"`
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]#%-`"' ; for l in `cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | tr -d '{' | tr -d '}' | sort | uniq) ; do
+      echo -n "$var :: "
+      a=`eval "echo \"$var\""`
       if [ -z "$a" ] ; then
-        if [ `grep -c "${var}=" "$ROLES_ROOT/$metascript"` -gt 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "$ROLES_ROOT/$metascript"` -gt 0 ] ; then
-          [ -n "$use_color" ] && printf "\033[01;31m"
-          echo -e "\nERROR :: line $n :: $metascript :: variable $var is null"
-          RETVAL+=1
-          good=false
-          [ -n "$use_color" ] && printf "\033[00;39m"
+        if [ `grep -c "${var}=" "$ROLES_ROOT/$metascript"` -eq 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "$ROLES_ROOT/$metascript"` -eq 0 ] ; then
+          if [ `grep -c "${var}=" "$ROLES_ROOT/${metascript%%/*}"` -eq 0 ]; then
+            [ -n "$use_color" ] && printf "\033[01;31m"
+            echo -e "\nERROR :: line $n :: $metascript :: variable $var is not defined"
+            RETVAL+=1
+            good=false
+            [ -n "$use_color" ] && printf "\033[00;39m"
+          else
+            [ -n "$use_color" ] && printf "\033[01;33m"
+            printf "empty  "
+            [ -n "$use_color" ] && printf "\033[00;39m"
+          fi
         else
           [ -n "$use_color" ] && printf "\033[01;33m"
           printf "internal  "
