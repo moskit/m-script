@@ -97,7 +97,7 @@ if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f11`
   [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS. Define it as a command-line option or check if this cluster has a default flavor set in conf/cluster.conf" && exit 1
 fi
-source "$ROLES_ROOT/$role/role.conf"
+
 IFS1=$IFS
 IFS='
 '
@@ -122,6 +122,7 @@ for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^
       echo
       continue
     fi
+    source "$ROLES_ROOT/${metascript%%/*}/role.conf"
     ### Variant with subshells extraction
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
