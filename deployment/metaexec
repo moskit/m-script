@@ -131,7 +131,7 @@ run_meta() {
 
 startserver() {
   ip=0
-  ip="`IAMACHILD=1 "$rpath"/../cloud/$cloud/start_server --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log | grep -v ^$ || echo $? | tail -1`"
+  ip="`(IAMACHILD=1 "$rpath"/../cloud/$cloud/start_server --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log) || echo $? | grep -v ^$ | tail -1`"
   log "($CLOUD) start_server returned this: $ip"
 }
 
@@ -294,13 +294,13 @@ if [ -n "$newserver" ]; then
         # assuming it's the exit status (see the function)
         res=$ip
       fi
-      [ $res -eq 2 ] && log "Timeout waiting for the server ready" && break
-      [ $res -eq 5 ] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 291
+      [[ $res -eq 2 ]] && log "Timeout waiting for the server ready" && break
+      [[ $res -eq 5 ]] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 291
       # various weird errors below, exit 1 
-      [ $res -eq 6 ] && log "Failed to generate a name for the new server" && proper_exit 1 293
-      [ $res -eq 7 ] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 294
-      [ $res -eq 8 ] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 295
-      [ $res -eq 1 ] && log "Something went wrong, unable to add a server to the cluster $cluster"
+      [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 293
+      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 294
+      [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 295
+      [[ $res -eq 1 ]] && log "Something went wrong, unable to add a server to the cluster $cluster"
       if [ -z "$ip" ]; then
         log "Was unable either to start a cloud server in the cloud $cloud or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
       fi
