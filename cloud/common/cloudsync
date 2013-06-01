@@ -171,7 +171,7 @@ if [ "X$command" != "X" ] ; then
       if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
         [ -z "$nolocalhost" ] && cp -up $from $to
       else
-        KEY=`find_key server $IP` || continue
+        KEY=`$M_ROOT/helpers/find_key server $IP` || continue
         if [ -n "$RSYNC" ] ; then
           $RSYNC -l $recursive -e "$SSH -i \"$KEY\" -p $SSHPORT" "${from%/}" "${IP}:${to}"
           [ $? -eq 0 ] && echo "Success" && continue
