@@ -247,8 +247,8 @@ do
   sname=${sname#*/}
   for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
-    [ `expr "$exclsocket" : ".*$t"` -ne 0 ] && skip=1 && break
-    [ `expr "$exclsocket" : ".*$sname"` -ne 0 ] && skip=1 && break
+    [ `expr "$t" : ".*$exclsocket"` -ne 0 ] && skip=1 && break
+    [ `expr "$sname" : ".*$exclsocket"` -ne 0 ] && skip=1 && break
   done
   # now compare sockets
   for ((i=0; i<${#sockets[*]}; i++))
