@@ -239,15 +239,17 @@ $SOCKCONNS | grep STREAM > "$M_TEMP/sockets.$$"
 while read LINE
 do
   sockets=( ${sockets[*]} )
-  for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
-  do
-    [[ $LINE =~ $exclsocket ]] && skip=1 && break
-  done
+  
   [[ $skip -eq 1 ]] && skip=0 && continue
   socketfound=0
   t="${LINE##*[[:space:]]}"
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
   sname=${sname#*/}
+  for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+  do
+    [ `expr "$exclsocket" : ".*$t"` -ne 0 ] && skip=1 && break
+    [ `expr "$exclsocket" : ".*$sname"` -ne 0 ] && skip=1 && break
+  done
   # now compare sockets
   for ((i=0; i<${#sockets[*]}; i++))
   do
