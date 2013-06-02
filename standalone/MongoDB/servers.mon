@@ -365,24 +365,32 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
   done
 fi
 
-if [ -e "${rpath}/mongo_shards.list" ] ; then
-  for cs in `cat "${rpath}/mongo_shards.list" | cut -d'|' -f1` ; do
-    install -d "$M_ROOT/www/MongoDB/shardservers/${cs}"
-    mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_shards.list"
-    parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "$M_ROOT"/lib/txt2html "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/shardservers/${cs}/${cs%:*}_${cs#*:}_name.html"
+if [ -e "$rpath/mongo_shards.list" ] ; then
+  for cs in `cat "$rpath/mongo_shards.list" | cut -d'|' -f1` ; do
+    install -d "$M_ROOT/www/MongoDB/shardservers/$cs"
+    mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    $MONGO $cs/admin --quiet "$rpath/serverstatus.js" > "$rpath/data/${cs}.dat" 2>/dev/null || sed -i "/$cs/d" "$rpath/mongo_shards.list"
+    parse_data "$cs" > "$rpath/data/${cs}.report"
+    "$M_ROOT"/lib/txt2html "$rpath/data/${cs}.report" > "$M_ROOT/www/MongoDB/shardservers/$cs/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
-if [ -e "${rpath}/mongo_servers.list" ] ; then
-  for cs in `cat "${rpath}/mongo_servers.list" | cut -d'|' -f1` ; do
-    install -d "$M_ROOT/www/MongoDB/servers/${cs}"
-    mv "${rpath}/data/${cs}.dat" "${rpath}/data/${cs}.dat.prev" 2>/dev/null
-    $MONGO ${cs}/admin --quiet "${rpath}/serverstatus.js" > "${rpath}/data/${cs}.dat" 2>/dev/null || sed -i "/${cs}/d" "${rpath}/mongo_servers.list"
-    parse_data "${cs}" > "${rpath}/data/${cs}.report"
-    "$M_ROOT/lib/txt2html" "${rpath}/data/${cs}.report" > "$M_ROOT/www/MongoDB/servers/${cs}/${cs%:*}_${cs#*:}_name.html"
+if [ -e "$rpath/mongo_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_servers.list" | cut -d'|' -f1` ; do
+    install -d "$M_ROOT/www/MongoDB/servers/$cs"
+    mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    $MONGO $cs/admin --quiet "$rpath/serverstatus.js" > "$rpath/data/${cs}.dat" 2>/dev/null || sed -i "/$cs/d" "$rpath/mongo_servers.list"
+    parse_data "$cs" > "$rpath/data/${cs}.report"
+    "$M_ROOT/lib/txt2html" "$rpath/data/${cs}.report" > "$M_ROOT/www/MongoDB/servers/$cs/${cs%:*}_${cs#*:}_name.html"
   done
 fi
 
+### Cleanup. Note that it removes all old files from data folder, including
+### those created by other MongoDB monitors
+
+timeshift=`cat "$M_TEMP/timeshift" || echo 0`
+ccl=`expr $FREQ + $timeshift || echo 200`
+mmin=`expr $ccl \* 3 / 60 + 1`
+find "$rpath/data/" -mmin +$mmin -exec rm {} \;
+exit 0
 
