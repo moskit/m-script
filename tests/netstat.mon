@@ -23,11 +23,12 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/monitoring.log"
 netstatbin=`which netstat 2>/dev/null`
- 
-timeindexnow=`cat $M_TEMP/timeindex 2>/dev/null`
-lasttimeindex=`cat $M_TEMP/lasttimeindex 2>/dev/null`
 
-[ -n "$timeindexnow" ] || timeindexnow=`date +"%s"`
+### time indexes are now supposed to be exported in mon.run
+#timeindexnow=`cat $M_TEMP/timeindex 2>/dev/null`
+#lasttimeindex=`cat $M_TEMP/lasttimeindex 2>/dev/null`
+
+#[ -n "$timeindexnow" ] || timeindexnow=`date +"%s"`
 monperiod=`expr $timeindexnow - $lasttimeindex 2>/dev/null`
 [ -z "$monperiod" -o $monperiod -le 0 ] 2>/dev/null && timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` && monperiod=`expr $FREQ + $timeshift || echo 200`
 

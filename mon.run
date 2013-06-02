@@ -25,36 +25,37 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 M_ROOT="$rpath" ; export M_ROOT
 commline="$0 $*"
-echo "`date +"%H:%M:%S"` == Running ${commline} ==" >> ${rpath}/monitoring.log
+commlinehash=`echo "$commline" | md5sum | cut -b 1,2,3,4,5,6,7,8`
+echo "`date +"%H:%M:%S"` == Running $commline ==" >> "$rpath/monitoring.log"
 #*/
 
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30 
-lockfile=`find ${rpath} -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
+lockfile=`find "$rpath" -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
 if [ -n "$lockfile" ] ; then
-  ls -l $lockfile >> ${rpath}/monitoring.log
-  echo "`date +"%H:%M:%S"` *** Lock file is older than $MAXLOCK minutes, removing" >> ${rpath}/monitoring.log
-  rm -f $lockfile
+  ls -l "$lockfile" >> "$rpath/monitoring.log"
+  echo "`date +"%H:%M:%S"` *** Lock file is older than $MAXLOCK minutes, removing" >> "$rpath/monitoring.log"
+  rm -f "$lockfile"
 fi
 sleep $((RANDOM%5))
 for ((i=1; i<=10; i++))
 do
-  if [ -e ${rpath}/mon.run.lock ] ; then
-    printf "." >> ${rpath}/monitoring.log
+  if [ -e "$rpath/mon.run.lock" ] ; then
+    printf "." >> "$rpath/monitoring.log"
     sleep $((RANDOM%10))
     continue
   else
-    echo "`date +"%H:%M:%S"` not locked" >> ${rpath}/monitoring.log
+    echo "`date +"%H:%M:%S"` not locked" >> "$rpath/monitoring.log"
     break
   fi
 done
-if [ -f ${rpath}/mon.run.lock ] ; then
-  echo >> ${rpath}/monitoring.log
-  echo "Giving up..." >> ${rpath}/monitoring.log
+if [ -f "$rpath/mon.run.lock" ] ; then
+  echo >> "$rpath/monitoring.log"
+  echo "Giving up..." >> "$rpath/monitoring.log"
   exit 1
 fi
 
-touch ${rpath}/mon.run.lock && echo "`date +"%H:%M:%S"` >>> locking by ${commline}" >> ${rpath}/monitoring.log
+touch "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` >>> locking by $commline" >> "$rpath/monitoring.log"
 # bc workaround to make it work with floating point numbers
 solve() {
 bc << EOF
@@ -66,34 +67,34 @@ EOF
 function mailreport() {
   while read RLINE
   do
-    if [ -n "${RLINE}" ]; then
-      cat ${rpath}/conf/rep.header ${rpath}/report | ${MAILX} -s "Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` report" ${RLINE}
+    if [ -n "$RLINE" ]; then
+      cat "$rpath/conf/rep.header" "$rpath/report" | $MAILX -s "Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` report" "$RLINE"
     fi
   done < ${rpath}/conf/mail.admin.list
 }
 
 function mailalert() {
-  if [ -f "${rpath}/alert1" ] && [ `cat "${rpath}/alert1" | wc -l` -ne 0 ]; then
+  if [ -f "$rpath/alert1" ] && [ `cat "$rpath/alert1" | wc -l` -ne 0 ]; then
     al='*' ; aln=1
-    cat "${rpath}/conf/header.alert1" "${rpath}/alert1" >> "${rpath}/alert"
+    cat "$rpath/conf/header.alert1" "$rpath/alert1" >> "$rpath/alert"
   fi
-  if [ -f "${rpath}/alert2" ] && [ `cat "${rpath}/alert2" | wc -l` -ne 0 ]; then
+  if [ -f "$rpath/alert2" ] && [ `cat "$rpath/alert2" | wc -l` -ne 0 ]; then
     al='**' ; aln=2
-    cat "${rpath}/conf/header.alert2" "${rpath}/alert2" >> "${rpath}/alert"
+    cat "$rpath/conf/header.alert2" "$rpath/alert2" >> "$rpath/alert"
   fi
-  if [ -f "${rpath}/alert3" ] && [ `cat "${rpath}/alert3" | wc -l` -ne 0 ]; then
+  if [ -f "$rpath/alert3" ] && [ `cat "$rpath/alert3" | wc -l` -ne 0 ]; then
     al='***' ; aln=3
-    cat "${rpath}/conf/header.alert3" "${rpath}/alert3" >> "${rpath}/alert"
+    cat "$rpath/conf/header.alert3" "$rpath/alert3" >> "$rpath/alert"
   fi
   if [ -n "$al" ] ; then
-    echo "================ sending alert =================" >> "${rpath}/monitoring.log"
-    cat "${rpath}/alert" >> "${rpath}/monitoring.log"
-    echo "================================================" >> "${rpath}/monitoring.log"
-    for MLINE in `cat "${rpath}/conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
+    echo "================ sending alert =================" >> "$rpath/monitoring.log"
+    cat "$rpath/alert" >> "$rpath/monitoring.log"
+    echo "================================================" >> "$rpath/monitoring.log"
+    for MLINE in `cat "$rpath/conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
     do
-      recipn=`grep "^$MLINE" "${rpath}/conf/mail.alert.list" | awk '{print $2}'`
+      recipn=`grep "^$MLINE" "$rpath/conf/mail.alert.list" | awk '{print $2}'`
       if ([ -z "$recipn" ] || [ $recipn -le $aln ]) ; then
-        cat "${rpath}/alert" | ${MAILX} -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" ${MLINE} >> "${rpath}/monitoring.log" 2>&1
+        cat "$rpath/alert" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE" >> "$rpath/monitoring.log" 2>&1
       fi
     done
   fi
@@ -240,7 +241,7 @@ function runactions() {
               if [ -z "$calerts" ]; then
                 calerts=1
               elif [ `expr "$calerts" : ".*[^0-9].*"` -ne 0 ]; then
-                echo "Warning: bad consequent alerts number in ${M_TEMP}/consequent_alerts.tmp for action $action" >> "${rpath}/monitoring.log"
+                echo "Warning: bad consequent alerts number in $M_TEMP/consequent_alerts.tmp for action $action" >> "${rpath}/monitoring.log"
                 calerts=1
               fi
               calerts=`expr $calerts + 1`
@@ -450,11 +451,13 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 
 function newtimeindex() {
   timeindexnow=$(date +"%s")
-  echo $timeindexnow > "$M_TEMP/timeindex"
+  echo $timeindexnow > "$M_TEMP/timeindex.$commlinehash"
+  lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash"`
+  export timeindexnow lasttimeindex
 }
 
 function deltimeindex() {
-  mv "$M_TEMP/timeindex" "$M_TEMP/lasttimeindex"
+  mv "$M_TEMP/timeindex.$commlinehash" "$M_TEMP/lasttimeindex.$commlinehash"
 }
 
 function timeshift() {
@@ -468,7 +471,7 @@ function timeshift() {
   echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
     MAINSEQ_EXECTIME=`eval "echo \\$MAINSEQ_EXECTIME_$l"`
-    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${BASH_SOURCE##*/} execution time is longer than $MAINSEQ_EXECTIME" >> "${rpath}/alert$l" && return
+    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${BASH_SOURCE##*/} execution time is longer than $MAINSEQ_EXECTIME" >> "$rpath/alert$l" && return
   done
 }
 

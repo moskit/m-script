@@ -342,10 +342,20 @@ if [[ $cpun -ne 0 ]] ; then
   l2=$cpun
   l3=`echo "scale=1;$cpun * 2" | bc`
   lcrit=`echo "scale=1;$cpun * 10" | bc`
-  sed -i -e "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|g" "$rpath/conf/mon.conf"
-  sed -i -e "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|g" "$rpath/conf/mon.conf"
-  sed -i -e "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|g" "$rpath/conf/mon.conf"
-  sed -i -e "s|LOAD_CRIT=.*|LOAD_CRIT=$lcrit|g" "$rpath/conf/mon.conf"
+  sed -i "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|g" "$rpath/conf/mon.conf"
+  sed -i "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|g" "$rpath/conf/mon.conf"
+  sed -i "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|g" "$rpath/conf/mon.conf"
+  sed -i "s|LOAD_CRIT=.*|LOAD_CRIT=$lcrit|g" "$rpath/conf/mon.conf"
+fi
+memtotal=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`
+memvirt=`cat /proc/meminfo | grep CommitLimit | awk '{print $2}'`
+mvperc1=`expr $memvirt / $memtotal / 2 \* 100 2>/dev/null || echo 100`
+mvperc2=`expr $mvperc1 \* 3 / 2 || echo 150`
+mvperc2=`expr $mvperc1 \* 2 || echo 200`
+if [ -f "$rpath/tests/memory_eaters.conf" ]; then
+  sed -i "s|MEM_VIR_1=.*|MEM_VIR_1=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
+  sed -i "s|MEM_VIR_2=.*|MEM_VIR_2=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
+  sed -i "s|MEM_VIR_3=.*|MEM_VIR_3=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
 fi
 [ -d /etc/init.d ] && rcdir=/etc/init.d
 [ -d /etc/rc.d/init.d ] && rcdir=/etc/rc.d/init.d

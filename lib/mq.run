@@ -93,9 +93,9 @@ while read action ; do
     echo "$JOBCMD|$JOBID|$JOBREPEAT" >> "$M_ROOT/actions.q"
   fi
   if [ "$mode" == "distinct" ] ; then
-    sed -i "/^${JOBCMD_E}|/d" "$M_ROOT/actions.in"
+    sed -i "/^$JOBCMD_E|/d" "$M_ROOT/actions.in"
   else
-    sed -i "/^${JOBCMD_E}|${JOBINTIME}|/d" "$M_ROOT/actions.in"
+    sed -i "/^$JOBCMD_E|$JOBINTIME|/d" "$M_ROOT/actions.in"
   fi
   sed -i "/^${JOBCMD_E}$/d" "$M_ROOT/actions.in"
   sed -i "/^${JOBID}$/d" "$M_TEMP/actions.auth.list"
@@ -113,19 +113,19 @@ for ((n=0; n<$limit; n++)); do
   res=$?
   if [ $res -ne 0 ] ; then
     log "=== job: $JOB ID: $JOBID has failed: exit status $res"
-    echo "${JOB}|${JOBID}|$res" >> "$M_ROOT/actions.failed"
+    echo "$JOB|$JOBID|$res" >> "$M_ROOT/actions.failed"
   else
     log "=== job: $JOB ID: $JOBID has finished successfully"
   fi
   # exit status numbers 5 and 13 allow to block the script for additional
   # $BLOCK_ERR5 and $BLOCK_ERR13 cycles respectively
   if [ $res -eq 13 ] && [ -n "$BLOCK_ERR13" ]; then
-    cclbl=`grep -c "^${JOBCMD_E}|" "$M_TEMP/actions.blocked"`
-    [ $cclbl -ne 0 ] && sed -i "/^${JOBCMD_E}|/d" "$M_TEMP/actions.blocked" && echo "${JOB}|$BLOCK_ERR13" >> "$M_TEMP/actions.blocked"
+    cclbl=`grep -c "^$JOBCMD_E|" "$M_TEMP/actions.blocked"`
+    [ $cclbl -ne 0 ] && sed -i "/^$JOBCMD_E|/d" "$M_TEMP/actions.blocked" && echo "$JOB|$BLOCK_ERR13" >> "$M_TEMP/actions.blocked"
   fi
   if [ $res -eq 5 ] && [ -n "$BLOCK_ERR5" ]; then
-    cclbl=`grep -c "^${JOBCMD_E}|" "$M_TEMP/actions.blocked"`
-    [ $cclbl -ne 0 ] && sed -i "/^${JOBCMD_E}|/d" "$M_TEMP/actions.blocked" && echo "${JOB}|$BLOCK_ERR5" >> "$M_TEMP/actions.blocked"
+    cclbl=`grep -c "^$JOBCMD_E|" "$M_TEMP/actions.blocked"`
+    [ $cclbl -ne 0 ] && sed -i "/^$JOBCMD_E|/d" "$M_TEMP/actions.blocked" && echo "$JOB|$BLOCK_ERR5" >> "$M_TEMP/actions.blocked"
   fi
 done
 
