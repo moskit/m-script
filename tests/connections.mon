@@ -145,6 +145,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
     portfound=0
     t=${LINE%%%*}
     prog=${LINE#* }
+    spid=${prog%/*}
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
     chk_portexclusions $t $prog
@@ -191,6 +192,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
     portfound=0
     t=${LINE%%%*}
     prog=${LINE#* }
+    spid=${prog%/*}
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     t=${t%% *}
     chk_portexclusions $t $prog
@@ -215,8 +217,11 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is a new service"
-    skip=0
+    if [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]]; then
+      echo "<***> Service $prog listening on $t is a new service"
+      echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n`find fd -type l | while read f ; do expr `readlink $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+      skip=0
+    fi
   done < "$M_TEMP/ports.udp.$$"
 
   if [[ ${#portsudp[*]} -gt 0 ]]
@@ -244,6 +249,7 @@ do
   socketfound=0
   t="${LINE##*[[:space:]]}"
   sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
+  spid=${sname%/*}
   sname=${sname#*/}
   for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
   do
@@ -265,7 +271,10 @@ do
       break
     fi
   done
-  [[ $socketfound -ne 1 ]] && echo "<***> Service $sname listening on $t is a new service"
+  if [[ $socketfound -ne 1 ]]; then
+    echo "<***> Service $sname listening on $t is a new service"
+    echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n`find fd -type l | while read f ; do expr `readlink $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+  fi
 done < "$M_TEMP/sockets.$$"
 
 if [[ ${#sockets[*]} -gt 0 ]]
