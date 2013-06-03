@@ -219,7 +219,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
     done
     if [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]]; then
       echo "<***> Service $prog listening on $t is a new service"
-      echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n`find fd -type l | while read f ; do expr `readlink $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+      echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n`find /proc/$spid/fd -type l | while read f ; do expr $(readlink $f) : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
       skip=0
     fi
   done < "$M_TEMP/ports.udp.$$"
