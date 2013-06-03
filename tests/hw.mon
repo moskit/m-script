@@ -18,8 +18,8 @@ rcommand=${0##*/}
 rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
-timeindexnow=`cat $M_TEMP/timeindex`
-source "${rpath}/../conf/mon.conf"
+
+source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 

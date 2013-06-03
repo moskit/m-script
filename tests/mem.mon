@@ -23,7 +23,6 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
 source "$M_ROOT/conf/mon.conf"
-timeindexnow=`cat $M_TEMP/timeindex`
 
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"

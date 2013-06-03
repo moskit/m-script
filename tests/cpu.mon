@@ -23,7 +23,6 @@ rpath=${0%/*}
 source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
-timeindexnow=`cat "$M_TEMP/timeindex"`
 
 [ -z "$CPUUPERIOD" ] && CPUUPERIOD=1
 [ -z "$CPUUSAMPLES" ] && CPUUSAMPLES=5

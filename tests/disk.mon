@@ -22,8 +22,6 @@ source "${rpath}/../conf/mon.conf"
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 
-timeindexnow=`cat $M_TEMP/timeindex`
-lasttimeindex=`cat $M_TEMP/lasttimeindex.disk`
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
@@ -221,6 +219,7 @@ if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
 
   sqlite3 ${rpath}/../sysdata "update sysdata set diskusage='${diskusage}', diskiord='${diskiord}', diskiowr='${diskiowr}' where timeindex='$timeindexnow'"
 fi
-cp $M_TEMP/timeindex $M_TEMP/lasttimeindex.disk
+
 rm -f $M_TEMP/disk.tmp* >/dev/null 2>&1
 rm -f $M_TEMP/diskiowr $M_TEMP/diskiord $M_TEMP/diskusage >/dev/null 2>&1
+

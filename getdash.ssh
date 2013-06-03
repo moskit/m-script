@@ -29,9 +29,9 @@ SSH_OPTS="-o StrictHostKeyChecking=yes -o PasswordAuthentication=no -o ConnectTi
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
-source "${rpath}/conf/mon.conf"
-source "${rpath}/conf/cloud.conf"
-source "${rpath}/lib/functions.sh"
+source "$rpath/conf/mon.conf"
+source "$rpath/conf/cloud.conf"
+source "$rpath/lib/functions.sh"
 
 SQLITE=dbquery
 #SQLITE=`which sqlite3 2>/dev/null`
@@ -40,7 +40,6 @@ LOG="$rpath/logs/dashboard.log"
 [ -n "$debug" ] && debug=false || debug=true
 
 [ -n "$SSHPORT" ] || SSHPORT=22
-timeindexnow=`cat "${M_TEMP}/timeindex" 2>/dev/null` || timeindexnow=`date +"%s"`
 
 monitor="$1"
 if [ -z "$monitor" ]; then
@@ -54,59 +53,58 @@ else
   fi
 fi
 
-
 IFS1=$IFS ; IFS='
 '
-for cluster in `cat "${rpath}/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
+for cluster in `cat "$rpath/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
   [ "X$cluster" == "X$SUPER_CLUSTER" ] && continue
   [ -n "$targetcluster" -a "$targetcluster" != "$cluster" ] && continue
   [ -z "$clustered_as" ] && clustered_as="$cluster"
   $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
-  mpath=`grep ^$cluster\| "${rpath}/conf/clusters.conf" | cut -d'|' -f8`
+  mpath=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath="/opt/m"
-  for server in `grep \|${cluster}$ "${rpath}/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+  for server in `grep \|${cluster}$ "$rpath/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
     [ -n "$RUNDELAY" ] && sleep $RUNDELAY
     time0=`date +"%s"`
     ip=${server%%|*}
     [ `echo $ip | grep -c "^$localip$"` -ne 0 ] && continue
     key=`echo $server | cut -d'|' -f2`
     servername=`echo $server | cut -d'|' -f4`
-    [ -f "${rpath}/keys/${key}" ] || key=${key}.pem
-    [ ! -f "${rpath}/keys/${key}" ] && log "Unable to connect to $servername - key $key not found" && continue
-    [ -d "${rpath}/www/$monitor/${clustered_as}/${servername}" ] || install -d "${rpath}/www/$monitor/${clustered_as}/${servername}"
-    (IFS=$IFS1 ; $SSH -i "${rpath}/keys/${key}" -p $SSHPORT $SSH_OPTS $ip find "${mpath}/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > "${M_TEMP}/${ip}.${monitor}.remote.dash.list")
-    find "${rpath}/www/$monitor/${clustered_as}/${servername}" -type f -printf "%f\n" | sort > "${M_TEMP}/${ip}.${monitor}.local.dash.list"
-    nd=(`diff "${M_TEMP}/${ip}.${monitor}.remote.dash.list" "${M_TEMP}/${ip}.${monitor}.local.dash.list" | grep ^\< | sed 's|^< ||'`)
+    [ -f "$rpath/keys/$key" ] || key=${key}.pem
+    [ ! -f "$rpath/keys/$key" ] && log "Unable to connect to $servername - key $key not found" && continue
+    [ -d "$rpath/www/$monitor/$clustered_as/$servername" ] || install -d "$rpath/www/$monitor/$clustered_as/$servername"
+    (IFS=$IFS1 ; $SSH -i "$rpath/keys/$key" -p $SSHPORT $SSH_OPTS $ip find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > "$M_TEMP/${ip}.${monitor}.remote.dash.list")
+    find "$rpath/www/$monitor/$clustered_as/$servername" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"
+    nd=(`diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\< | sed 's|^< ||'`)
     if [ -n "$nd" ] ; then
       nd+=( "dash.html" "report.html" )
       scplist="{`echo -n "${nd[*]}" | tr '\n' ','`}"
-      (IFS=$IFS1 ; $SCP -i "${rpath}/keys/${key}" -P $SSHPORT $SSH_OPTS "${ip}":"${mpath}/www/$monitor/localhost/$scplist" "${rpath}/www/$monitor/${clustered_as}/${servername}/" > /dev/null 2>&1 </dev/null &)
+      (IFS=$IFS1 ; $SCP -i "$rpath/keys/$key" -P $SSHPORT $SSH_OPTS "$ip":"$mpath/www/$monitor/localhost/$scplist" "$rpath/www/$monitor/$clustered_as/$servername/" > /dev/null 2>&1 </dev/null &)
       unset nd
-      [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/notfound"
-      [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped" ] && rm -f "${rpath}/www/$monitor/${cluster}/${servername}/stopped"
+      [ -e "$rpath/www/$monitor/$clustered_as/$servername/notfound" ] && rm -f "$rpath/www/$monitor/$cluster/$servername/notfound"
+      [ -e "$rpath/www/$monitor/$clustered_as/$servername/stopped" ] && rm -f "$rpath/www/$monitor/$cluster/$servername/stopped"
     else
       log "No data received from server ${servername}, cluster ${cluster}, monitor ${monitor}"
-      if [ -e "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound" ] ; then
-        rm -f "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound"
-        touch "${rpath}/www/$monitor/${clustered_as}/${servername}/stopped"
+      if [ -e "$rpath/www/$monitor/$clustered_as/$servername/notfound" ] ; then
+        rm -f "$rpath/www/$monitor/$clustered_as/$servername/notfound"
+        touch "$rpath/www/$monitor/$clustered_as/$servername/stopped"
       else
-        touch "${rpath}/www/$monitor/${clustered_as}/${servername}/notfound"
+        touch "$rpath/www/$monitor/$clustered_as/$servername/notfound"
       fi
     fi
-    for dashfile in `diff ${M_TEMP}/${ip}.${monitor}.remote.dash.list ${M_TEMP}/${ip}.${monitor}.local.dash.list | grep ^\> | sed 's|^> ||'` ; do
-      rm -f "${rpath}/www/$monitor/${clustered_as}/${servername}/${dashfile}"
+    for dashfile in `diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\> | sed 's|^> ||'` ; do
+      rm -f "$rpath/www/$monitor/$clustered_as/$servername/$dashfile"
     done
     time1=`date +"%s"`
     timediff=`expr $time1 - $time0`
     if [ "X$SQLITE3" == "X1" ] ; then
       daynow=$(date +"%Y%m%d")
-      $SQLITE "${rpath}/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${clustered_as}/${servername}', '$timediff')"
+      $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$clustered_as/$servername', '$timediff')"
     else
-      log "${clustered_as}/${servername}: $timediff sec"
+      log "$clustered_as/${servername}: $timediff sec"
     fi
   done
-  for server in `find "${rpath}/www/$monitor/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
-    [ `cat "${rpath}/servers.list" | grep "|${cluster}[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "${rpath}/www/$monitor/$cluster/${server##*/}"
+  for server in `find "$rpath/www/$monitor/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
+    [ `cat "$rpath/servers.list" | grep "|$cluster[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cluster/${server##*/}"
   done
   unset clustered_as
 done

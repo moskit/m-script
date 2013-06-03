@@ -25,9 +25,6 @@ source "$M_ROOT/lib/functions.sh"
 
 netstatbin=`which netstat 2>/dev/null`
 iptablesbin=`which iptables 2>/dev/null`
- 
-timeindexnow=`cat $M_TEMP/timeindex 2>/dev/null`
-lasttimeindex=`cat $M_TEMP/lasttimeindex 2>/dev/null`
 
 if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
 then
