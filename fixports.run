@@ -78,7 +78,7 @@ else
   # No point in parsing of more than 100 lines of LISTENING ports, increase this
   # if you want
   $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > "$M_TEMP"/netstat.tcp.tmp
-  [ `cat /tmp/m_script/netstat.tcp.tmp | wc -l` -gt `cat /tmp/m_script/netstat.tcp.tmp | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log" && rm -f "$M_TEMP"/netstat.tcp.tmp
+  [ `cat "$M_TEMP"/netstat.tcp.tmp | wc -l` -gt `cat "$M_TEMP"/netstat.tcp.tmp | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log" && rm -f "$M_TEMP"/netstat.tcp.tmp
 fi
 
 if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $inuseudp6 ]])); then
@@ -87,7 +87,7 @@ if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $in
   fi
 else
   $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> "$M_TEMP"/netstat.udp.tmp
-  [ `cat "$M_TEMP"/netstat.udp.tmp | wc -l` -gt `cat /tmp/m_script/netstat.udp.tmp | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> "${rpath}/monitoring.log" && rm -f "$M_TEMP"/netstat.udp.tmp
+  [ `cat "$M_TEMP"/netstat.udp.tmp | wc -l` -gt `cat "$M_TEMP"/netstat.udp.tmp | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log" && rm -f "$M_TEMP"/netstat.udp.tmp
 fi
 
 rm -f "$rpath"/ports.*.list
