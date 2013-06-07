@@ -151,7 +151,7 @@ print_dashlines() {
 IFS1=$IFS; IFS='
 '
       for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
-        print_line_title $dfpdsonclick "${server##*/}"
+        print_line_title "$dfpdsonclick" "${@%%/*}" "${server##*/}"
         cat "$dpath/../www/${@}/${server##*/}/dash.html"
         close_line "${server##*/}"
       done
