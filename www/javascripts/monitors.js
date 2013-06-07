@@ -91,7 +91,9 @@ showURL = function(theid,url,scriptname) {
 
 showData = function(theid,base) {
   cluster=$(theid).parentNode.parentNode.id;
-  server=$(theid).parentNode.id;
+  clusterB="^" + cluster;
+  re=new RegExp(clusterB);
+  server=$(theid).parentNode.id.replace(re,'');
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
     stopUpdater(updater);
