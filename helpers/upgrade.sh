@@ -56,6 +56,7 @@ echo "Checking files:"
 for script in `find ""$M_TEMP"/.update" -type f`; do
   echo -n " -- ${script##*/} ... "
   oldscript=`echo "$script" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
+  
   if [ -x "$oldscript" ]; then
     if [ "$script" -nt "$oldscript" ]; then
       cp "$script" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
@@ -63,6 +64,7 @@ for script in `find ""$M_TEMP"/.update" -type f`; do
       echo "This file is older than the local one. Not updated"
     fi
   elif [ ! -e "$oldscript" ]; then
+    [ "${oldscript##*/}" == "setup.done" ] && continue
     printf "new file. Copying ... "
     cp "$script" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
   elif [ "$script" -nt "$oldscript" ]; then
