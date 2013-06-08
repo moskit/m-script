@@ -26,16 +26,16 @@ format() {
     echo "<tr class=\"$2\"><td>${1}</td></tr>" | sed 's|[[:space:]][[:space:]]\+|</td><td>|g'
     ;;
   tablerow_*)
-    tdstyle=${2}
+    tdstyle=$2
     if [[ $1 =~ [[:space:]][[:space:]] ]] ; then
-      echo "<tr class=\"tablerow ${tdstyle}\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
+      echo "<tr class=\"tablerow $tdstyle\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
     else
-      echo "<tr class=\"tablerow ${tdstyle}\"><td colspan=\"3\">${1}</td></tr>"
+      echo "<tr class=\"tablerow $tdstyle\"><td colspan=\"3\">${1}</td></tr>"
     fi
     ;;
   info)
     echo "<div class=\"info info_$2\">"
-    echo "${1}" | sed "s|\(.*\):[[:space:]][[:space:]]\+\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g;s|\(.*\):\t\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g"
+    echo "$1" | sed "s|\(.*\):[[:space:]][[:space:]]\+\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g;s|\(.*\):\t\(.*\)|<div class=\"left\">\1:</div><div class=\"right\">\2</div>|g"
     echo "</div>"
     ;;
   ok|w1|w2|w3)
@@ -51,7 +51,7 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
   LINE=${LINE%$}
   cursor+=1
   
-  #printf "|||${LINE}\n"
+#  printf "|||${LINE}\n"
   case "$LINE" in
     "")
     data[$cursor]=""
@@ -157,6 +157,11 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
       "empty empty")
         cursor=0
         unset datatype[2] datastyle[2]
+        ;;
+      "info table")
+        format ${data[1]} ${datastyle[1]}
+        format ${data[2]} tablerow_${datastyle[2]}
+        cursor=0
         ;;
     esac
   fi

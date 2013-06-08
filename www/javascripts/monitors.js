@@ -91,7 +91,7 @@ showURL = function(theid,url,scriptname) {
 
 showData = function(theid,base) {
   cluster=$(theid).parentNode.parentNode.id;
-  clusterB="^" + cluster;
+  clusterB="^" + cluster + "\\.";
   re=new RegExp(clusterB);
   server=$(theid).parentNode.id.replace(re,'');
   if ($('data_' + theid).style.display == "none") {
