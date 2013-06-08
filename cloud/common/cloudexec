@@ -26,7 +26,7 @@ source "$M_ROOT/conf/cloud.conf" || exit 99
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
-[ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o \"ConnectTimeout=$CONNECT_TIMEOUT\""
+[ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="cluster help region verbose limit ip nolocalhost"
 commflag=0

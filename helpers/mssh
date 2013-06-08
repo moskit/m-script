@@ -28,6 +28,7 @@ source "$M_ROOT/conf/cloud.conf"
 if [ -n "$SSHPORT" ]; then
   [ $SSHPORT != "22" ] && SSHPORT="-p $SSHPORT" || unset SSHPORT
 fi
+[ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 nextkey=false
 
 # if target is IP
@@ -71,7 +72,7 @@ KEY="$M_ROOT/keys/$KEY"
 
 if [ -n "$KEY" ] ; then
   if [ -f "$KEY" ]; then
-    $SSH -i "$KEY" $SSHPORT "$@"
+    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 else
@@ -80,14 +81,14 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY1" ]; then
-    $SSH -i "$USERKEY1" $SSHPORT "$@"
+    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY2" ]; then
-    $SSH -i "$USERKEY2" $SSHPORT "$@"
+    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   fi
 fi
