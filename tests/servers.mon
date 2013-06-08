@@ -70,17 +70,33 @@ do
   else
     if [ "X$CURL" != "X" ]; then
       $CURL -m 5 -s ${serverip}:$serverport > /dev/null 2>&1
-      res="$?"
+      res=$?
       # Checking only connection to host:port here
-      if [ "$res" != "7" ] ; then
+      if [ $res -ne 7 -a $res -ne 28 ] ; then
         curltest="yes"
       fi
-      if [ "x$curltest" == "xyes" ]; then
-        echo "<OK> $servername is online (Curl test, port $serverport)"
-      else
+      case $res in
+        7)
         echo "<***> Curl test connect to $servername failed!"
-      fi
-      unset curltest
+        ;;
+        28)
+        echo "<***> Curl test connect to $servername timeout!"
+        ;;
+        3)
+        echo "<**> Curl test: bad URL ${serverip}:$serverport"
+        6)
+        echo "<**> Curl test: unable to resolve ${serverip}:$serverport"
+        ;;
+        1)
+        echo "<**> Curl test: unsupported protocol"
+        ;;
+        0)
+        echo "<OK> $servername is online (Curl test, port $serverport)"
+        ;;
+        *)
+        echo "<OK> Curl test returned code $res for $servername port $serverport"
+        ;;
+      esac
       continue
     fi
     if [ "X$LYNX" != "X" ]; then
