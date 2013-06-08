@@ -26,6 +26,7 @@ source "$M_ROOT/conf/cloud.conf" || exit 99
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
+[ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o \"ConnectTimeout=$CONNECT_TIMEOUT\""
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="cluster help region verbose limit ip nolocalhost"
 commflag=0
@@ -163,7 +164,7 @@ if [ "X$command" != "X" ] ; then
       else
         KEY=`$M_ROOT/helpers/find_key server $IP`
         [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
-        $SSH -i "$KEY" -p $SSHPORT $IP \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
+        $SSH $TIMEOUT -i "$KEY" -p $SSHPORT $IP \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
       fi
       n+=1
     done

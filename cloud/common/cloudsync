@@ -36,6 +36,7 @@ fi
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
+[ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o \"ConnectTimeout=$CONNECT_TIMEOUT\""
 possible_options="cluster help region verbose recursive ip nolocalhost"
 commflag=0
 for s_option in "${@}"
@@ -173,11 +174,11 @@ if [ "X$command" != "X" ] ; then
       else
         KEY=`$M_ROOT/helpers/find_key server $IP` || continue
         if [ -n "$RSYNC" ] ; then
-          $RSYNC -l $recursive -e "$SSH -i \"$KEY\" -p $SSHPORT" "${from%/}" "${IP}:${to}"
+          $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "${IP}:${to}"
           [ $? -eq 0 ] && echo "Success" && continue
         fi
         printf "Rsync failed or not found, trying scp ...  "
-        $SCP -i "$KEY" -P $SSHPORT -p $recursive "$from" "${IP}:${to}"
+        $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "${IP}:${to}"
         if [ $? -eq 0 ] ; then
           echo "Success"
         else
