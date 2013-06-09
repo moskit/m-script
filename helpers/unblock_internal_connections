@@ -192,8 +192,8 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
     echo
   fi
 
-  if [ -n "$ip" ]; then
-    IP2UB=$ip
+  if [ -n "$fromip" ]; then
+    IP2UB=$fromip
     unblock_ip
   else
     for sserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
