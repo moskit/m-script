@@ -110,7 +110,7 @@ IFS='
 '
 
 findchain_local() {
-  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | grep -vE "^ACCEPT|^REJECT|^DROP|^LOG" | head -1 | awk '{print $1}'`
+  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | grep -vE "^ACCEPT|^REJECT|^DROP|^LOG|^[[:space:]]" | head -1 | awk '{print $1}'`
   if [ -n "$upperchain" ] ; then
     $IPT -L $upperchain >/dev/null && echo $upperchain || echo $1
   else
@@ -119,7 +119,7 @@ findchain_local() {
 }
 
 findchain_remote() {
-  upperchain=`$SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -vE \"^ACCEPT|^REJECT|^DROP|^LOG\" | head -1 | awk '{print \\$1}'"`
+  upperchain=`$SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -vE \"^ACCEPT|^REJECT|^DROP|^LOG|^[[:space:]]\" | head -1 | awk '{print \\$1}'"`
   if [ -n "$upperchain" ] ; then
     $SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain  || echo $1
   else
