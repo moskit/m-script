@@ -140,7 +140,7 @@ unblock_ip() {
       else
         dupes=`expr $existing - 1`
         if [[ $dupes -gt 0 ]] ; then
-          echo -n "  removing duplicates"
+          echo -n "  $existing existing rules found, removing duplicates"
           for ((n=0; n<$dupes; n++)) ; do
             printf "."
             $IPT -D "$rchain" -s $IP2UB -j ACCEPT
@@ -152,7 +152,7 @@ unblock_ip() {
       rchain=`findchain_remote $mainchain $IP "$KEY"`
       [ -n "$rchain" ] || continue
       [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
-      command="\`which iptables-save 2>/dev/null\` | grep -E \"\-A $rchain \-s $IP2UB \-j ACCEPT\|\-A $rchain \-s $IP2UB/[0-9]\* \-j ACCEPT\" | wc -l"
+      command="\`which iptables-save 2>/dev/null\` | grep -E \"\-A $rchain \-s $IP2UB \-j ACCEPT|\-A $rchain \-s $IP2UB/[0-9]\* \-j ACCEPT\" | wc -l"
       existing=`$SSH -i "$KEY" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $IP "$command"`
       if [[ $existing -eq 0 ]] ; then
         command="\`which iptables 2>/dev/null\` -I \"$rchain\" -s $IP2UB -j ACCEPT"
@@ -160,7 +160,7 @@ unblock_ip() {
       else
         dupes=`expr $existing - 1`
         if [[ $dupes -gt 0 ]] ; then
-          echo -n "  removing duplicates"
+          echo -n "  $existing existing rules found, removing duplicates"
           for ((n=0; n<$dupes; n++)) ; do
             printf "."
             command="\`which iptables 2>/dev/null\` -D \"$rchain\" -s $IP2UB -j ACCEPT"
