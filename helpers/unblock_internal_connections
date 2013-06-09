@@ -27,7 +27,7 @@ SSH=`which ssh 2>/dev/null`
 [ -f "/sbin/iptables-save" ] && IPTS=/sbin/iptables-save || IPTS=`which iptables-save 2>/dev/null`
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 
-possible_options="cluster help region verbose ip fromregion fromcluster"
+possible_options="cluster help region verbose ip fromregion fromcluster fromip"
 commflag=0
 for s_option in "${@}"
 do
