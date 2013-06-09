@@ -97,7 +97,7 @@ EOF
   exit 0
 fi
 
-[ -z "$cluster" ] && echo "Target cluster must be defined! Use --cluster=all to specify all clusters." && exit 1
+[ -z "$ip" -a -z "$cluster" ] && echo "Neither target cluster nor target IP is defined! If you want to specify all clusters, use --cluster=all." && exit 1
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
