@@ -5,7 +5,7 @@ scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections" "mongo_logger|Log Monitor"
-print_page_title "host:port" "Status" "Memory Res/Virt" "Bandwidth In/Out" "Requests / sec" "Locks, %  Curr/Overall"
+print_page_title "host:port" "Status" "Memory Res/Virt" "Bandwidth In/Out" "Requests / sec" "Locks, %  Curr/Overall" "Not In Memory / Page Faults"
 
 print_mongo_server() {
   local host=`echo "$1" | cut -d'|' -f1`
