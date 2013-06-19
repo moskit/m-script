@@ -42,6 +42,10 @@ print_mongo_server() {
     locktime=`echo "$report" | grep '^Lock time ' | cut -d':' -f2 | sed 's| *||g'`
     echo "<div class=\"status\" id=\"${id}_locks\" onclick=\"showDetails('${id}_locks','mongolocks')\">`echo "$locktime" | head -1` / `echo "$locktime" | tail -1`</div>"
     
+    notinmemory=`echo "$report" | grep '^Records not found in memory' | cut -d':' -f2 | sed 's| *||g'`
+    pagefaults=`echo "$report" | grep '^Page fault exceptions' | cut -d':' -f2 | sed 's| *||g'`
+    echo "<div class=\"status\" id=\"${id}_recstats\" onclick=\"showDetails('${id}_recstats','mongorecstats')\">`echo "$notinmemory" | head -1` / `echo "$pagefaults" | tail -1`</div>"
+    
   echo "</div>"
   echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
 }

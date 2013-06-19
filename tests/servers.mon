@@ -84,6 +84,7 @@ do
         ;;
         3)
         echo "<**> Curl test: bad URL ${serverip}:$serverport"
+        ;;
         6)
         echo "<**> Curl test: unable to resolve ${serverip}:$serverport"
         ;;

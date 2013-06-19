@@ -48,4 +48,8 @@ if (objStatus.globalLock) {
   print('lockClientsReaders|' + objStatus.globalLock.activeClients.readers);
   print('lockClientsWriters|' + objStatus.globalLock.activeClients.writers);
 }
+if (objStatus.recordStats) {
+  print('accessesNotInMemory|' + objStatus.recordStats.accessesNotInMemory);
+  print('pageFaultExceptionsThrown|' + objStatus.recordStats.pageFaultExceptionsThrown);
+}
 
