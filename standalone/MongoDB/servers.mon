@@ -14,6 +14,13 @@ DIFF=`which diff 2>/dev/null`
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
 source "$rpath/${rcommand%.mon}.conf"
+if [ -n "$AUTH_LOGIN" ]; then
+  if [ -n "$AUTH_PASSWD" ]; then
+    MONGO="$MONGO -u $AUTH_LOGIN -p $AUTH_PASSWD"
+  else
+    echo "Password is not set for user $AUTH_LOGIN"
+  fi
+fi
 source "$M_ROOT/conf/mon.conf"
 SQLITE=`which sqlite3 2>/dev/null`
 touch "$rpath/mongo_mongos_servers.list" "$rpath/mongo_config_servers.list" "$rpath/mongo_shards.list" "$rpath/mongo_servers.list"
@@ -92,10 +99,10 @@ function parse_data() {
   fi
     
   accessesNotInMemory_prev=`grep ^accessesNotInMemory\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || accessesNotInMemory_prev=$accessesNotInMemory
-  [ -n "$accessesNotInMemory" ] && recstatsNotInMemory=`solve 1 "$accessesNotInMemory - $accessesNotInMemory_prev"`
+  [ -n "$accessesNotInMemory" ] && recstatsNotInMemory=`solve 1 "($accessesNotInMemory - $accessesNotInMemory_prev) / ($timeindexnow - $lasttimeindex)"`
   
   pageFaultExceptionsThrown_prev=`grep ^pageFaultExceptionsThrown\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || pageFaultExceptionsThrown=$pageFaultExceptionsThrown_prev
-  [ -n "$pageFaultExceptionsThrown" ] && recstatsPageFaults=`solve 1 "$pageFaultExceptionsThrown - $pageFaultExceptionsThrown_prev"`
+  [ -n "$pageFaultExceptionsThrown" ] && recstatsPageFaults=`solve 1 "($pageFaultExceptionsThrown - $pageFaultExceptionsThrown_prev) / ($timeindexnow - $lasttimeindex)"`
   
   echo -e "\n Access Stats\n\nRecords not found in memory:   $recstatsNotInMemory\nPage fault exceptions:   $recstatsPageFaults\n"
   
@@ -170,7 +177,7 @@ function parse_data() {
   echo -e "Query               $ops_queriesps      $ops_queriesps_sharded      $ops_queriesps_notsharded\nInsert              $ops_insertsps      $ops_insertsps_sharded     $ops_insertsps_notsharded\nUpdate              $ops_updatesps      $ops_updatesps_sharded     $ops_updatesps_notsharded\nDelete              $ops_deletesps      $ops_deletesps_sharded     $ops_deletesps_notsharded\nGetmore              $ops_getmoresps      $ops_getmoresps_sharded     $ops_getmoresps_notsharded\nCommand              $ops_commandsps      $ops_commandsps_sharded     $ops_commandsps_notsharded\nTotal                $ops_totalqps      $ops_totalqps_sharded      $ops_totalqps_notsharded"
   
   if [ "X$SQLITE3" == "X1" ] ; then
-    $SQLITE "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}, '${recstatsNotInMemory-0})" 2>>"$LOG"
+    $SQLITE "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsShardedInsert, opsShardedQuery, opsShardedUpdate, opsShardedDelete, opsShardedGetmore, opsShardedCommand, opsNotShardedInsert, opsNotShardedQuery, opsNotShardedUpdate, opsNotShardedDelete, opsNotShardedGetmore, opsNotShardedCommand, opsTotalQPS, opsShardedTotalQPS, opsNotShardedTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_insertsps_sharded-0}', '${ops_queriesps_sharded-0}', '${ops_updatesps_sharded-0}', '${ops_deletesps_sharded-0}', '${ops_getmoresps_sharded-0}', '${ops_commandsps_sharded-0}', '${ops_insertsps_notsharded-0}', '${ops_queriesps_notsharded-0}', '${ops_updatesps_notsharded-0}', '${ops_deletesps_notsharded-0}', '${ops_getmoresps_notsharded-0}', '${ops_commandsps_notsharded-0}', '${ops_totalqps-0}', '${ops_totalqps_sharded-0}', '${ops_totalqps_notsharded-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}')" 2>>"$LOG"
   fi
   unset status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable bw_in bw_out net_reqps ops_insertsps ops_queriesps ops_updatesps ops_deletesps ops_getmoresps ops_commandsps ops_insertsps_sharded ops_queriesps_sharded ops_updatesps_sharded ops_deletesps_sharded ops_getmoresps_sharded ops_commandsps_sharded ops_insertsps_notsharded ops_queriesps_notsharded ops_updatesps_notsharded ops_deletesps_notsharded ops_getmoresps_notsharded ops_commandsps_notsharded ops_totalqps ops_totalqps_sharded ops_totalqps_notsharded lockRatio lockTime lockTime_prev lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters recstatsPageFaults recstatsNotInMemory
 }
