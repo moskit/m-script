@@ -401,6 +401,8 @@ else
   else
     $rcdir/monitorload start
   fi
+  ;;
+  esac
 fi
 else
   echo "If you want to start the load monitoring daemon now, run:"
