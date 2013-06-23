@@ -72,7 +72,7 @@ start)
         exit 1
       fi
     fi
-    [ -f "$rpath/conf/htaccess" ] || ($MG -A "$rpath/conf/htaccess" "$MONGOOSE_HOSTNAME" admin admin && printf "access file $rpath/conf/htaccess not found, created with login: admin, password: admin; use $MG -A $rpath/conf/htaccess <realm> <user> <passwd> to change credentials  ")
+    [ -f "$rpath/conf/htaccess" ] || ($MG -A "$rpath/conf/htaccess" "$MONGOOSE_HOSTNAME" admin admin && echo -e "access file $rpath/conf/htaccess not found, creating one with:\n\nlogin: admin\npassword: admin\n\nuse $MG -A $rpath/conf/htaccess <realm> <user> <passwd> to change credentials  ")
     MGOPTS=$(for opt in `cat "$rpath/conf/mongoose.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
     echo "`date` -- Starting $MG $MGOPTS -R $MONGOOSE_HOSTNAME" >> "$rpath/mongoose.log"
     $MG $MGOPTS -R $MONGOOSE_HOSTNAME >> "$rpath/mongoose.log" 2>&1 </dev/null &

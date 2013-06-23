@@ -334,7 +334,7 @@ echo -e "$fpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/act
 "$rpath"/fixports.run
 [ -f "$fpath/.msh.env" ] || echo 'HISTFILE=$HOME/.bash_history' > "$fpath/.msh.env"
 
-printf "Adjusting some thresholds for your system...    "
+echo -e "Adjusting some thresholds for your system...    "
 cpun=`find /sys/class/cpuid -name cpu[0-9] 2>/dev/null | wc -l`
 [[ $cpun -eq 0 ]] && cpun=`cat /proc/cpuinfo | grep '^processor[[:space:]]' | wc -l`
 if [[ $cpun -ne 0 ]] ; then
@@ -349,22 +349,23 @@ if [[ $cpun -ne 0 ]] ; then
 fi
 memtotal=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`
 memvirt=`cat /proc/meminfo | grep CommitLimit | awk '{print $2}'`
-mvperc1=`expr $memvirt / $memtotal / 2 \* 100 2>/dev/null || echo 100`
-mvperc2=`expr $mvperc1 \* 3 / 2 || echo 150`
-mvperc2=`expr $mvperc1 \* 2 || echo 200`
+mvperc1=`expr $memvirt \* 100 / $memtotal / 2 2>/dev/null`
+[ $? -ne 0 ] && mvperc1=100
+mvperc2=`expr $mvperc1 \* 3 / 2 2>/dev/null`
+[ $? -ne 0 ] && mvperc2=150
+mvperc2=`expr $mvperc1 \* 2 2>/dev/null`
+[ $? -ne 0 ] && mvperc3=200
 if [ -f "$rpath/tests/memory_eaters.conf" ]; then
   sed -i "s|MEM_VIR_1=.*|MEM_VIR_1=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
   sed -i "s|MEM_VIR_2=.*|MEM_VIR_2=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
   sed -i "s|MEM_VIR_3=.*|MEM_VIR_3=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
 fi
+echo "done"
 [ -d /etc/init.d ] && rcdir=/etc/init.d
 [ -d /etc/rc.d/init.d ] && rcdir=/etc/rc.d/init.d
-[ "X$rcdir" == "X" ] || ln -s "$fpath/monitorload.run" $rcdir/monitorload
+[ "X$rcdir" == "X" ] || ln -s "$fpath/monitorload.run" $rcdir/monitorload 2>/dev/null
 if [ -z "$defopt" ] ; then
-  echo
-  echo "Default email address for reports and alerts is root@localhost. You can change"
-  echo "it now or leave it for later. In the latter case just press Enter"
-  echo
+  echo -e "\nDefault email address for reports and alerts is root@localhost. You can change it now or leave it for later. In the latter case just press Enter\n\n"
   read -p "What email address to send reports and alerts to? " email
   echo $email > "$rpath/conf/mail.alert.list"
   echo $email > "$rpath/conf/mail.admin.list"
