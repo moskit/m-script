@@ -61,18 +61,17 @@ start)
   
   [ -n "$FREQ" ] && FREQ=`expr $FREQ - 10` || FREQ=200
   if [ "X$MONGOOSE" == "X1" ] ; then
-    printf "Starting web interface...      "
+    echo -n "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
     if [ -z "$MG" ] ; then
       if [ -f "$rpath/mongoose" ] ; then
         MG="$rpath/mongoose"
       else
-        echo "Error"
-        echo "Mongoose is enabled in $rpath/conf/mon.conf but not found"
+        echo -e "Error\nMongoose is enabled in $rpath/conf/mon.conf but not found"
         exit 1
       fi
     fi
-    [ -f "$rpath/conf/htaccess" ] || ($MG -A "$rpath/conf/htaccess" "$MONGOOSE_HOSTNAME" admin admin && echo -e "access file $rpath/conf/htaccess not found, creating one with:\n\nlogin: admin\npassword: admin\n\nuse $MG -A $rpath/conf/htaccess <realm> <user> <passwd> to change credentials  ")
+    [ -f "$rpath/conf/htaccess" ] || ([ -z "$MONGOOSE_HOSTNAME" ] && MONGOOSE_HOSTNAME=`hostname` ; "$rpath"/helpers/setvar MONGOOSE_HOSTNAME=`hostname` ; $MG -A "$rpath/conf/htaccess" "$MONGOOSE_HOSTNAME" admin admin && echo -e "access file $rpath/conf/htaccess not found, creating one with:\n\nlogin: admin\npassword: admin\n\nuse $MG -A $rpath/conf/htaccess <realm> <user> <passwd> to change credentials\n\n")
     MGOPTS=$(for opt in `cat "$rpath/conf/mongoose.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | sed 's|^|-|g'`; do printf " $opt" ; done)
     echo "`date` -- Starting $MG $MGOPTS -R $MONGOOSE_HOSTNAME" >> "$rpath/mongoose.log"
     $MG $MGOPTS -R $MONGOOSE_HOSTNAME >> "$rpath/mongoose.log" 2>&1 </dev/null &
