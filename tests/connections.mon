@@ -170,7 +170,14 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
         break
       fi
     done
-    [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]] && echo "<***> Service $prog listening on $t is a new service"
+    if [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]]; then
+      # we allow master process to step down in port binding in favor of its child
+      masterpid=`cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | grep ^${t}\| | cut -d'|' -f3`
+      if [ `ps -p $spid -o ppid= | tr -d ' '` -ne $masterpid ]; then
+        echo "<***> Service $prog listening on TCP $t is a new service"
+        echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink -f /proc/$spid/exe`\n<***>     Files opened:\n`find /proc/$spid/fd -type l | while read f ; do expr $(readlink -f $f) : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+      fi
+    fi
     skip=0
   done < "$M_TEMP/ports.tcp.$$"
 
@@ -218,14 +225,17 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       fi
     done
     if [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]]; then
-      echo "<***> Service $prog listening on $t is a new service"
-      echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n`find /proc/$spid/fd -type l | while read f ; do expr $(readlink $f) : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
-      skip=0
+    # we allow master process to step down in port binding in favor of its child
+      masterpid=`cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | grep ^${t}\| | cut -d'|' -f3`
+      if [ `ps -p $spid -o ppid= | tr -d ' '` -ne $masterpid ]; then
+        echo "<***> Service $prog listening on UDP $t is a new service"
+        echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink -f /proc/$spid/exe`\n<***>     Files opened:\n`find /proc/$spid/fd -type l | while read f ; do expr $(readlink -f $f) : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+      fi
     fi
+    skip=0
   done < "$M_TEMP/ports.udp.$$"
 
-  if [[ ${#portsudp[*]} -gt 0 ]]
-  then
+  if [[ ${#portsudp[*]} -gt 0 ]]; then
     for t in ${portsudp[*]} ; do
       prog=`grep "^$t|" "$M_ROOT/ports.udp.list" | cut -d'|' -f2`
       chk_portexclusions $t $prog

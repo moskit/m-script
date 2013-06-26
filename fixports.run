@@ -99,6 +99,7 @@ if [ -e "$M_TEMP"/netstat.tcp.tmp ] ; then
   do
     skip=false
     prog=${LINE#* }
+    ppid=$(echo $prog | cut -d/ -f1)
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
     for exclport in `cat "$rpath/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
@@ -116,7 +117,7 @@ if [ -e "$M_TEMP"/netstat.tcp.tmp ] ; then
         fi
       fi
     done
-    $skip && skip=false || echo "$port|$prog" >> "$rpath/ports.tcp.list"
+    $skip && skip=false || echo "$port|$prog|$ppid" >> "$rpath/ports.tcp.list"
   done < "$M_TEMP"/netstat.tcp.tmp
 fi
 if [ -e "$M_TEMP"/netstat.udp.tmp ] ; then
@@ -124,6 +125,7 @@ if [ -e "$M_TEMP"/netstat.udp.tmp ] ; then
   do
     skip=false
     prog=${LINE#* }
+    ppid=$(echo $prog | cut -d/ -f1)
     prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
     port=${LINE% *}
     for exclport in `cat "$rpath/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
@@ -141,7 +143,7 @@ if [ -e "$M_TEMP"/netstat.udp.tmp ] ; then
         fi
       fi
     done
-    $skip && skip=false || echo "$port|$prog" >> "$rpath/ports.udp.list"
+    $skip && skip=false || echo "$port|$prog|$ppid" >> "$rpath/ports.udp.list"
   done < "$M_TEMP"/netstat.udp.tmp
 fi
 # UNIX SOCKETS
