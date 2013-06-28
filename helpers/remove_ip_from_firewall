@@ -98,7 +98,7 @@ fi
 
 [ -z "$s_param" ] && echo "Usage: ${0##*/} <options> IP" || IP=$s_param
 
-[ -z "$cluster" ] && echo "Target cluster must be defined! Use --cluster=all to specify all clusters." && exit 1
+[ -z "$cluster" -a -z $ip ] && echo "Target cluster or a single IP must be defined! Use --cluster=all to specify all clusters." && exit 1
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
@@ -108,7 +108,7 @@ IFS1=$IFS
 IFS='
 '
 
-for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+for dserver in `cat "$rpath/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
   dip=${dserver%%|*}
   [ -n "$ip" ] && [ "X$dip" != "X$ip" ] && continue
   if [ -n "$region" ] ; then
@@ -132,10 +132,10 @@ for dserver in `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^#|grep -
       $line && echo "OK" || echo "Error"
     done
   else
-    lines=`"${rpath}"/mssh "$dip" "$IPTS \\| grep \\"\\ $IP\\ \\" | sed \"s\|^-A\|$IPT -D\|g\"`
+    lines=`"$rpath"/mssh "$dip" "$IPTS \\| grep \\"\\ $IP\\ \\" | sed \"s\|^-A\|$IPT -D\|g\"`
     for line in $lines ; do
       echo -n "$line    "
-      "${rpath}"/mssh $dip $line && echo "OK" || echo "Error"
+      "$rpath"/mssh $dip $line && echo "OK" || echo "Error"
     done
   fi
 done
