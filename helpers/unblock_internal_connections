@@ -190,7 +190,7 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
   fi
   if [ "X$verbose" == "Xyes" ] ; then
     echo
-    echo "### Server: $dserver"
+    echo "--- Server: $dserver"
     echo
   fi
 
