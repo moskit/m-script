@@ -128,7 +128,7 @@ for dserver in `cat "$rpath/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v 
     lines=`$IPTS | grep -E " $IP | $IP/[0-9]*" | sed "s|^-A|$IPT -D|g"`
     for line in $lines ; do
       echo -n "$line    "
-      $line && echo "OK" || echo "Error"
+      eval $line && echo "OK" || echo "Error"
     done
   else
     lines=`"$rpath"/mssh "$dip" "$IPTS \\| grep -E \\"\\ $IP\\ \\|\\ $IP/[0-9]\\*\\" | sed \"s\|^-A\|$IPT -D\|g\"`
