@@ -98,7 +98,7 @@ fi
 
 [ -z "$s_param" ] && echo "Usage: ${0##*/} <options> IP" || IP=$s_param
 
-[ -z "$cluster" -a -z $ip ] && echo "Target cluster or a single IP must be defined! Use --cluster=all to specify all clusters." && exit 1
+[ -z "$cluster" -a -z "$ip" ] && echo "Target cluster or a single IP must be defined! Use --cluster=all to specify all clusters." && exit 1
 
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
