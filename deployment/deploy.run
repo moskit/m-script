@@ -171,7 +171,7 @@ if [ "X$roleincluded" != "X$role" ] ; then
   fi
 fi
 # The actual role is the last one. This way it has the last word and overwrites
-# variables of the same name from the roles included above
+# variables of the same name from the roles included before
 if [ -e "$ROLES_ROOT/$role/role.conf" ] ; then
   store_vars $role
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1

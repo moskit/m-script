@@ -173,9 +173,10 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
     if [[ $portfound -ne 1 ]] && [[ $skip -ne 1 ]]; then
       # we allow master process to step down in port binding in favor of its child
       masterpid=`cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | grep ^${t}\| | cut -d'|' -f3`
-      if [ `ps -p $spid -o ppid= | tr -d ' '` -ne $masterpid ]; then
+      spidmaster=`ps -p $spid -o ppid= 2>/dev/null | tr -d ' '`
+      if [[ $spidmaster -ne $masterpid ]]; then
         echo "<***> Service $prog listening on TCP $t is a new service"
-        echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink -f /proc/$spid/exe`\n<***>     Files opened:\n`find /proc/$spid/fd -type l | while read f ; do expr $(readlink -f $f) : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+        echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink -f /proc/$spid/exe`\n<***>     Files opened:\n$(find /proc/$spid/fd -type l | while read f ; do expr `readlink -f $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c)\n\n"
       fi
     fi
     skip=0
@@ -229,7 +230,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       masterpid=`cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | grep ^${t}\| | cut -d'|' -f3`
       if [ `ps -p $spid -o ppid= | tr -d ' '` -ne $masterpid ]; then
         echo "<***> Service $prog listening on UDP $t is a new service"
-        echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink -f /proc/$spid/exe`\n<***>     Files opened:\n`find /proc/$spid/fd -type l | while read f ; do expr $(readlink -f $f) : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c`\n\n"
+        echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink -f /proc/$spid/exe`\n<***>     Files opened:\n$(find /proc/$spid/fd -type l | while read f ; do expr `readlink -f $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c)\n\n"
       fi
     fi
     skip=0
@@ -283,7 +284,7 @@ do
   done
   if [[ $socketfound -ne 1 ]]; then
     echo "<***> Service $sname listening on $t is a new service"
-    echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n$(find fd -type l | while read f ; do expr `readlink $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c)\n\n"
+    echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n$(find /proc/$spid/fd -type l | while read f ; do expr `readlink $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c)\n\n"
   fi
 done < "$M_TEMP/sockets.$$"
 

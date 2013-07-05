@@ -24,19 +24,22 @@ source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 
 netstatbin=`which netstat 2>/dev/null`
+iptablessave=`which iptables-save 2>/dev/null`
 iptablesbin=`which iptables 2>/dev/null`
 
-if [ "X$SQLITE3" != "X0" ] && [ "X${1}" == "XSQL" ]
+if [ "X$SQLITE3" != "X0" ] && [ "X$1" == "XSQL" ]
 then
 
-[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 ${rpath}/../sysdata "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat $M_TEMP/timeindex`
+[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 "$rpath/../sysdata" "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat $M_TEMP/timeindex`
 
-numconn=`${netstatbin} -s 2>/dev/null | grep 'connections established' | awk '{print $1}'`
-binputlast=`sqlite3 ${rpath}/../sysdata "select input from sysdata where timeindex='$lasttimeindex'"`
-boutputlast=`sqlite3 ${rpath}/../sysdata "select output from sysdata where timeindex='$lasttimeindex'"`
+numconn=`$netstatbin -s 2>/dev/null | grep 'connections established' | awk '{print $1}'`
+binputlast=`sqlite3 "$rpath/../sysdata" "select input from sysdata where timeindex='$lasttimeindex'"`
+boutputlast=`sqlite3 "$rpath/../sysdata" "select output from sysdata where timeindex='$lasttimeindex'"`
 
-if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
-  ${iptablesbin} -L INPUT -v -x > /tmp/ipt.input.accept
+$iptablessave | grep -A 3 ^\*filter | grep ^\: > /tmp/ipt.counters
+
+if [ -n "$iptablesbin" ] && [ "$IPTABLES" != "X0" ]; then
+  $iptablesbin -L INPUT -v -x > /tmp/ipt.output.accept
   if [ `grep '^Chain' /tmp/ipt.input.accept | grep -c ' 0 bytes'` -eq 1 ]
   then
     declare -i b
@@ -55,7 +58,7 @@ if [ "X${iptablesbin}" != "X" ] && [ "X${IPTABLES}" != "X0" ]; then
     binput=`expr "${c}" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
   fi
 
-  ${iptablesbin} -L OUTPUT -v -x > /tmp/ipt.output.accept
+  $iptablesbin -L OUTPUT -v -x > /tmp/ipt.output.accept
   if [ `grep '^Chain' /tmp/ipt.output.accept | grep -c ' 0 bytes'` -eq 1 ]
   then
     declare -i b
