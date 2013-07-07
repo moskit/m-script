@@ -29,7 +29,7 @@ DIFF=`which diff 2>/dev/null`
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-source "${0%.mon}.conf"
+source "$rpath/${rcommand%.mon}.conf"
 M_TEMP="$M_TEMP/cloud"
 
 gen_html_table() {
