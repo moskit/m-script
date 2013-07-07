@@ -136,6 +136,8 @@ SSH=`which ssh 2>/dev/null`
 RSYNC=`which rsync 2>/dev/null`
 
 possible_options="cluster help region verbose debug flavor role ip test dry cloud timestamp local"
+# debug must be passed here as option only
+unset debug
 
 IFS1=$IFS
 IFS='-'
@@ -206,7 +208,7 @@ fi
 source "$rpath/../conf/mon.conf"
 source "$rpath/../conf/deployment.conf"
 source "$rpath/../conf/cloud.conf"
-[ -n "$debug" ] && verbose="yes"
+[ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")

@@ -45,7 +45,7 @@ run_meta() {
     printf "\n  type: $metatype  script: $metascript \n"
     V='--verbose'
   fi
-  if [ -n "$debug" ] ; then
+  if $debug ; then
     D='--debug'
   fi
   if [ -n "$ignoreemptycluster" ] ; then
@@ -173,16 +173,16 @@ if $found ; then
   exit 1
 fi
 
-[ -n "$debug" ] && verbose="yes" && debug=true
+[ -n "$debug" ] && verbose="yes" && debug=true || debug=false
+[ "X$help" == "Xyes" ] && debug=true
 export verbose debug
 [ -n "$repeat" ] && timestamp=repeat
-[ -n "$usage" ] && help="yes" && unset verbose
+[ -n "$usage" ] && help="yes" && debug=false
 
 if [ "X$help" == "Xyes" ] ; then
   if $debug ; then
     cat << "EOF"
 Usage: ${0##*/} <options>
-help verbose debug flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage"
 
 Common options:
 
