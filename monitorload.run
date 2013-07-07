@@ -59,7 +59,7 @@ start)
   [ -z "$BASIC_SEQUENCE" ] &&  BASIC_SEQUENCE=connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,servers.mon,netstat.mon
   echo $$ > $pidfile
   
-  [ -n "$FREQ" ] && || FREQ=200
+  [ -n "$FREQ" ] || FREQ=200
   if [ "X$MONGOOSE" == "X1" ] ; then
     echo -n "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
