@@ -29,7 +29,7 @@ lock_cloudops() {
   [ -n "$IAMACHILD" ] && log "I am a child, don't lock me up" && return 0
   local -i i
   i=0
-  log "trying to acquire the cloud operations lock"
+  log "trying to acquire cloud operations lock"
   [ -n "$MAXLOCK" ] || MAXLOCK=30 
   lockfile=`find "$M_ROOT/cloud/" -maxdepth 1 -mindepth 1 -name "cloud.${CLOUD}.lock" -mmin +$MAXLOCK`
   if [ -n "$lockfile" ] ; then

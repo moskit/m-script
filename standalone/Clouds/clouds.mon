@@ -21,7 +21,7 @@ rpath=${rpath%/*}
 #*/
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
-log "Starting.."
+log "starting.."
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
@@ -29,6 +29,7 @@ DIFF=`which diff 2>/dev/null`
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "${0%.mon}.conf"
 M_TEMP="$M_TEMP/cloud"
 
 gen_html_table() {
@@ -84,7 +85,10 @@ if [[ $API_CALLS_FREQ -gt 1 ]]; then
     echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/cycles.count"
     exit 0
   fi
+else
+  update_servers_list
 fi
+
 [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ] && log "no changes in servers.list" && exit 0
 cp "$M_ROOT/servers.list" "$M_TEMP/servers.list"
 
