@@ -26,9 +26,9 @@ store_vars() {
   fi
   [ -n "$verbose" ] && echo "Sourcing $1"
   for LINE in `cat "${1}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
-    [ -n "$debug" ] && echo "  == $LINE"
+    $debug && echo "  == $LINE"
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
-    [ -n "$debug" ] && echo "  << $ELINE"
+    $debug && echo "  << $ELINE"
     # This conditional evaluation below is a workaround for hard nuts like pipes
     # inside sub-shells. More complex constructs involving both sub-shell and 
     # non-sub-shell expression in a single line both with pipes will probably 
@@ -36,20 +36,20 @@ store_vars() {
     eval "$LINE" 2>/dev/null
     eval $(eval "echo \"$LINE\"") 2>/dev/null
     if [ $? -eq 0 ]; then
-      [ -n "$debug" ] && echo "evaluating plain line"
+      $debug && echo "evaluating plain line"
       eval "echo \"$LINE\"" >> "${tmpfile}.var"
     else
       eval "$ELINE" 2>/dev/null
       eval $(eval "echo \"$ELINE\"") 2>/dev/null
       if [ $? -eq 0 ]; then
-        [ -n "$debug" ] && echo "evaluating converted line"
+        $debug && echo "evaluating converted line"
         eval "echo \"$ELINE\"" >> "${tmpfile}.var"
       else
         echo -e "ERROR: both plain and converted lines evaluation failed for this line:\n\n$LINE\n\n"
         exit 1
       fi
     fi
-    [ -n "$debug" ] && echo "  >> `tail -1 "${tmpfile}.var"`"
+    $debug && echo "  >> `tail -1 "${tmpfile}.var"`"
   done
 }
 
@@ -105,7 +105,7 @@ prepare_file() {
     sed 's|"|\\\"|g' | \
     sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
-  [ -n "$debug" ] && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
+  $debug && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
 
   for LINE in `cat -E "${tmpfile}.orig"` ; do
     if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
@@ -120,7 +120,7 @@ prepare_file() {
       else
         echo "$LINE" >> "$tmpfile"
       fi
-      [ -n "$debug" ] && tail -1 "$tmpfile" || true
+      $debug && tail -1 "$tmpfile" || true
     fi
   done
   if [ -n "$role" -a -n "$task" -a -n "$timestamp" ] ; then

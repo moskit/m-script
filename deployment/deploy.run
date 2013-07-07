@@ -38,9 +38,9 @@ store_vars() {
       fi
     fi
     
-    [ -n "$debug" ] && echo "  == $LINE"
+    $debug && echo "  == $LINE"
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
-    [ -n "$debug" ] && echo "  << $ELINE"
+    $debug && echo "  << $ELINE"
     # This conditional evaluation below is a workaround for hard nuts like pipes
     # inside sub-shells. More complex constructs involving both sub-shell and 
     # non-sub-shell expression in a single line both with pipes will probably 
@@ -48,20 +48,20 @@ store_vars() {
     eval "$LINE" 2>/dev/null
     eval $(eval "echo \"$LINE\"") 2>/dev/null
     if [ $? -eq 0 ]; then
-      [ -n "$debug" ] && echo "evaluating plain line"
+      $debug && echo "evaluating plain line"
       eval "echo \"$LINE\"" >> "$varfile"
     else
       eval "$ELINE" 2>/dev/null
       eval $(eval "echo \"$ELINE\"") 2>/dev/null
       if [ $? -eq 0 ]; then
-        [ -n "$debug" ] && echo "evaluating converted line"
+        $debug && echo "evaluating converted line"
         eval "echo \"$ELINE\"" >> "$varfile"
       else
         echo -e "ERROR: both plain and converted lines evaluation failed for this line:\n\n$LINE\n\n"
         exit 1
       fi
     fi
-    [ -n "$debug" ] && echo "  >> `tail -1 "$varfile"`" || true
+    $debug && echo "  >> `tail -1 "$varfile"`" || true
   done
 }
 
@@ -76,7 +76,7 @@ SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster"
 necessary_options="file type task role"
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
 # debug must be passed here as option only
 unset debug
 
