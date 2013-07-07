@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -139,8 +139,8 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster"
-[ "X$*" == "X" ] && echo "Can't work without options. Possible options are: $possible_options" && exit 1
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage"
+[ "X$*" == "X" ] && usage="yes"
 
 IFS1=$IFS
 IFS='-'
@@ -151,6 +151,7 @@ do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
   [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "X$s_optarg" == "Xno" ] && unset $s_optname
 
   for option in ${possible_options// /-} ; do
     [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
@@ -175,9 +176,85 @@ fi
 [ -n "$debug" ] && verbose="yes" && debug=true
 export verbose debug
 [ -n "$repeat" ] && timestamp=repeat
+[ -n "$usage" ] && help="yes" && unset verbose
 
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options>"
+  if $debug ; then
+    cat << "EOF"
+Usage: ${0##*/} <options>
+help verbose debug flavor ip cloud run cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage"
+
+Common options:
+
+  --help		this help
+  --usage		short help
+  --verbose		shows the output of each command; also exports
+			"verbose=yes" to descendant processes, so it can be 
+			used in scripts
+  --debug		adds verbosity; also exports "debug=yes" to descendant
+			processes, so it can be used in scripts
+  --test|--dry		makes all preparations but doesn't really execute
+			any scripts; in combination with --verbose or --debug
+			outputs the resulting scripts and files with all
+			variables substituted
+
+Target selection options:
+
+  --ip=[IP]		target is this IP only
+  --ignoreemptycluster	useful only in combination with --ip in some cases;
+			prevents from complaining about cluster not defined
+  --cluster=[name]	allows to define cluster; overwrites M_CLUSTER 
+			environment variable if it is defined
+  --role=[name]		(re)defines cluster based on role
+  --flavor=[name]	(re)defines cluster(s) based on flavor, i.e. selects
+			all hosts of this flavor as a target
+  --cloud=[name]	(re)defines cluster(s) based on cloud, i.e. selects
+			all hosts in this cloud as a target
+
+Commands selection options:
+
+  --task=[name]		task is defined by metascript "extension"; metascript
+			must be located in the root folder of the role, so e.g.
+			file meta.deploy corresponds to the task named "deploy"
+                        and contains the list of all correspondent commands
+			inside
+  --command=[command string]	executes a single command defined by command
+			string; syntax is "command-type role/flavor/command"
+			where command-type is either "remote" or "local";
+			see documentation for more details
+  --command=[number,...]	executes command(s) defined by their numbers in
+			existing metascript defined by the --task option; see
+			also option --list
+  --list		outputs all commands listed in metascript defined by 
+			the --task option with their numbers
+  --skip=[number,...]	allows to skip certain commands while executing 
+                        metascript defined by the --task option
+
+Repeat options:
+
+  These options don't require other options to be defined, all the options
+  are inherited from the session being repeated
+
+  --repeat		repeats the last meta execution starting from the
+			command that failed during the previous run; if there
+			were no failed commands, does nothing
+  --timestamp=[string]	repeats execution of the session defined by its
+			timestamp; session timestamp is shown when metascript
+			execution has finished, either successfully or not
+
+Other options:
+
+  --newserver		this is a shortcut combining start_server command and
+			metascript execution on this new server when it is
+			ready; includes all necessary automation: getting
+			new server status, repeating the call if it has failed,
+			inserting the IP into the list, ensuring it is up
+			and accessible etc. See documentation for more details
+
+EOF
+  else
+    echo -e "Usage: ${0##*/} <options>\n   Possible options: $possible_options"
+  fi
   exit 0
 fi
 

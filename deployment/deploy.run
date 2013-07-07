@@ -31,7 +31,12 @@ store_vars() {
   for LINE in `cat "$ROLES_ROOT/$role/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     # to respect environment variables and variables passed from command line
     pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
-    [ -n "$pvar" -a -n "`eval echo "\\$$pvar"`" ] && echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
+    if [ -n "$pvar" ]; then
+      pval="`eval echo "\\$$pvar"`"
+      if [ -n "$pval" ]; then
+        [ `expr "$pval" : "^[0-9]*$"` -eq 0 ] && echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "$varfile" && continue || echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
+      fi
+    fi
     
     [ -n "$debug" ] && echo "  == $LINE"
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
@@ -127,8 +132,8 @@ fi
 
 echo -e "\n\n-------------------\n${0} $*\n" >> "${rpath}/../logs/deploy.log"
 
-source "$rpath/../conf/deployment.conf" || exit 99
-source "$rpath/../conf/cloud.conf" || exit 99
+source "$M_ROOT/conf/deployment.conf" || exit 99
+source "$M_ROOT/conf/cloud.conf" || exit 99
 
 [ -n "$debug" ] && verbose="yes"
 [ -n "$dry" -o -n "$test" ] && dry="yes"
@@ -139,17 +144,17 @@ export debug verbose dry
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-[ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
+
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 
-[ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "$rpath/../logs/deploy.log" && exit 1
-[ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `cat "$rpath/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
+[ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "$M_ROOT/logs/deploy.log" && exit 1
+[ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "${WORK_DIR}/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
 [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
 export role task timestamp   ## exports the working dir
-install -d "$WORK_DIR/${role}.${task}.${timestamp}/${file%/*}" >> "$rpath/../logs/deploy.log" 2>&1 || exit 1
+install -d "$WORK_DIR/${role}.${task}.${timestamp}/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
 declare -i RETVAL
 RETVAL=0
 IFS1=$IFS; IFS='
@@ -184,7 +189,7 @@ for option in `echo $possible_options | sed 's/,/ /g'`; do
 done
 IFS=$IFS2
 # and some other variables
-M_ROOT_REMOTE=`grep "^$cluster|" "$rpath/../conf/clusters.conf" | cut -d'|' -f8`
+M_ROOT_REMOTE=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
 [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
 echo "M_ROOT_REMOTE=$M_ROOT_REMOTE" >> $WORK_DIR/${role}.${task}.$timestamp/${file}.var
 
@@ -200,18 +205,18 @@ done
  
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
-    cluster=`grep "^$ip|" "$rpath/../servers.list" | cut -d'|' -f5`
-    [ -z "$cluster" ] && echo "Unable to find cluster name" >> "$rpath/../logs/deploy.log" && exit 1
+    cluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
+    [ -z "$cluster" ] && echo "Unable to find cluster name" >> "$M_ROOT/logs/deploy.log" && exit 1
   fi
   if [ -n "$ip" ] ; then
     key=`"$M_ROOT"/helpers/find_key server "$ip"`
   else
     key=`"$M_ROOT"/helpers/find_key cluster "$cluster"`
   fi
-  [ -z "$key" ] && echo "Key not found" >> "$rpath/../logs/deploy.log" && exit 1
-  [ ! -f "$key" ] && echo "Key $key does not exist" >> "$rpath/../logs/deploy.log" && exit 1
-  echo "using key $key" >> "$rpath/../logs/deploy.log"
-  echo "`date +"%H:%M:%S"` REMOTE $file" >> "$rpath/../logs/deploy.log"
+  [ -z "$key" ] && echo "Key not found" >> "$M_ROOT/logs/deploy.log" && exit 1
+  [ ! -f "$key" ] && echo "Key $key does not exist" >> "$M_ROOT/logs/deploy.log" && exit 1
+  echo "using key $key" >> "$M_ROOT/logs/deploy.log"
+  echo "`date +"%H:%M:%S"` REMOTE $file" >> "$M_ROOT/logs/deploy.log"
   if [ -z "$ip" ] ; then
     if [ -n "$dry" ] ; then
       ips=`get_ips --cluster="$cluster" --limit=1`
@@ -225,21 +230,21 @@ if [ "$type" == "remote" ] ; then
     for IP in $ips ; do
       find_name $IP
       # install remote workdir
-      $SSH -p $SSHPORT -i "$key" $IP install -d "$WORK_DIR/${role}.${task}.$timestamp/${file%/*}" >> "$rpath/../logs/deploy.log" 2>&1 || exit 1
+      $SSH -p $SSHPORT -i "$key" $IP install -d "$WORK_DIR/${role}.${task}.$timestamp/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
       # copy the script to remote server
-      $SCP -P $SSHPORT -i "$key" "$WORK_DIR/${role}.${task}.$timestamp/$file" "${IP}:$WORK_DIR/${role}.${task}.$timestamp/$file" >> "$rpath/../logs/deploy.log" 2>&1 || exit 1
+      $SCP -P $SSHPORT -i "$key" "$WORK_DIR/${role}.${task}.$timestamp/$file" "${IP}:$WORK_DIR/${role}.${task}.$timestamp/$file" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
       # copy config to remote server
-      $SCP -P $SSHPORT -i "$key" "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" "${IP}:$WORK_DIR/${role}.${task}.$timestamp/${file}.var" >> "$rpath/../logs/deploy.log" 2>&1
+      $SCP -P $SSHPORT -i "$key" "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" "${IP}:$WORK_DIR/${role}.${task}.$timestamp/${file}.var" >> "$M_ROOT/logs/deploy.log" 2>&1
       $SSH -p $SSHPORT -i "$key" $IP echo -e "ip=$IP\nservername=$NAME" \>\> "$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
       if [ -n "$dry" ] ; then
       [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-        $SSH -p $SSHPORT -i "$key" $IP "(source \"$WORK_DIR/${role}.${task}.$timestamp/${file}.var\" && cat \"$WORK_DIR/${role}.${task}.$timestamp/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+        $SSH -p $SSHPORT -i "$key" $IP "(source \"$WORK_DIR/${role}.${task}.$timestamp/${file}.var\" && cat \"$WORK_DIR/${role}.${task}.$timestamp/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
         res=$?
         [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
         [ $res -ne 0 ] && exit 1
       else
         [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-        $SSH -p $SSHPORT -i "$key" $IP "(source \"$WORK_DIR/${role}.${task}.$timestamp/${file}.var\" && bash \"$WORK_DIR/${role}.${task}.$timestamp/$file\" 2>&1 || echo \"${timestamp}_ERROR\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+        $SSH -p $SSHPORT -i "$key" $IP "(source \"$WORK_DIR/${role}.${task}.$timestamp/${file}.var\" && bash \"$WORK_DIR/${role}.${task}.$timestamp/$file\" 2>&1 || echo \"${timestamp}_ERROR\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
         res=$?
         [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
         [ $res -ne 0 ] && exit 1
@@ -249,27 +254,27 @@ if [ "$type" == "remote" ] ; then
     if [ -n "$dry" ] ; then
       echo "Remote servers not found, testing locally" | tee -a "${rpath}/../logs/deploy.log"
       [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-      (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+      (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
       res=$?
     [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
     [ $res -ne 0 ] && exit 1
     else
-      echo "Remote servers not found, exiting" | tee -a "${rpath}/../logs/deploy.log"
+      echo "Remote servers not found, exiting" | tee -a "$M_ROOT/logs/deploy.log"
       RETVAL+=1
     fi
   fi
 elif [ "$type" == "local" ] ; then
-  echo "`date +"%H:%M:%S"` LOCAL $file" >> "${rpath}/../logs/deploy.log"
+  echo "`date +"%H:%M:%S"` LOCAL $file" >> "$M_ROOT/logs/deploy.log"
   if [ -n "$dry" ] ; then
     [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-    (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+    (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" && cat "$WORK_DIR/${role}.${task}.$timestamp/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
     res=$?
     [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
     [ $res -ne 0 ] && exit 1
   else
     [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
     # running the script
-    (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && bash "$WORK_DIR/${role}.${task}.$timestamp/$file" 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$rpath/../logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+    (source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var" && bash "$WORK_DIR/${role}.${task}.$timestamp/$file" 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
     res=$?
     [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
     [ $res -ne 0 ] && exit 1
