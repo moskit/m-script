@@ -178,9 +178,9 @@ IFS='
 
 lock_cloudops || exit 10
 log "checking cluster $cluster limit"
-res=`check_cluster_limit $verbose`
+res=`check_cluster_limit $cluster`
 [[ $res -ne 0 ]] && proper_exit 5 181
-[ -z "$name" ] && name=`generate_name` && log "name auto-generated: $name"
+[ -z "$name" ] && name=`generate_name $cluster` && log "name auto-generated: $name"
 [ -z "$name" ] && proper_exit 6 183
 [ -z "$ip" ] && ip=`find_ip` && log "IP that will be used: $ip"
 [ -z "$ip" ] && proper_exit 4 185
