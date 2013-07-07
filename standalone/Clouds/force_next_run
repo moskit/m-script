@@ -4,9 +4,9 @@ rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/cloud.conf"
-source "$rpath/${rcommand%.mon}.conf"
 M_TEMP="$M_TEMP/cloud"
 
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
@@ -14,4 +14,7 @@ echo "blablabla" >> "$M_TEMP/servers.list"
 for cloud in ${clouds[*]} ; do
   echo "blablabla" >> "$M_TEMP/$cloud/show_servers.resp"
 done
+
+[ -f "$rpath/cycles.count" ] && [ -n "$API_CALLS_FREQ" ] && echo $API_CALLS_FREQ > "$rpath/cycles.count"
+
 
