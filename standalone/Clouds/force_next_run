@@ -13,7 +13,7 @@ M_TEMP="$M_TEMP/cloud"
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
 echo "blablabla" >> "$M_TEMP/servers.list"
 for cloud in ${clouds[*]} ; do
-  echo "blablabla" >> "$M_TEMP/$cloud/show_servers.resp"
+  echo "blablabla" >> "$M_TEMP/$cloud/show_servers.resp.prev"
 done
 
 [ -f "$rpath/cycles.count" ] && [ -n "$API_CALLS_FREQ" ] && echo $API_CALLS_FREQ > "$rpath/cycles.count"
