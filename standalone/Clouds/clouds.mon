@@ -79,6 +79,7 @@ if [[ $API_CALLS_FREQ -gt 1 ]]; then
   cyclescount=`cat "$rpath/cycles.count"`
   if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
     echo 0 > "$rpath/cycles.count"
+    update_servers_list
   else
     echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/cycles.count"
     exit 0
@@ -112,7 +113,7 @@ gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
 
 for cl in `cat "$M_ROOT/conf/clusters.conf" | grep -vE '^#|[[:space:]]*#|^$' | cut -d'|' -f1,7 | grep -v ^$ | grep -v \|$ | cut -d'|' -f1` ; do
   check_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"
-  check_cluster_minimum || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
+  check_cluster_minimum "$cl" || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
 done
 
 
