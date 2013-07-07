@@ -74,9 +74,16 @@ IFS=$IFS1
 
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
 
-
-# This monitor doesn't query API itself, it relies on periodic running of
-# update_servers_list instead
+[ -z "$API_CALLS_FREQ" ] && API_CALLS_FREQ=1
+if [[ $API_CALLS_FREQ -gt 1 ]]; then
+  cyclescount=`cat "$rpath/cycles.count"`
+  if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
+    echo 0 > "$rpath/cycles.count"
+  else
+    echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/cycles.count"
+    exit 0
+  fi
+fi
 [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ] && log "no changes in servers.list" && exit 0
 cp "$M_ROOT/servers.list" "$M_TEMP/servers.list"
 
