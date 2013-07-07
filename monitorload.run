@@ -59,7 +59,7 @@ start)
   [ -z "$BASIC_SEQUENCE" ] &&  BASIC_SEQUENCE=connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,servers.mon,netstat.mon
   echo $$ > $pidfile
   
-  [ -n "$FREQ" ] && FREQ=`expr $FREQ - 10` || FREQ=200
+  [ -n "$FREQ" ] && || FREQ=200
   if [ "X$MONGOOSE" == "X1" ] ; then
     echo -n "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
@@ -91,9 +91,9 @@ start)
   while true
   do
   # Checking how much load average has changed
-    [ -z "$rload" ] && rloadprev=$rload || rloadprev=0
+    [ -n "$rload" ] && rloadprev=$rload || rloadprev=0
     rload="$(cat /proc/loadavg | cut -d' ' -f2)"
-    rloadabs=${rload%.*} ; [ -z "$rloadabs" ] && rloadabs=0
+    rloadabs=${rload%.*}
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
     [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
@@ -103,7 +103,7 @@ start)
     # Running actions from the queue
     "$rpath"/lib/mq.run &
     
-### Tests that run if load has changed - we're interested in various metrics here
+### Tests that run if load has changed - we are interested in more metrics here
     if [ "X$x" == "X1" ]; then
 ## A pause is necessary here, because it is practically the same moment as test
 ## at line 114 from the previous run, so lock file doesn't really work.
@@ -117,7 +117,6 @@ start)
         "$rpath"/mon.run mem.mon </dev/null &
       fi
     fi
-
     
     sleep $FREQ
 
