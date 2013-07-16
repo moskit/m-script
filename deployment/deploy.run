@@ -34,7 +34,7 @@ store_vars() {
     if [ -n "$pvar" ]; then
       pval="`eval echo "\\$$pvar"`"
       if [ -n "$pval" ]; then
-        [ `expr "$pval" : "^[0-9]*$"` -eq 0 ] && echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "$varfile" && continue || echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
+        [ `expr "$pval" : "[0-9]*$"` -eq 0 ] && echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "$varfile" && continue || echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
       fi
     fi
     

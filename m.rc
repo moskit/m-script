@@ -46,13 +46,13 @@ cr() {
   cd "$ROLES_ROOT/$1"
   export M_ROLE="${1%/}"
   export role="${1%/}"
-  M_CLUSTER=`cat "${rpath}/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
+  M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
   [ `echo -e "$M_CLUSTER" | wc -l` -gt 1 ] && echo "More than one cluster found for this role. Selecting the first one." && M_CLUSTER=`echo -e "$M_CLUSTER" | head -1`
   if [ -z "$M_CLUSTER" ]; then
     echo "Cluster not found for this role. It is not a critical error, but default cluster and flavor cannot be determined. It is recommended to create a record in conf/clusters.conf."
   else
     export M_CLUSTER
-    flavor=`grep ^$M_CLUSTER\| "${rpath}/conf/clusters.conf" | cut -d'|' -f11`
+    flavor=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f11`
     export flavor
   fi
   set_default_ps
@@ -65,7 +65,7 @@ exitrole() {
 }
 
 set_default_ps() {
-  if ${use_color} ; then
+  if $use_color ; then
     if [ -z "$PS_COLOR" ] ; then
       PS1_COLOR="$ATTR_BOLD$FG_RED"
     else

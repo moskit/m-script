@@ -389,7 +389,7 @@ case $command1 in
     [ -z "$param1" ] && echo "Usage: role edit meta|script|file NAME" && exit 1
     [ -n "$VISUAL" ] && ED=$VISUAL
     [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
-    [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you like" && ED=`which vim 2>/dev/null`
+    [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you want" && ED=`which vim 2>/dev/null`
     [ -z "$ED" ] && echo "Editor not found" && exit 1
     case $command2 in
       meta)
@@ -405,7 +405,7 @@ case $command1 in
           1)
           if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
             if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-              echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors. If it is a new script, use full notation (role/flavor/scriptname) or create it directly: $ED \"$ROLES_ROOT/$role/$flavor/$param1\" or $ED \"$ROLES_ROOT/$role/common/$param1\"." && exit 1
+              echo "$param1 doesn't exist in this role. `[[ "$flavor" == "common" ]] && echo "Flavor 'common' has been" || echo "Flavors '$flavor' and 'common' have been"` searched. Use options --role= and --flavor= to search in other roles and flavors. If it is a new script, use full notation (role/flavor/scriptname) or create it directly: $ED \"$ROLES_ROOT/$role/$flavor/$param1\" or $ED \"$ROLES_ROOT/$role/common/$param1\"." && exit 1
             else
               $ED "$ROLES_ROOT/$role/common/$param1"
             fi
@@ -424,7 +424,7 @@ case $command1 in
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
-        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors. If you intended to create a new file, just create it directly: $ED \"$ROLES_ROOT/$role/$flavor/files/$param1\" or $ED \"$ROLES_ROOT/$role/common/files/$param1\"." && exit 1
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors. If you intended to create a new file, just create it directly: $ED \"$ROLES_ROOT/$role/$flavor/files/$param1\" or $ED \"$ROLES_ROOT/$role/common/files/$param1\"." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           $ED "$rf"
         else
@@ -452,7 +452,7 @@ case $command1 in
           1)
           if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
             if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-              echo "$param1 doesn't exist in this role. Only `[[ "$flavor" == "common" ]] && echo "flavor 'common'" || echo "flavors '$flavor' and 'common'"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+              echo "$param1 doesn't exist in this role. `[[ "$flavor" == "common" ]] && echo "Flavor 'common' has been" || echo "Flavors '$flavor' and 'common' have been"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
             else
               [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
             fi
@@ -471,7 +471,7 @@ case $command1 in
           rf="$ROLES_ROOT/$role/$flavor/files/$param1"
         fi
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
-        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Only flavors $flavor and common searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           [ -n "$strip" ] && cat "$rf" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$rf"
         else

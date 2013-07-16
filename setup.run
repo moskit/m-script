@@ -332,7 +332,12 @@ install -d "$rpath/logs" "$rpath/deployment/roles"
 echo -e "$fpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/actions.allowed.list"
 "$rpath"/helpers/init_rc
 "$rpath"/fixports.run
-[ -f "$fpath/.msh.env" ] || echo 'HISTFILE=$HOME/.bash_history' > "$fpath/.msh.env"
+[ -f "$fpath/.msh.env" ] || cat > "$fpath/.msh.env" << "EOF"
+# makes MSH history written separately
+HISTFILE=$HOME/.bash_history
+# sets terminal title
+PROMPT_COMMAND='echo -ne "\033]0;msh@${HOSTNAME}\007"'
+EOF
 
 echo -e "Adjusting some thresholds for your system...    "
 cpun=`find /sys/class/cpuid -name cpu[0-9] 2>/dev/null | wc -l`
@@ -410,6 +415,7 @@ else
   echo "$rpath/monitorload.sh start"
 fi
 
+echo -e "\nYou may want to use M-Shell (just execute $rpath/msh).\nIt is just a convenience subshell that doesn't restrict you from using your shell as usual but adds paths and sets all necessary environment variables.\nCheck/edit $rpath/.msh.env to adjust its look and feel\n"
 
 
 #rsync ifconfig

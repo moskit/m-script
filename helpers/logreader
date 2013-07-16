@@ -47,7 +47,8 @@ do
 done
 IFS=$IFS1
 
-[ -n "$help" ] && echo -e "Possible options: $possible_options\nNecessary options: $necessary_options"
+[ -n "$help" ] && echo -e "Possible options: $possible_options\nNecessary options: $necessary_options" && exit 0
+
 [ -n "$verbose" ] && debug=true || debug=false
 
 source "${rpath}/../conf/mon.conf"

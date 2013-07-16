@@ -170,7 +170,9 @@ if [ "X$command" != "X" ] ; then
         echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
       fi
       if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
-        [ -z "$nolocalhost" ] && cp -up $from $to
+        if [ -z "$nolocalhost" ]; then
+          [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
+        fi
       else
         KEY=`$M_ROOT/helpers/find_key server $IP` || continue
         if [ -n "$RSYNC" ] ; then
