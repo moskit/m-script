@@ -133,7 +133,7 @@ find_name() {
 
 proper_exit() {
   log "exit at line: $2 status: $1"
-  [ -z "$IAMACHILD" ] && log "not a child, unlocking" && unlock_cloudops || log "I am a child, cannot unlock"
+  [ -z "$IAMACHILD" ] && log "I am a parent, unlocking" && unlock_cloudops || log "I am a child, cannot unlock"
   exit $1
 }
 
