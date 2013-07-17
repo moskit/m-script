@@ -210,8 +210,7 @@ log "using OSPATH $OSPATH"
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
 [ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && proper_exit 1 203
 if [ -d "$OSPATH/$OSNAME" ]; then
-  [ -f "$OSPATH/$OSNAME/create" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/create"
-  [ -f "$OSPATH/$OSNAME/variants.list" ] || cp "$M_ROOT/cloud/ganeti/os-skeleton/create" "$OSPATH/$OSNAME/variants.list"
+  cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/*" "$OSPATH/$OSNAME/"
 else
   cp -r "$M_ROOT/cloud/ganeti/os-skeleton" "$OSPATH/$OSNAME"
 fi
