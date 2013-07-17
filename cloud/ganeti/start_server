@@ -126,7 +126,7 @@ wait_ready() {
 request() {
   node="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f3`"
   ios="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f5`"
-  iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6` --net 0:ip:$ip"
+  iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6` --net 0:ip=$ip"
   sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
   $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1
