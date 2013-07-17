@@ -114,7 +114,7 @@ wait_ready() {
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     [ -n "$1" ] && echo -n '.'
-    "$rpath"/get_server_details --name=$name >/dev/null 2>&1
+    IAMACHILD=1 "$rpath"/get_server_details --name=$name >/dev/null 2>&1
     if [ `cat "$M_TEMP/get_server_details.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
       echo
       return 0
@@ -210,7 +210,7 @@ log "using OSPATH $OSPATH"
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
 [ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && proper_exit 1 203
 if [ -d "$OSPATH/$OSNAME" ]; then
-  cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/*" "$OSPATH/$OSNAME/"
+  cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/"* "$OSPATH/$OSNAME/"
 else
   cp -r "$M_ROOT/cloud/ganeti/os-skeleton" "$OSPATH/$OSNAME"
 fi
@@ -306,7 +306,7 @@ if [ -z "$test" ]; then
   $GNTI add-tags $name "cluster:$cluster"
   if [ $? -eq 0 ]; then
     log "Tag cluster:$cluster added"
-    "$rpath"/show_servers --update_servers_list
+    IAMACHILD=1 "$rpath"/show_servers --update_servers_list
   else
     log "Adding tag cluster:$cluster failed"
     echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"
