@@ -16,6 +16,7 @@ conf="{rpath}/${rcomm%.mon}.conf"
 # [ -z $period ] && period=200
 
 ### Here goes the monitor's logic
+
 ### results are in e.g. var1 (integer) and var2 (real)
 check_results var1:integer,var2:real
 store_results var1:integer,var2:real

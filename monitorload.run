@@ -177,6 +177,7 @@ start)
   ;;
 stop)
   if [ -f "$pidfile" ]; then
+    echo "3" > "$rpath/services.mon.lock"
     pid=`cat "$pidfile"|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
     rm -f $pidfile
@@ -185,6 +186,7 @@ stop)
     echo "$pidfile not found!"
   fi
   if [ -f $mgpidfile ] ; then
+    echo "3" > "$rpath/connections.mon.lock"
     pid=`cat $mgpidfile|tail -1`
     printf "Stopping web interface (pid $pid)...       "
     kill -15 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log"

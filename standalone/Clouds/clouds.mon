@@ -75,26 +75,34 @@ IFS=$IFS1
 
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
 
-[ -z "$API_CALLS_FREQ" ] && API_CALLS_FREQ=1
-if [[ $API_CALLS_FREQ -gt 1 ]]; then
-  cyclescount=`cat "$rpath/cycles.count"`
-  if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
-    echo 0 > "$rpath/cycles.count"
-    update_servers_list
-  else
-    echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/cycles.count"
-    exit 0
-  fi
+# might be manual edits of servers.list: non-cloud servers and servers added by
+# start_server that have not yet reported by API (there might be delays)
+if [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ]; then
+  log "no changes in servers.list"
 else
-  update_servers_list
+  cp "$M_ROOT/servers.list" "$M_TEMP/servers.list"
+  log "changes found in servers.list"
 fi
 
-[ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ] && log "no changes in servers.list" && exit 0
-cp "$M_ROOT/servers.list" "$M_TEMP/servers.list"
-
 for cloud in ${clouds[*]} ; do
-
+# update_servers_list command does not remove manual records from servers.list
+# and it updates show_servers.resp for each cloud; thus we have a full list:
+# current servers.list backuped to $M_TEMP and clouds' responses
   log "cloud $cloud"
+  [ -z "$API_CALLS_FREQ" ] && API_CALLS_FREQ=1
+  if [[ $API_CALLS_FREQ -gt 1 ]]; then
+    cyclescount=`cat "$rpath/${cloud}.cycles.count"`
+    if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
+      echo 0 > "$rpath/${cloud}.cycles.count"
+      [ -x $M_ROOT/$cloud/update_servers_list ] && $M_ROOT/$cloud/update_servers_list
+    else
+      echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
+      exit 0
+    fi
+  else
+    [ -x $M_ROOT/$cloud/update_servers_list ] && $M_ROOT/$cloud/update_servers_list
+  fi
+
   [ `cat "$M_TEMP/$cloud/full.servers.list" 2>/dev/null | wc -l` -eq 0 ] && log "servers list is empty for this cloud, update forced" && echo > "$M_TEMP/$cloud/show_servers.resp.prev"
   if [ -f "$M_TEMP/$cloud/show_servers.resp" ]; then
     [ -f "$M_TEMP/$cloud/show_servers.resp.prev" ] || echo > "$M_TEMP/$cloud/show_servers.resp.prev"
@@ -110,10 +118,26 @@ for cloud in ${clouds[*]} ; do
     log "no response found, querying"
     "$M_ROOT/cloud/$cloud"/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
   fi
-  
+  gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
 done
 
-gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
+# By now the diff of current and backuped servers.list files contains
+# non-cloud servers (including those not yet reported by API)
+noncloud=`$DIFF "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1 | grep '^>' | sed 's|^> ||'`
+if [ -n "$noncloud" ]; then
+  cloud="noncloud"
+  [ -d "$M_TEMP/$cloud" ] || install -d "$M_TEMP/$cloud"
+  [ -f "$M_TEMP/$cloud/full.servers.list" ] && rm "$M_TEMP/$cloud/full.servers.list"
+  IFS1=$IFS; IFS='
+'
+  for LINE in `echo $noncloud` ; do
+    ncip=`echo $LINE | cut -d'|' -f1`
+    ncname=`echo $LINE | cut -d'|' -f4`
+    nccluster=`echo $LINE | cut -d'|' -f5`
+    echo "|$ncname||$ncip||$nccluster||" >> "$M_TEMP/$cloud/full.servers.list"
+  done
+  IFS=$IFS1
+fi
 
 for cl in `cat "$M_ROOT/conf/clusters.conf" | grep -vE '^#|[[:space:]]*#|^$' | cut -d'|' -f1,7 | grep -v ^$ | grep -v \|$ | cut -d'|' -f1` ; do
   check_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"

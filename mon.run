@@ -118,47 +118,26 @@ function runscript() {
 
   if [ "X$1" == "XSQL" ]; then
     
-    if [ -n "$2" ] ; then
-      for script in `find "$rpath/rc/" -maxdepth 1 -name "*.mon" | head -n $2`
-      do
-        [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-        time0=`date +"%s"`
-        mon="$rpath/rc/`readlink $script`"
-        if [ -x "$mon" ]; then
-          log "$mon"
-          monoutput=`$mon $SQL 2>&1`
-          echo "$monoutput" >> "$LOG"
-          if alert_blocked ${mon##*/} ; then
-            log "=== alert is blocked for $mon"
-            echo "$monoutput" >> "$rpath/report.blocked"
-          else  
-            echo "$monoutput" >> "$rpath/report"
-          fi
-          time1=`date +"%s"`
-          $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+    for script in "$rpath/rc/"*.mon  #*/
+    do
+      [ -n "$RUNDELAY" ] && sleep $RUNDELAY
+      time0=`date +"%s"`
+      mon="$rpath/rc/`readlink $script`"
+      if [ -x "$mon" ]; then
+        log "$mon"
+        monoutput=`$mon $SQL 2>&1`
+        echo "$monoutput" >> "$LOG"
+        if alert_blocked ${mon##*/} ; then
+          log "=== alert is blocked for $mon"
+          echo "$monoutput" >> "$rpath/report.blocked"
+        else  
+          echo "$monoutput" >> "$rpath/report"
         fi
-      done
-    else
-      for script in "$rpath/rc/"*.mon  #*/
-      do
-        [ -n "$RUNDELAY" ] && sleep $RUNDELAY
-        time0=`date +"%s"`
-        mon="$rpath/rc/`readlink $script`"
-        if [ -x "$mon" ]; then
-          log "$mon"
-          monoutput=`$mon $SQL 2>&1`
-          echo "$monoutput" >> "$LOG"
-          if alert_blocked ${mon##*/} ; then
-            log "=== alert is blocked for $mon"
-            echo "$monoutput" >> "$rpath/report.blocked"
-          else  
-            echo "$monoutput" >> "$rpath/report"
-          fi
-          time1=`date +"%s"`
-          $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
-        fi
-      done
-    fi
+        time1=`date +"%s"`
+        $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+      fi
+    done
+
   elif [ -n "$1" ]; then
     for mon in `echo $1 | sed 's|,| |g'` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
@@ -452,7 +431,7 @@ analyzesysparams 'uptime'   'days' $dayfirst   ""       "Uptime"        "UPTIME"
 function newtimeindex() {
   timeindexnow=$(date +"%s")
   echo $timeindexnow > "$M_TEMP/timeindex.$commlinehash"
-  lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash"`
+  lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash" 2>/dev/null || echo 0`
   export timeindexnow lasttimeindex
 }
 
@@ -552,17 +531,6 @@ case $1 in
     deltimeindex
     cleanup
   ;;
-  --report=*)
-    limit=${1#*=}
-    [[ $limit =~ [^[0-9]] ]] && echo "Usage: --report=<number>" && exit 1
-    newtimeindex
-    runscript SQL $limit
-    mailreport
-    mailalert
-    [ -n "$DASHBOARD" ] && genreport "$M_ROOT/report" servers
-    deltimeindex
-    cleanup
-  ;;
   *.mon)
     newtimeindex
     runscript "$1" $SQL
@@ -578,8 +546,6 @@ case $1 in
   ;;
 esac
 rm -f "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` <<< unlocking by $commline" >> "$rpath/monitoring.log"
-echo  >> "$rpath/monitoring.log"
-#rm -f $M_TEMP/sar.tmp
-chmod 666 "$rpath"/alert* 2>/dev/null
+
 export LC_MESSAGES=`echo $currentlocale`
 
