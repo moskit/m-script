@@ -399,7 +399,7 @@ log "d=$d"
     QUERYFROM="select timeindex from $table WHERE $field=$value order by timeindex desc limit $limit"
   else
     QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
-    QUERY="select ${metricQ} from $table order by timeindex desc limit $limit"
+    QUERY="select $metricQ from $table order by timeindex desc limit $limit"
   fi
   $debug && log "$QUERY"
   if [ "$sIP" == "localhost" ]; then
@@ -407,12 +407,12 @@ log "d=$d"
     from=`$SQL3 "${rpath}/$database" "${QUERYFROM}" | tail -1`
   else
     $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/$database\" \"${QUERY}\"" > ${M_TEMP}/graph.${sIP}.${dbname}.${name}
-    from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/$database\" \"${QUERYFROM}\"" \| tail -1`
+    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
+    from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$QUERYFROM\"" \| tail -1`
   fi
   log "from: $from  to: $to"
-  if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | wc -l` -le 5 ] ; then
-    log "Too few data for graph. Might be connection to ${sIP} problems. Graph is not generated."
+  if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 5 ] ; then
+    log "Too few data for graph. Might be connection to $sIP problems. Graph is not generated."
     exit 1
   fi
   sn=`echo $metric | tr ',' ' ' | wc -w`
@@ -426,7 +426,7 @@ else
   mp=100
   qmetric="timeindex"
   for smetric in `echo $metric | tr ',' ' '` ; do
-    rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric} 2>/dev/null
+    rm -f "$M_TEMP/graph.${sIP}.${dbname}.${smetric}" 2>/dev/null
     qmetric="${qmetric}, ${smetric}*${mp}"
   done
     
@@ -438,15 +438,15 @@ else
       QUERY="$QUERY AND $field='$value'" 
     fi
     if [ "X$sIP" == "Xlocalhost" ] ; then
-      $debug && log "$SQL3 \"${rpath}/${database}\" \"${QUERY}\""
-      $SQL3 "${rpath}/${database}" "${QUERY}" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting ${smetric} data from ${rpath}/${database}, server $sIP"
+      $debug && log "$SQL3 \"$rpath/$database\" \"$QUERY\""
+      $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting $smetric data from $rpath/${database}, server $sIP"
     else
     # -o StrictHostKeyChecking=no
-      $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/${database}\" \"${QUERY}\""
-      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"${mpath}/${database}\" \"${QUERY}\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from ${rpath}/${database}, server $sIP"
+      $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"$mpath/$database\" \"$QUERY\""
+      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$QUERY\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from $rpath/${database}, server $sIP"
     fi
-    if [ `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | wc -l` -le 1 ] ; then
-      log "Too little data for graph. Might be connection to ${sIP} problems. Graph is not generated."
+    if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 1 ] ; then
+      log "Too little data for graph. Might be connection to $sIP problems. Graph is not generated."
       exit 1
     fi
   fi
@@ -458,8 +458,8 @@ else
   declare -i n
   n=2
   for smetric in `echo $metric | tr ',' ' '` ; do
-    smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
-    smin=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
+    smax=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
+    smin=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
     [[ $metricmax -eq 0 ]] && metricmin=$smax
     [ -z "$metricmin" ] && metricmin=0
     [[ $smax -gt $metricmax ]] && metricmax=$smax
@@ -473,17 +473,17 @@ else
     snadd=0
     n=2
     for smetric in `echo $metric | tr ',' ' '` ; do
-      rm -f ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled 2>/dev/null
-      smax=`cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f${n} | sort -n | tail -1`
+      rm -f "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" 2>/dev/null
+      smax=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | sort -n | tail -1`
       if [ -n "$smax" ] ; then
         [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve 2 "$metricmax / $smax / $sn / 1.2"` || sratio=1
-        for LINE in `cat ${M_TEMP}/graph.${sIP}.${dbname}.${name} | cut -d'|' -f1,${n}` ; do
+        for LINE in `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n}` ; do
           st=`echo $LINE | cut -d'|' -f1`
           [ -z "$st" ] && continue
           sd=`echo $LINE | cut -d'|' -f2`
           [ -z "$sd" ] && continue
           sds=`solve 2 "$sd * $sratio + $snadd"`
-          echo "${st}|${sds}" >> ${M_TEMP}/graph.${sIP}.${dbname}.${smetric}.scaled
+          echo "$st|$sds" >> $M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled
         done
       fi
       snadd=`solve 2 "$snadd + $sadd"`
@@ -569,12 +569,12 @@ if [[ $hourX -lt $countminX ]] ; then
           currpoint=`date -u -d "1970/01/01 +$currpoint sec +$res month" +"%s"`
           themonth=`date -u -d "1970/01/01 +$currpoint sec" +"%m"`
           theyear=`date -u -d "1970/01/01 +$currpoint sec" +"%Y"`
-          themark=`date -u -d "${theyear}/${themonth}/1" +"%s"`
+          themark=`date -u -d "$theyear/$themonth/1" +"%s"`
           themark=`expr \( $themark - $from \) / $perdotX + $startX`
           [[ $themark -gt $mY2 ]] && break
           textmark=`date -u -d "1970/01/01 +$currpoint sec"`
           textmark=`date -d "$textmark" +"%m"`
-          addxmarks $themark $textmark
+          addxmarks ${themark}.5 $textmark
         done
         unset nextmonth res monthX
       else
@@ -592,7 +592,7 @@ if [[ $hourX -lt $countminX ]] ; then
           [[ $themark -gt $mY2 ]] && break
           textmark=`date -u -d "1970/01/01 +$currpoint sec"`
           textmark=`date -d "$textmark" +"%d"`
-          addxmarks $themark $textmark
+          addxmarks ${themark}.5 $textmark
         done
         unset nextday
       fi
@@ -610,7 +610,7 @@ if [[ $hourX -lt $countminX ]] ; then
         [[ $themark -gt $mY2 ]] && break
         textmark=`date -u -d "1970/01/01 +$currpoint sec"`
         textmark=`date -d "$textmark" +"%d"`
-        addxmarks $themark $textmark
+        addxmarks ${themark}.5 $textmark
       done
     fi
     unset dayN
@@ -633,13 +633,13 @@ if [[ $hourX -lt $countminX ]] ; then
       themonth=`date -u -d "$currpointsec" +"%m"`
       longmonth=`date -u -d "$currpointsec" +"%b"`
       theyear=`date -u -d "$currpointsec" +"%Y"`
-      themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
+      themark=`date -u -d "$theyear/$themonth/$theday ${thehour}:00" +"%s"`
       themark=`expr \( $themark - $from \) / $perdotX + $startX`
       [[ $themark -gt $mY2 ]] && break
       textmark=`date -u -d "1970/01/01 +$currpoint sec"`
       textmark=`date -d "$textmark" +"%H"`
-      addxmarks $themark $textmark
-      daytextmark="${longmonth} ${theday}"
+      addxmarks ${themark}.5 $textmark
+      daytextmark="$longmonth $theday"
       [ -n "$daymark" ] && addxlongmark $daymark $daytextmark
     done
   fi
@@ -665,13 +665,13 @@ else
     themonth=`date -u -d "$currpointsec" +"%m"`
     longmonth=`date -u -d "$currpointsec" +"%b"`
     theyear=`date -u -d "$currpointsec" +"%Y"`
-    themark=`date -u -d "${theyear}/${themonth}/${theday} ${thehour}:00" +"%s"`
+    themark=`date -u -d "$theyear/$themonth/$theday ${thehour}:00" +"%s"`
     themark=`expr \( $themark - $from \) / $perdotX + $startX`
     [[ $themark -gt $mY2 ]] && break
     textmark=`date -u -d "1970/01/01 +$currpoint sec"`
     textmark=`date -d "$textmark" +"%H"`
-    addxmarks $themark $textmark
-    daytextmark="${longmonth} ${theday}"
+    addxmarks ${themark}.5 $textmark
+    daytextmark="$longmonth $theday"
     [ -n "$daymark" ] && addxlongmark $daymark $daytextmark
   done
 fi
@@ -734,7 +734,7 @@ do
   # Freeing some room for axis Y title
   [[ `expr $i + $ires` -gt $imax ]] && unset imark imarkfp
   irev=`expr ${graphV} - $i`
-  marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"$irev\\" x2=\\"$mY2\\" y2=\\"$irev\\" />"`"
+  marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"$irev\\" x2=\\"$mY2\\" y2=\\"$irev\\" />"`.5"
   if [ "X$scale" != "Xyes" ] ; then
     if [ -n "$perpixel" ] ; then
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" >$imark</text>"`"
@@ -746,30 +746,30 @@ do
 done
 log "marks generated"
 
-cat "${rpath}/wwwtemplates/graph.head.svg.tmpl" > "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"$graphH\" height=\"$graphV\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+cat "$rpath/wwwtemplates/graph.head.svg.tmpl" > "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"$graphH\" height=\"$graphV\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Axis
-echo "<g id=\"axis\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-printf "<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-printf " $startX,$startY $startX,$mX2" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"axis\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf " ${startX},$startY ${startX},$mX2" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "\" />" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+printf "<path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
 printf " $startX,$startY $mY2,$startY" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "\" />" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "\" />" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Marks
-echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo $marksX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo $marksY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo $textX >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo $textY >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<text font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"${fontsize}\" fill=\"#666\">$axisY</text>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "</g>" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo $marksX >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo $marksY >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo $textX >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+[ "X$scale" == "Xyes" ] || echo $textY >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<text font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$axisY</text>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Graphs
 i=0

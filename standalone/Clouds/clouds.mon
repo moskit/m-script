@@ -94,12 +94,14 @@ for cloud in ${clouds[*]} ; do
     cyclescount=`cat "$rpath/${cloud}.cycles.count"`
     if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
       echo 0 > "$rpath/${cloud}.cycles.count"
+      log "updating servers.list"
       [ -x $M_ROOT/$cloud/update_servers_list ] && $M_ROOT/$cloud/update_servers_list
     else
       echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
       exit 0
     fi
   else
+    log "updating servers.list"
     [ -x $M_ROOT/$cloud/update_servers_list ] && $M_ROOT/$cloud/update_servers_list
   fi
 
@@ -126,6 +128,7 @@ done
 noncloud=`$DIFF "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1 | grep '^>' | sed 's|^> ||'`
 if [ -n "$noncloud" ]; then
   cloud="noncloud"
+  log "non-cloud servers found, generating the list"
   [ -d "$M_TEMP/$cloud" ] || install -d "$M_TEMP/$cloud"
   [ -f "$M_TEMP/$cloud/full.servers.list" ] && rm "$M_TEMP/$cloud/full.servers.list"
   IFS1=$IFS; IFS='
@@ -134,9 +137,10 @@ if [ -n "$noncloud" ]; then
     ncip=`echo $LINE | cut -d'|' -f1`
     ncname=`echo $LINE | cut -d'|' -f4`
     nccluster=`echo $LINE | cut -d'|' -f5`
-    echo "|$ncname||$ncip||$nccluster||" >> "$M_TEMP/$cloud/full.servers.list"
+    [ "X$NETWORK" == "Xexternal" ] && echo "|$ncname||$ncip||$nccluster||" >> "$M_TEMP/$cloud/full.servers.list" || echo "|$ncname|||$ncip|$nccluster||" >> "$M_TEMP/$cloud/full.servers.list"
   done
   IFS=$IFS1
+  gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
 fi
 
 for cl in `cat "$M_ROOT/conf/clusters.conf" | grep -vE '^#|[[:space:]]*#|^$' | cut -d'|' -f1,7 | grep -v ^$ | grep -v \|$ | cut -d'|' -f1` ; do
