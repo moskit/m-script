@@ -80,7 +80,7 @@ request() {
 save_details() {
   log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
-  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/\"id\"\||\/\"imageId\"\||\/\"flavorId\"\||\/\"adminPass\"\||\/\"addresses\"\/\"public\"|\/\"addresses\"\/\"private\"" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/\\"id\\"\||\/\\"imageId\\"\||\/\\"flavorId\\"\||\/\\"adminPass\\"\||\/\\"addresses\\"\/\\"public\\"|\/\\"addresses\\"\/\\"private\\"" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
   chmod 600 "$rpath/../rackspace.log"
   if [ "X$NETWORK" == "Xexternal" ] ; then
     slip=`grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
