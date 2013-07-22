@@ -356,8 +356,8 @@ if [ -n "$newserver" ]; then
   echo "*** Bringing up new server in cloud $cloud"
   log "bringing up new server in cloud $cloud"
   if [ -z "$test" ]; then
-    log "updating servers list"
-    IAMACHILD=1 "$M_ROOT/cloud/$cloud/update_servers_list"
+    #log "updating servers list"
+    #IAMACHILD=1 "$M_ROOT/cloud/$cloud/update_servers_list"
     log "getting cloud operations lock"
     source "$M_ROOT/lib/cloud_functions.sh"
     lock_cloudops || exit 10
