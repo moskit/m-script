@@ -87,7 +87,7 @@ EOF
     ;;
     esac
   ;;
-  only-pickup|no-tar|notar|no-archive)
+  only-pickup)
     nonbackup='yes'
     onlypickup='yes'
     if [ X$s_optarg == 'Xhelp' ]; then
