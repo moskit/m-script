@@ -33,6 +33,7 @@ MONGODUMP="$(which mongodump 2>/dev/null)"
 GZIP="$(which gzip 2>/dev/null)"
 BZIP2="$(which bzip2 2>/dev/null)"
 LOG="$M_ROOT/m_backup.log"
+TAR="`which tar 2>/dev/null`"
 
 [ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
 [ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1
@@ -60,13 +61,13 @@ full_coll_backup() {
 if [ "X$compression" == "Xgzip" ] && [ -n "$GZIP" ] ; then
   compress=$GZIP
   ext="gz"
-  TAR="`which tar 2>/dev/null` czf"
+  TAR="$TAR czf"
 fi
 
 if [ "X$compression" == "Xbzip2" ] && [ -n "$BZIP2" ] ; then
   compress=$BZIP2
   ext="bz2"
-  TAR="`which tar 2>/dev/null` cjf"
+  TAR="$TAR cjf"
 fi
 
 [ "X$mongohosts" == "X" ] && echo "Error: database host not defined" >> "$M_ROOT/m_backup.error" && exit 1
@@ -194,15 +195,15 @@ else
         install -d "$MBD/${db}.${archname}"
         if [ -n "$compress" ] ; then
           for collection in `$MONGO $DBHOST/$db --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
-            $MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
+            $MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log" | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
           done
         fi
     # --------------------
     # 
       else
-        $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log"
+        $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log"
         [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar.${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp"
-        popd
+        [ -n "$TAR" ] && popd
         cat "$M_ROOT/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$M_ROOT/m_backup.error" && rm -f "$M_ROOT/logs/mongo.backup.tmp"
         rm -rf "$MBD/${db}.${archname}" 2>>"$M_ROOT/m_backup.error"
       fi
