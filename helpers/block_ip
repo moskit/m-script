@@ -23,7 +23,9 @@ rpath=${0%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/block_ip.log"
 
-ips=`cat $1 2>/dev/null | grep -v ^$ | sort | uniq`
+if [ -e "$1" ] || [ "X$1" == "X-" ]; then
+  ips=`cat $1 2>/dev/null | grep -v ^$ | sort | uniq`
+fi
 
 cleanup() {
 
@@ -75,6 +77,44 @@ do
 done
 found=0
 
+if [ -n "$help" ]; then
+  cat << "EOF"
+Usage: $0 [ip list file] <options>
+
+stdin can be used as well:
+
+  echo "ip list" | $0 - <options>
+  
+Options:
+
+  --help                            this help
+  
+  --block_forever_after=[N]         IPs are blocked temporarily by default,
+                                    but every occasion is counted, and IP
+                                    can be blocked forever after N temporary
+                                    blocks; use N=0 to bypass temporary block
+  
+  --method=[method]                 is supposed to be either native iptables
+                                    methods DROP and REJECT (default) that are
+                                    simply converted to the string '-j [method]'
+                                    or special method 'limit' which is converted
+                                    to the string '-m limit --limit $rate 
+                                    --limit-burst $burst -j ACCEPT'
+                                    
+  --rate=[rate]                     limit rate (see --method option and iptables
+                                    documentation); default 1/s
+  
+  --burst=[burst]                   burst rate (see --method option and iptables
+                                    documentation); default 5
+                                    
+  --cleanup                         purges all existing blocks and removes
+                                    chains created by this script
+
+EOF
+
+  exit 0
+fi
+
 source "$M_ROOT/conf/mon.conf"
 
 [ -n "$cleanup" ] && cleanup && exit $?
@@ -119,7 +159,7 @@ if [ -n "$ips" ] ; then
         $IPT -A M_IPBLOCK_CONST -s $ip $method
         log "$ip blocked for ever by $BLOCK_CALLER"
       else
-        log "$ip found in $M_TEMP/ip_block.const, pls check your firewall"
+        log "$ip found in $M_TEMP/ip_block.const, check your firewall"
       fi
     else
       log "$ip :: blocking temporarily by $BLOCK_CALLER"

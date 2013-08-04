@@ -39,23 +39,23 @@ boutputlast=`sqlite3 "$rpath/../sysdata" "select output from sysdata where timei
 $iptablessave | grep -A 3 ^\*filter | grep ^\: > /tmp/ipt.counters
 
 if [ -n "$iptablesbin" ] && [ "$IPTABLES" != "X0" ]; then
-  $iptablesbin -L INPUT -v -x > /tmp/ipt.output.accept
+  $iptablesbin -L INPUT -v -x > /tmp/ipt.input.accept
   if [ `grep '^Chain' /tmp/ipt.input.accept | grep -c ' 0 bytes'` -eq 1 ]
   then
     declare -i b
     b=0
     while read LINE
     do
-      if [ "X${LINE}" != "X" ] && [ `echo ${LINE} | grep -c '^Chain'` -eq 0 ]
+      if [ "X$LINE" != "X" ] && [ `echo "$LINE" | grep -c '^Chain'` -eq 0 ]
       then
-        a=`echo ${LINE} | awk '{print $2}'`
+        a=`echo "$LINE" | awk '{print $2}'`
         b+=`expr "$a" : '\([0-9]*\)'`
       fi
     done < /tmp/ipt.input.accept
     binput=$b
   else
     c=`grep '^Chain' /tmp/ipt.input.accept`
-    binput=`expr "${c}" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
+    binput=`expr "$c" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
   fi
 
   $iptablesbin -L OUTPUT -v -x > /tmp/ipt.output.accept
@@ -65,16 +65,16 @@ if [ -n "$iptablesbin" ] && [ "$IPTABLES" != "X0" ]; then
     b=0
     while read LINE
     do
-      if [ "X${LINE}" != "X" ] && [ `echo ${LINE} | grep -c '^Chain'` -eq 0 ]
+      if [ "X$LINE" != "X" ] && [ `echo "$LINE" | grep -c '^Chain'` -eq 0 ]
       then
-        a=`echo ${LINE} | awk '{print $2}'`
+        a=`echo "$LINE" | awk '{print $2}'`
         b+=`expr "$a" : '\([0-9]*\)'`
       fi
     done < /tmp/ipt.output.accept
     boutput=$b
   else
     c=`grep '^Chain' /tmp/ipt.output.accept`
-    boutput=`expr "${c}" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
+    boutput=`expr "$c" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
   fi
 
   [ -z "$FREQ" ] && FREQ=200
