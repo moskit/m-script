@@ -36,52 +36,18 @@ numconn=`$netstatbin -s 2>/dev/null | grep 'connections established' | awk '{pri
 binputlast=`sqlite3 "$rpath/../sysdata" "select input from sysdata where timeindex='$lasttimeindex'"`
 boutputlast=`sqlite3 "$rpath/../sysdata" "select output from sysdata where timeindex='$lasttimeindex'"`
 
-$iptablessave | grep -A 3 ^\*filter | grep ^\: > /tmp/ipt.counters
-
-if [ -n "$iptablesbin" ] && [ "$IPTABLES" != "X0" ]; then
-  $iptablesbin -L INPUT -v -x > /tmp/ipt.input.accept
-  if [ `grep '^Chain' /tmp/ipt.input.accept | grep -c ' 0 bytes'` -eq 1 ]
-  then
-    declare -i b
-    b=0
-    while read LINE
-    do
-      if [ "X$LINE" != "X" ] && [ `echo "$LINE" | grep -c '^Chain'` -eq 0 ]
-      then
-        a=`echo "$LINE" | awk '{print $2}'`
-        b+=`expr "$a" : '\([0-9]*\)'`
-      fi
-    done < /tmp/ipt.input.accept
-    binput=$b
-  else
-    c=`grep '^Chain' /tmp/ipt.input.accept`
-    binput=`expr "$c" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
-  fi
-
-  $iptablesbin -L OUTPUT -v -x > /tmp/ipt.output.accept
-  if [ `grep '^Chain' /tmp/ipt.output.accept | grep -c ' 0 bytes'` -eq 1 ]
-  then
-    declare -i b
-    b=0
-    while read LINE
-    do
-      if [ "X$LINE" != "X" ] && [ `echo "$LINE" | grep -c '^Chain'` -eq 0 ]
-      then
-        a=`echo "$LINE" | awk '{print $2}'`
-        b+=`expr "$a" : '\([0-9]*\)'`
-      fi
-    done < /tmp/ipt.output.accept
-    boutput=$b
-  else
-    c=`grep '^Chain' /tmp/ipt.output.accept`
-    boutput=`expr "$c" : '.*\(\ [0-9]*\ bytes\).*' | awk '{print $1}'`
-  fi
+if [ "$IPTABLES" != "X0" ]; then
+  counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
+  binput=`echo $counters | grep ^\:INPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
+  boutput=`echo $counters | grep ^\:OUTPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
 
   [ -z "$FREQ" ] && FREQ=200
-  diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=$FREQ
+  [ -z "$timeshift" ] && timeshift=10
+  
+  diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=`expr $FREQ + $timeshift`
 
-  [ "X$binputlast" == "X" ] && binputlast=$binput
-  [ "X$boutputlast" == "X" ] && boutputlast=$boutput
+  [ -z "$binputlast" ] && binputlast=$binput
+  [ -z "$boutputlast" ] && boutputlast=$boutput
   
   if [ "X$BW_UNITS" == "XGBM" ] ; then
     # GB/month 
