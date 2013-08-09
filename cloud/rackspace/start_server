@@ -203,8 +203,8 @@ done
 [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
 
 code=`grep \/\"code\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
-[ -n "$code" ] && echo -n "${code}: "
-grep \/\"message\"\| "$M_TEMP/${rcommand}.resp"
+[ -n "$code" ] && echo -n "${code}: " >&2
+grep \/\"message\"\| "$M_TEMP/${rcommand}.resp" >&2
 newid=`grep \/\"id\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$newid" ] ; then
   save_details $verbose || true
