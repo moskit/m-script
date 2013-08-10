@@ -750,7 +750,7 @@ cat "$rpath/wwwtemplates/graph.head.svg.tmpl" > "$rpath/www/graphs/${sIP}.${dbna
 echo "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"$graphH\" height=\"$graphV\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Axis
-echo -e "<g id=\"axis\">\n<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M\n ${startX},$startY ${startX},$mX2\" /><path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M $startX,$startY $mY2,$startY" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg\" />" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo -e "<g id=\"axis\">\n<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M\n ${startX},$startY ${startX},$mX2\" /><path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M $startX,$startY $mY2,$startY\" /></g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
 
 # Marks
 echo -e "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">\n${marksX}\n${marksY}\n</g>\n<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$textX" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
