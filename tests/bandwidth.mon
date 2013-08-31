@@ -38,8 +38,8 @@ boutputlast=`sqlite3 "$rpath/../sysdata" "select output from sysdata where timei
 
 if [ "$IPTABLES" != "X0" ]; then
   counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
-  binput=`echo $counters | grep ^\:INPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
-  boutput=`echo $counters | grep ^\:OUTPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
+  binput=`echo "$counters" | grep ^\:INPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
+  boutput=`echo "$counters" | grep ^\:OUTPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
 
   [ -z "$FREQ" ] && FREQ=200
   [ -z "$timeshift" ] && timeshift=10
@@ -78,7 +78,7 @@ warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-printf "${warnind} Total connections:\t\t$numconn\n"
+printf "$warnind Total connections:\t\t$numconn\n"
 
 [[ $BW_INPUT_1 -ne 0 ]] && y1="$(echo "$diffbwin >= $BW_INPUT_1" | bc)" || y1=0
 [[ $BW_INPUT_2 -ne 0 ]] && y2="$(echo "$diffbwin >= $BW_INPUT_2" | bc)" || y2=0
@@ -87,7 +87,7 @@ warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-printf "${warnind} Input bandwidth:\t\t$diffbwin ${unitname}\n"
+printf "$warnind Input bandwidth:\t\t$diffbwin ${unitname}\n"
 
 [[ $BW_OUTPUT_1 -ne 0 ]] && y1="$(echo "$diffbwout >= $BW_OUTPUT_1" | bc)" || y1=0
 [[ $BW_OUTPUT_2 -ne 0 ]] && y2="$(echo "$diffbwout >= $BW_OUTPUT_2" | bc)" || y2=0
@@ -96,9 +96,9 @@ warnind='<OK> '
 [ "$y1" == "1" ] && warnind=' <*> '
 [ "$y2" == "1" ] && warnind='<**> '
 [ "$y3" == "1" ] && warnind='<***>'
-printf "${warnind} Output bandwidth:\t\t$diffbwout ${unitname}\n"
+printf "$warnind Output bandwidth:\t\t$diffbwout ${unitname}\n"
 
-sqlite3 ${rpath}/../sysdata "update sysdata set connections='$numconn', input='$binput', output='$boutput', bwidthin='$diffbwin', bwidthout='$diffbwout' where timeindex='$timeindexnow'"
+sqlite3 "$rpath/../sysdata" "update sysdata set connections='$numconn', input='$binput', output='$boutput', bwidthin='$diffbwin', bwidthout='$diffbwout' where timeindex='$timeindexnow'"
 
 fi
 
