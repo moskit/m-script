@@ -119,7 +119,7 @@ check_cluster_minimum() {
   n=`IAMACHILD=1 "$M_ROOT/cloud/$M_CLOUD"/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
-  [ `expr $limit \< $n` -gt 0 ] && return 0
+  [ `expr $limit \<= $n` -gt 0 ] && return 0
   return 1
 }
 
