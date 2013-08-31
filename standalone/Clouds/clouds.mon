@@ -77,6 +77,7 @@ clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 
 
 # might be manual edits of servers.list: non-cloud servers and servers added by
 # start_server that have not yet reported by API (there might be delays)
+# so it cannot be compared with the list obtained from API
 if [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ]; then
   log "no changes in servers.list"
 else
@@ -85,9 +86,6 @@ else
 fi
 
 for cloud in ${clouds[*]} ; do
-# update_servers_list command does not remove manual records from servers.list
-# and it updates show_servers.resp for each cloud; thus we have a full list:
-# current servers.list backuped to $M_TEMP and clouds' responses
   log "cloud $cloud"
   [ -z "$API_CALLS_FREQ" ] && API_CALLS_FREQ=1
   if [[ $API_CALLS_FREQ -gt 1 ]]; then
@@ -95,14 +93,14 @@ for cloud in ${clouds[*]} ; do
     if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
       echo 0 > "$rpath/${cloud}.cycles.count"
       log "updating servers.list"
-      [ -x $M_ROOT/$cloud/update_servers_list ] && $M_ROOT/$cloud/update_servers_list
+      [ -x $M_ROOT/cloud/$cloud/update_servers_list ] && $M_ROOT/cloud/$cloud/update_servers_list
     else
       echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
       exit 0
     fi
   else
     log "updating servers.list"
-    [ -x $M_ROOT/$cloud/update_servers_list ] && $M_ROOT/$cloud/update_servers_list
+    [ -x $M_ROOT/cloud/$cloud/update_servers_list ] && $M_ROOT/$cloud/cloud/update_servers_list
   fi
 
   [ `cat "$M_TEMP/$cloud/full.servers.list" 2>/dev/null | wc -l` -eq 0 ] && log "servers list is empty for this cloud, update forced" && echo > "$M_TEMP/$cloud/show_servers.resp.prev"
@@ -115,6 +113,7 @@ for cloud in ${clouds[*]} ; do
       cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
     else
       log "no changes found"
+      continue
     fi
   else
     log "no response found, querying"

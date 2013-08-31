@@ -52,6 +52,7 @@ fi
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+  [ -z "$cluster" ] && cluster=`grep \|${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
   if [ -n "$cluster" ] ; then
     KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
     if [ ! -f "$M_ROOT/keys/$KEY" ]; then
@@ -74,6 +75,8 @@ if [ -n "$KEY" ] ; then
   if [ -f "$KEY" ]; then
     $SSH $TIMEOUT -i "$KEY" $SSHPORT "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
+  else
+    nextkey=true
   fi
 else
   nextkey=true
@@ -83,6 +86,8 @@ if $nextkey ; then
   if [ -f "$USERKEY1" ]; then
     $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
+  else
+    nextkey=true
   fi
 fi
 if $nextkey ; then
@@ -90,6 +95,8 @@ if $nextkey ; then
   if [ -f "$USERKEY2" ]; then
     $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
+  else
+    nextkey=true
   fi
 fi
 

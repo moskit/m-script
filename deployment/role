@@ -50,7 +50,7 @@ IFS='-'
 for s_option in "$@"
 do
   found=false
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
@@ -64,7 +64,7 @@ do
     exit 1
     ;;
   *)
-    s_param=${s_option}
+    s_param=$s_option
     s_optname=''
     s_optarg=''
     case $ppn in
@@ -73,7 +73,7 @@ do
           if [ "X$s_param" == "X$comm" ]; then
             if $commfound ; then
               echo "Only one command can be executed!"
-              echo "Commands are: ${possible_commands}"
+              echo "Commands are: $possible_commands"
               exit 1
             else
               found=true
@@ -152,13 +152,21 @@ if [ -n "$role" ]; then
   fi
 fi
 
-[ -z "$method" -o "$method" == "symlink" ] && method="link"
-if [ "$method" == "copy" ] ; then
-  methodcommand=`which cp 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-u"`"
-else
-  methodcommand=`which ln 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-s"`"
+if [ "X$command1" == "Xclone" ]; then 
+  [ -z "$method" ] && echo -e "Using default method: copy\n    (other available methods are: symlink, copywithlinks - see 'role --help' for details)"
+  case $method in
+    copy|cp)
+      methodcommand=`which cp 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-u\n-L"`"
+      ;;
+    link|symlink)
+      methodcommand=`which ln 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-s"`"
+      ;;
+    copywithlinks|cpwithlinks)
+      methodcommand=`which cp 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-u\n-d"`"
+      ;;
+  esac
 fi
-    
+
 IFS='
 '
 case $command1 in
@@ -257,7 +265,7 @@ case $command1 in
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/files/" -maxdepth 1 -type f -o -type l` ; do
           for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
-            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "${sc}" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
+            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
           done
           if [ -n "$sci" ]; then
             for scis in $sci ; do
@@ -336,7 +344,7 @@ case $command1 in
         fi
       else
         if [ -e "$ROLES_ROOT/$param2/$nsl" -a ! -h "$ROLES_ROOT/$param2/$nsl" ]; then
-          echo "Source file $nsl is a symlink, but target is not. Not copying."
+          echo "Source file $nsl is a symlink, but target exists and is not a symlink. Skipping."
         else
           if [ ! -e "$ROLES_ROOT/$param2/$nsl" -o -n "$all" ]; then
             $methodcommand "$sl" "$ROLES_ROOT/$param2/$nsl"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2009 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -135,6 +135,8 @@ function runscript() {
         fi
         time1=`date +"%s"`
         $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+      else
+        log "monitor $mon does not exist or is not executable"
       fi
     done
 
@@ -470,7 +472,7 @@ source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
-install -d $M_TEMP
+[ -d $M_TEMP ] || install -d $M_TEMP
 etitle="------------------------------\n`date`\n------------------------------"
 
 case $1 in
