@@ -70,21 +70,20 @@ fi
 request=$M_TEMP/r53query.$$
 
 server_date=`curl -q -s -S -I --max-time 5 --url https://route53.amazonaws.com/date | grep ^Date | awk -F'Date: ' '{print $2}' | sed 's|\r||'`
-
 signature=`printf "$server_date" | $SSLEX dgst -binary -sha1 -hmac $AWS_SECRET_ACCESS_KEY | base64`
 
 case $action in 
   list)
     $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone > $M_TEMP/r53.list.xml
-    ${rpath}/../../lib/xml2txt $M_TEMP/r53.list.xml > $M_TEMP/r53.list.txt
+    "$rpath"/../../lib/xml2txt $M_TEMP/r53.list.xml > $M_TEMP/r53.list.txt
     grep ^ListHostedZonesResponse_HostedZones_HostedZone_Id $M_TEMP/r53.list.txt | cut -d' ' -f2 | sed 's|/hostedzone/||' > $M_TEMP/r53.list.ids
     [ -z "$noupdate" ] && [ `cat $M_TEMP/r53.list.ids | wc -l` -ne 0 ] && rm -f "${rpath}/../../$CLOUD.dnszones.list"
-    [ -f "${rpath}/../../$CLOUD.dnszones.list" ] || touch "${rpath}/../../$CLOUD.dnszones.list"
+    [ -f "$rpath/../../$CLOUD.dnszones.list" ] || touch "$rpath/../../$CLOUD.dnszones.list"
     while read zoneid ; do
       zonename=`grep -A 1 "${zoneid}$" $M_TEMP/r53.list.txt | tail -1 | cut -d' ' -f2`
-      [ -z "$noupdate" ] && [[ `grep -c "^$zoneid|$zonename$" "${rpath}/../../$CLOUD.dnszones.list"` -eq 0 ]] && echo "$zoneid|$zonename" >> "${rpath}/../../$CLOUD.dnszones.list"
+      [ -z "$noupdate" ] && [[ `grep -c "^$zoneid|$zonename$" "$rpath/../../$CLOUD.dnszones.list"` -eq 0 ]] && echo "$zoneid|$zonename" >> "$rpath/../../$CLOUD.dnszones.list"
     done < $M_TEMP/r53.list.ids
-    cat "${rpath}/../../$CLOUD.dnszones.list"
+    cat "$rpath/../../$CLOUD.dnszones.list"
     ;;
   show)
     if [ -z "$id" ] ; then
@@ -92,7 +91,7 @@ case $action in
         echo "Either zone ID or zone name should be defined" && exit 1
       else
         zone="${zone%.}."
-        id=`grep "|${zone}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
+        id=`grep "|${zone}$" "$rpath/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f1`
         if [ -z "$id" ] ; then
           echo "Unable to find zone ID of this zone. Zones list is outdated? Run ${0##*/} --action=list to update it." && exit 1
         fi
@@ -104,7 +103,7 @@ case $action in
     echo "------------------------------------------------------------------------------"
     printf "Zone name: ${zone}\tZone id: ${id}\n"
     echo "------------------------------------------------------------------------------"
-    ${rpath}/../../lib/xml2txt $M_TEMP/r53.${id}.show | grep ^GetHostedZoneResponse_HostedZone_DelegationSet_NameServers_NameServer | cut -d' ' -f2
+    "$rpath"/../../lib/xml2txt $M_TEMP/r53.${id}.show | grep ^GetHostedZoneResponse_HostedZone_DelegationSet_NameServers_NameServer | cut -d' ' -f2
     ;;
   listzone)
     if [ -z "$id" ] ; then
@@ -118,7 +117,7 @@ case $action in
         fi
       fi
     fi
-    [ -z "$name" ] && name=`grep "^${id}$" "${rpath}/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f2`
+    [ -z "$name" ] && name=`grep "^${id}$" "$rpath/../../$CLOUD.dnszones.list" | tail -1| cut -d'|' -f2`
     if [ -n "$wholezone" ] ; then
       request=$M_TEMP/r53.${id}.listzone.wholezone
     else
@@ -136,7 +135,7 @@ case $action in
       fi
     fi
     if [ -z "$noupdate" ] || [ ! -f ${request}.txt ] ; then
-      ${rpath}/../../lib/xml2txt $request > ${request}.txt
+      "$rpath"/../../lib/xml2txt $request > ${request}.txt
     fi
     grep ^ListResourceRecordSetsResponse_ResourceRecordSets_ResourceRecordSet_Name ${request}.txt | cut -d' ' -f2 | sort -n | uniq > ${request}.names
     while read recname ; do

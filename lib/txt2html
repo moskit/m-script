@@ -79,7 +79,7 @@ for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
     datastyle[$cursor]="w3"
     ;;
     [[:space:]]*[[:print:]]*)
-    data[$cursor]="`echo ${LINE} | sed 's|^[[:space:]]*||'`"
+    data[$cursor]="`echo "$LINE" | sed 's|^[[:space:]]*||'`"
     datatype[$cursor]="table"
     datastyle[$cursor]="table"
     ;;
