@@ -55,10 +55,10 @@ get_hostname() {
 }
 
 request() {
-  timestamp=`date +"%Y-%m-%dT%H:%M:%S" | sed 's|:|%3A|g'`
-  Q=`echo -e "GET\nhttps://ec2.amazonaws.com\n/\nAWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2009-03-31"`
+  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%SZ"`
+  Q=`echo -e "GET\nhttps://ec2.amazonaws.com\n/\nAWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac | base64`
-  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2009-03-31&Signature=${signature}" > "$M_TEMP/${rcommand}.resp"
+  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=${signature}" > "$M_TEMP/${rcommand}.resp"
   "$M_ROOT"/lib/xml2txt "$M_TEMP/${rcommand}.resp" > "$M_TEMP/servers.${region}.ips"
 }
 
