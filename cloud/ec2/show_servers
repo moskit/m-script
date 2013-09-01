@@ -25,6 +25,8 @@ SED=`which sed 2>/dev/null`
 [ -z "$SED" ] && echo "Sed utility not found, exiting..  " && exit 1
 SSH=`which ssh 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
+CURL=`which curl 2>/dev/null`
+CURL="$CURL -s"
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting..  " && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
 # Normally needed for localhost only, and not always: depends on system.
@@ -53,9 +55,10 @@ get_hostname() {
 }
 
 request() {
-  server_date=`curl -q -s -S -I --max-time 5 --url https://route53.amazonaws.com/date | grep ^Date | awk -F'Date: ' '{print $2}' | sed 's|\r||'`
-  signature=`printf "$server_date" | $SSLEX dgst -binary -sha1 -hmac $AWS_SECRET_ACCESS_KEY | base64`
-  $CURL -H "Content-Type: text/xml; charset=UTF-8" -H "Date: $server_date" -H "X-Amzn-Authorization: AWS3-HTTPS AWSAccessKeyId=$AWS_ACCESS_KEY_ID,Algorithm=HmacSHA1,Signature=$signature" https://route53.amazonaws.com/2011-05-05/hostedzone > "$M_TEMP/${rcommand}.resp"
+  timestamp=`date +"%Y-%m-%dT%H:%M:%S" | sed 's|:|%3A|g'`
+  Q=`echo -e "GET\nhttps://ec2.amazonaws.com\n/\nAWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2009-03-31"`
+  signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac | base64`
+  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2009-03-31&Signature=${signature}" > "$M_TEMP/${rcommand}.resp"
   "$M_ROOT"/lib/xml2txt "$M_TEMP/${rcommand}.resp" > "$M_TEMP/servers.${region}.ips"
 }
 
