@@ -59,7 +59,7 @@ request() {
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=${signature}" > "$M_TEMP/${rcommand}.resp"
+  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" > "$M_TEMP/${rcommand}.resp"
   "$M_ROOT"/lib/xml2txt "$M_TEMP/${rcommand}.resp" > "$M_TEMP/servers.${region}.ips"
 }
 
@@ -103,13 +103,8 @@ source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
 LOG=$M_ROOT/logs/cloud.log
 
-for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH ; do
-  [ -z "`eval echo \\$\$var`" ] && log "$var is not defined! Define it in conf/cloud.conf please." && exit 1
-done
-PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
-export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
-M_TEMP=$M_TEMP/cloud/ec2
-install -d $M_TEMP
+M_TEMP="$M_TEMP/cloud/ec2"
+[ -d "$M_TEMP/cloud/ec2" ] || install -d "$M_TEMP"
 
 [ -z "$region" ] && region=$EC2_REGION
 
