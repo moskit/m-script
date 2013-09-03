@@ -1,0 +1,22 @@
+#!/bin/bash
+
+rpath=$(readlink -m "$BASH_SOURCE")
+rcomm=${rpath##*/}
+rpath=${rpath%/*}
+source "$rpath/../../lib/functions.sh"
+[ -f "$rpath/${rcomm%mon}conf" ] && source "$rpath/${rcomm%mon}conf"
+
+timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
+[ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=200
+
+SLOW=`"$M_ROOT"/helpers/logreader --file=/var/log/mongo/shard.log --timeformat='%a %b %e %H:%M' --period="$period sec" | grep [0-9][0-9][0-9][0-9][0-9]ms$ | grep -v LockPinger | grep -v writebacklisten`
+
+if [ -z "$SLOW" ] ; then
+  echo "<OK>  No slow queries"
+else
+  echo "$SLOW" | while read SL; do echo "<***> $SL"; done
+fi
+
+gendash "$rpath/report" "mongo_logger"
+
+

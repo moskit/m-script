@@ -18,38 +18,38 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
-source "${rpath}/../conf/mon.conf"
+source "$rpath/../conf/mon.conf"
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
 
 if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
-  alltables=`sqlite3 ${rpath}/../sysdata ".tables"`
+  alltables=`dbquery "$rpath/../sysdata" ".tables"`
 fi
 
 echo
 echo "Disks usage:"
 echo "------------"
 echo
-df -m | grep -v ^shm | grep -v ^tmpfs | grep -v ^udev | grep -v ^none | grep -v "^Filesystem" > $M_TEMP/disk.tmp
+df -m | grep -v ^shm | grep -v ^tmpfs | grep -v ^udev | grep -v ^none | grep -v "^Filesystem" > "$M_TEMP/disk.tmp"
 printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 while read LINE
 do
-  if [ -n "${LONGLINE}" ]
+  if [ -n "$LONGLINE" ]
   then
-    LINE="${LONGLINE} ${LINE}"
+    LINE="$LONGLINE $LINE"
     LONGLINE=""
   fi
   # Sometimes df breaks a line, if it is much longer than 80 symbols
-  if [ x$(echo $LINE | awk '{ print $6}') == "x" ] && [ -z "${LONGLINE}" ]
+  if [ x$(echo "$LINE" | awk '{ print $6}') == "x" ] && [ -z "$LONGLINE" ]
   then
-    LONGLINE="${LINE}"
+    LONGLINE="$LINE"
     continue
   fi
-  disk=$(echo $LINE | awk '{ print $1}')
-  mpoint=$(echo $LINE | awk '{ print $6}')
-  used=$(echo $LINE | awk '{ print $5}' | sed 's@\%@@')
+  disk=$(echo "$LINE" | awk '{ print $1}')
+  mpoint=$(echo "$LINE" | awk '{ print $6}')
+  used=$(echo "$LINE" | awk '{ print $5}' | sed 's@\%@@')
   x1="$(echo "$used >= $DISK_WARN_1" | bc)"
   x2="$(echo "$used >= $DISK_WARN_2" | bc)"
   x3="$(echo "$used >= $DISK_WARN_3" | bc)"
@@ -57,7 +57,7 @@ do
   [ "$x1" == "1" ] && warnind=' <*> '
   [ "$x2" == "1" ] && warnind='<**> '
   [ "$x3" == "1" ] && warnind='<***>'
-  echo "${used}" >> $M_TEMP/diskusage 
+  echo "$used" >> "$M_TEMP/diskusage"
   printf "$warnind\t$disk"
   m=`expr length $disk`
   l=`expr 32 - $m`
@@ -76,28 +76,28 @@ do
   fi
   printf "$used%%\n"
   
-  if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+  if [ "X$dbquery" == "X1" ] && [ "X$1" == "XSQL" ]; then
     diskname=${disk##*/}
     tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "X$diskname" ] && echo "yes" ; done`
-    [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+    [ -z "$tablefound" ] && log "creating table $diskname" && dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
     unset tablefound
-    [[ `sqlite3 ${rpath}/../sysdata "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into '$diskname' (timeindex) values ('$timeindexnow')"
-    sqlite3 ${rpath}/../sysdata "update '$diskname' set diskusage='${used}' where timeindex='$timeindexnow'"
+    [[ `dbquery "$rpath/../sysdata" "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && dbquery "$rpath/../sysdata" "insert into '$diskname' (timeindex) values ('$timeindexnow')"
+    dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used' where timeindex='$timeindexnow'"
   fi
 ## Discovering what this disk really is
-  echo $disk >> $M_TEMP/disk.tmp.ext
+  echo $disk >> "$M_TEMP/disk.tmp.ext"
   linkedto=`readlink $disk 2>/dev/null`
   if [ -n "$linkedto" ] ; then
-    echo "Disk $disk is a symlink to $linkedto" >> $M_TEMP/disk.tmp.discovered
-    echo "/dev/$linkedto" >> $M_TEMP/disk.tmp.ext
+    echo "Disk $disk is a symlink to $linkedto" >> "$M_TEMP/disk.tmp.discovered"
+    echo "/dev/$linkedto" >> "$M_TEMP/disk.tmp.ext"
   fi
   slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
   if [ -n "$slaves" ] ; then
-    printf "Disk $disk is a logical volume built upon `echo $slaves`" >> $M_TEMP/disk.tmp.discovered
-    printf "\n" >> $M_TEMP/disk.tmp.discovered
-    for sldisk in $slaves ; do echo "/dev/$sldisk" >> $M_TEMP/disk.tmp.ext ; done
+    printf "Disk $disk is a logical volume built upon `echo $slaves`" >> "$M_TEMP/disk.tmp.discovered"
+    printf "\n" >> "$M_TEMP/disk.tmp.discovered"
+    for sldisk in $slaves ; do echo "/dev/$sldisk" >> "$M_TEMP/disk.tmp.ext" ; done
   fi
-done < $M_TEMP/disk.tmp
+done < "$M_TEMP/disk.tmp"
 swaps=`cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }'`
 echo $swaps >> $M_TEMP/disk.tmp.ext
 for sw in `echo $swaps` ; do
@@ -112,11 +112,11 @@ echo
 echo "    Disk                  Overall, Mbytes/sec             Current, Mbytes/sec"
 echo
 VMSTAT=`which vmstat 2>/dev/null`
-if [ "X${VMSTAT}" != "X" ]; then
+if [ "X$VMSTAT" != "X" ]; then
   DISKSTAT="$VMSTAT -d"
 fi
-if [ "X${DISKSTAT}" != "X" ]; then
-  $DISKSTAT > $M_TEMP/diskstat.tmp 2>&1
+if [ "X$DISKSTAT" != "X" ]; then
+  $DISKSTAT > "$M_TEMP/diskstat.tmp" 2>&1
   if [ $? -ne 0 ]; then
     echo "Couldn't get disk stats"
     exit 0
@@ -140,7 +140,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
     l=`expr 22 - $m`
     for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
     replinerd=`printf "${replinerd}${drspeed}"`
-    echo "${drspeed}" >> $M_TEMP/diskiord
+    echo "$drspeed" >> "$M_TEMP/diskiord"
     dw=$($DISKSTAT | grep "^${disk} " | awk '{ print $8 }')
     dwtime=$($DISKSTAT | grep "^${disk} " | awk '{ print $9 }')
     if [[ $dwtime -gt 100 ]]; then
@@ -155,17 +155,17 @@ if [ "X${DISKSTAT}" != "X" ]; then
     replinerw=`printf "${replinerw}${dwspeed}"`
     echo "${dwspeed}" >> $M_TEMP/diskiowr
 
-    if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+    if [ "X$dbquery" == "X1" ] && [ "X${1}" == "XSQL" ]; then
     
       diskname=${disk##*/}
       
       tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "X$diskname" ] && echo "yes" ; done`
-      [ -n "$tablefound" ] || sqlite3 ${rpath}/../sysdata "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)" 2>/dev/null
+      [ -n "$tablefound" ] || dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)" 2>/dev/null
       unset tablefound
-      [[ `sqlite3 ${rpath}/../sysdata "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && sqlite3 ${rpath}/../sysdata "insert into '$diskname' (timeindex) values ('$timeindexnow')"
+      [[ `dbquery "$rpath/../sysdata" "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && dbquery "$rpath/../sysdata" "insert into '$diskname' (timeindex) values ('$timeindexnow')"
       [ -n "$dr" ] || dr=0
       diskreads=`solve 2 "($dr / 2048)"`
-      diskreadslast=`sqlite3 ${rpath}/../sysdata "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
+      diskreadslast=`dbquery ${rpath}/../sysdata "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
       [ -n "$diskreadslast" ] || diskreadslast=0
       drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
       m=`expr length "$replinerd"`
@@ -174,7 +174,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       replinerd=`printf "${replinerd}${drspeed}\n"`
       [ -n "$dw" ] || dw=0
       diskwrites=`solve 2 "($dw / 2048)"`
-      diskwriteslast=`sqlite3 ${rpath}/../sysdata "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
+      diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
       [ -n "$diskwriteslast" ] || diskwriteslast=0
       dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
       m=`expr length "$replinerw"`
@@ -182,7 +182,7 @@ if [ "X${DISKSTAT}" != "X" ]; then
       for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
       replinerw=`printf "${replinerw}${dwspeed}\n"`
       
-      sqlite3 ${rpath}/../sysdata "update '$diskname' set diskusage='${used}', diskreads='${diskreads}', drspeed='${drspeed}', diskwrites='${diskwrites}', dwspeed='${dwspeed}' where timeindex='$timeindexnow'"
+      dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
       
     fi
     echo "$replinerd"
@@ -191,33 +191,33 @@ if [ "X${DISKSTAT}" != "X" ]; then
 
 fi
 
-if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
-  disksnum=`cat $M_TEMP/diskusage | wc -l`
+if [ "X$dbquery" == "X1" ] && [ "X$1" == "XSQL" ]; then
+  disksnum=`cat "$M_TEMP/diskusage" | wc -l`
   diskusage=0
-  if [ -f $M_TEMP/diskusage ]; then
+  if [ -f "$M_TEMP/diskusage" ]; then
     while read LINE; do
       diskusage=`solve 2 "$diskusage + $LINE"`
     done < $M_TEMP/diskusage
     diskusage=`solve 2 "$diskusage / $disksnum"`
   fi
   diskiord=0
-  if [ -f $M_TEMP/diskiord ]; then
-    disksnum=`cat $M_TEMP/diskiord | wc -l`
+  if [ -f "$M_TEMP/diskiord" ]; then
+    disksnum=`cat "$M_TEMP/diskiord" | wc -l`
     while read LINE; do
       diskiord=`solve 2 "$diskiord + $LINE"`
-    done < $M_TEMP/diskiord
+    done < "$M_TEMP/diskiord"
     diskiord=`solve 2 "$diskiord / $disksnum"`
   fi
   diskiowr=0
-  if [ -f $M_TEMP/diskiowr ]; then
-    disksnum=`cat $M_TEMP/diskiowr | wc -l`
+  if [ -f "$M_TEMP/diskiowr" ]; then
+    disksnum=`cat "$M_TEMP/diskiowr" | wc -l`
     while read LINE; do
       diskiowr=`solve 2 "$diskiowr + $LINE"`
     done < $M_TEMP/diskiowr
     diskiowr=`solve 2 "$diskiowr / $disksnum"`
   fi
 
-  sqlite3 ${rpath}/../sysdata "update sysdata set diskusage='${diskusage}', diskiord='${diskiord}', diskiowr='${diskiowr}' where timeindex='$timeindexnow'"
+  dbquery "$rpath/../sysdata" "update sysdata set diskusage='$diskusage', diskiord='$diskiord', diskiowr='$diskiowr' where timeindex='$timeindexnow'"
 fi
 
 rm -f $M_TEMP/disk.tmp* >/dev/null 2>&1

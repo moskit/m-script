@@ -224,7 +224,7 @@ dbquery() {
   shift
   dbquery="$@"
   [ -z "$LOG" ] && LOG="$M_ROOT/monitoring.log"
-  $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
+  $SQLBIN "$dbfile" "$dbquery" 2>>"$LOG"
   [ $? -eq 5 -o $? -eq 6 ] && sleep 5 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1 && log "DB query repeated after 5 sec and finished successfully"
   [ $? -eq 5 -o $? -eq 6 ] && sleep 15 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1 && log "DB query repeated after 15 sec and finished successfully"
 }

@@ -41,7 +41,7 @@ addnode() {
       elif [ $l -eq `expr $n - 2` ] ; then
         echo -n "${branch[$l]}|"
       else
-        echo -n "${branch[$l]}_"
+        echo -n "${branch[$l]}/"
       fi
     done
     unset branch[$n-1]; unset branch[$n-2]
