@@ -19,44 +19,56 @@ declare -i i
 i=0
 declare -a branch
 declare -a index
+declare -a ndarr
 debug=false
 
 addnode() {
   nd=$1
-  [[ "$nd" =~ ^\? ]] && return 0
+  expr "$nd" : ^\? >/dev/null && return 0
+  expr "$nd" : .*/$ >/dev/null && return 0
+  nd=`echo "$nd" | sed 's|"|\\\"|g'`
   $debug && echo "=== $nd"
+  
   index[$i]="$nd"
   unset ndcont
   if [ $i -gt 1 ] ; then
+    # this means the node is closed and the previous value was its content:
     if [ "X${index[$i-2]}" == "X${nd#/}" ] ; then
       ndcont=${index[$i-1]}
     fi
   fi
   n=${#branch[*]}
-  $debug && echo "$i | $n  --  $ndcont"
+  [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
+  $debug && echo "X${index[$i]} == X${index[$i-1]}"
+  [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
+  $debug && echo "$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
   if [ -n "$ndcont" ] ; then
+    # we got the full line, printing
     for ((l=0; l<$n; l++)) ; do
       if [ $l -eq `expr $n - 1` ] ; then
-        echo "${branch[$l]}"
+        echo "\"${branch[$l]}\""
       elif [ $l -eq `expr $n - 2` ] ; then
-        echo -n "${branch[$l]}|"
+        echo -n "\"${branch[$l]}\"/${ndarr[$l]}|"
       else
-        echo -n "${branch[$l]}/"
+        echo -n "\"${branch[$l]}\"/${ndarr[$l]}/"
       fi
     done
-    unset branch[$n-1]; unset branch[$n-2]
+    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
+    unset branch[$n-1] branch[$n-2] ndarr[$n-1] ndarr[$n-2]
   else
     branch[$n]="$nd"
-    for ((l=0; l<=$n; l++)) ; do
-      if [ "X${branch[$l]}" == "X${nd#/}" ] ; then
-        for ((m=0; m<`expr $n - $l`; m++)) ; do unset branch[$l+$m+1] ; done
-      fi
-    done
+    # both open and close tags
+    $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
+    if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ]; then
+      $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+      unset branch[$n-1] branch[$n] ndarr[$n-1] ndarr[$n]
+    fi
   fi
   i+=1
 }
 
 ( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ ) | while read node ; do ([ -n "$node" ] && [ "$node" != "|" ]) && addnode "$node"; done
 
-unset branch index ndcont cont i LINE node
+unset branch index ndcont cont i LINE node ndarr
 

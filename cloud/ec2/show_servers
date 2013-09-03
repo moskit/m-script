@@ -60,7 +60,102 @@ request() {
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" > "$M_TEMP/${rcommand}.resp"
-  "$M_ROOT"/lib/xml2txt "$M_TEMP/${rcommand}.resp" > "$M_TEMP/servers.${region}.ips"
+  "$M_ROOT"/lib/xml2txt "$M_TEMP/${rcommand}.resp" | awk -F'"instancesSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/servers.ips"
+}
+
+list_servers() {
+  IFS1=$IFS
+  IFS='
+'
+  if [ -f "$M_TEMP/servers.ips" ] ; then
+    [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.ips" && return
+    for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3 | sort | uniq` ; do
+      unset id name istatus extIP intIP IP imageId flavorId icluster
+      server=`grep ^$sn "$M_TEMP/servers.ips"`
+      intIP=`echo "$sn" | grep '/"privateIpAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      extIP=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      id=`echo "$sn" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`
+      imageId=`echo "$sn" | grep '/"imageId"/0' | cut -d'|' -f2 | tr -d '"'`
+      istatus=`echo "$sn" | grep '/"instanceState"/0/"name"/0' | cut -d'|' -f2 | tr -d '"'`
+      flavorId=`echo "$sn" | grep '/"instanceType"/0' | cut -d'|' -f2 | tr -d '"'`
+      secgroup=`echo "$sn" | grep '/"groupSet"/0/"item"/0/"groupName"' | cut -d'|' -f2 | tr -d '"'`
+      izone=`echo "$sn" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
+      iaki=`echo "$sn" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
+      #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      iname=`echo "$sn" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+      tags=`echo "$sn" | grep '/"tagSet"/'`
+      iclustertag=`echo "$tags" | grep '/"key"/' | grep '|"cluster"' | cut -d'/' -f7`
+      icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | tr -d '"'`
+      altnametag=`echo "$tags" | grep '/"key"/' | grep '|"Name"' | cut -d'/' -f7`
+      altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | tr -d '"'`
+      #ikey=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      #bdevs=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      
+      if [ "X$NETWORK" == "Xexternal" ] ; then
+        IP=$extIP
+      else
+        IP=$intIP
+      fi
+      if [ -z "$icluster" ] ; then
+        # servers having no cluster in metadata but added manually to servers.list
+        icluster=`grep ^$IP\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+      else
+        # no icluster means that server will not be shown, but only if there
+        # is no option --all. With this option, however, we want to see all
+        # clusters assigned via metadata
+        [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+      fi
+
+      if [ -z "$update_servers_list" ] ; then
+        # icluster existence condition is needed for the case there are multiple
+        # projects (cluster groups) in the same cloud.
+        # Note that if you use same names for clusters in different cluster
+        # groups, you'll get them mixed here.
+        if [ -n "$icluster" -o -n "$all" ] ; then
+          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
+          case $view in
+            list)
+              echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
+              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
+              ;;
+            table)
+              echo "$id|$iname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
+              echo "$bdevs" | sed 's_^_EBS: _g'
+              ;;
+            column)
+              echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
+              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
+              ;;
+            none)
+              ;;
+            *)
+              echo -e "------------------------------------------------------------------------------\nServer ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIP    Private IP: $intIP\nServer image: $imageId    AKI: $iaki    ARI: $iari\nServer size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
+              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
+              ;;
+          esac
+          icount+=1
+        fi
+      else
+        if [ -n "$icluster" ] ; then
+          if [ `grep -c ^${icluster}\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${icluster}\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
+            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)"
+            sed -i /^$IP\|/d "$rpath/../../servers.list"
+            [ "X$istatus" == "Xrunning" ] && echo "$IP|$key|$region|$iname|$icluster" >> "$rpath/../../servers.list"
+
+          fi
+        fi
+      fi
+      
+    done
+  else
+    echo "No data. Run without --noupdate"
+  fi
+  for listip in `cat "$rpath/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+    [ `grep -c \|${listip}\| "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$rpath/../../servers.list" | cut -d'|' -f5`|" "$rpath/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$rpath/../../servers.list"
+  done
+  IFS=$IFS1
 }
 
 possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id name_source"
@@ -129,5 +224,7 @@ fi
 request
 
 [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+
+list_servers
 
 
