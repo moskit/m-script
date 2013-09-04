@@ -39,30 +39,35 @@ addnode() {
   fi
   n=${#branch[*]}
   [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
-  $debug && echo "X${index[$i]} == X${index[$i-1]}"
+  $debug && echo "X/${index[$i]} == X${index[$i-1]}"
   [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
   $debug && echo "$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
   if [ -n "$ndcont" ] ; then
     # we got the full line, printing
-    for ((l=0; l<$n; l++)) ; do
-      if [ $l -eq `expr $n - 1` ] ; then
-        echo "\"${branch[$l]}\""
-      elif [ $l -eq `expr $n - 2` ] ; then
-        echo -n "\"${branch[$l]}\"/${ndarr[$l]}|"
-      else
-        echo -n "\"${branch[$l]}\"/${ndarr[$l]}/"
-      fi
+    for ((l=0; l<$n-2; l++)) ; do
+      txtline="$txtline\"${branch[$l]}\"/${ndarr[$l]}/"
+#      if [ $l -eq `expr $n - 1` ] ; then
+#        echo "\"${branch[$l]}\""
+#      elif [ $l -eq `expr $n - 2` ] ; then
+#        echo -n "\"${branch[$l]}\"/${ndarr[$l]}|"
+#      else
+#        echo -n "\"${branch[$l]}\"/${ndarr[$l]}/"
+#      fi
     done
+    txtline="$txtline\"${branch[$n-2]}\"/${ndarr[$n-2]}|"
+    txtline="$txtline\"${branch[$n-1]}\""
+    echo "$txtline"
+    unset txtline
     $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
     $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
-    unset branch[$n-1] branch[$n-2] ndarr[$n-1] ndarr[$n-2]
+    unset branch[$n-1] branch[$n-2]
   else
     branch[$n]="$nd"
     # both open and close tags
     $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
     if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ]; then
       $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
-      unset branch[$n-1] branch[$n] ndarr[$n-1] ndarr[$n]
+      unset branch[$n-1] branch[$n]
     fi
   fi
   i+=1
