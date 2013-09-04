@@ -98,12 +98,12 @@ list_servers() {
       fi
       if [ -z "$icluster" ] ; then
         # servers having no cluster in metadata but added manually to servers.list
-        icluster=`grep ^$IP\| "$rpath/../../servers.list" | cut -d'|' -f5`
+        icluster=`grep ^$IP\| "$M_ROOT/servers.list" | cut -d'|' -f5`
       else
         # no icluster means that server will not be shown, but only if there
         # is no option --all. With this option, however, we want to see all
         # clusters assigned via metadata
-        [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+        [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
       fi
 
       if [ -z "$update_servers_list" ] ; then
@@ -138,10 +138,10 @@ list_servers() {
         fi
       else
         if [ -n "$icluster" ] ; then
-          if [ `grep -c ^${icluster}\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
-            key=`grep ^${icluster}\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
+          if [ `grep -c ^${icluster}\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${icluster}\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
             [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)"
-            sed -i /^$IP\|/d "$rpath/../../servers.list"
+            sed -i /^$IP\|/d "$M_ROOT/servers.list"
             [ "X$istatus" == "Xrunning" ] && echo "$IP|$key|$region|$iname|$icluster" >> "$rpath/../../servers.list"
 
           fi
@@ -152,8 +152,8 @@ list_servers() {
   else
     echo "No data. Run without --noupdate"
   fi
-  for listip in `cat "$rpath/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|${listip}\| "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$rpath/../../servers.list" | cut -d'|' -f5`|" "$rpath/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$rpath/../../servers.list"
+  for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+    [ `grep -c \|${listip}\| "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
   done
   IFS=$IFS1
 }

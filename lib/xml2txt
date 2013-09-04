@@ -40,7 +40,9 @@ addnode() {
   n=${#branch[*]}
   [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
   $debug && echo "X/${index[$i]} == X${index[$i-1]}"
-  [ "X/${index[$i]}" == "X${index[$i-1]}" ] 2>/dev/null && ndarr[$n]=`expr ${ndarr[$n]} + 1`
+  if [ $i -ne 0 ]; then
+    [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
+  fi
   $debug && echo "$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
   if [ -n "$ndcont" ] ; then
     # we got the full line, printing
@@ -65,9 +67,11 @@ addnode() {
     branch[$n]="$nd"
     # both open and close tags
     $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
-    if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ] 2>/dev/null ; then
-      $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
-      unset branch[$n-1] branch[$n] ndarr[$n]
+    if [ $n -ne 0 ]; then
+      if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ] 2>/dev/null ; then
+        $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+        unset branch[$n-1] branch[$n] ndarr[$n]
+      fi
     fi
   fi
   i+=1
