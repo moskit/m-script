@@ -78,16 +78,16 @@ list_servers() {
       imageId=`echo "$server" | grep '/"imageId"/0' | cut -d'|' -f2 | tr -d '"'`
       istatus=`echo "$server" | grep '/"instanceState"/0/"name"/0' | cut -d'|' -f2 | tr -d '"'`
       flavorId=`echo "$server" | grep '/"instanceType"/0' | cut -d'|' -f2 | tr -d '"'`
-      secgroup=`echo "$server" | grep '/"groupSet"/0/"item"/0/"groupName"' | cut -d'|' -f2 | tr -d '"'`
+      secgroup=`echo "$server" | grep '/"groupSet"/0/"item"/0/"groupName"' | cut -d'|' -f2 | sort | uniq | tr -d '"' | tr '\n' ','`
       izone=`echo "$server" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
       iaki=`echo "$server" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
       #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       iname=`echo "$server" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
       tags=`echo "$server" | grep '/"tagSet"/'`
       iclustertag=`echo "$tags" | grep '/"key"/' | grep '|"cluster"' | cut -d'/' -f7`
-      icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | tr -d '"'`
+      icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       altnametag=`echo "$tags" | grep '/"key"/' | grep '|"Name"' | cut -d'/' -f7`
-      altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | tr -d '"'`
+      altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       #ikey=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       #bdevs=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       
