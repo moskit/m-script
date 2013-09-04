@@ -60,7 +60,7 @@ request() {
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" > "$M_TEMP/${rcommand}.resp"
-  "$M_ROOT"/lib/xml2txt "$M_TEMP/${rcommand}.resp" | awk -F'"instancesSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/servers.ips"
+  cat "$M_TEMP/${rcommand}.resp" | "$M_ROOT"/lib/xml2txt | awk -F'"instancesSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/servers.ips"
 }
 
 list_servers() {

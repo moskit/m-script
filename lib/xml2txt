@@ -60,14 +60,14 @@ addnode() {
     unset txtline
     $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
     $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
-    unset branch[$n-1] branch[$n-2]
+    unset branch[$n-1] branch[$n-2] ndarr[$n]
   else
     branch[$n]="$nd"
     # both open and close tags
     $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
     if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ]; then
       $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
-      unset branch[$n-1] branch[$n]
+      unset branch[$n-1] branch[$n] ndarr[$n]
     fi
   fi
   i+=1
