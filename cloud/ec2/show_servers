@@ -88,7 +88,7 @@ list_servers() {
       icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       altnametag=`echo "$tags" | grep '/"key"/' | grep '|"Name"' | cut -d'/' -f7`
       altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
-      ikey=`echo "$sn" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
+      ikey=`echo "$server" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
       #bdevs=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       
       if [ "X$NETWORK" == "Xexternal" ] ; then
