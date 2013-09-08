@@ -24,6 +24,7 @@ debug=false
 
 addnode() {
   nd=$1
+  i=$2
   selfclosed=false
   expr "$nd" : ^\? >/dev/null && return 0
   expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
@@ -35,8 +36,6 @@ addnode() {
     tag=`expr "$nd" : "^\([^\ ]*\)\(\ \|$\|/\)"`
   fi
   vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
-  
-  #vars=$(for n in $nd ; do a=`expr "$n" : "\(.*=\".*\"\)"` ; [ -n "$a" ] && b=`expr "$a" : "\(.*\)="` && c=`expr "$a" : ".*=\"\(.*\)\""` && echo "\"$b\"|\"$c\"" ;  done)
   $debug && echo "  == $tag ="
   index[$i]="$tag"
   unset ndcont
@@ -96,10 +95,11 @@ addnode() {
       fi
     fi
   fi
-  i+=1
 }
 
-( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ ) | while read node ; do ([ -n "$node" ] && [ "$node" != "|" ]) && addnode "$node"; done
+declare -i nn
+nn=0
+( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]$ ) | while read node ; do addnode "$node" $nn ; nn+=1 ; done
 
 unset branch index ndcont cont i LINE node ndarr
 

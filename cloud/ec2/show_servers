@@ -232,9 +232,12 @@ if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
   [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
 fi
 
-request
-
-[ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+if [ -z "$noupdate" ]; then
+  request
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+else
+  [ `cat "$M_TEMP/servers.ips" | wc -l` -eq 0 ] && log "file $M_TEMP/servers.ips is empty" && exit 1
+fi
 
 list_servers
 
