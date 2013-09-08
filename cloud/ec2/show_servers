@@ -34,20 +34,21 @@ IFCFG=`which ifconfig 2>/dev/null`
 # this is why the variable below is not used for remote servers: you may
 # have different OSes there with different paths to hostname utility.
 HOSTNAME=`which hostname 2>/dev/null`
+[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 
 get_hostname() {
   [ -z "$1" ] && return 1
-  if [ -f "${rpath}/../../keys/${keypair}.pem" ] ; then
-    key=${keypair}.pem
-  elif [ -f "${rpath}/../../keys/${keypair}" ] ; then
-    key=${keypair}
+  if [ -f "$rpath/../../keys/${keypair}.pem" ] ; then
+    key="${keypair}.pem"
+  elif [ -f "$rpath/../../keys/$keypair" ] ; then
+    key="$keypair"
   else
-    message=" (key ${rpath}/../../keys/${keypair}{.pem} not found)"
+    message=" (key $rpath/../../keys/${keypair}{.pem} not found)"
   fi
   if [ `echo $localip | grep -c "^$1$"` -ne 0 ] ; then
     sname=`$HOSTNAME`
   else
-    sname=`$SSH -i "$M_ROOT/keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
+    sname=`$SSH -i "$M_ROOT/keys/$key" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
   fi
   [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname
   [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $intIP|$extIP$message" && unset message && return 1
@@ -84,8 +85,10 @@ list_servers() {
       #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       iname=`echo "$server" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
       tags=`echo "$server" | grep '/"tagSet"/'`
-      iclustertag=`echo "$tags" | grep '/"key"/' | grep '|"cluster"' | cut -d'/' -f7`
-      icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+      iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f7`
+      if [ -n "$iclustertag" ]; then
+        icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+      fi
       altnametag=`echo "$tags" | grep '/"key"/' | grep '|"Name"' | cut -d'/' -f7`
       altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       ikey=`echo "$server" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
