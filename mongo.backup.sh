@@ -19,21 +19,21 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-[ -z "$M_ROOT" ] && M_ROOT=$rpath
+[ -z "$M_ROOT" ] && M_ROOT="$rpath"
 
 if [ -z "$1" ]; then
   echo "Error: configuration file is not defined for $0" >> "$M_ROOT/m_backup.error"
   exit 1
 else
-  source ${1}
+  source "$1"
 fi
 
-MONGO="$(which mongo 2>/dev/null)"
-MONGODUMP="$(which mongodump 2>/dev/null)"
-GZIP="$(which gzip 2>/dev/null)"
-BZIP2="$(which bzip2 2>/dev/null)"
-LOG="$M_ROOT/m_backup.log"
+MONGO=`which mongo 2>/dev/null`
+MONGODUMP=`which mongodump 2>/dev/null`
+GZIP=`which gzip 2>/dev/null`
+BZIP2=`which bzip2 2>/dev/null`
 TAR="`which tar 2>/dev/null`"
+LOG="$M_ROOT/m_backup.log"
 
 [ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
 [ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1
@@ -177,7 +177,7 @@ if [ -n "$mongodbpertableconf" ] ; then
 else
   [ -n "$debugflag" ] && echo "Per table backup configuration disabled" >> "$M_ROOT/m_backup.error"
   if [ "X$mongodblist" == "X" ]; then
-    mongodblist="$($MONGO $DBHOST/admin --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>"$M_ROOT/m_backup.error"
+    mongodblist="$($MONGO $DBHOST/admin $USER $PASS --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>"$M_ROOT/m_backup.error"
   fi
 
   for db in $mongodblist
@@ -196,7 +196,7 @@ else
 ### Note that it doesn't dump indexes
         install -d "$MBD/${db}.${archname}"
         if [ -n "$compress" ] ; then
-          for collection in `$MONGO $DBHOST/$db --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
+          for collection in `$MONGO $DBHOST/$db $USER $PASS --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
             $MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log" | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
           done
         fi

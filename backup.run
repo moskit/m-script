@@ -90,6 +90,7 @@ EOF
   only-pickup)
     nonbackup='yes'
     onlypickup='yes'
+    removeoldlocal='no'
     if [ X$s_optarg == 'Xhelp' ]; then
       cat <<"EOF"
     This option makes the program skip the backup creation part and only pick up
@@ -111,7 +112,7 @@ EOF
       fi
     fi
   ;;
-  only-cleanup|only-clean)
+  only-cleanup|only-clean|only-remove)
     nonbackup='yes'
     onlyclean='yes'
     if [ "X$s_optarg" == "Xhelp" ]; then
@@ -166,7 +167,7 @@ EOF
     fgflag='yes'
     if [ "X$s_optarg" == "Xhelp" ]; then
       cat <<"EOF"
-    This option makes all output go to stdin and is useful for debugging.
+    This option makes all output go to stdin.
     
     Usage: --fg or --fg=yes
     
@@ -218,13 +219,13 @@ RSYNC_RSH_BK=$RSYNC_RSH
 # Main loop. Runs as many times as many config files used  #
 ###################################################################
 
-source $M_ROOT/conf/mon.conf
-M_TEMP=$M_TEMP/backups
+source "$M_ROOT/conf/mon.conf"
+M_TEMP="$M_TEMP/backups"
 [ -d "$M_TEMP" ] && install -d "$M_TEMP"
 export M_TEMP
 declare -i res
 
-localbackuppath=$rpath
+localbackuppath="$rpath"
 install -d "$M_TEMP" 2>$stderrto
 # If config files collection is not set by option, we use all files having names
 # like backup*.conf from the conf folder
@@ -280,7 +281,7 @@ do
   if [ "$r_proto" == "s3" ]
   then
     S3="`which s3cmd 2>/dev/null`"
-    if [ "X${S3}" == "X" ]
+    if [ -z "$S3" ]
     then
       echo 'No s3cmd command found!' >> $stderrto
       exit 1
@@ -749,7 +750,7 @@ EOF
   then
     [ $keeplocaldays -gt 0 ] && keeplocaldays=`expr $keeplocaldays - 1`
     [ -n "$debugflag" ] && rmv='-v'
-    find ${localrmpath} -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>$stderrto >> $stdinto && echo "Outdated backups at $localrmpath have been removed" >> $stdinto
+    find "$localrmpath" -mtime +$keeplocaldays -type f -print0 | xargs -0 rm "$rmv" -f 2>>$stderrto >> $stdinto && echo "Outdated backups at $localrmpath have been removed" >> $stdinto
   fi
   if [ "$xferdirection" == "to-remote" ]
   then
@@ -829,16 +830,21 @@ EOF
       find "$remotepath" -mtime +$keepremotedays -type f 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
       declare -i res
       res=0
-      for LINE in `cat "$M_TEMP/remote_files_to_remove.list"`
-      do
-        [ -n "$debugflag" ] && rmv='-v'
-        rm "$rmv" -f \"${LINE}\" 2>>$stderrto >> $dbginto
-        res+=$?
-      done
-      if [ $res -eq 0 ]; then
-        echo "Outdated backups at $remotepath have been removed" >> $stdinto
+      outdated=`cat "$M_TEMP/remote_files_to_remove.list"`
+      if [ `echo "$outdated" | wc -l` -gt 0 ]; then
+        for LINE in `echo "$outdated"`
+        do
+          [ -n "$debugflag" ] && rmv='-v'
+          rm "$rmv" -f \"$LINE\" 2>>$stderrto >> $dbginto
+          res+=$?
+        done
+        if [ $res -eq 0 ]; then
+          echo "Outdated backups at $remotepath have been removed" >> $stdinto
+        else
+          echo "Outdated backups at $remotepath have not been removed" >>$stdinto
+        fi
       else
-        echo "Outdated backups at $remotepath have not been removed" >>$stdinto
+        echo "No outdated backups found at $remotepath" >>$stdinto
       fi
     fi
   fi
@@ -869,38 +875,38 @@ EOF
     fi
   fi
   
-  echo -e "Operations finished:\n\n" >> "${rpath}/backup.report"
+  echo -e "Operations finished:\n\n" >> "$rpath/backup.report"
 
   if [ -n "$debugflag" ]; then
-    [ -f "$dbginto" ] && cat $dbginto >> "${rpath}/backup.report"
+    [ -f "$dbginto" ] && cat $dbginto >> "$rpath/backup.report"
   else
-    [ -f "$stdinto" ] && cat $stdinto >> "${rpath}/backup.report"
+    [ -f "$stdinto" ] && cat $stdinto >> "$rpath/backup.report"
   fi
 # Send report by email
   while read LINE
   do
-    if [ -n "${LINE}" ]; then
-      cat "${rpath}/backup.report" | mail -s "Server $(hostname -f) backup report" "${LINE}"
+    if [ -n "$LINE" ]; then
+      cat "$rpath/backup.report" | mail -s "Server $(hostname -f) backup report" "$LINE"
     fi
   done < "$M_ROOT/conf/mail.backup.list"
   
   if [ -n "$errlog" ]; then
-    echo "*** `date` ***" >> "${locallogpath}/logs/m_backup.error"
+    echo "*** `date` ***" >> "$locallogpath/logs/m_backup.error"
     if [ -z "$nonbackup" ]; then
-      echo "*** ${archname} ***" >> "${locallogpath}/logs/m_backup.error"
+      echo "*** $archname ***" >> "$locallogpath/logs/m_backup.error"
     fi
-    [ -f "$stderrto" ] && cat $stderrto >> "${locallogpath}/logs/m_backup.error"
+    [ -f "$stderrto" ] && cat $stderrto >> "$locallogpath/logs/m_backup.error"
   fi
-  echo "*** `date` ***" >> "${locallogpath}/logs/m_backup.log"
+  echo "*** `date` ***" >> "$locallogpath/logs/m_backup.log"
   if [ -z "$nonbackup" ]; then
-    echo "*** ${archname} ***" >> "${locallogpath}/logs/m_backup.log"
+    echo "*** ${archname} ***" >> "$locallogpath/logs/m_backup.log"
   fi
   
-  [ -f "$stdinto" ] && cat $stdinto >> "${locallogpath}/logs/m_backup.log"
-  rm -f ${rpath}/m_backup.{error,log} 2>/dev/null
+  [ -f "$stdinto" ] && cat $stdinto >> "$locallogpath/logs/m_backup.log"
+  rm -f $rpath/m_backup.{error,log} 2>/dev/null
   rm -f $M_TEMP/$archname*log 2>/dev/null
 ### Now it's time to restore some environment variables
-  export RSYNC_RSH="${RSYNC_RSH_BK}"
+  export RSYNC_RSH="$RSYNC_RSH_BK"
 done
 [ -n "$fgflag" ] && kill `cat "$M_TEMP/backup.fg.pid"`
 

@@ -89,13 +89,21 @@ list_servers() {
       altnametag=`echo "$tags" | grep '/"key"/' | grep '|"Name"' | cut -d'/' -f7`
       altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       ikey=`echo "$server" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
-      #bdevs=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      
+      bdevs=`echo "$server" | grep '/"blockDeviceMapping"/'`
+      for bdev in `echo "$bdevs" | grep '|"attached"' | cut -d'/' -f11 | sort | uniq` ; do
+        bdevname=`echo "$bdevs" | grep "/$bdev/\"deviceName\"" | cut -d'|' -f2 | tr -d '"'`
+        bdevid=`echo "$bdevs" | grep "/$bdev/\"volumeId\"" | cut -d'|' -f2 | tr -d '"'`
+        bdevsince=`echo "$bdevs" | grep "/$bdev/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
+        ebs+=("$bdevid|$bdevname|$bdevsince")
+      done
       
       if [ "X$NETWORK" == "Xexternal" ] ; then
         IP=$extIP
       else
         IP=$intIP
       fi
+      
       if [ -z "$icluster" ] ; then
         # servers having no cluster in metadata but added manually to servers.list
         icluster=`grep ^$IP\| "$M_ROOT/servers.list" | cut -d'|' -f5`

@@ -35,7 +35,7 @@ do
   case ${s_option} in
   --*=*)
     if [ "$commflag" == "1" ] ; then
-      command="$command ${s_option}"
+      command="$command $s_option"
     else
       s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`
       s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
