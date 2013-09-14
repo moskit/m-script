@@ -23,20 +23,21 @@ declare -a ndarr
 debug=false
 
 addnode() {
+echo -n "." >&2
   nd=$1
   i=$2
   selfclosed=false
   expr "$nd" : ^\? >/dev/null && return 0
   expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
-  $debug && echo "==== $nd ="
+#  $debug && echo "==== $nd ="
   if `expr "$nd" : ^\" >/dev/null` ; then
     tag=`expr "$nd" : "^\(\".*\"\)"`
   else
     tag=`expr "$nd" : "^\([^\ ]*\)\(\ \|$\|/\)"`
   fi
   vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
-  $debug && echo "  == $tag ="
+#  $debug && echo "  == $tag ="
   index[$i]="$tag"
   unset ndcont
   if [ $i -gt 1 ] ; then
@@ -47,19 +48,19 @@ addnode() {
   fi
   n=${#branch[*]}
   [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
-  $debug && echo "X/${index[$i]} == X${index[$i-1]}"
+#  $debug && echo "X/${index[$i]} == X${index[$i-1]}"
   if [ $i -ne 0 ]; then
     [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
   fi
   
-  if $debug ; then
-    echo -e "----------------------------\n$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
-    for ((l=0; l<$n; l++)) ; do
-      txtline="$txtline\"${branch[$l]}\"/"
-    done
-    echo "***** $txtline"
-    unset txtline
-  fi
+#  if $debug ; then
+#    echo -e "----------------------------\n$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
+#    for ((l=0; l<$n; l++)) ; do
+#      txtline="$txtline\"${branch[$l]}\"/"
+#    done
+#    echo "***** $txtline"
+#    unset txtline
+#  fi
   
   if [ -n "$ndcont" ] ; then
     # we got the full line, printing
@@ -70,8 +71,8 @@ addnode() {
     txtline="$txtline\"${branch[$n-1]}\""
     echo "$txtline"
     unset txtline
-    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
-    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
+#    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+#    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
     unset branch[$n-1] branch[$n-2] ndarr[$n]
   else
     branch[$n]="$tag"
@@ -83,13 +84,13 @@ addnode() {
       unset txtline vars
     fi
     if $selfclosed ; then
-      $debug && echo "     self-closed, unsetting branch[$n] :: ${branch[$n]}"
+#      $debug && echo "     self-closed, unsetting branch[$n] :: ${branch[$n]}"
       unset branch[$n] ndarr[$n]
     else
-      $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
+#      $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
       if [ $n -ne 0 ]; then
         if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ] 2>/dev/null ; then
-          $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+#          $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
           unset branch[$n-1] branch[$n] ndarr[$n]
         fi
       fi
@@ -99,7 +100,7 @@ addnode() {
 
 declare -i nn
 nn=0
-( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]$ ) | while read node ; do addnode "$node" $nn ; nn+=1 ; done
+( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read node ; do addnode "$node" $nn ; nn+=1 ; done
 
 unset branch index ndcont cont i LINE node ndarr
 

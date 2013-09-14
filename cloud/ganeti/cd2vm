@@ -24,14 +24,10 @@ source "$M_ROOT/conf/mon.conf" || exit 99
 source "$M_ROOT/conf/cloud.conf" || exit 99
 source "$M_ROOT/cloud/$CLOUD/functions.sh" || exit 99
 
-AWK=`which awk 2>/dev/null`
 LOSETUP=`which losetup 2>/dev/null`
-KPARTX=`which kpartx 2>/dev/null`
 GI=`which gnt-instance 2>/dev/null`
 
-[ -z "$AWK" ] && echo "no awk found" && exit 1
 [ -z "$LOSETUP" ] && echo "no losetup found" && exit 1
-[ -z "$KPARTX" ] && echo "no kpartx found" && exit 1
 [ -z "$GI" ] && echo "no gnt-instance found" && exit 1
 
 vm="$1"

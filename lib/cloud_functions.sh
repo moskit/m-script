@@ -97,11 +97,12 @@ check_cluster_limit() {
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
+  [ -d "$M_ROOT/cloud/$M_CLOUD" ] || echo "Cloud $M_CLOUD
   n=`IAMACHILD=1 "$M_ROOT/cloud/$M_CLOUD"/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   #[ `expr $n \>= 0` -gt 0 ] || return 1
-  [ `expr $limit \> $n` -gt 0 ] && return 0
+  [ `expr $limit \> $n` -gt 0 ] 2>/dev/null && return 0
   return 1
 }
 

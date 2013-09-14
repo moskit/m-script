@@ -15,18 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
 QEMU_IMG=`which qemu-img 2>/dev/null`
 [ -z "$QEMU_IMG" ] && echo "qemu-img utility is not found" >&2 && exit 1
+
+LOSETUP=`which losetup 2>/dev/null`
+GI=`which gnt-instance 2>/dev/null`
+[ -z "$LOSETUP" ] && echo "no losetup found" && exit 1
+[ -z "$GI" ] && echo "no gnt-instance found" && exit 1
+
 possible_options="name ip id imagename help verbose"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=0
   case ${s_option} in
@@ -102,6 +108,46 @@ fi
 [ -z "$imagename" ] && log "image name is mandatory, not saving" && exit 1
 
 
-  
+vm="$1"
+vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm" 2>/dev/null`
 
+vmstate=`echo "$vmini" | cut -d'|' -f1`
 
+[ -z "$vmstate" ] && echo "Instance $vm nto found" && exit 1
+
+[ "$vmstate" != "N" ] && echo "Instance must be stopped" && exit 1
+
+disktype="`echo "$vmini" | cut -d'|' -f2`"
+disksize="`echo "$vmini" | cut -d'|' -f3`"
+
+[ `expr "$disksize" : ".*[^[0-9]]*.*"` -ne 0 ] && echo "No disk found" && exit 1
+
+# now when we know that disk does exist, we can use a heavier tool to find its
+# file or device
+
+disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep '^State/Disks/disk/0/on primary' | cut -d'|' -f2 | tail -1`
+disk=`expr "$disk" : "\(.*\) ("`
+
+if [ ! -b "$disk" ]; then
+  blockdev=$($LOSETUP -f --show "$disk")
+  CLEANUP+=("$LOSETUP -d $blockdev")
+else
+  blockdev="$disk"
+fi
+
+filesystem_dev=$(map_disk0 $blockdev)
+CLEANUP+=("unmap_disk0 $blockdev")
+
+TARGET=`mktemp -d` || exit 1
+CLEANUP+=("rmdir $TARGET")
+
+mount $filesystem_dev $TARGET || exit 1
+CLEANUP+=("umount -l $TARGET")
+CLEANUP+=("sync")
+
+$QEMU_IMG convert $blockdev -O qcow2 "$M_ROOT/cloud/ganeti/os-images/${imagename}.img"
+
+cleanup
+trap - EXIT
+
+exit 0
