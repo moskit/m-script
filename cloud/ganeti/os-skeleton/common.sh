@@ -1,4 +1,4 @@
-#
+#!/bin/bash
 
 # Copyright (C) 2007, 2008, 2009 Google Inc.
 #
@@ -41,7 +41,7 @@ LOG="$M_ROOT/logs/cloud.log"
 M_TEMP="$M_TEMP/cloud/ganeti"
 
 source "$M_TEMP/vars"
-[ -z "$VARIANTS_DIR" ] && exit 1
+[ -z "$VARIANTS_DIR" ] && echo "VARIANTS_DIR not defined" && exit 1
 
 CLEANUP=( )
 
