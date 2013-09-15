@@ -17,13 +17,16 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 
-AWK=`which awk 2>/dev/null`
-DUMP=`which dump 2>/dev/null`
-LOSETUP=`which losetup 2>/dev/null`
-KPARTX=`which kpartx 2>/dev/null`
-SFDISK=`which sfdisk 2>/dev/null`
-QEMU_IMG=`which qemu-img 2>/dev/null`
+AWK=`which awk 2>/dev/null || echo "awk utility not found!"`
+DUMP=`which dump 2>/dev/null || echo "dump utility not found!"`
+LOSETUP=`which losetup 2>/dev/null || echo "losetup utility not found!"`
+KPARTX=`which kpartx 2>/dev/null || echo "kpartx utility not found!"`
+SFDISK=`which sfdisk 2>/dev/null || echo "sfdisk utility not found!"`
+QEMU_IMG=`which qemu-img 2>/dev/null || echo "qemu-img utility not found!"`
 MKDIR_P="`which install 2>/dev/null` -d"
+
+[ -z "$SFDISK" ] && exit 1
+[ -z "$KPARTX" ] && exit 1
 
 if [ -z "$OS_API_VERSION" -o "$OS_API_VERSION" = "5" ]; then
   DEFAULT_PARTITION_STYLE="none"
