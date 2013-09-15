@@ -22,6 +22,7 @@ dpath=${dpath%/*}
 M_CLOUD=$CLOUD
 source "$M_ROOT/conf/cloud.conf"
 [ -z "$M_CLOUD" ] && M_CLOUD=$CLOUD
+[ ! -d "$M_ROOT/cloud/$M_CLOUD" ] && log "Cloud $M_CLOUD is not supported"
 
 log() {
   [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${M_CLOUD}/${0##*/}: ${@}">>$LOG
@@ -97,7 +98,6 @@ check_cluster_limit() {
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
-  [ -d "$M_ROOT/cloud/$M_CLOUD" ] || echo "Cloud $M_CLOUD
   n=`IAMACHILD=1 "$M_ROOT/cloud/$M_CLOUD"/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster limit is ${limit}, current servers number is $n"
