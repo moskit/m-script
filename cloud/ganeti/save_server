@@ -107,8 +107,7 @@ if [ -z "$imagename" ]; then
 fi
 [ -z "$imagename" ] && log "image name is mandatory, not saving" && exit 1
 
-
-vm="$imagename"
+vm="$name"
 vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm" 2>/dev/null`
 
 vmstate=`echo "$vmini" | cut -d'|' -f1`

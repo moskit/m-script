@@ -129,6 +129,7 @@ request() {
   iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6` --net 0:ip=$ip"
   sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
+  log "sending request with command: $GNTI add -n $node -o $ios $iparams $name"
   $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1
 }
 
@@ -162,11 +163,11 @@ IFS='
       unset KEEP
       a=`eval "echo \"$LINE\"" 2>>"$LOG"`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
-        echo "$a" >> "${2}"
+        echo "$a" >> "$2"
       else
-        echo "$LINE" >> "${2}"
+        echo "$LINE" >> "$2"
       fi
-      [ -n "$debug" ] && tail -1 "${2}" || true
+      [ -n "$debug" ] && tail -1 "$2" || true
     fi
   done
   IFS=$IFS1
@@ -178,25 +179,25 @@ IFS='
 lock_cloudops || exit 10
 log "checking cluster $cluster limit"
 res=`check_cluster_limit $cluster`
-[[ $res -ne 0 ]] && proper_exit 5 181
+[[ $res -ne 0 ]] && proper_exit 5 182
 [ -z "$name" ] && name=`generate_name $cluster` && log "name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 183
+[ -z "$name" ] && proper_exit 6 184
 [ -z "$ip" ] && ip=`find_ip` && log "IP that will be used: $ip"
-[ -z "$ip" ] && proper_exit 4 185
+[ -z "$ip" ] && proper_exit 4 186
 
 thekey=`find_key cluster $cluster`
-[ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 188
+[ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 189
 [ -f "$M_ROOT/keys/${thekey}.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pub"
 [ -z "$PUBLIC_KEY" ] && [ -f "$M_ROOT/keys/${thekey}.pem.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pem.pub"
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_dsa.pub
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME}/.ssh/id_rsa.pub
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_dsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_dsa.pub
-[ -z "$PUBLIC_KEY" ] && [ -f ${HOME_ORIG}/.ssh/id_rsa.pub ] && PUBLIC_KEY=${HOME_ORIG}/.ssh/id_rsa.pub
-[ -z "$PUBLIC_KEY" ] && log "No public key found. Tried $M_ROOT/keys/${thekey}.\*, public keys from ${HOME}/.ssh and ${HOME_ORIG}/.ssh" && exit 1
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME/.ssh/id_dsa.pub" ] && PUBLIC_KEY="$HOME/.ssh/id_dsa.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME/.ssh/id_rsa.pub" ] && PUBLIC_KEY="$HOME/.ssh/id_rsa.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME_ORIG/.ssh/id_dsa.pub" ] && PUBLIC_KEY="$HOME_ORIG/.ssh/id_dsa.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME_ORIG/.ssh/id_rsa.pub" ] && PUBLIC_KEY="$HOME_ORIG/.ssh/id_rsa.pub"
+[ -z "$PUBLIC_KEY" ] && log "No public key found. Tried $M_ROOT/keys/${thekey}.\*, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && exit 1
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
-[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && proper_exit 1 192
+[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && proper_exit 1 200
 # If it's alive, we can get some info from it
 OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
@@ -208,12 +209,14 @@ done
 log "using OSPATH $OSPATH"
 # OS required for the new server
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
-[ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && proper_exit 1 203
+[ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && proper_exit 1 212
+
 if [ -d "$OSPATH/$OSNAME" ]; then
   cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/"* "$OSPATH/$OSNAME/"
 else
   cp -r "$M_ROOT/cloud/ganeti/os-skeleton" "$OSPATH/$OSNAME"
 fi
+log "OS building scripts placed in $OSPATH/$OSNAME"
 prepare_file "$M_ROOT/cloud/ganeti/os-skeleton/common.sh" "$OSPATH/$OSNAME/common.sh"
 
 OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`
@@ -237,6 +240,7 @@ echo -e "CUSTOMIZE_DIR=$CUSTOMIZE_DIR\nVARIANTS_DIR=$VARIANTS_DIR\nCDINSTALL=no\
 [ -d "$HOOKS_DIR" ] || install -d "$HOOKS_DIR"
 log "HOOKS_DIR: $HOOKS_DIR"
 
+[ ! -f "$IMAGE_FILE" ] && log "Image file does not exist!" && proper_exit 1 243
 export CUSTOMIZE_DIR VARIANTS_DIR IMAGE_DIR HOOKS_DIR IMAGE_FILE
 [ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
 
@@ -255,19 +259,19 @@ case $flvar in
     prepare_file "$rpath/network_if.debian.tmpl" "$M_TEMP/interfaces"
     [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
     prepare_file "$rpath/network_if.debian" "$M_TEMP/network"
-    [ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network created based on template for Debian" || log "error preparing $M_TEMP/network"
     ;;
   redhat|centos|fedora)
     prepare_file "$rpath/network_if.redhat.tmpl" "$M_TEMP/interfaces"
     [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
     prepare_file "$rpath/network_if.redhat" "$M_TEMP/network"
-    [ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network created based on template for Redhat" || log "error preparing $M_TEMP/network"
     ;;
   *)
     prepare_file "$rpath/network_if.${flvar}.tmpl" "$M_TEMP/interfaces"
     [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
     prepare_file "$rpath/network_if.${flvar}" "$M_TEMP/network"
-    [ $? -eq 0 ] && log "$M_TEMP/network prepared" || log "error preparing $M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network created based on template for $flvar" || log "error preparing $M_TEMP/network"
     ;;
 esac
 export OPERATING_SYSTEM=$flvar
@@ -285,21 +289,21 @@ if [ -z "$test" ]; then
     sleep 20
   else
     log "request returned status $reqexit"
-    proper_exit 1 282
+    proper_exit 1 292
   fi
   wait_ready $V 
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
       $ROUTE add -host $ip dev $idev
-      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 289
+      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 299
     else
       log "Instance started, but tap device doesn't exist"
-      proper_exit 1 292
+      proper_exit 1 302
     fi
   else
     log "Timeout while waiting for the server is up"
-    proper_exit 1 296
+    proper_exit 1 306
   fi
 
   # adding to the list
