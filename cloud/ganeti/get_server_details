@@ -71,16 +71,26 @@ for L in `$GNTI info "$name" 2>/dev/null | sed 's|^- ||;s|^  ||'` ; do
   e3=`expr "$L" : '^[[:space:]]*[a-z]'`
 #echo "=== $e1 $e2 $e3 ::: \"$L\""
   [ $e1 -lt 7 -a $e1 -gt 0 ] && unset subvar
-  [ $e1 -eq 1 ] && sect=`echo "$L" | cut -d: -f1` && echo $L | sed 's_: _|_' && continue
-  [ $e1 -eq 3 ] && subsect=`echo "$L" | cut -d: -f1 | sed 's|^ *||'` && subvalue=`echo $L | cut -d: -f2 | sed 's|^ *||'`
-  [ -n "$subvalue" ] && echo "$sect/$subsect|$subvalue" && unset subvalue && continue
+  [ $e2 -eq 3 ] && sect=`echo "$L" | cut -d: -f1 | sed 's|^- ||'` && subvalue=`echo $L | cut -sd: -f2 | sed 's|^ *||'` # && echo "    e33 :: $sect :: $subvalue"
+  [ $e1 -eq 1 ] && sect=`echo "$L" | cut -d: -f1` && subvalue=`echo $L | cut -sd: -f2 | sed 's|^ *||'` # && echo "    e11 :: $sect :: $subvalue"
+  [ $e1 -eq 3 ] && subsect=`echo "$L" | cut -d: -f1 | sed 's|^ *||'` && subvalue=`echo $L | cut -sd: -f2 | sed 's|^ *||'` # && echo "    e13 :: $sect :: $subvalue"
+  if [ -n "$subsect" ]; then
+    [ -n "$subvalue" ] && echo "\"${sect}\"/\"${subsect}\"|\"$subvalue\"" && unset subvalue && continue
+  else
+    [ -n "$subvalue" ] && echo "\"${sect}\"|\"$subvalue\"" && unset subvalue && continue
+  fi
   if [ -n "$all" -o "x$subsect" != "xHypervisor" ]; then
-    [ $e2 -gt 0 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }"
+    [ $e2 -gt 3 ] && var=${L%%:*} && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }"
     [ "x$value" == "x$L" ] && unset value
-    [ $e2 -eq 7 ] && subvar=$var 
-    [ -n "$value" -a $e2 -eq 7 ] && echo "$sect/$subsect/$var|$value" && unset var value && continue
-    [ $e2 -eq 9 ] && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "$sect/$subsect/$subvar/$var/$vvar|$vval" || echo "$sect/$subsect/$subvar/$var|$v"; unset vvar vval; done) && unset var value && continue
-    [ $e3 -gt 3 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }" && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "$sect/$subsect/$subvar/$var/$vvar|$vval" || echo "$sect/$subsect/$subvar/$var|$v"; unset vvar vval; done) && unset var value
+    [ $e2 -eq 7 ] && subvar=$var
+    [ -n "$value" -a $e2 -eq 7 ] && echo "\"${sect}\"/\"${subsect}\"/\"$var\"|\"$value\"" && unset var value && continue
+    if [ -n "$subvar" ]; then
+      [ $e2 -eq 9 ] && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "\"${sect}\"/\"${subsect}\"/\"$subvar\"/\"$var\"/\"$vvar\"|\"$vval\"" || echo "\"${sect}\"/\"${subsect}\"/\"$subvar\"/\"$var\"|\"$v\""; unset vvar vval; done) && unset var value && continue
+     [ $e3 -gt 3 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }" && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "\"${sect}\"/\"${subsect}\"/\"$subvar\"/\"$var\"/\"$vvar\"|\"$vval\"" || echo "\"${sect}\"/\"${subsect}\"/\"$subvar\"/\"$var\"|\"$v\""; unset vvar vval; done) && unset var value
+    else
+     [ $e2 -eq 9 ] && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "\"${sect}\"/\"${subsect}\"/\"$var\"/\"$vvar\"|\"$vval\"" || echo "\"${sect}\"/\"${subsect}\"/\"$var\"|\"$v\""; unset vvar vval; done) && unset var value && continue
+     [ $e3 -gt 3 ] && var="${L%%:*}" && var=`expr "$var" : '^[ -]*\([a-z]*.*\)$'` && value="${L#*: }" && (for v in `echo "$value" | sed 's|, |\n|g;s|^[[:space:]]||g;s|\[||g;s|\]||g' | sed "s|'||g"`; do vvar="${v%%:*}"; vval="${v#*: }"; [ "x$vval" != "x$v" ] && echo "\"${sect}\"/\"${subsect}\"/\"$var\"/\"$vvar\"|\"$vval\"" || echo "\"${sect}\"/\"${subsect}\"/\"$var\"|\"$v\""; unset vvar vval; done) && unset var value
+    fi
   fi
 done  > "$M_TEMP/${rcommand}.resp"
 

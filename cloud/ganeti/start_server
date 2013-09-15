@@ -115,7 +115,7 @@ wait_ready() {
     sleep $waitperiod
     [ -n "$1" ] && echo -n '.'
     IAMACHILD=1 "$rpath"/get_server_details --name=$name >/dev/null 2>&1
-    if [ `cat "$M_TEMP/get_server_details.resp" | grep ^State | grep -c 'actual state is up'` -eq 1 ] ; then
+    if [ `cat "$M_TEMP/get_server_details.resp" | grep '/"State"/' | grep -c 'actual state is up'` -eq 1 ] ; then
       echo
       return 0
     fi
@@ -134,8 +134,8 @@ request() {
 }
 
 find_idev() {
-  if [ "`cat "$M_TEMP/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/mode' | cut -d'|' -f2`" == "routed" ]; then
-    link=`cat "$M_TEMP/get_server_details.resp" | grep '^State/Hardware/NICs/nic/0/link' | cut -d'|' -f2`
+  if [ "`cat "$M_TEMP/get_server_details.resp" | grep '/"NICs"/"nic/0"/"mode"' | cut -d'|' -f2`" == "routed" ]; then
+    link=`cat "$M_TEMP/get_server_details.resp" | grep '/"NICs"/"nic/0"/"link"' | cut -d'|' -f2`
   fi
   $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
 }
