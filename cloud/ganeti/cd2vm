@@ -42,7 +42,7 @@ disksize="`echo "$vmini" | cut -d'|' -f3`"
 # now when we know that disk does exist, we can use a heavier tool to find its
 # file or device
 
-disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1`
+disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
 [ -z "$disk" ] && echo "unable to get disk details" && exit 1
 disk=`expr "$disk" : "\(.*\) ("`
 

@@ -64,7 +64,7 @@ rm -f "$M_TEMP/${rcommand}.resp"
 IFS1=$IFS
 IFS='
 '
-for L in `$GNTI info "$name" 2>/dev/null | sed 's|^- ||;s|^  ||'` ; do
+for L in `$GNTI info "$name" 2>/dev/null` ; do
 #echo "    sect: $sect   subsect: $subsect"
   e1=`expr "$L" : '^[[:space:]]*[A-Z]'`
   e2=`expr "$L" : '^[[:space:]]*-\ [a-zA-Z]'`

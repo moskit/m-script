@@ -134,8 +134,8 @@ request() {
 }
 
 find_idev() {
-  if [ "`cat "$M_TEMP/get_server_details.resp" | grep '/"NICs"/"nic/0"/"mode"' | cut -d'|' -f2`" == "routed" ]; then
-    link=`cat "$M_TEMP/get_server_details.resp" | grep '/"NICs"/"nic/0"/"link"' | cut -d'|' -f2`
+  if [ "`cat "$M_TEMP/get_server_details.resp" | grep '/"NICs"/"nic/0"/"mode"' | cut -d'|' -f2 | tr -d '"'`" == "routed" ]; then
+    link=`cat "$M_TEMP/get_server_details.resp" | grep '/"NICs"/"nic/0"/"link"' | cut -d'|' -f2 | tr -d '"'`
   fi
   $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
 }
