@@ -94,6 +94,8 @@ fi
 
 source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/functions.sh"
+
 [ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
 M_TEMP="$M_TEMP/cloud/ganeti"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"

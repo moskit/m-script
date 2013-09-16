@@ -20,24 +20,24 @@ i=0
 declare -a branch
 declare -a index
 declare -a ndarr
+declare -a savedline
 debug=false
 
 addnode() {
-echo -n "." >&2
   nd=$1
   i=$2
   selfclosed=false
   expr "$nd" : ^\? >/dev/null && return 0
   expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
-#  $debug && echo "==== $nd ="
+##  $debug && echo "==== $nd ="
   if `expr "$nd" : ^\" >/dev/null` ; then
     tag=`expr "$nd" : "^\(\".*\"\)"`
   else
     tag=`expr "$nd" : "^\([^\ ]*\)\(\ \|$\|/\)"`
   fi
   vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
-#  $debug && echo "  == $tag ="
+  #$debug && echo "  == $tag ="
   index[$i]="$tag"
   unset ndcont
   if [ $i -gt 1 ] ; then
@@ -64,34 +64,40 @@ echo -n "." >&2
   
   if [ -n "$ndcont" ] ; then
     # we got the full line, printing
-    for ((l=0; l<$n-2; l++)) ; do
-      txtline="$txtline\"${branch[$l]}\"/${ndarr[$l]}/"
-    done
-    txtline="$txtline\"${branch[$n-2]}\"/${ndarr[$n-2]}|"
+    txtline="${savedline[$n-2]}"
+#    if [ -z "$txtline" ]; then
+#      for ((l=0; l<$n-2; l++)) ; do
+#        txtline="$txtline\"${branch[$l]}\"/${ndarr[$l]}/"
+#      done
+#    fi
+    txtline="$txtline|"
     txtline="$txtline\"${branch[$n-1]}\""
-    echo "$txtline"
-    unset txtline
+  #######  echo "$txtline"
 #    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
 #    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
-    unset branch[$n-1] branch[$n-2] ndarr[$n]
+    unset branch[$n-1] branch[$n-2] ndarr[$n] savedline[$n-2] savedline[$n-1] savedline[$n]
+    unset txtline
   else
     branch[$n]="$tag"
+    if [ $n -gt 0 ]; then
+      savedline[$n]="${savedline[$n-1]}/\"${branch[$n]}\"/${ndarr[$n]}"
+    else
+      savedline[$n]="\"${branch[$n]}\"/${ndarr[$n]}"
+    fi
     if [ -n "$vars" ]; then
-      for ((l=0; l<=$n; l++)) ; do
-        txtline="$txtline\"${branch[$l]}\"/${ndarr[$l]}/"
-      done
-      echo "${txtline%/}|$vars"
+      txtline="${savedline[$n]}"
+  #######    echo "$txtline|$vars"
       unset txtline vars
     fi
     if $selfclosed ; then
 #      $debug && echo "     self-closed, unsetting branch[$n] :: ${branch[$n]}"
-      unset branch[$n] ndarr[$n]
+      unset branch[$n] ndarr[$n] savedline[$n]
     else
 #      $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
       if [ $n -ne 0 ]; then
         if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ] 2>/dev/null ; then
 #          $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
-          unset branch[$n-1] branch[$n] ndarr[$n]
+          unset branch[$n-1] branch[$n] ndarr[$n] savedline[$n] savedline[$n-1]
         fi
       fi
     fi
