@@ -24,6 +24,7 @@ declare -a savedline
 debug=false
 
 addnode() {
+echo "t0 `date +"%s%N"`"
   nd=$1
   i=$2
   selfclosed=false
@@ -31,6 +32,7 @@ addnode() {
   expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
 ##  $debug && echo "==== $nd ="
+echo "t1 `date +"%s%N"`"
   if `expr "$nd" : ^\" >/dev/null` ; then
     tag=`expr "$nd" : "^\(\".*\"\)"`
   else
@@ -39,6 +41,9 @@ addnode() {
   vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
   #$debug && echo "  == $tag ="
   index[$i]="$tag"
+  
+echo "t2 `date +"%s%N"`"
+
   unset ndcont
   if [ $i -gt 1 ] ; then
     # this means the node is closed and the previous value was its content:
@@ -52,7 +57,9 @@ addnode() {
   if [ $i -ne 0 ]; then
     [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
   fi
-  
+
+echo "t3 `date +"%s%N"`"
+
 #  if $debug ; then
 #    echo -e "----------------------------\n$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
 #    for ((l=0; l<$n; l++)) ; do
@@ -72,11 +79,14 @@ addnode() {
 #    fi
     txtline="$txtline|"
     txtline="$txtline\"${branch[$n-1]}\""
-  #######  echo "$txtline"
+    echo "$txtline"
 #    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
 #    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
     unset branch[$n-1] branch[$n-2] ndarr[$n] savedline[$n-2] savedline[$n-1] savedline[$n]
     unset txtline
+
+echo "t4 `date +"%s%N"`"
+
   else
     branch[$n]="$tag"
     if [ $n -gt 0 ]; then
@@ -86,7 +96,7 @@ addnode() {
     fi
     if [ -n "$vars" ]; then
       txtline="${savedline[$n]}"
-  #######    echo "$txtline|$vars"
+      echo "$txtline|$vars"
       unset txtline vars
     fi
     if $selfclosed ; then
@@ -101,12 +111,15 @@ addnode() {
         fi
       fi
     fi
+
+echo "t4 `date +"%s%N"`"
+
   fi
 }
 
 declare -i nn
 nn=0
-( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read node ; do addnode "$node" $nn ; nn+=1 ; done
+( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read node ; do echo "== tt1 `date +"%s%N"`" ; addnode "$node" $nn ; nn+=1 ; echo "== tt2 `date +"%s%N"`" ; done
 
 unset branch index ndcont cont i LINE node ndarr
 

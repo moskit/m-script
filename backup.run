@@ -835,7 +835,7 @@ EOF
         for LINE in `echo "$outdated"`
         do
           [ -n "$debugflag" ] && rmv='-v'
-          rm "$rmv" -f \"$LINE\" 2>>$stderrto >> $dbginto
+          rm "$rmv" -f "$LINE" 2>>$stderrto >> $dbginto
           res+=$?
         done
         if [ $res -eq 0 ]; then
