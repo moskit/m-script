@@ -222,13 +222,13 @@ M_TEMP="$M_TEMP/cloud/ec2"
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
 changed=0
-[ -f $M_TEMP/servers.${region}.ips ] && mv $M_TEMP/servers.${region}.ips $M_TEMP/servers.${region}.ips.prev || touch $M_TEMP/servers.${region}.ips.prev
-[ -f $M_TEMP/servers.${region}.bdevs ] && mv $M_TEMP/servers.${region}.bdevs $M_TEMP/servers.${region}.bdevs.prev || touch $M_TEMP/servers.${region}.bdevs.prev
+[ -f "$M_TEMP/servers.${region}.ips" ] && mv "$M_TEMP/servers.${region}.ips" "$M_TEMP/servers.${region}.ips.prev" || touch "$M_TEMP/servers.${region}.ips.prev"
+[ -f "$M_TEMP/servers.${region}.bdevs" ] && mv "$M_TEMP/servers.${region}.bdevs" "$M_TEMP/servers.${region}.bdevs.prev" || touch "$M_TEMP/servers.${region}.bdevs.prev"
 
 # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
 # if no setting, force update is disabled
 if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
-  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/${rcommand}.resp || echo 0` || echo 86400)
+  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0` || echo 86400)
   [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
 fi
 
