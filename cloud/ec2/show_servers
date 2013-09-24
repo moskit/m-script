@@ -68,7 +68,12 @@ list_servers() {
   IFS1=$IFS
   IFS='
 '
-  if [ -f "$M_TEMP/servers.ips" ] ; then
+  if [ -z "$noupdate" ]; then
+    [ -f "$M_TEMP/servers.ips" ] && slist="$M_TEMP/servers.ips"
+  else
+    [ -f "$M_TEMP/servers.ips.prev" ] && slist="$M_TEMP/servers.ips.prev"
+  fi
+  if [ -n "$slist" ] && [[ -f "$slist" ]]; then
     [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.ips" && return
     for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
@@ -161,10 +166,11 @@ list_servers() {
       
     done
   else
-    echo "No data. Run without --noupdate"
+    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/servers.ips and run without --noupdate if necessary."
+    exit 1
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|${listip}\| "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
+    [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
   done
   IFS=$IFS1
 }
@@ -222,8 +228,8 @@ M_TEMP="$M_TEMP/cloud/ec2"
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
 changed=0
-[ -f "$M_TEMP/servers.${region}.ips" ] && mv "$M_TEMP/servers.${region}.ips" "$M_TEMP/servers.${region}.ips.prev" || touch "$M_TEMP/servers.${region}.ips.prev"
-[ -f "$M_TEMP/servers.${region}.bdevs" ] && mv "$M_TEMP/servers.${region}.bdevs" "$M_TEMP/servers.${region}.bdevs.prev" || touch "$M_TEMP/servers.${region}.bdevs.prev"
+[ -f "$M_TEMP/servers.ips" ] && mv "$M_TEMP/servers.ips" "$M_TEMP/servers.ips.prev" || touch "$M_TEMP/servers.ips.prev"
+[ -f "$M_TEMP/servers.bdevs" ] && mv "$M_TEMP/servers.bdevs" "$M_TEMP/servers.bdevs.prev" || touch "$M_TEMP/servers.bdevs.prev"
 
 # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
 # if no setting, force update is disabled
@@ -233,9 +239,11 @@ if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
 fi
 
 if [ -z "$noupdate" ]; then
+  [ -n "$verbose" ] && log "sending request"
   request
   [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
 else
+  [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
   [ `cat "$M_TEMP/servers.ips" | wc -l` -eq 0 ] && log "file $M_TEMP/servers.ips is empty" && exit 1
 fi
 

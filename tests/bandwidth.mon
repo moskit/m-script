@@ -38,6 +38,7 @@ boutputlast=`sqlite3 "$rpath/../sysdata" "select output from sysdata where timei
 
 if [ "$IPTABLES" != "X0" ]; then
   counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
+  [ -z "$counters" ] && $iptablesbin -Z && counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
   binput=`echo "$counters" | grep ^\:INPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
   boutput=`echo "$counters" | grep ^\:OUTPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
 

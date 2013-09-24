@@ -93,9 +93,10 @@ print_line_title() {
   dfpltparent="$1"
   shift
   dfpltnode="$1"
+  dfpltnodep="${1:0:24}"
   dfpltid="${dfpltparent}.${dfpltnode}"
-  echo -e "<div class=\"server\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnode</div>"
-  unset dfpltparent dfpltnode dfpltonclick
+  echo -e "<div class=\"server\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
+  unset dfpltparent dfpltnode dfpltonclick dfpltnodep
 }
 
 print_inline() {
