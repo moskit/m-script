@@ -25,7 +25,7 @@ do
   do
     serverh=${server##*/}
     echo "<div class=\"server\" id=\"$serverh\">"
-      echo "<span class=\"servername\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:24}</span>"
+      echo "<span class=\"servername\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:20}</span>"
       cat "../servers/$server/dash.html" 2>/dev/null || echo "No data"
       [ -e "../servers/$server/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
       [ -e "../servers/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
