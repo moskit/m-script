@@ -80,9 +80,9 @@ function parse_data() {
   echo "Status:   $status" | sed 's|1|OK|;s|0|Error|'
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
-  netIn_prev=`grep ^netIn\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
+  netIn_prev=`grep ^netIn\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
   bw_in=`solve 2 "(${netIn-0} - ${netIn_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576"`
-  netOut_prev=`grep ^netOut\| "${rpath}/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
+  netOut_prev=`grep ^netOut\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
   bw_out=`solve 2 "(${netOut-0} - ${netOut_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576"`
   echo -e "Bandwidth in (MB/sec):   $bw_in\nBandwidth out (MB/sec):   $bw_out"
   netReqn_prev=`grep ^netReqn\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netReqn_prev=$netReqn
@@ -274,7 +274,7 @@ for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
 # master=`find_master ${configip} || echo ${configip}`
-  mongoses=`$MONGO $AUTH "$configip/config" --quiet --eval "db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
+  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
   mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -d'|' -f2 | tr -d '"' | sort -n`
   [ $res -eq 0 ] && break
@@ -288,7 +288,7 @@ else
 fi
 
 for configip in $configips ; do
-  shardhosts=`$MONGO $AUTH "$configip"/config --quiet --eval "db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>>"$LOG"`
+  shardhosts=`$MONGO $AUTH "$configip"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
   shardhosts=`echo "$shardhosts" | "$M_ROOT"/lib/json2txt | tr -d '"'`
   [ $res -eq 0 ] && break
