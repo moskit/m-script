@@ -9,6 +9,13 @@ LOG="$M_ROOT/logs/sa.log"
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
+if [ -n "$AUTH_LOGIN" ]; then
+  if [ -n "$AUTH_PASSWD" ]; then
+    AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
+  else
+    echo "Password is not set for user $AUTH_LOGIN"
+  fi
+fi
 source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
 log "Running $rpath/$rcommand"
@@ -20,14 +27,14 @@ log "Running $rpath/$rcommand"
 [ -f "$rpath/data/databases.dat" ] && rm -f "$rpath/data/databases.dat"
 
 for hp in $hostport ; do
-  $MONGO "$hp/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' >> "$rpath/data/databases.dat"
+  $MONGO $AUTH "$hp/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' >> "$rpath/data/databases.dat"
 done
 
 for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$|^local$" | sort | uniq` ; do
   rm -f "$rpath"/data/${db}.*.dat "$rpath"/data/${db}.dat
   for hp in $hostport ; do
-    $MONGO "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt >> "$rpath/data/${db}.dat"
-    (IFS=','; for coll in `$MONGO "$hp/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do $MONGO "$hp/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt >> "$rpath/data/${db}.${coll}.dat"; done)
+    $MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt >> "$rpath/data/${db}.dat"
+    (IFS=','; for coll in `$MONGO $AUTH "$hp/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do $MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt >> "$rpath/data/${db}.${coll}.dat"; done)
   done
 done
 

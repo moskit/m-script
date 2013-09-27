@@ -244,7 +244,8 @@ if [ -z "$noupdate" ]; then
   [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
 else
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
-  [ `cat "$M_TEMP/servers.ips" | wc -l` -eq 0 ] && log "file $M_TEMP/servers.ips is empty" && exit 1
+  [ ! -e "$M_TEMP/servers.ips" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/servers.ips not found" && exit 1
+  [ `cat "$M_TEMP/servers.ips" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/servers.ips is empty" && exit 1
 fi
 
 list_servers
