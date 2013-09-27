@@ -12,6 +12,7 @@ print_mongo_server() {
   local role=`echo "$1" | cut -d'|' -f4`
   port=${host##*:}
   name=${host%:*}
+  namep=${name:0:20}
   id="${name}_${port}"
   install -d "$PWD/../$scriptname/balancers/$id"
   [ -n "$port" ] && wport=`expr $port + 1000`
@@ -21,7 +22,7 @@ print_mongo_server() {
   
   echo "<div class=\"server\" id=\"${name}:${port}\">"
   
-    echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}_name','/${scriptname}')\">${name}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+    echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}_name','/${scriptname}')\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     echo "<div class=\"status status_short\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
     if [ "X`echo "$rawdata" | grep ^status\| | cut -d'|' -f2`" == "X1" ] ; then
