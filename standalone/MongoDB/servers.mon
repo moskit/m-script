@@ -318,7 +318,7 @@ if [ -n "$shardhosts" ] ; then
     find_rsmemberrole "${shardhost}:${shardport}"
     shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
   done
-  echo -e ${shardlist[*]} | tr ' ' '\n' > "$M_TEMP/mongo_shards.list"
+  echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
 
   shardlist=()
   for rs in `cat "$M_TEMP/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
@@ -337,7 +337,7 @@ if [ -n "$shardhosts" ] ; then
       find_rsmemberrole "$replicahost"
       shardlist+=("$replicahost|${rs}${rsmemberrole}")
     done
-    echo -e ${shardlist[*]} | tr ' ' '\n' >> "$M_TEMP/mongo_shards.list"
+    echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq >> "$M_TEMP/mongo_shards.list"
   done
   
   [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"`" ] && mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
