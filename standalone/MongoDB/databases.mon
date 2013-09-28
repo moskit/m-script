@@ -16,7 +16,8 @@ if [ -n "$AUTH_LOGIN" ]; then
     echo "Password is not set for user $AUTH_LOGIN"
   fi
 fi
-source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
+source "$rpath/servers.conf"
+source "$rpath/databases.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
 log "Running $rpath/$rcommand"
 
@@ -26,15 +27,26 @@ log "Running $rpath/$rcommand"
 
 [ -f "$rpath/data/databases.dat" ] && rm -f "$rpath/data/databases.dat"
 
+databases=()
 for hp in $hostport ; do
-  $MONGO $AUTH "$hp/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^=' >> "$rpath/data/databases.dat"
+  databases+=(`$MONGO $AUTH "$hp/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^='`)
 done
+echo -e ${databases[*]} | tr ' ' '\n' | sort | uniq > "$rpath/data/databases.dat"
 
-for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$|^local$" | sort | uniq` ; do
-  rm -f "$rpath"/data/${db}.*.dat "$rpath"/data/${db}.dat
-  for hp in $hostport ; do
-    $MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt >> "$rpath/data/${db}.dat"
-    (IFS=','; for coll in `$MONGO $AUTH "$hp/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do $MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt >> "$rpath/data/${db}.${coll}.dat"; done)
-  done
+for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$|^local$"` ; do
+  if [ "X$SHARDING" == "Xmanual" ]; then
+    for hp in $hostport ; do
+      dbdat=`$MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
+      echo "$dbdat" > "$rpath/data/${db}.dat"
+      (IFS=','; for coll in `$MONGO $AUTH "$hp/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do colldat=`$MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"; done)
+    done &
+    "$rpath"/nonshard_distributed_dbreport "$db" $hostport
+  else
+    for hp in $hostport ; do
+      dbdat=`$MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
+      echo "$dbdat" > "$rpath/data/${db}.dat"
+      (IFS=','; for coll in `$MONGO $AUTH "$hp/$db" --quiet --eval "db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do colldat=`$MONGO $AUTH "$hp/$db" --quiet --eval "printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${coll}.dat"; done)
+    done &
+  fi
 done
 

@@ -43,6 +43,7 @@ for coll in $sharded ; do
   database=${coll%%.*}
   rm -f "$rpath/data/shards.$coll"
   shards=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"$coll\" , \"shard\" : c }).count() ) } )" 2>>$LOG`
+  collshardinfo=()
   for shard in $shards ; do
     shname=`echo $shard | cut -d'|' -f1`
     shchunks=`echo $shard | cut -d'|' -f2`
@@ -50,12 +51,14 @@ for coll in $sharded ; do
     [ -z "$shhost" ] && continue
     shdatasize=`$MONGO $AUTH "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()" 2>>$LOG`
     shindexsize=`$MONGO $AUTH "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()" 2>>$LOG`
-    echo "$shname|$shhost|$shchunks|$shdatasize|$shindexsize" >> "$rpath/data/shards.$coll"
+    collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
+    
     if [ "X$SQLITE3" == "X1" ] ; then
-      $SQLITE "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
+      $dbquery "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
     fi
   done
-
+  echo -e ${collshardinfo[*]} | tr ' ' '\n' > "$rpath/data/shards.$coll"
+  
   [ -f "$rpath/data/sharding.changelog.${coll}.dat" ] && mv "$rpath/data/sharding.changelog.${coll}.dat" "$rpath/data/sharding.changelog.${coll}.dat.prev"
   $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c, \"ns\" : \"$coll\" } ).count() ) } )" > "${rpath}/data/sharding.changelog.${coll}.dat"
   $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c, \"ns\" : \"$coll\" } ).count() ) } )" >> "$rpath/data/sharding.changelog.${coll}.dat"
@@ -66,13 +69,13 @@ for coll in $sharded ; do
     
     leftdiff=`echo "$cldiff" | grep ^\< | tr -d '^\< '`
     rightdiff=`echo "$cldiff" | grep ^\> | tr -d '^\> '`
-    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "X$SQLITE3" == "X1" ] && $SQLITE "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
+    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "X$SQLITE3" == "X1" ] && $dbquery "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
   fi
 
   # latest chunks of this collection
   #$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.find( { ns : \"${coll}\" }, { _id : 0, shard : 1, min : 1, max : 1 } ).sort({_id:-1}).limit(${depth}).forEach(printjson)" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${coll}.chunks"
 
-done
+done &
 
   # the last split chunk and the server it has been splitted on:
 #  lastsplit=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({what:\"split\", ns:\"${coll}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)" | "$M_ROOT"/lib/json2txt | cut -d'|' -f2`
