@@ -22,7 +22,7 @@ print_mongo_server() {
   
   echo "<div class=\"server\" id=\"${name}:${port}\">"
   
-    echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+    echo "<div class=\"servername\" id=\"${id}_name\" onClick=\"showData('${id}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     echo "<div class=\"status status_short\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
     if [ "X`echo "$rawdata" | grep ^status\| | cut -d'|' -f2`" == "X1" ] ; then
@@ -34,14 +34,14 @@ print_mongo_server() {
     echo "<div class=\"status\" id=\"${id}_mem\">`echo "$rawdata" | grep ^memRes\| | cut -d'|' -f2` / `echo "$rawdata" | grep ^memVir\| | cut -d'|' -f2`</div>"
     
     bwinout=`echo "$report" | grep '^Bandwidth ' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status\" id=\"${id}_bw\">`echo "$bwinout" | head -1` / `echo "$bwinout" | tail -1`</div>"
+    echo "<div class=\"status\" id=\"${id}_bw\">`echo "$bwinout" 2>/dev/null | head -1` / `echo "$bwinout" 2>/dev/null | tail -1`</div>" 2>/dev/null
     qps=`echo "$report" | grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g'`
     [ -n "$qps" ] || rps=`echo "$report" | grep '^Total' | awk '{print $2}'`
     
     echo "<div class=\"status\" id=\"${id}_qps\" onclick=\"showDetails('${id}_qps','mongoqps')\">$qps</div>"
     
     locktime=`echo "$report" | grep '^Lock time ' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status\" id=\"${id}_locks\" onclick=\"showDetails('${id}_locks','mongolocks')\">`echo "$locktime" | head -1` / `echo "$locktime" | tail -1`</div>"
+    echo "<div class=\"status\" id=\"${id}_locks\" onclick=\"showDetails('${id}_locks','mongolocks')\">`echo "$locktime" 2>/dev/null | head -1` / `echo "$locktime" 2>/dev/null | tail -1`</div>" 2>/dev/null
     
     notinmemory=`echo "$report" | grep '^Records not found in memory' | cut -d':' -f2 | sed 's| *||g'`
     pagefaults=`echo "$report" | grep '^Page fault exceptions' | cut -d':' -f2 | sed 's| *||g'`

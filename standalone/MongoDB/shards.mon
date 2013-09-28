@@ -54,7 +54,7 @@ for coll in $sharded ; do
     collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
     
     if [ "X$SQLITE3" == "X1" ] ; then
-      $dbquery "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
+      dbquery "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
     fi
   done
   echo -e ${collshardinfo[*]} | tr ' ' '\n' > "$rpath/data/shards.$coll"
@@ -69,7 +69,7 @@ for coll in $sharded ; do
     
     leftdiff=`echo "$cldiff" | grep ^\< | tr -d '^\< '`
     rightdiff=`echo "$cldiff" | grep ^\> | tr -d '^\> '`
-    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "X$SQLITE3" == "X1" ] && $dbquery "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
+    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "X$SQLITE3" == "X1" ] && dbquery "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
   fi
 
   # latest chunks of this collection

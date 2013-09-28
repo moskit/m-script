@@ -80,6 +80,7 @@ function parse_data() {
   echo "Status:   $status" | sed 's|1|OK|;s|0|Error|'
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
+  [ -e "$rpath/data/${1}.dat.prev" -a -e "$rpath/data/${1}.dat" ] || return
   netIn_prev=`grep ^netIn\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
   bw_in=`solve 2 "(${netIn-0} - ${netIn_prev-1}) / ($timeindexnow - $lasttimeindex) / 1048576"`
   netOut_prev=`grep ^netOut\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
