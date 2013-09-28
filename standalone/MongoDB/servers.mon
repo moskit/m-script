@@ -7,7 +7,7 @@ rpath=${rpath%/*}
 #*/
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
-log "Starting.."
+IFSORG=$IFS
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
@@ -34,9 +34,9 @@ function print_servers() {
 }
 
 function find_master() {
-  im=`$MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().primary" 2>>"$LOG" | grep -v arning | tail -1`
+  im=`(IFS=$IFSORG ; $MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().primary" 2>>"$LOG" | grep -v arning | tail -1)`
   if [ -z "$im" ] ; then
-    im=`$MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().ismaster" 2>>"$LOG" |tail -1`
+    im=`(IFS=$IFSORG ; $MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().ismaster" 2>>"$LOG" |tail -1)`
     [ "X$im" == "Xtrue" ] && im=$1
   fi
   [ -n "$im" ] && echo $im || (log "Unable to find master for replica set (asked ${1})" && exit 1)
@@ -45,7 +45,7 @@ function find_master() {
 function find_rsmemberrole() {
   rsmemberrole='|slave'
   master=`find_master "$1"`
-  members=`$MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt"`
+  members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
   membernum=`echo "$members" | grep "$1" | cut -d'/' -f1`
   arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
   [ $arbiter -eq 1 ] && rsmemberrole='|arbiter'
@@ -296,7 +296,6 @@ done
 
 if [ -n "$shardhosts" ] ; then
   [ -f "$M_TEMP/mongo_shards.list" ] && rm -f "$M_TEMP/mongo_shards.list"
-  IFS1=$IFS
   IFS='
 '
   nmax=`echo "$shardhosts" | tail -1 | cut -d'/' -f1`
@@ -310,8 +309,8 @@ if [ -n "$shardhosts" ] ; then
     # might be multiple hosts here, not needed now, it'll be dealt with later
     shardhost=${shardhost%%,*}
     shardport=${shardhost#*:}
-    if [ "X`$MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()" 2>>"$LOG" | tail -1`" != "Xnull" ] ; then
-      replicaset=$(IFS=$IFS1 ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1)
+    if [ "X`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()" 2>>"$LOG" | tail -1)`" != "Xnull" ] ; then
+      replicaset=`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1)`
     fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
@@ -324,7 +323,7 @@ if [ -n "$shardhosts" ] ; then
   for rs in `cat "$M_TEMP/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
 
     for rshost in `cat "$M_TEMP/mongo_shards.list" | grep "|$rs|" | cut -d'|' -f1` ; do
-      replicahosts=$(IFS=$IFS1 ; $MONGO $AUTH "$rshost"/admin --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG")
+      replicahosts=`(IFS=$IFSORG ; $MONGO $AUTH "$rshost"/admin --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG")`
       res=$?
       replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
       [ $res -eq 0 ] && break
@@ -341,7 +340,7 @@ if [ -n "$shardhosts" ] ; then
   done
   
   [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"`" ] && mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
-IFS=$IFS1
+IFS=$IFSORG
 else
   echo > "$M_TEMP/mongo_shards.list"
 fi
@@ -368,7 +367,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1` ; do
     install -d "$M_ROOT/www/MongoDB/balancers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
-    serverstatus=$($MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
+    serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null`
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_mongos_servers.list"
     else
