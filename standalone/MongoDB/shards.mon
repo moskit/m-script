@@ -24,8 +24,7 @@ source "$rpath/${rcommand}.conf" 2>/dev/null
 [ -z "$depth" ] && depth=5
 
 source "$M_ROOT/conf/mon.conf"
-SQLITE=`which sqlite3 2>/dev/null`
-[ "X$SQLITE3" == "X1" ] && [ -z "$SQLITE" ] && log "Sqlite3 not found, exiting..  " && exit 1
+
 M_TEMP="$M_TEMP/MongoDB"
 install -d "$M_TEMP"
 timeindexnow=`date +"%s"`
@@ -36,7 +35,7 @@ a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/null | tail -1 | cut -d'|' -f1`
 [ -z "$confserver" ] && log "No configuration servers found" && exit 1
 
-sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.collections.find( {}, { _id : 1 } ).forEach(printjson)" | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"' 2>>$LOG`
+sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.collections.find( {}, { _id : 1 } ).forEach(printjson)" 2>>$LOG | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"'`
 
 for coll in $sharded ; do
 
