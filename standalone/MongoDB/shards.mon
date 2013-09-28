@@ -11,6 +11,8 @@ log "Starting..."
 
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
+
+source "$rpath/servers.conf"
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
     AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
@@ -48,8 +50,8 @@ for coll in $sharded ; do
     shchunks=`echo $shard | cut -d'|' -f2`
     shhost=`grep \|$shname\| "$rpath"/mongo_shards.list 2>/dev/null | grep \|master$ | cut -d'|' -f1`
     [ -z "$shhost" ] && continue
-    shdatasize=`$MONGO $AUTH "$shhost/$database" --quiet --eval "db.${coll#*.}.dataSize()" 2>>$LOG`
-    shindexsize=`$MONGO $AUTH "$shhost/$database" --quiet --eval "db.${coll#*.}.totalIndexSize()" 2>>$LOG`
+    shdatasize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.${coll#*.}.dataSize()" 2>>$LOG`
+    shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.${coll#*.}.totalIndexSize()" 2>>$LOG`
     collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
     
     if [ "X$SQLITE3" == "X1" ] ; then
