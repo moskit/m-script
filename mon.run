@@ -142,7 +142,7 @@ function runscript() {
 
   elif [ -n "$1" ]; then
     for mon in `echo $1 | sed 's|,| |g'` ; do
-      [ -n "$RUNDELAY" ] && sleep $RUNDELAY
+      [ -n "$RUNDELAY" ] && sleep $RUNDELAY && delay+=$RUNDELAY
       if [ -x "$rpath/tests/$mon" ]; then
         log "$mon"
         monoutput=`"$rpath"/tests/$mon $SQL 2>&1`
