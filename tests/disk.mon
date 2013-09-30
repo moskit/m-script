@@ -153,9 +153,9 @@ if [ "X$DISKSTAT" != "X" ]; then
     l=`expr 21 - $m`
     for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
     replinerw=`printf "${replinerw}${dwspeed}"`
-    echo "${dwspeed}" >> $M_TEMP/diskiowr
+    echo "$dwspeed" >> $M_TEMP/diskiowr
 
-    if [ "X$dbquery" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+    if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
     
       diskname=${disk##*/}
       
@@ -191,7 +191,7 @@ if [ "X$DISKSTAT" != "X" ]; then
 
 fi
 
-if [ "X$dbquery" == "X1" ] && [ "X$1" == "XSQL" ]; then
+if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
   disksnum=`cat "$M_TEMP/diskusage" | wc -l`
   diskusage=0
   if [ -f "$M_TEMP/diskusage" ]; then

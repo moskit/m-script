@@ -110,7 +110,7 @@ function runscript() {
   daynow=$(date +"%Y%m%d")
   if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
   then
-    $SQLITE "$rpath/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
+    dbquery "$rpath/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
 
   echo -e "$etitle" >> "$LOG"
@@ -134,7 +134,7 @@ function runscript() {
           echo "$monoutput" >> "$rpath/report"
         fi
         time1=`date +"%s"`
-        $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+        dbquery "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
       else
         log "monitor $mon does not exist or is not executable"
       fi
@@ -156,6 +156,7 @@ function runscript() {
       fi
     done
   fi
+  echo >> "$rpath/report"
   al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'` > "$rpath/alert3"
   al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'` > "$rpath/alert2"
   al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'` > "$rpath/alert1"
@@ -290,12 +291,12 @@ function analyzesysparams() {
   then
     partotal=""
   else
-    partotal=`$SQLITE "$rpath/sysdata" "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
+    partotal=`dbquery "$rpath/sysdata" "select avg($4) from sysdata where day='$afrdayfirst' group by day"`
   fi
 
   for ((n=1; n <= $ANALYS_DAYS; n++))
   do
-    results[$n]=`$SQLITE "$rpath/sysdata" "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
+    results[$n]=`dbquery "$rpath/sysdata" "select avg($1) from sysdata where day='$afrdayfirst' group by day"`
     #echo "== n=$n; date: $afrdatefirst; result: ${results[$n]}"
     afrdayfirst=`date -d "$afrdayfirst + 1 day" +"%Y%m%d"`
   done
@@ -409,7 +410,7 @@ function sysanalysis() {
     exit 1
   fi
   dayfirst=`date -d "- 7 day" +"%Y%m%d"`
-  testdays=`$SQLITE "$rpath/sysdata" "select day from sysdata where day='$dayfirst'"`
+  testdays=`dbquery "$rpath/sysdata" "select day from sysdata where day='$dayfirst'"`
   if [ "X$testdays" != "X" ]
   then
 #   ------------ Database -- un -- "From" - DB column  - Human  ----- Warning level - Con
