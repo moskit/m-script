@@ -192,7 +192,7 @@ stop)
     kill -15 $pid
     sleep 3
     for ((i=0; i<5; i++)); do
-      [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" || sleep 3
+      [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
     done
     [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server killed brutally" >> "$rpath/monitoring.log"
   fi

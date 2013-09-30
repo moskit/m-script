@@ -52,7 +52,7 @@ cat -E $1 | while read LINE ; do
   LINE=${LINE%$}
   cursor+=1
   
-  printf "|||${LINE}\n"
+  #echo -e "|||${LINE}\n"
   case "$LINE" in
     "")
     data[$cursor]=""
