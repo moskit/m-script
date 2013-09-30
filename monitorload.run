@@ -189,7 +189,12 @@ stop)
     echo "3" > "$rpath/connections.mon.lock"
     pid=`cat $mgpidfile|tail -1`
     printf "Stopping web interface (pid $pid)...       "
-    kill -15 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log"
+    kill -15 $pid
+    sleep 3
+    for ((i=0; i<5; i++)); do
+      [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" || sleep 3
+    done
+    [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server killed brutally" >> "$rpath/monitoring.log"
   fi
   ;;
 restart)

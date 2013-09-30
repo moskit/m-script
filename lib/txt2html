@@ -52,7 +52,7 @@ cat -E $1 | while read LINE ; do
   LINE=${LINE%$}
   cursor+=1
   
-#  printf "|||${LINE}\n"
+  printf "|||${LINE}\n"
   case "$LINE" in
     "")
     data[$cursor]=""
@@ -95,7 +95,7 @@ cat -E $1 | while read LINE ; do
     datastyle[$cursor]="info"
     ;;
   esac
-#echo "== $LINE" ; echo "-- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
+echo "== $LINE" ; echo "-- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
   if [ $cursor -eq 3 ] ; then
     case ${datatype[*]} in
       "info dashline empty")
