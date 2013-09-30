@@ -7,6 +7,7 @@ rpath=${rpath%/*}
 #*/
 LOG="$M_ROOT/logs/sa.log"
 
+source "$rpath/servers.conf"
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
 if [ -n "$AUTH_LOGIN" ]; then
@@ -16,10 +17,9 @@ if [ -n "$AUTH_LOGIN" ]; then
     echo "Password is not set for user $AUTH_LOGIN"
   fi
 fi
-source "$rpath/servers.conf"
+
 source "$rpath/databases.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
-log "Running $rpath/$rcommand"
 
 [ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
 [ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`cat "$rpath/mongo_servers.list" | grep -vE "slave$|arbiter$" | cut -d'|' -f1 | tr '\n' ' '`
