@@ -319,9 +319,8 @@ if [ -n "$shardhosts" ] ; then
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
 
-  shardlist=()
   for rs in `cat "$M_TEMP/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
-
+  shardlist=()
     for rshost in `cat "$M_TEMP/mongo_shards.list" | grep "|$rs|" | cut -d'|' -f1` ; do
       replicahosts=`(IFS=$IFSORG ; $MONGO $AUTH "$rshost"/admin --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG")`
       res=$?
