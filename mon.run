@@ -120,7 +120,7 @@ function runscript() {
     
     for script in "$rpath/rc/"*.mon  #*/
     do
-      [ -n "$RUNDELAY" ] && sleep $RUNDELAY
+      [ -n "$RUNDELAY" ] && sleep $RUNDELAY && delay+=$RUNDELAY
       time0=`date +"%s"`
       mon="$rpath/rc/`readlink $script`"
       if [ -x "$mon" ]; then
@@ -471,6 +471,7 @@ source "$rpath/conf/mon.conf"
 # needed for actions (only?)
 source "$rpath/lib/functions.sh"
 SQLITE=dbquery
+declare -i delay ; delay=0
 export M_TEMP FREQ M_ROOT
 [ "X$2" == "XSQL" ] && SQL=SQL
 [ -d $M_TEMP ] || install -d $M_TEMP

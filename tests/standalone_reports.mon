@@ -24,7 +24,7 @@ source "${0%.mon}.conf"
 
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
   sarep=`cat "$M_ROOT/standalone/$sa/report" | tail -n +3`
-  if [ `echo "$sarep" | grep -v \-\-\- | grep -v ^$ | wc -l` -gt 0 ]; then
+  if [ `echo "$sarep" | grep -v '\-\-\-' | grep -v ^$ | wc -l` -gt 0 ]; then
     echo -e "$sa\n---------------\n\n$sarep"
   fi
 done

@@ -47,7 +47,8 @@ format() {
 IFS1=$IFS
 IFS='
 '
-for LINE in `cat -E "$1" ; echo \$; echo \$` ; do
+#(cat -E "$1" ; echo -e "\$\n\$") | while read LINE ; do
+cat -E $1 | while read LINE ; do
   LINE=${LINE%$}
   cursor+=1
   
