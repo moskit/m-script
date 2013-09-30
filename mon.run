@@ -448,6 +448,7 @@ function timeshift() {
   else
     timeshift=$(expr $fintime - $timeindexnow)
   fi
+  timeshift=$(expr $timeshift - $delay)
   export timeshift
   echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
