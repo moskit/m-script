@@ -102,7 +102,7 @@ check_cluster_limit() {
   [ -z "$n" ] && n=0
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   #[ `expr $n \>= 0` -gt 0 ] || return 1
-  [ `expr $limit \> $n` -gt 0 ] 2>/dev/null && return 0
+  [ `expr $limit \>= $n` -gt 0 ] 2>/dev/null && return 0
   return 1
 }
 

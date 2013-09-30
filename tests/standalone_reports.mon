@@ -23,6 +23,9 @@ source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
 
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
-  cat "$M_ROOT/standalone/$sa/report"
+  sarep=`cat "$M_ROOT/standalone/$sa/report" | tail -n +3`
+  if [ `echo "$sarep" | grep -v \-\-\- | grep -v ^$ | wc -l` -gt 0 ]; then
+    echo -e "$sa\n---------------\n\n$sarep"
+  fi
 done
 

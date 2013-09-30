@@ -16,7 +16,7 @@
 
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
-MAILX=`which mail 2>/dev/null`
+
 HOSTNAME=`which hostname 2>/dev/null`
 SQLBIN=`which sqlite3 2>/dev/null`
 #SAR=`which sar 2>/dev/null`
@@ -467,6 +467,7 @@ function action() {
 }
 
 source "$rpath/conf/mon.conf"
+[ -z "$MAILX" ] && MAILX=`which mail 2>/dev/null`
 # needed for actions (only?)
 source "$rpath/lib/functions.sh"
 SQLITE=dbquery
