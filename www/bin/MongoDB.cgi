@@ -91,7 +91,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc
   open_cluster "shardservers|Shard Servers"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
-      echo "<div class=\"server\" id=\"$rs\">"
+      echo "<div class=\"server hilited\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"
       for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$rs|"` ; do

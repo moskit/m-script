@@ -336,8 +336,8 @@ span.indent {
 
 .chunk {
   width: 10px;
-  height: 20px;
-  margin-right: 1px;
+  height: 18px;
+  margin: 1px 1px 1px 0px;
   float: left;
 }
 
@@ -348,7 +348,7 @@ span.indent {
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fbfbfb', endColorstr='#f2f2f2'); /* for IE */
   background: -webkit-gradient(linear, left bottom, left top, from(#f2f2f2), to(#fbfbfb)); /* for webkit browsers */
   background: -moz-linear-gradient(bottom,  #f2f2f2,  #fbfbfb); /* for firefox 3.6+ */ 
-  padding: 10px 0px 10px 0px;
+  padding: 6px 0px 10px 0px;
 }
 
 .dashtitle {
