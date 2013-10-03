@@ -267,28 +267,28 @@ span.indent {
 .okmarked {
   background-color: green;
   width: 8px !important;
-  height: 18px !important;
+  height: 16px !important;
   border: 1px solid blue;
 }
 
 .w1marked {
   background-color: #860;
   width: 8px !important;
-  height: 18px !important;
+  height: 16px !important;
   border: 1px solid blue;
 }
 
 .w2marked {
   background-color: orange;
   width: 8px !important;
-  height: 18px !important;
+  height: 16px !important;
   border: 1px solid blue;
 }
 
 .w3marked {
   background-color: red;
   width: 8px !important;
-  height: 18px !important;
+  height: 16px !important;
   border: 1px solid blue;
 }
 
@@ -403,7 +403,6 @@ span.indent {
   display: table;
   width: 800px;
   height: 20px;
-  padding: auto 0px;
   float: left;
   display: table;
   cursor: pointer;
@@ -413,26 +412,27 @@ span.indent {
 }
 
 .hilited {
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dedede', endColorstr='#fcfcfc');
-  background: -webkit-gradient(linear, left bottom, left top, from(#dedede), to(#fcfcfc));
-  background: -moz-linear-gradient(bottom,  #dedede,  #fcfcfc)
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#c0c0c0', endColorstr='#dadada');
+  background: -webkit-gradient(linear, left bottom, left top, from(#c0c0c0), to(#dadada));
+  background: -moz-linear-gradient(bottom,  #dcdcdc,  #eaeaea)
 }
 
 .clustername {
   width: 800px;
-  height: 26px;
-  padding: 7px 0px 5px 0px;
+  height: 22px;
+  padding: 5px 0px 3px 0px;
+  margin-bottom: 1px;
   font-weight: bold;
   font-size: 14px;
-  background-color: #E6E6E6;
+  background-color: #dadada;
   display: table;
 }
 
 .servername {
-  height: 20px;
+  height: 16px;
   width: 180px;
   margin-left: 25px;
-  padding: auto;
+  padding: 2px 0px;
   font-weight: bold;
   float: left;
 }
@@ -453,9 +453,9 @@ span.indent {
 
 .status {
   width: 88px;
-  height: 20px;
+  height: 16px;
   display: table;
-  padding: auto;
+  padding: 2px 0px;
   text-align: center;
   float: left;
   cursor: pointer;

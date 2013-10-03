@@ -20,7 +20,44 @@ rpath=${0%/*}
 M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
+genline() {
+  IFS=$IFSORIG
+  metatype=$1
+  shift
+  metascript=$@
+  case $metatype in
+  local)
+    echo "local \"$metascript\""
+    ;;
+  remote)
+    echo "remote \"$metascript\""
+    ;;
+  include)
+    IFS='
+'
+    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline "$metaline" >> "$WORK_DIR"/meta ; done
+    ;;
+  *)
+    # finding out from shebang
+    ipr=`head -1 "$metascript" | grep ^#! | cut -b 3- | awk '{print $1}'`
+    if [ -n "$ipr" ] ; then
+      case $ipr in
+        runlocal) ipr="local" ;;
+        runremote) ipr="remote" ;;
+        *) unset ipr ;;
+      esac
+    fi
+    if [ -n "$ipr" ]; then
+      echo "$ipr \"$1 $metascript\""
+    else
+      echo -e "# ERROR generating full line:\n$metatype $metascript\neither meta type is unknown or it is empty and no shebang in the script"
+    fi
+    ;;
+  esac
+}
+
 run_meta() {
+  IFS=$IFSORIG
   declare -i res
   res=0
   [ `grep -c "^${1}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "$LOG" && return 0
@@ -28,19 +65,10 @@ run_meta() {
   [ -z "$verbose" ] && echo -n " .. "
   [ -n "$test" -o -n "$dry" ] && dry="--dry"
   
-  metatype=`echo $1 | awk '{print $1}'`
-  metascript=`echo $1 | awk '{print $2}'`
-  [ -z "$metascript" ] && metascript="$metatype" && unset metatype
-  metascript=`eval "echo $metascript"`
-  if [ -z "$metatype" ] ; then
-    # finding out from shebang
-    ipr=`head -1 "$1" | grep ^#! | cut -b 3- | awk '{print $1}'`
-    if [ -n "$ipr" ] ; then
-      [ "$ipr" == "runlocal" ] && metatype="local"
-      [ "$ipr" == "runremote" ] && metatype="remote"
-    fi
-  fi
-  [ -z "$metatype" ] && echo "Meta type is not defined. Don't know how to run it." && exit 1
+  metatype=$1
+  shift
+  metascript=$@
+  
   if [ -n "$verbose" ] ; then
     printf "\n  type: $metatype  script: $metascript \n"
     V='--verbose'
@@ -142,7 +170,7 @@ SCP=`which scp 2>/dev/null`
 possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage"
 [ "X$*" == "X" ] && usage="yes"
 
-IFS1=$IFS
+IFSORIG=$IFS
 IFS='-'
 for s_option in "$@"
 do
@@ -162,7 +190,7 @@ do
     exit 1
   fi
 done
-IFS=$IFS1
+IFS=$IFSORIG
 
 found=false
 for option in $necessary_options ; do
@@ -458,14 +486,15 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   echo
   if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
     meta="$command"
-    run_meta "$meta"
+    run_meta $meta
   else
-    IFS1=$IFS
     IFS='
 '
+    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline "$metaline" >> "$WORK_DIR"/meta ; done
+    
     declare -i metan
     metan=1
-    for meta in `cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+    for meta in `cat "$WORK_DIR"/meta` ; do
       meta=`eval "echo $meta"`
       runthis=true
       skipthis=false
@@ -495,7 +524,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       fi
       metan+=1
     done
-    IFS=$IFS1
+    IFS=$IFSORIG
   fi
 else
   echo "Setting up self is not supported"
