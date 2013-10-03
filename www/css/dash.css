@@ -403,13 +403,19 @@ span.indent {
   display: table;
   width: 800px;
   height: 20px;
-  margin: 3px 0px;
+  padding: auto 0px;
   float: left;
   display: table;
   cursor: pointer;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f2f2f2', endColorstr='#fbfbfb');
-  background: -webkit-gradient(linear, left bottom, left top, from(#fbfbfb), to(#f2f2f2));
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fcfcfc', endColorstr='#f0f0f0');
+  background: -webkit-gradient(linear, left bottom, left top, from(#fcfcfc), to(#f0f0f0));
   background: -moz-linear-gradient(bottom,  #fcfcfc,  #f0f0f0)
+}
+
+.hilited {
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dedede', endColorstr='#fcfcfc');
+  background: -webkit-gradient(linear, left bottom, left top, from(#dedede), to(#fcfcfc));
+  background: -moz-linear-gradient(bottom,  #dedede,  #fcfcfc)
 }
 
 .clustername {

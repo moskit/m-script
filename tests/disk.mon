@@ -22,9 +22,9 @@ source "$rpath/../conf/mon.conf"
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 
-diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1
+diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
 
-if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]; then
+if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables"`
 fi
 
