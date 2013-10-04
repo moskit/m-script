@@ -35,15 +35,16 @@ IFCFG=`which ifconfig 2>/dev/null`
 # have different OSes there with different paths to hostname utility.
 HOSTNAME=`which hostname 2>/dev/null`
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
+LOG="$M_ROOT/logs/cloud.log"
 
 get_hostname() {
   [ -z "$1" ] && return 1
-  if [ -f "$rpath/../../keys/${keypair}.pem" ] ; then
+  if [ -f "$M_ROOT/keys/${keypair}.pem" ] ; then
     key="${keypair}.pem"
-  elif [ -f "$rpath/../../keys/$keypair" ] ; then
+  elif [ -f "$M_ROOT/keys/$keypair" ] ; then
     key="$keypair"
   else
-    message=" (key $rpath/../../keys/${keypair}{.pem} not found)"
+    message=" (key $M_ROOT/keys/${keypair}{.pem} not found)"
   fi
   if [ `echo $localip | grep -c "^$1$"` -ne 0 ] ; then
     sname=`$HOSTNAME`
@@ -158,7 +159,7 @@ list_servers() {
             key=`grep ^${icluster}\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
             [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)"
             sed -i /^$IP\|/d "$M_ROOT/servers.list"
-            [ "X$istatus" == "Xrunning" ] && echo "$IP|$key|$region|$iname|$icluster" >> "$rpath/../../servers.list"
+            [ "X$istatus" == "Xrunning" ] && echo "$IP|$key|$region|$iname|$icluster" >> "$M_ROOT/servers.list"
 
           fi
         fi
