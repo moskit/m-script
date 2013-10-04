@@ -37,15 +37,21 @@ for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^
   if [ "X$SHARDING" == "Xmanual" ]; then
     for hp in $hostport ; do
       dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-      echo "$dbdat" > "$rpath/data/${db}.dat"
-      (IFS=','; for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"; done)
-    done &
+      echo "$dbdat" >> "$rpath/data/${db}.${hp}.dat"
+      for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error" | tr ',' '\n'`
+      do
+        colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
+      done
+    done
     "$rpath"/nonshard_distributed_dbreport "$db" $hostport
   else
     for hp in $hostport ; do
       dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
       echo "$dbdat" > "$rpath/data/${db}.dat"
-      (IFS=','; for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error"` ; do colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${coll}.dat"; done)
+      for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error" | tr ',' '\n'`
+      do
+        colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
+      done
     done &
   fi
 done

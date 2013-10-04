@@ -50,7 +50,7 @@ genline() {
     if [ -n "$ipr" ]; then
       echo "$ipr \"$1 $metascript\""
     else
-      echo -e "# ERROR generating full line:\n$metatype $metascript\neither meta type is unknown or it is empty and no shebang in the script"
+      echo -e "# ERROR generating full line:\n# $metatype $metascript\n# either meta type is unknown or it is empty and no shebang in the script"
     fi
     ;;
   esac

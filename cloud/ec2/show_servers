@@ -227,22 +227,20 @@ M_TEMP="$M_TEMP/cloud/ec2"
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 
-changed=0
-[ -f "$M_TEMP/servers.ips" ] && mv "$M_TEMP/servers.ips" "$M_TEMP/servers.ips.prev" || touch "$M_TEMP/servers.ips.prev"
-[ -f "$M_TEMP/servers.bdevs" ] && mv "$M_TEMP/servers.bdevs" "$M_TEMP/servers.bdevs.prev" || touch "$M_TEMP/servers.bdevs.prev"
-
-# force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
-# if no setting, force update is disabled
-if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
-  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0` || echo 86400)
-  [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
-fi
-
 if [ -z "$noupdate" ]; then
+  changed=0
+  [ -f "$M_TEMP/servers.ips" ] && mv "$M_TEMP/servers.ips" "$M_TEMP/servers.ips.prev" || touch "$M_TEMP/servers.ips.prev"
+  [ -f "$M_TEMP/servers.bdevs" ] && mv "$M_TEMP/servers.bdevs" "$M_TEMP/servers.bdevs.prev" || touch "$M_TEMP/servers.bdevs.prev"
   [ -n "$verbose" ] && log "sending request"
   request
   [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
 else
+  # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
+  # if no setting, force update is disabled
+  if [ -n "$FORCE_LIST_UPDATE_AFTER" ] ; then
+    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0` || echo 86400)
+    [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
+  fi
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
   [ ! -e "$M_TEMP/servers.ips" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/servers.ips not found" && exit 1
   [ `cat "$M_TEMP/servers.ips" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/servers.ips is empty" && exit 1
