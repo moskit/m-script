@@ -19,8 +19,8 @@ rpath=${0%/*}
 #*/
 
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
-source "${rpath}/../../conf/mon.conf" || exit 99
-source "${rpath}/../../conf/cloud.conf" || exit 99
+source "$M_ROOT/conf/mon.conf" || exit 99
+source "$M_ROOT/conf/cloud.conf" || exit 99
 
 RSYNC=`which rsync 2>/dev/null`
 SCP=`which scp 2>/dev/null`
@@ -37,7 +37,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
-possible_options="cluster help region verbose recursive ip nolocalhost"
+possible_options="cluster help region verbose recursive ip nolocalhost user"
 commflag=0
 for s_option in "${@}"
 do
@@ -95,10 +95,16 @@ Options:
   --region=region          - syncs to all servers from this region.
   --verbose                - shows each server details before running
                              the command.
+  --user=[username]        - connects to remote servers as user [username].
+                             Username can also be defined in conf/mon.conf
+                             (REMOTE_USER). Default user is root.
 
 EOF
   exit 0
 fi
+
+[ -n "$user" ] && REMOTE_USER="$user"
+[ -z "$REMOTE_USER" ] && REMOTE_USER="root"
 
 declare -i RETVAL
 RETVAL=0
@@ -176,11 +182,11 @@ if [ "X$command" != "X" ] ; then
       else
         KEY=`$M_ROOT/helpers/find_key server $IP` || continue
         if [ -n "$RSYNC" ] ; then
-          $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "${IP}:${to}"
+          $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$REMOTE_USER"@"${IP}:${to}"
           [ $? -eq 0 ] && echo "Success" && continue
         fi
         printf "Rsync failed or not found, trying scp ...  "
-        $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "${IP}:${to}"
+        $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$REMOTE_USER"@"${IP}:${to}"
         if [ $? -eq 0 ] ; then
           echo "Success"
         else

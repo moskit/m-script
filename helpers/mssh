@@ -31,6 +31,8 @@ fi
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 nextkey=false
 
+[ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+
 # if target is IP
 KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
 # if target is hostname
@@ -54,7 +56,7 @@ if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
   [ -z "$cluster" ] && cluster=`grep \|${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
   if [ -n "$cluster" ] ; then
-    KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
+    KEY=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
     if [ ! -f "$M_ROOT/keys/$KEY" ]; then
       KEY1="${KEY}.pem"
       [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
@@ -73,7 +75,7 @@ KEY="$M_ROOT/keys/$KEY"
 
 if [ -n "$KEY" ] ; then
   if [ -f "$KEY" ]; then
-    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$@"
+    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$REMOTE_USER@$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -84,7 +86,7 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY1" ]; then
-    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$@"
+    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$REMOTE_USER@$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -93,7 +95,7 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY2" ]; then
-    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$@"
+    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$REMOTE_USER@$@"
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -101,7 +103,7 @@ if $nextkey ; then
 fi
 
 if $nextkey ; then
-  echo "No matching key found, tried: $KEY, $USERKEY1, $USERKEY2"
+  echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: no matching key found, tried: $KEY, $USERKEY1, $USERKEY2" >> "$M_ROOT/logs/cloud.log"
 fi
 
 exit 0

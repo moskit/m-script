@@ -28,11 +28,11 @@ SSH=`which ssh 2>/dev/null`
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="cluster help region verbose limit ip nolocalhost"
+possible_options="cluster help region verbose limit ip nolocalhost user nosudo"
 commflag=0
-for s_option in "${@}"
+for s_option in "$@"
 do
-  case ${s_option} in
+  case $s_option in
   --*=*)
     if [ "$commflag" == "1" ] ; then
       command="$command $s_option"
@@ -77,14 +77,14 @@ Any option can be passed as environment variable of the same name.
 
 Options:
 
-  --cluster=clustername    - the command will be executed on all servers
+  --cluster=[clustername]  - the command will be executed on all servers
                              from this cluster. Multiple clusters are
                              allowed, separated by comma (no spaces!).
                              MUST be defined. To execute the command on all
                              servers, use --cluster=all. Accepts also M_CLUSTER
                              environment variable (used by msh).
   --all                    - shortcut for --cluster=all.
-  --region=region          - the command will be executed on all servers from
+  --region=[region]        - the command will be executed on all servers from
                              this region.
   --ip=IP                  - executes the command on a single server. This
                              allows other scripts to include this one the
@@ -94,8 +94,14 @@ Options:
                              cluster and region are ignored.
   --verbose                - shows each server details before running the
                              command.
-  --limit=N                - runs the command on first N servers of each
+  --limit=N                - executes the command on first N servers of each
                              cluster defined by the --cluster option
+  --user=[username]        - connects to remote servers as user [username] and
+                             executes all commands via sudo. Username can also
+                             be defined in conf/mon.conf (REMOTE_USER). Default
+                             user is root.
+  --nosudo                 - if user is defined, executes commands without sudo.
+                             If user is not defined, does nothing.
 
 EOF
   exit 0
@@ -125,6 +131,8 @@ fi
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "No clusters found" && exit 1
 [ "x$cluster" == "xall" ] && clusters=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+[ -n "$user" ] && REMOTE_USER="$user"
+[ -z "$REMOTE_USER" ] && REMOTE_USER="root" && nosudo="yes"
 
 declare -i n
 IFS1=$IFS
@@ -164,7 +172,11 @@ if [ "X$command" != "X" ] ; then
       else
         KEY=`$M_ROOT/helpers/find_key server $IP`
         [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
-        $SSH $TIMEOUT -i "$KEY" -p $SSHPORT $IP \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
+        if [ "x$nosudo" == "xyes" ]; then
+          $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
+        else
+          $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; sudo $command\)
+        fi
       fi
       n+=1
     done

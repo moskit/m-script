@@ -91,7 +91,7 @@ list_servers() {
       #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       iname=`echo "$server" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
       tags=`echo "$server" | grep '/"tagSet"/'`
-      iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f7`
+      iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f11`
       if [ -n "$iclustertag" ]; then
         icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       fi
@@ -171,7 +171,7 @@ list_servers() {
     exit 1
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
+    [ `grep -c \|\"$listip\"$ "$M_TEMP/servers.ips"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
   done
   IFS=$IFS1
 }
