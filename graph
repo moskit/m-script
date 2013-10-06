@@ -38,16 +38,17 @@ debug=true
 
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
-source "${rpath}/conf/cloud.conf"
+source "$rpath/conf/cloud.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
+[ -z "$REMOTE_USER" ] && REMOTE_USER="root"
 IFCFG=`which ifconfig 2>/dev/null`
 possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
 necessary_options="metric"
-source "${rpath}/conf/mon.conf"
-source "${rpath}/conf/dash.conf"
-source "${rpath}/lib/functions.sh"
+source "$rpath/conf/mon.conf"
+source "$rpath/conf/dash.conf"
+source "$rpath/lib/functions.sh"
 
-LOG="${rpath}/logs/dashboard.log"
+LOG="$rpath/logs/dashboard.log"
 if [ -z "$freqdef" ]; then
   timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
   [ -z "$timeshift" ] && timeshift=5
@@ -322,7 +323,7 @@ if [ -n "$perpixel" ]; then
     $minauto && minres=`$SQL3 "${rpath}/$database" "$minQ"`
     maxres=`$SQL3 "${rpath}/$database" "$maxQ"`
   else
-    minmax=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$maxQ ; $minQ\""`
+    minmax=`$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$maxQ ; $minQ\""`
     maxres=`echo "$minmax" | head -1`
     $minauto && minres=`echo "$minmax" | tail -1`
   fi
@@ -406,9 +407,9 @@ log "d=$d"
     $SQL3 "${rpath}/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
     from=`$SQL3 "${rpath}/$database" "${QUERYFROM}" | tail -1`
   else
-    $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"${mpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
-    from=`$SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$QUERYFROM\"" \| tail -1`
+    $debug && log "$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" $SQL3 \"${mpath}/$database\" \"${QUERY}\""
+    $SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
+    from=`$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERYFROM\"" \| tail -1`
   fi
   log "from: $from  to: $to"
   if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 5 ] ; then
@@ -442,8 +443,8 @@ else
       $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting $smetric data from $rpath/${database}, server $sIP"
     else
     # -o StrictHostKeyChecking=no
-      $debug && log "$SSH $thekey -p $SSHPORT $sIP $SQL3 \"$mpath/$database\" \"$QUERY\""
-      $SSH $thekey -p $SSHPORT $sIP "$SQL3 \"$mpath/$database\" \"$QUERY\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from $rpath/${database}, server $sIP"
+      $debug && log "$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" $SQL3 \"$mpath/$database\" \"$QUERY\""
+      $SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from $rpath/${database}, server $sIP"
     fi
     if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 1 ] ; then
       log "Too little data for graph. Might be connection to $sIP problems. Graph is not generated."

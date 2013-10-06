@@ -131,7 +131,7 @@ run_meta() {
     if [ $res -eq 0 ]; then
       [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/$metascript"
       [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript.var" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/${metascript}.var"
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $SU
       res=$?
     fi
     if [ -n "$verbose" ] ; then
@@ -167,7 +167,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage user nosudo"
 [ "X$*" == "X" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -297,6 +297,10 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
+
+[ -n "$user" ] && REMOTE_USER="$user"
+[ -z "$REMOTE_USER" ] && REMOTE_USER="root" && nosudo="yes"
+[ "x$nosudo" == "xyes" ] && SU="--nosudo"
 
 log "Starting metaexec with arguments $@"
 
@@ -448,7 +452,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     $debug && log "ensuring the target server $ip is accessible"
     if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
-        $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" $ip echo >/dev/null
+        $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$REMOTE_USER"@"$ip" echo >/dev/null
         if [ $? -ne 0 ]; then
           echo "Unable to login to the server $ip using the key ${KEY}, trying again...">>"$LOG"
           loggedin=false

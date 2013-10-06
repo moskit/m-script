@@ -155,7 +155,7 @@ if [ "X$command" != "X" ] ; then
         [ "X$REGION" == "X$region" ] || continue
       fi
       CLUSTER=`echo $server | cut -d'|' -f5`
-      # if servers's cluster is not found, it's a bug, but it's a good idea to
+      # if server's cluster is not found, it's a bug, but it's a good idea to
       # still show it in the output when --cluster=all
       if [ -z "$CLUSTER" ]; then
         [ "$cluster" == "all" ] || continue
