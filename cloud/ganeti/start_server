@@ -188,8 +188,8 @@ res=`check_cluster_limit $cluster`
 
 thekey=`find_key cluster $cluster`
 [ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 189
-[ -f "$M_ROOT/keys/${thekey}.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pub"
-[ -z "$PUBLIC_KEY" ] && [ -f "$M_ROOT/keys/${thekey}.pem.pub" ] && PUBLIC_KEY="$M_ROOT/keys/${thekey}.pem.pub"
+[ -f "${thekey}.pub" ] && PUBLIC_KEY="${thekey}.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "${thekey}.pem.pub" ] && PUBLIC_KEY="${thekey}.pem.pub"
 [ -z "$PUBLIC_KEY" ] && [ -f "$HOME/.ssh/id_dsa.pub" ] && PUBLIC_KEY="$HOME/.ssh/id_dsa.pub"
 [ -z "$PUBLIC_KEY" ] && [ -f "$HOME/.ssh/id_rsa.pub" ] && PUBLIC_KEY="$HOME/.ssh/id_rsa.pub"
 [ -z "$PUBLIC_KEY" ] && [ -f "$HOME_ORIG/.ssh/id_dsa.pub" ] && PUBLIC_KEY="$HOME_ORIG/.ssh/id_dsa.pub"
