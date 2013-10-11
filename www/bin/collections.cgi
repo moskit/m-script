@@ -11,9 +11,7 @@ print_page_title "Collection" "Status" "Sharded" "Primary" "Records" "Data Size"
 
 [ -f "$PWD/../../standalone/$saname/data/databases.dat" ] || exit 0
 
-for db in `cat "$PWD/../../standalone/$saname/data/databases.dat"` ; do
-  dbname=${db%|*}
-  #dbsize=${db#*|}  # It's a files total size
+for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|' -f2 | sort | uniq` ; do
   
   db_dat="$PWD/../../standalone/$saname/data"/${dbname}.dat
   [ -f "$db_dat" ] || continue

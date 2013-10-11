@@ -29,29 +29,30 @@ source "$M_ROOT/lib/functions.sh"
 
 databases=()
 for hp in $hostport ; do
-  databases+=(`$MONGO $AUTH "$hp/admin" --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name + '|' + d.sizeOnDisk ) } )" | grep ^= | tr -d '^='`)
+  databases+=(`$MONGO $AUTH "$hp/admin" --quiet --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { if (d.empty == false && d.name != 'local' && d.name != 'admin') { print( '=' + '\$hp|' + d.name + '|' + d.sizeOnDisk ) }} )" | grep ^= | tr -d '^='`)
 done
 echo -e ${databases[*]} | tr ' ' '\n' | sort | uniq > "$rpath/data/databases.dat"
 
-for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f1 | grep -vE "^admin$|^config$|^test$|^local$"` ; do
+for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
+  
+  hp=${hpdb%|*}
+  db=${hpdb#*|}
   if [ "X$SHARDING" == "Xmanual" ]; then
-    for hp in $hostport ; do
-      dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-      echo "$dbdat" >> "$rpath/data/${db}.${hp}.dat"
-      for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
-      do
-        colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
-      done
+    dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
+    echo "$dbdat" >> "$rpath/data/${db}.${hp}.dat"
+    collectins=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
+    echo "$collections" > "$rpath/data/${db}.${hp}.collections"
+    for coll in `echo "$collections"`
+    do
+      colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
     done
-    "$rpath"/nonshard_distributed_dbreport "$db" $hostport
+    "$rpath"/nonshard_distributed_dbreport "$db" "$hostport"
   else
-    for hp in $hostport ; do
-      dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-      echo "$dbdat" > "$rpath/data/${db}.dat"
-      for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|error" | tr ',' '\n'`
-      do
-        colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
-      done
+    dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
+    echo "$dbdat" >> "$rpath/data/${db}.dat"
+    for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
+    do
+      colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${coll}.dat"
     done &
   fi
 done

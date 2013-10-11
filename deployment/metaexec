@@ -167,7 +167,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip ignoreemptycluster usage user nosudo"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster usage user nosudo"
 [ "X$*" == "X" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -297,7 +297,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
-
+[ -n "$ignoreipnotpresent" -o -n "$force" ] && ignoreemptycluster="yes"
 [ -n "$user" ] && REMOTE_USER="$user"
 [ -z "$REMOTE_USER" ] && REMOTE_USER="root" && nosudo="yes"
 [ "x$nosudo" == "xyes" ] && SU="--nosudo"
@@ -334,7 +334,7 @@ if [ -n "$ip" ] ; then
     exit 1
   fi
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
-  [ -z "$ipcluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
+  [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ] ; then
     [ "$cluster" != "$ipcluster" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
   else
