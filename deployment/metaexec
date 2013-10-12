@@ -21,7 +21,6 @@ M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
 genline() {
-  IFS=$IFSORIG
   metatype=$1
   shift
   metascript=$@
@@ -35,7 +34,7 @@ genline() {
   include)
     IFS='
 '
-    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline "$metaline" >> "$WORK_DIR"/meta ; done
+    cat "$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline "$metaline" >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
     ;;
   *)
     # finding out from shebang
@@ -497,11 +496,11 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   else
     IFS='
 '
-    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline "$metaline" >> "$WORK_DIR"/meta ; done
+    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline "$metaline" >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done
     
     declare -i metan
     metan=1
-    for meta in `cat "$WORK_DIR"/meta` ; do
+    for meta in `cat "$WORK_DIR/${role}.${task}.$timestampact"/meta` ; do
       meta=`eval "echo $meta"`
       runthis=true
       skipthis=false
