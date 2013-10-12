@@ -58,14 +58,14 @@ genline() {
 run_meta() {
   declare -i res
   res=0
-  [ `grep -c "^${1}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "$LOG" && return 0
-  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$1\033[0m" || printf "META: $1"
+  [ `grep -c "^${@}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $@" | tee -a "$LOG" && return 0
   [ -z "$verbose" ] && echo -n " .. "
   [ -n "$test" -o -n "$dry" ] && dry="--dry"
   
   metatype=$1
   shift
   metascript=$@
+  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m${metatype} ${metascript}\033[0m" || printf "META: ${metatype} ${metascript}"
   
   if [ -n "$verbose" ] ; then
     printf "\n  type: $metatype  script: $metascript \n"
