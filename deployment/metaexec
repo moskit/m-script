@@ -79,6 +79,9 @@ run_meta() {
   if [ -n "$ignoreemptycluster" ] ; then
     I="--ignoreemptycluster"
   fi
+  if [ -n "$ignorenocluster" ] ; then
+    F="--ignorenocluster"
+  fi
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
       thescript=${metascript##*/}
@@ -131,7 +134,7 @@ run_meta() {
     if [ $res -eq 0 ]; then
       [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/$metascript"
       [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript.var" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/${metascript}.var"
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $SU
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $F $SU
       res=$?
     fi
     if [ -n "$verbose" ] ; then
@@ -167,7 +170,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster usage user nosudo"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo"
 [ "X$*" == "X" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -297,7 +300,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
-[ -n "$ignoreipnotpresent" -o -n "$force" ] && ignoreemptycluster="yes"
+[ -n "$ignoreipnotpresent" -o -n "$force" -o -n "$ignorenocluster" ] && ignorenocluster="yes" && force="yes"
 [ -n "$user" ] && REMOTE_USER="$user"
 [ -z "$REMOTE_USER" ] && REMOTE_USER="root" && nosudo="yes"
 [ "x$nosudo" == "xyes" ] && SU="--nosudo"
@@ -336,7 +339,7 @@ if [ -n "$ip" ] ; then
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
   [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ] ; then
-    [ "$cluster" != "$ipcluster" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
+    [ "$cluster" != "$ipcluster" ] && [ -z "$force" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
   else
     cluster=$ipcluster
   fi
@@ -353,7 +356,7 @@ else
       [ -n "$cluster" ] && echo "Using cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??
-    if [ -z "$cluster" ] ; then
+    if [ -z "$cluster" -a -z "$ignorenocluster" ] ; then
       echo "Unable to find what cluster to use."
       exit 1
     fi

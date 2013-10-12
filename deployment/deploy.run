@@ -74,7 +74,7 @@ find_name() {
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster user nosudo"
+possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster ignorenocluster user nosudo"
 necessary_options="file type task role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
 # debug must be passed here as option only
@@ -147,7 +147,7 @@ export debug verbose dry
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
-
+[ -z "$ip" -a -n "$ignorenocluster" ] && echo "Either IP or cluster is necessary" && exit 1
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 
 [ -n "$user" ] && REMOTE_USER="$user"
@@ -212,7 +212,10 @@ done
 if [ "$type" == "remote" ] ; then
   if [ -z "$cluster" ] && [ -n "$ip" ] ; then
     cluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
-    [ -z "$cluster" ] && echo "Unable to find cluster name" >> "$M_ROOT/logs/deploy.log" && exit 1
+    if [ -z "$cluster" ]; then
+      echo "Unable to find cluster name" >> "$M_ROOT/logs/deploy.log"
+      [ -z "$ignorenocluster" ] && exit 1
+    fi
   fi
   if [ -n "$ip" ] ; then
     key=`"$M_ROOT"/helpers/find_key server "$ip"`
