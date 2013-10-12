@@ -34,7 +34,7 @@ genline() {
   include)
     IFS='
 '
-    cat "$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline "$metaline" >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
+    cat "$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
     ;;
   *)
     # finding out from shebang
@@ -56,7 +56,6 @@ genline() {
 }
 
 run_meta() {
-  IFS=$IFSORIG
   declare -i res
   res=0
   [ `grep -c "^${1}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $1" | tee -a "$LOG" && return 0
@@ -496,7 +495,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   else
     IFS='
 '
-    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline "$metaline" >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done
+    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done
     
     declare -i metan
     metan=1
@@ -524,7 +523,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
           done
         fi
         if $runthis && ! $skipthis ; then
-          run_meta "$meta"
+          (IFS=$IFSORIG ; run_meta $meta)
           [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 414
         fi
       fi
