@@ -79,7 +79,7 @@ list_servers() {
     [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.ips" && return
     for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
-      server=`grep ^$sn "$M_TEMP/servers.ips"`
+      server=`grep ^$sn\/ "$M_TEMP/servers.ips"`
       intIP=`echo "$server" | grep '/"privateIpAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       extIP=`echo "$server" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       id=`echo "$server" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`
