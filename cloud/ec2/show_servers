@@ -69,12 +69,12 @@ list_servers() {
   IFS1=$IFS
   IFS='
 '
-  if [ -z "$noupdate" ]; then
-    [ -f "$M_TEMP/servers.ips" ] && slist="$M_TEMP/servers.ips"
+  if [ -f "$M_TEMP/servers.ips" ]; then
+    slist="$M_TEMP/servers.ips"
   else
     [ -f "$M_TEMP/servers.ips.prev" ] && slist="$M_TEMP/servers.ips.prev"
   fi
-  if [ -n "$slist" ] && [[ -f "$slist" ]]; then
+  if [ -n "$slist" ]; then
     [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.ips" && return
     for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
