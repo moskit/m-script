@@ -69,6 +69,7 @@ list_servers() {
   IFS1=$IFS
   IFS='
 '
+  [ -f "$M_ROOT/servers.list" ] || touch "$M_ROOT/servers.list"
   if [ -f "$M_TEMP/servers.ips" ]; then
     slist="$M_TEMP/servers.ips"
   else
@@ -157,7 +158,7 @@ list_servers() {
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
-            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)"
+            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)" && key="$ikey"
             sed -i /^$IP\|/d "$M_ROOT/servers.list"
             [ "X$istatus" == "Xrunning" ] && echo "$IP|$key|$region|$iname|$icluster" >> "$M_ROOT/servers.list"
 
