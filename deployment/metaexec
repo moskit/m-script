@@ -58,7 +58,7 @@ genline() {
 run_meta() {
   declare -i res
   res=0
-  [ `grep -c "^${@}$" "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $@" | tee -a "$LOG" && return 0
+  [ `grep -c ^${@}$ "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $@" | tee -a "$LOG" && return 0
   [ -n "$test" -o -n "$dry" ] && dry="--dry"
   
   metatype=$1
