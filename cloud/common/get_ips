@@ -97,11 +97,11 @@ if [ -n "$local" ] ; then
   unset cluster
   IPS=$localips
 else
-  IPS=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#`
+  IPS=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#`
   [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
   cluster=`echo -e $cluster | tr ',' '\n'`
   [ -n "$all" ] && cluster=all
-  [ "x$cluster" == "xall" ] && cluster=`cat "${rpath}/../../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+  [ "x$cluster" == "xall" ] && cluster=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && echo "No clusters found" && exit 1
 fi
@@ -135,15 +135,15 @@ for server in $IPS ; do
     ip_to_name $IP
     if [ -z "$rname" ] ; then
       KEY=`echo $server | cut -d'|' -f2`
-      [ -f "${rpath}/../../keys/$KEY" ] || KEY="${KEY}.pem"
-      [ -f "${rpath}/../../keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
-      [ -n "$SSH" ] && rname=`$SSH -i "${rpath}/../../keys/$KEY" $IP hostname`
+      [ -f "$M_ROOT/keys/$KEY" ] || KEY="${KEY}.pem"
+      [ -f "$M_ROOT/keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
+      [ -n "$SSH" ] && rname=`$SSH -i "$M_ROOT/keys/$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
     fi
     [ -n "$rname" ] && IP=$rname
   fi
   if [ -n "$delimiter" ] ; then
     if [ -n "$quoted" ] ; then
-      ips="${ips}`printf "\\"${IP}\\"${delimiter}"`"
+      ips="${ips}`printf "\\"${IP}\\"$delimiter"`"
     else
       ips="${ips}`printf "${IP}${delimiter}"`"
     fi
@@ -155,5 +155,5 @@ for server in $IPS ; do
 done
 IFS=$IFS1
 
-[ -n "$ips" ] && echo "${ips}" | sed "s|${delimiter}$||" || exit 0
+[ -n "$ips" ] && echo "$ips" | sed "s|${delimiter}$||" || exit 0
 
