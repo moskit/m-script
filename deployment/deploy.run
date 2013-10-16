@@ -74,7 +74,7 @@ find_name() {
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster ignorenocluster user nosudo"
+possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster ignorenocluster user nosudo parentrole"
 necessary_options="file type task role"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
 # debug must be passed here as option only
