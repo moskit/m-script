@@ -64,7 +64,7 @@ run_meta() {
   metatype=$1
   shift
   metascript=$@
-  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m${metatype} ${metascript}\033[0m" || printf "META: ${metatype} ${metascript}"
+  [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m${metatype} $metascript\033[0m" || printf "META: $metatype $metascript"
   [ -z "$verbose" ] && echo -n " .. "
   
   if [ -n "$verbose" ] ; then
@@ -392,7 +392,7 @@ if [ -n "$newserver" ]; then
     #log "updating servers list"
     #IAMACHILD=1 "$M_ROOT/cloud/$cloud/update_servers_list"
     log "getting cloud operations lock"
-    source "$M_ROOT/lib/cloud_functions.sh"
+
     lock_cloudops || exit 10
     log "initiating server start sequence"
     

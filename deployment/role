@@ -172,7 +172,7 @@ IFS='
 case $command1 in
   list)
     case $command2 in
-      metas)
+      metas|tasks)
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -207,7 +207,7 @@ case $command1 in
           unset scerr
         done
       ;;
-      scripts)
+      scripts|commands)
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -400,11 +400,11 @@ case $command1 in
     [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you want" && ED=`which vim 2>/dev/null`
     [ -z "$ED" ] && echo "Editor not found" && exit 1
     case $command2 in
-      meta)
+      meta|task)
         [ ! -e "$ROLES_ROOT/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
         $ED "$ROLES_ROOT/$role/meta.$param1"
         ;;
-      script)
+      script|command)
         prmarr=( `echo "$param1" | tr '/' '\n'` )
         [ ${#prmarr[*]} -gt 3 ] && echo "Path can't have more than 3 parts (role/flavor/script)" && exit 1
         case ${#prmarr[*]} in
@@ -447,11 +447,11 @@ case $command1 in
   show)
     [ -z "$param1" ] && echo "Usage: role show meta|script|file NAME" && exit 1
     case $command2 in
-      meta)
+      meta|task)
         [ ! -e "$ROLES_ROOT/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
         [ -n "$strip" ] && cat "$ROLES_ROOT/$role/meta.$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/meta.$param1"
         ;;
-      script)
+      script|command)
         prmarr=( `echo "$param1" | tr '/' '\n'` )
         [ ${#prmarr[*]} -gt 3 ] && echo "Path can't have more than 3 parts (role/flavor/script)" && exit 1
         case ${#prmarr[*]} in
@@ -501,12 +501,12 @@ Syntax: role command <sub-command> <args> <--option=value>
                       Flavor: Linux flavor, default for this role
                       Image: server image ID (if cloud environment is set)
   
-    list metas    - lists all metascripts for the current role or the role set
+    list tasks    - lists all metascripts for the current role or the role set
                     with the --role option and additional info:
                       Scripts: the number of scripts included in this meta
                       Includes: lists other roles which this meta includes
                                   scripts from
-    list scripts  - lists all scripts (not only included in metas) for the role
+    list commands - lists all scripts (not only included in metas) for the role
                     along with the meta they are included into
     list files    - lists all files for the role along with the scripts they are
                     mentioned in
