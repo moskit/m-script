@@ -32,7 +32,7 @@
 ### END INIT INFO
 
 rpath=$(readlink -f "$BASH_SOURCE")
-rcommand=${rpath##*/}
+rcommand=${BASH_SOURCE##*/}
 rpath=${rpath%/*}
 #*/
 ## The root folder for descendant processes. It is not recommended to rely on
