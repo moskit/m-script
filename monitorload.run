@@ -41,8 +41,8 @@ rpath=${rpath%/*}
 ## is not.
 export M_ROOT="$rpath"
 
-pidfile=/var/run/monitorload.pid
-mgpidfile=/var/run/mongoose.pid
+pidfile=/var/run/${rcommand}.pid
+mgpidfile=/var/run/${rcommand}.http.pid
 [ -f "$rpath/conf/mon.conf" ] && source "$rpath/conf/mon.conf" || exit 1
 
 set +h
