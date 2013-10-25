@@ -25,7 +25,7 @@ source "$M_ROOT/conf/cloud.conf"
 [ ! -d "$M_ROOT/cloud/$M_CLOUD" ] && log "Cloud $M_CLOUD is not supported"
 
 log() {
-  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${M_CLOUD}/${0##*/}: ${@}">>$LOG
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${M_CLOUD}/${0##*/}: ${@}">>$LOG
 }
 
 lock_cloudops() {

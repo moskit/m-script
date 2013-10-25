@@ -129,7 +129,7 @@ print_report_title() {
 }
 
 log() {
-  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: ${@}">>$LOG
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${0##*/}: ${@}">>$LOG
 }
 
 find_delta() {

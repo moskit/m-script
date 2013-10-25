@@ -63,8 +63,17 @@ cleanup() {
   if [ ${#CLEANUP[*]} -gt 0 ]; then
     LAST_ELEMENT=$((${#CLEANUP[*]}-1))
     REVERSE_INDEXES=$(seq ${LAST_ELEMENT} -1 0)
+    errflag=false
     for i in $REVERSE_INDEXES; do
-      ${CLEANUP[$i]}
+      if $errflag ; then
+        log_error "Cleanup operation not executed: ${CLEANUP[$i]}"
+      else
+        ${CLEANUP[$i]}
+        if [ $? -ne 0 ]; then
+          log_error "Cleanup operation failed: ${CLEANUP[$i]}"
+          errflag=true
+        fi
+      fi
     done
   fi
 }
