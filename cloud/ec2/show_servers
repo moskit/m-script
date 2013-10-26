@@ -47,7 +47,6 @@ request() {
 }
 
 get_iname() {
-  local IP=$1
   for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
     case $ns in
       host)
@@ -96,7 +95,7 @@ list_servers() {
       izone=`echo "$server" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
       iaki=`echo "$server" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
       #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
-      [ "X$network" == "Xexternal" ] && iname=`get_hostname extIP` || iname=`get_hostname intIP`
+      [ "X$NETWORK" == "Xexternal" ] && iname=`get_hostname $extIP` || iname=`get_hostname $intIP`
       
       tags=`echo "$server" | grep '/"tagSet"/'`
       iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f11`
