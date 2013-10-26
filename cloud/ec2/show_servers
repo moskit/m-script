@@ -135,21 +135,21 @@ list_servers() {
           case $view in
             list)
               echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
-              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
+              echo "$ebs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
             table)
               echo "$id|$iname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
-              echo "$bdevs" | sed 's_^_EBS: _g'
+              echo "$ebs" | sed 's_^_EBS: _g'
               ;;
             column)
               echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
-              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
+              echo "$ebs" | sed 's_^_EBS: _g;s_|_  _g'
               ;;
             none)
               ;;
             *)
               echo -e "------------------------------------------------------------------------------\nServer ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIP    Private IP: $intIP\nServer image: $imageId    AKI: $iaki    ARI: $iari\nServer size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
-              echo "$bdevs" | sed 's_^_EBS: _g;s_|_  _g'
+              echo "$ebs" | sed 's_^_  EBS: _g;s_|_  _g'
               ;;
           esac
           icount+=1
