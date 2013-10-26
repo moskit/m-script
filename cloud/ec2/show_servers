@@ -37,25 +37,6 @@ HOSTNAME=`which hostname 2>/dev/null`
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
 
-get_hostname() {
-  [ -z "$1" ] && return 1
-  if [ -f "$M_ROOT/keys/${keypair}.pem" ] ; then
-    key="${keypair}.pem"
-  elif [ -f "$M_ROOT/keys/$keypair" ] ; then
-    key="$keypair"
-  else
-    message=" (key $M_ROOT/keys/${keypair}{.pem} not found)"
-  fi
-  if [ `echo $localip | grep -c "^$1$"` -ne 0 ] ; then
-    sname=`$HOSTNAME`
-  else
-    sname=`$SSH -i "$M_ROOT/keys/$key" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
-  fi
-  [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname
-  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $intIP|$extIP$message" && unset message && return 1
-  return 0
-}
-
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
@@ -63,6 +44,31 @@ request() {
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" > "$M_TEMP/${rcommand}.resp"
   cat "$M_TEMP/${rcommand}.resp" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/servers.ips"
+}
+
+get_iname() {
+  local IP=$1
+  for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
+    case $ns in
+      host)
+        get_hostname $1
+        ;;
+      metadata)
+        sname=`echo "$server" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+        ;;
+      dnsName)
+        sname=`echo "$server" | grep '/"dnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+        ;;
+      *)
+        # anything else is considered to be a tag as the source
+        NAMETAG="${ns#*:}"
+        nametagind=`echo "$tags" | grep '/"key"/' | grep \|\"$NAMETAG\" | cut -d'/' -f7`
+        sname=`echo "$tags" | grep "$nametagind/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+        ;;
+    esac
+    [ -n "$sname" ] && break
+  done
+  echo "$sname"
 }
 
 list_servers() {
@@ -90,14 +96,14 @@ list_servers() {
       izone=`echo "$server" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
       iaki=`echo "$server" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
       #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
-      iname=`echo "$server" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+      [ "X$network" == "Xexternal" ] && iname=`get_hostname extIP` || iname=`get_hostname intIP`
+      
       tags=`echo "$server" | grep '/"tagSet"/'`
       iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f11`
       if [ -n "$iclustertag" ]; then
         icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       fi
-      altnametag=`echo "$tags" | grep '/"key"/' | grep '|"Name"' | cut -d'/' -f7`
-      altname=`echo "$tags" | grep "$altnametag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+      
       ikey=`echo "$server" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
       
       bdevs=`echo "$server" | grep '/"blockDeviceMapping"/'`
@@ -178,7 +184,7 @@ list_servers() {
   IFS=$IFS1
 }
 
-possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id name_source"
+possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all count resolveids id name_source"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -227,6 +233,7 @@ M_TEMP="$M_TEMP/cloud/ec2"
 [ -z "$status" ] && status="running"
 
 [ -n "$name_source" ] && NAME_SOURCE=$name_source
+[ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
 
 [ "X$IFCFG" == "X" ] || localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
 

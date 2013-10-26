@@ -138,4 +138,16 @@ proper_exit() {
   exit $1
 }
 
+get_hostname() {
+  [ -z "$1" ] && return 1
+  if [ `echo $localip | grep -c "^$1$"` -ne 0 ] ; then
+    sname=`$HOSTNAME`
+  else
+    KEY=`$M_ROOT/helpers/find_key server $1`
+    sname=`$SSH -i "$KEY" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
+  fi
+  [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname
+  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $1" && return 1
+  return 0
+}
 
