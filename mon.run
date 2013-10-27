@@ -223,7 +223,7 @@ function runactions() {
               if [ -z "$calerts" ]; then
                 calerts=1
               elif [ `expr "$calerts" : ".*[^0-9].*"` -ne 0 ]; then
-                echo "Warning: bad consequent alerts number in $M_TEMP/consequent_alerts.tmp for action $action" >> "${rpath}/monitoring.log"
+                echo "Warning: bad consequent alerts number in $M_TEMP/consequent_alerts.tmp for action $action" >> "$rpath/monitoring.log"
                 calerts=1
               fi
               calerts=`expr $calerts + 1`
@@ -250,7 +250,7 @@ function runactions() {
     if $all_alerts_found ; then
       log "all alerts found for action: $action ; block enabled, cycles: $blockccl"
       [ -n "$blockccl" ] && block_action $blockccl "$action"
-      echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "${rpath}/monitoring.log" | tee -a $LOG
+      echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "$rpath/monitoring.log" | tee -a $LOG
       action $action
       [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
     fi

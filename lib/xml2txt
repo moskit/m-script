@@ -24,15 +24,13 @@ declare -a savedline
 debug=false
 
 addnode() {
-echo "t0 `date +"%s%N"`"
-  nd=$1
+  nd="$1"
   i=$2
   selfclosed=false
   expr "$nd" : ^\? >/dev/null && return 0
   expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
 ##  $debug && echo "==== $nd ="
-echo "t1 `date +"%s%N"`"
   if `expr "$nd" : ^\" >/dev/null` ; then
     tag=`expr "$nd" : "^\(\".*\"\)"`
   else
@@ -41,14 +39,12 @@ echo "t1 `date +"%s%N"`"
   vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
   #$debug && echo "  == $tag ="
   index[$i]="$tag"
-  
-echo "t2 `date +"%s%N"`"
 
   unset ndcont
   if [ $i -gt 1 ] ; then
     # this means the node is closed and the previous value was its content:
     if [ "X${index[$i-2]}" == "X${nd#/}" ] ; then
-      ndcont=${index[$i-1]}
+      ndcont="${index[$i-1]}"
     fi
   fi
   n=${#branch[*]}
@@ -57,8 +53,6 @@ echo "t2 `date +"%s%N"`"
   if [ $i -ne 0 ]; then
     [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
   fi
-
-echo "t3 `date +"%s%N"`"
 
 #  if $debug ; then
 #    echo -e "----------------------------\n$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
@@ -85,8 +79,6 @@ echo "t3 `date +"%s%N"`"
     unset branch[$n-1] branch[$n-2] ndarr[$n] savedline[$n-2] savedline[$n-1] savedline[$n]
     unset txtline
 
-echo "t4 `date +"%s%N"`"
-
   else
     branch[$n]="$tag"
     if [ $n -gt 0 ]; then
@@ -111,15 +103,12 @@ echo "t4 `date +"%s%N"`"
         fi
       fi
     fi
-
-echo "t4 `date +"%s%N"`"
-
   fi
 }
 
 declare -i nn
 nn=0
-( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read node ; do echo "== tt1 `date +"%s%N"`" ; addnode "$node" $nn ; nn+=1 ; echo "== tt2 `date +"%s%N"`" ; done
+( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read node ; do addnode "$node" $nn ; nn+=1 ; done
 
 unset branch index ndcont cont i LINE node ndarr
 
