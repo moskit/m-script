@@ -166,9 +166,12 @@ RETVAL=0
 IFS1=$IFS; IFS='
 '
 # save variables to a file
-# common first
-[[ "$role" == "common" ]] || store_vars common
-[ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
+# first goes the actual role. Variables assigned are not being overwritten
+# by included roles, thus actual role has higher priority
+if [ -e "$ROLES_ROOT/$role/role.conf" ] ; then
+  store_vars $role
+  [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
+fi
 # if some other role's script is included in meta script, source its variables
 # too. Same for scripts symlinked from other roles.
 [ -h "$ROLES_ROOT/$file" ] && realfile=`readlink -f "$ROLES_ROOT/$file"` || realfile="$ROLES_ROOT/$file"
@@ -180,12 +183,6 @@ if [ "X$roleincluded" != "X$role" ] ; then
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
     export ROLEINCL=$roleincluded
   fi
-fi
-# The actual role is the last one. This way it has the last word and overwrites
-# variables of the same name from the roles included before
-if [ -e "$ROLES_ROOT/$role/role.conf" ] ; then
-  store_vars $role
-  [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
 
 # command-line options (variables from this script) should be saved too
