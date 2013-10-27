@@ -39,11 +39,10 @@ ec2_api_request() {
   shift
   filters=`echo "$*" | tr ' ' '&'`
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  query="AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${action}&${filters}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"
+  query="AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${action}`[ -n "$filters" ] && echo -n "&${filters}"`&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  $CURL "https://ec2.amazonaws.com/?${query}&Signature=$signature" > "$M_TEMP/${rcommand}.resp"
-  cat "$M_TEMP/${rcommand}.resp" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/servers.ips"
+  $CURL "https://ec2.amazonaws.com/?${query}&Signature=$signature"
 }
 
 
