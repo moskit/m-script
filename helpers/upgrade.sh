@@ -18,7 +18,7 @@
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/..")
 #*/
 source "$M_ROOT/conf/mon.conf"
 rm -rf "$M_TEMP"/.update/
@@ -41,89 +41,88 @@ else
   $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update || exit 1
   gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
 fi
+[ "X$1" == "Xhelp" ] && echo -e "Usage:\n\n    $rcommand\n\nor:\n\n    $rcommand full  (to update all non-executables - may overwrite your configs!)\n" && exit 0
 [ "X$1" == "Xfull" ] && fullupgrade=true || fullupgrade=false
 find "$M_TEMP"/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
-for script in `find ""$M_TEMP"/.update" -type d`; do
-  printf "${script##*/} ... "
-  oldscript=`echo "$script" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
-  if [ ! -e "$oldscript" ]; then
-    printf "copying ... "
-    cp -r "$script" "$oldscript" && chown -R `id -un`:`id -gn` "$oldscript" && echo "OK"
+for script in `find "$M_TEMP/.update" -type d`; do
+  sc=`echo "$script" | sed "s|$M_TEMP/.update/||"`
+  echo -n "$sc ... "
+  if [ ! -e "$M_ROOT/$sc" ]; then
+    echo -n "copying ... "
+    cp -r "$script" "$M_ROOT/$sc" && chown -R `id -un`:`id -gn` "$M_ROOT/$sc" && echo "OK"
   fi
 done
 echo "Checking files:"
-for script in `find ""$M_TEMP"/.update" -type f`; do
-  echo -n " -- ${script##*/} ... "
-  oldscript=`echo "$script" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
-  
-  if [ -x "$oldscript" ]; then
-    if [ "$script" -nt "$oldscript" ]; then
-      cp "$script" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
+for script in `find "$M_TEMP/.update" -type f`; do
+  sc=`echo "$script" | sed "s|$M_TEMP/.update/||"`
+  echo -n " -- $sc ... "
+  if [ -x "$M_ROOT/$sc" ]; then
+    if [ "$script" -nt "$M_ROOT/$sc" ]; then
+      cp "$script" "$M_ROOT/$sc" && chown `id -un`:`id -gn` "$M_ROOT/$sc" && echo "OK"
     else
       echo "This file is older than the local one. Not updated"
     fi
-  elif [ ! -e "$oldscript" ]; then
-    [ "${oldscript##*/}" == "setup.done" ] && continue
-    printf "new file. Copying ... "
-    cp "$script" "$oldscript" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
-  elif [ "$script" -nt "$oldscript" ]; then
-    printf "this file is newer than the local one; saving as ${oldscript}.new, please check the differences manually ... "
-    cp "$script" "${oldscript}.new" && chown `id -un`:`id -gn` "${oldscript}.new" && echo "OK"
+  elif [ ! -e "$M_ROOT/$sc" ]; then
+    [ "${sc##*/}" == "setup.done" ] && continue
+    echo -n "new file. Copying ... "
+    cp "$script" "$M_ROOT/$sc" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
+  elif [ "$script" -nt "$M_ROOT/$sc" ]; then
+    echo -n "this file is newer than the local one; saving as ${sc}.new, please check the differences manually ... "
+    cp "$script" "$M_ROOT/${sc}.new" && chown `id -un`:`id -gn` "$M_ROOT/${sc}.new" && echo "OK"
   else
     echo "not copying this file"
   fi
 done
 echo "Checking symlinks:"
-for symlink in `find ""$M_TEMP"/.update" -type l`; do
-  echo -n " -- ${symlink##*/} ... "
-  oldsymlink=`echo "$symlink" | sed "s|"$M_TEMP"/.update/|$rpath/../|"`
-  cp -P "$symlink" "$oldsymlink" && chown `id -un`:`id -gn` "$oldsymlink" && echo "OK"
+for symlink in `find "$M_TEMP/.update" -type l`; do
+  sl=`echo "$symlink" | sed "s|$M_TEMP/.update/||"`
+  echo -n " -- $sl ... "
+  cp -P "$symlink" "$M_ROOT/$sl" && chown `id -un`:`id -gn` "$M_ROOT/$sl" && echo "OK"
 done
 printf "Removing .new files that have zero difference with the local files ..."
-for newfile in `find "$rpath/../" -name "*.new"` ; do
+for newfile in `find "$M_ROOT/" -name "*.new"` ; do
   if [ `diff $newfile ${newfile%.new} | wc -l` -eq 0 ] ; then
     rm -f $newfile && touch ${newfile%.new} && printf "."
   fi
 done && echo "OK"
-printf "Running actions specific for this upgrade ... "
-if [ -f "$rpath/../this_upgrade_actions" ] ; then
-  printf "found ... "
-  thists=`head -1 "$rpath/../this_upgrade_actions" | sed 's|#||;s|[[:space:]]||'`
+echo -n "Running actions specific for this upgrade ... "
+if [ -f "$M_ROOT/this_upgrade_actions" ] ; then
+  echo -n "found ... "
+  thists=`head -1 "$M_ROOT/this_upgrade_actions" | sed 's|#||;s|[[:space:]]||'`
   if [[ $thists =~ [^[0-9]] ]] ; then
     echo "Timestamp not found or has wrong format, 1st line of the script must be: # <epoch>"
   else
-    [ -f "$rpath/../upgrade.log" ] || echo 0 > "$rpath/../upgrade.log"
-    lastts=`tail -1 "$rpath/../upgrade.log"`
+    [ -f "$M_ROOT/upgrade.log" ] || echo 0 > "$M_ROOT/upgrade.log"
+    lastts=`tail -1 "$M_ROOT/upgrade.log"`
     if [[ $lastts =~ [^[0-9]] ]] ; then
       echo "Unable to find last upgrade time, using file VERSION creation time"
       lastts=$(date -d "$(`which stat` -c %y VERSION | cut -d'.' -f1)" +"%s")
     fi
-    echo "timestamps: now $timeindex, last $lastts, this $thists, git $gitts" >> "$rpath/../upgrade_actions.log"
+    echo "timestamps: now $timeindex, last $lastts, this $thists, git $gitts" >> "$M_ROOT/upgrade_actions.log"
     if [ `expr $thists \> $lastts` -eq 1 ] ; then
-      echo "`date` Running this upgrade specific actions script" >> "$rpath/../upgrade_actions.log"
+      echo "`date` Running this upgrade specific actions script" >> "$M_ROOT/upgrade_actions.log"
       
-      bash "$rpath/../this_upgrade_actions" "$rpath" >> "$rpath/../upgrade_actions.log"
+      bash "$M_ROOT/this_upgrade_actions" "$rpath" >> "$M_ROOT/upgrade_actions.log"
       if [[ $? -eq 0 ]] ; then
         echo "OK"
-        install -d "$rpath/../upgrade_actions"
-        mv "$rpath/../this_upgrade_actions" "$rpath/../upgrade_actions/${thists}.success"
+        install -d "$M_ROOT/upgrade_actions"
+        mv "$M_ROOT/this_upgrade_actions" "$M_ROOT/upgrade_actions/${thists}.success"
       else
-        install -d "$rpath/../upgrade_actions"
-        mv "$rpath/../this_upgrade_actions" "$rpath/../upgrade_actions/${thists}.failed"
+        install -d "$M_ROOT/upgrade_actions"
+        mv "$M_ROOT/this_upgrade_actions" "$M_ROOT/upgrade_actions/${thists}.failed"
         echo "Error. Check the script: this_upgrade_actions.failed"
       fi
     else
       echo "outdated, not applying"
     fi
   fi
-  rm -f "$rpath/../this_upgrade_actions"
+  rm -f "$M_ROOT/this_upgrade_actions"
 else
   echo "not found"
 fi
 rm -rf "$M_TEMP"/.update/
-echo $timeindex >> "$rpath/../upgrade.log"
-
+echo $timeindex >> "$M_ROOT/upgrade.log"
 
 if $fullupgrade ; then
   find "$M_ROOT" -name "*.new" | grep -vE "\.conf\.|/conf/|\.list\." | while read updated ; do "$M_ROOT"/helpers/unnew $updated ; done

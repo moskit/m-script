@@ -38,7 +38,7 @@ necessary_options="command"
 [ $# -eq 0 ] && ${0} --help && exit 0
 IFS1=$IFS
 IFS='-'
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=0
   case ${s_option} in

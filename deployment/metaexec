@@ -34,11 +34,11 @@ genline() {
   include)
     IFS='
 '
-    cat "$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
+    cat "$ROLES_ROOT/$metascript" 2>/dev/null || log "$ROLES_ROOT/$metascript not found" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
     ;;
   *)
     # finding out from shebang
-    ipr=`head -1 "$metascript" | grep ^#! | cut -b 3- | awk '{print $1}'`
+    ipr=`head -1 "$metascript" 2>/dev/null || log "$metascript not found" | grep ^#! | cut -b 3- | awk '{print $1}'`
     if [ -n "$ipr" ] ; then
       case $ipr in
         runlocal) ipr="local" ;;
@@ -451,7 +451,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   if [ -z "$list" ] ; then
     #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"
-    if [ -z "$test" -a -z "$list" -a -n "$ip" ] ; then
+    if [ -z "$test" -a -n "$ip" ] ; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
         $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$REMOTE_USER"@"$ip" echo >/dev/null
         if [ $? -ne 0 ]; then
