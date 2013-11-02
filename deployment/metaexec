@@ -34,7 +34,7 @@ genline() {
   include)
     IFS='
 '
-    cat "$ROLES_ROOT/$metascript" 2>/dev/null || log "$ROLES_ROOT/$metascript not found" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
+    (cat "$ROLES_ROOT/$metascript" 2>/dev/null || log "$ROLES_ROOT/$metascript not found") | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
     ;;
   *)
     # finding out from shebang
