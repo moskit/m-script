@@ -34,7 +34,12 @@ genline() {
   include)
     IFS='
 '
-    (cat "$ROLES_ROOT/$metascript" 2>/dev/null || log "$ROLES_ROOT/$metascript not found") | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta ; done
+    if [ -e "$ROLES_ROOT/$metascript" ]; then
+      irole=${metascript%%/*}
+      cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|$role|$irole|' | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done
+    else
+      log "$ROLES_ROOT/$metascript not found"
+    fi
     ;;
   *)
     # finding out from shebang
@@ -308,7 +313,7 @@ log "Starting metaexec with arguments $@"
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 if [ -n "$timestamp" ] ; then
-  [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
+  [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
   if [ "X$timestamp" == "Xrepeat" ]; then
     timestampact=`ls -1tr "$WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
   else
