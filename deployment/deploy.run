@@ -27,7 +27,6 @@ store_vars() {
     source "$varfile"
   fi
   [ -n "$verbose" ] && echo "Sourcing $ROLES_ROOT/$role/role.conf"
-  ### Note that common role.conf is read first
   for LINE in `cat "$ROLES_ROOT/$role/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     # to respect environment variables and variables passed from command line
     pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
@@ -184,6 +183,7 @@ if [ "X$roleincluded" != "X$role" ] ; then
     export ROLEINCL=$roleincluded
   fi
 fi
+[ "X$roleincluded" == "Xcommon" ] || store_vars common
 
 # command-line options (variables from this script) should be saved too
 IFS2=$IFS ; IFS=$' \t\n'
