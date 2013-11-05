@@ -361,7 +361,7 @@ else
     # Still no cluster??
     if [ -z "$cluster" -a -z "$ignorenocluster" ] ; then
       echo "Unable to find what cluster to use."
-      exit 1
+      [ -z "$list" ] && exit 1
     fi
   else
     # role by cluster
@@ -380,8 +380,7 @@ touch "$WORK_DIR/${role}.${task}.$timestampact/log"
 
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11`
-  echo "Using flavor $flavor, default for cluster $cluster"
-  [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS" && exit 1
+  [ -z "$flavor" ] && echo -e "Unable to find the flavor of this cluster/server OS\n\n (hint: option --flavor is available)\n" && exit 1 || echo "Using flavor $flavor, default for cluster $cluster"
 fi
 
 [ -z "$SERVER_CHECKS_NUMBER" ] && SERVER_CHECKS_NUMBER=20

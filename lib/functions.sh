@@ -230,7 +230,7 @@ dbquery() {
 }
 
 solve() {
-sc=$1
+local sc=$1
 shift
 bc << EOF
 scale=${sc};
@@ -243,6 +243,22 @@ define b (x) {
 print b($@);
 print "\n";
 EOF
+}
+
+check_period() {
+  local period="$*"
+  period=`date -d "1970/01/01 +$period" +"%s"`
+  [ $period -eq 0 ] && return false
+  local currperiod=`cat "$fpath/period.tmp" 2>/dev/null || echo 0`
+  timeshift=`cat "$M_TEMP/timeshift" || echo 0`
+  currperiod=`expr $currperiod + $FREQ + $timeshift`
+  if [ $currperiod -ge $period ]; then
+    echo 0 > "$fpath/period.tmp"
+    return true
+  else
+    echo $currperiod > "$fpath/period.tmp"
+    return false
+  fi
 }
 
 

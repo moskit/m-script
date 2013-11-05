@@ -21,7 +21,7 @@ declare -a branch
 declare -a index
 declare -a ndarr
 declare -a savedline
-debug=false
+debug=true
 
 addnode() {
   nd="$1"
@@ -30,14 +30,14 @@ addnode() {
   expr "$nd" : ^\? >/dev/null && return 0
   expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
-##  $debug && echo "==== $nd ="
+  $debug && echo "==== $nd ="
   if `expr "$nd" : ^\" >/dev/null` ; then
     tag=`expr "$nd" : "^\(\".*\"\)"`
   else
     tag=`expr "$nd" : "^\([^\ ]*\)\(\ \|$\|/\)"`
   fi
   vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
-  #$debug && echo "  == $tag ="
+  $debug && echo "  == $tag ="
   index[$i]="$tag"
 
   unset ndcont
@@ -49,7 +49,7 @@ addnode() {
   fi
   n=${#branch[*]}
   [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
-#  $debug && echo "X/${index[$i]} == X${index[$i-1]}"
+  $debug && echo "X/${index[$i]} == X${index[$i-1]}"
   if [ $i -ne 0 ]; then
     [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
   fi
@@ -74,8 +74,8 @@ addnode() {
     txtline="$txtline|"
     txtline="$txtline\"${branch[$n-1]}\""
     echo "$txtline"
-#    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
-#    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
+    $debug && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+    $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
     unset branch[$n-1] branch[$n-2] ndarr[$n] savedline[$n-2] savedline[$n-1] savedline[$n]
     unset txtline
 
@@ -92,13 +92,13 @@ addnode() {
       unset txtline vars
     fi
     if $selfclosed ; then
-#      $debug && echo "     self-closed, unsetting branch[$n] :: ${branch[$n]}"
+      $debug && echo "     self-closed, unsetting branch[$n] :: ${branch[$n]}"
       unset branch[$n] ndarr[$n] savedline[$n]
     else
-#      $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
+      $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
       if [ $n -ne 0 ]; then
         if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ] 2>/dev/null ; then
-#          $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
+          $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
           unset branch[$n-1] branch[$n] ndarr[$n] savedline[$n] savedline[$n-1]
         fi
       fi

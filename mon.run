@@ -30,7 +30,7 @@ echo "`date +"%H:%M:%S"` == Running $commline ==" >> "$rpath/monitoring.log"
 #*/
 
 # removing stale lock file
-[ -n "$MAXLOCK" ] || MAXLOCK=30 
+[ -n "$MAXLOCK" ] || MAXLOCK=30
 lockfile=`find "$rpath" -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
 if [ -n "$lockfile" ] ; then
   ls -l "$lockfile" >> "$rpath/monitoring.log"

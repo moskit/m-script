@@ -183,7 +183,6 @@ if [ "X$roleincluded" != "X$role" ] ; then
     export ROLEINCL=$roleincluded
   fi
 fi
-[ "X$roleincluded" == "Xcommon" ] || store_vars common
 
 # command-line options (variables from this script) should be saved too
 IFS2=$IFS ; IFS=$' \t\n'
