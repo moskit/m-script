@@ -247,18 +247,21 @@ EOF
 
 check_period() {
   local period="$*"
+  [ -z "$rpath" ] && rpath="$M_TEMP"
   period=`date -d "1970/01/01 +$period" +"%s"`
-  [ $period -eq 0 ] && return false
-  local currperiod=`cat "$fpath/period.tmp" 2>/dev/null || echo 0`
+  [ $period -eq 0 ] && return 1
+  local currperiod=`cat "$rpath/period.tmp" 2>/dev/null || echo 0`
   timeshift=`cat "$M_TEMP/timeshift" || echo 0`
   currperiod=`expr $currperiod + $FREQ + $timeshift`
   if [ $currperiod -ge $period ]; then
-    echo 0 > "$fpath/period.tmp"
-    return true
+    echo 0 > "$rpath/period.tmp"
+    return 0
   else
-    echo $currperiod > "$fpath/period.tmp"
-    return false
+    echo $currperiod > "$rpath/period.tmp"
+    return 1
   fi
 }
 
-
+date_header() {
+  echo -e "`date`\n------------------------------\n"
+}

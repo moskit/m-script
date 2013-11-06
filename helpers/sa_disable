@@ -16,11 +16,13 @@ else
   echo "Folder standalone/$1 not found" && exit 1
 fi
 
+if [ -d "$rpath/../standalone/$1/wwwbin" ] ; then
 IFS='
 '
-for bin in "$rpath/../standalone/$1/wwwbin/"* ; do
-  rm -f "$rpath/../www/bin/$bin"
-done
+  for bin in "$rpath/../standalone/$1/wwwbin/"* ; do
+    rm -f "$rpath/../www/bin/$bin"
+  done
+fi
 
 exit 0
 
