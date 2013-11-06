@@ -152,7 +152,8 @@ start)
           for satest in `find "$sa/rc/" -maxdepth 1 -type l | sort` ; do
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
-            $satest > "$safolder/report" 2>>"$rpath/logs/sa.log"
+            sares=`$satest 2>>"$rpath/logs/sa.log"`
+            [ -n "$sares" ] && echo "$sares" > "$safolder/report"
           done </dev/null &
         done
       fi
