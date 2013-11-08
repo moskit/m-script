@@ -56,13 +56,6 @@ if [ -f "$rpath/mon.run.lock" ] ; then
 fi
 
 touch "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` >>> locking by $commline" >> "$rpath/monitoring.log"
-# bc workaround to make it work with floating point numbers
-solve() {
-bc << EOF
-scale=6
-${1}
-EOF
-}
 
 function mailreport() {
   while read RLINE
@@ -145,7 +138,7 @@ function runscript() {
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY && delay+=$RUNDELAY
       if [ -x "$rpath/tests/$mon" ]; then
         log "$mon"
-        monoutput=`"$rpath"/tests/$mon $SQL 2>&1`
+        monoutput=$("$rpath"/tests/$mon $SQL 2>&1 ; echo)
         echo "$monoutput" >> "$LOG"
         if alert_blocked ${mon##*/} ; then
           log "=== alert is blocked for $mon"
@@ -156,7 +149,6 @@ function runscript() {
       fi
     done
   fi
-  echo >> "$rpath/report"
   al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'` > "$rpath/alert3"
   al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'` > "$rpath/alert2"
   al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'` > "$rpath/alert1"
@@ -470,7 +462,6 @@ function action() {
 
 source "$rpath/conf/mon.conf"
 [ -z "$MAILX" ] && MAILX=`which mail 2>/dev/null`
-# needed for actions (only?)
 source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 declare -i delay ; delay=0

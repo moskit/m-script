@@ -96,7 +96,7 @@ start)
     rloadabs=${rload%.*}
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
-    [ "${1}" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
+    [ "$1" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
 
 ##### Running tests #####
     sleep 10
@@ -194,7 +194,7 @@ stop)
     for ((i=0; i<5; i++)); do
       [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
     done
-    [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server killed brutally" >> "$rpath/monitoring.log"
+    [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server has been killed brutally" >> "$rpath/monitoring.log"
   fi
   ;;
 restart)
