@@ -27,5 +27,7 @@ for sa in `echo "$SATESTS" | tr ',' ' '` ; do
   if [ `echo "$sarep" | grep -v '\-\-\-' | grep -v ^$ | wc -l` -gt 0 ]; then
     echo -e "\n$sa\n---------------\n\n$sarep"
   fi
+  # this is necessary to avoid sending same alert
+  rm "$sarep"
 done
 
