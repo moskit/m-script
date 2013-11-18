@@ -23,7 +23,7 @@ source $M_ROOT/conf/mon.conf
 source $M_ROOT/conf/cloud.conf
 source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
-M_TEMP="${M_TEMP}/cloud/${CLOUD}"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
 LOG="$M_ROOT"/logs/cloud.log
 
 possible_options="id name ip verbose force last first"
@@ -53,15 +53,15 @@ removed=false
 
 find_by_ip() {
   IAMACHILD=1 show_servers >/dev/null
-  id=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${1}\| | cut -d'|' -f2`
-  [ -z "$id" ] && id=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${1}\| | cut -d'|' -f2`
+  id=`cat "$M_TEMP/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${1}\| | cut -d'|' -f2`
+  [ -z "$id" ] && id=`cat "$M_TEMP/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${1}\| | cut -d'|' -f2`
 }
 
 if [ -n "$first" ] ; then
-  ip=`cat "${rpath}/../../servers.list" | grep \|${first}$ | head -1 | cut -d'|' -f1`
+  ip=`cat "$M_ROOT/servers.list" | grep \|${first}$ | head -1 | cut -d'|' -f1`
 fi
 if [ -n "$last" ] ; then
-  ip=`cat "${rpath}/../../servers.list" | grep \|${last}$ | tail -1 | cut -d'|' -f1`
+  ip=`cat "$M_ROOT/servers.list" | grep \|${last}$ | tail -1 | cut -d'|' -f1`
 fi
 
 if [ -z "$id" ] ; then
@@ -71,32 +71,32 @@ if [ -z "$id" ] ; then
       exit 1
     else
       # IP is more reliable
-      ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
+      ip=`cat "$M_ROOT/servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
         IAMACHILD=1 show_servers >/dev/null
-        id=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
+        id=`cat "$M_TEMP/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
     find_by_ip $ip
   fi
 else
-  if [ -f "${M_TEMP}/servers.${EC2_REGION}.ips" ] ; then
+  if [ -f "$M_TEMP/servers.${EC2_REGION}.ips" ] ; then
     IAMACHILD=1 show_servers >/dev/null
   fi
-  name=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
-  ipint=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`
-  ipext=`cat "${M_TEMP}/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${id}\| | cut -d'|' -f1`
+  name=`cat "$M_TEMP/servers.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
+  ipint=`cat "$M_TEMP/servers.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`
+  ipext=`cat "$M_TEMP/servers.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${id}\| | cut -d'|' -f1`
 fi
 [ -z "$id" ] && echo "Unable to find ID of this server" && exit 1
 req="/servers/$id"
 
-IPS=( "${ipint}" "${ipext}" "${ip}" )
+IPS=( "$ipint" "$ipext" "$ip" )
 
-${EC2_TOOLS_BIN_PATH}/ec2-terminate-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $id >> "$M_ROOT"/logs/cloud.log && log "(EC2) server name ${name}, id ${id}, IP ${IPS[*]} terminated successfully" && removed=true 
+$EC2_TOOLS_BIN_PATH/ec2-terminate-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $id >> "$M_ROOT"/logs/cloud.log && log "(EC2) server name ${name}, id ${id}, IP ${IPS[*]} terminated successfully" && removed=true 
 
 if [ $removed -o $force ]; then
   SSHK=`which ssh-keygen 2>/dev/null`
@@ -105,7 +105,7 @@ if [ $removed -o $force ]; then
   for ipa in ${IPS[*]} ; do
     if [ -n "$ipa" ] ; then
       $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "(EC2) $ipa removed from known_hosts"
-      sed -i "/^$ipa|/d" "${rpath}/../../servers.list" && log "(EC2) $ipa removed from servers.list"
+      sed -i "/^$ipa|/d" "$M_ROOT/servers.list" && log "(EC2) $ipa removed from servers.list"
       sed -i "/^$ipa /d" /etc/hosts && log "(EC2) $ipa removed from /etc/hosts"
     fi
   done

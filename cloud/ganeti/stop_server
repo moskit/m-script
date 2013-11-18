@@ -25,7 +25,7 @@ source "$M_ROOT/conf/cloud.conf"
 LOG="$M_ROOT/logs/cloud.log"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-M_TEMP="${M_TEMP}/cloud/$CLOUD"
+M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 
 possible_options="id name ip verbose"
 necessary_options=""

@@ -21,28 +21,30 @@ declare -a branch
 declare -a index
 declare -a ndarr
 declare -a savedline
-debug=true
+debug=false
 
 addnode() {
   nd="$1"
   i=$2
   selfclosed=false
   expr "$nd" : ^\? >/dev/null && return 0
-  expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
   $debug && echo "==== $nd ="
-  if `expr "$nd" : ^\" >/dev/null` ; then
-    tag=`expr "$nd" : "^\(\".*\"\)"`
+  if `expr "$nd" : ^\< >/dev/null` ; then
+    tag=`expr "$nd" : "^<\([^\ ]*\)\(\ \|>$\|/\)"`
+    [ "X<${tag}>" == "X$nd" ] || vars=`expr "$nd" : "^<${tag}\ \(.*=.*\)\(>$\|/>$\)"`
+    nd=`expr "$nd" : "^<\(.*\)>$"`
   else
-    tag=`expr "$nd" : "^\([^\ ]*\)\(\ \|$\|/\)"`
+    tag=$nd
   fi
-  vars=`expr "$nd" : "^$tag\ \(.*=.*\)\($\|/$\)"`
+  expr "$nd" : .*/$ >/dev/null && nd=${nd%/} && selfclosed=true
   $debug && echo "  == $tag ="
   index[$i]="$tag"
 
   unset ndcont
   if [ $i -gt 1 ] ; then
     # this means the node is closed and the previous value was its content:
+    $debug && echo "  -- X${index[$i-2]} == X${nd#/} -"
     if [ "X${index[$i-2]}" == "X${nd#/}" ] ; then
       ndcont="${index[$i-1]}"
     fi
@@ -108,7 +110,7 @@ addnode() {
 
 declare -i nn
 nn=0
-( cat $1 | tr -d '\r\n' | tr '<>' '\n' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read node ; do addnode "$node" $nn ; nn+=1 ; done
+( cat $1 | tr -d '\r\n' | sed 's|<|\n<|g;s|>|>\n|g' | grep -v ^$ | grep -v ^[[:space:]]*$ ) | while read "node" ; do addnode "$node" $nn ; nn+=1 ; done
 
 unset branch index ndcont cont i LINE node ndarr
 

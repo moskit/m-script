@@ -15,15 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-[ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
-rcommand=${xcommand##*/}
-rpath=${xcommand%/*}
-fpath=$(cd $rpath && echo ${PWD})
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${BASH_SOURCE##*/}
+rpath=${rpath%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 
 [ "X$1" == "Xdefault" ] && defopt=1
-[ "X$1" == "Xuninstall" ] 
-[ "X$1" == "Xreinit" ]
+[ "X$1" == "Xuninstall" ] && defopt=2
+[ "X$1" == "Xreinit" ] && defopt=3
 
 # Checking dependencies
 
@@ -45,37 +44,22 @@ if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
 if [ -f /etc/redhat-release ]; then OS="redhat"; fi
 
 if [ -z "$defopt" ] ; then
-  echo "*** If during the setup process you choose to allow the script to install ***"
-  echo "*** suggested packages and it fails to install them for whatever reason,  ***"
-  echo "*** it doesn't cause any problems at all, just run the script again       ***"
-  echo "*** (you may also want to install failed packages manually before this)   ***"
-  echo
+  echo -e "*** If during the setup process you choose to allow the script to install ***\n*** suggested packages and it fails to install them for whatever reason,  ***\n*** it doesn't cause any problems at all, just run the script again       ***\n*** (you may also want to install failed packages manually before this)   ***\n"
 fi
 
-if [ "X$SED" == "X" ]
-then
-  echo
-  echo "Sed not found. It is necessary, please install it first."
-  echo
+if [ -z "$SED" ]; then
+  echo -e "\nSed not found. It is necessary, please install it first.\n"
   exit 1
 fi
 
-if [ "X$NETSTAT" == "X" ]
-then
-  echo
-  echo "Netstat not found. It is necessary, please install it first."
-  echo
+if [ -z "$NETSTAT" ]; then
+  echo -e "\nNetstat not found. It is necessary, please install it first.\n"
   exit 1
 fi
 
-if [ "X$BC" == "X" ]
-then
+if [ -z "$BC" ]; then
   if [ -z "$defopt" ] ; then
-    echo
-    echo "BC not found. It is necessary, please install it first."
-    echo "It is kind of shell calculator, and it is impossible to provide any results"
-    echo "without it."
-    echo
+    echo -e "\nBC not found. It is necessary, please install it first.\n"
     read -p "Do you want me to install it now?  [y/N] " installbc
   else
     installbc="y"
@@ -104,14 +88,9 @@ then
   fi
 fi
 
-if [ "X$MAILX" == "X" ]
-then
+if [ -z "$MAILX" ]; then
   if [ -z "$defopt" ] ; then
-    echo
-    echo "Mailx not found. It IS necessary, please install it first."
-    echo "You can also install any alternative, which has similar syntax and "
-    echo "provides the 'mail' command."
-    echo
+    echo -e "\n  Mailx not found. It is necessary, if you want traditional email functionality\n  for reports and alerts (see conf/mon.conf).\n"
     read -p "Do you want me to install it now?  [y/N] " installmailx
   else
     installmailx="y"
@@ -122,13 +101,14 @@ then
     debian)
       export DEBIAN_FRONTEND=noninteractive
       `which apt-get` install mailx
-      [[ $? -eq 100 ]] && `which apt-get` install bsd-mailx -y
+      [ $? -eq 100 ] && `which apt-get` install bsd-mailx -y
+      [ $? -ne 0 ] && exit 0
       ;;
     gentoo)
-      `which emerge` mailx
+      `which emerge` mailx || exit 1
       ;;
     redhat)
-      [ "X`which yum`" == "X" ] || `which yum` install mailx -y
+      `which yum` install mailx -y || exit 1
       ;;
     *)
       echo
@@ -141,13 +121,12 @@ then
   fi
 fi
 
-if [ "X$MONGOOSE" == "X" ]
-then
+if [ -z "$MONGOOSE" ]; then
+  [ -x "$rpath/mongoose" ] && MONGOOSE="$rpath/mongoose"
+fi
+if [ -z "$MONGOOSE" ]; then
   if [ -z "$defopt" ] ; then
-    echo
-    echo "Mongoose not found. You need it only in case you want web interface"
-    echo "here on this server "
-    echo
+    echo -e "\n  Mongoose not found or not in PATH. You need it only in case you want\n  web interface here on this server\n"
     read -p "Do you want me to install it now?  [y/N] " installmongoose
   else
     installmongoose="N"
@@ -155,9 +134,9 @@ then
   if [ `echo $installmongoose | grep -qi "^y"` ]
   then
     rm -rf "$rpath/mongoose-source" 2>/dev/null
-    (mkdir "$fpath/mongoose-source" && cd "$fpath/mongoose-source" && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose "$fpath/")
+    (mkdir "$rpath/mongoose-source" && cd "$rpath/mongoose-source" && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose "$rpath/")
     if [ $? -ne 0 ]; then
-      echo -e "\nUnable to compile, disabling it for now. Compile it or install some other way and copy its binary to $fpath/ if you need it"
+      echo -e "\nUnable to compile, disabling it for now. Compile it or install some other way and copy its binary to $rpath/ if you need it"
       sed -i "s|MONGOOSE=.*|MONGOOSE=0|g" "$rpath/conf/mon.conf"
     else
       if [ `grep -q "^MONGOOSE=" "$rpath/conf/mon.conf"` ]; then
@@ -191,24 +170,21 @@ then
   fi
   if [ `grep -c "^g " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
-    echo "g $fpath/conf/htaccess" >> "$rpath/conf/mongoose.conf"
+    echo "g $rpath/conf/htaccess" >> "$rpath/conf/mongoose.conf"
   fi
   if [ `grep -c "^r " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
-    echo "r $fpath/www" >> "$rpath/conf/mongoose.conf"
+    echo "r $rpath/www" >> "$rpath/conf/mongoose.conf"
   fi
   echo
   echo "You may want to adjust access settings for the web interface."
   echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
-  echo "and edit ${fpath}/conf/mongoose.conf"
+  echo "and edit $rpath/conf/mongoose.conf"
 fi
       
 if [ -z "$IPTABLES" ]; then
   if [ -z "$defopt" ] ; then
-    echo
-    echo "Iptables not found. It is not necessary, but useful to provide an average"
-    echo "bandwidth usage report. If you need it, install iptables and run setup.run again"
-    echo
+    echo -e "\nIptables not found. It is not necessary, but useful to provide an average\nbandwidth usage report. If you need it, install iptables and run setup.run again\n"
     read -p "Do you want to proceed without iptables? [y/N] " noiptables
   else
     noiptables="y"
@@ -233,16 +209,31 @@ else
 fi
 
 if [ -z "$S3CMD" ]; then
-  
   if [ -z "$defopt" ]; then
     echo -e "\ns3cmd not found. It is needed only if you are going to use Amazon S3 service\nfor backups.\n"
     read -p "Do you want to proceed without s3cmd? [Y/n] " nos3
   else
     nos3="y"
   fi
-  if [ `echo $nos3 | grep -qi "^y"` -eq 0 ]
-  then
-    exit 1
+  if [ `echo $nos3 | grep -qi "^y"` -eq 0 ]; then
+    exit 0
+  else
+    case $OS in
+    debian)
+      export DEBIAN_FRONTEND=noninteractive
+      `which apt-get` install s3cmd3 -y || exit 1
+      ;;
+    gentoo)
+      `which emerge` s3cmd || exit 1
+      ;;
+    redhat)
+      `which yum` install s3cmd -y || exit 1
+      ;;
+    *)
+      echo -e "\nUnable to determine operating system, sorry.. PLease install SQLite3 manually."
+      exit 1
+      ;;
+    esac
   fi
 fi
 
@@ -272,13 +263,13 @@ if [ -z "$SQLITE" ]; then
       case $OS in
       debian)
         export DEBIAN_FRONTEND=noninteractive
-        `which apt-get` install sqlite3 -y
+        `which apt-get` install sqlite3 -y || exit 1
         ;;
       gentoo)
-        `which emerge` sqlite
+        `which emerge` sqlite || exit 1
         ;;
       redhat)
-        [ "X`which yum`" == "X" ] || `which yum` install sqlite -y
+        `which yum` install sqlite -y || exit 1
         ;;
       *)
         echo -e "\nUnable to determine operating system, sorry.. PLease install SQLite3 manually."
@@ -314,10 +305,10 @@ chown -R root:root "$rpath"
 install -d "$rpath/standalone/rc"
 install -m 700 -d "$rpath/keys"
 install -d "$rpath/logs" "$rpath/deployment/roles"
-echo -e "$fpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/actions.allowed.list"
+echo -e "$rpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/actions.allowed.list"
 "$rpath"/helpers/init_rc
 "$rpath"/fixports.run
-[ -f "$fpath/.msh.env" ] || cat > "$fpath/.msh.env" << "EOF"
+[ -f "$rpath/.msh.env" ] || cat > "$rpath/.msh.env" << "EOF"
 # makes MSH history written separately
 HISTFILE=$HOME/.bash_history
 # sets terminal title
@@ -353,7 +344,7 @@ fi
 echo "done"
 [ -d /etc/init.d ] && rcdir=/etc/init.d
 [ -d /etc/rc.d/init.d ] && rcdir=/etc/rc.d/init.d
-[ "X$rcdir" == "X" ] || ln -s "$fpath/monitorload.run" $rcdir/monitorload 2>/dev/null
+[ "X$rcdir" == "X" ] || ln -s "$rpath/monitorload.run" $rcdir/monitorload 2>/dev/null
 if [ -z "$defopt" ] ; then
   echo -e "\nDefault email address for reports and alerts is root@localhost. You can change it now or leave it for later. In the latter case just press Enter\n\n"
   read -p "What email address to send reports and alerts to? " email

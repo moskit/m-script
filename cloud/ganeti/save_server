@@ -97,7 +97,7 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
 
 [ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
-M_TEMP="$M_TEMP/cloud/ganeti"
+M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
 if [ -z "$imagename" ]; then
@@ -126,7 +126,7 @@ disksize="`echo "$vmini" | cut -d'|' -f3`"
 # now when we know that disk does exist, we can use a heavier tool to find its
 # file or device
 
-disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
+disk=`"$M_ROOT/cloud/$CLOUD_PROVIDER"/get_server_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
 disk=`expr "$disk" : "\(.*\) ("`
 
 if [ ! -b "$disk" ]; then
