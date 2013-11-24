@@ -3,6 +3,10 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
-"$rpath"/show_servers --forceupdate --update_servers_list $@
+for cld in `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f12 | sort | uniq | grep -v ^$`; do
+  source "$M_ROOT/conf/clouds/${cld}.conf"
+  "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --forceupdate --update_servers_list $@
+done
 

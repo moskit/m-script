@@ -63,8 +63,8 @@ fi
 
 [ -n "$verbose" ] && debug=1
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/cloud.conf"
-[ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/cloud.conf, please" && exit 1
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/clouds/${CLOUD}.conf, please" && exit 1
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
 exit_status=0

@@ -69,7 +69,7 @@ if [[ $found -eq 1 ]]; then
 fi
 
 source "$rpath/../../conf/mon.conf"
-source "$rpath/../../conf/cloud.conf"
+source "$rpath/../../conf/clouds/${CLOUD}.conf"
 source "$rpath/../../lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 if [ -z "$IAMACHILD" ]; then

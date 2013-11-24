@@ -23,9 +23,6 @@ rpath=${0%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/block_ip.log"
 
-## This is a try aimed to eventually come to an automated logreader options
-## generation
-
 possible_options="file period maxlines maxinvalid method"
 necessary_options=""
 

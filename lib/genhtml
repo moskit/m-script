@@ -84,7 +84,11 @@ case $type in
     id="`date +"%m.%d_%H:%M:%S"`"
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
     echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk $css\" onclick=\"showData('${id}_${serverid}','/${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
-    "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
+    if [ -e "$textfile" ]; then
+      "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/${id}_${serverid}.html" 2>>"$M_ROOT/logs/dashboard.log"
+    else
+      echo "<p>No data</p>" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
+    fi
     exc=`cat "$M_ROOT/www/$folder/dash.html" | wc -l` 2>>"$M_ROOT/logs/dashboard.log"
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
@@ -118,7 +122,11 @@ case $type in
     fi
     ;;
   report)
-    "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/report.html" 2>>"$M_ROOT/logs/dashboard.log"
+    if [ -e "$textfile" ]; then
+      "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/report.html" 2>>"$M_ROOT/logs/dashboard.log"
+    else
+      echo "<p>No data</p>" >> "$M_ROOT/www/$folder/report.html"
+    fi
     ;;
 esac
 IFS=$IFS1

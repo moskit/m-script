@@ -59,12 +59,12 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: $missing_options not found"
   exit 1
 fi
 
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
@@ -246,7 +246,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 245
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 249
     "$rpath"/auth
     i+=1
     sleep 10
@@ -266,7 +266,7 @@ if [ -z "$noupdate" ] ; then
   declare -i n
   n=0
   while [ `grep -c \"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 265
+    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 269
     [ $n -gt 1 ] && sleep 30
     rm -f "$M_TEMP/auth.resp"
     try_auth
@@ -278,5 +278,5 @@ fi
 list_servers
 
 [ -n "$count" ] && echo $icount
-proper_exit 0 277
+proper_exit 0 281
 

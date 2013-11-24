@@ -57,13 +57,13 @@ done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
   echo 
-  echo "Without options all clusters defined in conf/cloud.conf will be synced"
+  echo "Without options all clusters defined in conf/clouds/${CLOUD}.conf will be synced"
   echo
   echo "Options:"
   echo
   echo "  --cluster=clustername    - syncs only this single cluster."
   echo "                             No port number allowed here! Port(s) will"
-  echo "                             be taken from conf/cloud.conf"
+  echo "                             be taken from conf/clouds/${CLOUD}.conf"
   exit 0
 fi
 found=0
@@ -77,10 +77,10 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source ${rpath}/../../conf/cloud.conf
+source ${rpath}/../../conf/clouds/${CLOUD}.conf
 
 for var in JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION EC2_TOOLS_BIN_PATH APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
-  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
+  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/clouds/${CLOUD}.conf please." && exit 1
 done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION

@@ -23,7 +23,7 @@ LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
-source "$rpath/../../conf/cloud.conf"
+source "$rpath/../../conf/clouds/${CLOUD}.conf"
 source "$rpath/../../conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 install -d "$M_TEMP"

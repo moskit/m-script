@@ -21,7 +21,7 @@ rpath=${0%/*}
 
 GNTI=`which gnt-instance 2>/dev/null`
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 LOG="$M_ROOT/logs/cloud.log"
 source "$M_ROOT/lib/cloud_functions.sh"
 

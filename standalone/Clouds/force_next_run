@@ -6,7 +6,7 @@ rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$rpath/clouds.conf"
 M_TEMP="$M_TEMP/cloud"
 

@@ -57,13 +57,13 @@ done
 if [ "X$help" == "Xyes" ] ; then
   echo "Usage: ${0##*/} <options>"
   echo 
-  echo "Without options all clusters defined in conf/cloud.conf will be synced"
+  echo "Without options all clusters defined in conf/clouds/${CLOUD}.conf will be synced"
   echo
   echo "Options:"
   echo
   echo "  --cluster=<cluster name>   - syncs only this single cluster."
   echo "                             Port number is not needed here! Port(s) will"
-  echo "                             be taken from conf/cloud.conf"
+  echo "                             be taken from conf/clouds/${CLOUD}.conf"
   echo "  --application=<application name>  - syncs only this single application."
   echo
   exit 0
@@ -79,12 +79,12 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-source "${rpath}/../../conf/cloud.conf"
+source "${rpath}/../../conf/clouds/${CLOUD}.conf"
 source "${rpath}/../../conf/mon.conf"
 source "${rpath}/../../lib/cloud_functions.sh"
 
 for var in APP_SERVERS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
-  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/cloud.conf please." && exit 1
+  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/clouds/${CLOUD}.conf please." && exit 1
 done
 
 [ -z "$cloud" ] && cloud=$CLOUD

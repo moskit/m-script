@@ -159,13 +159,13 @@ run_meta() {
     [ -n "$use_color" ] && printf "\033[01;31m"
     echo "Error parsing meta: $meta"
     [ -n "$use_color" ] && printf "\033[0m"
-    [ -z "$dry" ] && proper_exit 1 124
+    [ -z "$dry" ] && proper_exit 1 162
   fi
 }
 
 startserver() {
   ip=0 
-  ip="$(IAMACHILD=1 "$rpath"/../cloud/$cloud/start_server --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log | tail -1)"
+  ip="$(IAMACHILD=1 "$rpath"/../cloud/$CLOUD_PROVIDER/start_server --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log | tail -1)"
   [ $? -ne 0 ] && ip=$? 
   log "($CLOUD) start_server returned this: $ip"
 }
@@ -293,12 +293,8 @@ EOF
 fi
 
 source "$M_ROOT/conf/deployment.conf"
-source "$M_ROOT/conf/cloud.conf"
 source "$M_ROOT/lib/functions.sh"
-source "$M_ROOT/lib/cloud_functions.sh"
 
-[ -n "$cloud" ] || cloud=$CLOUD
-[ -n "$cloud" ] || cloud=common
 [ -n "$SSHPORT" ] || SSHPORT=22
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
@@ -310,7 +306,7 @@ export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 
 log "Starting metaexec with arguments $@"
 
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+[ -n "$IFCFG" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 if [ -n "$timestamp" ] ; then
   [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
@@ -387,14 +383,18 @@ fi
 [ -z "$SERVER_CHECKS_PERIOD" ] && SERVER_CHECKS_PERIOD=30
 
 if [ -n "$newserver" ]; then
+  
+  [ -n "$cloud" ] || cloud=$CLOUD
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
+  source "$M_ROOT/conf/clouds/${cloud}.conf"
+  [ $? -ne 0 ] && echo "Error reading cloud $cloud configuration" && exit 1
+  source "$M_ROOT/lib/cloud_functions.sh"
+
   [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
   echo "*** Bringing up new server in cloud $cloud"
   log "bringing up new server in cloud $cloud"
   if [ -z "$test" ]; then
-    #log "updating servers list"
-    #IAMACHILD=1 "$M_ROOT/cloud/$cloud/update_servers_list"
     log "getting cloud operations lock"
 
     lock_cloudops || exit 10
@@ -469,8 +469,8 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       done
       if ! $loggedin && [ -n "$newserver" ]; then
         # stop useless server and tell the parent process that something's wrong
-        "$M_ROOT"/cloud/$CLOUD/stop_server --ip=$ip
-        proper_exit 13 357
+        "$M_ROOT"/cloud/$CLOUD_PROVIDER/stop_server --ip=$ip
+        proper_exit 13 473
       fi
     fi
     #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
@@ -489,6 +489,8 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       if [ -n "$newserver" ]; then
         echo "ip=$ip" >> "$WORK_DIR/${role}.${task}.$timestampact/ARGV"
       fi
+    else
+      rm -f "$WORK_DIR/${role}.${task}.$timestampact"/meta
     fi
     ##
   fi
@@ -503,9 +505,25 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     
     declare -i metan
     metan=1
+    if [ -n "$command" ] ; then
+      for commandn in `echo -e $command | tr ',' '\n'` ; do
+        for meta in `cat "$WORK_DIR/${role}.${task}.$timestampact"/meta` ; do
+          meta=`eval "echo $meta"`
+          if [[ $commandn -eq $metan ]]; then
+            if [ $metan -eq 1 ]; then
+              newmeta="$meta"
+            else
+              newmeta="${newmeta}\n${meta}"
+            fi
+          fi
+          metan+=1
+        done
+        metan=1
+      done
+      echo -e "$newmeta" > "$WORK_DIR/${role}.${task}.$timestampact/meta"
+    fi
     for meta in `cat "$WORK_DIR/${role}.${task}.$timestampact"/meta` ; do
       meta=`eval "echo $meta"`
-      runthis=true
       skipthis=false
       if [ -n "$list" ] ; then
         echo "$metan $meta"
@@ -520,15 +538,10 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
             [[ $skipn -eq $metan ]] && skipthis=true
           done
         fi
-        if [ -n "$command" ] ; then
-          runthis=false
-          for commandn in `echo -e $command | tr ',' '\n'` ; do
-            [[ $commandn -eq $metan ]] && runthis=true
-          done
-        fi
-        if $runthis && ! $skipthis ; then
+
+        if ! $skipthis ; then
           (IFS=$IFSORIG ; run_meta $meta)
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 527
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 544
         fi
       fi
       metan+=1
@@ -546,7 +559,7 @@ if [ -z "$list" ] ; then
 fi
 echo
 if [ -n "$newserver" ]; then
-  proper_exit 0 545
+  proper_exit 0 562
 fi
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then

@@ -218,7 +218,7 @@ if [ "X$help" == "Xyes" ] ; then
 fi
 
 source $M_ROOT/conf/mon.conf
-source $M_ROOT/conf/cloud.conf
+source $M_ROOT/conf/clouds/${CLOUD}.conf
 source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
 LOG=$M_ROOT/logs/cloud.log

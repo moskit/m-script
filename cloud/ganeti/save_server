@@ -35,7 +35,7 @@ IFS='-'
 for s_option in "$@"
 do
   found=0
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
@@ -49,7 +49,7 @@ do
     exit 1
     ;;
   *)
-    s_param=${s_option}
+    s_param=$s_option
     s_optname=''
     s_optarg=''
     ;;
@@ -69,7 +69,14 @@ do
     echo "Unknown option: $s_optname"
     exit 1
   fi
-  [ -n "$s_param" ] && params="$params $s_param" && unset s_param
+  if [ -n "$s_param" ]; then
+    if [ -n "$params" ]; then
+      params="$params $s_param"
+    else
+      params="$s_param"
+    fi
+    unset s_param
+  fi
 done
 IFS=$IFS1
 if [ "X$help" == "Xyes" ] ; then
@@ -92,12 +99,13 @@ EOF
   exit 0
 fi
 
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/cloud/$CLOUD_PROVIDER/functions.sh"
 
 [ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
-M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
 if [ -z "$imagename" ]; then

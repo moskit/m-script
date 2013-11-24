@@ -38,7 +38,7 @@ debug=true
 
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
-source "$rpath/conf/cloud.conf"
+source "$rpath/conf/clouds/${CLOUD}.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
 IFCFG=`which ifconfig 2>/dev/null`

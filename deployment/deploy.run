@@ -135,7 +135,7 @@ fi
 echo -e "\n\n-------------------\n${0} $*\n" >> "$rpath/../logs/deploy.log"
 
 source "$M_ROOT/conf/deployment.conf" || exit 99
-source "$M_ROOT/conf/cloud.conf" || exit 99
+source "$M_ROOT/conf/clouds/${CLOUD}.conf" || exit 99
 
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$dry" -o -n "$test" ] && dry="yes"

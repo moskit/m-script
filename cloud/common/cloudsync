@@ -20,7 +20,7 @@ rpath=${0%/*}
 
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf" || exit 99
-source "$M_ROOT/conf/cloud.conf" || exit 99
+source "$M_ROOT/conf/clouds/${CLOUD}.conf" || exit 99
 
 RSYNC=`which rsync 2>/dev/null`
 SCP=`which scp 2>/dev/null`

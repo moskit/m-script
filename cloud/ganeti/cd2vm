@@ -21,8 +21,8 @@ rpath=${0%/*}
 
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf" || exit 99
-source "$M_ROOT/conf/cloud.conf" || exit 99
-source "$M_ROOT/cloud/$CLOUD/functions.sh" || exit 99
+source "$M_ROOT/conf/clouds/${CLOUD}.conf" || exit 99
+source "$M_ROOT/cloud/$CLOUD_PROVIDER/functions.sh" || exit 99
 
 LOSETUP=`which losetup 2>/dev/null`
 GI=`which gnt-instance 2>/dev/null`
@@ -42,7 +42,7 @@ disksize="`echo "$vmini" | cut -d'|' -f3`"
 # now when we know that disk does exist, we can use a heavier tool to find its
 # file or device
 
-disk=`"$M_ROOT/cloud/$CLOUD"/get_server_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
+disk=`"$M_ROOT/cloud/$CLOUD_PROVIDER"/get_server_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
 [ -z "$disk" ] && echo "unable to get disk details" && exit 1
 disk=`expr "$disk" : "\(.*\) ("`
 

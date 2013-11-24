@@ -2,9 +2,8 @@
 
 scriptname=${0%.cgi}; scriptname=${scriptname##*/}
 
-source "${PWD}/../../lib/dash_functions.sh"
-source "${PWD}/../../conf/mon.conf"
-source "${PWD}/../../conf/cloud.conf"
+source "$PWD/../../lib/dash_functions.sh"
+source "$PWD/../../conf/mon.conf"
 
 print_cgi_headers
 load_css "clouds.css"

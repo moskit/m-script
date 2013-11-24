@@ -61,7 +61,7 @@ fi
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 lock_cloudops || exit 10
 CURL="$CURL -s -k"

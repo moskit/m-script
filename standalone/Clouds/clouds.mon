@@ -26,7 +26,7 @@ DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 source "$rpath/${rcommand%.mon}.conf"
 M_TEMP="$M_TEMP/cloud"
@@ -92,14 +92,20 @@ for cloud in ${clouds[*]} ; do
     if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
       echo 0 > "$rpath/${cloud}.cycles.count"
       log "updating servers.list"
-      [ -x "$M_ROOT/cloud/$cloud/update_servers_list" ] && "$M_ROOT/cloud/$cloud"/update_servers_list && log "list updated" || log "update_servers_list error"
+      [ -x "$M_ROOT/cloud/$cloud/update_servers_list" ] && "$M_ROOT/cloud/$cloud"/update_servers_list
+      [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+      [ $? -eq 0 ] && log "list updated successfully"
+      [ $? -eq 1 ] && log "update_servers_list error" && exit 1
     else
       echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
       exit 0
     fi
   else
     log "updating servers.list"
-    [ -x $M_ROOT/cloud/$cloud/update_servers_list ] && $M_ROOT/$cloud/cloud/update_servers_list && log "list updated" || log "update_servers_list error"
+    [ -x $M_ROOT/cloud/$cloud/update_servers_list ] && $M_ROOT/$cloud/cloud/update_servers_list
+    [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+    [ $? -eq 0 ] && log "list updated successfully"
+    [ $? -eq 1 ] && log "update_servers_list error" && exit 1
   fi
 
   [ `cat "$M_TEMP/$cloud/full.servers.list" 2>/dev/null | wc -l` -eq 0 ] && log "servers list is empty for this cloud, update forced" && echo > "$M_TEMP/$cloud/show_servers.resp.prev"
@@ -108,8 +114,10 @@ for cloud in ${clouds[*]} ; do
     if [ -n "`$DIFF -q "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev" 2>&1`" ]; then
       log "getting full list"
       "$M_ROOT"/cloud/$cloud/show_servers --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
-      log "full list generated"
-      [ `cat "$M_TEMP/$cloud/full.servers.list" | wc -l` -eq 0 ] && log "no hosts in the response file, querying API" && "$M_ROOT"/cloud/$cloud/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list" && log "list received" || log "API query error"
+      [ `cat "$M_TEMP/$cloud/full.servers.list" | wc -l` -eq 0 ] && log "no hosts in the response file, querying API" && "$M_ROOT"/cloud/$cloud/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
+      [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+      [ $? -eq 0 ] && log "list received"
+      [ $? -eq 1 ] && log "API query error" && exit 1
       cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
     else
       log "no changes found"
@@ -117,7 +125,10 @@ for cloud in ${clouds[*]} ; do
     fi
   else
     log "no response found, querying"
-    "$M_ROOT/cloud/$cloud"/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list" && log "list received" || log "API query error"
+    "$M_ROOT/cloud/$cloud"/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
+    [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+    [ $? -eq 0 ] && log "list received"
+    [ $? -eq 1 ] && log "API query error" && exit 1
   fi
   gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
 done

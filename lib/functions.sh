@@ -99,10 +99,14 @@ check_results() {
 }
     
 gendash() {
-  indic="ok"
-  [ -n "`grep '<\*>' "$1"`" ] && indic="w1"
-  [ -n "`grep '<\*\*>' "$1"`" ] && indic="w2"
-  [ -n "`grep '<\*\*\*>' "$1"`" ] && indic="w3"
+  if [ -e "$1" ]; then
+    indic="ok"
+    [ -n "`grep '<\*>' "$1"`" ] && indic="w1"
+    [ -n "`grep '<\*\*>' "$1"`" ] && indic="w2"
+    [ -n "`grep '<\*\*\*>' "$1"`" ] && indic="w3"
+  else
+    indic="empty"
+  fi
   case $DASHBOARD in
     HTML)
       "$fpath/genhtml" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"

@@ -102,7 +102,7 @@ fi
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$SSHPORT" ] && SSHPORT=22
 
 IFS1=$IFS

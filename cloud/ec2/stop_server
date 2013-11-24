@@ -20,7 +20,7 @@ rpath=${0%/*}
 #*/
 
 source $M_ROOT/conf/mon.conf
-source $M_ROOT/conf/cloud.conf
+source $M_ROOT/conf/clouds/${CLOUD}.conf
 source $M_ROOT/lib/functions.sh
 source $M_ROOT/lib/cloud_functions.sh
 M_TEMP="$M_TEMP/cloud/$CLOUD"

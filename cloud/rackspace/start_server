@@ -50,7 +50,7 @@ IFS=$IFS1
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP"/cloud/rackspace
 install -d "$M_TEMP"
-source "$M_ROOT/conf/cloud.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 lock_cloudops || exit 10
 
@@ -183,7 +183,7 @@ try_auth() {
   [ $i -gt 0 ] && log "$i additional auth requests due to no reply from API"
 }
 
-source "$rpath/../../conf/cloud.conf"
+source "$rpath/../../conf/clouds/${CLOUD}.conf"
 exit_status=0
 
 if [ -z "$noupdate" ] ; then

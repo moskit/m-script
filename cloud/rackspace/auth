@@ -17,7 +17,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 CURL=`which curl 2>/dev/null`
 LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
@@ -26,13 +26,13 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 V="v1.1"
-source "$rpath/../../conf/cloud.conf"
-source "$rpath/../../conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/rackspace"
 install -d "$M_TEMP"
 
 cat "$rpath/auth.$V.json" | sed "s|RS_AUTH_USER|$RS_AUTH_USER|;s|RS_AUTH_KEY|$RS_AUTH_KEY|" > "$M_TEMP/auth.req"
-$CURL -X POST -T "$M_TEMP/auth.req" -H "Content-Type: application/json" -H "Accept: application/json" "https://${RS_APIURL#https://}/$V/auth" | "$rpath/../../lib/json2txt" > "$M_TEMP/auth.resp"
+$CURL -X POST -T "$M_TEMP/auth.req" -H "Content-Type: application/json" -H "Accept: application/json" "https://${RS_APIURL#https://}/$V/auth" | "$M_ROOT/lib/json2txt" > "$M_TEMP/auth.resp"
 rm -f "$M_TEMP/auth.req"
 [ `grep -c ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp"` -eq 1 ] || exit 1
 

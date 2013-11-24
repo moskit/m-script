@@ -25,7 +25,15 @@ store_vars() {
     source "${tmpfile}.var"
   fi
   [ -n "$verbose" ] && echo "Sourcing $1"
-  for LINE in `cat "${1}" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+  for LINE in `cat "$1" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+    # to respect environment variables and variables passed from command line
+    pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
+    if [ -n "$pvar" ]; then
+      pval="`eval echo "\\$$pvar"`"
+      if [ -n "$pval" ]; then
+        [ `expr "$pval" : "[0-9]*$"` -eq 0 ] && echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "${tmpfile}.var" && continue || echo "${pvar}=`eval echo "\\$$pvar"`" >> "${tmpfile}.var" && continue
+      fi
+    fi
     $debug && echo "  == $LINE"
     ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
     $debug && echo "  << $ELINE"
@@ -210,7 +218,7 @@ fi
 
 source "$rpath/../conf/mon.conf"
 source "$rpath/../conf/deployment.conf"
-source "$rpath/../conf/cloud.conf"
+source "$rpath/../conf/clouds/${CLOUD}.conf"
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
@@ -250,10 +258,13 @@ find_source
 # fullfrom and realrole are now defined
 tmpfile="$M_TEMP/deployment/`echo $fullfrom | tr '/' '_'`"
 rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
-  
-[ -f "$ROLES_ROOT/common/role.conf" ] && store_vars "$ROLES_ROOT/common/role.conf"
-[ -n "$realrole" ] && [ -f "$ROLES_ROOT/$realrole/role.conf" ] && store_vars "$ROLES_ROOT/$realrole/role.conf"
+
 [ -f "$ROLES_ROOT/$role/role.conf" ] && store_vars "$ROLES_ROOT/$role/role.conf"
+## ROLEINCL - role of symlinked script or script defined in meta  from another
+## role
+## realrole - same as ROLEINCL, but when file to deploy is found in that role,
+## not just script containing deploy_file
+[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/$ROLEINCL/role.conf" ] && store_vars "$ROLES_ROOT/$ROLEINCL/role.conf"
 
 if [ -z "$local" ]; then
 

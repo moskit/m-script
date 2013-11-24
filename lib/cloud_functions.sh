@@ -19,13 +19,12 @@ dpath=${dpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$dpath/../")
 [ -z "$LOG" ] && LOG="$M_ROOT/logs/cloud.log"
-M_CLOUD=$CLOUD
-source "$M_ROOT/conf/cloud.conf"
-[ -z "$M_CLOUD" ] && M_CLOUD=$CLOUD
-[ ! -d "$M_ROOT/cloud/$M_CLOUD" ] && log "Cloud $M_CLOUD is not supported"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -z "$CLOUD_PROVIDER" ] && echo "Error reading configuration for this cloud ($M_ROOT/conf/clouds/${CLOUD}.conf)" && exit 1
+[ ! -d "$M_ROOT/cloud/$CLOUD_PROVIDER" ] && log "Cloud $CLOUD_PROVIDER is not supported" && exit 1
 
 log() {
-  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${M_CLOUD}/${0##*/}: ${@}">>$LOG
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${CLOUD}/${0##*/}: ${@}">>$LOG
 }
 
 lock_cloudops() {
@@ -35,25 +34,25 @@ lock_cloudops() {
   i=0
   log "trying to acquire cloud operations lock"
   [ -n "$MAXLOCK" ] || MAXLOCK=30 
-  lockfile=`find "$M_ROOT/cloud/" -maxdepth 1 -mindepth 1 -name "cloud.${M_CLOUD}.lock" -mmin +$MAXLOCK`
+  lockfile=`find "$M_ROOT/cloud/" -maxdepth 1 -mindepth 1 -name "cloud.${CLOUD}.lock" -mmin +$MAXLOCK`
   if [ -n "$lockfile" ] ; then
     log " *** Lock file is older than $MAXLOCK minutes, removing"
     rm -f $lockfile
   fi
-  while [ -f "$M_ROOT/cloud/cloud.${M_CLOUD}.lock" ]; do
+  while [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; do
     sleep 10
     i+=1
     log "$i :: cloud operations are locked"
     [ $i -gt 50 ] && log "failed to acquire the lock" && return 1
   done
-  touch "$M_ROOT/cloud/cloud.${M_CLOUD}.lock"
+  touch "$M_ROOT/cloud/cloud.${CLOUD}.lock"
   log "locking cloud operations"
 }
 
 unlock_cloudops() {
   local LOG="$M_ROOT/logs/cloud.log"
-  if [ -f "$M_ROOT/cloud/cloud.${M_CLOUD}.lock" ]; then
-    rm -f "$M_ROOT/cloud/cloud.${M_CLOUD}.lock" && log "unlocking cloud operations" || log "error removing lock"
+  if [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; then
+    rm -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" && log "unlocking cloud operations" || log "error removing lock"
   else
     log "unlocking: cloud operations were not locked"
   fi
@@ -64,7 +63,7 @@ cloudops_locked() {
   local LOG="$M_ROOT/logs/cloud.log"
   # we don't lock up children
   [ -n "$IAMACHILD" ] && log "I am a child, I am not locked up" && return 1
-  [ -f "$M_ROOT/cloud/cloud.${M_CLOUD}.lock" ] && return 0 || return 1
+  [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ] && return 0 || return 1
 }
 
 generate_name() {
@@ -93,12 +92,12 @@ check_cluster_limit() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && M_CLOUD=$clcloud
+  [ -n "$clcloud" ] && [ "X$clcloud" != "X$XLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
-  n=`IAMACHILD=1 "$M_ROOT/cloud/$M_CLOUD"/show_servers --view=none --noupdate --count --cluster=$cluster`
+  n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   #[ `expr $n \>= 0` -gt 0 ] || return 1
@@ -111,13 +110,13 @@ check_cluster_minimum() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && M_CLOUD=$clcloud
+  [ -n "$clcloud" ] && [ "X$clcloud" != "X$XLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
   limit=${limit%:*}
   [ "$limit" == "0" ] && return 0
-  n=`IAMACHILD=1 "$M_ROOT/cloud/$M_CLOUD"/show_servers --view=none --noupdate --count --cluster=$cluster`
+  n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
   [ `expr $limit \<= $n` -gt 0 ] && return 0

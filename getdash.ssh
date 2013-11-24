@@ -30,7 +30,7 @@ SSH_OPTS="-o StrictHostKeyChecking=yes -o PasswordAuthentication=no -o ConnectTi
 [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 source "$rpath/conf/mon.conf"
-source "$rpath/conf/cloud.conf"
+source "$rpath/conf/clouds/${CLOUD}.conf"
 source "$rpath/lib/functions.sh"
 
 SQLITE=dbquery
