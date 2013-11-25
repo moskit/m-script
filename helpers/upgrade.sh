@@ -81,7 +81,7 @@ for symlink in `find "$M_TEMP/.update" -type l`; do
   cp -P "$symlink" "$M_ROOT/$sl" && chown `id -un`:`id -gn` "$M_ROOT/$sl" && echo "OK"
 done
 printf "Removing .new files that have zero difference with the local files ..."
-for newfile in `find "$M_ROOT/" -name "*.new"` ; do
+for newfile in `find "$M_ROOT/"* -name "*.new"` ; do
   if [ `diff $newfile ${newfile%.new} | wc -l` -eq 0 ] ; then
     rm -f $newfile && touch ${newfile%.new} && printf "."
   fi

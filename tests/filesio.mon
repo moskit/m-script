@@ -32,16 +32,41 @@ source "$M_ROOT/conf/mon.conf"
 find_processes() {
 cd /proc
 IFS1=$IFS; IFS='
-'; for l in `grep read_bytes */io | grep -v "read_bytes:\ 0"`; do pid=${l%%/*} ; rdp=${l##* }; sleep 1; rd=`test -d $pid && grep read_bytes $pid/io | cut -d' ' -f2`; echo "`expr $rd - $rdp 2>/dev/null` $pid" ; done | sort -rn | head -n $FIO_TOP_PROCESSES ; IFS=$IFS1
+'; for l in `grep ${1}_bytes */io | grep -v "${1}_bytes:\ 0"`; do pid=${l%%/*} ; rdp=${l##* }; sleep 1; rd=`test -d $pid && grep ${1}_bytes $pid/io | cut -d' ' -f2`; echo "`expr $rd - $rdp 2>/dev/null` $pid" ; done | sort -rn | head -n $FIO_TOP_PROCESSES ; IFS=$IFS1
 }
 
 find_cmd() {
 ps axo pid,cmd | sed 's|^ *||' | grep "^${1} "
 }
 
-io_eaters=`find_processes`
-
+print_eaters() {
 IFS1=$IFS; IFS='
-'; for eater in `echo "$io_eaters"` ; do io=`echo "$eater" | cut -d' ' -f1` ; pid=`echo "$eater" | cut -d' ' -f2` ; echo -e "\n  `find_cmd $pid` $io\n" ; [ -d /proc/$pid ] || continue ; cd /proc/$pid/fdinfo ; grep -L '^pos:[[:space:]]*0$' * | while read l ; do b=`grep ^pos $l | awk '{print $2}'`; sleep 1 ; a=`grep ^pos $l | awk '{print $2}'` ; c=`expr $a - $b` ; [ $c -ne 0 ] && echo "`readlink ../fd/$l` $c" ; done ; done ; IFS=$IFS1
+'; for eater in `echo "$io_eaters"` ; do
+  io=`echo "$eater" | cut -d' ' -f1`
+  pid=`echo "$eater" | cut -d' ' -f2`
+  echo -e "\n  `find_cmd $pid` $io\n"
+  [ -d /proc/$pid ] || continue
+  if [ -d /proc/$pid/fdinfo ]; then
+    cd /proc/$pid/fdinfo
+    grep -L '^pos:[[:space:]]*0$' * | while read l ; do
+      b=`grep ^pos $l | awk '{print $2}'`
+      sleep 1
+      a=`grep ^pos $l | awk '{print $2}'`
+      c=`expr $a - $b`
+      [ $c -ne 0 ] && echo "`readlink ../fd/$l` $c"
+    done
+  done
+done
+IFS=$IFS1
+}
 
+echo -e "Readers\n-------\n"
+
+io_eaters=`find_processes read`
+print_eaters
+
+echo -e "Writers\n-------\n"
+
+io_eaters=`find_processes write`
+print_eaters
 
