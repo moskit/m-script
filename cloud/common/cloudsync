@@ -20,7 +20,9 @@ rpath=${0%/*}
 
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf" || exit 99
-source "$M_ROOT/conf/clouds/${CLOUD}.conf" || exit 99
+if [ -n "$CLOUD" ]; then
+  source "$M_ROOT/conf/clouds/${CLOUD}.conf" || exit 99
+fi
 
 RSYNC=`which rsync 2>/dev/null`
 SCP=`which scp 2>/dev/null`
@@ -37,7 +39,7 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
-possible_options="cluster help region verbose recursive ip nolocalhost user"
+possible_options="cluster help region verbose recursive ip nolocalhost user cloud"
 commflag=0
 for s_option in "${@}"
 do
@@ -103,100 +105,110 @@ EOF
   exit 0
 fi
 
-[ -n "$user" ] && REMOTE_USER="$user"
-[ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 
-declare -i RETVAL
-RETVAL=0
-[ -n "$recursive" ] && recursive="-r"
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-if [ -n "$ip" ] ; then
-  cluster= ; region=
-  if [ `grep -c "^$ip|" "$M_ROOT/servers.list"` -eq 0 ] ; then
-    # if name passed as ip
-    if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
-      echo "Unable to find $ip in servers.list"
-      exit 1
+for cld in $CLOUD ; do
+
+  declare -i RETVAL
+  RETVAL=0
+  [ -n "$recursive" ] && recursive="-r"
+  [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+  if [ -n "$ip" ] ; then
+    cluster= ; region=
+    if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
+      # if name passed as ip
+      if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+        echo "Unable to find $ip in cloud $cld"
+        exit 1
+      else
+        ip=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+        [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
+      fi
     else
-      ip=`cat "$M_ROOT/servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
-      [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
+      # cluster is still needed in some cases
+      server=`grep "|${cld}$" "$M_ROOT/servers.list" | grep "^$ip|"`
+      cluster=`echo "$server" | cut -d'|' -f5`
+      region=`echo "$server" | cut -d'|' -f3`
     fi
-  else
-    # cluster is still needed for some cases
-    server=`grep "^$ip|" "$M_ROOT/servers.list"`
-    cluster=`echo "$server" | cut -d'|' -f5`
-    region=`echo "$server" | cut -d'|' -f3`
   fi
-fi
 
-[ -n "$all" ] && cluster=all
-[ "x$cluster" == "xall" ] && cluster=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
-[ -z "$cluster" ] && cluster=$M_CLUSTER
-[ -z "$cluster" ] && echo "No clusters found" && exit 1
-[ `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "^${cluster}$"` -eq 0 ] && echo "No servers found in cluster $cluster" && exit 1
+  [ -n "$all" ] && cluster=all
+  [ -z "$cluster" ] && cluster=$M_CLUSTER
+  [ -z "$cluster" ] && echo "No clusters found" && exit 1
 
-IFS1=$IFS
-IFS='
-'
-if [ "X$command" != "X" ] ; then
-  from=${command%% *}
-  ## Deployment system integration ##
-  if [ ! -e "$from" ]; then
-    source "$M_ROOT/conf/deployment.conf"
-    for r in $role $ROLEINCL common ; do
-      for f in $flavor common ; do
-        from1=`find "$ROLES_ROOT/$r/$f/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
-        [ -e "$from1" ] && break 2
+  [ "x$cluster" == "xall" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+
+  IFS1=$IFS
+  IFS='
+  '
+  if [ "X$command" != "X" ] ; then
+    from=${command%% *}
+    ## Deployment system integration ##
+    if [ ! -e "$from" ]; then
+      source "$M_ROOT/conf/deployment.conf"
+      for r in $role $ROLEINCL common ; do
+        for f in $flavor common ; do
+          from1=`find "$ROLES_ROOT/$r/$f/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`
+          [ -e "$from1" ] && break 2
+        done
+      done
+      [ ! -e "$from1" ] && echo "File $from not found" && exit 1
+      from=$from1
+    fi
+    ##
+    [ -h "$from" ] && from=`readlink -f "$from"`
+    to=${command#* }
+    [ -n "$verbose" ] && echo "### Syncing $from to $to"
+    for cluster in `printf "${clusters}\n"|sed 's|,|\n|g'` ; do
+
+      [ -n "$user" ] && REMOTE_USER="$user"
+      [ -z "$REMOTE_USER" ] && REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -d'|' -f13`
+      [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+
+      for server in `cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v ^#|grep -v ^[[:space:]]*#` ; do
+        IP=${server%%|*}
+        if [ -n "$ip" ] ; then
+          [ "X$IP" == "X$ip" ] || continue
+        fi
+        if [ -n "$region" ] ; then
+          REGION=`echo $server | cut -d'|' -f3`
+          [ "X$REGION" == "X$region" ] || continue
+        fi
+        if [ -n "$cluster" ] ; then
+          CLUSTER=`echo $server | cut -d'|' -f5`
+          [ "X$CLUSTER" == "X$cluster" ] || continue
+        fi
+        if [ "X$verbose" == "Xyes" ] ; then
+          NAME=`echo $server | cut -d'|' -f4`
+          echo
+          echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
+        fi
+        if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+          if [ -z "$nolocalhost" ]; then
+            [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
+          fi
+        else
+          KEY=`$M_ROOT/helpers/find_key server $IP` || continue
+          if [ -n "$RSYNC" ] ; then
+            $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$REMOTE_USER"@"${IP}:${to}"
+            [ $? -eq 0 ] && echo "Success" && continue
+          fi
+          printf "Rsync failed or not found, trying scp ...  "
+          $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$REMOTE_USER"@"${IP}:${to}"
+          if [ $? -eq 0 ] ; then
+            echo "Success"
+          else
+            echo "ERROR: Unable to cloudsync"
+            RETVAL+=1
+          fi
+        fi
       done
     done
-    [ ! -e "$from1" ] && echo "File $from not found" && exit 1
-    from=$from1
   fi
-  ##
-  [ -h "$from" ] && from=`readlink -f "$from"`
-  to=${command#* }
-  [ -n "$verbose" ] && echo "### Syncing $from to $to"
-  for cluster in `printf "${cluster}\n"|sed 's|,|\n|g'` ; do
-    for server in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v ^#|grep -v ^[[:space:]]*#` ; do
-      IP=${server%%|*}
-      if [ -n "$ip" ] ; then
-        [ "X$IP" == "X$ip" ] || continue
-      fi
-      if [ -n "$region" ] ; then
-        REGION=`echo $server | cut -d'|' -f3`
-        [ "X$REGION" == "X$region" ] || continue
-      fi
-      if [ -n "$cluster" ] ; then
-        CLUSTER=`echo $server | cut -d'|' -f5`
-        [ "X$CLUSTER" == "X$cluster" ] || continue
-      fi
-      if [ "X$verbose" == "Xyes" ] ; then
-        NAME=`echo $server | cut -d'|' -f4`
-        echo
-        echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
-      fi
-      if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
-        if [ -z "$nolocalhost" ]; then
-          [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
-        fi
-      else
-        KEY=`$M_ROOT/helpers/find_key server $IP` || continue
-        if [ -n "$RSYNC" ] ; then
-          $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$REMOTE_USER"@"${IP}:${to}"
-          [ $? -eq 0 ] && echo "Success" && continue
-        fi
-        printf "Rsync failed or not found, trying scp ...  "
-        $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$REMOTE_USER"@"${IP}:${to}"
-        if [ $? -eq 0 ] ; then
-          echo "Success"
-        else
-          echo "ERROR: Unable to cloudsync"
-          RETVAL+=1
-        fi
-      fi
-    done
-  done
-fi
-IFS=$IFS1
+  IFS=$IFS1
+  
+done
+
 exit $RETVAL
 

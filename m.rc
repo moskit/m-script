@@ -27,7 +27,14 @@ setup_env() {
   source "$rpath/conf/deployment.conf"
   HOME_ORIG=$HOME
   HOME=$M_ROOT
-  export CLOUD ROLES_ROOT M_ROOT HOME HOME_ORIG M_TEMP
+  # with a single cloud we can speed up things a bit (see scripts in cloud/common)
+  CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+  if [ `echo "$CLOUD" | wc -l` -eq 1 ]; then
+    export CLOUD
+  else
+    unset CLOUD
+  fi
+  export ROLES_ROOT M_ROOT HOME HOME_ORIG M_TEMP
   $ALWAYS_LOGIN_SHELL && source /etc/profile
   [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
   [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
@@ -53,6 +60,8 @@ cr() {
     export M_CLUSTER
     flavor=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f11`
     export flavor
+    CLOUD=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f12`
+    export CLOUD
   fi
   set_default_ps
   source role.conf

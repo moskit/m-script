@@ -1,5 +1,5 @@
 ### Servers.list
 ##
 ## Format:
-## IP|key|region|name|cluster
+## IP|key|region|name|cluster|cloud
 
