@@ -1,0 +1,44 @@
+#!/bin/bash
+### Generates $db.dat out of all $db.$hp.dat and $db.$coll.dat out of $db.$hp.$coll.dat
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+LOG="$M_ROOT/logs/sa.log"
+
+hostport=`cat "$rpath/mongo_servers.list" | grep -vE "slave$|arbiter$" | cut -d'|' -f1 | tr '\n' ' '`
+[ -z "$hostport" ] && echo "No servers found" && exit 1
+
+declare -i dbhpdat objects datasize storagesize numextents indexes indexsize filesize
+
+for db in `cat "$rpath/data/databases.dat" | cut -d'|' -f2 | sort | uniq` ; do
+  dbhpdat=0
+  objects=0
+  datasize=0
+  storagesize=0
+  numextents=0
+  indexes=0
+  indexsize=0
+  filesize=0
+  for hp in $hostport ; do
+    dbhpdat=`cat "$rpath/data/${db}.${hp}.dat"`
+    objects+=`echo "$dbhpdat" | grep \/\"objects\" | cut -d'|' -f2`
+    datasize+=`echo "$dbhpdat" | grep \/\"dataSize\" | cut -d'|' -f2`
+    storagesize+=`echo "$dbhpdat" | grep \/\"storageSize\" | cut -d'|' -f2`
+    numextents+=`echo "$dbhpdat" | grep \/\"numExtents\" | cut -d'|' -f2`
+    [ $indexes -eq 0 ] && indexes=`echo "$dbhpdat" | grep \/\"indexes\" | cut -d'|' -f2`
+    indexsize+=`echo "$dbhpdat" | grep \/\"indexSize\" | cut -d'|' -f2`
+    filesize+=`echo "$dbhpdat" | grep \/\"fileSize\" | cut -d'|' -f2`
+    for coll in `cat "$rpath/data/${db}.${hp}.collections"` ; do
+      colldata=`cat "$rpath/data/${db}.${hp}.${coll}.dat"`
+      
+    done
+  done
+  echo -e "0/"objects"|$objects\n0/"dataSize"|$datasize\n0/"storageSize"|$storagesize\n0/"numExtents"|$numextents\n0/"indexes"|$indexes\n0/"indexSize"|indexsize\n0/"fileSize"|$filesize" > "$rpath/data/${db}.dat"
+  
+  
+    
+
+

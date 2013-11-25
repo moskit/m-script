@@ -1,0 +1,80 @@
+##################################
+##  Amazon cloud configuration  ##
+##################################
+
+CLOUD_PROVIDER=ec2
+
+# Short, or internal, name is the name of this file without extension.
+# Below is a long name that appears in reports, alerts and web interface
+NAME="Amazon EC2"
+
+EC2_PRIVATE_KEY=
+EC2_CERT=
+EC2_USERID=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+
+EC2_AK=
+EC2_REGION=
+
+### Settings for server images ###
+
+# S3 bucket to save AMI to:
+BUCKETNAME=
+# Multiple paths must be separated by comma
+EXCLUDE_PATHS=
+SAVED_FILES_PATH=/mnt
+ARCH=i386
+
+####################
+## Common options ##
+####################
+
+# Network used for communication with this cloud. Possible values:
+# internal (private IP ranges: 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
+# external
+NETWORK=
+
+# In case you are using non-standard SSH port
+SSHPORT=
+
+# Connect timeout (SSH default if not set)
+CONNECT_TIMEOUT=5
+
+# Length of the index part in server names (e.g. app001)
+# It does not limit available numbers, so if it is set to 3, after 999 still
+# will be 1000 :)
+NAME_INDEX_LENGTH=3
+
+# What is to be used as server name for servers list. Also available as command
+# line option --name_source
+# host - real hostname (default, slower)
+# metadata - gets the name from server metadata via API
+# dnsName - public DNS name in case of EC2; metadata source above uses private
+#           DNS name
+# tag:tagname - specific tag in metadata; tagname defines the name of the tag
+# NAME_SOURCE=
+
+# What source of server name to be used as a fallback in case default source
+# fails to return anything or returns empty string (see the sources list above).
+# Default is "metadata".
+# NAME_SOURCE_FALLBACK=
+
+# Some functions don't call API each time they need the servers list, using
+# existing tmp file instead. This variable sets the maximal age of this file
+# in seconds. If this file is too old, it will be updated forcefully.
+# There is no default, so if this is unset or empty, the feature is disabled.
+FORCE_LIST_UPDATE_AFTER=1800
+
+# tag name to define cluster (default: "cluster")
+# CLUSTER_TAG=
+
+# Whether /etc/profile should be sourced via $M_ROOT/m.rc (useful for remote
+# operations only)
+# SSH defines some environment, but it's not /etc/profile, and sometimes it is
+# not enough (depends on the system). Note that sourcing /etc/profile adds some
+# time to each remote operation.
+# Another way to achieve this is to add the line 'source /etc/profile' to
+# $M_ROOT/.msh.env in every server.
+ALWAYS_LOGIN_SHELL=false
+

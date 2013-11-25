@@ -287,7 +287,7 @@ Other options:
 
 EOF
   else
-    echo -e "Usage: ${0##*/} <options>\n   Possible options: $possible_options"
+    echo -e "Usage: ${0##*/} <options>\n    Possible options: $possible_options\n    For detailed help use ${0##*/} --help --verbose\n"
   fi
   exit 0
 fi

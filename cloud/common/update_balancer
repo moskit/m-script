@@ -1,0 +1,125 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
+possible_options="cluster help"
+necessary_options=""
+#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+for s_option in "${@}"
+do
+  found=0
+  case ${s_option} in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes' 
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=${s_option}
+    s_optname=''
+    s_optarg=''
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's/,//g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+  done
+  [ "X$s_option" == "X$s_param" ] && found=1
+  if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+if [ "X$help" == "Xyes" ] ; then
+  cat << "EOF"
+Usage: ${0##*/} <options>
+
+Options:
+
+  --cluster=<cluster name>           - updates balancer of this cluster
+                                     If cluster is not defined, M_CLUSTER
+                                     environment variable is used
+
+EOF
+  exit 0
+fi
+found=0
+
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && echo "cluster is not defined" && exit 1
+
+source "$M_ROOT/conf/balancers/${cluster}.conf"
+source "$M_ROOT/conf/mon.conf"
+
+[ -z "$BALANCER_PORTS" ] && echo "BALANCER_PORTS is empty" && exit 1
+
+M_TEMP="$M_TEMP/cloud/$cloud"
+install -d $M_TEMP
+
+apps=`echo -e "$BALANCER_PORTS" | tr ',' '\n' | sort | uniq`
+appnames=`echo "$APPS" | cut -s -d':' -f1`
+if [ -z "$appnames" ]; then
+  appnames="$cluster"
+  appports="$apps"
+fi
+
+IFS='
+'
+for app in $appnames ; do
+  [ -f "$M_TEMP/${app}.${cluster}.ips" ] && mv "$M_TEMP/${app}.${cluster}.ips" "$M_TEMP/${app}.${cluster}.ips.prev" 2>/dev/null
+  [ -z "$appports" ] && appports=`echo "$apps" | grep "^${app}:" | cut -s -d':' -f2`
+  for IP in `"$rpath"/get_ips --cluster=$cluster` ; do
+    for PORT in $ports ; do
+      echo "$IP:$PORT" >> "$M_TEMP/${app}.${cluster}.ips"
+    done
+  done
+  [ -f "$M_TEMP/${app}.${cluster}.ips.prev" ] && [ -f "$M_TEMP/${app}.${cluster}.ips" ] && [ -z "`$DIFF -q "$M_TEMP/${app}.${cluster}.ips.prev" "$M_TEMP/${app}.${cluster}.ips"`" ] && continue
+
+case $BALANCER_TYPE in
+nginx)
+  update_nginx_balancer --cluster="$cluster" --application="$app"
+  [ $? -ne 0 ] && log "error updating balancer" && exit 1
+  ;;
+*)
+  echo "balancer type $BALANCER_TYPE is not supported" && exit 1
+  ;;
+esac
+
+exit 0
+
+done

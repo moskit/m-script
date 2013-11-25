@@ -1,0 +1,25 @@
+##############################
+##  Balancer configuration  ##
+##############################
+
+BALANCER_TYPE=nginx
+
+### This file must have the name of the cluster it is attached to with .conf
+### extension, for example: appservers.conf for cluster 'appservers'
+
+### Ports, traffic to/from which is balanced
+### Syntax: BALANCER_PORTS=APP1:PORT1,APP1:PORT2,APP2:PORT1,...
+### If there is only one APP, its name can be omitted, cluster name will be
+### used instead: BALANCER_PORTS=PORT1,PORT2,...
+### If you use same application names in other clusters, they will be
+### included in this balancer too.
+BALANCER_PORTS=
+
+### One of: 1) sticky (requests from the same IP go to the same server)
+###         2) round-robin (default)
+BALANCE_METHOD=
+
+NGINX_PROXY_CLUSTER_CONF_DIR=/etc/nginx/balancers/
+NGINX_RC_SCRIPT=/etc/init.d/nginx
+NGINX_RELOAD_COMMAND=reload
+
