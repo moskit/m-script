@@ -38,11 +38,11 @@ debug=true
 
 SSH=`which ssh 2>/dev/null`
 [ -n "$SSH" ] || (echo "No ssh found" && exit 1)
-source "$rpath/conf/clouds/${CLOUD}.conf"
+[ -n "$CLOUD" ] && source "$rpath/conf/clouds/${CLOUD}.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
+possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
 necessary_options="metric"
 source "$rpath/conf/mon.conf"
 source "$rpath/conf/dash.conf"
@@ -431,25 +431,23 @@ else
     qmetric="${qmetric}, ${smetric}*${mp}"
   done
     
-  if [ -n "$new" ] ; then
-    QUERY="SELECT $qmetric FROM $table WHERE timeindex BETWEEN $from AND $to"
-    if [ -n "$where" ] ; then
-      field=${where%%:*}
-      value=${where#*:}
-      QUERY="$QUERY AND $field='$value'" 
-    fi
-    if [ "X$sIP" == "Xlocalhost" ] ; then
-      $debug && log "$SQL3 \"$rpath/$database\" \"$QUERY\""
-      $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting $smetric data from $rpath/${database}, server $sIP"
-    else
-    # -o StrictHostKeyChecking=no
-      $debug && log "$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" $SQL3 \"$mpath/$database\" \"$QUERY\""
-      $SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from $rpath/${database}, server $sIP"
-    fi
-    if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 1 ] ; then
-      log "Too little data for graph. Might be connection to $sIP problems. Graph is not generated."
-      exit 1
-    fi
+  QUERY="SELECT $qmetric FROM $table WHERE timeindex BETWEEN $from AND $to"
+  if [ -n "$where" ] ; then
+    field=${where%%:*}
+    value=${where#*:}
+    QUERY="$QUERY AND $field='$value'" 
+  fi
+  if [ "X$sIP" == "Xlocalhost" ] ; then
+    $debug && log "$SQL3 \"$rpath/$database\" \"$QUERY\""
+    $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting $smetric data from $rpath/${database}, server $sIP"
+  else
+  # -o StrictHostKeyChecking=no
+    $debug && log "$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" $SQL3 \"$mpath/$database\" \"$QUERY\""
+    $SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from $rpath/${database}, server $sIP"
+  fi
+  if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 1 ] ; then
+    log "Too little data for graph. Might be connection to $sIP problems. Graph is not generated."
+    exit 1
   fi
 
 #############################

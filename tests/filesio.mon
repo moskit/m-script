@@ -51,7 +51,7 @@ IFS1=$IFS; IFS='
 '; for eater in `echo "$io_eaters"` ; do
   io=`echo "$eater" | cut -d' ' -f1`
   pid=`echo "$eater" | cut -d' ' -f2`
-  echo -e "\n  `find_cmd $pid` $io\n"
+  echo -e "\n  `find_cmd $pid` $io"
   [ -d /proc/$pid ] || continue
   if [ -d /proc/$pid/fdinfo ]; then
     cd /proc/$pid/fdinfo
