@@ -32,7 +32,14 @@ source "$M_ROOT/conf/mon.conf"
 find_processes() {
 cd /proc
 IFS1=$IFS; IFS='
-'; for l in `grep ${1}_bytes */io | grep -v "${1}_bytes:\ 0"`; do pid=${l%%/*} ; rdp=${l##* }; sleep 1; rd=`test -d $pid && grep ${1}_bytes $pid/io | cut -d' ' -f2`; echo "`expr $rd - $rdp 2>/dev/null` $pid" ; done | sort -rn | head -n $FIO_TOP_PROCESSES ; IFS=$IFS1
+'; for l in `grep ^${1}_bytes */io | grep -v "${1}_bytes:\ 0"`; do
+    pid=${l%%/*}
+    rdp=${l##* }
+    sleep 1
+    rd=`test -d $pid && grep ^${1}_bytes $pid/io | cut -d' ' -f2`
+    echo "`expr $rd - $rdp 2>/dev/null` $pid"
+  done | sort -rn | head -n $FIO_TOP_PROCESSES
+  IFS=$IFS1
 }
 
 find_cmd() {
@@ -55,7 +62,7 @@ IFS1=$IFS; IFS='
       c=`expr $a - $b`
       [ $c -ne 0 ] && echo "`readlink ../fd/$l` $c"
     done
-  done
+  fi
 done
 IFS=$IFS1
 }
