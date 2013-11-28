@@ -35,7 +35,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 trap unlock_cloudops 3
 trap unlock_cloudops 15
 
-possible_options="id name ip verbose force last first cluster"
+possible_options="cloud id name ip verbose force last first cluster"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`

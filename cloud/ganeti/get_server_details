@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
-possible_options="id name ip return verbose"
+possible_options="cloud id name ip return verbose"
 necessary_options=""
 
 GNTI=`which gnt-instance 2>/dev/null`

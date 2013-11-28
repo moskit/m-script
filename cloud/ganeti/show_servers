@@ -26,7 +26,7 @@ declare -i icount
 
 GNTI=`which gnt-instance 2>/dev/null`
 
-possible_options="cluster state filter node view all count update_servers_list forceupdate noupdate"
+possible_options="cloud cluster state filter node view all count update_servers_list forceupdate noupdate"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`

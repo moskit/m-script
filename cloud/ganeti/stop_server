@@ -27,7 +27,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 
-possible_options="id name ip verbose"
+possible_options="cloud id name ip verbose"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`

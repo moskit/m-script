@@ -26,7 +26,7 @@ source $M_ROOT/lib/cloud_functions.sh
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 LOG="$M_ROOT"/logs/cloud.log
 
-possible_options="id name ip verbose force last first"
+possible_options="cloud id name ip verbose force last first"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`

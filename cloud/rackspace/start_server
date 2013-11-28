@@ -26,7 +26,7 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="region flavor cluster image name return verbose"
+possible_options="cloud region flavor cluster image name return verbose"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`

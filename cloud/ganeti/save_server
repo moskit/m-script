@@ -28,7 +28,7 @@ GI=`which gnt-instance 2>/dev/null`
 [ -z "$LOSETUP" ] && echo "no losetup found" && exit 1
 [ -z "$GI" ] && echo "no gnt-instance found" && exit 1
 
-possible_options="name ip id imagename help verbose"
+possible_options="cloud name ip id imagename help verbose"
 necessary_options=""
 IFS1=$IFS
 IFS='-'

@@ -26,7 +26,7 @@ IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
 [ -z "$ROUTE" ] && echo "route utility not found" && exit 1
 [ -z "$IPR2" ] && echo "ip utility not found" && exit 1
-possible_options="region flavor cluster image name return verbose test"
+possible_options="cloud region flavor cluster image name return verbose test"
 necessary_options="cluster"
 
 LOG="$M_ROOT/logs/cloud.log"

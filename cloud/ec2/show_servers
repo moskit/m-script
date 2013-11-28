@@ -183,7 +183,7 @@ list_servers() {
   IFS=$IFS1
 }
 
-possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all count resolveids id name_source"
+possible_options="cloud help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all count resolveids id name_source"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
