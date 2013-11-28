@@ -72,6 +72,7 @@ for cluster in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | gr
     ip=${server%%|*}
     [ `echo $ip | grep -c "^$localip$"` -ne 0 ] && continue
     key=`find_key server $ip`
+    servername=`echo $server | cut -d'|' -f4`
     [ -d "$rpath/www/$monitor/$cld/$clustered_as/$servername" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$servername"
     (IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > "$M_TEMP/${ip}.${monitor}.remote.dash.list")
     find "$rpath/www/$monitor/$cld/$clustered_as/$servername" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"
