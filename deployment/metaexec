@@ -294,6 +294,7 @@ fi
 
 source "$M_ROOT/conf/deployment.conf"
 source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -n "$SSHPORT" ] || SSHPORT=22
 
@@ -388,7 +389,6 @@ if [ -n "$newserver" ]; then
   [ -z "$cloud" ] && echo "Cloud is not defined" && exit 1
   source "$M_ROOT/conf/clouds/${cloud}.conf"
   [ $? -ne 0 ] && echo "Error reading cloud $cloud configuration" && exit 1
-  source "$M_ROOT/lib/cloud_functions.sh"
 
   [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30

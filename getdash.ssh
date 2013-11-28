@@ -56,14 +56,17 @@ fi
 
 IFS1=$IFS ; IFS='
 '
-for cluster in `cat "$rpath/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq` ; do
+
+for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq` ; do
+
+for cluster in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f5 | sort | uniq` ; do
   [ "X$cluster" == "X$SUPER_CLUSTER" ] && continue
   [ -n "$targetcluster" -a "$targetcluster" != "$cluster" ] && continue
   [ -z "$clustered_as" ] && clustered_as="$cluster"
   $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
   mpath=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath="/opt/m"
-  for server in `grep \|${cluster}$ "$rpath/servers.list" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+  for server in `grep "|${cld}$" "$rpath/servers.list" | grep "|${cluster}|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
     [ -n "$RUNDELAY" ] && sleep $RUNDELAY
     time0=`date +"%s"`
     ip=${server%%|*}
@@ -108,6 +111,8 @@ for cluster in `cat "$rpath/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[
     [ `cat "$rpath/servers.list" | grep "|$cluster[[:space:]]*$" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cluster/${server##*/}"
   done
   unset clustered_as
+done
+
 done
 
 [ -d "$rpath/mon.backups/dash/" ] || install -d "$rpath/mon.backups/dash/"

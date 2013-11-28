@@ -36,8 +36,7 @@ rpath=${rpath%/*}
 # to enable debug logging even without command-line option
 debug=true
 
-SSH=`which ssh 2>/dev/null`
-[ -n "$SSH" ] || (echo "No ssh found" && exit 1)
+
 [ -n "$CLOUD" ] && source "$rpath/conf/clouds/${CLOUD}.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
@@ -49,6 +48,11 @@ source "$rpath/conf/dash.conf"
 source "$rpath/lib/functions.sh"
 
 LOG="$rpath/logs/dashboard.log"
+
+SSH=`which ssh 2>/dev/null`
+[ -z "$SSH" ] && log "No ssh found" && exit 1
+
+
 if [ -z "$freqdef" ]; then
   timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
   [ -z "$timeshift" ] && timeshift=5

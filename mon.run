@@ -173,7 +173,7 @@ function runactions() {
   rm -f "$rpath/report.blocked"
   IFS1=$IFS; IFS='
 '
-  for action in `cat "$rpath/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*# | cut -d'|' -f3 | sort | uniq` ; do
+  for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
     touch "$M_TEMP/consequent_alerts.tmp"

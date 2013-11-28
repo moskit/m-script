@@ -30,7 +30,7 @@ WGET=`which wget 2>/dev/null`
 [ -n "$debug" ] && debug=true || debug=false
 $debug && LOG="$M_ROOT/logs/show_images.log"
 
-possible_options="noupdate"
+possible_options="noupdate cloud"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//;s/ --/|/g'`
@@ -63,6 +63,7 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+[ -n "$cloud" ] && CLOUD=$cloud
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"

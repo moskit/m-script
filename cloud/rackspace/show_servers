@@ -30,7 +30,7 @@ WGET=`which wget 2>/dev/null`
 [ -n "$debug" ] && debug=true || debug=false
 $debug && LOG="$M_ROOT/logs/show_servers.log"
 
-possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolveids"
+possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolveids cloud"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -62,6 +62,8 @@ if [[ found -eq 1 ]]; then
   echo "Necessary options: $missing_options not found"
   exit 1
 fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
 
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
