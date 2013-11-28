@@ -214,7 +214,7 @@ list_servers() {
             for ip in $IP ; do
               ip=${ip#* } ; ip=${ip% *}
               sed -i /^$ip\|/d "$M_ROOT/servers.list"
-              echo "$ip|$key|$region|$name|$icluster" >> "$M_ROOT/servers.list"
+              echo "$ip|$key|$region|$name|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
           fi

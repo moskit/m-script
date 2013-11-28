@@ -141,7 +141,7 @@ list_servers() {
           if [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
             sed -i /^$nic_ip_0\|/d "$M_ROOT/servers.list"
-            echo "$nic_ip_0|$key|$pnode|$name|$icluster" >> "$M_ROOT/servers.list"
+            echo "$nic_ip_0|$key|$pnode|$name|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
             usedips=`$GNTI list -o nic.ip/0`
             for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
               [ `echo $usedips | tr ' ' '\n' | grep -c ^${listip}$` -eq 0 ] && sed -i /^$listip\|/d "$M_ROOT/servers.list"
