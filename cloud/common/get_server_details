@@ -38,10 +38,6 @@ if $found ; then
   exit 1
 fi
 
-for option in $possible_options ; do
-  eval "echo ${option}=\$${option}"
-done
-
 [ -n "$region" ] && REGION="--region=$region"
 
 if [ -n "$cloud" ]; then
