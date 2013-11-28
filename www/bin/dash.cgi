@@ -6,31 +6,24 @@ print_cgi_headers
 
 print_timeline Cluster Server
 
-for cluster in `find ../servers/* -maxdepth 0 -type d 2>/dev/null`
+echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
+cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
+echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"
+
+for cluster in `find ../servers/*/* -maxdepth 0 -type d 2>/dev/null`
 do
-  echo "<div class=\"clustername\"><span class=\"indent\">${cluster##*/}</span></div>"
-  echo "<div class=\"cluster\" id=\"${cluster##*/}\">"
-  if [ "X${cluster##*/}" == "Xlocalhost" ] ; then
-    echo "<div class=\"server\" id=\"localhost\">"
-    
-      echo "<span class=\"servername\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
-      
-      cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
-    echo "</div>"
-    echo "<div class=\"details\" id=\"localhost_details\"></div>"
-    echo "</div>"
-    continue
-  fi
+  cld=`echo "$cluster" | cut -d'/' -f3`
+  cls=`echo "$cluster" | cut -d'/' -f4`
+  echo -e "<div class=\"clustername\"><span class=\"indent\">${cls} / ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
+
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
     serverh=${server##*/}
-    echo "<div class=\"server\" id=\"$serverh\">"
-      echo "<span class=\"servername\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:20}</span>"
+    echo -e "<div class=\"server\" id=\"$serverh\">\n<span class=\"servername\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:20}</span>"
       cat "../servers/$server/dash.html" 2>/dev/null || echo "No data"
       [ -e "../servers/$server/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
       [ -e "../servers/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
-    echo "</div>"
-    echo "<div class=\"details\" id=\"${serverh}_details\"></div>"
+    echo -e "</div>\n<div class=\"details\" id=\"${serverh}_details\"></div>"
   done
   echo "</div>"
 done
