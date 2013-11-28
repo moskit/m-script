@@ -5,40 +5,24 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
-possible_options="region cloud verbose"
+possible_options="cloud"
 necessary_options=""
 
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"
 do
-  found=false
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "X$s_optarg" == "X$s_optname" ] && unset s_optarg
 
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && break
   done
-  
-  if ! $found ; then 
-    echo "Unknown option: $s_optname"
-    exit 1
-  fi
+
 done
 IFS=$IFS1
-
-found=false
-for option in $necessary_options ; do
-  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options} --${option}," && found=true
-done
-if $found ; then
-  echo "Necessary options: ${missing_options/%,/} not found"
-  exit 1
-fi
-
-[ -n "$region" ] && REGION="--region=$region"
 
 if [ -n "$cloud" ]; then
   cloud=`echo -e "$cloud" | tr ',' '\n'`
@@ -50,6 +34,6 @@ fi
 
 for cld in $cloud ; do
   source "$M_ROOT/conf/clouds/${cld}.conf"
-  "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $REGION $@
+  "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
 done
 
