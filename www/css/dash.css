@@ -234,6 +234,13 @@ span.indent {
   float: left;
 }
 
+span.right_note {
+  margin-right: 6px;
+  width: 199px;
+  font-size: 10px;
+  color: #33b;
+  float: right;
+}
 
 .clusterstatus {
   width: 88px;

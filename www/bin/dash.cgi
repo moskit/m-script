@@ -14,7 +14,7 @@ for cluster in `find ../servers/*/* -maxdepth 0 -type d 2>/dev/null`
 do
   cld=`echo "$cluster" | cut -d'/' -f3`
   cls=`echo "$cluster" | cut -d'/' -f4`
-  echo -e "<div class=\"clustername\"><span class=\"indent\">${cls} / ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
+  echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
 
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
