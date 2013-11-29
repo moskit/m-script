@@ -235,12 +235,12 @@ span.indent {
 }
 
 span.right_note {
-  margin-right: 6px;
-  width: 199px;
+  margin: 3px 6px 3px 0px;
+  width: 560px;
   font-size: 10px;
-  color: #339;
-  float: right;
-  text-align: right;
+  color: #669;
+  float: left;
+  text-align: left;
 }
 
 .clusterstatus {
