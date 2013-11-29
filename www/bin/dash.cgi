@@ -4,7 +4,11 @@ source "$PWD/../../lib/dash_functions.sh"
 
 print_cgi_headers
 
-print_timeline Cluster Server
+open_cluster Cluster
+print_cluster_inline "Size" "Image" "Cloud"
+close_cluster_line
+print_timeline Server
+close_cluster
 
 echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
 cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"

@@ -174,7 +174,7 @@ IFS=$IFS1
 print_timeline() {
   dfptoldest=`date -d "-$timerange sec"`
   dfpthour=`date -d "$dfptoldest" +"%H"`
-  echo -e "<div class=\"dashtitle\">\n<div class=\"clustername\"><span class=\"indent\">${1}</span></div>\n<div class=\"server\">\n<span class=\"servername\">${2}</span>\n"
+  echo -e "<div class=\"server\">\n<span class=\"servername\">${1}</span>"
   for ((n=0; n<$slotline_length; n++)) ; do
     dfpttimediff=`expr $n \* \( $freqdef - $timeshift \)`
     dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`
@@ -186,7 +186,7 @@ print_timeline() {
       dfpthour=$dfpthournew
     fi
   done
-  echo -e "</div>\n</div>"
+  echo "</div>"
   unset dfptoldest dfpthour dfpttimediff dfpttimestamp dfpthournew
 }
 
