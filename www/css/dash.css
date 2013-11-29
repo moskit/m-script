@@ -237,8 +237,9 @@ span.indent {
 span.right_note {
   margin: 3px 6px 3px 0px;
   width: 560px;
-  font-size: 10px;
-  color: #669;
+  font-size: 11px;
+  font-weight: normal;
+  color: #444444;
   float: left;
   text-align: left;
 }

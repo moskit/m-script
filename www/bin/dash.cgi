@@ -19,7 +19,7 @@ do
   sizeh=`cat "$M_TEMP/cloud/$cld/flavors.list" | grep ^$size\| | cut -d'|' -f2`
   img=`echo "$clsconf" | cut -d'|' -f6`
   imgh=`cat "$M_TEMP/cloud/$cld/images.list"  | grep ^$img\| | cut -d'|' -f2`
-  echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Servers: $sizeh Image: $imgh Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
+  echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Server size: $sizeh  Image: $imgh  Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
 
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do

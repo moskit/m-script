@@ -7,7 +7,6 @@ rpath=${0%/*}
 
 for cld in `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^[[:space:]]# | grep -v ^$ | cut -d'|' -f12 | sort | uniq | grep -v ^$`; do
   source "$M_ROOT/conf/clouds/${cld}.conf"
-  export CLOUD=$cld
   "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld --forceupdate --update_servers_list $@
 done
 
