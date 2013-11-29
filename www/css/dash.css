@@ -238,8 +238,9 @@ span.right_note {
   margin-right: 6px;
   width: 199px;
   font-size: 10px;
-  color: #33b;
+  color: #339;
   float: right;
+  text-align: right;
 }
 
 .clusterstatus {
