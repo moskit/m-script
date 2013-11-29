@@ -246,7 +246,7 @@ span.indent {
   font-weight: normal;
   margin-top: 3px;
   color: #666699;
-  background-color: #f9f9f9;
+  border-right: 1px solid #fcfcfc;
 }
 
 .ok {
@@ -340,8 +340,12 @@ span.indent {
   height: 18px;
   margin: 1px 1px 1px 0px;
   float: left;
+  border-bottom: 1px solid #cacaca;
 }
 
+.hour {
+  border-bottom: 1px solid #333333;
+}
 .cluster {
   width: 800px;
   display: table;

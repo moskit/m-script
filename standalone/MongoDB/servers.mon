@@ -276,7 +276,7 @@ for configip in $configips ; do
 # master=`find_master ${configip} || echo ${configip}`
   mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
-  mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -d'|' -f2 | tr -d '"' | sort -n`
+  mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -s -d'|' -f2 | tr -d '"' | grep -v ^$ | sort -n`
   [ $res -eq 0 ] && break
 done
 
@@ -301,8 +301,9 @@ if [ -n "$shardhosts" ] ; then
   nmax=`echo "$shardhosts" | tail -1 | cut -d'/' -f1`
   shardlist=()
   for ((n=0; n<=$nmax; n++)) ; do
-    shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | cut -d'|' -f2`
-    shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | cut -d'|' -f2`
+    shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | cut -s -d'|' -f2`
+    shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | cut -s -d'|' -f2`
+    [ -z "$shardhost" ] && continue
     shard=`eval "echo $shard"` ; shardhost=`eval "echo $shardhost"`
     #ifreplicaset=${shardhost%%/*}
     shardhost=${shardhost#*/}
@@ -321,7 +322,8 @@ if [ -n "$shardhosts" ] ; then
 
   for rs in `cat "$M_TEMP/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
   shardlist=()
-    for rshost in `cat "$M_TEMP/mongo_shards.list" | grep "|$rs|" | cut -d'|' -f1` ; do
+    for rshost in `cat "$M_TEMP/mongo_shards.list" | grep "|$rs|" | cut -s -d'|' -f1` ; do
+      [ -z "$rshost" ] && continue
       replicahosts=`(IFS=$IFSORG ; $MONGO $AUTH "$rshost"/admin --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG")`
       res=$?
       replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
@@ -345,7 +347,7 @@ else
 fi
 
 if [ -e "$rpath/mongo_config_servers.list" ] ; then
-  for cs in `cat "$rpath/mongo_config_servers.list" | cut -d'|' -f1` ; do
+  for cs in `cat "$rpath/mongo_config_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/configservers/$cs" ] || install -d "$M_ROOT/www/MongoDB/configservers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
 # mongo localhost:27017/admin --quiet --eval "db.currentOp().inprog.forEach(function(d){ if(d.waitingForLock) print(d.op)})" | sort | uniq -c
@@ -363,7 +365,7 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
 fi
 
 if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
-  for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1` ; do
+  for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -s -d'|' -f1` ; do
     install -d "$M_ROOT/www/MongoDB/balancers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
     serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null`
@@ -380,7 +382,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
 fi
 
 if [ -e "$rpath/mongo_shards.list" ] ; then
-  for cs in `cat "$rpath/mongo_shards.list" | cut -d'|' -f1` ; do
+  for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     install -d "$M_ROOT/www/MongoDB/shardservers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
@@ -397,7 +399,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
 fi
 
 if [ -e "$rpath/mongo_servers.list" ] ; then
-  for cs in `cat "$rpath/mongo_servers.list" | cut -d'|' -f1` ; do
+  for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
     install -d "$M_ROOT/www/MongoDB/servers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)

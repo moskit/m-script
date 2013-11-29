@@ -1,16 +1,14 @@
 #!/bin/bash
 
-source "${PWD}/../../conf/dash.conf"
-source "${PWD}/../../lib/dash_functions.sh"
+source "$PWD/../../conf/dash.conf"
+source "$PWD/../../lib/dash_functions.sh"
 
-ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}$" | cut -d'|' -f1`
-[ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}[[:space:]]$" | cut -d'|' -f1`
-[ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}|$" | cut -d'|' -f1`
-[ -z "$ip" ] && ip=`cat "${PWD}/../../servers.list" | grep "|${2}|${1}|[[:space:]]$" | cut -d'|' -f1`
+ip=`cat "$PWD/../../servers.list" | grep "|$2|$1|" | cut -d'|' -f1`
+
 [ -n "$ip" ] && sip="--ip=$ip" || ip="localhost"
-ex=`find ${PWD}/../graphs -mmin -$(expr 2 \* ${freqdef} / 60 ) -name ${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg`
+ex=`find $PWD/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name ${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg`
 if [ -z "$ex" ] ; then
-${PWD}/../../graph --metric=loadavg,activeram,freeswap,procnum,diskusage,cpuusage,connections,bwidthin,bwidthout --new --scale --width=750 --height=300 --from=-${timerange}sec $sip --padding=20 --legend=160
+$PWD/../../graph --metric=loadavg,activeram,freeswap,procnum,diskusage,cpuusage,connections,bwidthin,bwidthout --new --scale --width=750 --height=300 --from=-${timerange}sec $sip --padding=20 --legend=160
 fi
 
 echo -e "<div class=\"combinedgraph\"><object data=\"/graphs/${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object></div>"
