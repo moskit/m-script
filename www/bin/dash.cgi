@@ -4,7 +4,7 @@ source "$PWD/../../lib/dash_functions.sh"
 
 print_cgi_headers
 
-Size="Size" ; Image="Image" ; Cloud="Cloud"
+Size="Size/Tariff" ; Image="Source Image" ; Cloud="Cloud"
 
 open_cluster "Cluster"
 print_cluster_inline "Size" "Image" "Cloud"
@@ -25,7 +25,9 @@ do
   sizeh=`cat "$M_TEMP/cloud/$cld/flavors.list" | grep ^$size\| | cut -d'|' -f2`
   img=`echo "$clsconf" | cut -d'|' -f6`
   imgh=`cat "$M_TEMP/cloud/$cld/images.list"  | grep ^$img\| | cut -d'|' -f2`
-  echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Server size: $sizeh  Image: $imgh  Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
+  open_cluster "$cls"
+  print_cluster_inline "sizeh" "imgh" "cld"
+  #echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Server size: $sizeh  Image: $imgh  Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
 
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
