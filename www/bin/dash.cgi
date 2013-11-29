@@ -27,6 +27,7 @@ do
   imgh=`cat "$M_TEMP/cloud/$cld/images.list"  | grep ^$img\| | cut -d'|' -f2`
   open_cluster "$cls"
   print_cluster_inline "sizeh" "imgh" "cld"
+  close_cluster_line
   #echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Server size: $sizeh  Image: $imgh  Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
 
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
@@ -38,7 +39,7 @@ do
       [ -e "../servers/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
     echo -e "</div>\n<div class=\"details\" id=\"${serverh}_details\"></div>"
   done
-  echo "</div>"
+  close_cluster
 done
 
 exit 0
