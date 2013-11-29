@@ -33,6 +33,7 @@ else
 fi
 
 for cld in $cloud ; do
+  export CLOUD=$cld
   source "$M_ROOT/conf/clouds/${cld}.conf"
   "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
 done

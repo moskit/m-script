@@ -33,6 +33,7 @@ fi
 [ -z "$cld" ] && echo "cloud is not defined" && exit 1
 
 source "$M_ROOT/conf/clouds/${cld}.conf"
+export CLOUD=$cld
 "$M_ROOT"/cloud/$CLOUD_PROVIDER/start_server --cloud=$cld $@
 
 

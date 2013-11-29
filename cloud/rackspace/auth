@@ -26,6 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 V="v1.1"
+[ -z "$CLOUD" ] && echo "CLOUD is not defined" && exit 1
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/rackspace"
