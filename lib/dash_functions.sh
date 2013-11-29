@@ -58,7 +58,7 @@ open_cluster() {
   dfocid="${@}"
   echo "<div class=\"cluster\" id=\"${dfocid%%|*}\">"
   echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid#*|}</span>"
-  unset dfoconclick dfocid
+  unset dfoconclick
 }
 
 print_cluster_inline() {
