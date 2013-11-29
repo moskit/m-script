@@ -41,7 +41,7 @@ for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|
   open_cluster databases "$dbname"
   
   print_cluster_inline "total_status" "-" "-" "total_count" "total_datasize" "total_indexsize"
-  close_cluster_line "$dbname"
+  close_cluster_line
   
   for coll in "$PWD/../../standalone/$saname/data"/${dbname}.*.dat ; do
     collinfo=`cat "$coll"`
