@@ -3,7 +3,7 @@
 source "$PWD/../../conf/dash.conf"
 source "$PWD/../../lib/dash_functions.sh"
 
-ip=`cat "$PWD/../../servers.list" | grep "|$2|$1|" | cut -d'|' -f1`
+ip=`cat "$PWD/../../servers.list" | grep "|$2|${1}$" | cut -d'|' -f1`
 
 [ -n "$ip" ] && sip="--ip=$ip" || ip="localhost"
 ex=`find $PWD/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name ${ip}.sysdata.loadavg_activeram_freeswap_procnum_diskusage_cpuusage_connections_bwidthin_bwidthout.svg`
