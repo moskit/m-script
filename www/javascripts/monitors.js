@@ -91,15 +91,18 @@ showURL = function(theid,url,scriptname) {
 
 showData = function(theid,base) {
   cluster=$(theid).parentNode.parentNode.id;
-  clusterB="^" + cluster + "\\.";
-  re=new RegExp(clusterB);
-  server=$(theid).parentNode.id.replace(re,'');
+  clusterA=cluster.split("|");
+  if (clusterA[1]) {
+    cluster=clusterA[1] + "/" + clusterA[0];
+  }
+  server=$(theid).parentNode.id
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
     stopUpdater(updater);
     if (cluster == 'localhost') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(theid) + '.html';
     } else {
+
       var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(theid) + '.html';
     }
     new Ajax.Request(the_url, {
@@ -110,7 +113,7 @@ showData = function(theid,base) {
         Effect.SlideDown('data_' + theid, {duration: 0.3});
       }
     });
-	}
+  }
 }
 
 showDetails = function(theid,script) {

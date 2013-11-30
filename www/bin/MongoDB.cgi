@@ -56,7 +56,7 @@ IFS='
 '
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
-  open_cluster "configservers|Configuration Servers"
+  open_cluster "Configuration Servers|configservers"
   close_cluster_line
   for s in `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list"` ; do
     print_mongo_server "$s"
@@ -67,7 +67,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/n
 # Standalone servers
 elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
   
-  open_cluster "mongoservers|MongoDB Servers"
+  open_cluster "MongoDB Servers|mongoservers"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
@@ -88,7 +88,7 @@ fi
 
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
-  open_cluster "shardservers|Shard Servers"
+  open_cluster "Shard Servers|shardservers"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
@@ -108,7 +108,7 @@ fi
 
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
-  open_cluster "balancers|Balancers"
+  open_cluster "Balancers|balancers"
   close_cluster_line
   
     for s in `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list"` ; do
