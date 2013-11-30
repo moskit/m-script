@@ -182,7 +182,7 @@ print_timeline() {
     dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`
     dfpthournew=`date -d "$dfpttimestamp" +"%H"`
     if [ "X$dfpthournew" == "X$dfpthour" ] ; then
-      echo "<div class=\"chunk\">&nbsp;</div>"
+      echo "<div class=\"chunk timeline\">&nbsp;</div>"
     else
       echo "<div class=\"chunk hour\">${dfpthournew}:00</div>"
       dfpthour=$dfpthournew
