@@ -98,8 +98,7 @@ Options:
   --verbose                - shows each server details before running
                              the command.
   --user=[username]        - connects to remote servers as user [username].
-                             Username can also be defined in conf/mon.conf
-                             (REMOTE_USER). Default user is root.
+                             Default user is root.
 
 EOF
   exit 0
@@ -162,9 +161,9 @@ for cld in $CLOUD ; do
     [ -n "$verbose" ] && echo "### Syncing $from to $to"
     for cluster in `printf "${clusters}\n"|sed 's|,|\n|g'` ; do
 
-      [ -n "$user" ] && REMOTE_USER="$user"
-      [ -z "$REMOTE_USER" ] && REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -d'|' -f13`
-      [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+      [ -n "$user" ] && SSH_REMOTE_USER="$user"
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -s -d'|' -f13`
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
 
       for server in `cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v ^#|grep -v ^[[:space:]]*#` ; do
         IP=${server%%|*}
@@ -191,11 +190,11 @@ for cld in $CLOUD ; do
         else
           KEY=`$M_ROOT/helpers/find_key server $IP` || continue
           if [ -n "$RSYNC" ] ; then
-            $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$REMOTE_USER"@"${IP}:${to}"
+            $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$SSH_REMOTE_USER"@"${IP}:${to}"
             [ $? -eq 0 ] && echo "Success" && continue
           fi
           printf "Rsync failed or not found, trying scp ...  "
-          $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$REMOTE_USER"@"${IP}:${to}"
+          $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$SSH_REMOTE_USER"@"${IP}:${to}"
           if [ $? -eq 0 ] ; then
             echo "Success"
           else

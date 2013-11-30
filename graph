@@ -274,8 +274,8 @@ if [ -z "$localip" ] ; then
   [ -z "$mpath" ] && log "M-Script path for server $server not found" && exit 1
   [ -f "$rpath/keys/$skey" ] && thekey="-i $rpath/keys/$skey"
   [ -z "$thekey" -a -f "$rpath/keys/${skey}.pem" ] && thekey="-i $rpath/keys/${skey}.pem"
-  [ -z "$REMOTE_USER" ] && REMOTE_USER=`cat "$rpath/conf/clusters.conf"|grep "^${scluster}|"|tail -1|cut -s -d'|' -f13`
-  [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+  [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$rpath/conf/clusters.conf"|grep "^${scluster}|"|tail -1|cut -s -d'|' -f13`
+  [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
   $debug && log "fetching data from ${sIP}, cluster $scluster using key $skey"
 else
   sIP="localhost"

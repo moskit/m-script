@@ -101,9 +101,8 @@ Options:
   --limit=N                - executes the command on first N servers of each
                              cluster defined by the --cluster option
   --user=[username]        - connects to remote servers as user [username] and
-                             executes all commands via sudo. Username can also
-                             be defined in conf/mon.conf (REMOTE_USER). Default
-                             user is root.
+                             executes all commands via sudo. Default user is
+                             root.
   --nosudo                 - if user is defined, executes commands without sudo.
                              If user is not defined, does nothing.
 
@@ -150,9 +149,9 @@ for cld in $CLOUD ; do
   [ -n "$verbose" ] && echo -e "### Cloud $cld\n    Command: $command"
   if [ "X$command" != "X" ] ; then
     for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
-      [ -n "$user" ] && REMOTE_USER="$user"
-      [ -z "$REMOTE_USER" ] && REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -d'|' -f13`
-      [ -z "$REMOTE_USER" ] && REMOTE_USER="root" && nosudo="yes"
+      [ -n "$user" ] && SSH_REMOTE_USER="$user"
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -s -d'|' -f13`
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
       n=0
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
       M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
@@ -185,9 +184,9 @@ for cld in $CLOUD ; do
           KEY=`$M_ROOT/helpers/find_key server $IP`
           [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
           if [ "x$nosudo" == "xyes" ]; then
-            $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
+            $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
           else
-            $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; sudo $command\)
+            $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; sudo $command\)
           fi
         fi
         n+=1
