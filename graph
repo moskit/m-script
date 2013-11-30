@@ -36,10 +36,9 @@ rpath=${rpath%/*}
 # to enable debug logging even without command-line option
 debug=true
 
-
 [ -n "$CLOUD" ] && source "$rpath/conf/clouds/${CLOUD}.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
-[ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+
 IFCFG=`which ifconfig 2>/dev/null`
 possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
 necessary_options="metric"
@@ -178,7 +177,7 @@ fi
 
 M_TEMP="$M_TEMP"/dash
 install -d "$M_TEMP"
-install -d "${rpath}/www/graphs"
+install -d "$rpath/www/graphs"
 declare -a colors
 colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "#44ff00" "#4400ff" "#00ff44" "#996644" "#994466" "#446699" "#449966" "#664499" "#669944" )
 
@@ -263,19 +262,21 @@ fi
 ##############################
 
 if [ -z "$localip" ] ; then
-  server=`grep "^${ip}|" "${rpath}/servers.list"|tail -1`
+  server=`grep "^${ip}|" "$rpath/servers.list"|tail -1`
   if [ -z "$server" ] ; then
-    log "Server with IP ${ip} not found in ${rpath}/servers.list"
+    log "Server with IP $ip not found in $rpath/servers.list"
     exit 1
   fi
   sIP=`echo $server | cut -d'|' -f1`
   skey=`echo $server | cut -d'|' -f2`
   scluster=`echo $server | cut -d'|' -f5`
-  mpath=`cat ${rpath}/conf/clusters.conf|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
+  mpath=`cat "$rpath/conf/clusters.conf"|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
   [ -z "$mpath" ] && log "M-Script path for server $server not found" && exit 1
-  [ -f "${rpath}/keys/${skey}" ] && thekey="-i ${rpath}/keys/${skey}"
-  [ -z "$thekey" -a -f "${rpath}/keys/${skey}.pem" ] && thekey="-i ${rpath}/keys/${skey}.pem"
-  $debug && log "fetching data from ${sIP}, cluster ${scluster} using key ${skey}"
+  [ -f "$rpath/keys/$skey" ] && thekey="-i $rpath/keys/$skey"
+  [ -z "$thekey" -a -f "$rpath/keys/${skey}.pem" ] && thekey="-i $rpath/keys/${skey}.pem"
+  [ -z "$REMOTE_USER" ] && REMOTE_USER=`cat "$rpath/conf/clusters.conf"|grep "^${scluster}|"|tail -1|cut -s -d'|' -f13`
+  [ -z "$REMOTE_USER" ] && REMOTE_USER="root"
+  $debug && log "fetching data from ${sIP}, cluster $scluster using key $skey"
 else
   sIP="localhost"
   $debug && log "reading data from localhost"
@@ -324,8 +325,8 @@ if [ -n "$perpixel" ]; then
   fi
   $debug && log "$maxQ"
   if [ "$sIP" == "localhost" ]; then
-    $minauto && minres=`$SQL3 "${rpath}/$database" "$minQ"`
-    maxres=`$SQL3 "${rpath}/$database" "$maxQ"`
+    $minauto && minres=`$SQL3 "$rpath/$database" "$minQ"`
+    maxres=`$SQL3 "$rpath/$database" "$maxQ"`
   else
     minmax=`$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$maxQ ; $minQ\""`
     maxres=`echo "$minmax" | head -1`
@@ -408,8 +409,8 @@ log "d=$d"
   fi
   $debug && log "$QUERY"
   if [ "$sIP" == "localhost" ]; then
-    $SQL3 "${rpath}/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
-    from=`$SQL3 "${rpath}/$database" "${QUERYFROM}" | tail -1`
+    $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
+    from=`$SQL3 "$rpath/$database" "${QUERYFROM}" | tail -1`
   else
     $debug && log "$SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" $SQL3 \"${mpath}/$database\" \"${QUERY}\""
     $SSH $thekey -p $SSHPORT "$REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
