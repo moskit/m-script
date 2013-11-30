@@ -134,10 +134,8 @@ for server in $IPS ; do
   if [ -n "$names" ] ; then
     ip_to_name $IP
     if [ -z "$rname" ] ; then
-      KEY=`echo $server | cut -d'|' -f2`
-      [ -f "$M_ROOT/keys/$KEY" ] || KEY="${KEY}.pem"
-      [ -f "$M_ROOT/keys/$KEY" ] || (echo "Key not found for IP $IP" && continue)
-      [ -n "$SSH" ] && rname=`$SSH -i "$M_ROOT/keys/$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
+      KEY=`find server $IP`
+      [ -n "$SSH" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
     fi
     [ -n "$rname" ] && IP=$rname
   fi

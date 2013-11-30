@@ -58,8 +58,11 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+[ -n "$cloud" ] && CLOUD=$cloud
+export CLOUD
+
 source "$M_ROOT/conf/mon.conf"
-M_TEMP="$M_TEMP"/cloud/rackspace
+M_TEMP="$M_TEMP/cloud/$CLOUD"
 install -d "$M_TEMP"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"

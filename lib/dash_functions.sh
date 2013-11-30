@@ -72,7 +72,8 @@ print_cluster_inline() {
     [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}"
     [ -n "$dfpcionclick" -a "${dfpcionclick%%|*}" != "${dfpcionclick#*|}" ] && dfpcistyle="${dfpcionclick#*|}" && dfpcionclick="${dfpcionclick%%|*}"
     dfpcicont=`eval echo \\$$dfpcistatus`
-    echo "<div id=\"${dfocid}_status\" `[ -n "$dfpcionclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfpcionclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$dfpcistyle\" alt=\"$dfpcicont\">${dfpcicont}</div>"
+    [ ${#dfpcicont} -gt 12 ] && dfpcicontalt=`echo -n "$dfpcicont" | cut -d'=' -f2 | tr -d '<>'` || unset dfpcicontalt
+    echo "<div id=\"${dfocid}_status\" `[ -n "$dfpcionclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfpcionclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$dfpcistyle\" title=\"$dfpcicontalt\">${dfpcicont}</div>"
     shift
   done
 }

@@ -68,6 +68,9 @@ if [[ $found -eq 1 ]]; then
   exit 1
 fi
 
+[ -n "$cloud" ] && CLOUD=$cloud
+export CLOUD
+
 source "$rpath/../../conf/mon.conf"
 source "$rpath/../../conf/clouds/${CLOUD}.conf"
 source "$rpath/../../lib/cloud_functions.sh"
