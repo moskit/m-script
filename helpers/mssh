@@ -36,6 +36,11 @@ KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
 # if target is hostname
 [ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${1}$ | cut -d'|' -f1`
 
+cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+[ -z "$cluster" ] && cluster=`grep \|${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+[ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f13`
+[ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
+    
 if [ -n "$KEY" ]; then
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
   KEY1="${KEY}.pem"
@@ -51,12 +56,8 @@ else
 fi
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
-  cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-  [ -z "$cluster" ] && cluster=`grep \|${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
   if [ -n "$cluster" ] ; then
     KEY=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
-    [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f13`
-    [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
     if [ ! -f "$M_ROOT/keys/$KEY" ]; then
       KEY1="${KEY}.pem"
       [ -f "$M_ROOT/keys/$KEY1" ] || KEY1="${KEY%.pem}"
