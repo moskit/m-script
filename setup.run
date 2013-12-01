@@ -64,8 +64,7 @@ if [ -z "$BC" ]; then
   else
     installbc="y"
   fi
-  if [ `echo $installbc | grep -qi "^y"` ]
-  then
+  if `echo $installbc | grep -qi "^y"` ; then
     case $OS in
     debian)
       export DEBIAN_FRONTEND=noninteractive
@@ -95,8 +94,7 @@ if [ -z "$MAILX" ]; then
   else
     installmailx="y"
   fi
-  if [ `echo $installmailx | grep -qi "^y"` ]
-  then
+  if `echo $installmailx | grep -qi "^y"` ; then
     case $OS in
     debian)
       export DEBIAN_FRONTEND=noninteractive
@@ -131,15 +129,14 @@ if [ -z "$MONGOOSE" ]; then
   else
     installmongoose="N"
   fi
-  if [ `echo $installmongoose | grep -qi "^y"` ]
-  then
+  if `echo $installmongoose | grep -qi "^y"` ; then
     rm -rf "$rpath/mongoose-source" 2>/dev/null
     (mkdir "$rpath/mongoose-source" && cd "$rpath/mongoose-source" && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose "$rpath/")
     if [ $? -ne 0 ]; then
       echo -e "\nUnable to compile, disabling it for now. Compile it or install some other way and copy its binary to $rpath/ if you need it"
       sed -i "s|MONGOOSE=.*|MONGOOSE=0|g" "$rpath/conf/mon.conf"
     else
-      if [ `grep -q "^MONGOOSE=" "$rpath/conf/mon.conf"` ]; then
+      if `grep -q "^MONGOOSE=" "$rpath/conf/mon.conf"` ; then
         sed -i "s|MONGOOSE=.*|MONGOOSE=1|g" "$rpath/conf/mon.conf"
       else    
         echo "MONGOOSE=1" >> "$rpath/conf/mon.conf"
@@ -147,16 +144,14 @@ if [ -z "$MONGOOSE" ]; then
     fi
   fi
 else
-  if [ `grep -q "^MONGOOSE=" "$rpath/conf/mon.conf"` ]
-  then
+  if `grep -q "^MONGOOSE=" "$rpath/conf/mon.conf"` ; then
     sed -i "s|MONGOOSE=.*|MONGOOSE=1|g" "$rpath/conf/mon.conf"
   else    
     echo "MONGOOSE=1" >> "$rpath/conf/mon.conf"
   fi
 fi
 
-if [ `grep -q "^MONGOOSE=1" "$rpath/conf/mon.conf"` ]
-then
+if `grep -q "^MONGOOSE=1" "$rpath/conf/mon.conf"` ; then
   if [ `grep -c "^p " "$rpath/conf/mongoose.conf"` -eq 0 ]
   then
     echo
@@ -172,8 +167,7 @@ then
   then
     echo "g $rpath/conf/htaccess" >> "$rpath/conf/mongoose.conf"
   fi
-  if [ `grep -c "^r " "$rpath/conf/mongoose.conf"` -eq 0 ]
-  then
+  if [ `grep -c "^r " "$rpath/conf/mongoose.conf"` -eq 0 ] ; then
     echo "r $rpath/www" >> "$rpath/conf/mongoose.conf"
   fi
   echo
@@ -189,9 +183,8 @@ if [ -z "$IPTABLES" ]; then
   else
     noiptables="y"
   fi
-  if [ `echo $noiptables | grep -qi "^y"` ]; then
-    if [ `grep -q "^IPTABLES=" "$rpath/conf/mon.conf"` ]
-    then
+  if `echo $noiptables | grep -qi "^y"` ; then
+    if `grep -q "^IPTABLES=" "$rpath/conf/mon.conf"` ; then
       sed -i "s|IPTABLES=.*|IPTABLES=0|g" "$rpath/conf/mon.conf"
     else    
       echo "IPTABLES=0" >> "$rpath/conf/mon.conf"
@@ -200,8 +193,7 @@ if [ -z "$IPTABLES" ]; then
     exit 1
   fi
 else
-  if [ `grep -q "^IPTABLES=" $rpath/conf/mon.conf` ]
-  then
+  if `grep -q "^IPTABLES=" $rpath/conf/mon.conf` ; then
     sed -i "s|IPTABLES=.*|IPTABLES=1|g" "$rpath/conf/mon.conf"
   else    
     echo "IPTABLES=1" >> "$rpath/conf/mon.conf"
@@ -215,7 +207,7 @@ if [ -z "$S3CMD" ]; then
   else
     nos3="y"
   fi
-  if [ `echo $nos3 | grep -qi "^y"` ]; then
+  if `echo $nos3 | grep -qi "^y"` ; then
     exit 0
   else
     case $OS in
@@ -244,7 +236,7 @@ if [ -z "$SQLITE" ]; then
   else
     nosqlite=N
   fi
-  if [ `echo $nosqlite | grep -qi "^y"` ]; then
+  if `echo $nosqlite | grep -qi "^y"` ; then
     if [ `grep -c "^SQLITE3=" "$rpath/conf/mon.conf"` ]
     then
       sed -i "s|SQLITE3=.*|SQLITE3=0|g" "$rpath/conf/mon.conf"
@@ -258,8 +250,7 @@ if [ -z "$SQLITE" ]; then
     else
       installsqlite="y"
     fi
-    if [ `echo $installsqlite | grep -qi "^n"` -eq 0 ]
-    then
+    if `echo $installsqlite | grep -qi "^n"` ; then
       case $OS in
       debian)
         export DEBIAN_FRONTEND=noninteractive
@@ -280,8 +271,7 @@ if [ -z "$SQLITE" ]; then
       exit 1
     fi
 
-    if [ `grep -q "^SQLITE3=" "$rpath/conf/mon.conf"` ]
-    then
+    if `grep -q "^SQLITE3=" "$rpath/conf/mon.conf"` ; then
       sed -i "s|SQLITE3=.*|SQLITE3=1|g" "$rpath/conf/mon.conf"
     else    
       echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
@@ -290,8 +280,7 @@ if [ -z "$SQLITE" ]; then
   SQLITE=`which sqlite3 2>/dev/null`
   createdb
 else
-  if [ `grep -q "^SQLITE3=" "$rpath/conf/mon.conf"` ]
-  then
+  if `grep -q "^SQLITE3=" "$rpath/conf/mon.conf"` ; then
     sed -i "s|SQLITE3=.*|SQLITE3=1|g" "$rpath/conf/mon.conf"
   else    
     echo "SQLITE3=1" >> "$rpath/conf/mon.conf"
@@ -356,8 +345,7 @@ if [ -z "$defopt" ] ; then
 else
   bootmon="y"
 fi
-if [ `echo $bootmon | grep -qi "^y"` ]
-then
+if `echo $bootmon | grep -qi "^y"` ; then
 if [ -n "`which insserv 2>/dev/null`" ] ; then
   `which insserv` monitorload
 else
