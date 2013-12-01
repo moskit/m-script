@@ -30,7 +30,47 @@ SSH=`which ssh 2>/dev/null`
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="cluster help region verbose limit ip nolocalhost user nosudo cloud"
+
+cleanup() {
+  if [ "x$threaded" == "xyes" ]; then
+    for ((i=0; i<$n; i++)) ; do
+      if [ -n "${pid[$n]}" ]; then
+        [ -d /proc/${pid[$n]} ] && kill ${pid[$n]}
+        sleep 1
+        if [ -d /proc/${pid[$n]} ]; then
+          sleep 10
+          kill -6 ${pid[$n]} 2>/dev/null
+        fi
+        if [ -d /proc/${pid[$n]} ]; then
+          sleep 3
+          kill -9 ${pid[$n]} 2>/dev/null
+        fi
+        unset pid[$n] res[$n]
+      fi
+      echo -e "${res[$n]}"
+    done
+  fi
+}
+
+remote_exec() {
+  if [ "X$verbose" == "Xyes" ] ; then
+    NAME=`echo $server | cut -d'|' -f4`
+    echo -e "\n=  Server: $NAME ($IP)  Cluster: $CLUSTER"
+  fi
+  if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+    [ -z "$nolocalhost" ] && eval $command
+  else
+    KEY=`$M_ROOT/helpers/find_key server $IP`
+    [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
+    if [ "x$nosudo" == "xyes" ]; then
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
+    else
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; sudo $command\)
+    fi
+  fi
+}
+
+possible_options="cluster help region verbose limit ip nolocalhost user nosudo cloud threaded"
 commflag=0
 for s_option in "$@"
 do
@@ -105,10 +145,13 @@ Options:
                              root.
   --nosudo                 - if user is defined, executes commands without sudo.
                              If user is not defined, does nothing.
+  --threaded               - executes commands on multiple servers in parallel.
 
 EOF
   exit 0
 fi
+
+trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
@@ -139,15 +182,14 @@ for cld in $CLOUD ; do
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && echo "No clusters found" && exit 1
 
-  [ "x$cluster" == "xall" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
-
+  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
   declare -i n
   IFS1=$IFS
   IFS='
   '
   [ -n "$verbose" ] && echo -e "### Cloud $cld\n    Command: $command"
-  if [ "X$command" != "X" ] ; then
+  if [ -n "$command" ] ; then
     for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
       [ -n "$user" ] && SSH_REMOTE_USER="$user"
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -s -d'|' -f13`
@@ -155,6 +197,7 @@ for cld in $CLOUD ; do
       n=0
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
       M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
+      
       for server in `cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
         [ -n "$limit" ] && [[ $n -ge $limit ]] && break
         IP=${server%%|*}
@@ -173,24 +216,26 @@ for cld in $CLOUD ; do
         else
           [ "$CLUSTER" == "$icluster" ] || continue
         fi
-        if [ "X$verbose" == "Xyes" ] ; then
-          NAME=`echo $server | cut -d'|' -f4`
-          echo
-          echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
-        fi
-        if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
-          [ -z "$nolocalhost" ] && eval $command
+        if [ "x$threaded" == "xyes" ]; then
+          res[$n]=$(remote_exec &)
+          pid[$n]=$!
         else
-          KEY=`$M_ROOT/helpers/find_key server $IP`
-          [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
-          if [ "x$nosudo" == "xyes" ]; then
-            $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
-          else
-            $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; sudo $command\)
-          fi
+          remote_exec
         fi
         n+=1
       done
+      if [ "x$threaded" == "xyes" ]; then
+        for ((i=0; i<$n; i++)); do
+          while true ; do
+            # always waiting here, for forced exit see cleanup()
+            while [ -d /proc/${pid[$n]} ]; do
+              sleep 1
+            done
+            echo -e "${res[$n]}"
+            unset pid[$n] res[$n]
+          done
+        done
+      fi
     done
   fi
   IFS=$IFS1
