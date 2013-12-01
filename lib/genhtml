@@ -97,7 +97,7 @@ case $type in
       done
     fi
     if [[ $exc -lt 0 ]] ; then
-      for ((i=$exc; i<0; i++)) ; do
+      for ((i=$exc; i<=0; i++)) ; do
         emptychunks="${emptychunks}<div class=\"chunk\">&nbsp;</div>"
       done
       dashhtml="${emptychunks}\n`cat "$M_ROOT/www/$folder/dash.html" | grep 'div\ id='`"
