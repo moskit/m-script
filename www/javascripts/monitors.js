@@ -96,6 +96,10 @@ showData = function(theid,base) {
     cluster=clusterA[1] + "/" + clusterA[0];
   }
   server=$(theid).parentNode.id
+  serverA=server.split("|");
+  if (serverA[1]) {
+    server=serverA[1];
+  }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
     stopUpdater(updater);

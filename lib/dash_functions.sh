@@ -96,7 +96,7 @@ print_line_title() {
   shift
   dfpltnode="$1"
   dfpltnodep="${1:0:20}"
-  dfpltid="${dfpltparent}.${dfpltnode}"
+  dfpltid="${dfpltnode}|${dfpltparent}"
   echo -e "<div class=\"server\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
   unset dfpltparent dfpltnode dfpltonclick dfpltnodep
 }
@@ -131,7 +131,7 @@ print_dashline() {
     case $dfpdsource in
     folder)
       [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
-      cat "$dpath/../www/${@}/dash.html"
+      cat "$dpath/../www/${@}/dash.html" 2>/dev/null
       ;;
     database)
       dfpddbpath=$1

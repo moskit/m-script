@@ -56,7 +56,7 @@ cleanup() {
         fi
         unset pid[$n] res[$n]
       fi
-      cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
+      [ -f "$M_TEMP/$$.$i" ] && cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
     done
   fi
 }
@@ -189,6 +189,7 @@ for cld in $CLOUD ; do
 
   [ "x$cluster" == "xall" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
+  declare -i n
   IFS1=$IFS
   IFS='
   '
@@ -211,7 +212,7 @@ for cld in $CLOUD ; do
     to=${command#* }
     [ -n "$verbose" ] && echo "### Syncing $from to $to"
     for cluster in `printf "${clusters}\n"|sed 's|,|\n|g'` ; do
-
+      n=0
       [ -n "$user" ] && SSH_REMOTE_USER="$user"
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -s -d'|' -f13`
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
@@ -231,7 +232,7 @@ for cld in $CLOUD ; do
         fi
         if [ "x$threaded" == "xyes" ]; then
           #res[$n]=$(remote_exec) 2>&1 </dev/null &
-          remote_sync > "$M_TEMP/$$.$n" &
+          remote_sync > "$M_TEMP/$$.$n" 2>&1 &
           pid[$n]=$!
         else
           remote_sync

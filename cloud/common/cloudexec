@@ -47,7 +47,7 @@ cleanup() {
         fi
         unset pid[$n] res[$n]
       fi
-      cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
+      [ -f "$M_TEMP/$$.$i" ] && cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
     done
   fi
 }
@@ -218,7 +218,7 @@ for cld in $CLOUD ; do
         fi
         if [ "x$threaded" == "xyes" ]; then
           #res[$n]=$(remote_exec) 2>&1 </dev/null &
-          remote_exec > "$M_TEMP/$$.$n" &
+          remote_exec > "$M_TEMP/$$.$n" 2>&1 &
           pid[$n]=$!
         else
           remote_exec
