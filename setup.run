@@ -207,9 +207,7 @@ if [ -z "$S3CMD" ]; then
   else
     nos3="y"
   fi
-  if `echo $nos3 | grep -qi "^y"` ; then
-    exit 0
-  else
+  if ! `echo $nos3 | grep -qi "^y"` ; then
     case $OS in
     debian)
       export DEBIAN_FRONTEND=noninteractive
@@ -250,7 +248,7 @@ if [ -z "$SQLITE" ]; then
     else
       installsqlite="y"
     fi
-    if `echo $installsqlite | grep -qi "^n"` ; then
+    if `echo $installsqlite | grep -qi "^y"` ; then
       case $OS in
       debian)
         export DEBIAN_FRONTEND=noninteractive
