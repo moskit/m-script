@@ -215,13 +215,13 @@ if [ -z "$S3CMD" ]; then
   else
     nos3="y"
   fi
-  if [ `echo $nos3 | grep -qi "^y"` -eq 0 ]; then
+  if [ `echo $nos3 | grep -qi "^y"` ]; then
     exit 0
   else
     case $OS in
     debian)
       export DEBIAN_FRONTEND=noninteractive
-      `which apt-get` install s3cmd3 -y || exit 1
+      `which apt-get` install s3cmd -y || exit 1
       ;;
     gentoo)
       `which emerge` s3cmd || exit 1
