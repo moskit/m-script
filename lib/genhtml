@@ -100,7 +100,7 @@ case $type in
       for ((i=$exc; i<0; i++)) ; do
         emptychunks="${emptychunks}<div class=\"chunk\">&nbsp;</div>"
       done
-      dashhtml="${emptychunks}\n`cat "$M_ROOT/www/$folder/dash.html"`"
+      dashhtml="${emptychunks}\n`cat "$M_ROOT/www/$folder/dash.html" | grep 'div\ id='`"
       echo -e "$dashhtml" > "$M_ROOT/www/$folder/dash.html"
     fi
     oldestchunk=`grep 'div\ id=' "$M_ROOT/www/$folder/dash.html" | head -1`
