@@ -97,8 +97,8 @@ showData = function(theid,base) {
   }
   server=$(theid).parentNode.id
   serverA=server.split("|");
-  if (serverA[1]) {
-    server=serverA[1];
+  if (serverA[0]) {
+    server=serverA[0];
   }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;

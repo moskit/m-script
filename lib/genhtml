@@ -96,7 +96,14 @@ case $type in
         sed -i '1d' "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
       done
     fi
-    oldestchunk=`head -1 "$M_ROOT/www/$folder/dash.html"`
+    if [[ $exc -lt 0 ]] ; then
+      for ((i=$exc; i<0; i++)) ; do
+        emptychunks="${emptychunks}<div class=\"chunk\">&nbsp;</div>"
+      done
+      dashhtml="${emptychunks}\n`cat "$M_ROOT/www/$folder/dash.html"`"
+      echo -e "$dashhtml" > "$M_ROOT/www/$folder/dash.html"
+    fi
+    oldestchunk=`grep 'div\ id=' "$M_ROOT/www/$folder/dash.html" | head -1`
     oldestfile="`expr "$oldestchunk" : '<div id=\"\(.*\)\" title'`".html
     badluck=false # we are lucky by default
     if [ -f "$M_ROOT/www/$folder/$oldestfile" ]; then

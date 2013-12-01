@@ -94,10 +94,11 @@ print_line_title() {
   fi
   dfpltparent="$1"
   shift
-  dfpltnode="$1"
-  dfpltnodep="${1:0:20}"
+  dfpltnode="${1%%|*}"
+  dfpltstyle=" `echo "$1" | cut -s -d'|' -f2`"
+  dfpltnodep="${dfpltnode:0:20}"
   dfpltid="${dfpltnode}|${dfpltparent}"
-  echo -e "<div class=\"server\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
+  echo -e "<div class=\"server${dfpltstyle}\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
   unset dfpltparent dfpltnode dfpltonclick dfpltnodep
 }
 
