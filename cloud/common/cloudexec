@@ -47,7 +47,7 @@ cleanup() {
         fi
         unset pid[$n] res[$n]
       fi
-      echo -e "${res[$n]}"
+      cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
     done
   fi
 }
@@ -217,7 +217,8 @@ for cld in $CLOUD ; do
           [ "$CLUSTER" == "$icluster" ] || continue
         fi
         if [ "x$threaded" == "xyes" ]; then
-          res[$n]=$(remote_exec &)
+          #res[$n]=$(remote_exec) 2>&1 </dev/null &
+          remote_exec > "$M_TEMP/$$.$n" &
           pid[$n]=$!
         else
           remote_exec
@@ -228,11 +229,12 @@ for cld in $CLOUD ; do
         for ((i=0; i<$n; i++)); do
           while true ; do
             # always waiting here, for forced exit see cleanup()
-            while [ -d /proc/${pid[$n]} ]; do
+            while [ -d /proc/${pid[$i]} ]; do
               sleep 1
             done
-            echo -e "${res[$n]}"
-            unset pid[$n] res[$n]
+            cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
+            unset pid[$i]
+            break
           done
         done
       fi
@@ -241,4 +243,5 @@ for cld in $CLOUD ; do
   IFS=$IFS1
 
 done
+
 

@@ -39,7 +39,56 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
-possible_options="cluster help region verbose recursive ip nolocalhost user cloud"
+
+cleanup() {
+  if [ "x$threaded" == "xyes" ]; then
+    for ((i=0; i<$n; i++)) ; do
+      if [ -n "${pid[$n]}" ]; then
+        [ -d /proc/${pid[$n]} ] && kill ${pid[$n]}
+        sleep 1
+        if [ -d /proc/${pid[$n]} ]; then
+          sleep 10
+          kill -6 ${pid[$n]} 2>/dev/null
+        fi
+        if [ -d /proc/${pid[$n]} ]; then
+          sleep 3
+          kill -9 ${pid[$n]} 2>/dev/null
+        fi
+        unset pid[$n] res[$n]
+      fi
+      cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
+    done
+  fi
+}
+
+remote_sync() {
+  if [ "X$verbose" == "Xyes" ] ; then
+    NAME=`echo $server | cut -d'|' -f4`
+    echo
+    echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
+  fi
+  if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+    if [ -z "$nolocalhost" ]; then
+      [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
+    fi
+  else
+    KEY=`$M_ROOT/helpers/find_key server $IP` || continue
+    if [ -n "$RSYNC" ] ; then
+      $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$SSH_REMOTE_USER"@"${IP}:${to}"
+      [ $? -eq 0 ] && echo "Success" && continue
+    fi
+    printf "Rsync failed or not found, trying scp ...  "
+    $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$SSH_REMOTE_USER"@"${IP}:${to}"
+    if [ $? -eq 0 ] ; then
+      echo "Success"
+    else
+      echo "ERROR: Unable to cloudsync"
+      RETVAL+=1
+    fi
+  fi
+}
+
+possible_options="cluster help region verbose recursive ip nolocalhost user cloud threaded"
 commflag=0
 for s_option in "${@}"
 do
@@ -103,6 +152,8 @@ Options:
 EOF
   exit 0
 fi
+
+trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
@@ -178,31 +229,28 @@ for cld in $CLOUD ; do
           CLUSTER=`echo $server | cut -d'|' -f5`
           [ "X$CLUSTER" == "X$cluster" ] || continue
         fi
-        if [ "X$verbose" == "Xyes" ] ; then
-          NAME=`echo $server | cut -d'|' -f4`
-          echo
-          echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
-        fi
-        if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
-          if [ -z "$nolocalhost" ]; then
-            [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
-          fi
+        if [ "x$threaded" == "xyes" ]; then
+          #res[$n]=$(remote_exec) 2>&1 </dev/null &
+          remote_sync > "$M_TEMP/$$.$n" &
+          pid[$n]=$!
         else
-          KEY=`$M_ROOT/helpers/find_key server $IP` || continue
-          if [ -n "$RSYNC" ] ; then
-            $RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$SSH_REMOTE_USER"@"${IP}:${to}"
-            [ $? -eq 0 ] && echo "Success" && continue
-          fi
-          printf "Rsync failed or not found, trying scp ...  "
-          $SCP $TIMEOUT -i "$KEY" -P $SSHPORT -p $recursive "$from" "$SSH_REMOTE_USER"@"${IP}:${to}"
-          if [ $? -eq 0 ] ; then
-            echo "Success"
-          else
-            echo "ERROR: Unable to cloudsync"
-            RETVAL+=1
-          fi
+          remote_sync
         fi
+        n+=1
       done
+      if [ "x$threaded" == "xyes" ]; then
+        for ((i=0; i<$n; i++)); do
+          while true ; do
+            # always waiting here, for forced exit see cleanup()
+            while [ -d /proc/${pid[$i]} ]; do
+              sleep 1
+            done
+            cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
+            unset pid[$i] res[$i]
+            break
+          done
+        done
+      fi
     done
   fi
   IFS=$IFS1
