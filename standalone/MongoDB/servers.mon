@@ -343,7 +343,7 @@ if [ -n "$shardhosts" ] ; then
   [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"`" ] && mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
 IFS=$IFSORG
 else
-  echo > "$M_TEMP/mongo_shards.list"
+  echo -n > "$M_TEMP/mongo_shards.list"
 fi
 
 if [ -e "$rpath/mongo_config_servers.list" ] ; then

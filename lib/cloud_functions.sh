@@ -19,8 +19,18 @@ dpath=${dpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$dpath/../")
 [ -z "$LOG" ] && LOG="$M_ROOT/logs/cloud.log"
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
-[ -z "$CLOUD_PROVIDER" ] && echo "Error reading configuration for this cloud ($M_ROOT/conf/clouds/${CLOUD}.conf)" && exit 1
+if [ -n "$CLOUD" ]; then
+  source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  [ -z "$CLOUD_PROVIDER" ] && echo "Error reading configuration for this cloud ($M_ROOT/conf/clouds/${CLOUD}.conf)" && exit 1
+else
+  CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+  if [ `echo "$CLOUD" | wc -l` -eq 1 ]; then
+    export CLOUD
+  else
+    unset CLOUD
+  fi
+  [ -z "$CLOUD" ] && log "Not sourcing cloud_functions, CLOUD is not defined" && exit 1
+fi
 [ ! -d "$M_ROOT/cloud/$CLOUD_PROVIDER" ] && log "Cloud $CLOUD_PROVIDER is not supported" && exit 1
 
 log() {
@@ -92,7 +102,7 @@ check_cluster_limit() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "X$clcloud" != "X$XLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
@@ -110,7 +120,7 @@ check_cluster_minimum() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "X$clcloud" != "X$XLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0

@@ -69,11 +69,12 @@ print_cluster_inline() {
       shift
       continue
     fi
-    [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}"
-    [ -n "$dfpcionclick" -a "${dfpcionclick%%|*}" != "${dfpcionclick#*|}" ] && dfpcistyle="${dfpcionclick#*|}" && dfpcionclick="${dfpcionclick%%|*}"
+    [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpcionclick')\""
+    
+    [ -n "$dfpcionclick" -a "${dfpcionclick%%|*}" != "${dfpcionclick#*|}" ] && dfpcistyle="${dfpcionclick#*|}" && dfpcionclick="${dfpcionclick%%|*}" && style="style=\"$dfpcistyle\""
     dfpcicont=`eval echo \\$$dfpcistatus`
     [ ${#dfpcicont} -gt 12 ] && dfpcicontalt=`echo -n "$dfpcicont" | cut -d'=' -f2 | tr -d '<>'` || unset dfpcicontalt
-    echo "<div id=\"${dfocid}_status\" `[ -n "$dfpcionclick" ] && echo -n "class=\\"clusterstatus clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfpcionclick}')\\"" || echo -n "class=\\"clusterstatus\\""` style=\"$dfpcistyle\" title=\"$dfpcicontalt\">${dfpcicont}</div>"
+    echo "<div id=\"${dfocid}_status\" class=\"status $classadded\" $onclick $style title=\"$dfpcicontalt\">${dfpcicont}</div>"
     shift
   done
 }
@@ -90,6 +91,7 @@ close_cluster() {
 print_line_title() {
   if [ -n "$3" ]; then
     dfpltonclick=$1
+    classadded="clickable"
     shift
   fi
   dfpltparent="$1"
@@ -98,7 +100,7 @@ print_line_title() {
   dfpltstyle=" `echo "$1" | cut -s -d'|' -f2`"
   dfpltnodep="${dfpltnode:0:20}"
   dfpltid="${dfpltnode}|${dfpltparent}"
-  echo -e "<div class=\"server${dfpltstyle}\" id=\"${dfpltid}\">\n<div class=\"servername\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
+  echo -e "<div class=\"server${dfpltstyle}\" id=\"${dfpltid}\">\n<div class=\"servername $classadded\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
   unset dfpltparent dfpltnode dfpltonclick dfpltnodep
 }
 
@@ -110,9 +112,9 @@ print_inline() {
       shift
       continue
     fi
-    [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}"
-    [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}"
-    echo "<div class=\"status\" id=\"${clustername}_$dfpistatus\" onclick=\"showDetails('${clustername}_name','$dfpionclick')\" style=\"$dfpistyle\">`eval echo \"\\$$dfpistatus\"`</div>"
+    [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\""
+    [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}" && dfpionclick="${dfpionclick%%|*}" && style="style=\"$dfpistyle\""
+    echo "<div class=\"status $classadded\" id=\"${clustername}_$dfpistatus\" $onclick $style>`eval echo \"\\$$dfpistatus\"`</div>"
     shift
   done
   unset dfpistatus dfpionclick dfpistyle

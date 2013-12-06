@@ -12,7 +12,7 @@ close_cluster_line
 print_timeline "Server"
 close_cluster
 
-echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
+echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
 cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
 echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"
 
@@ -35,7 +35,7 @@ do
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
     serverh=${server##*/}
-    echo -e "<div class=\"server\" id=\"$serverh\">\n<span class=\"servername\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:20}</span>"
+    echo -e "<div class=\"server\" id=\"$serverh\">\n<span class=\"servername clickable\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:20}</span>"
       cat "../servers/$server/dash.html" 2>/dev/null || echo "No data"
       [ -e "../servers/$server/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
       [ -e "../servers/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"

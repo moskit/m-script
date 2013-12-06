@@ -63,6 +63,22 @@ IFS=$IFS1
 [ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && log "No cluster $cluster in servers.list" && exit 1
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 
+if [ -z "$cloud" ]; then
+  if [ -n "$cluster" ]; then
+    cloud=`cat "$M_ROOT/servers.list" | cut -d'|' -f5,6 | grep ^$cluster\| | cut -s -d'|' -f2`
+    if [ `echo "$cloud" | wc -l` -gt 1 ]; then
+      log "more than one cloud for this cluster, thus cloud must be defined"
+      exit 1
+    else
+      CLOUD=$cloud
+      export CLOUD
+    fi
+  else
+    log "neither cloud not cluster is defined"
+    exit 1
+  fi
+fi
+
 [ -n "$force" ] && force=true || force=false
 removed=false
 if [ -n "$last" -o -n "$first" ]; then
@@ -73,13 +89,13 @@ if [ -n "$last" -o -n "$first" ]; then
 fi
 
 find_by_ip() {
-  if [ -f "${M_TEMP}/show_servers.resp" ] ; then
-    sn=`grep addresses "${M_TEMP}/show_servers.resp" | grep "|\"${1}\"$" | cut -d'/' -f3`
-    id=`grep \/$sn\/id\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
+  if [ -f "$M_TEMP/show_servers.resp" ] ; then
+    sn=`grep addresses "$M_TEMP/show_servers.resp" | grep "|\"${1}\"$" | cut -d'/' -f3`
+    id=`grep \/$sn\/id\| "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
     log "** warning: server ID not found for IP ${1}, getting servers list from the API"
-    id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | grep \|${1}\| | cut -d'|' -f1`
   fi
   find_cluster "$1"
 }
@@ -95,11 +111,11 @@ find_cluster() {
   else
     if [ -n "$cluster" ]; then
       if [ "$cluster" != "$icluster" ]; then
-        log "unknown error: cluster provided as option doesn't match the found one: $cluster != ${icluster}, re-assigning cluster=${icluster}"
-        cluster=${icluster}
+        log "unknown error: cluster provided as option doesn't match the found one: $cluster != ${icluster}, re-assigning cluster=$icluster"
+        cluster=$icluster
       fi
     else
-      cluster=${icluster}
+      cluster=$icluster
     fi
   fi
 }
@@ -113,13 +129,13 @@ if [ -z "$id" ] ; then
       echo "One of id, ip or name is required to identify the server"
       proper_exit 1 110
     else
-      ip=`cat "${rpath}/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
+      ip=`cat "$rpath/../../servers.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Use IP or ID to identify the server. Exiting." && proper_exit 1 113
       if [ -n "$ip" ] ; then
         find_by_ip $ip
       else
         log "** warning: server IP not found for name ${name}, getting servers list from the API"
-        id=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
+        id=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
@@ -127,15 +143,15 @@ if [ -z "$id" ] ; then
   fi
 fi
 if [ -n "$id" ] ; then
-  if [ -f "${M_TEMP}/show_servers.resp" ] ; then
-    sn=`grep \/id\| "${M_TEMP}/show_servers.resp" | grep "|${id}$" | cut -d'/' -f3`
-    name=`grep \/$sn\/name\| "${M_TEMP}/show_servers.resp" | cut -d'|' -f2`
-    ipint=`grep \/$sn\/addresses\/private "${M_TEMP}/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
-    ipext=`grep \/$sn\/addresses\/public "${M_TEMP}/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
+  if [ -f "$M_TEMP/show_servers.resp" ] ; then
+    sn=`grep \/id\| "$M_TEMP/show_servers.resp" | grep "|${id}$" | cut -d'/' -f3`
+    name=`grep \/$sn\/name\| "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
+    ipint=`grep \/$sn\/addresses\/private "$M_TEMP/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
+    ipext=`grep \/$sn\/addresses\/public "$M_TEMP/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
   if [ -z "$name" ] ; then
     log "** warning: server name not found for id ${id}, getting servers list from the API"
-    nameips=`IAMACHILD=1 ${rpath}/show_servers --forceupdate --view=table | grep ^${id}\| | cut -d'|' -f2,4,5`
+    nameips=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | grep ^${id}\| | cut -d'|' -f2,4,5`
     name=`echo "$nameips" | cut -d'|' -f1`
     ipext=`echo "$nameips" | cut -d'|' -f2`
     ipint=`echo "$nameips" | cut -d'|' -f3`
@@ -162,7 +178,7 @@ request() {
 try_auth() {
   local -i i
   i=0
-  while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 160
     ${rpath}/auth
     i+=1
