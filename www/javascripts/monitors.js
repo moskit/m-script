@@ -132,7 +132,7 @@ showDetails = function(theid,script) {
     server=serverA[0];
   }
   if (server == '') { server = cluster };
-  if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
+  if (($(server + '|' + cluster + '_details').style.display == "none") || ($(server + '|' + cluster + '_details').style.display == "")) {
     hideblocked = 1;
     stopUpdater(updater);
     cursor_saved = $(theid).style.cursor
@@ -141,9 +141,9 @@ showDetails = function(theid,script) {
     var the_url = '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
-     // new Effect.SlideDown(server + '_details', {duration: 0.3});
-        $(server + '_details').style.display = "table";
-        $(server + '_details').update(response.responseText);
+     // new Effect.SlideDown(server + '|' + cluster + '_details', {duration: 0.3});
+        $(server + '|' + cluster + '_details').style.display = "table";
+        $(server + '|' + cluster + '_details').update(response.responseText);
         cursor_style($(theid),cursor_saved);
         waitingEffect($(theid),'stop');
       }
