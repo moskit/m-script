@@ -409,7 +409,6 @@ span.indent {
   height: 20px;
   float: left;
   display: table;
-  cursor: pointer;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fcfcfc', endColorstr='#f0f0f0');
   background: -webkit-gradient(linear, left bottom, left top, from(#fcfcfc), to(#f0f0f0));
   background: -moz-linear-gradient(bottom,  #fcfcfc,  #f0f0f0)
@@ -465,11 +464,8 @@ span.indent {
   padding: 2px 0px;
   text-align: center;
   float: left;
-  cursor: pointer;
-  background-color: #f0f0f0;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f0f0f0', endColorstr='#fcfcfc');
-  background: -webkit-gradient(linear, left bottom, left top, from(#fcfcfc), to(#f0f0f0));
-  background: -moz-linear-gradient(bottom,  #fcfcfc,  #f0f0f0)
+  font-size: 11px;
+  color: #777777;
 }
 
 .status_short {

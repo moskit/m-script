@@ -122,7 +122,15 @@ showData = function(theid,base) {
 
 showDetails = function(theid,script) {
   cluster=$(theid).parentNode.parentNode.id;
+  clusterA=cluster.split("|");
+  if (clusterA[1]) {
+    cluster=clusterA[1] + "/" + clusterA[0];
+  }
   server=$(theid).parentNode.id;
+  serverA=server.split("|");
+  if (serverA[0]) {
+    server=serverA[0];
+  }
   if (server == '') { server = cluster };
   if (($(server + '_details').style.display == "none") || ($(server + '_details').style.display == "")) {
     hideblocked = 1;
