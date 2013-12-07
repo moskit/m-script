@@ -12,9 +12,9 @@ print_table_2() {
 }
 
 echo "<div style=\"display: table; width: 720px; margin-left: 60px;\">"
-[ -f "$PWD/../../standalone/MongoDB/data/${node}.dat" ] || exit 0
+[ -f "$PWD/../../standalone/MongoDB/data/${parent}.${node}.dat" ] || exit 0
 
-collinfo=`cat "$PWD/../../standalone/MongoDB/data/${node}.dat"`
+collinfo=`cat "$PWD/../../standalone/MongoDB/data/${parent}.${node}.dat"`
 for index in `echo "$collinfo" | grep ^0\/\"indexSizes\"\/` ; do
   index_name=`echo "$index" | cut -d'/' -f3 | cut -d'|' -f1`
   index_size=`echo "$index" | cut -d'|' -f2`

@@ -442,6 +442,7 @@ span.indent {
   padding: 2px 0px;
   font-weight: bold;
   float: left;
+  color: #555;
 }
 
 .combinedgraph_left {
@@ -672,6 +673,10 @@ span.value {
 
 .clickable {
   cursor: pointer;
+}
+
+.clickable:hover {
+  color: black;
 }
 
 /* Table */
