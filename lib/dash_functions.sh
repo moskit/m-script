@@ -88,20 +88,22 @@ close_cluster() {
   echo "</div>"
 }
 
-print_line_title() {
-  if [ -n "$3" ]; then
-    dfpltonclick=$1
+open_line() {
+  dfoltitle=$1
+  shift
+  if [ -n "$2" ]; then
+    dfolonclick=$1
     classadded="clickable"
     shift
   fi
-  dfpltparent="$1"
+  dfolparent="$1"
   shift
-  dfpltnode="${1%%|*}"
-  dfpltstyle=" `echo "$1" | cut -s -d'|' -f2`"
-  dfpltnodep="${dfpltnode:0:20}"
-  dfpltid="$dfpltnode|$dfpltparent"
-  echo -e "<div class=\"server${dfpltstyle}\" id=\"${dfpltid}\">\n<div class=\"servername $classadded\" id=\"${dfpltid}_name\" onclick=\"showDetails('${dfpltid}_name','${dfpltonclick}')\">$dfpltnodep</div>"
-  unset dfpltparent dfpltnode dfpltonclick dfpltnodep
+  dfolnode="${dfoltitle%%|*}"
+  dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
+  dfolnodep="${dfolnode:0:20}"
+  dfolid="$dfolnode|$dfolparent"
+  echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\">$dfolnodep</div>"
+  unset dfolparent dfolnode dfolonclick dfolnodep
 }
 
 print_inline() {
@@ -121,9 +123,10 @@ print_inline() {
 }
 
 close_line() {
+  [ -n "$1" ] && dfclid="$1" || dfclid="$dfolid"
   echo "</div>"
-  echo "<div class=\"details\" id=\"${dfpltid}_details\"></div>"
-  unset dfpltid
+  echo "<div class=\"details\" id=\"${dfclid}_details\"></div>"
+  unset dfclid
 }
 
 print_dashline() {
@@ -157,7 +160,7 @@ print_dashlines() {
 IFS1=$IFS; IFS='
 '
       for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
-        print_line_title "$dfpdsonclick" "${@##*/}" "${server##*/}"
+        open_line "${server##*/}" "$dfpdsonclick" "${@##*/}"
         cat "$dpath/../www/${@}/${server##*/}/dash.html"
         close_line "${server##*/}"
       done

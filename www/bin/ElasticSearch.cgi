@@ -36,7 +36,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
     prevstatus=$thisesstatus
   done
   
-  print_line_title eshealth "$clustername" "$clustername"
+  open_line "$clustername" eshealth "$clustername"
       for esst in $esstatus ; do
         echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
@@ -45,7 +45,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
 
     for node in `cat $PWD/../../standalone/$scriptname/${clustername}.nodes.list | sort` ; do
       [ "X`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
-      print_line_title "$scriptname" "$clustername" "$node"
+      open_line "$node" "$scriptname" "$clustername"
 
         echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" 2>/dev/null | grep ^\\"name\\"\||cut -d'|' -f2 | tr -d '"'`</div>"
         echo "<div class=\"status\" id=\"${node}_mem\">`grep ^\\"jvm\\"\/\\"mem\\"\/\\"heap_used\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'` / `grep ^\\"jvm\\"\/\\"mem\\"\/\\"heap_committed\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'`</div>"
