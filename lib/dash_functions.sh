@@ -89,14 +89,14 @@ close_cluster() {
 }
 
 open_line() {
-  dfoltitle=$1
+  dfoltitle="$1"
   shift
   if [ -n "$2" ]; then
     dfolonclick=$1
     classadded="clickable"
     shift
   fi
-  dfolparent="$1"
+  dfolparent="$dfocid"
   shift
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
@@ -116,17 +116,16 @@ print_inline() {
     fi
     [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\"" || unset onclick classadded dfpionclick
     [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}" && dfpionclick="${dfpionclick%%|*}" && style="style=\"$dfpistyle\"" || unset style
-    echo "<div class=\"status $classadded\" id=\"${clustername}_$dfpistatus\" $onclick $style>${dfpistatus}</div>"
+    echo "<div class=\"status $classadded\" id=\"${dfpiid}_$dfpistatus\" $onclick $style>${dfpistatus}</div>"
     shift
   done
   unset dfpistatus dfpionclick dfpistyle
 }
 
 close_line() {
-  [ -n "$1" ] && dfclid="$1" || dfclid="$dfolid"
   echo "</div>"
-  echo "<div class=\"details\" id=\"${dfclid}_details\"></div>"
-  unset dfclid
+  echo "<div class=\"details\" id=\"${dfolid}_details\"></div>"
+  unset dfolid
 }
 
 print_dashline() {
