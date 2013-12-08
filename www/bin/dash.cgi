@@ -34,12 +34,13 @@ do
 
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
-    serverh=${server##*/}
-    echo -e "<div class=\"server\" id=\"$serverh\">\n<span class=\"servername clickable\" id=\"${serverh}_status\" onclick=\"showDetails('${serverh}_status','serverdetails')\">${serverh:0:20}</span>"
+    node="${cld}/${cls}|${server##*/}"
+    serverh="${server##*/}"
+    echo -e "<div class=\"server\" id=\"$node\">\n<span class=\"servername clickable\" id=\"${node}_status\" onclick=\"showDetails('${node}_status','serverdetails')\">${serverh:0:20}</span>"
       cat "../servers/$server/dash.html" 2>/dev/null || echo "No data"
       [ -e "../servers/$server/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
       [ -e "../servers/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
-    echo -e "</div>\n<div class=\"details\" id=\"${serverh}_details\"></div>"
+    echo -e "</div>\n<div class=\"details\" id=\"${node}_details\"></div>"
   done
   close_cluster
 done
