@@ -13,7 +13,7 @@ print_mongo_server() {
   local role=`echo "$2" | cut -d'|' -f4`
   port="${host##*:}"
   name="${host%:*}"
-  nodeid="${name}:${port}|$clname"
+  nodeid="$clname|${name}:${port}"
   [ ${#name} -gt 14 ] && namep="${name:0:7}..${name:(-7)}" || namep=$name
   install -d "$PWD/../$scriptname/$clname/${name}:${port}"
   [ -n "$port" ] && wport=`expr $port + 1000`

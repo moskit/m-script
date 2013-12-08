@@ -93,16 +93,16 @@ showData = function(theid,base) {
   cluster=$(theid).parentNode.parentNode.id;
   clusterA=cluster.split("|");
   if (clusterA[1]) {
-    cluster=clusterA[1] + "/" + clusterA[0];
+    cluster=clusterA[0] + "/" + clusterA[1];
   }
   server=$(theid).parentNode.id
   serverA=server.split("|");
-  if (serverA[0]) {
-    server=serverA[0];
+  if (serverA[1]) {
+    server=serverA[1];
   }
   theidA=theid.split("|");
-  if (theidA[0]) {
-    report=theidA[0];
+  if (theidA[1]) {
+    report=theidA[1];
   }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
@@ -128,12 +128,12 @@ showDetails = function(theid,script) {
   cluster=$(theid).parentNode.parentNode.id;
   clusterA=cluster.split("|");
   if (clusterA[1]) {
-    cluster=clusterA[1] + "/" + clusterA[0];
+    cluster=clusterA[0] + "/" + clusterA[1];
   }
   server=$(theid).parentNode.id;
   serverA=server.split("|");
-  if (serverA[0]) {
-    server=serverA[0];
+  if (serverA[1]) {
+    server=serverA[1];
   }
   if (server == '') { server = cluster };
   if (($(server + '|' + cluster + '_details').style.display == "none") || ($(server + '|' + cluster + '_details').style.display == "")) {

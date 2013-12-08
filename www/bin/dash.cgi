@@ -27,7 +27,7 @@ do
   imgh=`cat "$M_TEMP/cloud/$cld/images.list"  | grep ^$img\| | cut -d'|' -f2 | tr -d '"'`
   region=`echo "$clsconf" | cut -d'|' -f3`
   role=`echo "$clsconf" | cut -d'|' -f10`
-  open_cluster "${cls}|${cld}"
+  open_cluster "${cld}|${cls}"
   print_cluster_inline "sizeh" "imgh" "cld" "region" "role"
   close_cluster_line
   #echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Server size: $sizeh  Image: $imgh  Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
