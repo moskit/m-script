@@ -102,16 +102,16 @@ showData = function(theid,base) {
   }
   theidA=theid.split("|");
   if (theidA[0]) {
-    theid=theidA[0];
+    report=theidA[0];
   }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
     stopUpdater(updater);
     if (cluster == 'localhost') {
-      var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(theid) + '.html';
+      var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(report) + '.html';
     } else {
 
-      var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(theid) + '.html';
+      var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(report) + '.html';
     }
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
