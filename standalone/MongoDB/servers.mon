@@ -360,7 +360,7 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
     reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/${cs}/${cs}_name.html"
   done &
 fi
 
@@ -377,7 +377,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
     reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/${cs}/${cs%:*}_${cs#*:}_name.html"
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/${cs}/${cs}_name.html"
   done &
 fi
 
@@ -394,7 +394,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
     reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs%:*}_${cs#*:}_name.html"
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
   done &
 fi
 
@@ -411,7 +411,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
     reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs%:*}_${cs#*:}_name.html"
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
   done &
 fi
 

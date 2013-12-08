@@ -15,8 +15,7 @@ print_mongo_server() {
   name="${host%:*}"
   nodeid="${name}:${port}|$clname"
   [ ${#name} -gt 14 ] && namep="${name:0:7}..${name:(-7)}" || namep=$name
-  id="${name}_${port}"
-  install -d "$PWD/../$scriptname/balancers/$id"
+  install -d "$PWD/../$scriptname/$clname/${name}:${port}"
   [ -n "$port" ] && wport=`expr $port + 1000`
   
   report=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.report" 2>/dev/null`
