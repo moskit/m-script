@@ -100,6 +100,10 @@ showData = function(theid,base) {
   if (serverA[0]) {
     server=serverA[0];
   }
+  theidA=theid.split("|");
+  if (theidA[0]) {
+    theid=theidA[0];
+  }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
     stopUpdater(updater);
