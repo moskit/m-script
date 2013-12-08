@@ -116,7 +116,7 @@ print_inline() {
     fi
     [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\"" || unset onclick classadded dfpionclick
     [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}" && dfpionclick="${dfpionclick%%|*}" && style="style=\"$dfpistyle\"" || unset style
-    echo "<div class=\"status $classadded\" id=\"${dfpiid}_$dfpistatus\" $onclick $style>${dfpistatus}</div>"
+    echo "<div class=\"status $classadded\" id=\"${dfpiid}_$dfpistatus\" $onclick $style>`eval echo \"\\$$dfpistatus\"`</div>"
     shift
   done
   unset dfpistatus dfpionclick dfpistyle

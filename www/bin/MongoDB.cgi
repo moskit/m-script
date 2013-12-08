@@ -8,10 +8,12 @@ print_nav_bar "MongoDB|Servers" "sharding|Sharding" "collections|Collections" "m
 print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Bandwidth In/Out (Mbytes/sec)" "Operations (N/sec)" "Locks Curr/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
 
 print_mongo_server() {
-  local host=`echo "$1" | cut -d'|' -f1`
-  local role=`echo "$1" | cut -d'|' -f4`
-  port=${host##*:}
-  name=${host%:*}
+  local clname="$1"
+  local host=`echo "$2" | cut -d'|' -f1`
+  local role=`echo "$2" | cut -d'|' -f4`
+  port="${host##*:}"
+  name="${host%:*}"
+  nodeid="${name}:${port}|$clname"
   [ ${#name} -gt 14 ] && namep="${name:0:7}..${name:(-7)}" || namep=$name
   id="${name}_${port}"
   install -d "$PWD/../$scriptname/balancers/$id"
@@ -20,9 +22,9 @@ print_mongo_server() {
   report=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.report" 2>/dev/null`
   rawdata=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.dat" 2>/dev/null`
   
-  echo "<div class=\"server\" id=\"${name}:${port}\">"
+  echo "<div class=\"server\" id=\"${nodeid}\">"
   
-    echo "<div class=\"servername clickable\" id=\"${id}_name\" onClick=\"showData('${id}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
+    echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${id}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${id}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     echo "<div class=\"status status_short clickable\" id=\"${id}_http\" onclick=\"showURL('${id}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${id}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
     if [ "X`echo "$rawdata" | grep ^status\| | cut -d'|' -f2`" == "X1" ] ; then
@@ -48,7 +50,7 @@ print_mongo_server() {
     echo "<div class=\"status clickable\" id=\"${id}_recstats\" onclick=\"showDetails('${id}_recstats','mongorecstats')\">`echo "$notinmemory" | head -1` / `echo "$pagefaults" | tail -1`</div>"
     
   echo "</div>"
-  echo "<div class=\"details\" id=\"${name}:${port}_details\"></div>"
+  echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
 }
 
 IFS1=$IFS
@@ -56,30 +58,31 @@ IFS='
 '
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
-  open_cluster "Configuration Servers"
+  clustername="Configuration Servers"
+  open_cluster "$clustername"
   close_cluster_line
   for s in `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list"` ; do
-    print_mongo_server "$s"
+    print_mongo_server "$clustername" "$s"
   done
     
   close_cluster
   
 # Standalone servers
 elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
-  
-  open_cluster "MongoDB Servers"
+  clustername="MongoDB Servers"
+  open_cluster "$clustername"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"
       for s in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | grep "|$rs|"` ; do
-        print_mongo_server "$s"
+        print_mongo_server "$clustername" "$s"
       done
     done
 ### Not members of any RS
     for s in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | grep ^.*\|$` ; do
-      print_mongo_server "$s"
+      print_mongo_server "$clustername" "$s"
     done
     
   close_cluster
@@ -88,14 +91,15 @@ fi
 
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
-  open_cluster "Shard Servers"
+  clustername="Shard Servers"
+  open_cluster "$clustername"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"
       for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$rs|"` ; do
-        print_mongo_server "$s"
+        print_mongo_server "$clustername" "$s"
       done
     done
 ### Not members of any RS
@@ -108,11 +112,12 @@ fi
 
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
-  open_cluster "Balancers"
+  clustername="Balancers"
+  open_cluster "$clustername"
   close_cluster_line
   
     for s in `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list"` ; do
-      print_mongo_server "$s"
+      print_mongo_server "$clustername" "$s"
     done
     
   close_cluster
