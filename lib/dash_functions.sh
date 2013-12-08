@@ -57,7 +57,7 @@ open_cluster() {
   fi
   dfocid="${@}"
   echo "<div class=\"cluster\" id=\"${dfocid}\">"
-  echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid#*|}</span>"
+  echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid##*|}</span>"
   unset dfoconclick
 }
 
@@ -90,18 +90,19 @@ close_cluster() {
 }
 
 open_line() {
+  # open_line "title|uniqkey" "onclick|cssclass" 
   dfoltitle="$1"
   shift
-  if [ -n "$2" ]; then
+  if [ -n "$1" ]; then
     dfolonclick=$1
     classadded="clickable"
-    shift
   fi
-  shift
+  dfolkey="${dfoltitle##*|}"
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
-  [ -n "$dfocid" ] && dfolid="${dfocid#*|}|$dfolnode" || dfolid="$dfolnode"
+  [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
+  [ -n "$dfolkey" ] && dfolid="$dfolkey|$dfolnode" || dfolid="$dfolnode"
   echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
 }
@@ -110,13 +111,13 @@ print_inline() {
   while [ -n "$1" ] ; do
     dfpistatus="$1"
     if [ "X$dfpistatus" == "X-" ]; then
-      echo "<div id=\"${dfpltid}_status\" class=\"clusterstatus\">&dash;</div>"
+      echo "<div id=\"${dfolid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
     fi
     [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\"" || unset onclick classadded dfpionclick
     [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}" && dfpionclick="${dfpionclick%%|*}" && style="style=\"$dfpistyle\"" || unset style
-    echo "<div class=\"status $classadded\" id=\"${dfpiid}_$dfpistatus\" $onclick $style>`eval echo \"\\$$dfpistatus\"`</div>"
+    echo "<div class=\"status $classadded\" id=\"${dfolid}_$dfpistatus\" $onclick $style>`eval echo \"\\$$dfpistatus\"`</div>"
     shift
   done
   unset dfpistatus dfpionclick dfpistyle

@@ -96,7 +96,7 @@ for mongohost in $mongohosts ; do
   [ $res -eq 0 ] && break
 done
 
-[ $res -ne 0 ] && echo -e "\n*** Was unable to find a MongoDB host, exiting\n" >> "$M_ROOT/m_backup.error" && exit 1
+[ $res -ne 0 ] && echo -e "\n*** unable to find a MongoDB host, exiting\n" >> "$M_ROOT/m_backup.error" && exit 1
  
 echo "Host $DBHOST selected." >>"$M_ROOT/m_backup.log"
 if [ "X${2}" == "X" ]; then

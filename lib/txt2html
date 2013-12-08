@@ -170,9 +170,11 @@ cat -E $1 | while read LINE ; do
     case ${datatype[*]} in
       "empty")
         cursor=0
+        [ -n "$tableflag" ] && echo "</table>" && unset tableflag
         ;;
     esac
   fi
 done
-[ -n "$tableflag" ] && echo "</table>"
+
 IFS=$IFS1
+
