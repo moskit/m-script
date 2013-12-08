@@ -81,11 +81,12 @@ print_cluster_inline() {
 
 close_cluster_line() {
   echo "</div>"
-  [ -n "$dfocid" ] && echo "<div class=\"details\" id=\"${dfocid}_details\"></div>" && unset dfocid
+  [ -n "$dfocid" ] && echo "<div class=\"details\" id=\"${dfocid}_details\"></div>"
 }
 
 close_cluster() {
   echo "</div>"
+  unset dfocid
 }
 
 open_line() {
@@ -96,12 +97,11 @@ open_line() {
     classadded="clickable"
     shift
   fi
-  dfolparent="$dfocid"
   shift
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
-  dfolid="$dfolnode|$dfolparent"
+  [ -n "$dfocid" ] && dfolid="$dfocid|$dfolnode" || dfolid="$dfolnode"
   echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
 }
