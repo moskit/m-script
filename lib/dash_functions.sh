@@ -57,7 +57,7 @@ open_cluster() {
   fi
   dfocid="${@}"
   echo "<div class=\"cluster\" id=\"${dfocid}\">"
-  echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid%|*}</span>"
+  echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid#*|}</span>"
   unset dfoconclick
 }
 
@@ -101,7 +101,7 @@ open_line() {
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
-  [ -n "$dfocid" ] && dfolid="$dfocid|$dfolnode" || dfolid="$dfolnode"
+  [ -n "$dfocid" ] && dfolid="${dfocid#*|}|$dfolnode" || dfolid="$dfolnode"
   echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
 }
