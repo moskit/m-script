@@ -90,21 +90,21 @@ showURL = function(theid,url,scriptname) {
 }
 
 showData = function(theid,base) {
-  cluster=$(theid).parentNode.parentNode.id;
-  clusterA=cluster.split("|");
+  cluster = $(theid).parentNode.parentNode.id;
+  clusterA = cluster.split("|");
   if (clusterA[1]) {
-    cluster=clusterA[0] + "/" + clusterA[1];
+    cluster = clusterA[0] + "/" + clusterA[1];
   }
-  server=$(theid).parentNode.id
-  serverA=server.split("|");
+  server = $(theid).parentNode.id
+  serverA = server.split("|");
   if (serverA[1]) {
-    server=serverA[1];
+    server = serverA[1];
   }
-  theidA=theid.split("|");
+  theidA = theid.split("|");
   if (theidA[1]) {
-    report=theidA[1];
+    report = theidA[1];
   } else {
-    report=theid;
+    report = theid;
   }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
@@ -127,18 +127,19 @@ showData = function(theid,base) {
 }
 
 showDetails = function(theid,script) {
-  cluster=$(theid).parentNode.parentNode.id;
-  clusterA=cluster.split("|");
+  cluster = $(theid).parentNode.parentNode.id;
+  clusterA = cluster.split("|");
   if (clusterA[1]) {
-    cluster=clusterA[0] + "/" + clusterA[1];
+    cluster = clusterA[0] + "/" + clusterA[1];
   }
-  server=$(theid).parentNode.id;
-  serverA=server.split("|");
+  server = $(theid).parentNode.id;
+  serverA = server.split("|");
   if (serverA[1]) {
-    server=serverA[1];
+    server = serverA[1];
   }
   if (server == '') { server = cluster };
-  if (($(server + '|' + cluster + '_details').style.display == "none") || ($(server + '|' + cluster + '_details').style.display == "")) {
+  node = cluster + '|' + server + '_details'
+  if (($(node).style.display == "none") || ($(node).style.display == "")) {
     hideblocked = 1;
     stopUpdater(updater);
     cursor_saved = $(theid).style.cursor
@@ -148,8 +149,8 @@ showDetails = function(theid,script) {
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
      // new Effect.SlideDown(server + '|' + cluster + '_details', {duration: 0.3});
-        $(server + '|' + cluster + '_details').style.display = "table";
-        $(server + '|' + cluster + '_details').update(response.responseText);
+        $(node).style.display = "table";
+        $(node).update(response.responseText);
         cursor_style($(theid),cursor_saved);
         waitingEffect($(theid),'stop');
       }
