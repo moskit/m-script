@@ -103,6 +103,8 @@ showData = function(theid,base) {
   theidA=theid.split("|");
   if (theidA[1]) {
     report=theidA[1];
+  } else {
+    report=theid;
   }
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
