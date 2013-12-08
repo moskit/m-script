@@ -138,8 +138,10 @@ showDetails = function(theid,script) {
     server = serverA[1];
   }
   if (server == '') { server = cluster };
-  node = theid + '_details'
-  if (($(node).style.display == "none") || ($(node).style.display == "")) {
+  re = new RegExp('(.*)_name$');
+  nodeid = re.exec(theid);
+  details = nodeid + '_details'
+  if (($(details).style.display == "none") || ($(details).style.display == "")) {
     hideblocked = 1;
     stopUpdater(updater);
     cursor_saved = $(theid).style.cursor
@@ -149,8 +151,8 @@ showDetails = function(theid,script) {
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
      // new Effect.SlideDown(server + '|' + cluster + '_details', {duration: 0.3});
-        $(node).style.display = "table";
-        $(node).update(response.responseText);
+        $(details).style.display = "table";
+        $(details).update(response.responseText);
         cursor_style($(theid),cursor_saved);
         waitingEffect($(theid),'stop');
       }
