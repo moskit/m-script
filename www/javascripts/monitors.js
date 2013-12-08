@@ -138,7 +138,7 @@ showDetails = function(theid,script) {
     server = serverA[1];
   }
   if (server == '') { server = cluster };
-  node = cluster + '|' + server + '_details'
+  node = theid + '_details'
   if (($(node).style.display == "none") || ($(node).style.display == "")) {
     hideblocked = 1;
     stopUpdater(updater);
