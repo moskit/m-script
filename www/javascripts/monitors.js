@@ -133,14 +133,12 @@ showDetails = function(theid,script) {
     cluster = clusterA[0] + "/" + clusterA[1];
   }
   server = $(theid).parentNode.id;
+  details = server + '_details';
   serverA = server.split("|");
   if (serverA[1]) {
     server = serverA[1];
   }
   if (server == '') { server = cluster };
-  re = new RegExp('(.*)_name$');
-  nodeid = re.exec(theid);
-  details = nodeid + '_details'
   if (($(details).style.display == "none") || ($(details).style.display == "")) {
     hideblocked = 1;
     stopUpdater(updater);
