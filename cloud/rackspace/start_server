@@ -76,21 +76,22 @@ request() {
   URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
   TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
   $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/servers" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
-  #[ -n "`find "${M_TEMP}" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/flavors/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/flavors.resp"
-  #[ -n "`find "${M_TEMP}" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
+  #[ -n "`find "$M_TEMP" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/flavors/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/flavors.resp"
+  #[ -n "`find "$M_TEMP" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/images/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/images.resp"
 }
 
 save_details() {
   log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/\\"id\\"\||\/\\"imageId\\"\||\/\\"flavorId\\"\||\/\\"adminPass\\"\||\/\\"addresses\\"\/\\"public\\"|\/\\"addresses\\"\/\\"private\\"" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
-  chmod 600 "$rpath/../rackspace.log"
+  cat "$M_TEMP/${rcommand}.resp" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$rpath/../rackspace.list"
+  chmod 600 "$rpath/../rackspace.log" "$rpath/../rackspace.list"
   if [ "X$NETWORK" == "Xexternal" ] ; then
     slip=`grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   else
     slip=`grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   fi
-  echo "$slip|$thekey|$region|$name|$cluster" >> "$rpath/../../servers.list"
+  echo "$slip|$thekey|$region|$name|$cluster|$CLOUD" >> "$rpath/../../servers.list"
   return 0
 }
 
@@ -196,7 +197,7 @@ request && log "Request sent"
 declare -i n
 n=0
 while [ `grep -c ^0\/\"cloudServersFault\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
-  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 207
+  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 200
   [ $n -gt 1 ] && sleep 30
   rm -f "$M_TEMP/auth.resp"
   try_auth
@@ -216,7 +217,7 @@ if [ -n "$newid" ] ; then
   [ -n "$return" ] && printreturn $return
   [ $wait_res -eq 1 ] && exit_status=2
 else
-  proper_exit 1 227
+  proper_exit 1 220
 fi
 
 "$rpath"/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"

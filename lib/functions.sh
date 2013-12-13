@@ -24,7 +24,7 @@ SQLBIN=`which sqlite3 2>/dev/null || echo echo`
 
 store_results() {
   # syntax:
-  # store_results fieldname1:datatype1,fieldname2:datatype2,...
+  # store_results fieldname1:datatype1,fieldname2:datatype2,... <filename|tablename>
   [ -z "$1" ] && echo "Fields are not defined" && exit 1
   [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
   if [ -z "$2" ]; then
