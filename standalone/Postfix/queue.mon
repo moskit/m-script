@@ -43,11 +43,7 @@ for deferred in `find $SPOOLDIR/deferred -type f` ; do
   id=${deferred##*/}
   create_time=$(expr "`cat $deferred | head -1`" : ".*create_time=\([0-9]*\)")
   age=`expr $timenow - $create_time`
-  if [ $age -lt $AGE1 ] && continue
-  [ $age -lt $AGE2 ] && q1+=1 && continue
-  [ $age -lt $AGE3 ] && q2+=1 && continue
-  q3+=1
-  
+
   if [ $age -gt $AGE3 ]; then
     q3+=1
     q3a+=( $id )

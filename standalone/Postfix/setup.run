@@ -10,6 +10,6 @@ source "$rpath/../../conf/mon.conf"
 
 PCONF=`which postconf 2>/dev/null`
 sed -i "/^SPOOLDIR=/d" "$rpath/postfix.conf"
-echo "SPOOLDIR=`$PCONF | grep queue_directory`" >> "$rpath/postfix.conf"
+echo "SPOOLDIR=`$PCONF | grep queue_directory | awk -F'= ' '{print $2}'`" >> "$rpath/postfix.conf"
 
 
