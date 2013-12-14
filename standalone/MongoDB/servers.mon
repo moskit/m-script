@@ -281,7 +281,7 @@ for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
 # master=`find_master ${configip} || echo ${configip}`
-  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({"ping" : { \$gt : $lastping }}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
+  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({\"ping\" : { \\$gt : "$lastping" }}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
   mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -s -d'|' -f2 | tr -d '"' | grep -v ^$ | sort -n`
   [ $res -eq 0 ] && break

@@ -93,7 +93,7 @@ for cloud in ${clouds[*]} ; do
     if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
       echo 0 > "$rpath/${cloud}.cycles.count"
       log "updating servers.list"
-      [ -x "$M_ROOT/cloud/$cloud/update_servers_list" ] && "$M_ROOT/cloud/$cloud"/update_servers_list
+      "$M_ROOT/cloud/common"/update_servers_list --cloud=$cloud
       [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
       [ $? -eq 0 ] && log "list updated successfully"
       [ $? -eq 1 ] && log "update_servers_list error" && exit 1
@@ -103,7 +103,7 @@ for cloud in ${clouds[*]} ; do
     fi
   else
     log "updating servers.list"
-    [ -x $M_ROOT/cloud/$cloud/update_servers_list ] && $M_ROOT/$cloud/cloud/update_servers_list
+    "$M_ROOT/cloud/common"/update_servers_list --cloud=$cloud
     [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
     [ $? -eq 0 ] && log "list updated successfully"
     [ $? -eq 1 ] && log "update_servers_list error" && exit 1
