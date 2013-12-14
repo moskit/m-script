@@ -84,7 +84,7 @@ if [ -n "$ES_SERVERS" ] ; then
       clustername=`cat "$M_ROOT/servers.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
       [ "X$clustername" == "X$clusternameprev" ] && continue
       
-      clusterips=`"$M_ROOT/cloud/ec2/get_ips" --cluster="$clustername" | sed "s|$|$port|g"`
+      clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|$port|g"`
       
       clusternameprev=$clustername
       clusternames="$clusternames $clustername"
@@ -97,7 +97,7 @@ if [ -n "$ES_SERVERS" ] ; then
       clustername=${name%:*}
       port=":${name#*:}"
       [ "X$port" == "X:$clustername" ] && unset port
-      clusterips=`"$M_ROOT/cloud/ec2/get_ips" --cluster="$clustername" | sed "s|$|$port|g"`
+      clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|$port|g"`
       collect_hosts $clusterips
       eval "${clustername}ips=\"$configips\""
       unset clusterips configips

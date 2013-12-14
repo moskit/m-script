@@ -27,6 +27,11 @@ touch "$rpath/mongo_mongos_servers.list" "$rpath/mongo_config_servers.list" "$rp
 M_TEMP="$M_TEMP/MongoDB"
 install -d "$M_TEMP"
 
+timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
+[ -n "$timeshift" ] && period=`expr $FREQ + $timeshift` || period=$FREQ
+
+lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
+
 function print_servers() {
   for host in $@ ; do
     echo "$host|||"
@@ -183,6 +188,8 @@ function parse_data() {
   unset status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable bw_in bw_out net_reqps ops_insertsps ops_queriesps ops_updatesps ops_deletesps ops_getmoresps ops_commandsps ops_insertsps_sharded ops_queriesps_sharded ops_updatesps_sharded ops_deletesps_sharded ops_getmoresps_sharded ops_commandsps_sharded ops_insertsps_notsharded ops_queriesps_notsharded ops_updatesps_notsharded ops_deletesps_notsharded ops_getmoresps_notsharded ops_commandsps_notsharded ops_totalqps ops_totalqps_sharded ops_totalqps_notsharded lockRatio lockTime lockTime_prev lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters recstatsPageFaults recstatsNotInMemory
 }
 
+################
+
 if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   defaultport=27019
   MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
@@ -269,12 +276,12 @@ else
 
   [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"`" ] && mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
 fi
-  
+
 for configip in $configips ; do
 # Despite variable name this is not necessarily config servers, so might be
 # replica sets
 # master=`find_master ${configip} || echo ${configip}`
-  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
+  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({"ping" : { \$gt : $lastping }}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
   mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -s -d'|' -f2 | tr -d '"' | grep -v ^$ | sort -n`
   [ $res -eq 0 ] && break

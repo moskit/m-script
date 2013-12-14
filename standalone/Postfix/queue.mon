@@ -20,9 +20,6 @@ rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
-DIFF=`which diff 2>/dev/null`
-[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
-
 source "$rpath/postfix.conf"
 [ -z "$AGE1" ] && AGE1=3600
 [ -z "$AGE2" ] && AGE2=86400
@@ -50,7 +47,7 @@ for deferred in `find $SPOOLDIR/deferred -type f` ; do
   elif [ $age -gt $AGE2 ]; then
     q2+=1
     q2a+=( $id )
-  elif [ $age -gt $AGE1]; then
+  elif [ $age -gt $AGE1 ]; then
     q1+=1
     q1a+=( $id )
   fi
