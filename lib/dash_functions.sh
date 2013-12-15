@@ -90,7 +90,8 @@ close_cluster() {
 }
 
 open_line() {
-  # open_line "title|style|uniqkey" "onclick|cssclass" 
+  # open_line "title|style|uniqkey" "onclick|cssclass"
+  # open_line "title" "onclick"
   dfoltitle="$1"
   shift
   if [ -n "$1" ]; then

@@ -40,7 +40,7 @@ for db in `find "$PWD/../../standalone/$saname/data" -mindepth 1 -maxdepth 1 -ty
   for coll in "$PWD/../../standalone/$saname/data"/shards.${db}.* ; do
     coll=`echo $coll | sed "s|$PWD/../../standalone/$saname/data/shards.${db}.||"`
     coll_dat="$PWD/../../standalone/$saname/data"/${db}.${coll}.dat
-    open_line "$coll" shards "$db"
+    open_line "$coll" shards
     if [ -f "$coll_dat" ]; then
       coll_ok=`cat $coll_dat | grep ^0\/\"ok\"\| | cut -d'|' -f2`
       coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
