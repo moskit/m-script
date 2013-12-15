@@ -72,10 +72,11 @@ echo -e "$warnind Total running processes:\t$rtotalprocess\n"
 
 echo -e "Memory usage:\n----------------\n"
 
-totalmemfree=`solve 2 "100 - ($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
+totalmemused=`solve 2 "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
 totalramused=`solve 2 "$ractiveram / $rtotalram * 100"`
 totalramfree=`solve 2 "$rfreeram / $rtotalram * 100"`
 totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100"`
+totalmemfree=`solve 2 "100 - $totalmemused"
 
 y1=`echo "$totalmemused >= $SYSMEM_1" | bc`
 y2=`echo "$totalmemused >= $SYSMEM_2" | bc`
