@@ -90,14 +90,14 @@ close_cluster() {
 }
 
 open_line() {
-  # open_line "title|uniqkey" "onclick|cssclass" 
+  # open_line "title|style|uniqkey" "onclick|cssclass" 
   dfoltitle="$1"
   shift
   if [ -n "$1" ]; then
     dfolonclick=$1
     classadded="clickable"
   fi
-  dfolkey="${dfoltitle##*|}"
+  dfolkey=`echo "$dfoltitle" | cut -s -d'|' -f3`
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
