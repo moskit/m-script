@@ -307,7 +307,7 @@ source "$rpath/conf/mon.conf"
 source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 declare -i delay ; delay=0
-export M_TEMP FREQ M_ROOT
+export M_TEMP FREQ M_ROOT THRESHOLD SQLITE3 IPTABLES
 [ "X$2" == "XSQL" ] && SQL=SQL
 [ -d $M_TEMP ] || install -d $M_TEMP
 etitle="------------------------------\n`date`\n------------------------------"

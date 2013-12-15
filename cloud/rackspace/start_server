@@ -160,18 +160,8 @@ PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $rpath/../../keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 167
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "$rpath/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$M_TEMP/${rcommand}.req"
-echo "        \"personality\" : [" >> "$M_TEMP/${rcommand}.req"
-echo "            {" >> "$M_TEMP/${rcommand}.req"
-echo -n "                \"path\" : " >> "$M_TEMP/${rcommand}.req"
-echo "\"/root/.ssh/authorized_keys\"," >> "$M_TEMP/${rcommand}.req"
-echo -n "                \"contents\" : " >> "$M_TEMP/${rcommand}.req"
-echo -n "\"" >> "$M_TEMP/${rcommand}.req"
-echo -n "$PUBLIC_KEY" >> "$M_TEMP/${rcommand}.req"
-echo "\"" >> "$M_TEMP/${rcommand}.req"
-echo "            }" >> "$M_TEMP/${rcommand}.req"
-echo "        ]" >> "$M_TEMP/${rcommand}.req"
-echo "    }" >> "$M_TEMP/${rcommand}.req"
-echo "}" >> "$M_TEMP/${rcommand}.req"
+
+echo -n -e "        \"personality\" : [\n            {\n                \"path\" : \"/root/.ssh/authorized_keys\",\n                \"contents\" : \"$PUBLIC_KEY\"\n            }\n        ]\n    }\n}\n" >> "$M_TEMP/${rcommand}.req"
 log "Request generated"
 
 try_auth() {

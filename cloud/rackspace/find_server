@@ -93,9 +93,9 @@ list_the_cluster() {
   # 2. if 'slow' is set, verify each server by querying its personal details
   ips1=`cat "$M_ROOT/servers.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${1}$ | cut -d'|' -f1`
   if [ "X$NETWORK" == "Xexternal" ]; then
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|${1}\||\|${1}$" | cut -d'|' -f6`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${1}\||\|${1}$" | cut -d'|' -f6`
   else
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|${1}\||\|${1}$" | cut -d'|' -f7`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${1}\||\|${1}$" | cut -d'|' -f7`
   fi
   ips=`echo -e "$ips1\n$ips2" | sort | uniq`
   if [ -n "$slow" ]; then

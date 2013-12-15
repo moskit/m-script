@@ -310,23 +310,30 @@ if [[ $cpun -ne 0 ]] ; then
   l2=$cpun
   l3=`echo "scale=1;$cpun * 2" | bc`
   lcrit=`echo "scale=1;$cpun * 10" | bc`
-  sed -i "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|g" "$rpath/conf/mon.conf"
-  sed -i "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|g" "$rpath/conf/mon.conf"
-  sed -i "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|g" "$rpath/conf/mon.conf"
-  sed -i "s|LOAD_CRIT=.*|LOAD_CRIT=$lcrit|g" "$rpath/conf/mon.conf"
+  sed -i "s|LOAD_WARN_1=.*|LOAD_WARN_1=$l1|" "$rpath/tests/mem.conf"
+  sed -i "s|LOAD_WARN_2=.*|LOAD_WARN_2=$l2|" "$rpath/tests/mem.conf"
+  sed -i "s|LOAD_WARN_3=.*|LOAD_WARN_3=$l3|" "$rpath/tests/mem.conf"
+  sed -i "s|LOAD_CRIT=.*|LOAD_CRIT=$lcrit|" "$rpath/conf/mon.conf"
 fi
+procn=`ps axo pid | grep -vE "^USER|grep|ps" | wc -l`
+p1=`expr $procn \* 2`
+p2=`expr $procn \* 3`
+p3=`expr $procn \* 4`
+sed -i "s|NPROC_1=.*|NPROC_1=$p1|" "$rpath/tests/mem.conf"
+sed -i "s|NPROC_2=.*|NPROC_2=$p2|" "$rpath/tests/mem.conf"
+sed -i "s|NPROC_3=.*|NPROC_3=$p3|" "$rpath/tests/mem.conf"
 memtotal=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`
 memvirt=`cat /proc/meminfo | grep CommitLimit | awk '{print $2}'`
 mvperc1=`expr $memvirt \* 100 / $memtotal / 2 2>/dev/null`
-[ $? -ne 0 ] && mvperc1=100
+[ $? -ne 0 ] && mvperc1=1000
 mvperc2=`expr $mvperc1 \* 3 / 2 2>/dev/null`
-[ $? -ne 0 ] && mvperc2=150
+[ $? -ne 0 ] && mvperc2=1500
 mvperc2=`expr $mvperc1 \* 2 2>/dev/null`
-[ $? -ne 0 ] && mvperc3=200
+[ $? -ne 0 ] && mvperc3=2000
 if [ -f "$rpath/tests/memory_eaters.conf" ]; then
-  sed -i "s|MEM_VIR_1=.*|MEM_VIR_1=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
-  sed -i "s|MEM_VIR_2=.*|MEM_VIR_2=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
-  sed -i "s|MEM_VIR_3=.*|MEM_VIR_3=$mvperc1|g" "$rpath/tests/memory_eaters.conf"
+  sed -i "s|MEM_VIR_1=.*|MEM_VIR_1=$mvperc1|" "$rpath/tests/memory_eaters.conf"
+  sed -i "s|MEM_VIR_2=.*|MEM_VIR_2=$mvperc2|" "$rpath/tests/memory_eaters.conf"
+  sed -i "s|MEM_VIR_3=.*|MEM_VIR_3=$mvperc3|" "$rpath/tests/memory_eaters.conf"
 fi
 echo "done"
 [ -d /etc/init.d ] && rcdir=/etc/init.d

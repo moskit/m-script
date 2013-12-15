@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-FREE=`which free 2>/dev/null`
-PS=`which ps 2>/dev/null`
-UPTIME=`which uptime 2>/dev/null`
-VMSTAT=`which vmstat 2>/dev/null`
 rcommand=${0##*/}
 rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
@@ -31,10 +27,10 @@ rfreeram=`cat /proc/meminfo | grep ^MemFree | awk '{ print $2 }'`
 mfreeram=`solve 2 "$rfreeram / 1024"`
 ractiveram=`cat /proc/meminfo | grep "^Active:" | awk '{ print $2}'`
 if [ -n "$ractiveram" ] ; then
-mactiveram=`solve 2 "$ractiveram / 1024"`
+  mactiveram=`solve 2 "$ractiveram / 1024"`
 else
-ractiveram=0
-mactiveram=0
+  ractiveram=0
+  mactiveram=0
 fi
 rtotalram=`cat /proc/meminfo | grep ^MemTotal | awk '{ print $2 }'`
 mtotalram=`solve 2 "$rtotalram / 1024"`
@@ -48,65 +44,82 @@ rusedswap=`expr $rtotalswap - $rfreeswap`
 musedswap=`solve 2 "$mtotalswap - $mfreeswap"`
 rtotalmemfree=`expr $rfreeram + $rfreeswap`
 mtotalmemfree=`solve 2 "$rtotalmemfree / 1024"`
-rtotalprocess="$($PS axo pid | grep -vE "^USER|grep|ps" | wc -l)"
+rtotalprocess=`ps axo pid | grep -vE "^USER|grep|ps" | wc -l`
 rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
 
-echo
-echo "System status:"
-echo "--------------"
-echo
-printf "Uptime:\t\t\t\t`expr $ruptime / 86400` days `expr \( $ruptime % 86400 \) / 3600`:`expr $ruptime % 86400 % 3600 / 60`\n"
-printf "Load average (1 5 15 min):\t$rloadavg\n"
-printf "Total running processes:\t$rtotalprocess\n"
-echo
-echo "RAM/Swap status:"
-echo "----------------"
-echo
-printf "Total RAM:\t\t${mtotalram} MB\n"
-printf "Active RAM:\t\t${mactiveram} MB\n"
-printf "Used RAM:\t\t${musedram} MB\n" 
-printf "Free RAM:\t\t${mfreeram} MB\n"
-printf "Used Swap:\t\t${musedswap} MB\n"
-printf "Free Swap:\t\t${mfreeswap} MB\n"
-printf "Total Swap:\t\t${mtotalswap} MB\n"
-echo
+echo -e "\nSystem status:\n--------------\nUptime:\t\t\t\t`expr $ruptime / 86400` days `expr \( $ruptime % 86400 \) / 3600`:`expr $ruptime % 86400 % 3600 / 60`\n"
 
-[[ $ruptime -lt `expr $FREQ \* 4` ]] && echo "<***> The system booted up `expr $ruptime / 60` minutes ago"
+[[ $ruptime -lt `expr $FREQ \* 4` ]] && echo "<***> System booted up `expr $ruptime / 60` minutes ago"
 
-x="$(cat /proc/loadavg | cut -d' ' -f2)"
-y1="$(echo "$x >= $LOAD_WARN_1" | bc)"
-y2="$(echo "$x >= $LOAD_WARN_2" | bc)"
-y3="$(echo "$x >= $LOAD_WARN_3" | bc)"
+x=`cat /proc/loadavg | cut -d' ' -f2`
+y1=`echo "$x >= $LOAD_WARN_1" | bc`
+y2=`echo "$x >= $LOAD_WARN_2" | bc`
+y3=`echo "$x >= $LOAD_WARN_3" | bc`
 warnind='<OK> '
-[ "$y1" == "1" ] && warnind=' <*> '
-[ "$y2" == "1" ] && warnind='<**> '
-[ "$y3" == "1" ] && warnind='<***>'
-echo "$warnind 5 min load average is $x"
+[ $y1 -eq 1 ] && warnind=' <*> '
+[ $y2 -eq 1 ] && warnind='<**> '
+[ $y3 -eq 1 ] && warnind='<***>'
+echo -e "$warnind Load average (1 5 15 min):\t$rloadavg\n"
 
-totalmemused=`solve 2 "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
+y1=`echo "$rtotalprocess >= $NPROC_1" | bc`
+y2=`echo "$rtotalprocess >= $NPROC_2" | bc`
+y3=`echo "$rtotalprocess >= $NPROC_3" | bc`
+warnind='<OK> '
+[ $y1 -eq 1 ] && warnind=' <*> '
+[ $y2 -eq 1 ] && warnind='<**> '
+[ $y3 -eq 1 ] && warnind='<***>'
+echo -e "$warnind Total running processes:\t$rtotalprocess\n"
+
+echo -e "Memory usage:\n----------------\n"
+
+totalmemfree=`solve 2 "100 - ($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
 totalramused=`solve 2 "$ractiveram / $rtotalram * 100"`
+totalramfree=`solve 2 "$rfreeram / $rtotalram * 100"`
+totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100"`
 
-y1="$(echo "$totalmemused >= $MEM_WARN_1" | bc)"
-y2="$(echo "$totalmemused >= $MEM_WARN_2" | bc)"
-y3="$(echo "$totalmemused >= $MEM_WARN_3" | bc)"
-
+y1=`echo "$totalmemused >= $SYSMEM_1" | bc`
+y2=`echo "$totalmemused >= $SYSMEM_2" | bc`
+y3=`echo "$totalmemused >= $SYSMEM_3" | bc`
 warnind='<OK> '
-[ "$y1" == "1" ] && warnind=' <*> '
-[ "$y2" == "1" ] && warnind='<**> '
-[ "$y3" == "1" ] && warnind='<***>'
-echo "$warnind Free system memory is $mtotalmemfree MB, ${totalmemused}% used"
+[ $y1 -eq 1 ] && warnind=' <*> '
+[ $y2 -eq 1 ] && warnind='<**> '
+[ $y3 -eq 1 ] && warnind='<***>'
 
-y1="$(echo "$totalramused >= $RAM_WARN_1" | bc)"
-y2="$(echo "$totalramused >= $RAM_WARN_2" | bc)"
-y3="$(echo "$totalramused >= $RAM_WARN_3" | bc)"
+echo -e "Total RAM:\t\t${mtotalram} MB"
+echo -e "Total Swap:\t\t${mtotalswap} MB"
+echo -e "$warnind Free system memory:\t$mtotalmemfree MB (${totalmemfree}%)"
 
+y1=`echo "$totalramused >= $ACTIVEMEM_1" | bc`
+y2=`echo "$totalramused >= $ACTIVEMEM_2" | bc`
+y3=`echo "$totalramused >= $ACTIVEMEM_3" | bc`
 warnind='<OK> '
-[ "$y1" == "1" ] && warnind=' <*> '
-[ "$y2" == "1" ] && warnind='<**> '
-[ "$y3" == "1" ] && warnind='<***>'
-echo "$warnind Active memory is $mactiveram MB, ${totalramused}% of total RAM"
+[ $y1 -eq 1 ] && warnind=' <*> '
+[ $y2 -eq 1 ] && warnind='<**> '
+[ $y3 -eq 1 ] && warnind='<***>'
+echo -e "$warnind Active RAM:\t\t$mactiveram MB (${totalramused}%)"
 
-if [ "X$SQLITE3" == "X1" ] && [ "X${1}" == "XSQL" ]
+y1=`echo "$totalramfree <= $FREERAM_1" | bc`
+y2=`echo "$totalramfree <= $FREERAM_2" | bc`
+y3=`echo "$totalramfree <= $FREERAM_3" | bc`
+warnind='<OK> '
+[ $y1 -eq 1 ] && warnind=' <*> '
+[ $y2 -eq 1 ] && warnind='<**> '
+[ $y3 -eq 1 ] && warnind='<***>'
+echo -e "$warnind Used RAM:\t\t${musedram} MB (`expr 100 - ${totalramfree}`%)" 
+echo -e "$warnind Free RAM:\t\t${mfreeram} MB (${totalramfree}%)"
+
+y1=`echo "$totalswapused >= $SWAP_1" | bc`
+y2=`echo "$totalswapused >= $SWAP_2" | bc`
+y3=`echo "$totalswapused >= $SWAP_3" | bc`
+warnind='<OK> '
+[ $y1 -eq 1 ] && warnind=' <*> '
+[ $y2 -eq 1 ] && warnind='<**> '
+[ $y3 -eq 1 ] && warnind='<***>'
+echo -e "Used Swap:\t\t${musedswap} MB"
+echo -e "Free Swap:\t\t${mfreeswap} MB"
+
+if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
 then
   sqlite3 "$rpath/../sysdata" "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime=$ruptime, loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi
+
