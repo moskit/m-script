@@ -116,8 +116,8 @@ warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
 [ $y3 -eq 1 ] && warnind='<***>'
-echo -e "Used Swap:\t\t${musedswap} MB"
-echo -e "Free Swap:\t\t${mfreeswap} MB"
+echo -e "$warnind Used Swap:\t\t${musedswap} MB"
+echo -e "$warnind Free Swap:\t\t${mfreeswap} MB"
 
 if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
 then

@@ -176,19 +176,18 @@ function runactions() {
   for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
-    touch "$M_TEMP/consequent_alerts.tmp"
     for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
       pattern=`echo $confline | cut -d'|' -f1`
-      level=`echo $confline | cut -d'|' -f2`
-      nalerts=`echo $confline | cut -d'|' -f4`
-      blockccl=`echo $confline | cut -d'|' -f5`
-      BLOCK_ERR13=`echo $confline | cut -d'|' -f6`
-      BLOCK_ERR5=`echo $confline | cut -d'|' -f7`
+      level=`echo $confline | cut -s -d'|' -f2`
+      nalerts=`echo $confline | cut -s -d'|' -f4`
+      blockccl=`echo $confline | cut -s -d'|' -f5`
+      BLOCK_ERR13=`echo $confline | cut -s -d'|' -f6`
+      BLOCK_ERR5=`echo $confline | cut -s -d'|' -f7`
       export BLOCK_ERR13 BLOCK_ERR5
       if [ -n "$nalerts" ] ; then
-        calerts=`cat "$M_TEMP/consequent_alerts.tmp" | grep ^"$commline"\|"$pattern"\|$level\| | tail -1`
+        [ -e "$M_TEMP/consequent_alerts.tmp" ] && calerts=`cat "$M_TEMP/consequent_alerts.tmp" | grep ^"$commline"\|"$pattern"\|$level\| | tail -1`
         if [ -n "$calerts" ] ; then
-          calerts=`echo "$calerts" | cut -d'|' -f4`
+          calerts=`echo "$calerts" | cut -s -d'|' -f4`
         else
           echo "$commline|$pattern|$level|0" >> "$M_TEMP/consequent_alerts.tmp"
         fi
@@ -227,7 +226,7 @@ function runactions() {
       done   ## <-- finished reading alerts
       
       if $alert_match ; then
-        # matching condition found, but conditions may be ANDed
+        # matching condition found, but conditions might be ANDed
         all_alerts_found=true
         log "alert match"
       else

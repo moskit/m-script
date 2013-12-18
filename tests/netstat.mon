@@ -66,7 +66,7 @@ for l3 in `echo "${config[*]}" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; d
     [[ `expr $val \> $thr2` -eq 1 ]] && echo "<**>  `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
     [[ `expr $val \> $thr1` -eq 1 ]] && echo "<*>   `echo "${config[*]}" | grep ^$var | cut -d'|' -f2` is ${val} / minute" && continue
   else
-    log "this netstat metric is empty: ${var}, so you can as well remove it from conf/netstat.conf"
+    log "this netstat metric is empty: ${var}, so you can as well remove it from tests/netstat.conf (or check the pattern)"
   fi
 done
 IFS=$IFS1

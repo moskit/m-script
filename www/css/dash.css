@@ -358,7 +358,7 @@ span.indent {
 
 .dashtitle {
   width: 800px;
-  display: table;
+  height: 32px;
   margin-top: 5px;
   border-bottom: 1px solid silver;
 }
@@ -462,11 +462,11 @@ span.indent {
 .status {
   width: 88px;
   height: 16px;
-  display: table;
   padding: 2px 0px;
   text-align: center;
   float: left;
-  font-size: 11px;
+  font-size: 10px;
+  word-wrap: break-word;
   color: #777777;
 }
 
