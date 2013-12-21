@@ -17,7 +17,7 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 QEMU_IMG=`which qemu-img 2>/dev/null`
@@ -143,16 +143,6 @@ if [ ! -b "$disk" ]; then
 else
   blockdev="$disk"
 fi
-
-filesystem_dev=$(map_disk0 $blockdev)
-CLEANUP+=("unmap_disk0 $blockdev")
-
-TARGET=`mktemp -d` || exit 1
-CLEANUP+=("rmdir $TARGET")
-
-mount $filesystem_dev $TARGET || exit 1
-CLEANUP+=("umount -l $TARGET")
-CLEANUP+=("sync")
 
 $QEMU_IMG convert $blockdev -O qcow2 "$M_ROOT/cloud/ganeti/os-images/${imagename}.img"
 

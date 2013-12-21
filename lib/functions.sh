@@ -249,19 +249,19 @@ print "\n";
 EOF
 }
 
-check_period() {
-  local period="$*"
+check_interval() {
+  local interval="$*"
   [ -z "$rpath" ] && rpath="$M_TEMP"
-  period=`date -d "1970/01/01 +$period" +"%s"`
-  [ $period -eq 0 ] && return 1
-  local currperiod=`cat "$rpath/period.tmp" 2>/dev/null || echo 0`
+  interval=`date -d "1970/01/01 +$interval" +"%s"`
+  [ $interval -eq 0 ] && return 1
+  local currinterval=`cat "$rpath/interval.tmp" 2>/dev/null || echo 0`
   timeshift=`cat "$M_TEMP/timeshift" || echo 0`
-  currperiod=`expr $currperiod + $FREQ + $timeshift`
-  if [ $currperiod -ge $period ]; then
-    echo 0 > "$rpath/period.tmp"
+  currinterval=`expr $currinterval + $FREQ + $timeshift`
+  if [ $currinterval -ge $interval ]; then
+    echo 0 > "$rpath/interval.tmp"
     return 0
   else
-    echo $currperiod > "$rpath/period.tmp"
+    echo $currinterval > "$rpath/interval.tmp"
     return 1
   fi
 }
@@ -269,3 +269,4 @@ check_period() {
 date_header() {
   echo -e "`date`\n------------------------------\n"
 }
+

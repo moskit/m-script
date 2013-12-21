@@ -360,7 +360,6 @@ span.indent {
   width: 800px;
   height: 32px;
   margin-top: 5px;
-  border-bottom: 1px solid silver;
 }
 
 #views {
@@ -461,13 +460,14 @@ span.indent {
 
 .status {
   width: 88px;
-  height: 16px;
+  height: 100%;
   padding: 2px 0px;
   text-align: center;
   float: left;
   font-size: 10px;
   word-wrap: break-word;
   color: #777777;
+  display: inline-block;
 }
 
 .status_short {

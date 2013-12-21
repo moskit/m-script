@@ -120,14 +120,15 @@ function runscript() {
         log "$mon"
         monoutput=`$mon $SQL 2>&1`
         echo "$monoutput" >> "$LOG"
-        if alert_blocked ${mon##*/} ; then
+        rmon=${mon##*/}
+        if alert_blocked $rmon ; then
           log "=== alert is blocked for $mon"
           echo "$monoutput" >> "$rpath/report.blocked"
         else  
           echo "$monoutput" >> "$rpath/report"
         fi
         time1=`date +"%s"`
-        dbquery "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '${rscript##*/}', '`expr $time1 - $time0`')"
+        dbquery "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$rmon', '`expr $time1 - $time0`')"
       else
         log "monitor $mon does not exist or is not executable"
       fi
