@@ -194,18 +194,18 @@ function runactions() {
         if [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ]; then
           # if it's not a number, it's a number per time interval
           # (format: n/interval)
-          nalerts=`echo "$nalerts" | cut -s -d'/' -f1`
           alerts_interval=`echo "$nalerts" | cut -s -d'/' -f2`
-          [ -z "$nalerts" -o -z "$alerts_interval" ] && echo "Bad consequent alerts number or time interval setting in actions.conf for action $action" >> "$rpath/monitoring.log" && continue
+          nalerts=`echo "$nalerts" | cut -s -d'/' -f1`
+          [ -z "$nalerts" -o -z "$alerts_interval" ] && echo "Bad consequent alerts number or time interval setting in actions.conf for action '$action'" >> "$rpath/monitoring.log" && continue
           alerts_interval=`date -d "1970/01/01 +$alerts_interval" +"%s" 2>/dev/null`
-          [ -z "$alerts_interval" ] && echo "Time format incorrect in actions.conf for action $action" >> "$rpath/monitoring.log" && continue
+          [ -z "$alerts_interval" ] && echo "Time format incorrect in actions.conf for action '$action'" >> "$rpath/monitoring.log" && continue
           [ -z "$calerts" ] && echo "$commline|$pattern|$level|0|0" >> "$M_TEMP/consequent_alerts.tmp"
         else
           [ -z "$calerts" ] && echo "$commline|$pattern|$level|0" >> "$M_TEMP/consequent_alerts.tmp"
         fi
       fi
       
-      [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf for action $action" >> "$rpath/monitoring.log" && continue
+      [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf for action '$action'" >> "$rpath/monitoring.log" && continue
       
       action_alert_found=false
       alert_match=false

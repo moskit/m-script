@@ -4,7 +4,7 @@ source "$PWD/../../lib/dash_functions.sh"
 
 print_cgi_headers
 
-Size="Size/Tariff" ; Image="Source Image" ; Cloud="Cloud" ; Region="Region" ; Role="Deployment Role"
+Size="Default size" ; Image="Source Image" ; Cloud="Cloud" ; Region="Region" ; Role="Default Role"
 
 open_cluster "Cluster"
 print_cluster_inline "Size" "Image" "Cloud" "Region" "Role"

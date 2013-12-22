@@ -69,7 +69,7 @@ case $where in
   server)
     nextkey=false
     find_server_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
-    log "trying server $1 cluster key"
+    #log "trying server $1 cluster key"
     if [ ! -f "$M_ROOT/keys/$KEY" ]; then
       cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
       if [ -n "$cluster" ] ; then
@@ -78,7 +78,7 @@ case $where in
         echo "Cluster not found for server $1" >&2
       fi
       if [ ! -f "$M_ROOT/keys/$KEY" ]; then
-        log "trying ${USER}'s keys"
+        #log "trying ${USER}'s keys"
         USERKEY1="~/.ssh/id_rsa"
         USERKEY2="~/.ssh/id_dsa"
       fi
@@ -98,7 +98,7 @@ if [ -n "$KEY" ] ; then
     exit 0
   fi
 else
-  log "trying other probable keys"
+  #log "trying other probable keys"
   nextkey=true
 fi
 if $nextkey ; then

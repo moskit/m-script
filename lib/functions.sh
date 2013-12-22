@@ -216,7 +216,6 @@ action_blocked() {
       return 0
     fi
   else
-    log "no block list file found"
     return 1
   fi
 }
