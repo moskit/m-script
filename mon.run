@@ -189,13 +189,23 @@ function runactions() {
         [ -e "$M_TEMP/consequent_alerts.tmp" ] && calerts=`cat "$M_TEMP/consequent_alerts.tmp" | grep ^"$commline"\|"$pattern"\|$level\| | tail -1`
         if [ -n "$calerts" ] ; then
           calerts=`echo "$calerts" | cut -s -d'|' -f4`
+          cinterval=`echo "$calerts" | cut -s -d'|' -f5`
+        fi
+        if [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ]; then
+          # if it's not a number, it's a number per time interval
+          # (format: n/interval)
+          nalerts=`echo "$nalerts" | cut -s -d'/' -f1`
+          alerts_interval=`echo "$nalerts" | cut -s -d'/' -f2`
+          [ -z "$nalerts" -o -z "$alerts_interval" ] && echo "Bad consequent alerts number or time interval setting in actions.conf for action $action" >> "$rpath/monitoring.log" && continue
+          alerts_interval=`date -d "1970/01/01 +$alerts_interval" +"%s" 2>/dev/null`
+          [ -z "$alerts_interval" ] && echo "Time format incorrect in actions.conf for action $action" >> "$rpath/monitoring.log" && continue
+          [ -z "$calerts" ] && echo "$commline|$pattern|$level|0|0" >> "$M_TEMP/consequent_alerts.tmp"
         else
-          echo "$commline|$pattern|$level|0" >> "$M_TEMP/consequent_alerts.tmp"
+          [ -z "$calerts" ] && echo "$commline|$pattern|$level|0" >> "$M_TEMP/consequent_alerts.tmp"
         fi
       fi
       
-      [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf" >> "$rpath/monitoring.log" && continue
-      [ `expr "$nalerts" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad consequent alerts number setting in actions.conf" >> "$rpath/monitoring.log" && continue
+      [ -z "$level" -o `expr "$level" : ".*[^[0-9]]*.*"` -gt 0 ] && echo "Bad alert level setting in actions.conf for action $action" >> "$rpath/monitoring.log" && continue
       
       action_alert_found=false
       alert_match=false
@@ -214,13 +224,18 @@ function runactions() {
               action_alert_found=true
               if [ -z "$calerts" ]; then
                 calerts=1
-              elif [ `expr "$calerts" : ".*[^0-9].*"` -ne 0 ]; then
-                echo "Warning: bad consequent alerts number in $M_TEMP/consequent_alerts.tmp for action $action" >> "$rpath/monitoring.log"
-                calerts=1
+                [ -n "$alerts_interval" ] && cinterval=0
               fi
               calerts=`expr $calerts + 1`
-              sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}%" "$M_TEMP/consequent_alerts.tmp"
-              [[ $calerts -ge $nalerts ]] && alert_match=true && break
+              if [ -n "$alerts_interval" ]; then
+                [ -z "$timeshift" ] && timeshift=`cat "$M_TEMP/timeshift"`
+                cinterval=`expr $cinterval + $FREQ + $timeshift`
+                sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}|${cinterval}%" "$M_TEMP/consequent_alerts.tmp"
+                [[ $calerts -ge $nalerts ]] && [[ $cinterval -ge $alerts_interval ]] && alert_match=true && break
+              else
+                sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}%" "$M_TEMP/consequent_alerts.tmp"
+                [[ $calerts -ge $nalerts ]] && alert_match=true && break
+              fi
             fi
           fi
         done <"$rpath/alert$i"
@@ -228,6 +243,9 @@ function runactions() {
       
       if $alert_match ; then
         # matching condition found, but conditions might be ANDed
+        # multiple conditions with the same action are ANDed
+        # to make them ORed, add marks to the beginning of action, enclosed in
+        # percent sign, e.g. %1% [action], %2% [action] and so on
         all_alerts_found=true
         log "alert match"
       else
@@ -243,6 +261,7 @@ function runactions() {
       log "all alerts found for action: $action ; block enabled, cycles: $blockccl"
       [ -n "$blockccl" ] && block_action $blockccl "$action"
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "$rpath/monitoring.log" | tee -a $LOG
+      action=`expr "$action" : "^%.*%\ \(.*\)"`
       action $action
       [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
     fi
