@@ -117,7 +117,7 @@ if [ -z "$ln" ] ; then
   done
 fi
 
-[[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln || echo "Logreader: was unable to find the number of lines to process. Command was: $0 $@" >> "$rpath/../monitoring.log"
+[[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln
 
 exit 0
 

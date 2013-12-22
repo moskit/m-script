@@ -94,9 +94,10 @@ for cloud in ${clouds[*]} ; do
       echo 0 > "$rpath/${cloud}.cycles.count"
       log "updating servers.list"
       "$M_ROOT/cloud/common"/update_servers_list --cloud=$cloud
-      [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
-      [ $? -eq 0 ] && log "list updated successfully"
-      [ $? -eq 1 ] && log "update_servers_list error" && exit 1
+      res=$?
+      [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+      [ $res -eq 0 ] && log "list updated successfully"
+      [ $res -eq 1 ] && log "update_servers_list error" && exit 1
     else
       echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
       exit 0
@@ -104,9 +105,10 @@ for cloud in ${clouds[*]} ; do
   else
     log "updating servers.list"
     "$M_ROOT/cloud/common"/update_servers_list --cloud=$cloud
-    [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
-    [ $? -eq 0 ] && log "list updated successfully"
-    [ $? -eq 1 ] && log "update_servers_list error" && exit 1
+    res=$?
+    [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+    [ $res -eq 0 ] && log "list updated successfully"
+    [ $res -eq 1 ] && log "update_servers_list error" && exit 1
   fi
 
   [ `cat "$M_TEMP/$cloud/full.servers.list" 2>/dev/null | wc -l` -eq 0 ] && log "servers list is empty for this cloud, update forced" && echo -n > "$M_TEMP/$cloud/show_servers.resp.prev"

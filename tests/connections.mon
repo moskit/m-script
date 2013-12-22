@@ -244,8 +244,6 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       skip=0
     done
   fi
-else
-  echo "Not testing UDP ports: failed to read the currently open ports list"
 fi
 
 echo "  Name              Socket file"
