@@ -117,12 +117,15 @@ for cloud in ${clouds[*]} ; do
     if [ -n "`$DIFF -q "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev" 2>&1`" ]; then
       log "getting full list"
       "$M_ROOT"/cloud/common/show_servers --cloud="$cloud" --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
-      [ `cat "$M_TEMP/$cloud/full.servers.list" | wc -l` -eq 0 ] && log "no hosts in the response file, querying API" && "$M_ROOT"/cloud/common/show_servers --cloud="$cloud" --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
-      res=$?
-      [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
-      [ $res -eq 0 ] && log "list received"
-      [ $res -eq 1 ] && log "API query error" && exit 1
-      cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
+      if [ `cat "$M_TEMP/$cloud/full.servers.list" | wc -l` -eq 0 ]; then
+        log "no hosts in the response file, querying API"
+        "$M_ROOT"/cloud/common/show_servers --cloud="$cloud" --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
+        res=$?
+        [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+        [ $res -eq 0 ] && log "list received"
+        [ $res -eq 1 ] && log "API query error" && exit 1
+        cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
+      fi
     else
       log "no changes found"
       continue
