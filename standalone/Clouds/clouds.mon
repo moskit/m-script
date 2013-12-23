@@ -118,9 +118,10 @@ for cloud in ${clouds[*]} ; do
       log "getting full list"
       "$M_ROOT"/cloud/$cloud/show_servers --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
       [ `cat "$M_TEMP/$cloud/full.servers.list" | wc -l` -eq 0 ] && log "no hosts in the response file, querying API" && "$M_ROOT"/cloud/$cloud/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
-      [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
-      [ $? -eq 0 ] && log "list received"
-      [ $? -eq 1 ] && log "API query error" && exit 1
+      res=$?
+      [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+      [ $res -eq 0 ] && log "list received"
+      [ $res -eq 1 ] && log "API query error" && exit 1
       cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
     else
       log "no changes found"
@@ -129,9 +130,10 @@ for cloud in ${clouds[*]} ; do
   else
     log "no response found, querying"
     "$M_ROOT/cloud/$cloud"/show_servers --view=table --all --resolveids > "$M_TEMP/$cloud/full.servers.list"
-    [ $? -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
-    [ $? -eq 0 ] && log "list received"
-    [ $? -eq 1 ] && log "API query error" && exit 1
+    res=$?
+    [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+    [ $res -eq 0 ] && log "list received"
+    [ $res -eq 1 ] && log "API query error" && exit 1
   fi
   gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
   for cl in `cat "$M_ROOT/conf/clusters.conf" | grep -vE '^#|[[:space:]]*#' | cut -d'|' -f1,7,12 | grep \|${cloud}$ | grep -v ^$ | grep -v \|\| | cut -d'|' -f1` ; do
