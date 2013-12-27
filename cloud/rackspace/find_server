@@ -51,17 +51,17 @@ IFS=$IFS1
 
 find_by_ip() {
   if [ -f "$M_TEMP/show_servers.resp" ] ; then
-    sn=`grep "\"addresses\"" "$M_TEMP/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    sn=`grep "\"addresses\"" "$M_TEMP/show_servers.resp" | grep "\"${1}\"$" | cut -d'/' -f3`
     id=`grep "\/$sn\/\"id\"\|" "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ]; then
-    id=`IAMACHILD=1 $rpath/show_servers --forceupdate --view=table | grep \|$1\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 $rpath/show_servers --cloud=$CLOUD --forceupdate --view=table | grep \|$1\| | cut -d'|' -f1`
   fi
   # we trust the cloud API more than local list (cloud/$CLOUD.list), but cloud
   # API has notable lag in listing new servers (the call show_servers is based 
   # on), so we fall back to the local list in this case, but with verification
   # via getting server details by its ID (this call has no lag)
-  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | grep \|${1}\| | cut -d'|' -f1`
+  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | grep "\|\"${1}\"\|" | cut -d'|' -f1`
   if [ -z "$id" ]; then
     log "unable to find server ID by its IP"
   else
@@ -70,9 +70,9 @@ find_by_ip() {
 }
 
 find_by_name() {
-  id=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
+  id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
   # falling back to the local list (see comment above)
-  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep \|${name}$ | cut -d'|' -f1`
+  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep "\|\"${name}\"$" | cut -d'|' -f1`
   if [ -z "$id" ]; then
     log "unable to find server ID by its name"
   else
