@@ -81,27 +81,27 @@ find_by_name() {
 }
 
 verify_by_id() {
-  if [ -z "`get_server_details --cloud=$CLOUD --id=$1 | grep \/\"id\"\| | grep \|${1}$`" ]; then
-    unset id
-    log "this server ID is present in the local list, but API call returns this:"
+  if [ -z "`IAMACHILD=1 get_server_details --cloud=$CLOUD --id=$1 | grep '"id"|'`" ]; then
+    log "this server ID is present in the local list (ID $id), but API call returns this:"
     log "`cat "$M_TEMP/get_server_details.resp"`"
+    unset id
   fi
 }
 
 list_the_cluster() {
   # 1. compile full list
   # 2. if 'slow' is set, verify each server by querying its personal details
-  ips1=`cat "$M_ROOT/servers.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${1}$ | cut -d'|' -f1`
+  ips1=`cat "$M_ROOT/servers.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${cluster}$ | cut -d'|' -f1`
   if [ "X$NETWORK" == "Xexternal" ]; then
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${1}\||\|${1}$" | cut -d'|' -f6`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${cluster}\||\|${cluster}$" | cut -d'|' -f6`
   else
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${1}\||\|${1}$" | cut -d'|' -f7`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${cluster}\||\|${cluster}$" | cut -d'|' -f7`
   fi
   ips=`echo -e "$ips1\n$ips2" | sort | uniq`
   if [ -n "$slow" ]; then
     for ip in `echo "$ips"` ; do
-      serverdetails=`get_server_details --cloud=$CLOUD --ip=$ip`
-      if [ -z "`echo "$serverdetails" | grep \/\"id\"\|`" ]; then
+      serverdetails=`IAMACHILD=1 get_server_details --cloud=$CLOUD --ip=$ip`
+      if [ -z "`echo "$serverdetails" | grep '"id"|'`" ]; then
         sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
         sed -i "/\|${ip}\|/d" "$M_ROOT/cloud/${CLOUD}.list"
       else
@@ -115,7 +115,7 @@ list_the_cluster() {
       grep -q ^${ip}\| "$M_ROOT/servers.list" || echo "$ip|||||$CLOUD" >> "$M_ROOT/servers.list"
     done
   fi
-  cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|${1}\||\|${1}$"
+  cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|${cluster}\||\|${cluster}$"
 }
 
 found=0
@@ -183,7 +183,7 @@ if [ -z "$id" ]; then
     if [ -z "$name" ]; then
       if [ -z "$cluster" ]; then
         echo "One of id, ip, name or cluster is required to identify the server"
-        proper_exit 1 119
+        proper_exit 1 186
       else
         list_the_cluster
       fi
@@ -201,7 +201,7 @@ if [ -z "$id" ]; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 155
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 204
 
 req="/servers/$id"
 
@@ -220,5 +220,5 @@ fi
 
 cat "$M_TEMP/${rcommand}.resp"
 
-proper_exit 0 174
+proper_exit 0 223
 
