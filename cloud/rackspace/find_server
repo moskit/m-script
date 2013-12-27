@@ -51,8 +51,8 @@ IFS=$IFS1
 
 find_by_ip() {
   if [ -f "$M_TEMP/show_servers.resp" ] ; then
-    sn=`grep addresses "$M_TEMP/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
-    id=`grep \/$sn\/id\| "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
+    sn=`grep "\"addresses\"" "$M_TEMP/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    id=`grep "\/$sn\/\"id\"\|" "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ]; then
     id=`IAMACHILD=1 $rpath/show_servers --forceupdate --view=table | grep \|$1\| | cut -d'|' -f1`
@@ -111,7 +111,7 @@ list_the_cluster() {
     done
   else
     for ip in `echo "$ips"` ; do
-      grep -q \|${ip}\| "$M_ROOT/cloud/${CLOUD}.list" || IAMACHILD=1 get_server_details --cloud=$CLOUD --ip=$ip | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
+      grep -q "\|\"${ip}\"\|" "$M_ROOT/cloud/${CLOUD}.list" || IAMACHILD=1 get_server_details --cloud=$CLOUD --ip=$ip | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
       grep -q ^${ip}\| "$M_ROOT/servers.list" || echo "$ip|||||$CLOUD" >> "$M_ROOT/servers.list"
     done
   fi
