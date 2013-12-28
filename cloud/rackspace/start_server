@@ -210,6 +210,6 @@ else
   proper_exit 1 220
 fi
 
-"$rpath"/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+"$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
 proper_exit $exit_status 231
 
