@@ -220,7 +220,7 @@ if [ $removed -o $force ]; then
   SSHK=`which ssh-keygen 2>/dev/null`
   [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
 
-  sed -i "/^$id|/d" "$rpath/../rackspace.list"
+  sed -i "/^$id|/d" "$rpath/../rackspace.list" && log "$id removed from cloud/rackspace.list"
   
   for ipa in ${IPS[*]} ; do
     if [ -n "$ipa" ] ; then

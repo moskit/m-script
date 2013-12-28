@@ -399,7 +399,7 @@ if [ -n "$newserver" ]; then
     log "getting cloud operations lock"
 
     lock_cloudops || exit 10
-    log "initiating server start sequence"
+    log "initiating start_server sequence"
     
     for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
       [ $i -eq 0 ] || sleep $WAIT_BETWEEN_TRIES
