@@ -17,7 +17,7 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 
 store_vars() {
   if [ -f "${tmpfile}.var" ]; then

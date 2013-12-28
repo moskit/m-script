@@ -62,7 +62,7 @@ find_by_ip() {
   # on), so we fall back to the local list in this case, but with verification
   # via getting server details by its ID (this call has no lag)
   [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | grep "|\"${1}\"|" | cut -d'|' -f1`
-  [ `expr "$id" : ".*[^0-9]"` -ne 0 ] && log "Bad ID" && exit 1
+  [ `expr "$id" : ".*[^0-9]"` -ne 0 ] && log "Bad ID" && proper_exit 1 65
   if [ -z "$id" ]; then
     log "unable to find server ID by its IP"
   else
@@ -71,7 +71,7 @@ find_by_ip() {
 }
 
 find_by_name() {
-  id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
+  id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | cut -d'|' -f1,2 | grep "|${name}$" | cut -d'|' -f1`
   # falling back to the local list (see comment above)
   [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep "|\"${name}\"$" | cut -d'|' -f1`
   if [ -z "$id" ]; then
@@ -191,7 +191,7 @@ if [ -z "$id" ]; then
       fi
     else
       # ip must be present in servers.list, so it's simple
-      ip=`cat "$rpath/../../servers.list" | grep -vE "^#|^[[:space:]]#" | cut -d'|' -f1,4,6 | grep -v ^$ | grep \|${CLOUD}$ | grep \|${name}\| cut -d'|' -f1`
+      ip=`cat "$rpath/../../servers.list" | grep -vE "^#|^[[:space:]]#" | cut -d'|' -f1,4,6 | grep -v ^$ | grep "|${CLOUD}$" | grep "|${name}|" | cut -d'|' -f1`
       if [ -n "$ip" ]; then
         find_by_ip $ip
       else

@@ -153,7 +153,9 @@ export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip not found" >> "$M_ROOT/logs/deploy.log" && exit 1
-[ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ `find_server --cluster="$cluster" --cloud="$cloud" --fast | wc -l` -eq 0 ] && [ -z "$dry" ] && echo "No servers found in cluster $cluster" && exit 1
+if [ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$dry" ]; then
+  [ `find_server --cluster="$cluster" --cloud="$cloud" | wc -l` -eq 0 ] && echo "No servers found in cluster $cluster" && exit 1
+fi
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
 [ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "$WORK_DIR/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
