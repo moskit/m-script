@@ -303,7 +303,7 @@ fi
 
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
-[ -n "$CLOUD" ] && source "$rpath/../../conf/clouds/${CLOUD}.conf"
+[ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/conf/deployment.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
@@ -347,7 +347,7 @@ if [ -n "$ip" ] ; then
     exit 1
   fi
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
-  [ -z "$ipcluster" ] && [ -n "$CLOUD" ] && find_server --cloud=$CLOUD --ip=$ip --updatelist
+  [ -z "$ipcluster" ] && [ -n "$CLOUD" ] && "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$ip --updatelist
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
   [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ] ; then

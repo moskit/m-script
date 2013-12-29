@@ -55,7 +55,7 @@ find_by_ip() {
     id=`grep "/$sn/\"id\"|" "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ]; then
-    id=`IAMACHILD=1 $rpath/show_servers --cloud=$CLOUD --forceupdate --view=table | grep \|$1\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | grep "|$1|" | cut -d'|' -f1`
   fi
   # we trust the cloud API more than local list (cloud/$CLOUD.list), but cloud
   # API has notable lag in listing new servers (the call show_servers is based 
@@ -82,9 +82,17 @@ find_by_name() {
 }
 
 verify_by_id() {
-  if [ -z "`IAMACHILD=1 get_server_details --cloud=$CLOUD --id=$1 | grep '"id"|'`" ]; then
+  local ip
+  if [ -z "`IAMACHILD=1 "$rpath"/get_server_details --cloud=$CLOUD --id=$1 | grep '"id"|'`" ]; then
     log "this server ID is present in the local list (ID $id), but API call returns this:"
     log "`cat "$M_TEMP/get_server_details.resp"`"
+    serverdetails=`grep "^$id|" "$M_ROOT/cloud/${CLOUD_PROVIDER}.list"`
+    if [[ "$NETWORK" == "external" ]]; then
+      ip="`echo "$serverdetails" | cut -s -d'|' -f6 | tr -d'"'`"
+    else
+      ip="`echo "$serverdetails" | cut -s -d'|' -f7 | tr -d'"'`"
+    fi
+    sed -i "/^${ip}|/d" "$M_ROOT/servers.list"
     unset id
   fi
 }
@@ -94,19 +102,19 @@ list_the_cluster() {
   # 2. if 'slow' is set, verify each server by querying its personal details
   ips1=`cat "$M_ROOT/servers.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${cluster}$ | cut -d'|' -f1`
   if [ "X$NETWORK" == "Xexternal" ]; then
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${cluster}\||\|${cluster}$" | cut -d'|' -f6`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f6`
   else
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|${cluster}\||\|${cluster}$" | cut -d'|' -f7`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f7`
   fi
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
   if [ -n "$slow" ]; then
     for ip in `echo "$ips"` ; do
-      serverdetails=`IAMACHILD=1 get_server_details --cloud=$CLOUD --ip=$ip`
+      serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip`
       if [ -z "`echo "$serverdetails" | grep '"id"|'`" ]; then
         sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
-        sed -i "/\|${ip}\|/d" "$M_ROOT/cloud/${CLOUD}.list"
+        sed -i "/\|\"${ip}\"\|/d" "$M_ROOT/cloud/${CLOUD}.list"
       else
-        grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
+        grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
         if `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
           name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2`"
           cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`"

@@ -77,8 +77,8 @@ case $where in
       else
         if [ -n "$CLOUD" ]; then
           source "$M_ROOT/conf/clouds/${CLOUD}.conf"
-          cluster=`IAMACHILD=1 find_server --cloud=$CLOUD --name=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
-          [ -z "$cluster" ] && cluster=`IAMACHILD=1 find_server --cloud=$CLOUD --ip=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
+          cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --name=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
+          [ -z "$cluster" ] && cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
         fi
         [ -z "$cluster" ] && echo "Cluster not found for server $1" >&2 | tee -a "$LOG"
       fi

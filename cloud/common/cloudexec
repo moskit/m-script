@@ -164,8 +164,8 @@ for cld in $CLOUD ; do
     if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
       # if name passed as ip
       if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
-        find_server --cloud=$cld --ip=$ip --updatelist
-        [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] && find_server --cloud=$cld --name=$name --updatelist
+        "$rpath"/find_server --cloud=$cld --ip=$ip --updatelist
+        [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] && "$rpath"/find_server --cloud=$cld --name=$name --updatelist
       fi
     fi
     # again
