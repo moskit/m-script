@@ -88,9 +88,9 @@ verify_by_id() {
     log "`cat "$M_TEMP/get_server_details.resp"`"
     serverdetails=`grep "^$id|" "$M_ROOT/cloud/${CLOUD_PROVIDER}.list"`
     if [[ "$NETWORK" == "external" ]]; then
-      ip="`echo "$serverdetails" | cut -s -d'|' -f6 | tr -d'"'`"
+      ip="`echo "$serverdetails" | cut -s -d'|' -f6 | tr -d '"'`"
     else
-      ip="`echo "$serverdetails" | cut -s -d'|' -f7 | tr -d'"'`"
+      ip="`echo "$serverdetails" | cut -s -d'|' -f7 | tr -d '"'`"
     fi
     sed -i "/^${ip}|/d" "$M_ROOT/servers.list"
     unset id
