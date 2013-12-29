@@ -167,13 +167,23 @@ for cld in $CLOUD ; do
   if [ -n "$ip" ] ; then
     cluster= ; region=
     if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
-      # if name passed as ip
+      # maybe name passed as ip
+      if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+        find_server --cloud=$cld --ip=$ip --updatelist
+      fi
+    fi
+    # again
+    if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
+      # maybe name passed as ip
       if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
         echo "Unable to find $ip in cloud $cld"
         exit 1
       else
-        ip=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
-        [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
+        ip=`cat "$M_ROOT/servers.list" | grep -vE "^#|^[[:space:]]#|^$" | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+        if [ -z "$ip" ]; then
+          ip=`cat "$M_ROOT/servers.list" | grep -vE "^#|^[[:space:]]#|^$" | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+          if [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
+        fi
       fi
     else
       # cluster is still needed in some cases

@@ -106,8 +106,13 @@ list_the_cluster() {
         sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
         sed -i "/\|${ip}\|/d" "$M_ROOT/cloud/${CLOUD}.list"
       else
-        grep -q \|${ip}\| "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
-        grep -q ^${ip}\| "$M_ROOT/servers.list" || echo "$ip|||||$CLOUD" >> "$M_ROOT/servers.list"
+        grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
+        if `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
+          name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2`"
+          cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`"
+          key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2`"
+          echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+        fi
       fi
     done
   else
@@ -163,6 +168,10 @@ Options:
                                   and cloud/rackspace.list from the cloud API
                                   and does its best to fix any inconsistencies
                                   found
+                                  
+  --updatelist                  - updates servers.list with servers found
+                                  (applicable only to single server search)
+  
                                   
 EOF
 
@@ -220,7 +229,22 @@ if [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -
   request
 fi
 
-cat "$M_TEMP/${rcommand}.resp"
+if [ -n "$updatelist" ]; then
+  serverdetails="`cat "$M_TEMP/${rcommand}.resp"`"
+  if [[ "$NETWORK" == "external" ]]; then
+    ip="`echo "$serverdetails" | grep '/"addresses"/"public"/0|' | cut -s -d'|' -f2`"
+  else
+    ip="`echo "$serverdetails" | grep '/"addresses"/"private"/0|' | cut -s -d'|' -f2`"
+  fi
+  if `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
+    name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2`"
+    cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`"
+    key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2`"
+    echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+  fi
+else
+  cat "$M_TEMP/${rcommand}.resp"
+fi
 
 proper_exit 0 223
 
