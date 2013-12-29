@@ -160,7 +160,9 @@ if [ -n "$id" ] ; then
   fi
   if [ -z "$name" ] ; then
     log "** warning: server name not found for id ${id}, getting servers list from the API"
-    cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --id=$id | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`
+    serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --id=$id`
+    cluster=`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`
+    name==`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`
   fi
   [ -z "$cluster" ] && log "unable to find the cluster for this server, not checking the minimal number of servers in the cluster"
 else
