@@ -116,9 +116,9 @@ list_the_cluster() {
       else
         grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
         if `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
-          name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2`"
-          cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`"
-          key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2`"
+          name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+          cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`"
+          key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
           echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
         fi
       fi
@@ -240,14 +240,14 @@ fi
 if [ -n "$updatelist" ]; then
   serverdetails="`cat "$M_TEMP/${rcommand}.resp"`"
   if [[ "$NETWORK" == "external" ]]; then
-    ip="`echo "$serverdetails" | grep '/"addresses"/"public"/0|' | cut -s -d'|' -f2`"
+    ip="`echo "$serverdetails" | grep '/"addresses"/"public"/0|' | cut -s -d'|' -f2 | tr -d '"'`"
   else
-    ip="`echo "$serverdetails" | grep '/"addresses"/"private"/0|' | cut -s -d'|' -f2`"
+    ip="`echo "$serverdetails" | grep '/"addresses"/"private"/0|' | cut -s -d'|' -f2 | tr -d '"'`"
   fi
   if `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
-    name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2`"
-    cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`"
-    key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2`"
+    name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+    cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`"
+    key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
     echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
   fi
 else
