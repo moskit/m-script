@@ -95,13 +95,20 @@ find_by_ip() {
   fi
   if [ -z "$id" ] ; then
     log "** warning: server ID not found for IP ${1}, getting servers list from the API"
-    id=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | grep "|${1}|" | cut -d'|' -f1`
+    id=`IAMACHILD=1 "$rpath"/find_server --cloud=$CLOUD --ip=$1 | grep '"id"|' | cut -s -d'|' -f2`
+    [ -z "$id" ] && log "*** server ID can not be found for IP $1" && proper_exit 1 99
   fi
   find_cluster "$1"
 }
 
 find_cluster() {
   icluster=`grep "^${1}|" "$M_ROOT"/servers.list | cut -d'|' -f5`
+  if [ -z "$icluster" ]; then
+    if [ `grep -c "^${1}|" "$M_ROOT"/servers.list` -eq 0 ]; then
+      find_server --cloud=$CLOUD --ip=$1 --updatelist
+      icluster=`grep "^${1}|" "$M_ROOT"/servers.list | cut -d'|' -f5`
+    fi
+  fi
   if [ -z "$icluster" ]; then
     if [ `grep -c "^${1}|" "$M_ROOT"/servers.list` -eq 0 ]; then
       log "no records with this IP ($1) in the servers.list"
@@ -135,7 +142,7 @@ if [ -z "$id" ] ; then
         find_by_ip $ip
       else
         log "** warning: server IP not found for name ${name}, getting servers list from the API"
-        id=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | cut -d'|' -f1,2 | grep "|${name}$" | cut -d'|' -f1`
+        id=`IAMACHILD=1 "$rpath"/find_server --cloud=$CLOUD --name=$name | grep '"id"|' | cut -s -d'|' -f2`
       fi
     fi
   else
