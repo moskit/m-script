@@ -27,7 +27,7 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="cloud id name ip return verbose cluster help updatelist"
+possible_options="cloud id name ip return verbose cluster help updatelist slow"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -102,9 +102,9 @@ list_the_cluster() {
   # 2. if 'slow' is set, verify each server by querying its personal details
   ips1=`cat "$M_ROOT/servers.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${cluster}$ | cut -d'|' -f1`
   if [ "X$NETWORK" == "Xexternal" ]; then
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f6 | tr -d'"'`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f6 | tr -d '"'`
   else
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f7 | tr -d'"'`
+    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f7 | tr -d '"'`
   fi
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
   if [ -n "$slow" ]; then
