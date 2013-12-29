@@ -27,7 +27,7 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="cloud id name ip return verbose cluster help"
+possible_options="cloud id name ip return verbose cluster help updatelist"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
