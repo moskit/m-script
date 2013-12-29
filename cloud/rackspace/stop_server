@@ -156,21 +156,11 @@ fi
 if [ -n "$id" ] ; then
   if [ -f "$M_TEMP/show_servers.resp" ] ; then
     sn=`grep \/id\| "$M_TEMP/show_servers.resp" | grep "|${id}$" | cut -d'/' -f3`
-    name=`grep \/$sn\/name\| "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
-    ipint=`grep \/$sn\/addresses\/private "$M_TEMP/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
-    ipext=`grep \/$sn\/addresses\/public "$M_TEMP/show_servers.resp" | cut -d'|' -f2 | tr -d '"'`
+    name=`grep \/$sn\/\"name\"\| "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$name" ] ; then
     log "** warning: server name not found for id ${id}, getting servers list from the API"
-    nameips=`IAMACHILD=1 "$rpath"/show_servers --forceupdate --view=table | grep "^${id}|" | cut -d'|' -f2,4,5`
-    name=`echo "$nameips" | cut -d'|' -f1`
-    ipext=`echo "$nameips" | cut -d'|' -f2`
-    ipint=`echo "$nameips" | cut -d'|' -f3`
-  fi
-  [ "X$NETWORK" == "Xexternal" ] && find_cluster "$ipext" || find_cluster "$ipint"
-  if [ -z "$cluster" ]; then
-    find_cluster "$ipint"
-    find_cluster "$ipext"
+    cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --id=$id | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2`
   fi
   [ -z "$cluster" ] && log "unable to find the cluster for this server, not checking the minimal number of servers in the cluster"
 else
