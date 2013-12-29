@@ -201,10 +201,10 @@ if [ -z "$id" ]; then
     if [ -z "$name" ]; then
       if [ -z "$cluster" ]; then
         echo "One of id, ip, name or cluster is required to identify the server"
-        proper_exit 1 186
+        proper_exit 1 204
       else
         list_the_cluster
-        proper_exit 0 189
+        proper_exit 0 207
       fi
     else
       # ip must be present in servers.list, so it's simple
@@ -220,7 +220,7 @@ if [ -z "$id" ]; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 204
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 223
 
 req="/servers/$id"
 

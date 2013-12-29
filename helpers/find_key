@@ -80,7 +80,11 @@ case $where in
           cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --name=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
           [ -z "$cluster" ] && cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
         fi
-        [ -z "$cluster" ] && echo "Cluster not found for server $1" >&2 | tee -a "$LOG"
+        if [ -z "$cluster" ]; then
+          echo "Cluster not found for server $1" >&2 | tee -a "$LOG"
+        else
+          find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
+        fi
       fi
       if [ ! -f "$M_ROOT/keys/$KEY" ]; then
         #log "trying ${USER}'s keys"

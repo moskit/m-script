@@ -162,7 +162,7 @@ if [ -n "$id" ] ; then
     log "** warning: server name not found for id ${id}, getting servers list from the API"
     serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --id=$id`
     cluster=`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`
-    name==`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`
+    name=`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`
   fi
   [ -z "$cluster" ] && log "unable to find the cluster for this server, not checking the minimal number of servers in the cluster"
 else
@@ -183,7 +183,7 @@ try_auth() {
   i=0
   while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 182
-    ${rpath}/auth
+    "$rpath"/auth
     i+=1
     sleep 10
   done
