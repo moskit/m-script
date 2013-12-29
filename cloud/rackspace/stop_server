@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -109,7 +109,7 @@ find_cluster() {
   icluster=`grep "^${1}|" "$M_ROOT"/servers.list | cut -d'|' -f5`
   if [ -z "$icluster" ]; then
     if [ `grep -c "^${1}|" "$M_ROOT"/servers.list` -eq 0 ]; then
-      "$rpath"/find_server --cloud=$CLOUD --ip=$1 --updatelist
+      IAMACHILD=1 "$rpath"/find_server --cloud=$CLOUD --ip=$1 --updatelist
       icluster=`grep "^${1}|" "$M_ROOT"/servers.list | cut -d'|' -f5`
     fi
   fi
