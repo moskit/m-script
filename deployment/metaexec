@@ -173,7 +173,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock"
 [ "X$*" == "X" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -284,6 +284,15 @@ Other options:
 			new server status, repeating the call if it has failed,
 			inserting the IP into the list, ensuring it is up
 			and accessible etc. See documentation for more details
+			
+  --nolock   the default is to lock cloud operations if --newserver option
+      is present; this helps to avoid background API calls caused
+      by absence of the target server in servers.list which may happen
+      due to the lag with which just started server appears in the list
+      returned by cloud API. But if the task is long enough, you may want
+      to avoid locking. This should not cause any problems, but may require
+      some extra time and extra API calls to ensure the target server presence.
+      
 
 EOF
   else
@@ -396,9 +405,11 @@ if [ -n "$newserver" ]; then
   echo "*** Bringing up new server in cloud $cloud"
   log "bringing up new server in cloud $cloud"
   if [ -z "$test" ]; then
-    log "getting cloud operations lock"
 
-    lock_cloudops || exit 10
+    if [ -z "$nolock" ]; then
+      log "getting cloud operations lock"
+      lock_cloudops || exit 10
+    fi
     log "initiating start_server sequence"
     
     for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
@@ -460,7 +471,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
         $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
         if [ $? -ne 0 ]; then
-          echo "Unable to login to the server $ip using the key ${KEY}, trying again...">>"$LOG"
+          echo "Unable to login to the server $ip using key ${KEY}, trying again...">>"$LOG"
           loggedin=false
           sleep $SERVER_CHECKS_PERIOD
         else
