@@ -409,7 +409,7 @@ log "d=$d"
   $debug && log "$QUERY"
   if [ "$sIP" == "localhost" ]; then
     $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
-    from=`$SQL3 "$rpath/$database" "${QUERYFROM}" | tail -1`
+    from=`$SQL3 "$rpath/$database" "$QUERYFROM" | tail -1`
   else
     $debug && log "$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" $SQL3 \"${mpath}/$database\" \"${QUERY}\""
     $SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
