@@ -304,6 +304,10 @@ fi
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
+[ -z "$CLOUD_PROVIDER" ] && echo "CLOUD_PROVIDER is not defined. Error reading configuration?" && exit 1
+[ -n "$SSHPORT" ] || SSHPORT=22
+
 source "$M_ROOT/conf/deployment.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
@@ -365,7 +369,7 @@ else
       fi
     else
       [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
-      [ -n "$cluster" ] && echo "Using cluster ${cluster}, default for role $role"
+      [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??
     if [ -z "$cluster" -a -z "$ignorenocluster" ] ; then
@@ -400,9 +404,6 @@ fi
 
 if [ -n "$newserver" ]; then
   
-  [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
-  [ -z "$CLOUD_PROVIDER" ] && echo "CLOUD_PROVIDER is not defined. Error reading configuration?" && exit 1
-  [ -n "$SSHPORT" ] || SSHPORT=22
   [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
   echo "*** Bringing up new server in cloud $CLOUD"

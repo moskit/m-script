@@ -134,8 +134,10 @@ fi
 
 echo -e "\n\n-------------------\n${0} $*\n" >> "$rpath/../logs/deploy.log"
 
+[ -n "$cloud" ] || cloud=$CLOUD
 source "$M_ROOT/conf/deployment.conf" || exit 99
-source "$M_ROOT/conf/clouds/${CLOUD}.conf" || exit 99
+source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
+[ -n "$SSHPORT" ] || SSHPORT=22
 
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$dry" -o -n "$test" ] && dry="yes"
@@ -143,11 +145,9 @@ export debug verbose dry
 # These must exist
 [ -z "$WORK_DIR" ] && echo "WORK_DIR is not set, check deployment.conf" && exit 1
 [ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT is not set, check deployment.conf" && exit 1
-[ -n "$SSHPORT" ] || SSHPORT=22
-[ -n "$cloud" ] || cloud=$CLOUD
-[ -n "$cloud" ] || cloud=common
+
 [ -z "$ip" -a -n "$ignorenocluster" ] && echo "Either IP or cluster is necessary" && exit 1
-export PATH="$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH"
+export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 
 [ -n "$user" ] && SSH_REMOTE_USER="$user"
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"

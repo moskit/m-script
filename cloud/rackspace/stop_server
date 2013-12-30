@@ -98,7 +98,6 @@ find_by_ip() {
     id=`IAMACHILD=1 "$rpath"/find_server --cloud=$CLOUD --ip=$1 | grep '"id"|' | cut -s -d'|' -f2`
     if [ -z "$id" ]; then
       log "*** server ID can not be found for IP $1"
-      sed -i "/^${1}.*${CLOUD}$/d" "$M_ROOT/servers.list"
       proper_exit 1 99
     fi
   fi
@@ -213,10 +212,12 @@ cat "$M_TEMP/${rcommand}.resp" >> "$LOG"
 
 IPS=( `echo -e "$ipint\n$ipext\n$ip" | sort | uniq` )
 
-if [ $reqres -eq 0 -a `grep -c \"code\"\|4 "$M_TEMP/${rcommand}.resp"` -eq 0 ]; then
+if [ $reqres -eq 0 -a `grep -c "itemNotFound" "$M_TEMP/${rcommand}.resp"` -eq 0 ]; then
   log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated successfully"
   echo -e "`date`\n\nServer ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
   removed=true
+else
+  log "Server name ${name}, id ${id}, IP ${IPS[*]} is NOT terminated"
 fi
 
 if [ $removed -o $force ]; then
