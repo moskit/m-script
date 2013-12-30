@@ -316,8 +316,8 @@ if [ -n "$perpixel" ]; then
   if [ -n "$where" ] ; then
     field=${where%%:*}
     value=${where#*:}
-    $minauto && minQ="select $minQ from (select $metric from $table where $nonempty and  $field=$value order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where $nonempty and $field=$value order by timeindex desc limit $limit)"
+    $minauto && minQ="select $minQ from (select $metric from $table where $nonempty and  $field='$value' order by timeindex desc limit $limit)"
+    maxQ="select $maxQ from (select $metric from $table where $nonempty and $field='$value' order by timeindex desc limit $limit)"
   else
     $minauto && minQ="select $minQ from (select $metric from $table where $nonempty order by timeindex desc limit $limit)"
     maxQ="select $maxQ from (select $metric from $table where $nonempty order by timeindex desc limit $limit)"
