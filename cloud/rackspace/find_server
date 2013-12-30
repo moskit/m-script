@@ -239,6 +239,10 @@ if [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -
   request
 fi
 
+if [ `grep -c ^0\/\"itemNotFound\"\/\"code\"\|404$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
+  echo "Server with ID $id does not exist" && proper_exit 1 243
+fi
+
 if [ -n "$updatelist" ]; then
   serverdetails="`cat "$M_TEMP/${rcommand}.resp"`"
   if [[ "$NETWORK" == "external" ]]; then
