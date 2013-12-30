@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "${PWD}/../../conf/dash.conf"
+source "$PWD/../../conf/dash.conf"
 timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 oldest=`date -d "-$timerange sec" +"%H:%M"`
 
@@ -9,11 +9,11 @@ echo "<span class=\"servername\">Status data since $oldest</span>"
 
 SQLITE=`which sqlite3 2>/dev/null`
 if [ -n "$SQLITE" ] ; then
-  $SQLITE "${PWD}/../../standalone/MongoDB/mongodb.sql3" "select datetime(timeindex,'unixepoch'),status from servers where hostport='${2}' order by timeindex desc limit $slotline_length" | while read res ; do
+  $SQLITE "$PWD/../../standalone/MongoDB/mongodb.sql3" "select datetime(timeindex,'unixepoch'),status from servers where hostport='${2}' order by timeindex desc limit $slotline_length" | while read res ; do
     timestamp=`echo $res | cut -d'|' -f1`
     status=`echo $res | cut -d'|' -f2`
     [ "X$status" == "X1" ] && css="ok" || css="w3"
-    echo "<div id=\"${timestamp}\" title=\"${timestamp}\" class=\"chunk ${css}\" style=\"float: right;\">&nbsp;</div>"
+    echo "<div id=\"$timestamp\" title=\"$timestamp\" class=\"chunk $css\" style=\"float: right;\">&nbsp;</div>"
   done
 fi
 echo "</div>"
