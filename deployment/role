@@ -266,7 +266,7 @@ case $command1 in
         printcol "File"
         echo "Script"
         for fl in `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/files/" -maxdepth 1 -type f -o -type l` ; do
-          for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
+          for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l` ; do
             [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
           done
           if [ -n "$sci" ]; then

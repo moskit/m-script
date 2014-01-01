@@ -51,7 +51,6 @@ LOG="$rpath/logs/dashboard.log"
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && log "No ssh found" && exit 1
 
-
 if [ -z "$freqdef" ]; then
   timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
   [ -z "$timeshift" ] && timeshift=5
