@@ -27,7 +27,7 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="cloud id name ip return verbose cluster help updatelist slow"
+possible_options="cloud id name ip return verbose cluster help updatelist fast slow"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -112,24 +112,27 @@ list_the_cluster() {
   fi
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
 
-  for ip in `echo "$ips"` ; do
-    if [ -n "$ip" ]; then
-      serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip`
-      if [ -z "`echo "$serverdetails" | grep '"id"|'`" ]; then
-        sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
-        sed -i "/|\"${ip}\"|/d" "$M_ROOT/cloud/${CLOUD}.list"
-      else
-        grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
-        if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
-          name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
-          cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`"
-          key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
-          echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+  if [ -z "$fast" ]; then
+    for ip in `echo "$ips"` ; do
+      if [ -n "$ip" ]; then
+        serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip 2>/dev/null`
+        if [ $? -eq 0 ]; then
+          if [ -z "`echo "$serverdetails" | grep '"id"|'`" ]; then
+            sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
+            sed -i "/|\"${ip}\"|/d" "$M_ROOT/cloud/${CLOUD}.list"
+          else
+            grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
+            if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
+              name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+              cluster="`echo "$serverdetails" | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -s -d'|' -f2 | tr -d '"'`"
+              key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+              echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+            fi
+          fi
         fi
       fi
-    fi
-  done
-
+    done
+  fi
   cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$"
 }
 
