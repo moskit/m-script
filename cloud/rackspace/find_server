@@ -111,21 +111,21 @@ list_the_cluster() {
     ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f7 | tr -d '"'`
   fi
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
-  serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip`
 
   for ip in `echo "$ips"` ; do
-    if [ -z "`echo "$serverdetails" | grep '"id"|'`" ]; then
-      if [ -n "$ip" ]; then
+    if [ -n "$ip" ]; then
+      serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip`
+      if [ -z "`echo "$serverdetails" | grep '"id"|'`" ]; then
         sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
         sed -i "/|\"${ip}\"|/d" "$M_ROOT/cloud/${CLOUD}.list"
-      fi
-    else
-      grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
-      if `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
-        name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
-        cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`"
-        key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
-        echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+      else
+        grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || echo "$serverdetails" | grep -vE "/\"progress\"|/\"status\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$M_ROOT/cloud/${CLOUD}.list"
+        if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
+          name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+          cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`"
+          key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+          echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+        fi
       fi
     fi
   done
