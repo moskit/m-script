@@ -27,7 +27,7 @@ WGET=`which wget 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="cloud id name ip return verbose cluster help updatelist fast slow"
+possible_options="cloud id name ip return verbose cluster help updatelist quick slow"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -112,7 +112,7 @@ list_the_cluster() {
   fi
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
 
-  if [ -z "$fast" ]; then
+  if [ -z "$quick" ]; then
     for ip in `echo "$ips"` ; do
       if [ -n "$ip" ]; then
         serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip 2>/dev/null`

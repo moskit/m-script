@@ -154,7 +154,7 @@ export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither cluster nor ip is found" >> "$M_ROOT/logs/deploy.log" && exit 1
 if [ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$dry" ]; then
-  [ `IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cluster="$cluster" --cloud="$cloud" | wc -l` -eq 0 ] && echo "No servers found in cluster $cluster" && exit 1
+  [ `IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cluster="$cluster" --cloud="$cloud" --quick | wc -l` -eq 0 ] && echo "No servers found in cluster $cluster" && exit 1
 fi
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
