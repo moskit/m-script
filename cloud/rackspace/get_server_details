@@ -50,11 +50,11 @@ IFS=$IFS1
 
 find_by_ip() {
   if [ -f "$M_TEMP/show_servers.resp" ] ; then
-    sn=`grep addresses "$M_TEMP/show_servers.resp" | grep "${1}$" | cut -d'/' -f3`
+    sn=`grep addresses "$M_TEMP/show_servers.resp" | grep "\"${1}\"$" | cut -d'/' -f3`
     id=`grep "/$sn/\"id\"|" "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
   fi
   if [ -z "$id" ] ; then
-    id=`IAMACHILD=1 $rpath/show_servers --forceupdate --view=table | grep \|$1\| | cut -d'|' -f1`
+    id=`IAMACHILD=1 $rpath/show_servers --forceupdate --view=table | grep "|$1|" | cut -d'|' -f1`
   fi
 }
 
@@ -96,7 +96,7 @@ if [ -z "$id" ] ; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 96
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 99
 
 req="/servers/$id"
 
@@ -112,8 +112,11 @@ if [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -
   "$rpath"/auth
   request
 fi
+if `grep -q '"id"|' "$M_TEMP/${rcommand}.resp"` ; then
+  cat "$M_TEMP/${rcommand}.resp"
+else
+  proper_exit 1 118
+fi
 
-cat "$M_TEMP/${rcommand}.resp"
-
-proper_exit 0 115
+proper_exit 0 121
 
