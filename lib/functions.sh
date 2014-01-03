@@ -72,7 +72,9 @@ check_results() {
   callerconf="${caller%.mon}.conf"
   [ "$callerconf" == "$caller" ] && log "Monitor script must have extension .mon" && return 1
   source "$callerconf"
-  for var2ck in `echo $1 | tr ',' ' '` ; do
+  IFSORIG=$IFS
+  IFS=','
+  for var2ck in $1 ; do
     varname=`echo "$var2ck" | cut -d'|' -f1`
     vardescr=`echo "$var2ck" | cut -s -d'|' -f2`
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
@@ -99,6 +101,7 @@ check_results() {
     fi
     echo "<OK>  $vardescr is $val"
   done
+  IFS=$IFSORIG
 }
     
 gendash() {
