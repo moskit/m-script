@@ -24,7 +24,7 @@ SQLBIN=`which sqlite3 2>/dev/null || echo echo`
 
 store_results() {
   # syntax:
-  # store_results fieldname1:datatype1,fieldname2:datatype2,... <filename|tablename>
+  # store_results fieldname1|datatype1,fieldname2|datatype2,... <filename|tablename>
   [ -z "$1" ] && echo "Fields are not defined" && exit 1
   [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
   if [ -z "$2" ]; then
@@ -49,12 +49,12 @@ store_results() {
   day=`date +"%Y%m%d"`
   [ -z "$dbtable" ] && echo "Unable to find out what table to store the data into" && exit 1
   [ -z "$dbfile" ] && echo "Database file definition is NULL" && exit 1
-  values="$(IFS=','; for f in $1; do f=${f%%:*}; eval "echo -n \'\$${f}\',"; done)"
+  values="$(IFS=','; for f in $1; do f=${f%%|*}; eval "echo -n \'\$${f}\',"; done)"
   values="${values%,}"
-  fields="$(IFS=','; for f in $1; do echo -n "${f%%:*},"; done)"
+  fields="$(IFS=','; for f in $1; do echo -n "${f%%|*},"; done)"
   fields="${fields%,}"
   if [ ! -f "$dbfile" ] || [ -f "$dbfile" -a -z "`$SQLBIN "$dbfile" ".schema $dbtable"`" ]; then
-    cfields="$(IFS=','; for f in $1; do echo -n "${f%%:*} `echo "${f}" | cut -d':' -f2`,"; done)"
+    cfields="$(IFS=','; for f in $1; do echo -n "${f%%|*} `echo "${f}" | cut -d'|' -f2`,"; done)"
     cfields="${cfields%,}"
     $SQLBIN -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
@@ -63,7 +63,7 @@ store_results() {
 
 check_results() {
   # syntax:
-  # check_results var1<:description:datatype1>,var2<:description:datatype2>,...
+  # check_results var1<|description|datatype1>,var2<|description|datatype2>,...
   # where datatype can be real (default, slower but more universal) or integer
   # if description is omitted, variable name will be used in report
   [ -z "$1" ] && return 1

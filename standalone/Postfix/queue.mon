@@ -32,7 +32,7 @@ SQLITE=`which sqlite3 2>/dev/null`
 
 timenow=`date -u +"%s"`
 
-for q in deferred active maildrop ; do qtype=$q ; qlength=`find $SPOOLDIR/$q -type f | wc -l` ; store_results qtype:text,qlength:integer ; done
+for q in deferred active maildrop ; do qtype=$q ; qlength=`find $SPOOLDIR/$q -type f | wc -l` ; store_results qtype|text,qlength|integer ; done
 
 declare -a q1a q2a q3a
 
@@ -52,7 +52,7 @@ for deferred in `find $SPOOLDIR/deferred -type f` ; do
     q1a+=( $id )
   fi
   
-  store_results q1:integer,q2:integer,q3:integer
+  store_results q1|integer,q2|integer,q3|integer
   
 done
 

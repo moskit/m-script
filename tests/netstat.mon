@@ -45,7 +45,7 @@ curr_values_arr=( $curr_values )
 dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \\( \\\$${var} - \\\$${var}_prev \\) \\\\* 60 / $monperiod"`"; done) )
 
 for st in ${dat_arr[*]} ; do
-  resline="${resline}${st%%=*}:integer,"
+  resline="${resline}${st%%=*}|integer,"
   eval $st
 done
 [ "X$1" == "XSQL" ] && store_results "$resline"
