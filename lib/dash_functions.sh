@@ -51,11 +51,9 @@ print_page_title() {
 }
 
 open_cluster() {
-  if [ -n "$2" ]; then
-    dfoconclick=$1
-    shift
-  fi
-  dfocid="${@}"
+  dfocid="$1"
+  shift
+  [ -n "$1" ] && dfoconclick="$1"
   echo "<div class=\"cluster\" id=\"${dfocid}\">"
   echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid##*|}</span>"
   unset dfoconclick
@@ -69,7 +67,7 @@ print_cluster_inline() {
       shift
       continue
     fi
-    [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpcionclick')\"" || unset classadded onclick dfpcionclick
+    [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${dfocid}_name','$dfpcionclick')\"" || unset classadded onclick dfpcionclick
     
     [ -n "$dfpcionclick" -a "${dfpcionclick%%|*}" != "${dfpcionclick#*|}" ] && dfpcistyle="${dfpcionclick#*|}" && dfpcionclick="${dfpcionclick%%|*}" && style="style=\"$dfpcistyle\"" || unset style
     dfpcicont=`eval echo \\$$dfpcistatus`
@@ -110,18 +108,18 @@ open_line() {
 print_inline() {
   # print_inline "metric<|onclick><|style>"
   while [ -n "$1" ] ; do
-    dfpistatus="$1"
-    if [ "X$dfpistatus" == "X-" ]; then
+    dfpistatusarg="$1"
+    if [ "X$dfpistatusarg" == "X-" ]; then
       echo "<div id=\"${dfolid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
     fi
-    dfpistatus=`echo $dfpistatus | cut -d'|' -f1`
-    dfpionclick=`echo $dfpistatus | cut -s -d'|' -f2`
-    dfpistyle=`echo $dfpistatus | cut -s -d'|' -f3`
+    dfpistatus=`echo "$dfpistatusarg" | cut -d'|' -f1`
+    dfpionclick=`echo "$dfpistatusarg" | cut -s -d'|' -f2`
+    dfpistyle=`echo "$dfpistatusarg" | cut -s -d'|' -f3`
     if [ -n "$dfpionclick" ]; then
       classadded="clickable"
-      onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\""
+      onclick="onclick=\"showDetails('${dfocid}_name','$dfpionclick')\""
     else
       unset onclick classadded dfpionclick
     fi
