@@ -38,7 +38,7 @@ for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|
   total_datasize="$total_datasize $csunits"
   total_chunks=`cat $db_dat | grep ^0\/\"nchunks\"\| | cut -d'|' -f2`
   
-  open_cluster databases "$dbname"
+  open_cluster "$dbname"
   
   print_cluster_inline "total_status" "-" "-" "total_count" "total_datasize" "total_indexsize"
   close_cluster_line
