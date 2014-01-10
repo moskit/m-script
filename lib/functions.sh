@@ -80,10 +80,10 @@ check_results() {
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
     [ -z "$vardescr" ] && vardescr=$varname
     [ "$varname" == "$vartype" ] && vartype=real
-    thr1=`eval "echo ${varname}_1"`
-    thr2=`eval "echo ${varname}_2"`
-    thr3=`eval "echo ${varname}_3"`
-    val=`eval "echo ${varname}"`
+    thr1=`eval "echo \\$${varname}_1"`
+    thr2=`eval "echo \\$${varname}_2"`
+    thr3=`eval "echo \\$${varname}_3"`
+    val=`eval "echo \\$${varname}"`
     if [ "$vartype" == "real" ]; then
       [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> $vardescr is $val" && continue
       [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  $vardescr is $val" && continue

@@ -324,7 +324,7 @@ if [ -z "$local" ]; then
             if [ `$SSH -i "$KEY" -p $SSHPORT $IP test -d "$to"` ] ; then
               to=${to%/}/${from##*/}
             fi
-            ip=$IP
+            export ip=$IP
             prepare_file
             echo "${tmpfile##*/}...  "
             cloudsync --ip=$IP "$tmpfile" "$to"

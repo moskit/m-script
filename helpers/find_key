@@ -70,28 +70,43 @@ case $where in
     nextkey=false
     find_server_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
     #log "trying server $1 cluster key"
-    if [ ! -f "$M_ROOT/keys/$KEY" ]; then
-      cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-      if [ -n "$cluster" ] ; then
-        find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
-      else
-        if [ -n "$CLOUD" ]; then
-          source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+
+    cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+    if [ -n "$cluster" ] ; then
+      find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
+    else
+      # finding cluster from the cloud metadata
+      if [ -n "$CLOUD" ]; then
+        source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+        
+        case $CLOUD_PROVIDER in
+        rackspace)
           cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --name=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
           [ -z "$cluster" ] && cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
-        fi
-        if [ -z "$cluster" ]; then
-          echo "Cluster not found for server $1" >&2 | tee -a "$LOG"
-        else
-          find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
-        fi
+        ;;
+        ec2)
+          
+        ;;
+        ganeti)
+          
+        ;;
+        *)
+          
+        ;;
+        esac
       fi
-      if [ ! -f "$M_ROOT/keys/$KEY" ]; then
-        #log "trying ${USER}'s keys"
-        USERKEY1="~/.ssh/id_rsa"
-        USERKEY2="~/.ssh/id_dsa"
+      if [ -z "$cluster" ]; then
+        echo "Cluster not found for server $1" >&2 | tee -a "$LOG"
+      else
+        find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
       fi
     fi
+    if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+      #log "trying ${USER}'s keys"
+      USERKEY1="~/.ssh/id_rsa"
+      USERKEY2="~/.ssh/id_dsa"
+    fi
+
   ;;
   *)
     echo "No idea how to find the key for $where"

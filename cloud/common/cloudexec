@@ -63,9 +63,9 @@ remote_exec() {
     KEY=`$M_ROOT/helpers/find_key server $IP`
     [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
     if [ "x$nosudo" == "xyes" ]; then
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; $command\)
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; $command\)
     else
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; sudo $command\)
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; sudo $command\)
     fi
   fi
 }

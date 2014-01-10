@@ -51,7 +51,7 @@ IFS=$IFS1
 
 [ -n "$verbose" ] && debug=true || debug=false
 
-source "${rpath}/../conf/mon.conf"
+source "$rpath/../conf/mon.conf"
 # defaults
 [ -z "$maxlines" ] && maxlines=1000
 [ -z "$safetylimit" ] && safetylimit=50

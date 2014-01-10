@@ -90,8 +90,7 @@ close_cluster() {
 }
 
 open_line() {
-  # open_line "title|style|uniqkey" "onclick"
-  # open_line "title" "onclick"
+  # open_line "title<|style><|uniqkey>" "onclick"
   dfoltitle="$1"
   shift
   if [ -n "$1" ]; then
@@ -109,6 +108,7 @@ open_line() {
 }
 
 print_inline() {
+  # print_inline "metric<|onclick><|style>"
   while [ -n "$1" ] ; do
     dfpistatus="$1"
     if [ "X$dfpistatus" == "X-" ]; then
@@ -116,8 +116,16 @@ print_inline() {
       shift
       continue
     fi
-    [ "${dfpistatus%%|*}" != "${dfpistatus#*|}" ] && dfpionclick="${dfpistatus#*|}" && dfpistatus="${dfpistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\"" || unset onclick classadded dfpionclick
-    [ -n "$dfpionclick" -a "${dfpionclick%%|*}" != "${dfpionclick#*|}" ] && dfpistyle="${dfpionclick#*|}" && dfpionclick="${dfpionclick%%|*}" && style="style=\"$dfpistyle\"" || unset style
+    dfpistatus=`echo $dfpistatus | cut -d'|' -f1`
+    dfpionclick=`echo $dfpistatus | cut -s -d'|' -f2`
+    dfpistyle=`echo $dfpistatus | cut -s -d'|' -f3`
+    if [ -n "$dfpionclick" ]; then
+      classadded="clickable"
+      onclick="onclick=\"showDetails('${clustername}_name','$dfpionclick')\""
+    else
+      unset onclick classadded dfpionclick
+    fi
+    [ -n "$dfpistyle"] && style="style=\"$dfpistyle\"" || unset style
     echo "<div class=\"status $classadded\" id=\"${dfolid}_$dfpistatus\" $onclick $style>`eval echo \"\\$$dfpistatus\"`</div>"
     shift
   done
