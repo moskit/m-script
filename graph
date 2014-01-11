@@ -59,10 +59,10 @@ fi
 RSYNC=`which rsync 2>/dev/null`
 SQL3=`which sqlite3 2>/dev/null` # assuming that remote path is the same
 
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=0
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
@@ -76,13 +76,13 @@ do
     exit 1
     ;;
   *)
-    s_param=${s_option}
+    s_param=$s_option
     s_optname=''
     s_optarg=''
     ;;
   esac
   for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
@@ -156,7 +156,7 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  log "Necessary options: ${missing_options} not found"
+  log "Necessary options: $missing_options not found"
   exit 1
 fi
 
@@ -416,7 +416,7 @@ log "d=$d"
   fi
   log "from: $from  to: $to"
   if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 5 ] ; then
-    log "Too few data for graph. Might be connection to $sIP problems. Graph is not generated."
+    log "Too few data for graph or connection to $sIP problem. Graph is not generated."
     exit 1
   fi
   sn=`echo $metric | tr ',' ' ' | wc -w`

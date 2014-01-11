@@ -38,6 +38,8 @@ confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/n
 
 sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.collections.find( {}, { _id : 1 } ).forEach(printjson)" 2>>$LOG | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"'`
 
+rm -f "$rpath/sharding.report"
+
 for coll in $sharded ; do
 
   database=${coll%%.*}
@@ -91,3 +93,4 @@ done &
 
 
 unset masters
+

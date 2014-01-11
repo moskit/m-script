@@ -119,7 +119,7 @@ print_inline() {
     dfpistyle=`echo "$dfpistatusarg" | cut -s -d'|' -f3`
     if [ -n "$dfpionclick" ]; then
       classadded="clickable"
-      onclick="onclick=\"showDetails('${dfolid}_name','$dfpionclick')\""
+      onclick="onclick=\"showDetails('${dfolid}_$dfpistatus','$dfpionclick')\""
     else
       unset onclick classadded dfpionclick
     fi

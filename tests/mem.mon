@@ -52,18 +52,18 @@ echo -e "\nSystem status:\n--------------\nUptime:\t\t\t\t`expr $ruptime / 86400
 [[ $ruptime -lt `expr $FREQ \* 4` ]] && echo "<***> System booted up `expr $ruptime / 60` minutes ago"
 
 x=`cat /proc/loadavg | cut -d' ' -f2`
-y1=`echo "$x >= $LOAD_1" | bc`
-y2=`echo "$x >= $LOAD_2" | bc`
-y3=`echo "$x >= $LOAD_3" | bc`
+y1=`echo "$x >= $LOAD_1" | bc || echo 1`
+y2=`echo "$x >= $LOAD_2" | bc || echo 1`
+y3=`echo "$x >= $LOAD_3" | bc || echo 1`
 warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
 [ $y3 -eq 1 ] && warnind='<***>'
 echo -e "$warnind Load average (1 5 15 min):\t$rloadavg\n"
 
-y1=`echo "$rtotalprocess >= $NPROC_1" | bc`
-y2=`echo "$rtotalprocess >= $NPROC_2" | bc`
-y3=`echo "$rtotalprocess >= $NPROC_3" | bc`
+y1=`echo "$rtotalprocess >= $NPROC_1" | bc || echo 1`
+y2=`echo "$rtotalprocess >= $NPROC_2" | bc || echo 1`
+y3=`echo "$rtotalprocess >= $NPROC_3" | bc || echo 1`
 warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
@@ -78,9 +78,9 @@ totalramfree=`solve 2 "$rfreeram / $rtotalram * 100"`
 totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100"`
 totalmemfree=`solve 2 "100 - $totalmemused"`
 
-y1=`echo "$totalmemused >= $SYSMEM_1" | bc`
-y2=`echo "$totalmemused >= $SYSMEM_2" | bc`
-y3=`echo "$totalmemused >= $SYSMEM_3" | bc`
+y1=`echo "$totalmemused >= $SYSMEM_1" | bc || echo 1`
+y2=`echo "$totalmemused >= $SYSMEM_2" | bc || echo 1`
+y3=`echo "$totalmemused >= $SYSMEM_3" | bc || echo 1`
 warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
@@ -90,18 +90,18 @@ echo -e "Total RAM:\t\t${mtotalram} MB"
 echo -e "Total Swap:\t\t${mtotalswap} MB"
 echo -e "$warnind Free system memory:\t$mtotalmemfree MB (${totalmemfree}%)"
 
-y1=`echo "$totalramused >= $ACTIVEMEM_1" | bc`
-y2=`echo "$totalramused >= $ACTIVEMEM_2" | bc`
-y3=`echo "$totalramused >= $ACTIVEMEM_3" | bc`
+y1=`echo "$totalramused >= $ACTIVEMEM_1" | bc || echo 1`
+y2=`echo "$totalramused >= $ACTIVEMEM_2" | bc || echo 1`
+y3=`echo "$totalramused >= $ACTIVEMEM_3" | bc || echo 1`
 warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
 [ $y3 -eq 1 ] && warnind='<***>'
 echo -e "$warnind Active RAM:\t\t$mactiveram MB (${totalramused}%)"
 
-y1=`echo "$totalramfree <= $FREERAM_1" | bc`
-y2=`echo "$totalramfree <= $FREERAM_2" | bc`
-y3=`echo "$totalramfree <= $FREERAM_3" | bc`
+y1=`echo "$totalramfree <= $FREERAM_1" | bc || echo 0`
+y2=`echo "$totalramfree <= $FREERAM_2" | bc || echo 0`
+y3=`echo "$totalramfree <= $FREERAM_3" | bc || echo 0`
 warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
@@ -109,9 +109,9 @@ warnind='<OK> '
 echo -e "$warnind Used RAM:\t\t\t${musedram} MB" 
 echo -e "$warnind Free RAM:\t\t\t${mfreeram} MB (${totalramfree}%)"
 
-y1=`echo "$totalswapused >= $SWAP_1" | bc`
-y2=`echo "$totalswapused >= $SWAP_2" | bc`
-y3=`echo "$totalswapused >= $SWAP_3" | bc`
+y1=`echo "$totalswapused >= $SWAP_1" | bc || echo 1`
+y2=`echo "$totalswapused >= $SWAP_2" | bc || echo 1`
+y3=`echo "$totalswapused >= $SWAP_3" | bc || echo 1`
 warnind='<OK> '
 [ $y1 -eq 1 ] && warnind=' <*> '
 [ $y2 -eq 1 ] && warnind='<**> '
