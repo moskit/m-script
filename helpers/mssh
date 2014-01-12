@@ -104,7 +104,7 @@ if $nextkey ; then
 fi
 
 if $nextkey ; then
-  echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: no matching key found for ${@%% }, tried: ${KEY}`[ -n "$USERKEY1" ] && echo ", $USERKEY1"``[ -n "$USERKEY2" ] && echo ", $USERKEY2"`" >> "$M_ROOT/logs/cloud.log"
+  echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: no matching key found for ${@%% *}, tried: ${KEY}`[ -n "$USERKEY1" ] && echo ", $USERKEY1"``[ -n "$USERKEY2" ] && echo ", $USERKEY2"`" >> "$M_ROOT/logs/cloud.log"
 fi
 
 exit 0
