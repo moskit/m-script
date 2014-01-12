@@ -94,7 +94,7 @@ fi
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 [ -z "$cluster" ] && echo "cluster is not defined" && exit 1
-[ -z "$cloud" ] && cloud="$M_CLOUD"
+[ -z "$cloud" ] && cloud="$CLOUD"
 [ -z "$cloud" ] && echo "cloud is not defined" && exit 1
 
 source "$M_ROOT/conf/balancers/${cluster}.conf"
@@ -105,9 +105,6 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 M_TEMP="$M_TEMP/cloud/$cloud"
 install -d $M_TEMP
-
-IFS='
-'
 
 case $BALANCER_TYPE in
 nginx)
@@ -121,4 +118,3 @@ esac
 
 exit 0
 
-done

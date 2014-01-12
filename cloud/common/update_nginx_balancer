@@ -101,7 +101,7 @@ M_TEMP="$M_TEMP/cloud/$cloud"
 for appport in `echo "$BALANCER_PORTS" | tr ',' ' '` ; do
 
   app=`echo "$appport" | cut -s -d':' -f1`
-  PORT=`echo "$appport" | cut -s -d':' -f2`
+  port=`echo "$appport" | cut -s -d':' -f2`
   [ -z "$app" ] && log "application name is empty in BALANCER_PORTS=$appport for cluster $cluster" && continue
   [ -z "$port" ] && log "port number is empty in BALANCER_PORTS=$appport for cluster $cluster" && continue
 

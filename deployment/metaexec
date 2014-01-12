@@ -306,7 +306,6 @@ export CLOUD
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
 [ -z "$CLOUD_PROVIDER" ] && echo "CLOUD_PROVIDER is not defined. Error reading configuration?" && exit 1
-[ -n "$SSHPORT" ] || SSHPORT=22
 
 source "$M_ROOT/conf/deployment.conf"
 source "$M_ROOT/lib/functions.sh"
@@ -468,6 +467,8 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   KEY=`find_key cluster "$cluster"` || KEY=`find_key server "$ip"` || proper_exit 1 467
   [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 468
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 469
+  # it's here because startserver function cause re-reading cloud config
+  [ -n "$SSHPORT" ] || SSHPORT=22
   if [ -z "$list" ] ; then
     #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"
