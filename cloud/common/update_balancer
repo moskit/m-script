@@ -92,8 +92,10 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && cluster="$M_CLUSTER"
 [ -z "$cluster" ] && echo "cluster is not defined" && exit 1
+[ -z "$cloud" ] && cloud="$M_CLOUD"
+[ -z "$cloud" ] && echo "cloud is not defined" && exit 1
 
 source "$M_ROOT/conf/balancers/${cluster}.conf"
 source "$M_ROOT/conf/mon.conf"
