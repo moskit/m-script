@@ -97,6 +97,7 @@ fi
 
 source "$M_ROOT/conf/balancers/${cluster}.conf"
 source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -z "$BALANCER_PORTS" ] && echo "BALANCER_PORTS is empty" && exit 1
 
