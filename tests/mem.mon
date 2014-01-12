@@ -52,13 +52,17 @@ echo -e "\nSystem status:\n--------------\nUptime:\t\t\t\t`expr $ruptime / 86400
 [[ $ruptime -lt `expr $FREQ \* 4` ]] && echo "<***> System booted up `expr $ruptime / 60` minutes ago"
 
 x=`cat /proc/loadavg | cut -d' ' -f2`
-y1=`echo "$x >= $LOAD_1" | bc`
-y2=`echo "$x >= $LOAD_2" | bc`
-y3=`echo "$x >= $LOAD_3" | bc`
-warnind='<OK> '
-[ $y1 -eq 1 ] && warnind=' <*> '
-[ $y2 -eq 1 ] && warnind='<**> '
-[ $y3 -eq 1 ] && warnind='<***>'
+if [ $LOAD_3 -gt 0 ] 2>/dev/null ; then
+  y1=`echo "$x >= $LOAD_1" | bc`
+  y2=`echo "$x >= $LOAD_2" | bc`
+  y3=`echo "$x >= $LOAD_3" | bc`
+  warnind='<OK> '
+  [ $y1 -eq 1 ] && warnind=' <*> '
+  [ $y2 -eq 1 ] && warnind='<**> '
+  [ $y3 -eq 1 ] && warnind='<***>'
+else
+  warnind='<***>'
+fi
 echo -e "$warnind Load average (1 5 15 min):\t$rloadavg\n"
 
 if [ $NPROC_3 -gt 0 ] 2>/dev/null ; then

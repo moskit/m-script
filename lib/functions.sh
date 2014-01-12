@@ -234,8 +234,16 @@ dbquery() {
   dbquery="$@"
   [ -z "$LOG" ] && LOG="$M_ROOT/monitoring.log"
   $SQLBIN "$dbfile" "$dbquery" 2>>"$LOG"
-  [ $? -eq 5 -o $? -eq 6 ] && sleep 5 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1 && log "query to database $dbfile repeated after 5 sec and finished successfully"
-  [ $? -eq 5 -o $? -eq 6 ] && sleep 15 && $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1 && log "query to database $dbfile repeated after 20 sec and finished successfully" || log "query \"$dbquery\" to database $dbfile failed"
+  if [ $? -eq 5 -o $? -eq 6 ]; then
+    for ((i=0; i<10; i++)); do
+      sleep 5
+      $SQLBIN "$dbfile" "$dbquery" >> $LOG 2>&1
+      if [ $? -ne 5 -a $? -ne 6 ]; then
+        log "query to database $dbfile repeated after `expr $i \* 5` sec and finished successfully"
+      fi
+    done
+  fi
+  log "query \"$dbquery\" to database $dbfile failed"
 }
 
 solve() {
