@@ -22,13 +22,13 @@ rpath=${0%/*}
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
-possible_options="cluster application app cloud help"
-necessary_options=""
+possible_options="cluster application cloud help"
+necessary_options="cloud cluster"
 #[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=0
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
@@ -42,7 +42,7 @@ do
     exit 1
     ;;
   *)
-    s_param=${s_option}
+    s_param=$s_option
     s_optname=''
     s_optarg=''
     ;;
@@ -57,18 +57,24 @@ do
   fi
 done
 if [ "X$help" == "Xyes" ] ; then
-  echo "Usage: ${0##*/} <options>"
-  echo 
-  echo "Without options all clusters defined in conf/clouds/${CLOUD}.conf will be synced"
-  echo
-  echo "Options:"
-  echo
-  echo "  --cluster=<cluster name>   - syncs only this single cluster."
-  echo "                             Port number is not needed here! Port(s) will"
-  echo "                             be taken from conf/clouds/${CLOUD}.conf"
-  echo "  --application=<application name>  - syncs only this single application."
-  echo
-  exit 0
+  cat << "EOF"
+Usage: ${0##*/} <options>
+
+Options:
+
+  --cloud=[name]                   - defines cloud to work with.
+
+  --cluster=[name]                 - defines cluster for which balancers
+                                     will be updated.
+                                     Port number is not needed here!
+                                     Port(s) will be taken from
+                                     conf/balancers/[clustername].conf.
+
+  --application=[name]             - updates balancer for this application only.
+                                     Application name must be present in
+                                     conf/balancers/[clustername].conf.
+
+EOF
 fi
 found=0
 
@@ -81,25 +87,27 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-[ -z "$app" ] && app="$application"
-[ -z "$app" ] && echo "application is not defined" && exit 1
-[ -z "$cluster" ] && cluster=$M_CLUSTER
-[ -z "$cluster" ] && echo "cluster is not defined" && exit 1
 source "$M_ROOT/conf/balancers/${cluster}.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-for var in NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
-  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/balancers/nginx.conf please." && exit 1
+for var in BALANCER_PORTS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
+  [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/balancers/[clustername].conf please." && exit 1
 done
 
 M_TEMP="$M_TEMP/cloud/$cloud"
-install -d $M_TEMP
-install -d $NGINX_PROXY_CLUSTER_CONF_DIR
+[ -d "$NGINX_PROXY_CLUSTER_CONF_DIR" ] && install -d "$NGINX_PROXY_CLUSTER_CONF_DIR"
 
-if [ -f "$M_TEMP/${app}.${cluster}.ips" ]; then
-  if [ `cat "$M_TEMP/${app}.${cluster}.ips" | grep -v ^$ | wc -l` -gt 0 ] ; then
-    case $balance_method in
+for appport in `echo "$BALANCER_PORTS" | tr ',' ' '` ; do
+
+  app=`echo "$appport" | cut -s -d':' -f1`
+  PORT=`echo "$appport" | cut -s -d':' -f2`
+  [ -z "$app" ] && log "application name is empty in BALANCER_PORTS=$appport for cluster $cluster" && continue
+  [ -z "$port" ] && log "port number is empty in BALANCER_PORTS=$appport for cluster $cluster" && continue
+
+  ips=`get_ips --cloud=$cloud --cluster=$cluster`
+  if [ -n "$ips" ]; then
+    case $BALANCE_METHOD in
       sticky|ip_hash|hash)
         balance_method="ip_hash"
         ;;
@@ -107,14 +115,15 @@ if [ -f "$M_TEMP/${app}.${cluster}.ips" ]; then
         unset balance_method
         ;;
     esac
-    echo "upstream $app {" > $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-    [ -n "$balance_method" ] && echo "  ${balance_method};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-    while read IP; do
-      echo "  server ${IP};" >> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
-    done<$M_TEMP/${app}.${cluster}.ips
-    echo "}">> $NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf
+    echo "upstream $app {" > "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
+    [ -n "$balance_method" ] && echo "  ${balance_method};" >> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
+    for IP in `echo "$ips"` ; do
+      echo "  server ${IP}:${port};" >> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
+    done
+    echo "}">> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
   fi
-fi
+
+done
 
 $NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND
 

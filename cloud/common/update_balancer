@@ -22,9 +22,9 @@ rpath=${0%/*}
 
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting" && exit 1
-possible_options="cluster help"
+possible_options="cloud cluster application help"
 necessary_options=""
-#[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+
 for s_option in "${@}"
 do
   found=0
@@ -62,10 +62,22 @@ Usage: ${0##*/} <options>
 
 Options:
 
-  --cluster=<cluster name>           - updates balancer of this cluster
-                                     If cluster is not defined, M_CLUSTER
-                                     environment variable is used
+  --cloud=[name1<,name2,...>]      - defines cloud(s) to work with. Balancers
+                                     for the clusters in those clouds not
+                                     defined here will not be updated.
 
+  --cluster=[name1<,name2,...>]    - defines cluster(s) for which balancers
+                                     will be updated.
+                                     Port number is not needed here!
+                                     Port(s) will be taken from
+                                     conf/balancers/[clustername].conf.
+                                     Use --cluster=all to update balancers for
+                                     all available clusters for the defined
+                                     cloud(s).
+
+  --application=[application name] - updates balancer for this application only.
+                                     Application name must be present in
+                                     conf/balancers/[clustername].conf.
 EOF
   exit 0
 fi
@@ -91,28 +103,12 @@ source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/$cloud"
 install -d $M_TEMP
 
-apps=`echo -e "$BALANCER_PORTS" | tr ',' '\n' | sort | uniq`
-appnames=`echo "$APPS" | cut -s -d':' -f1`
-if [ -z "$appnames" ]; then
-  appnames="$cluster"
-  appports="$apps"
-fi
-
 IFS='
 '
-for app in $appnames ; do
-  [ -f "$M_TEMP/${app}.${cluster}.ips" ] && mv "$M_TEMP/${app}.${cluster}.ips" "$M_TEMP/${app}.${cluster}.ips.prev" 2>/dev/null
-  [ -z "$appports" ] && appports=`echo "$apps" | grep "^${app}:" | cut -s -d':' -f2`
-  for IP in `"$rpath"/get_ips --cluster=$cluster` ; do
-    for PORT in $ports ; do
-      echo "$IP:$PORT" >> "$M_TEMP/${app}.${cluster}.ips"
-    done
-  done
-  [ -f "$M_TEMP/${app}.${cluster}.ips.prev" ] && [ -f "$M_TEMP/${app}.${cluster}.ips" ] && [ -z "`$DIFF -q "$M_TEMP/${app}.${cluster}.ips.prev" "$M_TEMP/${app}.${cluster}.ips"`" ] && continue
 
 case $BALANCER_TYPE in
 nginx)
-  update_nginx_balancer --cluster="$cluster" --application="$app"
+  "$rpath"/update_nginx_balancer --cloud=$cloud --cluster="$cluster"
   [ $? -ne 0 ] && log "error updating balancer" && exit 1
   ;;
 *)
