@@ -160,3 +160,25 @@ get_hostname() {
   return 0
 }
 
+find_local_ips() {
+  IFCFG=`which ifconfig 2>/dev/null`
+  if [ -n "$IFCFG" ] ; then
+    $IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'
+  else
+    IFCFG=`which ip 2>/dev/null`
+    [ -n "$IFCFG" ] && $IFCFG addr list | grep 'inet.*scope\ global' | while read L ; do expr "$L" : 'inet \(.*\)/' ; done
+  fi
+}
+
+check_super_cluster() {
+  # returns 0 if the argument IP is in a SUPER_CLUSTER (see conf/mon.conf)
+  # except if it is a local IP
+  [ -z "$SUPER_CLUSTER" ] && source "$M_ROOT/conf/mon.conf"
+  [ -z "$SUPER_CLUSTER" ] && return 1
+  [ -z "$2" ] && return 1
+  localips=`find_local_ips`
+  echo "$localips" | grep -q "^${1}$" && return 1
+  [ "X$2" == "X$SUPER_CLUSTER" ] && return 0
+}
+
+  

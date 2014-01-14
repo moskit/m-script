@@ -181,9 +181,12 @@ list_servers() {
         # groups, you'll get them mixed here.
         if [ -n "$icluster" -o -n "$all" ] ; then
           [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+          
           [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
           extIP=${extIP#* } ; extIP=${extIP% *}
           intIP=${intIP#* } ; intIP=${intIP% *}
+          check_super_cluster $extIP "$icluster" && continue
+          check_super_cluster $intIP "$icluster" && continue
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
@@ -210,10 +213,12 @@ list_servers() {
       else
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
+            
             key=`grep ^$icluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
             for ip in $IP ; do
               ip=${ip#* } ; ip=${ip% *}
               sed -i /^$ip\|/d "$M_ROOT/servers.list"
+              check_super_cluster $ip "$icluster" && continue
               echo "$ip|$key|$region|$name|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done

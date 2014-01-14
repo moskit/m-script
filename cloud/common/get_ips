@@ -80,13 +80,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 [ -n "$thishost" ] && local="yes"
 
 if [ -n "$local" -o -n "$nolocal" ] ; then
-  IFCFG=`which ifconfig 2>/dev/null`
-  if [ -n "$IFCFG" ] ; then
-    localips=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'`
-  else
-    IFCFG=`which ip 2>/dev/null`
-    [ -n "$IFCFG" ] && localips=`$IFCFG addr list | grep 'inet.*scope\ global' | while read L ; do expr "$L" : 'inet \(.*\)/' ; done`
-  fi
+  localips=`find_local_ips`
 fi
 
 if [ -n "$cloud" ]; then
