@@ -173,7 +173,7 @@ find_local_ips() {
 check_super_cluster() {
   # returns 0 if the argument IP is in a SUPER_CLUSTER (see conf/mon.conf)
   # except if it is a local IP
-  [ -z "$SUPER_CLUSTER" ] && source "$M_ROOT/conf/mon.conf"
+  [ -z "$SUPER_CLUSTER" ] && M_TEMP1=$M_TEMP && source "$M_ROOT/conf/mon.conf" && M_TEMP1=$M_TEMP
   [ -z "$SUPER_CLUSTER" ] && return 1
   [ -z "$2" ] && return 1
   localips=`find_local_ips`
