@@ -32,18 +32,16 @@ do
   ip=`echo $HOST | cut -d'|' -f1`
   hname=`echo $HOST | cut -d'|' -f2`
   [ -z "$hname" ] && error+=("Server $ip has no name") && continue
-  if [ `grep -c "$ip[[:space:]]*$hname$" /etc/hosts` -eq 0 ] ; then
-    if [ `grep -c "$ip " /etc/hosts` -eq 1 ] ; then
-      sed -i "/$ip /d" /etc/hosts
-    fi
-    if [ `grep -c " $hname " /etc/hosts` -eq 1 ] ; then
-      sed -i "/ $hname /d" /etc/hosts
-    fi
-    if [ `grep -c " $hname$" /etc/hosts` -eq 1 ] ; then
-      sed -i "/ $hname$/d" /etc/hosts
-    fi
-    echo "$ip $hname" >> /etc/hosts
+  if [ `grep -c "$ip " /etc/hosts` -ge 1 ] ; then
+    sed -i "/$ip /d" /etc/hosts
   fi
+  if [ `grep -c " $hname " /etc/hosts` -ge 1 ] ; then
+    sed -i "/ $hname /d" /etc/hosts
+  fi
+  if [ `grep -c " $hname$" /etc/hosts` -ge 1 ] ; then
+    sed -i "/ $hname$/d" /etc/hosts
+  fi
+  echo "$ip $hname" >> /etc/hosts
 done
 IFS=$IFS1
 
