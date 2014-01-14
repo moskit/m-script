@@ -103,7 +103,7 @@ wait_ready() {
   checks=`expr $waittimeout / $waitperiod`
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
-    "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
+    IAMACHILD=1 "$rpath"/get_server_details --id=$newid >/dev/null 2>&1
     if [ -n "$1" ] ; then
       printf "Progress: `grep \/\"progress\"\| "$M_TEMP/get_server_details.resp" | cut -d'|' -f2`     \r"
     fi

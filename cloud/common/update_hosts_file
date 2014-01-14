@@ -27,20 +27,20 @@ IFS='
 # in case the file doesn't end correctly
 [ `cat -E /etc/hosts | tail -1 | grep -c \$$` -eq 0 ] && echo >> /etc/hosts
 while [ `cat /etc/hosts | tail -1 | grep -c ^$` -eq 1 ] ; do sed -i '$d' /etc/hosts ; done
-cat "$M_ROOT/servers.list" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | cut -d'|' -f1,4 | while read HOST
+cat "$M_ROOT/servers.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | cut -d'|' -f1,4 | while read HOST
 do
   ip=`echo $HOST | cut -d'|' -f1`
   hname=`echo $HOST | cut -d'|' -f2`
   [ -z "$hname" ] && error+=("Server $ip has no name") && continue
   if [ `grep -c "$ip[[:space:]]*$hname$" /etc/hosts` -eq 0 ] ; then
     if [ `grep -c "$ip " /etc/hosts` -eq 1 ] ; then
-      sed -i -e "/$ip /d" /etc/hosts
+      sed -i "/$ip /d" /etc/hosts
     fi
     if [ `grep -c " $hname " /etc/hosts` -eq 1 ] ; then
-      sed -i -e "/ $hname /d" /etc/hosts
+      sed -i "/ $hname /d" /etc/hosts
     fi
     if [ `grep -c " $hname$" /etc/hosts` -eq 1 ] ; then
-      sed -i -e "/ $hname$/d" /etc/hosts
+      sed -i "/ $hname$/d" /etc/hosts
     fi
     echo "$ip $hname" >> /etc/hosts
   fi
@@ -51,19 +51,19 @@ IFS=$IFS1
 if [ -n "$1" ] ; then
   if [ "$1" == "everywhere" ] ; then
     echo "Syncing servers.list to all clusters"
-    for cluster in `cat "$M_ROOT/conf/clusters.conf" | grep -v ^[[:space:]]*$ | grep -v ^[[:space:]]*# | grep -v ^$SUPER_CLUSTER\|` ; do
+    for cluster in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | grep -v ^$SUPER_CLUSTER\|` ; do
       clustername=`echo $cluster | cut -d'|' -f1`
       mpath=`echo $cluster | cut -d'|' -f8`
       if [ -n "$mpath" ] ; then
-        "${rpath}"/cloudsync --cluster=$clustername "$M_ROOT/servers.list" "${mpath}/"
-        "${rpath}"/cloudexec --cluster=$clustername "${mpath}/cloud/common/${rcommand}"
+        "$rpath"/cloudsync --cluster=$clustername "$M_ROOT/servers.list" "$mpath/"
+        "$rpath"/cloudexec --cluster=$clustername "$mpath/cloud/common/$rcommand"
       fi
     done
   else
     mpath=`grep ^$1\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
     if [ -n "$mpath" ] ; then
-      "${rpath}"/cloudsync --nolocalhost --cluster=$1 "$M_ROOT/servers.list" "${mpath}/"
-      "${rpath}"/cloudexec --nolocalhost --cluster=$1 "${mpath}/cloud/common/${rcommand}"
+      "$rpath"/cloudsync --nolocalhost --cluster=$1 "$M_ROOT/servers.list" "$mpath/"
+      "$rpath"/cloudexec --nolocalhost --cluster=$1 "$mpath/cloud/common/$rcommand"
     fi
   fi
 fi

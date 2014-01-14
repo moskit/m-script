@@ -74,7 +74,7 @@ if [ -z "$cloud" ]; then
       export CLOUD
     fi
   else
-    log "neither cloud not cluster is defined"
+    log "neither cloud nor cluster is defined"
     exit 1
   fi
 fi

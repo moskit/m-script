@@ -25,7 +25,7 @@ SQLBIN=`which sqlite3 2>/dev/null || echo echo`
 store_results() {
   # syntax:
   # store_results fieldname1|datatype1,fieldname2|datatype2,... <filename|tablename>
-  [ -z "$1" ] && echo "Fields are not defined" && exit 1
+  [ -z "$1" ] && echo "store_results: fields are not defined" && exit 1
   [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
   if [ -z "$2" ]; then
     caller=$(readlink -f "$0")
@@ -59,6 +59,7 @@ store_results() {
     $SQLBIN -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
   dbquery "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)"
+  unset `echo "$fields" | tr ',' ' '`
 }
 
 check_results() {
