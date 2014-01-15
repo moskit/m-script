@@ -464,7 +464,7 @@ fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   #KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
-  KEY=`find_key cluster "$cluster"` || KEY=`find_key server "$ip"` || proper_exit 1 467
+  KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 467
   [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 468
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 469
   # it's here because startserver function cause re-reading cloud config

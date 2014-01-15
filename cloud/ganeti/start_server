@@ -186,7 +186,7 @@ res=`check_cluster_limit $cluster`
 [ -z "$ip" ] && ip=`find_ip` && log "IP that will be used: $ip"
 [ -z "$ip" ] && proper_exit 4 186
 
-thekey=`find_key cluster $cluster`
+thekey=`"$M_ROOT"/helpers/find_key cluster $cluster`
 [ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 189
 [ -f "${thekey}.pub" ] && PUBLIC_KEY="${thekey}.pub"
 [ -z "$PUBLIC_KEY" ] && [ -f "${thekey}.pem.pub" ] && PUBLIC_KEY="${thekey}.pem.pub"

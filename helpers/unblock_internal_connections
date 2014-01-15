@@ -177,7 +177,7 @@ unblock_ip() {
 for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
   IP=${dserver%%|*}
   [ -n "$ip" ] && [ "X$IP" != "X$ip" ] && continue
-  KEY=`find_key server $IP` || continue
+  KEY=`"$rpath"/find_key server $IP` || continue
   if [ -n "$region" ] ; then
     DREGION=`echo $dserver | cut -d'|' -f3`
     [ "X$DREGION" == "X$region" ] || continue

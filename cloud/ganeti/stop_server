@@ -71,7 +71,7 @@ if [ -z "$name" ] ; then
 fi
 [ -z "$name" ] && echo "Unable to find this server" && exit 1
 tscluster=$(cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4,5 | grep ^$name\| | cut -d'|' -f2)
-thekey=`find_key cluster $tscluster`
+thekey=`"$M_ROOT"/helpers/find_key cluster $tscluster`
 
 request() {
   ssh -i "$thekey" -o StrictHostKeyChecking=no root@$name \(swapoff -a \&\& poweroff\) >>"$LOG" 2>&1 </dev/null &
