@@ -245,7 +245,7 @@ if [ -z "$cluster" ] ; then
       exit 1
     fi
   else
-    cluster=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+    cluster=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}\| | cut -d'|' -f1`
     [ -z "$cluster" ] && echo "${rcommand}: cluster not defined for role $role" && exit 1
   fi
 fi

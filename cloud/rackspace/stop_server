@@ -60,14 +60,14 @@ do
 done
 IFS=$IFS1
 
-[ -n "$cluster" ] && [ `grep -c \|$cluster$ "$M_ROOT"/servers.list` -eq 0 ] && log "No cluster $cluster in servers.list" && exit 1
+[ -n "$cluster" ] && [ `grep -c \|$cluster\| "$M_ROOT"/servers.list` -eq 0 ] && log "No cluster $cluster in servers.list" && exit 1
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 
 if [ -z "$cloud" ]; then
   if [ -n "$cluster" ]; then
     cloud=`cat "$M_ROOT/servers.list" | cut -d'|' -f5,6 | grep ^$cluster\| | cut -s -d'|' -f2 | sort | uniq`
     if [ `echo "$cloud" | wc -l` -gt 1 ]; then
-      log "more than one cloud for this cluster, thus cloud must be defined"
+      log "more than one cloud for this cluster, therefore cloud must be defined"
       exit 1
     else
       CLOUD=$cloud
