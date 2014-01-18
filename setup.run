@@ -381,7 +381,7 @@ else
 fi
 else
   echo "If you want to start the load monitoring daemon now, run:"
-  echo "$rpath/monitorload.sh start"
+  echo "$rpath/monitorload.run start"
 fi
 
 echo -e "\nYou may want to use M-Shell (just execute $rpath/msh).\nIt is just a convenience subshell that doesn't restrict you from using your shell as usual but adds paths and sets all necessary environment variables.\nCheck/edit $rpath/.msh.env to adjust its look and feel\n"

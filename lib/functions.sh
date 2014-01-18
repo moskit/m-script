@@ -59,7 +59,7 @@ store_results() {
     $SQLBIN -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
   dbquery "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)"
-  unset `echo "$fields" | tr ',' ' '`
+  unset `echo $fields | tr ',' ' '`
 }
 
 check_results() {
