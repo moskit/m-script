@@ -36,11 +36,11 @@ else
     fi
   else
     for rcmon in `find "$M_ROOT/rc" -maxdepth 1 -mindepth 1 -type l`; do
-      sn=`echo "${rcmon##*/}" | cut -d'.' -f1`
+      sn=`echo "${rcmon##*/}" | cut -d'.' -f1 | sed 's|^0||'`
       [[ $sn -gt $maxsn ]] && maxsn=$sn 
     done
     newsn=`expr $maxsn + 1`
-    ln -s "../tests/${1}.mon" "$M_ROOT/rc/${2}.${1}.mon"
+    ln -s "../tests/${1}.mon" "$M_ROOT/rc/${newsn}.${1}.mon"
   fi
 
 fi
