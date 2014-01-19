@@ -40,6 +40,7 @@ LOG="$rpath/logs/dashboard.log"
 [ -n "$debug" ] && debug=false || debug=true
 
 [ -n "$SSHPORT" ] || SSHPORT=22
+timeindexnow=`date +"%s"`
 
 monitor="$1"
 if [ -z "$monitor" ]; then
