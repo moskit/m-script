@@ -243,8 +243,9 @@ dbquery() {
         log "query to database $dbfile repeated after `expr $i \* 5` sec and finished successfully"
       fi
     done
+  else
+    log "query \"$dbquery\" to database $dbfile failed"
   fi
-  log "query \"$dbquery\" to database $dbfile failed"
 }
 
 solve() {
