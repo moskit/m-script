@@ -753,18 +753,18 @@ do
 done
 log "marks generated"
 
-cat "$rpath/wwwtemplates/graph.head.svg.tmpl" > "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"$graphH\" height=\"$graphV\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+cat "$rpath/wwwtemplates/graph.head.svg.tmpl" > "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"$graphH\" height=\"$graphV\">" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 
 # Axis
-echo -e "<g id=\"axis\">\n<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M\n ${startX},$startY ${startX},$mX2\" /><path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M $startX,$startY $mY2,$startY\" /></g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo -e "<g id=\"axis\">\n<path id=\"y\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M\n ${startX},$startY ${startX},$mX2\" /><path id=\"x\" style=\"fill:none;stroke:#000;stroke-width:$strokewidth\" d=\"M $startX,$startY $mY2,$startY\" /></g>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 
 # Marks
-echo -e "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">\n${marksX}\n${marksY}\n</g>\n<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$textX" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo $textY >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<text font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$axisY</text>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo -e "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">\n${marksX}\n${marksY}\n</g>\n<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$textX" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+[ "X$scale" == "Xyes" ] || echo $textY >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "<text font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$axisY</text>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "</g>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 
 # Graphs
 i=0
@@ -779,7 +779,7 @@ else
 fi
 log "slegendX=$slegendX  slegendY=$slegendY  sadd=$sadd"
 
-echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 
 # first column is the X axis, data starts from the column 2
 declare -i n
@@ -796,7 +796,7 @@ log "slegend=$slegend"
   fi
 log "slegendY=$slegendY"
 
-  echo -n "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+  echo -n "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
   if [ -z "$perpixel" ]; then  
     if [ "X$scale" == "Xyes" ] ; then cat "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" ; else cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} ; fi | while read LINE
     do
@@ -805,7 +805,7 @@ log "slegendY=$slegendY"
       if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then continue ; fi
       X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
       Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) \* 100 / $perdotY`
-      printf " $X,$Y" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+      printf " $X,$Y" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
     done
 #### drawing perpixel graph
   else
@@ -819,19 +819,19 @@ log "slegendY=$slegendY"
       [ -z "$Y" ] && Y=0
       X+=1
       Y=`expr $shiftYY - $Y`
-      printf " $X,$Y" >> "${rpath}/www/graphs/${sIP}.${dbname}.${name}.svg"
+      printf " $X,$Y" >> "${rpath}/www/graphs/${ip}.${dbname}.${name}.svg"
     done
   fi
-  echo "\" />" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+  echo "\" />" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
   i+=1
   n+=1
 done
 
-echo "</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "<g id=\"legend\" text-rendering=\"optimizeSpeed\">" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "$slegend" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "</g>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
-echo "</svg>" >> "$rpath/www/graphs/${sIP}.${dbname}.${name}.svg"
+echo "</g>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "<g id=\"legend\" text-rendering=\"optimizeSpeed\">" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "$slegend" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "</g>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "</svg>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 
 #convert -size ${graphH}x${graphV} xc:white -family $fontfamily -pointsize $fontsize \
 #  -strokewidth $strokewidth \
