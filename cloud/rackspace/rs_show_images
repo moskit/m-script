@@ -66,40 +66,40 @@ source "$M_ROOT/lib/cloud_functions.sh"
 lock_cloudops || exit 10
 CURL="$CURL -s -k"
 
-[ -n "$short" ] && [ -f "${M_TEMP}/images.list" ] && cat "${M_TEMP}/images.list" && exit 0
-[ -n "$forceupdate" ] && rm -f "${M_TEMP}"/images.resp
+[ -n "$short" ] && [ -f "$M_TEMP/images.list" ] && cat "$M_TEMP/images.list" && exit 0
+[ -n "$forceupdate" ] && rm -f "$M_TEMP"/images.resp
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
 
 request() {
   local updateimages
   updateimages=false
-  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "${M_TEMP}/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^0\/auth\/token\/id "${M_TEMP}/auth.resp" | cut -d'|' -f2`
+  URL=`grep ^0\/auth\/serviceCatalog\/cloudServers\/0\/publicURL "$M_TEMP/auth.resp" | cut -d'|' -f2`
+  TOKEN=`grep ^0\/auth\/token\/id "$M_TEMP/auth.resp" | cut -d'|' -f2`
 
-  if [ -n "`find "${M_TEMP}" -mtime -2 -name images.resp`" ]; then
-    if grep -q code\|401$ "${M_TEMP}/images.resp" ; then
+  if [ -n "`find "$M_TEMP" -mtime -2 -name images.resp`" ]; then
+    if grep -q code\|401$ "$M_TEMP/images.resp" ; then
       updateimages=true
     fi
   else
     updateimages=true
   fi
 
-  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}/images/detail" | "${rpath}/../../lib/json2txt" > "${M_TEMP}/images.resp"
-  (nump=0; f=false ; cat "${M_TEMP}/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "${M_TEMP}/images.list"
+  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/images/detail" | "${rpath}/../../lib/json2txt" > "$M_TEMP/images.resp"
+  (nump=0; f=false ; cat "$M_TEMP/images.resp" | grep -E "/id\||/name\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/images.list"
 }
 
 list_images() {
   IFS1=$IFS
   IFS='
 '
-  if [ -f "${M_TEMP}/images.resp" ] ; then
-    for imnum in `cat "${M_TEMP}/images.resp" | sed 's|^0/images/||g' | cut -d'/' -f1 | sort | uniq` ; do
-      im=`grep ^0\/images\/${imnum}\/ "${M_TEMP}/images.resp"`
+  if [ -f "$M_TEMP/images.resp" ] ; then
+    for imnum in `cat "$M_TEMP/images.resp" | sed 's|^0/images/||g' | cut -d'/' -f1 | sort | uniq` ; do
+      im=`grep ^0\/images\/${imnum}\/ "$M_TEMP/images.resp"`
       for LN in `echo "$im" | cut -d'/' -f4 | sed 's_|_=\"_g;s_$_\"_g'` ; do
         eval "$LN"
       done
-      echo "${id}|${name}|${status}|${created}|${updated}|${progress}"
+      echo "$id|$name|$status|$created|$updated|$progress"
     done
   fi
   IFS=$IFS1
@@ -108,7 +108,7 @@ list_images() {
 try_auth() {
   local -i i
   i=0
-  while [ ! -e "${M_TEMP}/auth.resp" -o `cat "${M_TEMP}/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && exit 1
     ${rpath}/auth
     i+=1
@@ -122,10 +122,10 @@ if [ -z "$noupdate" ] ; then
   request
   declare -i n
   n=0
-  while [ `grep -c ^0\/unauthorized\/code\|401$ "${M_TEMP}/images.resp"` -eq 1 ] ; do
+  while [ `grep -c ^0\/unauthorized\/code\|401$ "$M_TEMP/images.resp"` -eq 1 ] ; do
     [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && exit 1
     [ $n -gt 1 ] && sleep 30
-    rm -f "${M_TEMP}/auth.resp"
+    rm -f "$M_TEMP/auth.resp"
     try_auth
     request
     n+=1

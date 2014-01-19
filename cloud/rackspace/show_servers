@@ -254,7 +254,7 @@ try_auth() {
   i=0
   while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
     [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 249
-    "$rpath"/auth
+    "$M_ROOT/cloud/$CLOUD_PROVIDER"/auth
     i+=1
     sleep 10
   done
