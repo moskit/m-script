@@ -130,8 +130,8 @@ for cluster in `find "$rpath/www/$monitor/$cld" -mindepth 1 -maxdepth 1 -type d`
     for server in `find "$rpath/www/$monitor/$cld/$cluster" -mindepth 1 -maxdepth 1 -type d` ; do
       server=${server##*/}
       if [ `grep "|${cld}$" "$rpath/servers.list" | grep -E -c "^$server\||\|$server\|" "$rpath/servers.list"` -eq 0 ]; then
-        cp -ru "$rpath/www/$monitor/$cld/$clustered_as/$server" "$rpath/mon.backups/dash/$cld/"
-        rm -rf "$rpath/www/$monitor/$cld/$clustered_as/$server"
+        cp -ru "$rpath/www/$monitor/$cld/$cluster/$server" "$rpath/mon.backups/dash/$cld/"
+        rm -rf "$rpath/www/$monitor/$cld/$cluster/$server"
       fi
     done
   fi
