@@ -785,8 +785,8 @@ echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "$rpath/www/gr
 declare -i n
 [ -z "$perpixel" ] && n=2 || n=1
 for smetric in `echo $metric | tr ',' ' '` ; do
-
-  slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$slegendX\\" y=\\"$slegendY\\" >$smetric</text>"`"
+  [ -n "$as" ] && slegendtext="$as" || slegendtext="$metric"
+  slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$slegendX\\" y=\\"$slegendY\\" >$slegendtext</text>"`"
 log "slegend=$slegend"
   
   if [ "$legendpos" == "left" ]; then
