@@ -282,6 +282,7 @@ if [ -z "$localip" ] ; then
   $debug && log "fetching data from ${sIP}, cluster $scluster using key $skey"
 else
   sIP="localhost"
+  ip="localhost"
   $debug && log "reading data from localhost"
 fi
 
