@@ -262,8 +262,13 @@ fi
 if [ -z "$localip" ] ; then
   server=`grep "^${ip}|" "$rpath/servers.list"|tail -1`
   if [ -z "$server" ] ; then
-    log "Server with IP $ip not found in $rpath/servers.list"
-    exit 1
+    # if it's name
+    ip=`cat "$rpath/servers.list" | cut -d'|' -f1,4 | grep "|${ip}$"`
+    server=`grep "^${ip}|" "$rpath/servers.list"|tail -1`
+    if [ -z "$server" ] ; then
+      log "Server with IP $ip not found in $rpath/servers.list"
+      exit 1
+    fi
   fi
   sIP=`echo $server | cut -d'|' -f1`
   skey=`echo $server | cut -d'|' -f2`
