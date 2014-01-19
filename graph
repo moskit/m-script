@@ -68,7 +68,8 @@ do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
   [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
-
+  [ "X$s_optarg" == "Xno" ] && unset $s_optname
+  
   for option in ${possible_options// /-} ; do
     [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
@@ -82,16 +83,12 @@ IFS=$IFS1
 
 found=false
 for option in $necessary_options ; do
-  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options} --${option}," && found=true
+  [ -z "$(eval echo \$$option)" ] && missing_options="$missing_options --${option}," && found=true
 done
 if $found ; then
   echo "Necessary options: ${missing_options/%,/} not found"
   exit 1
 fi
-
-for option in $possible_options ; do
-  eval "echo ${option}=\$${option}"
-done
 
 # "metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
 if [ "X$help" == "Xyes" ] ; then
@@ -292,9 +289,9 @@ dbname=`echo "$database" | tr '/' '_'`
 [ -z "$table" ] && table="sysdata" || dbname="${dbname}_${table}"
 [ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
   if [ -n "$as" ] ; then
-    name=$as
+    name=`echo "$as" | tr ',' '_' | tr ' ' '_'`
   else 
-    name=`echo $metric | tr ',' '_'`
+    name=`echo $metric | tr ',' '_' | tr ' ' '_'`
   fi
 
 if [ -n "$perpixel" ]; then
