@@ -263,10 +263,10 @@ if [ -z "$localip" ] ; then
   server=`grep "^${ip}|" "$rpath/servers.list"|tail -1`
   if [ -z "$server" ] ; then
     # if it's name
-    ip=`cat "$rpath/servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
-    server=`grep "^${ip}|" "$rpath/servers.list"|tail -1`
+    ipaddr=`cat "$rpath/servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+    server=`grep "^${ipaddr}|" "$rpath/servers.list"|tail -1`
     if [ -z "$server" ] ; then
-      log "Server with IP $ip not found in $rpath/servers.list"
+      log "Server $ip not found in $rpath/servers.list"
       exit 1
     fi
   fi
