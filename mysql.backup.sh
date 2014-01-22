@@ -19,11 +19,11 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 
-if [ "X${1}" == "X" ]; then
-  echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
+if [ -z "$1" ]; then
+  echo "Error: configuration file is not defined for $0" >> "$rpath/m_backup.error"
   exit 1
 else
-  source ${1}
+  source "$1"
 fi
 
 MYSQL="$(which mysql)"
@@ -32,42 +32,40 @@ CHOWN="$(which chown)"
 CHMOD="$(which chmod)"
 GZIP="$(which gzip)"
 
-[ "X$mysqluser" == "X" ] && echo "Error: database user not defined" >> ${rpath}/m_backup.error && exit 1
-[ "X$mysqlhost" == "X" ] && echo "Error: database host not defined" >> ${rpath}/m_backup.error && exit 1
-[ "X${localbackuppath}" != "X" ] && DEST="${localbackuppath}" || DEST=${rpath}
+[ -z "$mysqluser" ] && echo "Error: database user not defined" >> "$rpath/m_backup.error" && exit 1
+[ -z "$mysqlhost" ] && echo "Error: database host not defined" >> "$rpath/m_backup.error" && exit 1
+[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$rpath"
 
 MBD="$DEST/backup.tmp/mysql"
 
-if [ "X${2}" == "X" ]; then
+if [ -z "$2" ]; then
   archname="$(hostname -f).$(date +"%Y.%m.%d_%H.%M")"
 else
-  archname="${2}"
+  archname="$2"
 fi
 
 [ ! -d $MBD ] && install -d $MBD
-if [ "X$mysqlpass" == "X" ]; then
+if [ -z "$mysqlpass" ]; then
   PASS=""
 else
   PASS="-p$mysqlpass"
 fi
 
-if [ "X$mysqldblist" == "X" ]; then
-  mysqldblist="$($MYSQL -u $mysqluser -h $mysqlhost $PASS -Bse 'show databases')" 2>>${rpath}/m_backup.error
+if [ -z "$mysqldblist" ]; then
+  mysqldblist="$($MYSQL -u $mysqluser -h $mysqlhost $PASS -Bse 'show databases')" 2>>"$rpath/m_backup.error"
 fi
 
-for db in $mysqldblist
-do
-  skipdb=-1
-  if [ "$mysqldbexclude" != "" ]; then
-  	for i in $mysqldbexclude
-  	do
-  	    [ "$db" == "$i" ] && skipdb=1 || :
-  	done
+for db in $mysqldblist ; do
+  dumpdb=true
+  if [ -n "$mysqldbexclude" ]; then
+    for excl in $mysqldbexclude ; do
+      [ "$db" == "$excl" ] && dumpdb=false
+    done
   fi
     
-  if [ "$skipdb" == "-1" ]; then
-  	FILE="$MBD/$db.$archname.gz"
-    $MYSQLDUMP -u$mysqluser -h$mysqlhost $PASS $db 2>>${rpath}/m_backup.error | $GZIP -9 > $FILE 2>>${rpath}/m_backup.error && echo "mysql: $db dumped OK" >>${rpath}/m_backup.log
+  if $dumpdb ; then
+    FILE="$MBD/$db.$archname.gz"
+    $MYSQLDUMP -u$mysqluser -h$mysqlhost $PASS $db 2>>"$rpath/m_backup.error" | $GZIP > $FILE 2>>${rpath}/m_backup.error && echo "mysql: $db dumped OK" >>"$rpath/m_backup.log"
   fi
 done
 

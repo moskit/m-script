@@ -22,11 +22,11 @@ rpath=${xcommand%/*}
 
 source "$rpath/conf/mon.conf"
 
-if [ "X${1}" == "X" ]; then
-  echo "Error: configuration file is not defined for $0" >> ${rpath}/m_backup.error
+if [ -z "$1" ]; then
+  echo "Error: configuration file is not defined for $0" >> "$rpath/m_backup.error"
   exit 1
 else
-  source ${1}
+  source "$1"
 fi
 
 PSQL="$(which psql)"
@@ -36,45 +36,43 @@ CHMOD="$(which chmod)"
 GZIP="$(which gzip)"
 BZIP2="$(which bzip2)"
 
-if [ "X$pgsqlpass" != "X" ]; then
-  echo "*:*:*:*:${pgsqlpass}" > ~/.pgpass && chmod 600 ~/.pgpass
+if [ -n "$pgsqlpass" ]; then
+  echo "*:*:*:*:$pgsqlpass" > ~/.pgpass && chmod 600 ~/.pgpass
 fi
-[ "X$pgsqluser" == "X" ] && echo "Error: database user not defined" >> ${rpath}/m_backup.error && exit 1
-[ "X$pgsqlhost" == "X" ] && echo "Error: database host not defined" >> ${rpath}/m_backup.error && exit 1
-[ "X${localbackuppath}" != "X" ] && DEST="${localbackuppath}" || DEST=${rpath}
+[ -z "$pgsqluser" ] && echo "Error: database user not defined" >> "$rpath/m_backup.error" && exit 1
+[ -z "$pgsqlhost" ] && echo "Error: database host not defined" >> "$rpath/m_backup.error" && exit 1
+[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$rpath"
 
 MBD="$DEST/backup.tmp/pgsql"
 
-if [ "X${2}" == "X" ]; then
+if [ -z "$2" ]; then
   archname="$(hostname -f).$(date +"%Y.%m.%d_%H.%M")"
 else
-  archname="${2}"
+  archname="$2"
 fi
 
-[ ! -d $MBD ] && install -d $MBD
+[ -d "$MBD" ] || install -d "$MBD"
 rm -f "$M_TEMP/pgsql.backup.error" 2>/dev/null
 
 # Get all database list first
-if [ "X${pgdblist}" == "X" ]; then
+if [ -z "$pgdblist" ]; then
   pgdblist="$($PSQL -U $pgsqluser -h $pgsqlhost  -t --list -A | cut -d'|' -f1 | grep -vE "^postgres|^template" 2>"$M_TEMP/pgsql.backup.error")"
-  [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: Error getting database list:" >> ${rpath}/m_backup.log && cat "$M_TEMP/pgsql.backup.error" >> ${rpath}/m_backup.error && exit 1
+  [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: Error getting database list:" >> "$rpath/m_backup.log" && cat "$M_TEMP/pgsql.backup.error" >> "$rpath/m_backup.error" && exit 1
 fi
 
-for db in $pgdblist
-do
-  skipdb=-1
-  if [ "X$pgdbexclude" != "X" ]; then
-  	for i in $pgdbexclude
-  	do
-  	    [ "$db" == "$i" ] && skipdb=1 || :
+for db in $pgdblist ; do
+  dumpdb=true
+  if [ -n "$pgdbexclude" ]; then
+  	for excl in $pgdbexclude ; do
+  	    [ "$db" == "$excl" ] && dumpdb=false
   	done
   fi
     
-  if [ "$skipdb" == "-1" ]; then
+  if $dumpdb ; then
     rm -f "$M_TEMP/pgsql.backup.error" 2>/dev/null
   	FILE="$MBD/$db.$archname.gz"
     $PG_DUMP -U $pgsqluser -h $pgsqlhost $db 2>>"$M_TEMP/pgsql.backup.error" | $GZIP > $FILE 2>>"$M_TEMP/pgsql.backup.error"
-    [ -f "$M_TEMP/pgsql.backup.error" ] && (echo "pgsql: $db backup failed" >>${rpath}/m_backup.log && cat "$M_TEMP/pgsql.backup.error" >>${rpath}/m_backup.error) || echo "pgsql: $db dumped OK" >>${rpath}/m_backup.log
+    [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: $db backup failed" >> "$rpath/m_backup.log" && cat "$M_TEMP/pgsql.backup.error" >> "$rpath/m_backup.error" || echo "pgsql: $db dumped OK" >> "$rpath/m_backup.log"
   fi
 done
 
