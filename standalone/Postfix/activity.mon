@@ -1,0 +1,34 @@
+#!/bin/bash
+# Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+# lib/functions.sh reads conf/mon.conf
+source "$rpath/../../lib/functions.sh"
+source "$rpath/${rcomm%mon}conf"
+
+timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
+[ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=210
+
+log=`logreader --file=/var/log/mail.log --period="$period sec" --maxlines=10000 | grep ' postfix/' | grep ' status='`
+
+
+for id in `echo "$log" | grep postfix/qmgr|cut -d':' -f4|sort | uniq`; do from=`echo "$log" |grep postfix/qmgr|grep "$id: from" | cut -d'<' -f2| cut -d'>' -f1| head -1` ; to=`echo "$log" |grep "$id: to" | cut -d'<' -f2| cut -d'>' -f1| head -1 `; status=`echo "$log" |grep postfix/smtp| grep "$id: to" | awk -F'status=' '{print $2}'|tail -1|cut -d' ' -f1` ; echo "From: $from  To: $to  Status: $status" ; done
+
+
