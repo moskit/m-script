@@ -155,6 +155,8 @@ trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+declare -i result
+result=0
 
 for cld in $CLOUD ; do
 
@@ -230,6 +232,7 @@ for cld in $CLOUD ; do
           pid[$n]=$!
         else
           remote_exec
+          result+=$?
         fi
         n+=1
       done
@@ -252,4 +255,5 @@ for cld in $CLOUD ; do
 
 done
 
+exit $result
 

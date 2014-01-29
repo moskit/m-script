@@ -21,14 +21,45 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 # lib/functions.sh reads conf/mon.conf
 source "$rpath/../../lib/functions.sh"
-source "$rpath/${rcomm%mon}conf"
+source "$rpath/postfix.conf"
+
+declare -i deferred
+declare -i bounced
+declare -i sent
+deferred=0 ; bounced=0 ; sent=0
 
 timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
 [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=210
 
-log=`logreader --file=/var/log/mail.log --period="$period sec" --maxlines=10000 | grep ' postfix/' | grep ' status='`
+log=`$M_ROOT/helpers/logreader --file=/var/log/mail.log --period="$period sec" --maxlines=10000 | grep ' postfix/'`
 
+for id in `echo "$log" | grep postfix/qmgr|cut -d':' -f4|sort | uniq`; do
 
-for id in `echo "$log" | grep postfix/qmgr|cut -d':' -f4|sort | uniq`; do from=`echo "$log" |grep postfix/qmgr|grep "$id: from" | cut -d'<' -f2| cut -d'>' -f1| head -1` ; to=`echo "$log" |grep "$id: to" | cut -d'<' -f2| cut -d'>' -f1| head -1 `; status=`echo "$log" |grep postfix/smtp| grep "$id: to" | awk -F'status=' '{print $2}'|tail -1|cut -d' ' -f1` ; echo "From: $from  To: $to  Status: $status" ; done
+from=`echo "$log" |grep postfix/qmgr|grep "$id: from" | cut -d'<' -f2| cut -d'>' -f1| head -1`
+to=`echo "$log" |grep "$id: to" | cut -d'<' -f2| cut -d'>' -f1| head -1`
+status=`echo "$log" |grep postfix/smtp| grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}'|tail -1|cut -d' ' -f1`
+
+case $status in
+  deferred)
+    warn='<***>'
+    deferred+=1
+    ;;
+  bounced)
+    warn='<**>'
+    bounced+=1
+    ;;
+  sent)
+    warn='<OK>'
+    sent+=1
+    ;;
+  *)
+    warn='<*>'
+    ;;
+esac
+echo "${warn} From: $from  To: $to  Status: $status"
+
+done
+
+store_results "deferred|integer,bounced|integer,sent|integer"
 
 

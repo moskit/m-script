@@ -51,7 +51,7 @@ for deferred in `find $SPOOLDIR/deferred -type f` ; do
   fi
 done
 
-store_results q1|integer,q2|integer,q3|integer
+store_results "q1|integer,q2|integer,q3|integer"
 
 echo ${q1a[*]} > "$rpath/data/queue1"
 echo ${q2a[*]} > "$rpath/data/queue2"

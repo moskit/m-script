@@ -26,6 +26,10 @@ source "$M_ROOT/lib/functions.sh"
 
 timenow=`date -u +"%s"`
 
-for q in deferred active maildrop hold bounce corrupt saved ; do qtype=$q ; qlength=`find $SPOOLDIR/$q -type f | wc -l` ; store_results qtype|text,qlength|integer ; done
+for q in deferred active maildrop hold bounce corrupt saved ; do
+  qtype=$q
+  qlength=`find $SPOOLDIR/$q -type f | wc -l`
+  store_results "qtype|text,qlength|integer"
+done
 
 
