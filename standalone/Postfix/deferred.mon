@@ -21,11 +21,40 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 source "$rpath/postfix.conf"
+[ -z "$AGE1" ] && AGE1=3600
+[ -z "$AGE2" ] && AGE2=86400
+[ -z "$AGE3" ] && AGE3=432000
+declare -i q1 q2 q3
+q1=0 ; q2=0 ; q3=0
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
+SQLITE=`which sqlite3 2>/dev/null`
 
 timenow=`date -u +"%s"`
 
-for q in deferred active maildrop hold bounce corrupt saved ; do qtype=$q ; qlength=`find $SPOOLDIR/$q -type f | wc -l` ; store_results qtype|text,qlength|integer ; done
+declare -a q1a q2a q3a
+
+for deferred in `find $SPOOLDIR/deferred -type f` ; do
+  id=${deferred##*/}
+  create_time=$(expr "`cat $deferred | head -1`" : ".*create_time=\([0-9]*\)")
+  age=`expr $timenow - $create_time`
+
+  if [ $age -gt $AGE3 ]; then
+    q3+=1
+    q3a+=( $id )
+  elif [ $age -gt $AGE2 ]; then
+    q2+=1
+    q2a+=( $id )
+  elif [ $age -gt $AGE1 ]; then
+    q1+=1
+    q1a+=( $id )
+  fi
+done
+
+store_results q1|integer,q2|integer,q3|integer
+
+echo ${q1a[*]} > "$rpath/data/queue1"
+echo ${q2a[*]} > "$rpath/data/queue2"
+echo ${q3a[*]} > "$rpath/data/queue3"
 
 

@@ -157,7 +157,12 @@ run_meta() {
     return $res
   else
     [ -n "$use_color" ] && printf "\033[01;31m"
-    echo "Error parsing meta: $meta"
+    echo "Error parsing command: $meta"
+    if [ "X$metatype" == "Xlocal" -o "X$metatype" == "Xremote" -o "X$metatype" == "Xinclude" ]; then
+      echo "Looks like script is not defined"
+    else
+      echo "Looks like type is not defined"
+    fi
     [ -n "$use_color" ] && printf "\033[0m"
     [ -z "$dry" ] && proper_exit 1 162
   fi
