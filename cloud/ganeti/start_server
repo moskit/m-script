@@ -148,10 +148,11 @@ request() {
   iparams=`echo $iparams | sed "s|-H $hvparams ||"`
   if [ -z "$hvparams" ]; then
     hvparams="-H"
-    hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
-    [ -n "$vnc" ] && hvparams="-H ${hvdef}:${VNC}"
+    #hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
+    [ -n "$vnc" ] && hvparams="-H ${VNC}"
   else
-    [ -n "$vnc" ] && hvparams="-H ${hvparams},${VNC}"
+    hvparams="-H ${hvparams}"
+    [ -n "$vnc" ] && hvparams="${hvparams},${VNC}"
   fi
 
   sed -i "/^$ip/d" /etc/hosts
@@ -166,7 +167,7 @@ request() {
     $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
     res+=$?
     if [ $res -eq 0 ]; then
-      [[ "$hvparams" == "-H" ]] && hvparams="-H ${hvdef}:" || hvparams="${hvparams},"
+      [[ "$hvparams" == "-H" ]] && hvparams="-H " || hvparams="${hvparams},"
       hvparams="${hvparams}boot_order=cdrom,cdrom_image_path=\"$cdrom\""
       log "sending request with command: $GNTI startup $hvparams $name"
       $GNTI startup $hvparams $name >>"$LOG" 2>&1
@@ -334,21 +335,21 @@ if [ -z "$test" ]; then
     sleep 20
   else
     log "request returned status $reqexit"
-    proper_exit 1 324
+    proper_exit 1 337
   fi
   wait_ready $V 
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
       $ROUTE add -host $ip dev $idev
-      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 331
+      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 344
     else
       log "Instance started, but tap device doesn't exist"
-      proper_exit 1 334
+      proper_exit 1 347
     fi
   else
     log "Timeout while waiting for the server is up"
-    proper_exit 1 306
+    proper_exit 1 351
   fi
 
   # adding to the list
@@ -362,7 +363,7 @@ if [ -z "$test" ]; then
   fi
 else
   log "This was a test, not sending request, exiting"
-  proper_exit 0 352
+  proper_exit 0 365
 fi
 
 $SSHK -q -R "$ip" >/dev/null
@@ -390,8 +391,9 @@ else
       echo "curl not found, not testing connection to VNC"
     else
       [[ "$vnc" == "0.0.0.0" ]] && vnc="localhost"
+      vncport=`$GNTI info "$name" | grep 'Allocated network port' | cut -d':' -f2 | tr -d' '`
       for ((k=0; k<3; k++)); do
-        $CURL "${vnc}:11002"
+        $CURL "${vnc}:${vncport}"
         [ $? -eq 0 ] && exit_status=0 && break
         sleep 10
       done
@@ -419,5 +421,5 @@ if [ -n "$return" ]; then
   done
 fi
 
-proper_exit $exit_status 380
+proper_exit $exit_status 422
 
