@@ -26,7 +26,7 @@ IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
 [ -z "$ROUTE" ] && echo "route utility not found" && exit 1
 [ -z "$IPR2" ] && echo "ip utility not found" && exit 1
-possible_options="cloud region flavor cluster image name return verbose test"
+possible_options="cloud region flavor cluster image name return verbose test cdrom"
 necessary_options="cluster"
 
 LOG="$M_ROOT/logs/cloud.log"
@@ -62,6 +62,10 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -n "$verbose" ] && debug=1
+if [ -n "$cdrom" ]; then
+  [ "$cdrom" == "yes" ] && echo -e "\nOption --cdrom assumes path to ISO image:\n  --cdrom=/path/to/image" && exit 1
+  [ ! -e "$cdrom" ] && echo -e "\nFile $cdrom does not exist" && exit 1
+fi
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/clouds/${CLOUD}.conf, please" && exit 1
@@ -129,8 +133,17 @@ request() {
   iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6` --net 0:ip=$ip"
   sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
-  log "sending request with command: $GNTI add -n $node -o $ios $iparams $name"
-  $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1
+  if [ -z "$cdrom" ]; then
+    log "sending request with command: $GNTI add -n $node -o $ios $iparams $name"
+    $GNTI add -n $node -o $ios $iparams $name >>"$LOG" 2>&1
+  else
+    log "sending request with command: $GNTI add -n $node --no-start --no-install -o $ios $iparams $name"
+    $GNTI add -n $node --no-start --no-install -o $ios $iparams $name >>"$LOG" 2>&1
+    if [ $? -eq 0 ]; then
+      log "sending request with command: $GNTI add -n $node --no-start --no-install -o $ios $iparams $name"
+      $GNTI start -H boot_order=cdrom,cdrom_image_path="$cdrom" $name >>"$LOG" 2>&1
+    fi
+  fi
 }
 
 find_idev() {

@@ -228,7 +228,7 @@ for cld in $CLOUD ; do
         fi
         if [ "x$threaded" == "xyes" ]; then
           #res[$n]=$(remote_exec) 2>&1 </dev/null &
-          remote_exec > "$M_TEMP/$$.$n" 2>&1 &
+          (remote_exec > "$M_TEMP/$$.$n" 2>&1 || echo "ERROR") &
           pid[$n]=$!
         else
           remote_exec

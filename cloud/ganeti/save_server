@@ -81,7 +81,7 @@ done
 IFS=$IFS1
 if [ "X$help" == "Xyes" ] ; then
   cat <<"EOF"
-Usage: ${0##*/} <options> or ${0##*/} <options> [image name]
+Usage: save_server <options> or save_server <options> [image name]
 
 Image name can be defined as a long-option --imagename or as a positional parameter
 
