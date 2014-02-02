@@ -70,7 +70,7 @@ fi
 if [ -n "$vnc" ]; then
   [ "$vnc" == "yes" ] && log "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n" && vnc="0.0.0.0"
   [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && log "\nArgument for --vnc must be a valid IPv4 or IPv6 address\n" && exit 1
-  VNC="serial_console=false:vnc_bind_address=$vnc"
+  VNC="serial_console=false,vnc_bind_address=$vnc"
 fi
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
@@ -147,7 +147,7 @@ request() {
     hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
     [ -n "$vnc" ] && hvparams="-H ${hvdef}:${VNC}"
   else
-    [ -n "$vnc" ] && hvparams="-H ${hvparams}:${VNC}"
+    [ -n "$vnc" ] && hvparams="-H ${hvparams},${VNC}"
   fi
 
   sed -i "/^$ip/d" /etc/hosts
@@ -162,8 +162,8 @@ request() {
     $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
     res+=$?
     if [ $res -eq 0 ]; then
-      [[ "$hvparams" == "-H" ]] && hvparams="-H $hvdef"
-      hvparams="${hvparams}:boot_order=cdrom,cdrom_image_path=\"$cdrom\""
+      [[ "$hvparams" == "-H" ]] && hvparams="-H ${hvdef}:" || hvparams="${hvparams},"
+      hvparams="${hvparams}boot_order=cdrom,cdrom_image_path=\"$cdrom\""
       log "sending request with command: $GNTI startup $hvparams $name"
       $GNTI startup $hvparams $name >>"$LOG" 2>&1
       res+=$?
