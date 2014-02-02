@@ -62,21 +62,25 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -n "$verbose" ] && debug=1
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/clouds/${CLOUD}.conf, please" && exit 1
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 if [ -n "$cdrom" ]; then
   [ "$cdrom" == "yes" ] && echo -e "\nOption --cdrom assumes path to ISO image:\n  --cdrom=/path/to/image" && exit 1
   [ `echo "$cdrom" | cut -b1` != "/" ] && log "restoring absolute path required by Ganeti: $cdrom --> $PWD/$cdrom" && cdrom="$PWD/$cdrom"
   [ ! -e "$cdrom" ] && log "\nFile $cdrom does not exist" && exit 1
 fi
 if [ -n "$vnc" ]; then
-  [ "$vnc" == "yes" ] && log "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n" && vnc="0.0.0.0"
+  if [ "$vnc" == "yes" ]; then
+    log "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n"
+    vnc="0.0.0.0"
+  fi
   [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && log "\nArgument for --vnc must be a valid IPv4 or IPv6 address\n" && exit 1
   VNC="serial_console=false,vnc_bind_address=$vnc"
 fi
-source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
-[ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/clouds/${CLOUD}.conf, please" && exit 1
-source "$M_ROOT/lib/functions.sh"
-source "$M_ROOT/lib/cloud_functions.sh"
+
 exit_status=0
 
 M_TEMP="$M_TEMP/cloud/ganeti"
