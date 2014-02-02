@@ -70,7 +70,7 @@ fi
 if [ -n "$vnc" ]; then
   [ "$vnc" == "yes" ] && echo -e "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n" && vnc="0.0.0.0"
   [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && echo -e "\nArgument for --vnc must be a valid IPv4 or IPv6 address\n" && exit 1
-  VNC="-H serial_console=false -H vnc_bind_address=$vnc"
+  VNC="serial_console=false:vnc_bind_address=$vnc"
 fi
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
@@ -136,18 +136,29 @@ wait_ready() {
 request() {
   node="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f3`"
   ios="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f5`"
-  iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6` --net 0:ip=$ip"
+  iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6 | sed 's|--hypervisor-parameters|-H|'` --net 0:ip=$ip"
+  hvparams=`echo $iparams | awk -F'-H ' '{print $2}' | cut -d' ' -f1`
+  if [ -z "$hvparams" ]; then
+    hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
+    [ -n "$vnc" ] && hvparams="${hvdef}:${vnc}"
+  else
+    [ -n "$vnc" ] && hvparams="${hvparams}:${vnc}"
+  fi
+  iparams=`echo $iparams | sed "s|-H $hvparams ||"`
+  
   sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
+  
   if [ -z "$cdrom" ]; then
-    log "sending request with command: $GNTI add -n $node -o $ios $iparams $name"
-    $GNTI add -n $node -o $ios $iparams $VNC $name >>"$LOG" 2>&1
+    log "sending request with command: $GNTI add -n $node -o $ios $iparams $hvparams $name"
+    $GNTI add -n $node -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
   else
-    log "sending request with command: $GNTI add -n $node --no-start -o $ios $iparams $name"
-    $GNTI add -n $node --no-start --no-install -o $ios $iparams $name >>"$LOG" 2>&1
+    log "sending request with command: $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name"
+    $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
     if [ $? -eq 0 ]; then
-      log "sending request with command: $GNTI start -H boot_order=cdrom,cdrom_image_path="$cdrom" $name"
-      $GNTI startup -H boot_order=cdrom,cdrom_image_path="$cdrom" $VNC $name >>"$LOG" 2>&1
+      hvparams="${hvparams}:boot_order=cdrom,cdrom_image_path=\"$cdrom\""
+      log "sending request with command: $GNTI startup $hvparams $name"
+      $GNTI startup $hvparams $name >>"$LOG" 2>&1
     fi
   fi
 }
@@ -338,24 +349,43 @@ if [ -z "$test" ]; then
   fi
 else
   log "This was a test, not sending request, exiting"
-  proper_exit 0 310
+  proper_exit 0 341
 fi
 
 $SSHK -q -R "$ip" >/dev/null
-if [ -f "$thekey" ]; then
-  $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo 2>/dev/null
-  if [ $? -ne 0 ]; then
-    exit_status=2
-    log "($CLOUD) Unable to login to the server $ip using the key $thekey, trying again..."
-    for ((k=0; k<3; k++)); do
-      $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo >/dev/null
-      [ $? -eq 0 ] && exit_status=0 && break
-      sleep 10
-    done
+
+# if VM booted up from cdrom, no ssh server there
+if [ -z "$cdrom" ]; then
+  if [ -f "$thekey" ]; then
+    $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo 2>/dev/null
+    if [ $? -ne 0 ]; then
+      exit_status=2
+      log "($CLOUD) Unable to login to the server $ip using the key $thekey, trying again..."
+      for ((k=0; k<3; k++)); do
+        $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo >/dev/null
+        [ $? -eq 0 ] && exit_status=0 && break
+        sleep 10
+      done
+    fi
+  else
+    log "($CLOUD) WARNING: key not found, unable to test login!"
   fi
 else
-  log "($CLOUD) WARNING: key not found, unable to test login!"
+  if [ -n "$vnc" ]; then
+    CURL=`which curl 2>/dev/null`
+    if [ -z "$CURL" ]; then
+      echo "curl not found, not testing connection to VNC"
+    else
+      [[ "$vnc" == "0.0.0.0" ]] && vnc="localhost"
+      for ((k=0; k<3; k++)); do
+        $CURL "${vnc}:11002"
+        [ $? -eq 0 ] && exit_status=0 && break
+        sleep 10
+      done
+    fi
+  fi
 fi
+
 if [ -n "$return" ]; then
   echo
   for ret in `echo $return | tr ',' ' '`; do
@@ -376,5 +406,5 @@ if [ -n "$return" ]; then
   done
 fi
 
-proper_exit $exit_status 348
+proper_exit $exit_status 380
 
