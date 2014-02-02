@@ -65,11 +65,11 @@ fi
 if [ -n "$cdrom" ]; then
   [ "$cdrom" == "yes" ] && echo -e "\nOption --cdrom assumes path to ISO image:\n  --cdrom=/path/to/image" && exit 1
   [ `echo "$cdrom" | cut -b1` != "/" ] && log "restoring absolute path required by Ganeti: $cdrom --> $PWD/$cdrom" && cdrom="$PWD/$cdrom"
-  [ ! -e "$cdrom" ] && echo -e "\nFile $cdrom does not exist" && exit 1
+  [ ! -e "$cdrom" ] && log "\nFile $cdrom does not exist" && exit 1
 fi
 if [ -n "$vnc" ]; then
-  [ "$vnc" == "yes" ] && echo -e "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n" && vnc="0.0.0.0"
-  [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && echo -e "\nArgument for --vnc must be a valid IPv4 or IPv6 address\n" && exit 1
+  [ "$vnc" == "yes" ] && log "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n" && vnc="0.0.0.0"
+  [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && log "\nArgument for --vnc must be a valid IPv4 or IPv6 address\n" && exit 1
   VNC="serial_console=false:vnc_bind_address=$vnc"
 fi
 source "$M_ROOT/conf/mon.conf"
@@ -143,10 +143,11 @@ request() {
   hvparams=`echo $iparams | awk -F'-H ' '{print $2}' | cut -d' ' -f1`
   iparams=`echo $iparams | sed "s|-H $hvparams ||"`
   if [ -z "$hvparams" ]; then
+    hvparams="-H"
     hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
-    [ -n "$vnc" ] && hvparams="${hvdef}:${vnc}"
+    [ -n "$vnc" ] && hvparams="-H ${hvdef}:${VNC}"
   else
-    [ -n "$vnc" ] && hvparams="${hvparams}:${vnc}"
+    [ -n "$vnc" ] && hvparams="-H ${hvparams}:${VNC}"
   fi
 
   sed -i "/^$ip/d" /etc/hosts
@@ -161,6 +162,7 @@ request() {
     $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
     res+=$?
     if [ $res -eq 0 ]; then
+      [[ "$hvparams" == "-H" ]] && hvparams="-H $hvdef"
       hvparams="${hvparams}:boot_order=cdrom,cdrom_image_path=\"$cdrom\""
       log "sending request with command: $GNTI startup $hvparams $name"
       $GNTI startup $hvparams $name >>"$LOG" 2>&1
