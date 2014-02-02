@@ -134,33 +134,40 @@ wait_ready() {
 }
 
 request() {
+  local -i res
+  res=0
   node="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f3`"
   ios="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f5`"
   iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6 | sed 's|--hypervisor-parameters|-H|'` --net 0:ip=$ip"
+  [ -z "$node" -o -z "$ios" -o -z "$iparams" ] && log "error parsing parameters for cluster $cluster" && return 1
   hvparams=`echo $iparams | awk -F'-H ' '{print $2}' | cut -d' ' -f1`
+  iparams=`echo $iparams | sed "s|-H $hvparams ||"`
   if [ -z "$hvparams" ]; then
     hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
     [ -n "$vnc" ] && hvparams="${hvdef}:${vnc}"
   else
     [ -n "$vnc" ] && hvparams="${hvparams}:${vnc}"
   fi
-  iparams=`echo $iparams | sed "s|-H $hvparams ||"`
-  
+
   sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
   
   if [ -z "$cdrom" ]; then
     log "sending request with command: $GNTI add -n $node -o $ios $iparams $hvparams $name"
     $GNTI add -n $node -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
+    res=$?
   else
     log "sending request with command: $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name"
     $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
-    if [ $? -eq 0 ]; then
+    res+=$?
+    if [ $res -eq 0 ]; then
       hvparams="${hvparams}:boot_order=cdrom,cdrom_image_path=\"$cdrom\""
       log "sending request with command: $GNTI startup $hvparams $name"
       $GNTI startup $hvparams $name >>"$LOG" 2>&1
+      res+=$?
     fi
   fi
+  [ $res -ne 0 ] && return $res
 }
 
 find_idev() {
@@ -321,17 +328,17 @@ if [ -z "$test" ]; then
     sleep 20
   else
     log "request returned status $reqexit"
-    proper_exit 1 292
+    proper_exit 1 324
   fi
   wait_ready $V 
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
       $ROUTE add -host $ip dev $idev
-      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 299
+      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 331
     else
       log "Instance started, but tap device doesn't exist"
-      proper_exit 1 302
+      proper_exit 1 334
     fi
   else
     log "Timeout while waiting for the server is up"
@@ -349,7 +356,7 @@ if [ -z "$test" ]; then
   fi
 else
   log "This was a test, not sending request, exiting"
-  proper_exit 0 341
+  proper_exit 0 352
 fi
 
 $SSHK -q -R "$ip" >/dev/null
