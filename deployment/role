@@ -151,7 +151,7 @@ if [ -n "$role" ]; then
     echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
   fi
 else
-  echo "Role is not defined" && exit 1
+  [ "X$command1" != "Xcreate" ] && echo "Role is not defined" && exit 1
 fi
 
 if [ "X$command1" == "Xclone" ]; then 
