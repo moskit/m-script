@@ -116,7 +116,9 @@ find_broadcast() {
 save_details() {
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "$rpath/../ganeti.log"
-  echo "$ip|$thekey||$name|$cluster" >> "$M_ROOT/servers.list"
+  IAMACHILD=1 "$rpath"/show_servers --update_servers_list
+  sed -i "/^${name}|/d" "$M_ROOT/cloud/${CLOUD}.list"
+  grep "^${name}|" "$M_TEMP/show_servers.resp" >> "$M_ROOT/cloud/${CLOUD}.list"
   return 0
 }
 
@@ -356,7 +358,7 @@ if [ -z "$test" ]; then
   $GNTI add-tags $name "cluster:$cluster"
   if [ $? -eq 0 ]; then
     log "Tag cluster:$cluster added"
-    IAMACHILD=1 "$rpath"/show_servers --update_servers_list
+    save_details $verbose || true
   else
     log "Adding tag cluster:$cluster failed"
     echo -e "\nWas unable to add the cluster tag, so servers.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_servers_list\n"

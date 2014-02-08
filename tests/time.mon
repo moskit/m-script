@@ -27,7 +27,7 @@ source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/monitoring.log"
 
 [ -z "$CLUSTER" ] && CLUSTER="all"
-[ -x "/sbin/ntpd" ] && NTPD="/sbin/ntpd" || NTPD=`which ntpd 2>/dev/null`
+NTPD=`which ntpd 2>/dev/null`
 [ -z "$NTPD" ] && log "no NTP software found" && exit 0
 [ -n "$TEST" -o -n "$debug" -o -n "$verbose" ] && debug=true || debug=false
 

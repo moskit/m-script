@@ -13,6 +13,9 @@ NAME="Ganeti Cluster"
 # assigns them automatically to each new instance.
 GANETI_NETWORK=10.1.1.0
 
+# API URL
+GANETI_APIURL=localhost
+
 # Default gateway for Ganeti instances. Defaults to the first IP of the network.
 GANETI_GATEWAY=
 

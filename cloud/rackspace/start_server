@@ -84,8 +84,8 @@ save_details() {
   log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/\\"id\\"\||\/\\"imageId\\"\||\/\\"flavorId\\"\||\/\\"adminPass\\"\||\/\\"addresses\\"\/\\"public\\"|\/\\"addresses\\"\/\\"private\\"" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
-  cat "$M_TEMP/${rcommand}.resp" | grep -vE "/\"progress\"|/\"status\"|/\"adminPass\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$rpath/../rackspace.list"
-  chmod 600 "$rpath/../rackspace.log" "$rpath/../rackspace.list"
+  cat "$M_TEMP/${rcommand}.resp" | grep -vE "/\"progress\"|/\"status\"|/\"adminPass\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$rpath/../${CLOUD}.list"
+  chmod 600 "$rpath/../rackspace.log" "$rpath/../${CLOUD}.list"
   if [ "X$NETWORK" == "Xexternal" ] ; then
     slip=`grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
   else

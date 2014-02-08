@@ -181,7 +181,12 @@ stop)
     pid=`cat "$pidfile"|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
     rm -f $pidfile
-    kill -15 $pid && echo "done" && echo "Monitorload daemon stopped" >> "$rpath/monitoring.log"
+    kill -15 $pid
+    sleep 1
+    for ((i=0; i<5; i++)); do
+      [ ! -d /proc/$pid ] && rm -f $pidfile && echo "done" && echo "Monitorload daemon stopped" >> "$rpath/monitoring.log" && break || sleep 3
+    done
+    [ -d /proc/$pid ] && kill -6 $pid && rm -f $pidfile && echo "done" && echo "Monitorload server has been killed brutally" >> "$rpath/monitoring.log"
   else
     echo "$pidfile not found!"
   fi
@@ -195,11 +200,12 @@ stop)
       [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
     done
     [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server has been killed brutally" >> "$rpath/monitoring.log"
+  else
+    echo "$mgpidfile not found!"
   fi
   ;;
 restart)
   $0 stop
-  sleep 3
   $0 start
   ;;
 status)

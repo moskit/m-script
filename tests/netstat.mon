@@ -48,11 +48,11 @@ for st in ${dat_arr[*]} ; do
   resline="${resline}${st%%=*}|integer,"
   eval $st
 done
+IFS=$IFS1
 [ "X$1" == "XSQL" ] && store_results "$resline"
 
 echo -e "\nNetwork stats\n-------------\n\n"
 
-IFS=$IFS1
 IFS1=$IFS ; IFS='
 '
 for l3 in `echo "${config[*]}" | grep -v ^$ | cut -d'|' -f1,3,4,5 | grep \|` ; do
