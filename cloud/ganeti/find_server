@@ -77,15 +77,15 @@ list_the_cluster() {
     for ip in `echo "$ips"` ; do
       if [ -n "$ip" ]; then
         serverdetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_server_details --cloud=$CLOUD --ip=$ip 2>/dev/null`
-        name="`echo "$serverdetails" | grep '"Instance name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+        name="`echo "$serverdetails" | grep 'name"|' | cut -s -d'|' -f2 | tr -d '"'`"
         if [ $? -eq 0 ]; then
-          if [ -z "`echo "$serverdetails" | grep '"UUID"|'`" ]; then
+          if [ -z "`echo "$serverdetails" | grep -i '"UUID"|'`" ]; then
             sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
-            sed -i "/|\"${ip}\"|/d" "$M_ROOT/cloud/${CLOUD}.list"
+            sed -i "/|${ip}|/d" "$M_ROOT/cloud/${CLOUD}.list"
           else
-            grep -q "|\"${ip}\"|" "$M_ROOT/cloud/${CLOUD}.list" || $GNTI list --separator='|' --no-headers -o "name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,tags,uuid,os,ctime" "$name" >> "$M_ROOT/cloud/${CLOUD}.list"
+            grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" || $GNTI list --separator='|' --no-headers -o "name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,tags,uuid,os,ctime" "$name" >> "$M_ROOT/cloud/${CLOUD}.list"
             if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
-              cluster="`echo "$serverdetails" | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -s -d'|' -f2 | tr -d '"'`"
+              cluster="`echo "$serverdetails" | grep "\"tags\"/" | grep "\"${CLUSTER_TAG}:" | cut -s -d'|' -f2 | tr -d '"' | cut -s -d':' -f2`"
               key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
               echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
             fi
@@ -94,7 +94,7 @@ list_the_cluster() {
       fi
     done
   fi
-  cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$"
+  cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|cluster:${cluster}\||\|cluster:${cluster}$"
 }
 
 found=0
@@ -163,10 +163,10 @@ if [ -z "$name" ]; then
   if [ -z "$ip" ]; then
     if [ -z "$cluster" ]; then
       echo "One of ip, name or cluster is required to identify the server"
-      proper_exit 1 204
+      proper_exit 1 166
     else
       list_the_cluster
-      proper_exit 0 207
+      proper_exit 0 169
     fi
   else
     # ip must be present in servers.list, so it's simple
@@ -177,7 +177,7 @@ if [ -z "$name" ]; then
   fi
 
 fi
-[ -z "$name" ] && echo "Unable to identify this server" && proper_exit 1 227
+[ -z "$name" ] && echo "Unable to identify this server" && proper_exit 1 180
 
 req="/$V/instances/$name"
 
@@ -188,7 +188,7 @@ request() {
 request
 
 if [ `grep -c ^0\/\/\"code\"\|404$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
-  echo "Server $name does not exist" && proper_exit 1 245
+  echo "Server $name does not exist" && proper_exit 1 191
 fi
 
 if [ -n "$updatelist" ]; then
@@ -208,5 +208,5 @@ else
   cat "$M_TEMP/${rcommand}.resp"
 fi
 
-proper_exit 0 265
+proper_exit 0 211
 

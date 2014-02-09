@@ -153,10 +153,10 @@ get_hostname() {
     sname=`$HOSTNAME`
   else
     KEY=`$M_ROOT/helpers/find_key server $1`
-    sname=`$SSH -i "$KEY" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
+    [ -f "$KEY" ] && sname=`$SSH -i "$KEY" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
   fi
   [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname
-  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $1" && return 1
+  [ -z "$sname" ] && log "Unable to retrieve hostname of the server with IP $1" && return 1
   return 0
 }
 

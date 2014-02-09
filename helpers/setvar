@@ -104,6 +104,10 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
       echo -n "Found in $conf ...   "
       set_var || exit 1
     done
+    for conf in `grep -l "${s_var}=" "$M_ROOT/conf/clouds"/*.conf` ; do
+      echo -n "Found in $conf ...   "
+      set_var || exit 1
+    done
     for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
       echo -n "Found in $conf ...   "
       set_var || exit 1

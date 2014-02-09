@@ -27,11 +27,11 @@ rpath=${0%/*}
 source "$M_ROOT/lib/functions.sh"
 
 cleanup() {
-rm -f ${M_TEMP}/trafeaters.report ${M_TEMP}/ips.* ${M_TEMP}/ipt.in ${M_TEMP}/ipt.out $M_TEMP/nmap.sp.* 2>/dev/null
+rm -f "$M_TEMP"/trafeaters.report "$M_TEMP"/ips.* "$M_TEMP"/ipt.in "$M_TEMP"/ipt.out $M_TEMP/nmap.sp.* 2>/dev/null
 $IPT -F M_ACCT_IN
 $IPT -F M_ACCT_OUT
-sh ${M_TEMP}/cleanup
-rm -f ${M_TEMP}/cleanup
+sh "$M_TEMP"/cleanup
+rm -f "$M_TEMP"/cleanup
 $IPT -X M_ACCT_IN
 $IPT -X M_ACCT_OUT
 unset threshold NMAP NETSTAT MAILX possible_options necessary_options s_option s_optname s_optarg found s_param option missing_options ip if M_TEMP IFCFG IPT local_networks forwarded_only i ipt trin trout rpath
@@ -125,7 +125,7 @@ if [ "X$forwarded_only" == "Xyes" ] ; then
     done
   else
     [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
-    for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}'` ; do
+    for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}' | tr -d ':'` ; do
       $IPT -A FORWARD -i $i -j M_ACCT_OUT && echo "$IPT -D FORWARD -i $i -j M_ACCT_OUT" >> $M_TEMP/cleanup
       $IPT -A FORWARD -o $i -j M_ACCT_IN && echo "$IPT -D FORWARD -o $i -j M_ACCT_IN" >> $M_TEMP/cleanup
     done
@@ -139,7 +139,7 @@ else
     done
   else
     [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
-    for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}'` ; do
+    for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}' | tr -d ':'` ; do
       $IPT -A INPUT -i $i -j M_ACCT_IN && echo "$IPT -D INPUT -i $i -j M_ACCT_IN" >> $M_TEMP/cleanup
       $IPT -A OUTPUT -o $i -j M_ACCT_OUT && echo "$IPT -D OUTPUT -o $i -j M_ACCT_OUT" >> $M_TEMP/cleanup
     done
@@ -153,14 +153,9 @@ if [ "X$local_networks" == "Xyes" ] ; then
   fi
   if [ -n "$if" ] ; then
     [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
-    for ifc in $if ; do
-      i=`$IFCFG $ifc | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
-      $NMAP -n -sP ${i%.*}.0/${class} -oG $M_TEMP/nmap.sp.${i} > /dev/null
-    done
   fi
-  cat $M_TEMP/nmap.sp.* | grep 'Status: Up' | grep ^Host | awk '{print $2}' > $M_TEMP/ips.list
 else
-  $NETSTAT -tuapn | grep EST | grep -v '127.0.0.1' | awk '{print $5}' | awk -F':' '{print $1}' | sort | uniq > $M_TEMP/ips.list
+  $NETSTAT -tuapn | grep EST | grep -v '127.0.0.1' | awk '{print $5}' | awk -F':' '{print $1}' | sort | uniq > "$M_TEMP/ips.list"
 fi
 
 IFS1=$IFS
@@ -168,33 +163,30 @@ IFS='
 '
 
 for ipt in `cat $M_TEMP/ips.list`; do
-  $IPT -I M_ACCT_IN -d $ipt
-  $IPT -I M_ACCT_OUT -s $ipt
+  $IPT -I M_ACCT_IN -s $ipt
+  $IPT -I M_ACCT_OUT -d $ipt
 done
 sleep 100
-$IPT -L M_ACCT_OUT -x -n -v | tail -n +2 | awk '{print $7" "$2}' > ${M_TEMP}/ipt.out
-$IPT -L M_ACCT_IN -x -n -v | tail -n +2 | awk '{print $8" "$2}' > ${M_TEMP}/ipt.in
+$IPT -L M_ACCT_OUT -x -n -v | tail -n +2 | awk '{print $8" "$2}' > "$M_TEMP"/ipt.out
+$IPT -L M_ACCT_IN -x -n -v | tail -n +2 | awk '{print $7" "$2}' > "$M_TEMP"/ipt.in
 
-for ip in `cat ${M_TEMP}/ips.list`; do
-  trin=`cat ${M_TEMP}/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve 2 "$trin / 800000"`
-  trout=`cat ${M_TEMP}/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve 2 "$trout / 800000"`
+for ip in `cat "$M_TEMP"/ips.list`; do
+  trin=`cat "$M_TEMP"/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve 2 "$trin / 102400"`
+  trout=`cat "$M_TEMP"/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve 2 "$trout / 102400"`
   if [[ `echo "( $trin - $threshold ) > 0" | bc` -eq 1  ]] || [[ `echo "( $trout - $threshold ) > 0" | bc` -eq 1 ]]; then
-    echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" >> ${M_TEMP}/trafeaters.report
-#    $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> ${M_TEMP}/trafeaters.report 2>&1
+    echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" >> "$M_TEMP"/trafeaters.report
+#    $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> "$M_TEMP"/trafeaters.report 2>&1
   fi
 done
 
 
-if [ `cat ${M_TEMP}/trafeaters.report 2>/dev/null | wc -l` -gt 0 ] ; then
-  cat ${M_TEMP}/trafeaters.report >> ${rpath}/../monitoring.log
-  for MLINE in `cat ${rpath}/../conf/mail.alert.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
-  do
-    cat ${M_TEMP}/trafeaters.report | ${MAILX} -s "Server $(hostname -f) traffic consumers" ${MLINE}
-  done
+if [ `cat "$M_TEMP"/trafeaters.report 2>/dev/null | wc -l` -gt 0 ] ; then
+  cat "$M_TEMP"/trafeaters.report
 else
-  echo "No traffic eaters at the moment" >> ${rpath}/../monitoring.log
+  echo "No traffic eaters at the moment"
 fi
 
 cleanup
 
 IFS=$IFS1
+

@@ -134,8 +134,8 @@ for cld in $cloud ; do
     if [ -n "$names" ] ; then
       find_name $IP
       if [ -z "$rname" ] ; then
-        KEY=`find server $IP`
-        [ -n "$SSH" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
+        KEY=`find_key server $IP`
+        [ -n "$SSH" ] && [ -f "$KEY" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
       fi
       [ -n "$rname" ] && IP=$rname
     fi
