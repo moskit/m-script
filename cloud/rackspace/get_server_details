@@ -108,7 +108,7 @@ request() {
 
 [ -f "$M_TEMP/auth.resp" ] || "$rpath"/auth
 request
-if [ `grep -c ^0\/\"unauthorized\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
+if [ `grep -c \/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
   "$rpath"/auth
   request
 fi

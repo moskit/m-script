@@ -190,18 +190,20 @@ stop)
   else
     echo "$pidfile not found!"
   fi
-  if [ -f $mgpidfile ] ; then
-    echo "3" > "$rpath/connections.mon.lock"
-    pid=`cat $mgpidfile|tail -1`
-    printf "Stopping web interface (pid $pid)...       "
-    kill -15 $pid
-    sleep 3
-    for ((i=0; i<5; i++)); do
-      [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
-    done
-    [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server has been killed brutally" >> "$rpath/monitoring.log"
-  else
-    echo "$mgpidfile not found!"
+  if [ "X$MONGOOSE" == "X1" ] ; then
+    if [ -f $mgpidfile ] ; then
+      echo "3" > "$rpath/connections.mon.lock"
+      pid=`cat $mgpidfile|tail -1`
+      printf "Stopping web interface (pid $pid)...       "
+      kill -15 $pid
+      sleep 3
+      for ((i=0; i<5; i++)); do
+        [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
+      done
+      [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server has been killed brutally" >> "$rpath/monitoring.log"
+    else
+      echo "$mgpidfile not found!"
+    fi
   fi
   ;;
 restart)
