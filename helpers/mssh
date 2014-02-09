@@ -34,6 +34,12 @@ nextkey=false
 host="$1"
 shift
 
+if [ "x$nosudo" == "xyes" ]; then
+  command="\(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; $@\)"
+else
+  command="\(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; sudo $@\)"
+fi
+
 # if target is IP
 KEY=`grep ^${host}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
 # if target is hostname
@@ -79,7 +85,7 @@ KEY="$M_ROOT/keys/$KEY"
 
 if [ -n "$KEY" ] ; then
   if [ -f "$KEY" ]; then
-    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$SSH_REMOTE_USER@$host" $@
+    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$SSH_REMOTE_USER@$host" $command
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -90,7 +96,7 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY1" ]; then
-    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$SSH_REMOTE_USER@$host" $@
+    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$SSH_REMOTE_USER@$host" $command
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -99,7 +105,7 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY2" ]; then
-    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$REMOTE_USER@$host" $@
+    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$REMOTE_USER@$host" $command
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
