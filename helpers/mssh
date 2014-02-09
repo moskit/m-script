@@ -31,28 +31,31 @@ fi
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 nextkey=false
 
-# if target is IP
-KEY=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
-# if target is hostname
-[ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${1}$ | cut -d'|' -f1`
+host="$1"
+shift
 
-cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-[ -z "$cluster" ] && cluster=`grep \|${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+# if target is IP
+KEY=`grep ^${host}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
+# if target is hostname
+[ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
+
+cluster=`grep ^${host}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+[ -z "$cluster" ] && cluster=`grep \|${host}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f13`
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
     
 if [ -n "$KEY" ]; then
-if [ ! -f "$M_ROOT/keys/$KEY" ]; then
-  KEY1="${KEY}.pem"
-  if [ -f "$M_ROOT/keys/$KEY1" ]; then
-    KEY=$KEY1
-  else
-    KEY1="${KEY%.pem}"
+  if [ ! -f "$M_ROOT/keys/$KEY" ]; then
+    KEY1="${KEY}.pem"
+    if [ -f "$M_ROOT/keys/$KEY1" ]; then
+      KEY=$KEY1
+    else
+      KEY1="${KEY%.pem}"
+    fi
+    [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
   fi
-  [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
-fi
 else
-  echo "Server $1 not found" >&2
+  echo "Server $host not found in servers.list" >&2
 fi
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then
@@ -76,7 +79,7 @@ KEY="$M_ROOT/keys/$KEY"
 
 if [ -n "$KEY" ] ; then
   if [ -f "$KEY" ]; then
-    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$SSH_REMOTE_USER@$@"
+    $SSH $TIMEOUT -i "$KEY" $SSHPORT "$SSH_REMOTE_USER@$host" $@
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -87,7 +90,7 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY1" ]; then
-    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$SSH_REMOTE_USER@$@"
+    $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$SSH_REMOTE_USER@$host" $@
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true
@@ -96,7 +99,7 @@ fi
 if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY2" ]; then
-    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$REMOTE_USER@$@"
+    $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$REMOTE_USER@$host" $@
     [ $? -eq 255 ] && nextkey=true || exit 0
   else
     nextkey=true

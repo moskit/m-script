@@ -69,12 +69,4 @@ FORCE_LIST_UPDATE_AFTER=1800
 # tag name to define cluster (default: "cluster")
 # CLUSTER_TAG=
 
-# Whether /etc/profile should be sourced via $M_ROOT/m.rc (useful for remote
-# operations only)
-# SSH defines some environment, but it's not /etc/profile, and sometimes it is
-# not enough (depends on the system). Note that sourcing /etc/profile adds some
-# time to each remote operation.
-# Another way to achieve this is to add the line 'source /etc/profile' to
-# $M_ROOT/.msh.env in every server.
-ALWAYS_LOGIN_SHELL=false
 
