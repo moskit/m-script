@@ -291,7 +291,8 @@ date_header() {
 get_lock() {
   # removing stale lock file
   [ -z "$LOG" ] && LOG="$M_ROOT/monitoring.log"
-  [ -n "$MAXLOCK" ] || MAXLOCK=60
+  [ -z "$MAXLOCK" ] && MAXLOCK=60
+  [ -z "$rcommand" ] && rcommand="${BASH_SOURCE[0]##*/}"
   lockfile=`find "$rpath" -maxdepth 1 -name "${rcommand}.lock" -mmin +$MAXLOCK`
   if [ -n "$lockfile" ] ; then
     log "*** Lock file is older than $MAXLOCK minutes, removing"
