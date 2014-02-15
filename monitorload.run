@@ -180,7 +180,6 @@ stop)
     echo "3" > "$rpath/services.mon.lock"
     pid=`cat "$pidfile"|tail -1`
     printf "Stopping monitorload (pid $pid)...      "
-    rm -f $pidfile
     kill -15 $pid
     sleep 1
     for ((i=0; i<5; i++)); do

@@ -264,7 +264,7 @@ try_auth() {
 # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
 # if no setting, force update is disabled
 if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
-  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/${rcommand}.resp || echo 0` || echo 86400)
+  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/${rcommand}.resp 2>/dev/null || echo 0` || echo 86400)
   [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && log "$M_TEMP/${rcommand}.resp is older than $FORCE_LIST_UPDATE_AFTER sec, update forced" && unset noupdate
 fi
 if [ -z "$noupdate" ] ; then

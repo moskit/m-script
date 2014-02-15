@@ -22,9 +22,9 @@ rpath=${0%/*}
 source "$M_ROOT/conf/mon.conf" || exit 99
 source "${0%.mon}.conf" || exit 99
      
-portstcp=( `cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
-portsudp=( `cat "$M_ROOT/ports.udp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | cut -d'|' -f1` )
-sockets=( `cat "$M_ROOT/sockets.list" 2>/dev/null| grep -v '^#' | grep -v '^[[:space:]]*#'` )
+portstcp=( `cat "$M_ROOT/ports.tcp.list" 2>/dev/null | cut -d'|' -f1` )
+portsudp=( `cat "$M_ROOT/ports.udp.list" 2>/dev/null | cut -d'|' -f1` )
+sockets=( `cat "$M_ROOT/sockets.list" 2>/dev/null` )
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat' || NETSTATCMD=`which netstat 2>/dev/null`
 
 if [ `uname` == "Linux" ]; then
@@ -76,12 +76,7 @@ chk_portexclusions() {
   done
 }
 
-echo
-echo "Listening ports and sockets:"
-echo "----------------------------"
-echo
-echo "  Name              Listening on                            Connections"
-echo
+echo -e "\nListening ports and sockets:\n----------------------------\n\n  Name              Listening on                            Connections\n"
 
 ### Two modes are available: with per socket monitor enabled or disabled.
 ### By default it is enabled. But on loaded servers with a lot of waiting and/or
@@ -246,8 +241,8 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
   fi
 fi
 
-echo "  Name              Socket file"
-echo
+echo -e "  Name              Socket file\n"
+
 $SOCKCONNS | grep STREAM > "$M_TEMP/sockets.$$"
 
 while read LINE
@@ -294,12 +289,8 @@ fi
 rm -f "$M_TEMP"/ports.*.$$ "$M_TEMP"/sockets.$$
 # End of netstat test
 
-echo
-echo "Connections per protocol:"
-echo "-------------------------"
-echo
-echo "  Protocol               Connections"
-echo
+echo -e "\nConnections per protocol:\n-------------------------\n\n  Protocol               Connections\n"
+
 cat /proc/net/protocols | tail -n +2 | awk '{printf "%-24s %s\n", $1, $3}'
 
 # Connectivity test

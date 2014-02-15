@@ -18,7 +18,7 @@
 ### This script is monitoring net traffic between the machine it is running on
 ### and other hosts in the same network
  
-class=24  # means CIDR notation ( /${class} )
+class=24  # CIDR notation ( /${class} )
 
 rcommand=${0##*/}
 rpath=${0%/*}
@@ -43,16 +43,16 @@ NMAP=`which nmap 2>/dev/null`
 
 NETSTAT=`which netstat 2>/dev/null`
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
-[ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
+[ -z "$IPT" ] && echo "No iptables found" && exit 1
 MAILX=`which mail 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
 possible_options="ip if threshold local_networks forwarded_only"
 necessary_options=""
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
-for s_option in "${@}"
+[ -z "$@" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
+for s_option in "$@"
 do
   found=0
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
@@ -66,13 +66,13 @@ do
     exit 1
     ;;
   *)
-    s_param=${s_option}
+    s_param=$s_option
     s_optname=''
     s_optarg=''
     ;;
   esac
   for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg" && found=1
   done
   [ "X$s_option" == "X$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
@@ -87,7 +87,7 @@ for option in `echo $necessary_options | sed 's/,//g'`; do
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
-  echo "Necessary options: ${missing_options} not found"
+  echo "Necessary options: $missing_options not found"
   exit 1
 fi
 
@@ -124,7 +124,7 @@ if [ "X$forwarded_only" == "Xyes" ] ; then
       $IPT -A FORWARD -o $i -j M_ACCT_IN && echo "$IPT -D FORWARD -o $i -j M_ACCT_IN" >> $M_TEMP/cleanup
     done
   else
-    [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+    [ -z "$IFCFG" ] && echo "No ifconfig found" && exit 1
     for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}' | tr -d ':'` ; do
       $IPT -A FORWARD -i $i -j M_ACCT_OUT && echo "$IPT -D FORWARD -i $i -j M_ACCT_OUT" >> $M_TEMP/cleanup
       $IPT -A FORWARD -o $i -j M_ACCT_IN && echo "$IPT -D FORWARD -o $i -j M_ACCT_IN" >> $M_TEMP/cleanup
@@ -166,13 +166,13 @@ for ipt in `cat $M_TEMP/ips.list`; do
   $IPT -I M_ACCT_IN -s $ipt
   $IPT -I M_ACCT_OUT -d $ipt
 done
-sleep 100
+sleep 10
 $IPT -L M_ACCT_OUT -x -n -v | tail -n +2 | awk '{print $8" "$2}' > "$M_TEMP"/ipt.out
 $IPT -L M_ACCT_IN -x -n -v | tail -n +2 | awk '{print $7" "$2}' > "$M_TEMP"/ipt.in
 
 for ip in `cat "$M_TEMP"/ips.list`; do
-  trin=`cat "$M_TEMP"/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve 2 "$trin / 102400"`
-  trout=`cat "$M_TEMP"/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve 2 "$trout / 102400"`
+  trin=`cat "$M_TEMP"/ipt.in|grep "^$ip "`; trin="${trin#* }"; trin=`solve 2 "$trin / 10240"`
+  trout=`cat "$M_TEMP"/ipt.out|grep "^$ip "`; trout="${trout#* }"; trout=`solve 2 "$trout / 10240"`
   if [[ `echo "( $trin - $threshold ) > 0" | bc` -eq 1  ]] || [[ `echo "( $trout - $threshold ) > 0" | bc` -eq 1 ]]; then
     echo "$ip   $trin Kbytes/sec  $trout Kbytes/sec" >> "$M_TEMP"/trafeaters.report
 #    $NMAP $ip | grep -v ^Nmap | grep -v ^Starting | grep -v ^Interestin | grep -v ^Not | grep -v ^MAC | grep -v '^135/' | grep -v '^139/' | grep -v '^445/' >> "$M_TEMP"/trafeaters.report 2>&1
@@ -183,7 +183,7 @@ done
 if [ `cat "$M_TEMP"/trafeaters.report 2>/dev/null | wc -l` -gt 0 ] ; then
   cat "$M_TEMP"/trafeaters.report
 else
-  echo "No traffic eaters at the moment"
+  log "No traffic eaters at the moment"
 fi
 
 cleanup

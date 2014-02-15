@@ -18,8 +18,6 @@ currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 
 HOSTNAME=`which hostname 2>/dev/null`
-SQLBIN=`which sqlite3 2>/dev/null`
-#SAR=`which sar 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}

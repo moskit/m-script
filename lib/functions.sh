@@ -288,3 +288,32 @@ date_header() {
   echo -e "`date`\n------------------------------\n"
 }
 
+get_lock() {
+  # removing stale lock file
+  [ -z "$LOG" ] && LOG="$M_ROOT/monitoring.log"
+  [ -n "$MAXLOCK" ] || MAXLOCK=60
+  lockfile=`find "$rpath" -maxdepth 1 -name "${rcommand}.lock" -mmin +$MAXLOCK`
+  if [ -n "$lockfile" ] ; then
+    log "*** Lock file is older than $MAXLOCK minutes, removing"
+    rm -f "$lockfile"
+  fi
+  sleep $((RANDOM%5))
+  for ((i=1; i<=10; i++))
+  do
+    if [ -e "$rpath/${rcommand}.lock" ] ; then
+      sleep $((RANDOM%10))
+      continue
+    else
+      log "lock acquired"
+      break
+    fi
+  done
+  if [ -f "$rpath/${rcommand}.lock" ] ; then
+    log "giving up acquiring the lock..."
+    exit 1
+  fi
+
+  touch "$rpath/${rcommand}.lock"
+}
+
+
