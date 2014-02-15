@@ -1,7 +1,7 @@
 #!/bin/bash
 
 rpath=$(readlink -m "$BASH_SOURCE")
-rcomm=${rpath##*/}
+rcommand=${rpath##*/}
 rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/                                              ^^^^^ adjust this
@@ -9,18 +9,42 @@ source "$M_ROOT/lib/functions.sh"  # conf/mon.conf is sourced there
 conf="{rpath}/${rcomm%.mon}.conf"
 [ -f "$conf" ] && source "$conf"
 
-### time since the last run, if needed
+# LOG=<path/to/log/file>  # defaults to $M_ROOT/monitoring.log
+
+### locking is recommended if you are not 100% sure that your monitor won't hang
+### or take longer than FREQ
+# get_lock
+
+### time since the last run, if needed (timeshift is the average time needed
+### for main process execution, it depends on the system speed and RUNDELAY
+### setting
 # timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
-# [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift))
-# [ -z $period -a -n "$FREQ" ] && period=$FREQ
-# [ -z $period ] && period=200
+# [ -n "$FREQ" -a -n "$timeshift" ] && interval=$(($FREQ + $timeshift))
+# [ -z $interval -a -n "$FREQ" ] && interval=$FREQ
+
+### in case this monitor needs longer interval between runs
+### interval can be anything that the 'date' utility can recognize
+### (see 'man date' section DATE STRING)
+# check_interval "5 min"
+
+### in case you use check_period above and you need time since the last run:
+# interval=`cat "$rpath/interval.tmp"`
 
 ### Here goes the monitor's logic
 
 ### results are in e.g. var1 (integer) and var2 (real)
-check_results var1|integer,var2|real
-store_results var1|integer,var2|real
+# check_results var1|integer,var2|real # compares results with threshold in
+                                       # $conf (see above) which should be of
+                                       # form var1_1=<level1 threshold>
+                                       # 3 levels are supported, from var1_1 to
+                                       # var1_3
+                                       
+# store_results var1|integer,var2|real # stores results in database if needed
+                                       # (it is not necessary but it's good
+                                       # to have historic data, generate graphs
+                                       # and so on)
 
-# unset period timeshift / and other vars
+# unset period timeshift # and other vars
+
 exit 0
 

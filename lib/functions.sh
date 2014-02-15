@@ -313,8 +313,11 @@ get_lock() {
     log "giving up acquiring the lock..."
     exit 1
   fi
-
   touch "$rpath/${rcommand}.lock"
+}
+
+release_lock() {
+  rm "$rpath/${rcommand}.lock"
 }
 
 
