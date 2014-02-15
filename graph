@@ -133,9 +133,11 @@ Options:
 --as=<name>             New name for metric. Especially useful if metric is an
                         ariphmetic expression like:
                         --metric=\"\(metric1+metric2\)\" --as=MyMetric
+                        With multiple metrics multiple --as can be used, just
+                        list them in the same order, separated by comma.
                         
---perpixel              Renders one value per pixel along X-Axis thus saving
-                        CPU cycles
+--perpixel              Renders one value per pixel along X-Axis, saves CPU
+                        cycles
                         
 --legendpos=<left|below>
 
@@ -785,8 +787,14 @@ echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "$rpath/www/gr
 # first column is the X axis, data starts from the column 2
 declare -i n
 [ -z "$perpixel" ] && n=2 || n=1
+declare -i smid ; smid=0
 for smetric in `echo $metric | tr ',' ' '` ; do
-  [ -n "$as" ] && slegendtext="$as" || slegendtext="$metric"
+  if [ -n "$as" ]; then
+    slegendtext="$(IFS=',' ; asarr=( `echo "$as"` ) ; echo "${asarr[$smid]}")"
+  else
+    slegendtext="$smetric"
+  fi
+  smid+=1
   slegend="${slegend}`echo "<text font-family=\\"Verdana\\" font-size=\\"${fontsize}\\" fill=\\"${colors[$i]}\\" x=\\"$slegendX\\" y=\\"$slegendY\\" >$slegendtext</text>"`"
 log "slegend=$slegend"
   
