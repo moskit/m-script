@@ -54,6 +54,8 @@ find_server_key() {
     else
       return 1
     fi
+  else
+    return 1
   fi
 }
 
@@ -68,7 +70,7 @@ case $where in
   server)
     nextkey=false
     find_server_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
-    #log "trying server $1 cluster key"
+    log "key not found for server ${1}, trying cluster key"
 
     cluster=`grep ^${1}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
     if [ -n "$cluster" ] ; then
@@ -95,7 +97,7 @@ case $where in
         esac
       fi
       if [ -z "$cluster" ]; then
-        echo "Cluster not found for server $1" >&2 | tee -a "$LOG"
+        log "cluster not found for server $1"
       else
         find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
       fi
