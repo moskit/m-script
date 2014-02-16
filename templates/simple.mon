@@ -43,6 +43,8 @@ conf="{rpath}/${rcomm%.mon}.conf"
                                        # (it is not necessary but it's good
                                        # to have historic data, generate graphs
                                        # and so on)
+### if you locked it, release now
+# release_lock
 
 # unset period timeshift # and other vars
 

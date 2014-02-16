@@ -47,10 +47,9 @@ find_server_key() {
       KEY1="${KEY}.pem"
       if [ -f "$M_ROOT/keys/$KEY1" ]; then
         KEY=$KEY1
-      else
-        KEY1="${KEY%.pem}"
       fi
-      [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
+    fi
+    if [ -f "$M_ROOT/keys/$KEY" ]; then
       return 0
     else
       return 1
