@@ -64,6 +64,7 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
 
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"

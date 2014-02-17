@@ -153,7 +153,7 @@ if $nextkey ; then
   fi
 fi
 
-log "No matching key found, tried: $KEY, $USERKEY1, $USERKEY2"
+log "no key found at all for server ${1}, giving up"
 
 exit 1
 

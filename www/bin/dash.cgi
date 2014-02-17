@@ -21,10 +21,14 @@ do
   cld=`echo "$cluster" | cut -d'/' -f3`
   cls=`echo "$cluster" | cut -d'/' -f4`
   clsconf=`grep "|${cld}$" "$PWD/../../conf/clusters.conf" | grep "^$cls|"`
+  if [ -f "$M_TEMP/cloud/$cld/flavors.list" ]; then
   size=`echo "$clsconf" | cut -d'|' -f5`
   sizeh=`cat "$M_TEMP/cloud/$cld/flavors.list" | grep ^$size\| | cut -d'|' -f2 | tr -d '"'`
+  fi
+  if [ -f "$M_TEMP/cloud/$cld/images.list" ]; then
   img=`echo "$clsconf" | cut -d'|' -f6`
   imgh=`cat "$M_TEMP/cloud/$cld/images.list"  | grep ^$img\| | cut -d'|' -f2 | tr -d '"'`
+  fi
   region=`echo "$clsconf" | cut -d'|' -f3`
   role=`echo "$clsconf" | cut -d'|' -f10`
   open_cluster "${cld}|${cls}"
