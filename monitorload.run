@@ -149,11 +149,12 @@ start)
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           safolder=$(readlink -f "$sa")
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
+          rm "$safolder/report"
           for satest in `find "$sa/rc/" -maxdepth 1 -type l | sort` ; do
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
-            [ -n "$sares" ] && echo "$sares" > "$safolder/report"
+            [ -n "$sares" ] && echo "$sares" >> "$safolder/report"
           done </dev/null &
         done
       fi

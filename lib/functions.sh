@@ -285,7 +285,7 @@ check_interval() {
 }
 
 date_header() {
-  echo -e "`date`\n------------------------------\n"
+  echo -e "`date`\n------------------------------\n\n"
 }
 
 get_lock() {
@@ -320,4 +320,8 @@ release_lock() {
   rm "$rpath/${rcommand}.lock"
 }
 
+unlock_exit() {
+  rm "$rpath/${rcommand}.lock"
+  exit $1
+}
 
