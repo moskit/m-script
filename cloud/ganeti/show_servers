@@ -19,12 +19,24 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf"
-M_TEMP=$M_TEMP/cloud/ganeti
-install -d $M_TEMP
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+
+[ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+install -d "$M_TEMP"
 
 declare -i icount
 
 GNTI=`which gnt-instance 2>/dev/null`
+[ -z "$GNTI" ] && log "ERROR: gnt-instance utility not found" && exit 1
+
+lock_cloudops || exit 10
+export IAMACHILD M_TEMP CLOUD
 
 possible_options="cloud cluster state filter node view all count update_servers_list forceupdate noupdate"
 necessary_options=""
