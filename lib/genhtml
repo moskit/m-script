@@ -78,6 +78,9 @@ source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
 [ -z "$freqdef" ] && freqdef=$FREQ
 
+# to ensure the report file is closed (see gendash function)
+sleep 1
+
 textfile="$s_param"
 case $type in
   dash)

@@ -129,10 +129,10 @@ gendash() {
   [ -f "$report" ] || indic="empty"
   case $DASHBOARD in
     HTML)
-      "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
       ;;
     JSON)
-      "$fpath/genjson" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genjson" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
       ;;
   esac
 }
@@ -151,10 +151,10 @@ genreport() {
   done
   case $DASHBOARD in
     HTML)
-      "$fpath/genhtml" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genhtml" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
       ;;
     JSON)
-      "$fpath/genjson" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genjson" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
       ;;
   esac
 }
