@@ -151,10 +151,14 @@ start)
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
           for satest in `find "$sa/rc/" -maxdepth 1 -type l | sort` ; do
             rsatest=$(readlink -f "$satest")
+            rsatest=${rsatest##*/}
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
-            [ -n "$sares" ] && echo -e "${sares}\n" > "$safolder/${rsatest##*/}.report"            
+            [ -n "$sares" ] && echo -e "${sares}\n" > "$safolder/${rsatest}.report"
+            if [ `cat "$safolder/${rsatest}.report" | wc -l` -gt 2 ]; then
+              (source "$M_ROOT/lib/functions.sh" && gendash "${rsatest%.mon}" "$safolder/${rsatest}.report")
+            fi
           done </dev/null &
         done
       fi

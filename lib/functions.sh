@@ -106,55 +106,60 @@ check_results() {
 }
     
 gendash() {
-  [ -z "$1" ] && exit 1
-  local name="$1"
-  shift
+  local name
+  caller=$(readlink -f "$0")
   if [ -n "$1" ]; then
-    report="$1"
-  else
-    caller=$(readlink -f "$0")
-    report="${caller}.report"
-  fi
-  for ((i=0; i<5; i++)); do
-    if [ -f "$report" ]; then
-      indic="ok"
-      [ -n "`grep '<\*>' "$report"`" ] && indic="w1"
-      [ -n "`grep '<\*\*>' "$report"`" ] && indic="w2"
-      [ -n "`grep '<\*\*\*>' "$report"`" ] && indic="w3"
+    name="$1"
+    shift
+    if [ -n "$1" ]; then
+      report="$1"
     else
-      sleep 1
+      report="${caller}.report"
     fi
-  done
-  [ -n "$2" ] && indic2="$2"
-  [ -f "$report" ] || indic="empty"
+    [ -n "$2" ] && indic2="$2"
+  else
+    name="${caller%.mon}"
+    name="${name##*/}"
+  fi
+  if [ -f "$report" ]; then
+    indic="ok"
+    [ -n "`grep '<\*>' "$report"`" ] && indic="w1"
+    [ -n "`grep '<\*\*>' "$report"`" ] && indic="w2"
+    [ -n "`grep '<\*\*\*>' "$report"`" ] && indic="w3"
+  else
+    indic="empty"
+  fi
   case $DASHBOARD in
     HTML)
-      "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
+      "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
     JSON)
-      "$fpath/genjson" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
+      "$fpath/genjson" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
   esac
 }
 
 genreport() {
-  if [ -n "$2" ]; then
-    report="$2"
-  else
-    caller=$(readlink -f "$0")
-    report="${caller}.report"
-  fi
-  for ((i=0; i<5; i++)); do
-    if [ ! -f "$report" ]; then
-      sleep 1
+  local name
+  caller=$(readlink -f "$0")
+  if [ -n "$1" ]; then
+    name="$1"
+    shift
+    if [ -n "$1" ]; then
+      report="$1"
+    else
+      report="${caller}.report"
     fi
-  done
+  else
+    name="${caller%.mon}"
+    name="${name##*/}"
+  fi
   case $DASHBOARD in
     HTML)
-      "$fpath/genhtml" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
+      "$fpath/genhtml" --type=report --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
     JSON)
-      "$fpath/genjson" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log" &
+      "$fpath/genjson" --type=report --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
   esac
 }
