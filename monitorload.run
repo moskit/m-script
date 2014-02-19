@@ -151,10 +151,11 @@ start)
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
           rm "$safolder/report"
           for satest in `find "$sa/rc/" -maxdepth 1 -type l | sort` ; do
+            rsatest=$(readlink -f "$satest")
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
-            [ -n "$sares" ] && echo -e "${sares}\n" >> "$safolder/report"
+            [ -n "$sares" ] && echo -e "${sares}\n" >> "$safolder/${rsatest##*/}.report"            
           done </dev/null &
         done
       fi

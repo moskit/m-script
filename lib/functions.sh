@@ -106,31 +106,53 @@ check_results() {
 }
     
 gendash() {
-  if [ -e "$1" ]; then
-    indic="ok"
-    [ -n "`grep '<\*>' "$1"`" ] && indic="w1"
-    [ -n "`grep '<\*\*>' "$1"`" ] && indic="w2"
-    [ -n "`grep '<\*\*\*>' "$1"`" ] && indic="w3"
+  [ -z "$1" ] && exit 1
+  local name="$1"
+  shift
+  if [ -n "$1" ]; then
+    report="$1"
   else
-    indic="empty"
+    report="$rpath/${rcommand}.report"
   fi
+  for ((i=0; i<5; i++)); do
+    if [ -f "$report" ]; then
+      indic="ok"
+      [ -n "`grep '<\*>' "$report"`" ] && indic="w1"
+      [ -n "`grep '<\*\*>' "$report"`" ] && indic="w2"
+      [ -n "`grep '<\*\*\*>' "$report"`" ] && indic="w3"
+    else
+      sleep 1
+    fi
+  done
+  [ -n "$2" ] && indic2="$2"
+  [ -f "$1" ] || indic="empty"
   case $DASHBOARD in
     HTML)
-      "$fpath/genhtml" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
     JSON)
-      "$fpath/genjson" --type=dash --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genjson" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
   esac
 }
 
 genreport() {
+  if [ -n "$2" ]; then
+    report="$2"
+  else
+    report="$rpath/${rcommand}.report"
+  fi
+  for ((i=0; i<5; i++)); do
+    if [ ! -f "$report" ]; then
+      sleep 1
+    fi
+  done
   case $DASHBOARD in
     HTML)
-      "$fpath/genhtml" --type=report --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genhtml" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
     JSON)
-      "$fpath/genjson" --type=report --css=${indic}${3} --folder="$2/localhost" "$1" 2>>"$M_ROOT/logs/dashboard.log"
+      "$fpath/genjson" --type=report --folder="$1/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
       ;;
   esac
 }
