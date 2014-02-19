@@ -112,7 +112,8 @@ gendash() {
   if [ -n "$1" ]; then
     report="$1"
   else
-    report="$rpath/${rcommand}.report"
+    caller=$(readlink -f "$0")
+    report="${caller}.report"
   fi
   for ((i=0; i<5; i++)); do
     if [ -f "$report" ]; then
@@ -125,7 +126,7 @@ gendash() {
     fi
   done
   [ -n "$2" ] && indic2="$2"
-  [ -f "$1" ] || indic="empty"
+  [ -f "$report" ] || indic="empty"
   case $DASHBOARD in
     HTML)
       "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
@@ -140,7 +141,8 @@ genreport() {
   if [ -n "$2" ]; then
     report="$2"
   else
-    report="$rpath/${rcommand}.report"
+    caller=$(readlink -f "$0")
+    report="${caller}.report"
   fi
   for ((i=0; i<5; i++)); do
     if [ ! -f "$report" ]; then
