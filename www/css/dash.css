@@ -343,6 +343,10 @@ span.indent {
   cursor: pointer;
 }
 
+.empty {
+  background-color: #dadada;
+}
+
 .timeline {
   border-bottom: 1px solid #cacaca;
 }
