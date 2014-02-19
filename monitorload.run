@@ -154,7 +154,7 @@ start)
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
-            [ -n "$sares" ] && echo "$sares" >> "$safolder/report"
+            [ -n "$sares" ] && echo -e "${sares}\n" >> "$safolder/report"
           done </dev/null &
         done
       fi

@@ -53,48 +53,54 @@ cat -E $1 | while read LINE ; do
   cursor+=1
   
   #echo -e "|||${LINE}\n"
-  case "$LINE" in
-    "")
+  if [ -z "$LINE" ] ; then
     data[$cursor]=""
     datatype[$cursor]="empty"
     datastyle[$cursor]="empty"
-    ;;
-    \<OK\>*)
-    data[$cursor]="${LINE#* }"
-    datatype[$cursor]="info"
-    datastyle[$cursor]="ok"
-    ;;
-    \<\*\>*|[[:space:]]\<\*\>*)
-    data[$cursor]="${LINE#*> }"
-    datatype[$cursor]="info"
-    datastyle[$cursor]="w1"
-    ;;
-    \<\*\*\>*)
-    data[$cursor]="${LINE#* }"
-    datatype[$cursor]="info"
-    datastyle[$cursor]="w2"
-    ;;
-    \<\*\*\*\>*)
-    data[$cursor]="${LINE#* }"
-    datatype[$cursor]="info"
-    datastyle[$cursor]="w3"
-    ;;
-    [[:space:]]*[[:print:]]*)
-    data[$cursor]="`echo "$LINE" | sed 's|^[[:space:]]*||'`"
-    datatype[$cursor]="table"
-    datastyle[$cursor]="table"
-    ;;
-    -*)
-    data[$cursor]=""
-    datatype[$cursor]="dashline"
-    datastyle[$cursor]="dashline"
-    ;;
-    *)
-    data[$cursor]="$LINE"
-    datatype[$cursor]="info"
-    datastyle[$cursor]="info"
-    ;;
-  esac
+  else
+    case "$LINE" in
+      [[:space:]])
+      data[$cursor]=""
+      datatype[$cursor]="empty"
+      datastyle[$cursor]="empty"
+      ;;
+      \<OK\>*)
+      data[$cursor]="${LINE#* }"
+      datatype[$cursor]="info"
+      datastyle[$cursor]="ok"
+      ;;
+      \<\*\>*|[[:space:]]\<\*\>*)
+      data[$cursor]="${LINE#*> }"
+      datatype[$cursor]="info"
+      datastyle[$cursor]="w1"
+      ;;
+      \<\*\*\>*)
+      data[$cursor]="${LINE#* }"
+      datatype[$cursor]="info"
+      datastyle[$cursor]="w2"
+      ;;
+      \<\*\*\*\>*)
+      data[$cursor]="${LINE#* }"
+      datatype[$cursor]="info"
+      datastyle[$cursor]="w3"
+      ;;
+      [[:space:]]*[[:print:]]*)
+      data[$cursor]="`echo "$LINE" | sed 's|^[[:space:]]*||'`"
+      datatype[$cursor]="table"
+      datastyle[$cursor]="table"
+      ;;
+      -*)
+      data[$cursor]=""
+      datatype[$cursor]="dashline"
+      datastyle[$cursor]="dashline"
+      ;;
+      *)
+      data[$cursor]="$LINE"
+      datatype[$cursor]="info"
+      datastyle[$cursor]="info"
+      ;;
+    esac
+  fi
 #echo "== $LINE" ; echo "-- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
   if [ $cursor -eq 3 ] ; then
     case ${datatype[*]} in

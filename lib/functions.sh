@@ -285,7 +285,7 @@ check_interval() {
 }
 
 date_header() {
-  echo -e "`date`\n------------------------------\n\n"
+  echo -e "`date`\n------------------------------\n"
 }
 
 get_lock() {
