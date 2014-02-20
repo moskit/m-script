@@ -28,18 +28,31 @@ if [ -e "$1" ] || [ "X$1" == "X-" ]; then
 fi
 
 cleanup() {
-
 $IPT -F M_IPBLOCK_TMP
 $IPT -F M_IPBLOCK_CONST
 $IPT -D INPUT -j M_IPBLOCK_TMP
 $IPT -D INPUT -j M_IPBLOCK_CONST
 $IPT -X M_IPBLOCK_TMP
 $IPT -X M_IPBLOCK_CONST
-
 }
 
+local_ips() {
+  if [ -n "$IPR" ]; then
+    $IPR addr show | grep inet | awk '{print $2}'
+  elif [ -n "$IFC" ]; then
+    $IFC | grep inet | awk -F'addr:' '{print $2}' | sed 's|^ ||' | cut -sd' ' -f1
+  else
+    # TODO: get the list from /proc/net/tcp etc
+    # lets assume we have this at least, won't harm
+    echo '127.0.0.1'
+  fi
+}
+
+
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
-[ "X$IPT" == "X" ] && echo "No iptables found" && exit 1
+[ -z "$IPT" ] && echo "No iptables found" && exit 1
+[ -f "/sbin/ifconfig" ] && IFC=/sbin/ifconfig || IFC=`which ifconfig 2>/dev/null`
+[ -f "/sbin/ip" ] && IPR=/sbin/ip || IPR=`which ip 2?dev/null`
 
 possible_options="method cleanup block_forever_after rate burst help"
 necessary_options=""
@@ -143,9 +156,16 @@ fi
 
 [ -z "$block_forever_after" ] && block_forever_after=99999
 if [ -n "$ips" ] ; then
+  localips=`local_ips`
   for ip in $ips ; do
+    ip=`echo "$ip" | tr -d ' '`
     # Never block own IPs! :)
     [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -ne 0 ]] && continue
+    [[ `echo "$localips" | grep -c -E "^${ip}$|^${ip}/"` -ne 0 ]] && continue
+    # If it is not an IP address, consequences are unpredictable
+    expr "$ip" : ".*[^[0-9.:/]]*" && continue
+    # Empty IP is even worse: everything gets blocked
+    [ -z "$ip" ] && continue
     # Whitelist
     whitelisted=$(for wl in `cat "$M_ROOT/conf/ip.white.list"`; do expr "$ip" : ^$wl ; done | grep -v ^0$ | wc -l)
     [ $whitelisted -ne 0 ] && log "IP $ip is in the whitelist" && continue
