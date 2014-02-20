@@ -52,7 +52,7 @@ local_ips() {
 [ -f "/sbin/iptables" ] && IPT=/sbin/iptables || IPT=`which iptables 2>/dev/null`
 [ -z "$IPT" ] && echo "No iptables found" && exit 1
 [ -f "/sbin/ifconfig" ] && IFC=/sbin/ifconfig || IFC=`which ifconfig 2>/dev/null`
-[ -f "/sbin/ip" ] && IPR=/sbin/ip || IPR=`which ip 2?dev/null`
+[ -f "/sbin/ip" ] && IPR=/sbin/ip || IPR=`which ip 2>/dev/null`
 
 possible_options="method cleanup block_forever_after rate burst help"
 necessary_options=""
@@ -167,8 +167,10 @@ if [ -n "$ips" ] ; then
     # Empty IP is even worse: everything gets blocked
     [ -z "$ip" ] && continue
     # Whitelist
-    whitelisted=$(for wl in `cat "$M_ROOT/conf/ip.white.list"`; do expr "$ip" : ^$wl ; done | grep -v ^0$ | wc -l)
-    [ $whitelisted -ne 0 ] && log "IP $ip is in the whitelist" && continue
+    if [ -f "$M_ROOT/conf/ip.white.list" ]; then
+      whitelisted=$(for wl in `cat "$M_ROOT/conf/ip.white.list"`; do expr "$ip" : ^$wl ; done | grep -v ^0$ | wc -l)
+      [ $whitelisted -ne 0 ] && log "IP $ip is in the whitelist" && continue
+    fi
     echo "$ip|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
 
     ipincl=`grep -c "^$ip|${BLOCK_CALLER}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
