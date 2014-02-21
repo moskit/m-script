@@ -14,8 +14,8 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
   
   open_cluster "$clustername"
   close_cluster_line
-  clusterdat=`ls -1t "$PWD/../../standalone/$scriptname/data/${clustername}."*.dat`
-  esip=`cat "$clusterdat" 2>/dev/null | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
+  clusterdat=`find "$PWD/../../standalone/$scriptname/data/" -maxdepth 1 "${clustername}.*.dat"`
+  esip=`cat $clusterdat 2>/dev/null | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do
     eshostname=`grep ^$eshostip\| "$PWD/../../servers.list" | cut -d'|' -f4`
     if [ -n "$eshostname" ] ; then
