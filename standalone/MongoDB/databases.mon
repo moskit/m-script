@@ -62,6 +62,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
       collcount=`echo "$colldat" | grep '0/"count"|' | cut -d '|' -f2`
       collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
       collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
+      ns="${db}.${coll}"
       store_results "ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
     done &
   fi
