@@ -225,27 +225,37 @@ for cld in $CLOUD ; do
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -s -d'|' -f13`
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
 
-      for server in `cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v ^#|grep -v ^[[:space:]]*#` ; do
-        IP=${server%%|*}
-        if [ -n "$ip" ] ; then
-          [ "X$IP" == "X$ip" ] || continue
+      serverlist=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#"`
+      for servername in `echo "$serverlist" | cut -d'|' -f4 | sort | uniq` ; do
+        server=`echo "$serverlist" | grep "|$servername|"`
+        if [ `echo "$server" | wc -l` -gt 1 ]; then
+          log "more than one server named $servername is found:"
+          for s in `echo "$server"` ; do
+            log "$s"
+          done
         fi
-        if [ -n "$region" ] ; then
-          REGION=`echo $server | cut -d'|' -f3`
-          [ "X$REGION" == "X$region" ] || continue
-        fi
-        if [ -n "$cluster" ] ; then
-          CLUSTER=`echo $server | cut -d'|' -f5`
-          [ "X$CLUSTER" == "X$cluster" ] || continue
-        fi
-        if [ "x$threaded" == "xyes" ]; then
-          #res[$n]=$(remote_exec) 2>&1 </dev/null &
-          remote_sync > "$M_TEMP/$$.$n" 2>&1 &
-          pid[$n]=$!
-        else
-          remote_sync
-        fi
-        n+=1
+        for s in `echo "$server"` ; do
+          IP=${server%%|*}
+          if [ -n "$ip" ] ; then
+            [ "X$IP" == "X$ip" ] || continue
+          fi
+          if [ -n "$region" ] ; then
+            REGION=`echo $server | cut -d'|' -f3`
+            [ "X$REGION" == "X$region" ] || continue
+          fi
+          if [ -n "$cluster" ] ; then
+            CLUSTER=`echo $server | cut -d'|' -f5`
+            [ "X$CLUSTER" == "X$cluster" ] || continue
+          fi
+          if [ "x$threaded" == "xyes" ]; then
+            #res[$n]=$(remote_exec) 2>&1 </dev/null &
+            remote_sync > "$M_TEMP/$$.$n" 2>&1 &
+            pid[$n]=$!
+          else
+            remote_sync
+          fi
+          n+=1
+        done
       done
       if [ "x$threaded" == "xyes" ]; then
         for ((i=0; i<$n; i++)); do

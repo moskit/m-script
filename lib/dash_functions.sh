@@ -60,16 +60,24 @@ open_cluster() {
 }
 
 print_cluster_inline() {
+  # print_cluster_inline "metric<|onclick><|style>" "metric2<|onclick2><|style2>" ...
   while [ -n "$1" ] ; do
-    dfpcistatus="$1"
-    if [ "X$dfpcistatus" == "X-" ]; then
+    dfpcistatusarg="$1"
+    if [ "X$dfpcistatusarg" == "X-" ]; then
       echo "<div id=\"${dfocid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
     fi
-    [ "${dfpcistatus%%|*}" != "${dfpcistatus#*|}" ] && dfpcionclick="${dfpcistatus#*|}" && dfpcistatus="${dfpcistatus%%|*}" && classadded="clickable" && onclick="onclick=\"showDetails('${dfocid}_name','$dfpcionclick')\"" || unset classadded onclick dfpcionclick
-    
-    [ -n "$dfpcionclick" -a "${dfpcionclick%%|*}" != "${dfpcionclick#*|}" ] && dfpcistyle="${dfpcionclick#*|}" && dfpcionclick="${dfpcionclick%%|*}" && style="style=\"$dfpcistyle\"" || unset style
+    dfpcistatus=`echo "$dfpcistatusarg" | cut -d'|' -f1`
+    dfpcionclick=`echo "$dfpcistatusarg" | cut -s -d'|' -f2`
+    dfpcistyle=`echo "$dfpcistatusarg" | cut -s -d'|' -f3`
+    if [ -n "$dfpcionclick" ]; then
+      classadded="clickable"
+      onclick="onclick=\"showDetails('${dfolid}_$dfpcistatus','$dfpcionclick')\""
+    else
+      unset onclick classadded dfpcionclick
+    fi
+    [ -n "$dfpistyle"] && style="style=\"$dfpistyle\"" || unset style
     dfpcicont=`eval echo \\$$dfpcistatus`
     [ ${#dfpcicont} -gt 12 ] && dfpcicontalt=`echo -n "$dfpcicont" | cut -d'=' -f2 | tr -d '<>'` || unset dfpcicontalt
     echo "<div id=\"${dfocid}_status\" class=\"status $classadded\" $onclick $style title=\"$dfpcicontalt\">${dfpcicont}</div>"
@@ -106,7 +114,7 @@ open_line() {
 }
 
 print_inline() {
-  # print_inline "metric<|onclick><|style>"
+  # print_inline "metric<|onclick><|style>" "metric2<|onclick2><|style2>" ...
   while [ -n "$1" ] ; do
     dfpistatusarg="$1"
     if [ "X$dfpistatusarg" == "X-" ]; then
@@ -214,9 +222,12 @@ print_nav_bar() {
   echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
     shift
     while [ -n "$1" ]; do
-      unset dfpnbactive
-      [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
-      echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
+      # not printing if not exists
+      if [ -x "$M_ROOT/www/bin/${1%%|*}.cgi" ]; then
+        unset dfpnbactive
+        [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
+        echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
+      fi
       shift
     done
   echo -e "</ul>\n</div>"

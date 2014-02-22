@@ -40,11 +40,16 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   if [ "X$SHARDING" == "Xmanual" ]; then
     dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
     echo "$dbdat" >> "$rpath/data/${db}.${hp}.dat"
-    collectins=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
+    collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
     echo "$collections" > "$rpath/data/${db}.${hp}.collections"
     for coll in `echo "$collections"`
     do
       colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
+      collcount=`echo "$colldat" | grep '0/"count"|' | cut -d '|' -f2`
+      collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
+      collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
+      ns="${db}.${coll}"
+      store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "databases.sql3|collections"
     done
     "$rpath"/nonshard_distributed_dbreport "$db" "$hostport"
   else
@@ -52,7 +57,12 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     echo "$dbdat" > "$rpath/data/${db}.dat"
     for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
     do
-      colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`; echo "$colldat" > "$rpath/data/${db}.${coll}.dat"
+      colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
+      echo "$colldat" > "$rpath/data/${db}.${coll}.dat"
+      collcount=`echo "$colldat" | grep '0/"count"|' | cut -d '|' -f2`
+      collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
+      collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
+      store_results "ns|text,collcount|integer,collsize|integer,collindexsize|integer" "databases.sql3|collections"
     done &
   fi
 done

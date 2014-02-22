@@ -41,7 +41,7 @@ debug=true
 
 IFCFG=`which ifconfig 2>/dev/null`
 possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
-necessary_options="metric"
+necessary_options=""
 source "$rpath/conf/mon.conf"
 source "$rpath/conf/dash.conf"
 source "$rpath/lib/functions.sh"
