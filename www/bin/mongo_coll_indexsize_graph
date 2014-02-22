@@ -4,9 +4,9 @@ source "$PWD/../../conf/dash.conf"
 source "$PWD/../../conf/mon.conf"
 source "$PWD/../../lib/dash_functions.sh"
 
-ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.indexsize.svg)
+ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.collindexsize.svg)
 if [ -z "$ex" ] ; then
-"$PWD"/../../graph --database=standalone/MongoDB/databases.sql3 --table=collections --metric=indexsize --where="ns:${1}.${2}" --perpixel --width=750 --height=300 --padding=10 --legend=160
+"$PWD"/../../graph --database=standalone/MongoDB/databases.sql3 --table=collections --metric=collindexsize --where="ns:${1}.${2}" --perpixel --width=750 --height=300 --padding=10 --legend=160
 fi
-echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.indexsize.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
+echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.collindexsize.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 

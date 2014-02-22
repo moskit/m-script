@@ -373,8 +373,6 @@ span.indent {
   margin-top: 5px;
   background-color: #ddd;
   border: 1px solid #ddd;
-  -webkit-border-radius: 3px;
-  -moz-border-radius: 3px;
 }
 
 #views ul#viewsnav {
@@ -390,6 +388,7 @@ span.indent {
   border: 1px solid #888;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
+  border-radius: 3px;
   background-color: #ddd;
   margin: 3px 0px 3px 8px;
   float: left;
@@ -655,6 +654,10 @@ span.value {
   margin-bottom: 2px;
   background-color: #779;
   float: left;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-bottomleft: 3px;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#5555CC', endColorstr='#333399');
   background: -webkit-gradient(linear, left bottom, left top, from(#333399), to(#5555CC));
   background: -moz-linear-gradient(bottom,  #333399,  #5555CC)
