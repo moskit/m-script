@@ -49,7 +49,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
       collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
       collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
       ns="${db}.${coll}"
-      store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "databases.sql3|collections"
+      store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
     done
     "$rpath"/nonshard_distributed_dbreport "$db" "$hostport"
   else
@@ -62,7 +62,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
       collcount=`echo "$colldat" | grep '0/"count"|' | cut -d '|' -f2`
       collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
       collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
-      store_results "ns|text,collcount|integer,collsize|integer,collindexsize|integer" "databases.sql3|collections"
+      store_results "ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
     done &
   fi
 done
