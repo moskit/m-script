@@ -54,8 +54,7 @@ cleanup() {
 
 remote_exec() {
   if [ "X$verbose" == "Xyes" ] ; then
-    NAME=`echo $server | cut -d'|' -f4`
-    echo -e "\n=  Server: $NAME ($IP)  Cluster: $CLUSTER"
+    echo -e "\n=  Server: $servername ($IP)  Cluster: $CLUSTER"
   fi
   if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
     [ -z "$nolocalhost" ] && eval $command
@@ -208,33 +207,43 @@ for cld in $CLOUD ; do
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
       M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
       
-      for server in `cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
-        [ -n "$limit" ] && [[ $n -ge $limit ]] && break
-        IP=${server%%|*}
-        if [ -n "$ip" ] ; then
-          [ "X$ip" == "X$IP" ] || continue
+      serverlist=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#"`
+      for servername in `echo "$serverlist" | cut -d'|' -f4 | sort | uniq` ; do
+        server=`echo "$serverlist" | grep "|$servername|"`
+        if [ `echo "$server" | wc -l` -gt 1 ]; then
+          log "more than one server named $servername is found:"
+          for s in `echo "$server"` ; do
+            log "$s"
+          done
         fi
-        if [ -n "$region" ] ; then
-          REGION=`echo $server | cut -d'|' -f3`
-          [ "X$REGION" == "X$region" ] || continue
-        fi
-        CLUSTER=`echo $server | cut -d'|' -f5`
-        # if server's cluster is not found, it's a bug, but it's a good idea to
-        # still show it in the output when --cluster=all
-        if [ -z "$CLUSTER" ]; then
-          [ "$cluster" == "all" ] || continue
-        else
-          [ "$CLUSTER" == "$icluster" ] || continue
-        fi
-        if [ "x$threaded" == "xyes" ]; then
-          #res[$n]=$(remote_exec) 2>&1 </dev/null &
-          (remote_exec > "$M_TEMP/$$.$n" 2>&1 || echo "ERROR") &
-          pid[$n]=$!
-        else
-          remote_exec
-          result+=$?
-        fi
-        n+=1
+        for s in `echo "$server"` ; do
+          [ -n "$limit" ] && [[ $n -ge $limit ]] && break
+          IP=${s%%|*}
+          if [ -n "$ip" ] ; then
+            [ "X$ip" == "X$IP" ] || continue
+          fi
+          if [ -n "$region" ] ; then
+            REGION=`echo $s | cut -d'|' -f3`
+            [ "X$REGION" == "X$region" ] || continue
+          fi
+          CLUSTER=`echo $s | cut -d'|' -f5`
+          # if server's cluster is not found, it's a bug, but it's a good idea to
+          # still show it in the output when --cluster=all
+          if [ -z "$CLUSTER" ]; then
+            [ "$cluster" == "all" ] || continue
+          else
+            [ "$CLUSTER" == "$icluster" ] || continue
+          fi
+          if [ "x$threaded" == "xyes" ]; then
+            #res[$n]=$(remote_exec) 2>&1 </dev/null &
+            (remote_exec > "$M_TEMP/$$.$n" 2>&1 || echo "ERROR") &
+            pid[$n]=$!
+          else
+            remote_exec
+            result+=$?
+          fi
+          n+=1
+        done
       done
       if [ "x$threaded" == "xyes" ]; then
         for ((i=0; i<$n; i++)); do

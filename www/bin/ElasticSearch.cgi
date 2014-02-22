@@ -14,7 +14,8 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
   
   open_cluster "$clustername"
   close_cluster_line
-  clusterdat=`find "$PWD/../../standalone/$scriptname/data/" -maxdepth 1 "${clustername}.*.dat"`
+  clusterdat=`find "$PWD/../../standalone/$scriptname/data/" -maxdepth 1 -name "${clustername}.*.dat"`
+  [ $? -ne 0 ] && exit 1
   esip=`cat $clusterdat 2>/dev/null | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do
     eshostname=`grep ^$eshostip\| "$PWD/../../servers.list" | cut -d'|' -f4`
@@ -36,7 +37,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
     prevstatus=$thisesstatus
   done
   
-  open_line "$servercluster|hilited" eshealth
+  open_line "$clustername|hilited" eshealth
       for esst in $esstatus ; do
         echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
