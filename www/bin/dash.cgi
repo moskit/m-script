@@ -14,7 +14,11 @@ close_cluster
 
 # localhost first; if it belongs to a listed cluster, that cluster will be the first
 for localip in `localips | grep -v '127.0.0.1'` ; do
-  localcluster=`grep ^$localip\| "$PWD/../../servers.list" | cut -d'|' -f5`
+  localserver=`grep ^$localip\| "$PWD/../../servers.list"`
+  [ -z "$localserver" ] && continue || break
+  localcluster=`echo "$localserver" | cut -d'|' -f5`
+  localcloud=`echo "$localserver" | cut -d'|' -f6`
+  localserver=`echo "$localserver" | cut -d'|' -f4`
 done
 
 if [ -z "$localcluster" ]; then
@@ -42,9 +46,13 @@ do
   print_cluster_inline "sizeh" "imgh" "cld" "region" "role"
   close_cluster_line
 
-  if [ "x$cluster" == "x$localcluster" ]; then
+  if [ "x$cls" == "x$localcluster" -a "x$cld" == "x$localcloud"]; then
+    node="${cld}/${cls}|${localserver}"
+    echo -e "<div class=\"server\" id=\"$node\">\n<span class=\"servername clickable\" id=\"${node}_status\" onclick=\"showDetails('${node}_status','serverdetails')\">${localserver:0:20}</span>"
     cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
-    echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>"
+    [ -e "../servers/localhost/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
+    [ -e "../servers/localhost/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
+    echo -e "</div>\n<div class=\"details\" id=\"${node}_details\"></div>"
   fi
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
