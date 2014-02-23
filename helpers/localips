@@ -32,8 +32,8 @@ case $ipv in
   exit 1
   ;;
   6)
-  [ -n "$IPR" ] && $IPR addr show | grep -oE "inet6\ ([0-9.]*)/" | cut -d' ' -f2 | tr -d ' /' && exit 0
-  [ -n "$IFC" ] && $IFC | grep -oE "inet6\ addr:([0-9.]*)\ " | cut -d':' -f2 | tr -d ' ' && exit 0
+  [ -n "$IPR" ] && $IPR addr show | grep -oE "inet6\ ([0-9a-f:.]*)/" | cut -d' ' -f2 | tr -d ' /' && exit 0
+  [ -n "$IFC" ] && $IFC | grep -oE "inet6\ addr:\ *([0-9a-f:.]*)/" | cut -d' ' -f3 | tr -d ' /' && exit 0
   exit 1
   ;;
   *)
