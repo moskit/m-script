@@ -350,7 +350,7 @@ if [ -n "$perpixel" ]; then
   fi
   metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve 2 "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
   $debug && log "metricmaxfp: $metricmaxfp  metricmax: $metricmax"
-
+  orderm=`expr ${#metricmax} / 3`
   if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
     log "Error getting minimum and maximum values for $metric $limit last values"
     exit 1
@@ -363,7 +363,7 @@ if [ -n "$perpixel" ]; then
 
   if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
   # 1mln is a reasonable limit (scale 2 x 3); make i<=3 to make it a billion
-    for ((i=1; i<=2; i++)); do
+    for ((i=1; i<=$orderm; i++)); do
       [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / $metricmax" | bc`
       $debug && log "mp: $mp"
     done
