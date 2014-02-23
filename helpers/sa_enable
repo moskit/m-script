@@ -15,9 +15,11 @@ n=`expr $n + 1`
 ln -s "$rpath/../standalone/$1" "$rpath/../standalone/rc/${n}.$1"
 n=0
 for mon in "$rpath/../standalone/$1"/*.mon ; do
-  [ ${#n} -eq 1 ] && m="0$n"
-  ln -s "$mon" "$rpath/../standalone/$1/rc/${m}.${mon##*/}"
-  n=`expr $n + 1`
+  if [ -x "$mon" ]; then
+    [ ${#n} -eq 1 ] && m="0$n"
+    ln -s "$mon" "$rpath/../standalone/$1/rc/${m}.${mon##*/}"
+    n=`expr $n + 1`
+  fi
 done
 
 [ -d "$rpath/../standalone/$1/wwwbin" ] && cp "$rpath/../standalone/$1/wwwbin/"* "$rpath/../www/bin/" || true

@@ -12,6 +12,8 @@ close_cluster_line
 print_timeline "Server"
 close_cluster
 
+# localhost first; if it belongs to a listed cluster, that cluster will be the first
+
 echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
 cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
 echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"

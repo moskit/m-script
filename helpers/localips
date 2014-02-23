@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+[ -f "/sbin/ifconfig" ] && IFC=/sbin/ifconfig || IFC=`which ifconfig 2>/dev/null`
+[ -f "/sbin/ip" ] && IPR=/sbin/ip || IPR=`which ip 2>/dev/null`
+
+ipv=$1
+[ -z "$ipv" ] && ipv=4
+
+case $ipv in
+  4)
+  [ -n "$IPR" ] && $IPR addr show | grep -oE "inet\ ([0-9.]*)/" | cut -d' ' -f2 | tr -d ' /' && exit 0
+  [ -n "$IFC" ] && $IFC | grep -oE "inet\ addr:([0-9.]*)\ " | cut -d':' -f2 | tr -d ' ' && exit 0
+  exit 1
+  ;;
+  6)
+  [ -n "$IPR" ] && $IPR addr show | grep -oE "inet6\ ([0-9.]*)/" | cut -d' ' -f2 | tr -d ' /' && exit 0
+  [ -n "$IFC" ] && $IFC | grep -oE "inet6\ addr:([0-9.]*)\ " | cut -d':' -f2 | tr -d ' ' && exit 0
+  exit 1
+  ;;
+  *)
+  echo "Usage: $rcommand <4|6>"
+  ;;
+esac
+

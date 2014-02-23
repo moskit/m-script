@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rcommand=${0##*/}
-rpath=${0%/*}
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
@@ -54,8 +55,9 @@ freqdef=`expr $FREQ + $timeshift` || freqdef=210
 [ -z "$maxfail" ] && maxfail=5
 [ -z "$maxfailroot" ] && maxfailroot=3
 [ -z "$timeformat" ] && timeformat="%b %d %H:%M:%S"
+export BLOCK_CALLER="$rcommand"
 
-logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --period=$period`
+logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --period="$period"`
 
 userfails=`echo "$logged" | grep "Invalid\\ user"`
 rootfails=`echo "$logged" | grep "Failed\\ password\\ for\\ root"`
@@ -78,7 +80,7 @@ if [ -n "$rootfails" ]; then
     ipaddr=`echo "$ip" | cut -d'|' -f2`
     invalid=`echo "$ip" | cut -d'|' -f1`
     echo -n "${ipaddr}: $invalid attempts"
-    [ `expr "$invalid" : .*[^0-9].*` -ne 0 ] 2>/dev/null && log "wrong invalid user number for IP $ip" && echo && continue
+    [ `expr "$invalid" : ".*[^0-9].*"` -ne 0 ] 2>/dev/null && log "wrong invalid user number for IP $ip" && echo && continue
     previnvalid=`grep \|${ip}$ "$M_TEMP"/dict.attacks.tmp 2>/dev/null`
     if [ -z "$previnvalid" ]; then
       if [ $invalid -ge $maxfailroot ] 2>/dev/null; then
@@ -112,7 +114,7 @@ if [ -n "$userfails" ]; then
     ipaddr=`echo "$ip" | cut -d'|' -f2`
     invalid=`echo "$ip" | cut -d'|' -f1`
     echo -n "${ipaddr}: $invalid attempts"
-    [ `expr "$invalid" : .*[^0-9].*` -ne 0 ] 2>/dev/null && log "wrong invalid user number for IP $ip" && continue
+    [ `expr "$invalid" : ".*[^0-9].*"` -ne 0 ] 2>/dev/null && log "wrong invalid user number for IP $ip" && continue
     previnvalid=`grep \|${ip}$ "$M_TEMP"/dict.attacks.tmp 2>/dev/null`
     if [ -z "$previnvalid" ]; then
       if [ $invalid -ge $maxfail ] 2>/dev/null; then
