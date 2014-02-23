@@ -13,10 +13,15 @@ print_timeline "Server"
 close_cluster
 
 # localhost first; if it belongs to a listed cluster, that cluster will be the first
+for localip in `localips | grep -v '127.0.0.1'` ; do
+  localcluster=`grep ^$localip\| "$PWD/../../servers.list" | cut -d'|' -f5`
+done
 
-echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
-cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
-echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"
+if [ -z "$localcluster" ]; then
+  echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
+  cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
+  echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"
+fi
 
 for cluster in `find ../servers/*/* -maxdepth 0 -type d 2>/dev/null`
 do
@@ -36,8 +41,11 @@ do
   open_cluster "${cld}|${cls}"
   print_cluster_inline "sizeh" "imgh" "cld" "region" "role"
   close_cluster_line
-  #echo -e "<div class=\"clustername\"><span class=\"indent\">${cls}</span><span class=\"right_note\">Server size: $sizeh  Image: $imgh  Cloud: ${cld}</span></div>\n<div class=\"cluster\" id=\"${cls}_${cld}\">"
 
+  if [ "x$cluster" == "x$localcluster" ]; then
+    cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
+    echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>"
+  fi
   for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
   do
     node="${cld}/${cls}|${server##*/}"
