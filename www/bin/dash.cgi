@@ -15,10 +15,11 @@ close_cluster
 # localhost first; if it belongs to a listed cluster, that cluster will be the first
 for localip in `localips | grep -v '127.0.0.1'` ; do
   localserver=`grep ^$localip\| "$PWD/../../servers.list"`
-  [ -z "$localserver" ] && continue || break
+  [ -z "$localserver" ] && continue
   localcluster=`echo "$localserver" | cut -d'|' -f5`
   localcloud=`echo "$localserver" | cut -d'|' -f6`
   localserver=`echo "$localserver" | cut -d'|' -f4`
+  [ -n "$localserver" ] && break
 done
 
 if [ -z "$localcluster" ]; then
@@ -46,7 +47,7 @@ do
   print_cluster_inline "sizeh" "imgh" "cld" "region" "role"
   close_cluster_line
 
-  if [ "x$cls" == "x$localcluster" -a "x$cld" == "x$localcloud"]; then
+  if [ "x$cls" == "x$localcluster" -a "x$cld" == "x$localcloud" ]; then
     node="${cld}/${cls}|${localserver}"
     echo -e "<div class=\"server\" id=\"$node\">\n<span class=\"servername clickable\" id=\"${node}_status\" onclick=\"showDetails('${node}_status','serverdetails')\">${localserver:0:20}</span>"
     cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
