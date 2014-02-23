@@ -24,7 +24,7 @@ rpath=${rpath%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/block_ip.log"
 
-possible_options="file period maxlines maxinvalid method maxfail maxfailroot timeformat"
+possible_options="file period intervalmaxlines maxinvalid method maxfail maxfailroot timeformat"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -50,17 +50,21 @@ IFS=$IFS1
 [ -z "$file" ] && echo "file is not defined" >&2 && exit 1
 timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=10
 freqdef=`expr $FREQ + $timeshift` || freqdef=210
+[ -n "$interval" ] && period="$interval"
 [ -z "$period" ] && period="$freqdef sec"
+if ! expr "$period" : ".*[^[0-9]]*" >/dev/null; then period="$period sec" ; fi
 [ -z "$maxlines" ] && maxlines=500
 [ -z "$maxfail" ] && maxfail=5
 [ -z "$maxfailroot" ] && maxfailroot=3
 [ -z "$timeformat" ] && timeformat="%b %d %H:%M:%S"
+[ -z "$method" ] && method="REJECT"
 export BLOCK_CALLER="$rcommand"
 
 logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --period="$period"`
 
-userfails=`echo "$logged" | grep "Invalid\\ user"`
+invalidusers=`echo "$logged" | grep "Invalid\\ user"`
 rootfails=`echo "$logged" | grep "Failed\\ password\\ for\\ root"`
+userfails=`echo "$logged" | grep "Failed\\ password\\ for\\ " | grep -v "Failed\\ password\\ for\\ root" | grep -v "Failed\\ password\\ for\\ invalid"`
 loginbykey=`echo "$logged" | grep "Accepted\\ publickey\\ for"`
 loginbypass=`echo "$logged" | grep "Accepted\\ password\\ for"`
 
@@ -75,71 +79,34 @@ fi
 
 if [ -n "$rootfails" ]; then
   echo -e "\nFailed attempts to login as root:\n---------------------------------\n"
-  rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2 | sort | uniq -c | sed 's|^ *||' | tr ' ' '|'`
-  for ip in `echo "$rootfails"` ; do
-    ipaddr=`echo "$ip" | cut -d'|' -f2`
-    invalid=`echo "$ip" | cut -d'|' -f1`
+  rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
+  echo "$rootfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
+  for ipaddr in `echo "$rootfails | sort | uniq"` ; do
+    invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
     echo -n "${ipaddr}: $invalid attempts"
-    [ `expr "$invalid" : ".*[^0-9].*"` -ne 0 ] 2>/dev/null && log "wrong invalid user number for IP $ip" && echo && continue
-    previnvalid=`grep \|${ip}$ "$M_TEMP"/dict.attacks.tmp 2>/dev/null`
-    if [ -z "$previnvalid" ]; then
-      if [ $invalid -ge $maxfailroot ] 2>/dev/null; then
-        echo ", max ${maxfailroot}, blocking"
-        echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=0 && sed -i "/|${previnvalid}$/d" "$M_TEMP"/dict.attacks.tmp
-      else
-        echo ", max ${maxfailroot}, not blocking yet"
-        echo "$ip" >> "$M_TEMP"/dict.attacks.tmp
-      fi
-    else
-      nowinvalid=`expr $previnvalid + $invalid 2>/dev/null`
-      if [ -n "$nowinvalid" ]; then
-        if [ $nowinvalid -ge $maxfailroot ] 2>/dev/null; then
-          echo ", $nowinvalid total, max ${maxfailroot}, blocking"
-          echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method=$method --block_forever_after=0 && sed -i "/|${previnvalid}$/d" "$M_TEMP"/dict.attacks.tmp
-        else
-          echo ", $nowinvalid total, max ${maxfailroot}, not blocking yet"
-          sed -i "/$previnvalid/s/^[0-9]*|/${nowinvalid}|/" "$M_TEMP"/dict.attacks.tmp
-        fi
-      else
-        log "error in expression previnvalid + invalid ($previnvalid + $invalid)"
-      fi
-    fi
+    echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot
+  done
+fi
+
+if [ -n "$invalidusers" ]; then
+  echo -e "\nAttempts to login as non-existing user:\n---------------------------------------\n"
+  invalidusers=`echo "$invalidusers" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
+  echo "$invalidusers" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
+  for ipaddr in `echo "$invalidusers | sort | uniq"` ; do
+    invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
+    echo -n "${ipaddr}: $invalid attempts"
+    echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
 
 if [ -n "$userfails" ]; then
-  echo -e "\nAttempts to login as non-existing user:\n---------------------------------------\n"
-  userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2 | sort | uniq -c | sed 's|^ *||' | tr ' ' '|'`
-  for ip in `echo "$userfails"` ; do
-    ipaddr=`echo "$ip" | cut -d'|' -f2`
-    invalid=`echo "$ip" | cut -d'|' -f1`
+  echo -e "\nFailed attempts to login as non-root user:\n------------------------------------------\n"
+  userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
+  echo "$userfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
+  for ipaddr in `echo "$userfails | sort | uniq"` ; do
+    invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
     echo -n "${ipaddr}: $invalid attempts"
-    [ `expr "$invalid" : ".*[^0-9].*"` -ne 0 ] 2>/dev/null && log "wrong invalid user number for IP $ip" && continue
-    previnvalid=`grep \|${ip}$ "$M_TEMP"/dict.attacks.tmp 2>/dev/null`
-    if [ -z "$previnvalid" ]; then
-      if [ $invalid -ge $maxfail ] 2>/dev/null; then
-        echo ", max ${maxfail}, blocking"
-        echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=0 && sed -i "/|${previnvalid}$/d" "$M_TEMP"/dict.attacks.tmp
-      else
-        echo ", max ${maxfail}, not blocking yet"
-        echo "$ip" >> "$M_TEMP"/dict.attacks.tmp
-      fi
-    else
-      nowinvalid=`expr $previnvalid + $invalid 2>/dev/null`
-      if [ -n "$nowinvalid" ]; then
-        if [ $nowinvalid -ge $maxfail ] 2>/dev/null; then
-          echo ", $nowinvalid total, max ${maxfail}, blocking"
-          echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=0 && sed -i "/|${previnvalid}$/d" "$M_TEMP"/dict.attacks.tmp
-        else
-          echo ", $nowinvalid total, max ${maxfail}, not blocking yet"
-          sed -i "/$previnvalid/s/^[0-9]*|/${nowinvalid}|/" "$M_TEMP"/dict.attacks.tmp
-        fi
-      else
-        log "error in expression previnvalid + invalid ($previnvalid + $invalid)"
-      fi
-    fi
+    echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
-
-
 
