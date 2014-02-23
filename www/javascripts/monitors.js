@@ -109,7 +109,7 @@ showData = function(theid,base) {
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
     stopUpdater(updater);
-    if (cluster == 'localhost') {
+    if (server == 'localhost') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(report) + '.html';
     } else {
 
