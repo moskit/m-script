@@ -81,9 +81,9 @@ if [ -n "$rootfails" ]; then
   echo -e "\nFailed attempts to login as root:\n---------------------------------\n"
   rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$rootfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
-  for ipaddr in `echo "$rootfails | sort | uniq"` ; do
+  for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
-    echo -n "${ipaddr}: $invalid attempts"
+    echo "${ipaddr}: $invalid attempts"
     echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot
   done
 fi
@@ -92,9 +92,9 @@ if [ -n "$invalidusers" ]; then
   echo -e "\nAttempts to login as non-existing user:\n---------------------------------------\n"
   invalidusers=`echo "$invalidusers" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$invalidusers" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
-  for ipaddr in `echo "$invalidusers | sort | uniq"` ; do
+  for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
     invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
-    echo -n "${ipaddr}: $invalid attempts"
+    echo "${ipaddr}: $invalid attempts"
     echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
@@ -103,9 +103,9 @@ if [ -n "$userfails" ]; then
   echo -e "\nFailed attempts to login as non-root user:\n------------------------------------------\n"
   userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$userfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
-  for ipaddr in `echo "$userfails | sort | uniq"` ; do
+  for ipaddr in `echo "$userfails" | sort | uniq` ; do
     invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
-    echo -n "${ipaddr}: $invalid attempts"
+    echo "${ipaddr}: $invalid attempts"
     echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
