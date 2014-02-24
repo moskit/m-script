@@ -175,7 +175,7 @@ function runactions() {
   for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
-    for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+    for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       pattern=`echo $confline | cut -d'|' -f1`
       level=`echo $confline | cut -s -d'|' -f2`
       nalerts=`echo $confline | cut -s -d'|' -f4`
@@ -259,8 +259,8 @@ function runactions() {
       log "all alerts found for action: $action ; block enabled, cycles: $blockccl"
       [ -n "$blockccl" ] && block_action $blockccl "$action"
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "$rpath/monitoring.log" | tee -a $LOG
-      action=`expr "$action" : "^%.*%\ \(.*\)"`
-      action $action
+      action_or=`expr "$action" : "^%.*%\ \(.*\)"`
+      [ -z "$action_or" ] && action $action || action $action_or
       [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
     fi
 
@@ -314,7 +314,7 @@ function action() {
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
-  echo "`grep "$act" "$rpath/conf/actions.conf" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
+  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
   "$rpath"/lib/mq.run &
 }
