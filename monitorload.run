@@ -155,9 +155,11 @@ start)
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
-            [ -n "$sares" ] && echo -e "${sares}\n" > "$safolder/${rsatest}.report"
-            if [ `cat "$safolder/${rsatest}.report" | wc -l` -gt 1 ]; then
-              (source "$M_ROOT/lib/functions.sh" && gendash "${rsatest%.mon}" "$safolder/${rsatest}.report")
+            if [ -n "$sares" -a $? -eq 0 ]; then
+              echo -e "${sares}\n" > "$safolder/${rsatest}.report"
+              if [ `cat "$safolder/${rsatest}.report" | wc -l` -gt 1 ]; then
+                (source "$M_ROOT/lib/functions.sh" && gendash "${rsatest%.mon}" "$safolder/${rsatest}.report")
+              fi
             fi
           done </dev/null &
         done
