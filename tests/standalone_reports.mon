@@ -23,12 +23,15 @@ source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
 
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
-  [ -f "$M_ROOT/standalone/$sa/report" ] || continue
-  sarep=`cat "$M_ROOT/standalone/$sa/report" | tail -n +3`
-  if [ `echo "$sarep" | grep -v '\-\-\-' | grep -v ^$ | wc -l` -gt 0 ]; then
+  [ `find "$M_ROOT/standalone/$sa" -name "*.report" -prune | wc -l` -eq 0 ] && continue
+  sarep=`cat "$M_ROOT/standalone/$sa"/*.report`
+  # make the standalone monitor print at least one line with indicator
+  # (<OK>,<*>,<**>,<***>) to make this monitor print the whole output to its
+  # report
+  if `echo "$sarep" | grep -qE '<\*|<OK>'` ; then
     echo -e "\n$sa\n---------------\n\n$sarep"
   fi
-  # this is necessary to avoid sending the same alert
-  rm "$M_ROOT/standalone/$sa/report"
+  # this is necessary to avoid sending the same alert again
+  rm "$M_ROOT/standalone/$sa"/*.report"
 done
 
