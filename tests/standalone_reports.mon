@@ -32,6 +32,6 @@ for sa in `echo "$SATESTS" | tr ',' ' '` ; do
     echo -e "\n$sa\n---------------\n\n$sarep"
   fi
   # this is necessary to avoid sending the same alert again
-  rm "$M_ROOT/standalone/$sa"/*.report"
+  rm "$M_ROOT/standalone/$sa"/*.report
 done
 
