@@ -38,6 +38,6 @@ if (objStatus.recordStats) {
   print('accessesNotInMemory|' + objStatus.recordStats.accessesNotInMemory);
   print('pageFaultExceptionsThrown|' + objStatus.recordStats.pageFaultExceptionsThrown);
 }
-if (objStatus.metrics) {
+if (objStatus.metrics.queryExecutor) {
   print('scanned|' + objStatus.metrics.queryExecutor.scanned);
 }
