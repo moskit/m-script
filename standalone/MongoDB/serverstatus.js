@@ -23,20 +23,6 @@ if (objStatus.opcounters) {
   print('opcountersGetmore|' + objStatus.opcounters.getmore);
   print('opcountersCommand|' + objStatus.opcounters.command);
 }
-if (objStatus.ops) {
-  print('opsShardedInsert|' + objStatus.ops.sharded.insert);
-  print('opsShardedQuery|' + objStatus.ops.sharded.query);
-  print('opsShardedUpdate|' + objStatus.ops.sharded.update);
-  print('opsShardedDelete|' + objStatus.ops.sharded.delete);
-  print('opsShardedGetmore|' + objStatus.ops.sharded.getmore);
-  print('opsShardedCommand|' + objStatus.ops.sharded.command);
-  print('opsNotShardedInsert|' + objStatus.ops.notSharded.insert);
-  print('opsNotShardedQuery|' + objStatus.ops.notSharded.query);
-  print('opsNotShardedUpdate|' + objStatus.ops.notSharded.update);
-  print('opsNotShardedDelete|' + objStatus.ops.notSharded.delete);
-  print('opsNotShardedGetmore|' + objStatus.ops.notSharded.getmore);
-  print('opsNotShardedCommand|' + objStatus.ops.notSharded.command);
-}
 if (objStatus.globalLock) {
   print('totalTime|' + objStatus.globalLock.totalTime);
   print('lockTime|' + objStatus.globalLock.lockTime);
@@ -52,4 +38,6 @@ if (objStatus.recordStats) {
   print('accessesNotInMemory|' + objStatus.recordStats.accessesNotInMemory);
   print('pageFaultExceptionsThrown|' + objStatus.recordStats.pageFaultExceptionsThrown);
 }
-
+if (objStatus.metrics) {
+  print('scanned|' + objStatus.metrics.queryExecutor.scanned);
+}
