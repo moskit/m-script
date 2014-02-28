@@ -173,7 +173,9 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   fi
 
   print_servers $configips > "$M_TEMP/mongo_config_servers.list"
-  [ -f "$M_TEMP/mongo_config_servers.list" ] && [ -f "$rpath/mongo_config_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_config_servers.list" "$rpath/mongo_config_servers.list"`" ] && mv "$M_TEMP/mongo_config_servers.list" "$rpath/mongo_config_servers.list"
+  if [ -f "$M_TEMP/mongo_config_servers.list" ] && [ -f "$rpath/mongo_config_servers.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_config_servers.list" "$rpath/mongo_config_servers.list" || mv "$M_TEMP/mongo_config_servers.list" "$rpath/mongo_config_servers.list"
+  fi
   
 elif [ -z "$MONGO_SERVERS" ] ; then
   log "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
@@ -235,7 +237,9 @@ else
     echo -e ${replicalist[*]} | tr ' ' '\n' >> "$M_TEMP/mongo_servers.list"
   done
 
-  [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"`" ] && mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
+  if [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list" || mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
+  fi
 fi
 
 for configip in $configips ; do
@@ -250,7 +254,9 @@ done
 
 if [ -n "$mongoses" ] ; then
   print_servers $mongoses > "$M_TEMP/mongo_mongos_servers.list"
-  [ -f "$M_TEMP/mongo_mongos_servers.list" ] && [ -f "$rpath/mongo_mongos_servers.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"`" ] && mv "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"
+  if [ -f "$M_TEMP/mongo_mongos_servers.list" ] && [ -f "$rpath/mongo_mongos_servers.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list" || mv "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"
+  fi
 else
   echo -n > "$rpath/mongo_mongos_servers.list"
 fi
@@ -308,7 +314,9 @@ if [ -n "$shardhosts" ] ; then
     echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq >> "$M_TEMP/mongo_shards.list"
   done
   
-  [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ] && [ -n "`$DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"`" ] && mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
+  if [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list" || mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
+  fi
 IFS=$IFSORG
 else
   echo -n > "$M_TEMP/mongo_shards.list"
