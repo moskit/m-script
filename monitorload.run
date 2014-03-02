@@ -43,6 +43,7 @@ export M_ROOT="$rpath"
 pidfile=/var/run/${rcommand}.pid
 mgpidfile=/var/run/${rcommand}.http.pid
 [ -f "$rpath/conf/mon.conf" ] && source "$rpath/conf/mon.conf" || exit 1
+[ `find "$rpath/standalone/rc" -prune -type l | wc -l` -gt 0 ] && source "$rpath/lib/functions.sh"
 
 set +h
 
@@ -144,7 +145,7 @@ start)
       fi
       # Standalone tests, if any
       if [ -d "$rpath/standalone/rc" ]; then
-        for sa in `find "$rpath/standalone/rc/" -maxdepth 1 -type l` ; do
+        for sa in `find "$rpath/standalone/rc/" -prune -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           safolder=$(readlink -f "$sa")
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
@@ -156,8 +157,7 @@ start)
             sares=`$satest 2>>"$rpath/logs/sa.log"`
             if [ -n "$sares" -a $? -eq 0 ]; then
               echo -e "${sares}\n" > "$safolder/${rsatest}.report"
-              if [ `cat "$safolder/${rsatest}.report" | wc -l` -gt 1 ]; then
-                (source "$M_ROOT/lib/functions.sh" && gendash "${rsatest%.mon}" "$safolder/${rsatest}.report")
+              gendash "${rsatest%.mon}" "$safolder/${rsatest}.report"
               fi
             fi
           done </dev/null &

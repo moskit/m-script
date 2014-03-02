@@ -142,8 +142,7 @@ fi
 echo -e "$warnind Used Swap:\t\t${musedswap} MB"
 echo -e "$warnind Free Swap:\t\t${mfreeswap} MB"
 
-if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]
-then
+if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
   dbquery "$rpath/../sysdata" "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime=$ruptime, loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi
 

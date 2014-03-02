@@ -53,7 +53,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
         echo "<div class=\"status\" id=\"${node}_size\">`grep ^\\"indices\\"/\\"store\\"/\\"size\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d '"'`</div>"
         echo "<div class=\"status\" id=\"${node}_docs\">`grep ^\\"indices\\"/\\"docs\\"/\\"count\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^\\"process\\"/\\"open_file_descriptors\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
-        echo "<div class=\"status\" id=\"${node}_conn\">`grep ^\\"http\\"/\\"server_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^\\"transport\\"/\\"current_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${node}_conn\">`grep ^\\"http\\"/\\"current_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^\\"transport\\"/\\"server_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         
       close_line
     done
