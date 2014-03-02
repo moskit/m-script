@@ -22,6 +22,7 @@ rpath=${rpath%/*}
 # lib/functions.sh reads conf/mon.conf
 source "$rpath/../../lib/functions.sh"
 source "$rpath/postfix.conf"
+[ ! -e "$MAILLOG" ] && echo "log file $MAILLOG does not exist!" && exit 1
 
 declare -i deferred
 declare -i bounced
@@ -31,7 +32,7 @@ deferred=0 ; bounced=0 ; sent=0
 timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
 [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=210
 
-log=`$M_ROOT/helpers/logreader --file=/var/log/mail.log --period="$period sec" --maxlines=10000 | grep ' postfix/'`
+log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=10000 | grep ' postfix/'`
 
 for id in `echo "$log" | grep postfix/qmgr|cut -d':' -f4|sort | uniq`; do
 

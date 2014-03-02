@@ -21,6 +21,11 @@ fpath=${fpath%/*}
 source "$M_ROOT/conf/mon.conf"
 SQLBIN=`which sqlite3 2>/dev/null || echo echo`
 [ -z "$M_TEMP" ] && log "M_TEMP is not defined" && echo "M_TEMP is not defined" >&2 && exit 1
+caller=$(readlink -f "$0")
+callername=${caller%.mon}
+callername=${callername##*/}
+callerfolder=${caller%/*}
+callerparent=${callerfolder%/*}
 
 store_results() {
   # syntax:
@@ -28,19 +33,15 @@ store_results() {
   [ -z "$1" ] && echo "store_results: fields are not defined" && exit 1
   [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
   if [ -z "$2" ]; then
-    caller=$(readlink -f "$0")
-    callername=${caller##*/}
-    callerfolder=${caller%/*}
-    callerparent=${callerfolder%/*}
     if [ -n "$callerparent" -a "${callerparent##*/}" == "standalone" ]; then
-      dbfile="$callerfolder/${callername%.mon}.db"
+      dbfile="$callerfolder/${callername}.db"
     elif [ -n "$callerfolder" -a "${callerfolder##*/}" == "tests" ]; then
       dbfile="$callerfolder/../sysdata"
     else
       log "Non-standard file location, unable to determine where the database is, caller parent folder is ${callerparent##*/}, caller folder is ${callerfolder##*/}"
       exit 1
     fi
-    dbtable="${callername%.mon}"
+    dbtable="${callername}"
   else
     dbfile="${2%%|*}"
     dbtable="${2##*|}"
@@ -68,10 +69,8 @@ check_results() {
   # where datatype can be real (default, slower but more universal) or integer
   # if description is omitted, variable name will be used in report
   [ -z "$1" ] && return 1
-  caller=$(readlink -f "$0")
-  callername=${caller##*/}
   callerconf="${caller%.mon}.conf"
-  [ "$callerconf" == "$caller" ] && log "Monitor script must have extension .mon" && return 1
+  [ "$callerconf" == "${caller}.conf" ] && log "Monitor script must have extension .mon" && return 1
   source "$callerconf"
   IFSORIG=$IFS
   IFS=','
@@ -107,7 +106,6 @@ check_results() {
     
 gendash() {
   local name
-  caller=$(readlink -f "$0")
   if [ -n "$1" ]; then
     name="$1"
     shift
@@ -118,8 +116,7 @@ gendash() {
     fi
     [ -n "$2" ] && indic2="$2"
   else
-    name="${caller%.mon}"
-    name="${name##*/}"
+    name="${callername}"
   fi
   if [ -f "$report" ]; then
     indic="ok"
@@ -141,7 +138,6 @@ gendash() {
 
 genreport() {
   local name
-  caller=$(readlink -f "$0")
   if [ -n "$1" ]; then
     name="$1"
     shift
@@ -151,8 +147,7 @@ genreport() {
       report="${caller}.report"
     fi
   else
-    name="${caller%.mon}"
-    name="${name##*/}"
+    name="${callername}"
   fi
   case $DASHBOARD in
     HTML)
@@ -297,18 +292,18 @@ EOF
 }
 
 check_interval() {
-  local interval="$*"
+  # in seconds
   [ -z "$rpath" ] && rpath="$M_TEMP"
   interval=`date -d "1970/01/01 +$interval" +"%s"`
   [ $interval -eq 0 ] && return 1
-  local currinterval=`cat "$rpath/interval.tmp" 2>/dev/null || echo 0`
+  local currinterval=`cat "$rpath/${callername}.interval.tmp" 2>/dev/null || echo 0`
   timeshift=`cat "$M_TEMP/timeshift" || echo 0`
   currinterval=`expr $currinterval + $FREQ + $timeshift`
   if [ $currinterval -ge $interval ]; then
-    echo 0 > "$rpath/interval.tmp"
+    echo 0 > "$rpath/${callername}.interval.tmp"
     return 0
   else
-    echo $currinterval > "$rpath/interval.tmp"
+    echo $currinterval > "$rpath/${callername}.interval.tmp"
     return 1
   fi
 }
@@ -321,8 +316,7 @@ get_lock() {
   # removing stale lock file
   [ -z "$LOG" ] && LOG="$M_ROOT/monitoring.log"
   [ -z "$MAXLOCK" ] && MAXLOCK=60
-  [ -z "$rcommand" ] && rcommand="${BASH_SOURCE[0]##*/}"
-  lockfile=`find "$rpath" -maxdepth 1 -name "${rcommand}.lock" -mmin +$MAXLOCK`
+  lockfile=`find "$callerfolder" -maxdepth 1 -name "${callername}.lock" -mmin +$MAXLOCK`
   if [ -n "$lockfile" ] ; then
     log "*** Lock file is older than $MAXLOCK minutes, removing"
     rm -f "$lockfile"
@@ -330,7 +324,7 @@ get_lock() {
   sleep $((RANDOM%5))
   for ((i=1; i<=10; i++))
   do
-    if [ -e "$rpath/${rcommand}.lock" ] ; then
+    if [ -e "$callerfolder/${callername}.lock" ] ; then
       sleep $((RANDOM%10))
       continue
     else
@@ -338,19 +332,19 @@ get_lock() {
       break
     fi
   done
-  if [ -f "$rpath/${rcommand}.lock" ] ; then
+  if [ -f "$callerfolder/${callername}.lock" ] ; then
     log "giving up acquiring the lock..."
     exit 1
   fi
-  touch "$rpath/${rcommand}.lock"
+  echo $$ > "$callerfolder/${callername}.lock"
 }
 
 release_lock() {
-  rm "$rpath/${rcommand}.lock"
+  rm "$callerfolder/${callername}.lock"
 }
 
 unlock_exit() {
-  rm "$rpath/${rcommand}.lock"
+  rm "$callerfolder/${callername}.lock"
   exit $1
 }
 

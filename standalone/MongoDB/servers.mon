@@ -25,7 +25,7 @@ source "$M_ROOT/conf/mon.conf"
 
 touch "$rpath/mongo_mongos_servers.list" "$rpath/mongo_config_servers.list" "$rpath/mongo_shards.list" "$rpath/mongo_servers.list"
 M_TEMP="$M_TEMP/MongoDB"
-install -d "$M_TEMP"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
 timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
 [ -n "$timeshift" ] && period=`expr $FREQ + $timeshift` || period=$FREQ
@@ -327,7 +327,6 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_config_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
-# mongo localhost:27017/admin --quiet --eval "db.currentOp().inprog.forEach(function(d){ if(d.waitingForLock) print(d.op)})" | sort | uniq -c
     serverstatus=$($MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_config_servers.list"
@@ -336,7 +335,7 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
     fi
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/${cs}/${cs}_name.html"
   done &
 fi
@@ -353,7 +352,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
     fi
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/${cs}/${cs}_name.html"
   done &
 fi
@@ -370,7 +369,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     fi
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
   done &
 fi
@@ -387,7 +386,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
     fi
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib/"txt2html "$rpath/data/${cs}.report"`
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
   done &
 fi

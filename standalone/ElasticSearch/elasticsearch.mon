@@ -13,28 +13,16 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s"
 source "$M_ROOT/conf/mon.conf" || exit 1
 source "$rpath/${rcommand%.mon}.conf"
-SQLITE=`which sqlite3 2>/dev/null`
+SQLITE=dbquery
 MAILX=`which mail 2>/dev/null`
 M_TEMP="$M_TEMP/elasticsearch"
 LOG="$M_ROOT/logs/sa.log"
-log() {
-echo "`date +"%H:%M:%S"` $rcommand ($pid): ${@}">>$LOG
-}
+source "$M_ROOT/lib/functions.sh"
 
-pid=$$
-if [ -n "`find "$rpath" -maxdepth 1 -mmin +30 -type f -name lock`" ]; then
-  kill `cat "$rpath/lock"`
-  log "Stale lock found and removed"
-  rm -f "$rpath/lock"
-fi
-[ -f "$rpath/lock" ] && log "Another process running" && exit 0
-
-echo "Running $rpath/$rcommand" >> $LOG
-
-install -d "$M_TEMP"
 timeindexnow=`date +"%s"`
-### Uncomment to debug
-debug=true
+debug=false
+
+get_lock
 
 function ip_to_name() {
   rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
@@ -74,7 +62,8 @@ if [ -n "$ES_SERVERS" ] ; then
     fi
   done
   
-  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in ES_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && echo "Wrong cluster name in ES_SERVERS or both cluster and server names are present which is not supported" && unlock_exit 1
+  
   if [ "X$noncluster" == "X1" ] ; then
   # ES_SERVERS contains hosts
     for server in $ES_SERVERS ; do
@@ -106,7 +95,7 @@ if [ -n "$ES_SERVERS" ] ; then
   fi
 else
   log "ES_SERVERS variable is not defined, check ${rcommand}.conf"
-  exit 1
+  unlock_exit 1
 fi
 $debug && log "hosts collected"
 
@@ -120,11 +109,9 @@ $debug && log "server lists updated"
 for node in `cat "$rpath"/*.es_servers.list 2>/dev/null` ; do
   allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"$node|\\" \\$2}" | tr -d '"'`"
 done
-[ -z "$allclusters" ] && log "no ES clusters found, exiting" && exit 1
+[ -z "$allclusters" ] && log "no ES clusters found, exiting" && unlock_exit 1
 
 $debug && log "ES cluster(s) found: $allclusters"
-
-echo $pid > "$rpath/lock"
 
 date > "$rpath/report"
 echo -e "-----------------------------\n" >> "$rpath/report"
@@ -288,7 +275,6 @@ find "$rpath/" -name "*.dat" -o -name "*.dat.prev" -o -name "*.nodes.list" -mmin
 # ( the last known state of a disappeared cluster :) )
 find "$rpath/" -name "*.report" -mtime +1 -exec rm {} \;
 $debug && log "finish"
-rm -f "$rpath/lock"
 
-exit 0
+release_lock
 

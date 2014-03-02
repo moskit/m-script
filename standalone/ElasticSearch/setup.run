@@ -5,10 +5,12 @@ rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
 #*/
 
-install -d "${rpath}/data"
-source "${rpath}/../../conf/mon.conf"
+install -d "$rpath/data"
+source "$rpath/../../conf/mon.conf"
+M_TEMP="$M_TEMP/elasticsearch"
+install -d "$M_TEMP"
 if [ "X$SQLITE3" == "X1" ] ; then
-  `which sqlite3 2>/dev/null` "${rpath}/elasticsearch.sql3" "CREATE TABLE nodes (timeindex integer, day varchar(8), hostport text, master boolean, ind_size integer, ind_docsnum integer, ind_cache_field_evictions integer, ind_cache_field_size integer, ind_cache_filter_count integer, ind_cache_filter_evictions integer, ind_cache_filter_size integer, ind_merges integer, ind_merges_time integer, open_file_descriptors integer, proc_cpu_sys integer, proc_cpu_user integer, proc_mem_res integer, proc_mem_share integer, proc_mem_virt integer, jvm_uptime integer, jvm_mem_heap_used integer, jvm_mem_heap_committed integer, jvm_mem_nonheap_used integer, jvm_mem_nonheap_committed integer, jvm_threads integer, network_active_opens integer, network_passive_opens integer, network_curr_estab integer, transport_server_open integer, http_server_open integer, PRIMARY KEY(timeindex, hostport))"
-  `which sqlite3 2>/dev/null` "${rpath}/elasticsearch.sql3" "CREATE TABLE cluster (timeindex integer, day varchar(8), name text, status varchar(8), timed_out boolean, number_of_nodes integer, number_of_data_nodes integer, active_primary_shards integer, active_shards integer, relocating_shards integer, initializing_shards integer, unassigned_shards integer, PRIMARY KEY(timeindex, name))"
+  `which sqlite3 2>/dev/null` "$rpath/elasticsearch.sql3" "CREATE TABLE nodes (timeindex integer, day varchar(8), hostport text, master boolean, ind_size integer, ind_docsnum integer, ind_cache_field_evictions integer, ind_cache_field_size integer, ind_cache_filter_count integer, ind_cache_filter_evictions integer, ind_cache_filter_size integer, ind_merges integer, ind_merges_time integer, open_file_descriptors integer, proc_cpu_sys integer, proc_cpu_user integer, proc_mem_res integer, proc_mem_share integer, proc_mem_virt integer, jvm_uptime integer, jvm_mem_heap_used integer, jvm_mem_heap_committed integer, jvm_mem_nonheap_used integer, jvm_mem_nonheap_committed integer, jvm_threads integer, network_active_opens integer, network_passive_opens integer, network_curr_estab integer, transport_server_open integer, http_server_open integer, PRIMARY KEY(timeindex, hostport))"
+  `which sqlite3 2>/dev/null` "$rpath/elasticsearch.sql3" "CREATE TABLE cluster (timeindex integer, day varchar(8), name text, status varchar(8), timed_out boolean, number_of_nodes integer, number_of_data_nodes integer, active_primary_shards integer, active_shards integer, relocating_shards integer, initializing_shards integer, unassigned_shards integer, PRIMARY KEY(timeindex, name))"
 
 fi

@@ -217,20 +217,43 @@ print_nav_bar() {
   # view0 is a special ID indicating updaterlevel = 0 in monitors.js
   # that is, clicking it is the same as clicking the corresponding upper tab
   # other buttons IDs become CGI scripts names (with .cgi extension)
-  [ -z "$1" ] && exit 0
-  [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
-  echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
-    shift
-    while [ -n "$1" ]; do
-      # not printing if not exists
-      if [ -x "$M_ROOT/www/bin/${1%%|*}.cgi" ]; then
-        unset dfpnbactive
-        [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
-        echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
-      fi
+  ## Views provided as arguments have the highest priority
+  if [ -n "$1" ]; then
+    [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
+    echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
       shift
-    done
-  echo -e "</ul>\n</div>"
+      while [ -n "$1" ]; do
+        # not printing if not exists
+        if [ -x "$M_ROOT/www/bin/${1%%|*}.cgi" ]; then
+          unset dfpnbactive
+          [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
+          echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
+        fi
+        shift
+      done
+    echo -e "</ul>\n</div>"
+  else
+
+    ## Views from file nav.bar, located in SA folder. Requires variable 'saname'
+    ## to be defined in CGI script! (name of the folder)
+    if [ -e "$M_ROOT/standalone/$saname/nav.bar" ]; then
+      IFSORIG=$IFS
+      IFS='
+'
+        for view in `cat "$M_ROOT/standalone/$saname/nav.bar"`; do
+          if [ "${view%%|*}" == "${0%.cgi}" ]; then
+            dfpnbactive=" active"
+            echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view%%|*}', 0)\">${view#*|}</li>"
+          else
+            
+          fi
+          unset dfpnbactive
+        done
+      IFS=$IFSORIG
+    else
+    
+    fi
+  fi
   unset dfpnbactive
 }
 

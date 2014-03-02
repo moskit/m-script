@@ -36,7 +36,7 @@ declare -a q1a q2a q3a
 
 for deferred in `find $SPOOLDIR/deferred -type f` ; do
   id=${deferred##*/}
-  create_time=$(expr "`cat $deferred | head -1`" : ".*create_time=\([0-9]*\)")
+  create_time=$(expr "`cat $deferred | head -1 | cut -b -1000`" : ".*create_time=\([0-9]*\)")
   age=`expr $timenow - $create_time`
 
   if [ $age -gt $AGE3 ]; then

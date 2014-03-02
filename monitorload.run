@@ -22,7 +22,6 @@
 # chkconfig:   2345 99 1
 # description: monitorload
 # processname: monitorload.run
-
 ### BEGIN INIT INFO
 # Provides:          monitorload
 # Default-Start:     2 3 4 5
@@ -50,13 +49,14 @@ set +h
 case $1 in
 start)
 
-  [ -f $pidfile ] && [ -d /proc/`cat $pidfile` ] && echo "Already running (PID `cat $pidfile`)" | tee -a "$rpath/monitoring.log" && exit 0
+  [ -f "$pidfile" ] && [ -d /proc/`cat "$pidfile"` ] && echo "Already running (PID `cat "$pidfile"`)" | tee -a "$rpath/monitoring.log" && exit 0
   
   [ -f "$rpath/mon.run.lock" ] && rm -f "$rpath/mon.run.lock"
   
-  LOAD_CRIT=${LOAD_CRIT%.*} ; [ "X$LOAD_CRIT" == "X" ] && LOAD_CRIT=0
+  LOAD_CRIT=${LOAD_CRIT%.*} ; [ -z "$LOAD_CRIT" ] && LOAD_CRIT=0
   install -d "$M_TEMP"
   [ -z "$BASIC_SEQUENCE" ] &&  BASIC_SEQUENCE=connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,servers.mon,netstat.mon
+  [ -z "$HIGH_LOAD_SEQUENCE" ] && HIGH_LOAD_SEQUENCE=mem.mon
   echo $$ > $pidfile
   
   [ -n "$FREQ" ] || FREQ=200
@@ -96,7 +96,6 @@ start)
     rloadabs=${rload%.*}
     rloadchng="$(echo "scale=2; $rload - $rloadprev" | bc)"
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
-    [ "$1" == "--verbose" ] && echo "Was: $rloadprev; Now: $rload; Change: $rloadchng; Test started? $x"
 
 ##### Running tests #####
     sleep 10
@@ -114,7 +113,7 @@ start)
         "$rpath"/mon.run -ao </dev/null &
       else
 ## otherwise, these tests only
-        "$rpath"/mon.run mem.mon </dev/null &
+        "$rpath"/mon.run "$HIGH_LOAD_SEQUENCE" </dev/null &
       fi
     fi
     
@@ -166,7 +165,7 @@ start)
       fi
     else
 ## Tests that are always enabled
-      "$rpath"/mon.run mem.mon </dev/null &
+      "$rpath"/mon.run "$HIGH_LOAD_SEQUENCE" </dev/null &
     fi
 ###
   done >/dev/null 2>&1 </dev/null &
@@ -186,8 +185,9 @@ stop)
   if [ -f "$pidfile" ]; then
     echo "3" > "$rpath/services.mon.lock"
     pid=`cat "$pidfile"|tail -1`
-    printf "Stopping monitorload (pid $pid)...      "
+    echo -n "Stopping monitorload (PID $pid)...      "
     kill -15 $pid
+    [ $? -ne 0 ] && echo "ERROR" && exit 1
     sleep 1
     for ((i=0; i<5; i++)); do
       [ ! -d /proc/$pid ] && rm -f $pidfile && echo "done" && echo "Monitorload daemon stopped" >> "$rpath/monitoring.log" && break || sleep 3
@@ -200,8 +200,9 @@ stop)
     if [ -f $mgpidfile ] ; then
       echo "3" > "$rpath/connections.mon.lock"
       pid=`cat $mgpidfile|tail -1`
-      printf "Stopping web interface (pid $pid)...       "
+      printf "Stopping web interface (PID $pid)...       "
       kill -15 $pid
+      [ $? -ne 0 ] && echo "ERROR" && exit 1
       sleep 3
       for ((i=0; i<5; i++)); do
         [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
@@ -213,19 +214,26 @@ stop)
   fi
   ;;
 restart)
-  $0 stop
-  $0 start
+  $0 stop && $0 start
   ;;
 status)
   if [ -f "$pidfile" ]; then
     pid=`cat "$pidfile"|tail -1`
-    echo "${0##*/} is running (pid $pid)"
+    if [ -d /proc/$pid ]; then
+      echo "${0##*/} is running (PID $pid)"
+    else
+      echo "PID file exists, but process PID $pid does not"
+    fi
   else
     echo "${0##*/} is not running"
   fi
   if [ -f $mgpidfile ] ; then
     pid=`cat $mgpidfile|tail -1`
-    echo "HTTP is running (pid $pid)"
+    if [ -d /proc/$pid ]; then
+      echo "HTTP is running (pid $pid)"
+    else
+      echo "PID file exists, but process PID $pid does not"
+    fi
   else
     echo "HTTP is not running"
   fi

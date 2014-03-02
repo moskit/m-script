@@ -641,8 +641,6 @@ span.value {
   float: left;
   border-top-left-radius: 3px;
   border-bottom-left-radius: 3px;
-  -moz-border-radius-topleft: 3px;
-  -moz-border-radius-bottomleft: 3px;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#cc5555', endColorstr='#993333');
   background: -webkit-gradient(linear, left bottom, left top, from(#993333), to(#cc5555));
   background: -moz-linear-gradient(bottom,  #993333,  #CC5555)
@@ -654,10 +652,6 @@ span.value {
   margin-bottom: 2px;
   background-color: #779;
   float: left;
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-  -moz-border-radius-topleft: 3px;
-  -moz-border-radius-bottomleft: 3px;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#5555CC', endColorstr='#333399');
   background: -webkit-gradient(linear, left bottom, left top, from(#333399), to(#5555CC));
   background: -moz-linear-gradient(bottom,  #333399,  #5555CC)
@@ -671,8 +665,6 @@ span.value {
   float: left;
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
-  -moz-border-radius-topright: 3px;
-  -moz-border-radius-bottomright: 3px;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#55CC55', endColorstr='#339933');
   background: -webkit-gradient(linear, left bottom, left top, from(#339933), to(#55CC55));
   background: -moz-linear-gradient(bottom,  #339933,  #55CC55)
