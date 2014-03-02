@@ -45,6 +45,7 @@ store_results() {
   else
     dbfile="${2%%|*}"
     dbtable="${2##*|}"
+    [ `echo "$dbfile" | cut -b1` == "/" ] || dbfile="$M_ROOT/$dbfile"
   fi
   timeindex=`date +"%s"`
   day=`date +"%Y%m%d"`

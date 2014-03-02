@@ -155,7 +155,7 @@ start)
             [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
-            if [ -n "$sares" -a $? -eq 0 ]; then
+            if [ $? -eq 0 ]; then
               echo -e "${sares}\n" > "$safolder/${rsatest}.report"
               gendash "${rsatest%.mon}" "$safolder/${rsatest}.report"
             fi

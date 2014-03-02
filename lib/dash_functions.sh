@@ -176,7 +176,7 @@ IFS1=$IFS; IFS='
 '
       for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
         open_line "${server##*/}" "$dfpdsonclick" "${@##*/}"
-        cat "$dpath/../www/${@}/${server##*/}/dash.html"
+        cat "$dpath/../www/${@}/${server##*/}/dash.html" 2>/dev/null
         close_line "${server##*/}"
       done
 IFS=$IFS1
