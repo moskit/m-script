@@ -214,44 +214,71 @@ print_timeline() {
 }
 
 print_nav_bar() {
+  callername="${0%.cgi}"
+  callername="${callername##*/}"
+  unset dfpnbactive
   # view0 is a special ID indicating updaterlevel = 0 in monitors.js
   # that is, clicking it is the same as clicking the corresponding upper tab
   # other buttons IDs become CGI scripts names (with .cgi extension)
   ## Views provided as arguments have the highest priority
   if [ -n "$1" ]; then
-    [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
+    [ "${1%%|*}" == "$callername" ] && dfpnbactive=" active"
     echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
       shift
       while [ -n "$1" ]; do
         # not printing if not exists
         if [ -x "$M_ROOT/www/bin/${1%%|*}.cgi" ]; then
           unset dfpnbactive
-          [ "${1%%|*}" == "${0%.cgi}" ] && dfpnbactive=" active"
+          [ "${1%%|*}" == "$callername" ] && dfpnbactive=" active"
           echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
         fi
         shift
       done
     echo -e "</ul>\n</div>"
   else
-
+    unset dfpnbactive
     ## Views from file nav.bar, located in SA folder. Requires variable 'saname'
     ## to be defined in CGI script! (name of the folder)
     if [ -e "$M_ROOT/standalone/$saname/nav.bar" ]; then
       IFSORIG=$IFS
       IFS='
 '
-        for view in `cat "$M_ROOT/standalone/$saname/nav.bar"`; do
-          if [ "${view%%|*}" == "${0%.cgi}" ]; then
-            dfpnbactive=" active"
-            echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view%%|*}', 0)\">${view#*|}</li>"
-          else
-            
-          fi
+        view=`cat "$M_ROOT/standalone/$saname/nav.bar" | head -1`
+        if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
+          [ "${view%%|*}" == "$callername" ] && dfpnbactive=" active"
+          echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view%%|*}', 0)\">${view#*|}</li>"
           unset dfpnbactive
+        fi
+        for view in `cat "$M_ROOT/standalone/$saname/nav.bar" | tail -n +2`; do
+          if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
+            [ "${view%%|*}" == "$callername" ] && dfpnbactive=" active"
+            echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view%%|*}', 1)\">${view#*|}</li>"
+            unset dfpnbactive
+          fi
         done
       IFS=$IFSORIG
     else
-    
+      # 3rd way: for each monitor there is CGI script with the same name, e.g.
+      # SAFOLDER/foo.mon corresponds to M_ROOT/www/bin/foo.cgi
+      # This means that the main monitor (corresp. to view0 CGI) must have the
+      # same name as SAFOLDER, e.g. M_ROOT/standalone/MyMonitor/MyMonitor.mon
+      for view in `find "$M_ROOT/standalone/$saname" -type l | sort | xargs readlink -f`; do
+        view="${view##*/}"
+        view="${view%.mon}"
+        if [ "$view" == "$saname" ]; then
+          if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
+            [ "$view" == "$callername" ] && dfpnbactive=" active"
+            v0="<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view}', 0)\">${view}</li>"
+            unset dfpnbactive
+          fi
+        else
+          if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
+            [ "$view" == "$callername" ] && dfpnbactive=" active"
+            v1="<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view}', 1)\">${view}</li>"
+            unset dfpnbactive
+          fi
+        fi
+      done
     fi
   fi
   unset dfpnbactive
