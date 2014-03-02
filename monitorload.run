@@ -43,7 +43,7 @@ export M_ROOT="$rpath"
 pidfile=/var/run/${rcommand}.pid
 mgpidfile=/var/run/${rcommand}.http.pid
 [ -f "$rpath/conf/mon.conf" ] && source "$rpath/conf/mon.conf" || exit 1
-[ `find "$rpath/standalone/rc" -prune -type l | wc -l` -gt 0 ] && source "$rpath/lib/functions.sh"
+[ `find "$rpath/standalone/rc" -maxdepth 1 -type l | wc -l` -gt 0 ] && source "$rpath/lib/functions.sh"
 
 set +h
 
@@ -145,7 +145,7 @@ start)
       fi
       # Standalone tests, if any
       if [ -d "$rpath/standalone/rc" ]; then
-        for sa in `find "$rpath/standalone/rc/" -prune -type l` ; do
+        for sa in `find "$rpath/standalone/rc/" -maxdepth 1  -type l` ; do
           [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           safolder=$(readlink -f "$sa")
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder:" >> "$rpath/logs/sa.log"
@@ -242,4 +242,5 @@ status)
   ;;
 esac
 
+exit 0
 
