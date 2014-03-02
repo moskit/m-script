@@ -158,7 +158,6 @@ start)
             if [ -n "$sares" -a $? -eq 0 ]; then
               echo -e "${sares}\n" > "$safolder/${rsatest}.report"
               gendash "${rsatest%.mon}" "$safolder/${rsatest}.report"
-              fi
             fi
           done </dev/null &
         done
