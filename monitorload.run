@@ -156,7 +156,7 @@ start)
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
             if [ $? -eq 0 ]; then
-              echo -e "${sares}\n" > "$safolder/${rsatest}.report"
+              [ -n "$sares" ] && echo -e "${sares}\n" > "$safolder/${rsatest}.report" || rm "$safolder/${rsatest}.report"
               gendash "${rsatest%.mon}" "$safolder/${rsatest}.report"
             fi
           done </dev/null &

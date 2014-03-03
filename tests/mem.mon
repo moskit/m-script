@@ -123,7 +123,7 @@ if [ $FREERAM_3 -gt 0 ] 2>/dev/null ; then
   [ $y2 -eq 1 ] && warnind='<**> '
   [ $y3 -eq 1 ] && warnind='<***>'
 else
-  warnind='<OK>'
+  warnind='<OK> '
 fi
 echo -e "$warnind Used RAM:\t\t\t${musedram} MB" 
 echo -e "$warnind Free RAM:\t\t\t${mfreeram} MB (${totalramfree}%)"
