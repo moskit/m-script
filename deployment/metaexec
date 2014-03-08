@@ -34,6 +34,7 @@ genline() {
   include)
     IFS='
 '
+    metascript=`eval "echo $metascript"`
     if [ -e "$ROLES_ROOT/$metascript" ]; then
       irole=${metascript%%/*}
       cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done

@@ -41,8 +41,10 @@ else
   $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update || exit 1
   gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
 fi
+
 [ "X$1" == "Xhelp" ] && echo -e "Usage:\n\n    $rcommand\n\nor:\n\n    $rcommand full  (to update all non-executables - may overwrite your configs!)\n" && exit 0
 [ "X$1" == "Xfull" ] && fullupgrade=true || fullupgrade=false
+
 find "$M_TEMP"/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
 for script in `find "$M_TEMP/.update" -type d`; do

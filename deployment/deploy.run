@@ -25,7 +25,11 @@ store_vars() {
   if [ -f "$varfile" ]; then
     [ -n "$verbose" ] && echo "Reading existing variables"
     source "$varfile"
+  else
+    touch "$varfile"
   fi
+  # should not be readable by others, sensitive things may be there
+  chmod 600 "$varfile"
   [ -n "$verbose" ] && echo "Sourcing $ROLES_ROOT/$role/role.conf"
   for LINE in `cat "$ROLES_ROOT/$role/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     # to respect environment variables and variables passed from command line

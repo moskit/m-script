@@ -122,6 +122,9 @@ Options:
                                     
   --cleanup                         purges all existing blocks and removes
                                     chains created by this script
+                                    Note that it does not do anything with the
+                                    blocked IPs lists $M_TEMP/ip_block.const
+                                    and $M_TEMP/ip_block.tmp. Backup them if
 
 EOF
 
@@ -169,7 +172,7 @@ if [ -n "$ips" ] ; then
     # Whitelist
     if [ -f "$M_ROOT/conf/ip.white.list" ]; then
       whitelisted=$(for wl in `cat "$M_ROOT/conf/ip.white.list"`; do expr "$ip" : ^$wl ; done | grep -v ^0$ | wc -l)
-      [ $whitelisted -ne 0 ] && log "IP $ip is in the whitelist" && continue
+      [ $whitelisted -ne 0 ] && log "IP $ip is in white list" && continue
     fi
     echo "$ip|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
 

@@ -6,7 +6,7 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/                                              ^^^^^ adjust this
 source "$M_ROOT/lib/functions.sh"  # conf/mon.conf is sourced there
-conf="{rpath}/${rcomm%.mon}.conf"
+conf="$rpath/${rcommand%.mon}.conf"
 [ -f "$conf" ] && source "$conf"
 
 # LOG=<path/to/log/file>  # defaults to $M_ROOT/monitoring.log
@@ -34,7 +34,7 @@ conf="{rpath}/${rcomm%.mon}.conf"
 # date_header
 
 ### in case you use check_period above and you need time since the last run:
-# interval=`cat "$rpath/interval.tmp"`
+# interval=`cat "$rpath/${rcommand%.mon}.interval.tmp"`
 
 ### Here goes the monitor's logic
 
