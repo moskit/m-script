@@ -303,7 +303,7 @@ check_interval() {
     return 0
   else
     timeshift=`cat "$M_TEMP/timeshift" || echo 0`
-    expr $currinterval + $FREQ + $timeshift || echo 0 > "$rpath/${callername}.interval.tmp"
+    (expr $currinterval + $FREQ + $timeshift || echo 0) > "$rpath/${callername}.interval.tmp"
     return 1
   fi
 }

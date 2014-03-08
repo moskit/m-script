@@ -25,6 +25,8 @@ conf="$rpath/${rcommand%.mon}.conf"
 ### in case this monitor needs longer interval between runs
 ### interval can be anything that the 'date' utility can recognize
 ### (see 'man date' section DATE STRING)
+### in case you need time since the last run:
+# interval=`cat "$rpath/${rcommand%.mon}.interval.tmp"`
 # check_interval "5 min" || exit 0
 
 ### or, if you use get_lock function:
@@ -33,8 +35,7 @@ conf="$rpath/${rcommand%.mon}.conf"
 ### prints date header to the report file
 # date_header
 
-### in case you use check_period above and you need time since the last run:
-# interval=`cat "$rpath/${rcommand%.mon}.interval.tmp"`
+
 
 ### Here goes the monitor's logic
 
