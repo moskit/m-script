@@ -298,13 +298,12 @@ check_interval() {
   interval=`date -d "1970/01/01 +$1" +"%s" 2>>/dev/null`
   [ -z "$interval" ] && return 1
   local currinterval=`cat "$rpath/${callername}.interval.tmp" 2>/dev/null || echo 0`
-  timeshift=`cat "$M_TEMP/timeshift" || echo 0`
-  newinterval=`expr $currinterval + $FREQ + $timeshift || echo 0`
-  if [ $newinterval -ge $interval ]; then
+  if [ $currinterval -ge $interval ]; then
     echo 0 > "$rpath/${callername}.interval.tmp"
     return 0
   else
-    echo $newinterval > "$rpath/${callername}.interval.tmp"
+    timeshift=`cat "$M_TEMP/timeshift" || echo 0`
+    expr $currinterval + $FREQ + $timeshift || echo 0 > "$rpath/${callername}.interval.tmp"
     return 1
   fi
 }
