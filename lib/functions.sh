@@ -299,12 +299,12 @@ check_interval() {
   [ -z "$interval" ] && return 1
   local currinterval=`cat "$rpath/${callername}.interval.tmp" 2>/dev/null || echo 0`
   timeshift=`cat "$M_TEMP/timeshift" || echo 0`
-  currinterval=`expr $currinterval + $FREQ + $timeshift || echo 0`
-  if [ $currinterval -ge $interval ]; then
+  newinterval=`expr $currinterval + $FREQ + $timeshift || echo 0`
+  if [ $newinterval -ge $interval ]; then
     echo 0 > "$rpath/${callername}.interval.tmp"
     return 0
   else
-    echo $currinterval > "$rpath/${callername}.interval.tmp"
+    echo $newinterval > "$rpath/${callername}.interval.tmp"
     return 1
   fi
 }
