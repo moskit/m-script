@@ -69,7 +69,7 @@ if [ "X$help" == "Xyes" ] ; then
 fi
 
 log() {
-  echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: ${@}">>$LOG
+  echo "`date +"%m.%d %H:%M:%S"` ($$) ${0##*/}: ${@}">>"$LOG"
 }
 
 [ -z "$folder" ] && folder="servers/localhost"
@@ -82,14 +82,17 @@ source "$M_ROOT/conf/mon.conf"
 sleep 1
 
 textfile="$s_param"
+
 case $type in
   dash)
     id="`date +"%m.%d_%H:%M:%S"`"
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
     echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk $css\" onclick=\"showData('${id}_${serverid}','/${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
     if [ -e "$textfile" ]; then
+      log "generating HTML from report $textfile (exist) type: $type id: $id folder: $folder css: $css"
       "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/${id}_${serverid}.html" 2>>"$M_ROOT/logs/dashboard.log"
     else
+      log "generating HTML from report $textfile (does not exist) type: $type id: $id folder: $folder css: $css"
       echo "<p>No data</p>" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
     fi
     exc=`cat "$M_ROOT/www/$folder/dash.html" | wc -l` 2>>"$M_ROOT/logs/dashboard.log"
