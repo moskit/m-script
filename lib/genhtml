@@ -121,7 +121,7 @@ case $type in
       log "unable to find the oldest file in folder ${folder}. Using calculation based on frequency"
       timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
     else
-      log "oldest file timestamp for folder ${folder}: $oldestfiledate"
+      #log "oldest file timestamp for folder ${folder}: $oldestfiledate"
       timenow=`date +"%s"`
       timerange=`expr \( $timenow - $oldestfiledate \) / 60 + 1`
     fi

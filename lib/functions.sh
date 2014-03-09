@@ -107,6 +107,7 @@ check_results() {
     
 gendash() {
   local name
+  local LOG="$M_ROOT/logs/dashboard.log"
   if [ -n "$1" ]; then
     name="$1"
     shift
