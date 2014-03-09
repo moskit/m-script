@@ -16,6 +16,7 @@ ln -s "$rpath/../standalone/$1" "$rpath/../standalone/rc/${n}.$1"
 n=0
 for mon in "$rpath/../standalone/$1"/*.mon ; do
   if [ -x "$mon" ]; then
+    [ "$mon" == "servers.mon" ] && echo "*** $1/servers.mon is not enabled! Name \"servers\" is reserved for main process (servers health monitor), please rename it." && continue
     [ ${#n} -eq 1 ] && m="0$n"
     ln -s "$mon" "$rpath/../standalone/$1/rc/${m}.${mon##*/}"
     n=`expr $n + 1`

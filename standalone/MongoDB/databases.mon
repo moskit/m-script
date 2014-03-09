@@ -7,7 +7,7 @@ rpath=${rpath%/*}
 #*/
 LOG="$M_ROOT/logs/sa.log"
 
-source "$rpath/servers.conf"
+source "$rpath/mongo_servers.conf"
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found! Exiting..  " && exit 1
 if [ -n "$AUTH_LOGIN" ]; then
@@ -67,4 +67,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     done &
   fi
 done
+
+# we don't need a report from this monitor
+exit 10
 

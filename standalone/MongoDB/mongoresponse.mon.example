@@ -19,4 +19,6 @@ fi
 
 gendash "$rpath/report" "mongo_logger"
 
+# we don't need a report from this monitor
+exit 10
 

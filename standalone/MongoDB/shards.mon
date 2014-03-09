@@ -11,7 +11,7 @@ LOG="$M_ROOT/logs/sa.log"
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
 
-source "$rpath/servers.conf"
+source "$rpath/mongo_servers.conf"
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
     AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
@@ -93,4 +93,7 @@ done &
 
 
 unset masters
+
+# we don't need a report from this monitor
+exit 10
 

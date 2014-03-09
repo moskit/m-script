@@ -113,8 +113,8 @@ done
 
 $debug && log "ES cluster(s) found: $allclusters"
 
-date > "$rpath/report"
-echo -e "-----------------------------\n" >> "$rpath/report"
+date > "$rpath/elasticsearch.mon.report"
+echo -e "-----------------------------\n" >> "$rpath/elasticsearch.mon.report"
 
 ### allclusters and escluster mean ES cluster, not servers cluster!
 for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
@@ -192,7 +192,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
 #    for clusternode in `cat "$rpath/data/${escluster}.nodes" | grep ^1\/nodes\/ | cut -d'/' -f3 | sort | uniq` ; do
   
 #    thisnodename=`$CURL -m 2 -s "http://${clusterhost}/_cluster/nodes" | "$M_ROOT/lib/json2txt" | grep "/nodes/$clusternode/name|" | cut -d'|' -f2`
-#    [ -z "$thisnodename" ] && echo "<***> Node $clusternode not known to the node located on the host ${clusterhost}" >> "$rpath/report"
+#    [ -z "$thisnodename" ] && echo "<***> Node $clusternode not known to the node located on the host ${clusterhost}" >> "$rpath/elasticsearch.mon.report"
 #    done
 #  done
   
@@ -264,7 +264,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   done
   $debug && log "ES cluster ${escluster}: routing data processed"
   
-  cat "$rpath/${escluster}.report" >> "$rpath/report"
+  cat "$rpath/${escluster}.report" >> "$rpath/elasticsearch.mon.report"
 done
 $debug && log "done with clusters"
 
