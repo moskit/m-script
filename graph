@@ -756,10 +756,10 @@ do
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"${irev}.5\\" x2=\\"$mY2\\" y2=\\"${irev}.5\\" />"`"
   if [ "X$scale" != "Xyes" ] ; then
     if [ -n "$perpixel" ] ; then
-      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style="text-anchor: end">$imark</text>"`"
+      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style=\\"text-anchor: end\\">$imark</text>"`"
     else
       [ -n "$imark" ] && imarkfp=`solve 2 "$imark/$mp"`
-      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style="text-anchor: end">$imarkfp</text>"`"
+      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style=\\"text-anchor: end\\">$imarkfp</text>"`"
     fi
   fi
 done
