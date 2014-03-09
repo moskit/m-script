@@ -446,7 +446,7 @@ else
   if [ -n "$where" ] ; then
     field=${where%%:*}
     value=${where#*:}
-    QUERY="$QUERY AND $field='$value'" 
+    QUERY="$QUERY AND $field='$value'"
   fi
   if [ "X$sIP" == "Xlocalhost" ] ; then
     $debug && log "$SQL3 \"$rpath/$database\" \"$QUERY\""
@@ -461,19 +461,17 @@ else
     exit 1
   fi
 
-#############################
-#### Processing the data ####
-#############################
+#####################################################
+#### Processing the data (for non-perpixel mode) ####
+#####################################################
 
   declare -i n
   n=2
   for smetric in `echo $metric | tr ',' ' '` ; do
     smax=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
-    smin=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
-    [[ $metricmax -eq 0 ]] && metricmin=$smax
-    [ -z "$metricmin" ] && metricmin=0
+    $minauto && smin=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
     [[ $smax -gt $metricmax ]] && metricmax=$smax
-    [[ $smin -lt $metricmin ]] && metricmin=$smin
+    $minauto && [[ $smin -lt $metricmin ]] && metricmin=$smin
     n+=1
   done
   sn=`echo $metric | tr ',' ' ' | wc -w`
@@ -690,7 +688,7 @@ unset nexthour theday themonth theyear themark currpoint hourX
 
 ########  Here ends the X-Axis marks definition part
 
-# Now for Y
+########  Now for Y
 # Finding out what per mark resolution might be
 a=`solve 2 "$perdotY * $countminY / 100"`
 b=`solve 2 "2 * $a"`
@@ -811,10 +809,10 @@ log "slegendY=$slegendY"
     do
       X=`echo $LINE | cut -d'|' -f1`
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-      if [ "X$X" == "X" ] || [ "X$Y" == "X" ] ; then continue ; fi
+      if [ -z "$X" ] || [ -z "$Y" ] ; then continue ; fi
       X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
       Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) \* 100 / $perdotY`
-      printf " $X,$Y" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+      echo -n " $X,$Y" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
     done
 #### drawing perpixel graph
   else
@@ -828,7 +826,7 @@ log "slegendY=$slegendY"
       [ -z "$Y" ] && Y=0
       X+=1
       Y=`expr $shiftYY - $Y`
-      printf " $X,$Y" >> "${rpath}/www/graphs/${ip}.${dbname}.${name}.svg"
+      echo -n " $X,$Y" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
     done
   fi
   echo "\" />" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
