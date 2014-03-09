@@ -117,7 +117,7 @@ gendash() {
     fi
     [ -n "$2" ] && indic2="$2"
   else
-    name="${callername}"
+    name="$callername"
   fi
   if [ -f "$report" ]; then
     indic="ok"
@@ -127,6 +127,7 @@ gendash() {
   else
     indic="empty"
   fi
+  log "generating dash from report ${report}, fodler $name/localhost, indic1=${indic1}, indic2=$indic2"
   case $DASHBOARD in
     HTML)
       "$fpath/genhtml" --type=dash --css=${indic}${indic2} --folder="$name/localhost" "$report" 2>>"$M_ROOT/logs/dashboard.log"
