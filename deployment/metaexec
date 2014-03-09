@@ -37,7 +37,7 @@ genline() {
     metascript=`eval "echo $metascript"`
     if [ -e "$ROLES_ROOT/$metascript" ]; then
       irole=${metascript%%/*}
-      cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done
+      cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     else
       log "$ROLES_ROOT/$metascript not found"
     fi
@@ -64,7 +64,7 @@ genline() {
 run_meta() {
   declare -i res
   res=0
-  [ `grep -c ^"$*"$ "$WORK_DIR/${role}.${task}.$timestampact/log"` -ne 0 ] && echo "Skipping: $*" | tee -a "$LOG" && return 0
+  [ `grep -c ^"$*"$ "$CURRTASKDIR/log"` -ne 0 ] && echo "Skipping: $*" | tee -a "$LOG" && return 0
   [ -n "$test" -o -n "$dry" ] && dry="--dry"
   
   metatype=$1
@@ -136,8 +136,8 @@ run_meta() {
       fi
     fi
     if [ $res -eq 0 ]; then
-      [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/$metascript"
-      [ -e "$WORK_DIR/${role}.${task}.$timestampact/$metascript.var" ] && rm -f "$WORK_DIR/${role}.${task}.$timestampact/${metascript}.var"
+      [ -e "$CURRTASKDIR/$metascript" ] && rm -f "$CURRTASKDIR/$metascript"
+      [ -e "$CURRTASKDIR/$metascript.var" ] && rm -f "$CURRTASKDIR/${metascript}.var"
       deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $F $SU
       res=$?
     fi
@@ -154,7 +154,7 @@ run_meta() {
         [ $res -eq 0 ] && echo " Success" || echo " ERROR"
       fi
     fi
-    [ $res -eq 0 ] && echo "$meta" >> "$WORK_DIR/${role}.${task}.$timestampact/log"
+    [ $res -eq 0 ] && echo "$meta" >> "$CURRTASKDIR/log"
     return $res
   else
     [ -n "$use_color" ] && printf "\033[01;31m"
@@ -317,6 +317,9 @@ source "$M_ROOT/conf/deployment.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
 
+[ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deployment/roles
+[ -z "$WORK_DIR" ] && WORK_DIR=/root/deploy.tmp
+
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
 [ -n "$ignoreipnotpresent" -o -n "$force" -o -n "$ignorenocluster" ] && ignorenocluster="yes" && force="yes"
@@ -396,8 +399,10 @@ USER_FROM_CLUSTER=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -s -d'|' 
 
 [ -n "$verbose" ] && V='--verbose'
 [ -n "$test" ] && T='--test'
-install $V -d "$WORK_DIR/${role}.${task}.$timestampact"
-touch "$WORK_DIR/${role}.${task}.$timestampact/log"
+CURRTASKDIR="$WORK_DIR/${role}.${task}.$timestampact"
+export CURRTASKDIR
+install $V -d "$CURRTASKDIR"
+touch "$CURRTASKDIR/log"
 
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11`
@@ -505,15 +510,15 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       $debug && log "saving command-line arguments for possible repeat of the sequence"
       IFS2=$IFS ; IFS=$' \t\n'
       for option in `echo $possible_options | sed 's/,/ /g'`; do
-        echo "${option}=`eval "echo \\$${option}"`" >> "$WORK_DIR/${role}.${task}.$timestampact/ARGV"
+        echo "${option}=\"`eval "echo \\$${option}"`\"" >> "$CURRTASKDIR/ARGV"
       done
       IFS=$IFS2
-      echo -e "flavor=$flavor\ncluster=$cluster\nrole=$role\n" >> "$WORK_DIR/${role}.${task}.$timestampact/ARGV"
+      echo -e "flavor=$flavor\ncluster=$cluster\nrole=$role\n" >> "$CURRTASKDIR/ARGV"
       if [ -n "$newserver" ]; then
-        echo "ip=$ip" >> "$WORK_DIR/${role}.${task}.$timestampact/ARGV"
+        echo "ip=\"$ip\"" >> "$CURRTASKDIR/ARGV"
       fi
     else
-      rm -f "$WORK_DIR/${role}.${task}.$timestampact"/meta
+      rm -f "$CURRTASKDIR"/meta
     fi
     ##
   fi
@@ -524,13 +529,13 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   else
     IFS='
 '
-    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$WORK_DIR/${role}.${task}.$timestampact"/meta) ; done
+    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     
     declare -i metan
     metan=1
     if [ -n "$command" ] ; then
       for commandn in `echo -e $command | tr ',' '\n'` ; do
-        for meta in `cat "$WORK_DIR/${role}.${task}.$timestampact"/meta` ; do
+        for meta in `cat "$CURRTASKDIR"/meta` ; do
           meta=`eval "echo $meta"`
           if [[ $commandn -eq $metan ]]; then
             if [ $metan -eq 1 ]; then
@@ -543,9 +548,9 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
         done
         metan=1
       done
-      echo -e "$newmeta" > "$WORK_DIR/${role}.${task}.$timestampact/meta"
+      echo -e "$newmeta" > "$CURRTASKDIR/meta"
     fi
-    for meta in `cat "$WORK_DIR/${role}.${task}.$timestampact"/meta` ; do
+    for meta in `cat "$CURRTASKDIR"/meta` ; do
       meta=`eval "echo $meta"`
       skipthis=false
       if [ -n "$list" ] ; then
@@ -564,7 +569,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
 
         if ! $skipthis ; then
           (IFS=$IFSORIG ; run_meta $meta)
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n" && proper_exit 1 559
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && proper_exit 1 559
         fi
       fi
       metan+=1
@@ -575,7 +580,7 @@ else
   echo "Setting up self is not supported"
 fi
 if [ -z "$list" ] ; then
-  echo -e "Timestamp: $timestampact\nWork directory: $WORK_DIR/${role}.${task}.$timestampact\n"
+  echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
   # the best place for this seems to be here
   [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30
   find "$WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;

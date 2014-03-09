@@ -37,7 +37,7 @@ store_vars() {
     if [ -n "$pvar" ]; then
       pval="`eval echo "\\$$pvar"`"
       if [ -n "$pval" ]; then
-        [ `expr "$pval" : "[0-9]*$"` -eq 0 ] && echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "$varfile" && continue || echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue
+        [ `expr "$pval" : "^[0-9]*$"` -eq 0 ] && echo "${pvar}=`eval echo "\\$$pvar"`" >> "$varfile" && continue || echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "$varfile" && continue
       fi
     fi
     
@@ -190,16 +190,21 @@ if [ "X$roleincluded" != "X$role" ] ; then
   fi
 fi
 
-# command-line options (variables from this script) should be saved too
+# command-line options (variables from this script) must be saved too
 IFS2=$IFS ; IFS=$' \t\n'
 for option in `echo $possible_options | sed 's/,/ /g'`; do
-  echo "${option}=`eval "echo \\$${option}"`" >> "$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
+  echo "${option}=\"`eval "echo \\$${option}"`\"" >> "$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
 done
 IFS=$IFS2
 # and some other variables
 M_ROOT_REMOTE=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
 [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
-echo "M_ROOT_REMOTE=$M_ROOT_REMOTE" >> $WORK_DIR/${role}.${task}.$timestamp/${file}.var
+echo "M_ROOT_REMOTE=\"$M_ROOT_REMOTE\"" >> $WORK_DIR/${role}.${task}.$timestamp/${file}.var
+# variables propagated from scripts via propvar
+if [ -f "$WORK_DIR/${role}.${task}.$timestamp/prop.var" ]; then
+  $debug && echo -e "propagated variables found:\n`cat "$WORK_DIR/${role}.${task}.$timestamp/prop.var"`"
+  cat "$WORK_DIR/${role}.${task}.$timestamp/prop.var" >> "$varfile"
+fi
 
 # now prepare the script
 source "$WORK_DIR/${role}.${task}.$timestamp/${file}.var"
