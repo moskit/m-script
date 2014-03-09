@@ -478,7 +478,7 @@ else
     n+=1
   done
   sn=`echo $metric | tr ',' ' ' | wc -w`
-  $debug && log "this graph maximum: $metricmax  minimum: $metricmin  (option 'min' is set to $min)" 
+  $debug && log "this graph maximum: $metricmax  minimum: $metricmin  (option 'min' is set to '$min')" 
   if [ "X$scale" == "Xyes" ] ; then
     sadd=`solve 2 "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve 2 "$metricmax / $sn"` 2>/dev/null || sadd=10
     snadd=0
@@ -508,7 +508,8 @@ fi #### perpixel or not condition end
 #### Graph geometry calculations ####
 #####################################
 
-# 20 to 40 pixels
+# comfortable distance between marks: 20 to 40 pixels
+# these numbers are not final, just a base for further calculations
 countminX=20
 countminY=20
 
@@ -692,22 +693,29 @@ unset nexthour theday themonth theyear themark currpoint hourX
 ########  Here ends the X-Axis marks definition part
 
 ########  Now for Y
-# Finding out what per mark resolution might be
+### Finding out what per mark resolution might be
+# a and b represent the range (preliminary, just a comfortable suggestion)
 a=`solve 2 "$perdotY * $countminY / 100"`
 b=`solve 2 "2 * $a"`
+# the order of magnitude of b
 s=`expr length ${b%%.*}`
 [ -z "$s" ] && s=1
 pof=1
 for ((i=0; i<$s; i++)); do pof="${pof}0"; done
 log "a=$a b=$b s=$s pof=$pof"
+# checking how it fits, for predefined orders (we want them nice, e.g. 2, 5, 10)
 res=`expr $pof / 10`
 log "/10 :: res=$res"
 if [[ $res -lt ${a%%.*} ]] ; then
-  res=`expr $pof / 4`
-log "/4 :: res=$res"
+  res=`expr $pof / 5`
+log "/5 :: res=$res"
   if [[ $res -lt ${a%%.*} ]] ; then
-    res=`expr $pof / 2`
+    res=`expr $pof / 4`
+log "/4 :: res=$res"
+    if [[ $res -lt ${a%%.*} ]] ; then
+      res=`expr $pof / 2`
 log "/2 :: res=$res"
+    fi
   fi
 fi
 $debug && log "Y-Axis per-mark resolution is $res"
