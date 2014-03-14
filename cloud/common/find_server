@@ -33,7 +33,12 @@ fi
 [ -z "$cld" ] && echo "cloud is not defined" && exit 1
 
 source "$M_ROOT/conf/clouds/${cld}.conf"
-export CLOUD=$cld
-"$M_ROOT"/cloud/$CLOUD_PROVIDER/find_server --cloud=$cld $@
 
+if [ -z "$CLOUD_PROVIDER" ]; then
+  echo "CLOUD_PROVIDER is not defined"
+  exit 0
+else
+  export CLOUD=$cld
+  "$M_ROOT"/cloud/$CLOUD_PROVIDER/find_server --cloud=$cld $@
+fi
 
