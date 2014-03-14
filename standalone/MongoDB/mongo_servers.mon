@@ -76,70 +76,66 @@ function collect_hosts() {
 
 function parse_data() {
   timeindexnow=`date +"%s"`
-  lasttimeindex=`cat "$M_TEMP/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 200`
+  lasttimeindex=`cat "$M_TEMP/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 210`
   echo $timeindexnow > "$M_TEMP/${1}.lasttimeindex"
   timediff=`expr $timeindexnow - $lasttimeindex`
-  for d in `cat "$rpath/data/${1}.dat" | grep \|` ; do
-    eval "`echo "$d" | sed 's_|_=_'`"
+  for d in `cat "$rpath/data/${1}.dat" "$rpath/data/${1}.dat.prev" 2>/dev/null` ; do
+    eval "`echo "$d"`"
   done
   echo -e "Server $1 ** `date`\n-----------------------------------------\n\n Status\n"
   echo "Status:   $status" | sed 's|1|OK|;s|0|Error|'
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
-  [ -e "$rpath/data/${1}.dat.prev" -a -e "$rpath/data/${1}.dat" ] || return
-  netIn_prev=`grep ^netIn\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netIn_prev=$netIn
+  
+  [ -z "$netIn_prev" ] && netIn_prev=$netIn
+  [ -z "$netOut_prev" ] && netOut_prev=$netOut
   bw_in=`solve 2 "(${netIn-0} - ${netIn_prev-1}) / $timediff / 1048576"`
-  netOut_prev=`grep ^netOut\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netOut_prev=$netOut
   bw_out=`solve 2 "(${netOut-0} - ${netOut_prev-1}) / $timediff / 1048576"`
   echo -e "Bandwidth in (MB/sec):   $bw_in\nBandwidth out (MB/sec):   $bw_out"
-  netReqn_prev=`grep ^netReqn\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || netReqn_prev=$netReqn
+  [ -z "$netReqn_prev" ] && netReqn_prev=$netReqn
   net_reqps=`solve 1 "($netReqn - $netReqn_prev) / $timediff"`
   echo "Network requests per second:   $net_reqps"
+  
   if [ -n "$lockTime" ] ; then
     echo -e "\n Global lock\n"
-    lockTime_prev=`grep ^lockTime\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || lockTime_prev=$lockTime
+    [ -z "$lockTime_prev" ] && lockTime_prev=$lockTime
     lockTime=`solve 2 "(${lockTime} - ${lockTime_prev}) / $timediff / 10000"`
     echo -e "Lock time current, percents:   $lockTime\nLock time overall, percents:   `solve 2 "$lockRatio * 100 / 1"`\nLock queue total:   $lockQueueTotal\nLock queue readers:   $lockQueueReaders\nLock queue writers:   $lockQueueWriters\nLock clients total:   $lockClientsTotal\nLock clients readers:   $lockClientsReaders\nLock clients writers:   $lockClientsWriters"
   else
     lockTime=0
     lockRatio=0
   fi
-    
-  accessesNotInMemory_prev=`grep ^accessesNotInMemory\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || accessesNotInMemory_prev=$accessesNotInMemory
+  
+  [ -z "$accessesNotInMemory_prev" ] && accessesNotInMemory_prev=$accessesNotInMemory
   [ -n "$accessesNotInMemory" ] && recstatsNotInMemory=`solve 1 "($accessesNotInMemory - $accessesNotInMemory_prev) / $timediff"`
   
-  pageFaultExceptionsThrown_prev=`grep ^pageFaultExceptionsThrown\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || pageFaultExceptionsThrown_prev=$pageFaultExceptionsThrown
+  [ -z "$pageFaultExceptionsThrown_prev" ] && pageFaultExceptionsThrown_prev=$pageFaultExceptionsThrown
   [ -n "$pageFaultExceptionsThrown" ] && recstatsPageFaults=`solve 1 "($pageFaultExceptionsThrown - $pageFaultExceptionsThrown_prev) / $timediff"`
   
   echo -e "\n Access Stats\n\nRecords not found in memory:   $recstatsNotInMemory\nPage fault exceptions:   $recstatsPageFaults\n"
   
-  scanned_prev=`grep ^scanned\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || scanned_prev=$scanned
-  [ -n "$scanned" ] && recordsScanned=`solve 1 "($scanned - $scanned_prev) / $timediff"`
-  
-  echo -e "\n Query Executor Stats\n\nRecords scanned:   $recordsScanned\n"
-  
   echo -e "\n Operations / second\n\nOperation Type         Number"
   
   # Total
-  
-  opcountersQuery_prev=`grep ^opcountersQuery\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersQuery_prev=$opcountersQuery
+  [ -z "$opcountersQuery_prev" ] && opcountersQuery_prev=$opcountersQuery
   [ -n "$opcountersQuery" ] && ops_queriesps=`solve 1 "($opcountersQuery >= $opcountersQuery_prev) * ($opcountersQuery - $opcountersQuery_prev) / $timediff"`
   
-  opcountersInsert_prev=`grep ^opcountersInsert\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersInsert_prev=$opcountersInsert
+  [ -z "$opcountersInsert_prev" ] && opcountersInsert_prev=$opcountersInsert
   [ -n "$opcountersInsert" ] && ops_insertsps=`solve 1 "($opcountersInsert >= $opcountersInsert_prev) * ($opcountersInsert - $opcountersInsert_prev) / $timediff"`
   
-  opcountersUpdate_prev=`grep ^opcountersUpdate\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersUpdate_prev=$opcountersUpdate
+  [ -z "$opcountersUpdate_prev" ] && opcountersUpdate_prev=$opcountersUpdate
   [ -n "$opcountersUpdate" ] && ops_updatesps=`solve 1 "($opcountersUpdate >= $opcountersUpdate_prev) * ($opcountersUpdate - $opcountersUpdate_prev) / $timediff"`
   
-  opcountersDelete_prev=`grep ^opcountersDelete\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersDelete_prev=$opcountersDelete
+  [ -z "$opcountersDelete_prev" ] && opcountersDelete_prev=$opcountersDelete
   [ -n "$opcountersDelete" ] && ops_deletesps=`solve 1 "($opcountersDelete >= $opcountersDelete_prev) * ($opcountersDelete - $opcountersDelete_prev) / $timediff"`
   
-  opcountersGetmore_prev=`grep ^opcountersGetmore\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersGetmore_prev=$opcountersGetmore
+  [ -z "$opcountersGetmore_prev" ] && opcountersGetmore_prev=$opcountersGetmore
   [ -n "$opcountersGetmore" ] && ops_getmoresps=`solve 1 "($opcountersGetmore >= $opcountersGetmore_prev) * ($opcountersGetmore - $opcountersGetmore_prev) / $timediff"`
   
-  opcountersCommand_prev=`grep ^opcountersCommand\| "$rpath/data/${1}.dat.prev" | cut -d '|' -f2` || opcountersCommand_prev=$opcountersCommand
+  [ -z "$opcountersCommand_prev" ] && opcountersCommand_prev=$opcountersCommand
   [ -n "$opcountersCommand" ] && ops_commandsps=`solve 1 "($opcountersCommand >= $opcountersCommand_prev) * ($opcountersCommand - $opcountersCommand_prev) / $timediff"`
   
+  [ -z "$opcountersQuery_prev" ] && opcountersQuery_prev=$opcountersQuery
   [ -n "$opcountersQuery" ] && ops_totalqps=`solve 1 "$ops_queriesps + $ops_insertsps + $ops_updatesps + $ops_deletesps + $ops_getmoresps + $ops_commandsps"`
   
   echo -e "Query               $ops_queriesps\nInsert              $ops_insertsps\nUpdate              $ops_updatesps\nDelete              $ops_deletesps\nGetmore              $ops_getmoresps\nCommand              $ops_commandsps\nTotal                $ops_totalqps"
@@ -323,10 +319,13 @@ else
   echo -n > "$M_TEMP/mongo_shards.list"
 fi
 
+# Data processing
+
 if [ -e "$rpath/mongo_config_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_config_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
     serverstatus=$($MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_config_servers.list"
@@ -344,6 +343,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
     serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null`
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_mongos_servers.list"
@@ -361,6 +361,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_shards.list"
@@ -378,6 +379,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
+    [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_servers.list"

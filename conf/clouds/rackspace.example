@@ -19,6 +19,7 @@ RS_APIURL="auth.api.rackspacecloud.com"
 # Network used for communication with this cloud. Possible values:
 # internal (private IP ranges: 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
 # external
+# Default: internal
 NETWORK=
 
 # In case you are using non-standard SSH port

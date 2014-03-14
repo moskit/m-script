@@ -1,8 +1,4 @@
-# 1371647813
-if [ -f $1/../standalone/MongoDB/mongodb.sql3 ]; then
-mv $1/../standalone/MongoDB/mongodb.sql3 $1/../standalone/MongoDB/mongodb.sql3.`date +"%Y.%m.%d_$H_%M_%S"`
-rm -f $1/../standalone/MongoDB/setup.run.done
-$1/../standalone/MongoDB/setup.run
-else
-exit 0
-fi
+# 1394745887
+SQLITE=`which sqlite3 2>/dev/null`
+$SQLITE "../standalone/MongoDB/extended.sql3" "CREATE TABLE extended (timeindex integer, day varchar(8), hostport text, totalOpen integer, lastFlushMs integer, avgFlushMs real, durCommits integer, durWriteJPercent real, durWriteDPercent real, indexAccesses real, indexHits real, indexMisses real, opcountersReplQuery real, opcountersReplInsert real, opcountersReplUpdate real, opcountersReplDelete real, opcountersReplGetmore real, opcountersReplCommand real, opcountersReplTotal real, scanned real, fastmod real, idhack real, scanAndOrder real, documentDeleted real, documentInserted real, documentReturned real, documentUpdated real, recordMoves real, replApplyBatchesNum real, replApplyBatchesMs real, replApplyOps real, replNetworkBytes real, replNetworkOps real, replOplogInsertNum real, replOplogInsertMs real, replOplogInsertBytes real, dataInMemory integer, overSeconds integer, PRIMARY KEY(timeindex, hostport))"
+

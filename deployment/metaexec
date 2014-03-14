@@ -311,7 +311,6 @@ fi
 export CLOUD
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
-[ -z "$CLOUD_PROVIDER" ] && echo "CLOUD_PROVIDER is not defined. Error reading configuration?" && exit 1
 
 source "$M_ROOT/conf/deployment.conf"
 source "$M_ROOT/lib/functions.sh"

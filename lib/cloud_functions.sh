@@ -21,7 +21,6 @@ dpath=${dpath%/*}
 [ -z "$LOG" ] && LOG="$M_ROOT/logs/cloud.log"
 if [ -n "$CLOUD" ]; then
   source "$M_ROOT/conf/clouds/${CLOUD}.conf"
-  [ -z "$CLOUD_PROVIDER" ] && echo "Error reading configuration for this cloud ($M_ROOT/conf/clouds/${CLOUD}.conf)" && exit 1
 else
   CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
   if [ `echo "$CLOUD" | wc -l` -eq 1 ]; then
@@ -31,7 +30,6 @@ else
   fi
   [ -z "$CLOUD" ] && log "Not sourcing cloud_functions, CLOUD is not defined" && exit 1
 fi
-[ ! -d "$M_ROOT/cloud/$CLOUD_PROVIDER" ] && log "Cloud $CLOUD_PROVIDER is not supported" && exit 1
 
 log() {
   [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${CLOUD}/${0##*/}: ${@}">>$LOG

@@ -248,7 +248,9 @@ if [ -z "$SQLITE" ]; then
     else
       installsqlite="y"
     fi
-    if `echo $installsqlite | grep -qi "^y"` ; then
+    if `echo $installsqlite | grep -qi "^n"` ; then
+      exit 1
+    else
       case $OS in
       debian)
         export DEBIAN_FRONTEND=noninteractive
@@ -265,8 +267,6 @@ if [ -z "$SQLITE" ]; then
         exit 1
         ;;
       esac
-    else
-      exit 1
     fi
 
     if `grep -q "^SQLITE3=" "$rpath/conf/mon.conf"` ; then

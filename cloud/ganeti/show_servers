@@ -35,7 +35,6 @@ declare -i icount
 GNTI=`which gnt-instance 2>/dev/null`
 [ -z "$GNTI" ] && log "ERROR: gnt-instance utility not found" && exit 1
 
-lock_cloudops || exit 10
 export IAMACHILD M_TEMP CLOUD
 
 possible_options="cloud cluster state filter node view all count update_servers_list forceupdate noupdate"
@@ -170,8 +169,11 @@ list_servers() {
   IFS=$IFS1
 }
 
+lock_cloudops || exit 10
 [ -z "$noupdate" ] && request
 list_servers
 
-[ -n "$count" ] && echo $icount || exit 0
+[ -n "$count" ] && echo $icount
+
+proper_exit 0
 
