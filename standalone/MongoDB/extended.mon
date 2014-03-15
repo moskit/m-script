@@ -77,13 +77,13 @@ parse_data() {
   [ -n "$scanned" ] && scanned=`solve 1 "($scanned - $scanned_prev) / $timediff"` && echo -e "\n Query Executor Stats\n\nRecords scanned, per second:   $scanned"
   
   [ -z "$fastmod_prev" ] && fastmod_prev=$fastmod
-  [ -n "$fastmod" ] && fastmod=`solve 1 "($fastmod - $fastmod_prev) / $timediff"` && echo "\n Operation stats:\n\nFastmod operations, per second:   $fastmod"
+  [ -n "$fastmod" ] && fastmod=`solve 1 "($fastmod - $fastmod_prev) / $timediff"` && echo -e "\n Operation stats:\n\nFastmod operations, per second:   $fastmod"
   [ -z "$idhack_prev" ] && idhack_prev=$idhack
   [ -n "$idhack" ] && idhack=`solve 1 "($idhack - $idhack_prev) / $timediff"` && echo "Idhack operations, per second:   $idhack"
   [ -n "$scanAndOrder" ] && scanAndOrder=`solve 1 "($scanAndOrder - $scanAndOrder_prev) / $timediff"` && echo "Scan and order operations, per second:   $scanAndOrder"
   
   [ -z "$documentDeleted_prev" ] && documentDeleted_prev=$documentDeleted
-  [ -n "$documentDeleted" ] && documentDeleted=`solve 1 "($documentDeleted - $documentDeleted_prev) / $timediff"` && echo "\n Documents:\n\nDeleted, per second:   $documentDeleted"
+  [ -n "$documentDeleted" ] && documentDeleted=`solve 1 "($documentDeleted - $documentDeleted_prev) / $timediff"` && echo -e "\n Documents:\n\nDeleted, per second:   $documentDeleted"
   [ -z "$documentInserted_prev" ] && documentInserted_prev=$documentInserted
   [ -n "$documentInserted" ] && documentInserted=`solve 1 "($documentInserted - $documentInserted_prev) / $timediff"` && echo "Inserted, per second:   $documentInserted"
   [ -z "$documentReturned_prev" ] && documentReturned_prev=$documentReturned
@@ -95,7 +95,7 @@ parse_data() {
   [ -n "$recordMoves" ] && recordMoves=`solve 1 "($recordMoves - $recordMoves_prev) / $timediff"` && echo -e "\nRecord moves (on-disk), per second:   $recordMoves"
   
   [ -z "$replApplyBatchesNum_prev" ] && replApplyBatchesNum_prev=$replApplyBatchesNum
-  [ -n "$replApplyBatchesNum" ] && replApplyBatchesNum=`solve 1 "($replApplyBatchesNum - $replApplyBatchesNum_prev) / $timediff"` && echo "\n Replication process stats:\n\nBatches applied, per second:   $replApplyBatchesNum"
+  [ -n "$replApplyBatchesNum" ] && replApplyBatchesNum=`solve 1 "($replApplyBatchesNum - $replApplyBatchesNum_prev) / $timediff"` && echo -e "\n Replication process stats:\n\nBatches applied, per second:   $replApplyBatchesNum"
   
   [ -z "$replApplyBatchesMs_prev" ] && replApplyBatchesMs_prev=$replApplyBatchesMs
   [ -n "$replApplyBatchesMs" ] && replApplyBatchesMs=`solve 1 "($replApplyBatchesMs - $replApplyBatchesMs_prev) / $timediff * 100"` && echo "Time spent applying batches, %:   $replApplyBatchesMs"
