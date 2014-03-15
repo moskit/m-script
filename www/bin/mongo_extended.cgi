@@ -5,7 +5,7 @@ scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
-print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Bandwidth In/Out (Mbytes/sec)" "Operations (N/sec)" "Locks Curr/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
+print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
 
 print_mongo_server() {
   local clname="$1"
@@ -24,21 +24,35 @@ print_mongo_server() {
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
     echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
-   
-    bwinout=`echo "$report" | grep '^Bandwidth ' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status\" id=\"${nodeid}_bw\">`echo "$bwinout" 2>/dev/null | head -1` / `echo "$bwinout" 2>/dev/null | tail -1`</div>" 2>/dev/null
-    qps=`echo "$report" | grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g'`
-    [ -n "$qps" ] || rps=`echo "$report" | grep '^Total' | awk '{print $2}'`
     
-    echo "<div class=\"status clickable\" id=\"${nodeid}_qps\" onclick=\"showDetails('${nodeid}_qps','mongoqps')\">$qps</div>"
+    scanned=`echo "$report" | grep '^Records scanned' | cut -d':' -f2`
+    scanned=`expr "$scanned" : "^\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_scanned\">${scanned}</div>"
     
-    locktime=`echo "$report" | grep '^Lock time ' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_locks\" onclick=\"showDetails('${nodeid}_locks','mongolocks')\">`echo "$locktime" 2>/dev/null | head -1` / `echo "$locktime" 2>/dev/null | tail -1`</div>" 2>/dev/null
+    inmemdd=`echo "$report" | grep '^Data size' | cut -d':' -f2`
+    inmemdd=`expr "$inmemdd" : "^\ *\(.*[^ ]\)\ *$"`
+    inmemsec=`echo "$report" | grep '^Over seconds' | cut -d':' -f2`
+    inmemsec=`expr "$inmemsec" : "^\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_inmem\">${inmemdd} / ${inmemsec}</div>"
     
-    notinmemory=`echo "$report" | grep '^Records not found in memory' | cut -d':' -f2 | sed 's| *||g'`
-    pagefaults=`echo "$report" | grep '^Page fault exceptions' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_recstats\" onclick=\"showDetails('${nodeid}_recstats','mongorecstats')\">`echo "$notinmemory" | head -1` / `echo "$pagefaults" | tail -1`</div>"
+    indexhits=`echo "$report" | grep '^Index hits' | cut -d':' -f2`
+    indexhits=`expr "$indexhits" : "^\ *\(.*[^ ]\)\ *$"`
+    indexacc=`echo "$report" | grep '^Index accesses' | cut -d':' -f2`
+    indexacc=`expr "$indexacc" : "^\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_index\">${indexhits} / ${indexacc}</div>"
     
+    fastmod=`echo "$report" | grep '^Fastmod operations' | cut -d':' -f2`
+    fastmod=`expr "$fastmod" : "^\ *\(.*[^ ]\)\ *$"`
+    idhack=`echo "$report" | grep '^Idhack operations' | cut -d':' -f2`
+    idhack=`expr "$idhack" : "^\ *\(.*[^ ]\)\ *$"`
+    scanorder=`echo "$report" | grep '^Scan and order operations' | cut -d':' -f2`
+    scanorder=`expr "$scanorder" : "^\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_oper\">${fastmod} / ${idhack} / ${scanorder}</div>"
+    
+    replops=`echo "$report" | grep '^Total' | cut -d':' -f2`
+    replops=`expr "$replops" : "^\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_repl\">${replops}</div>"
+
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
 }
