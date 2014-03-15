@@ -23,6 +23,9 @@ LYNX=`which lynx 2>/dev/null`
 LINKS=`which links 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 
+# TODO
+insecure=true
+
 if [[ "${1}" =~ '://' ]] ; then
   PROTO=`echo "${1}" | awk -F'://' '{print $1}'`
   URL=`echo "${1}" | awk -F'://' '{print $2}'`
@@ -39,23 +42,27 @@ if [ -n "$WGET" ] ; then
   [ -n "$2" ] && DEST="-P ${2}"
   if [ -n "$verbose" ]; then
     echo "Fetching with Wget"
-    $WGET -nH -N $DEST "${PROTO}://${URL}"
+    $WGET -nH -N $DEST "${PROTO}://$URL"
     res=$?
   else
-    $WGET -q -nH -N $DEST "${PROTO}://${URL}"
+    $WGET -q -nH -N $DEST "${PROTO}://$URL"
     res=$?
   fi
-fi
-if [[ $res -eq 0 ]] ; then
-  exit 0
-else
-  if [ $PROTO == "https" ] ; then
-    $WGET --no-check-certificate -nH -N $DEST "${PROTO}://${URL}"
-    res=$?
+  if [ $res -eq 0 ] ; then
+    exit 0
+  else
+    if [ $res -eq 5 ] ; then
+      $insecure && $WGET -q --no-check-certificate -nH -N $DEST "${PROTO}://${URL}"
+      res=$?
+    fi
+    if [ $res -eq 0 ]; then
+      exit 0
+    else
+      [ -n "$verbose" ] && echo "failed with exit code $res"
+      exit 1
+    fi
   fi
 fi
-[ $res -eq 0 ] && exit 0
-[ $res -ne 1 ] && exit 1
 
 if [ -n "$CURL" ] ; then
   [ -n "$2" ] && DEST="-o ${2}/$filename" || DEST="-o $filename"
@@ -67,9 +74,17 @@ if [ -n "$CURL" ] ; then
     $CURL -m 20 -s -f "${PROTO}://${URL}" $DEST
     res=$?
   fi
+  if [ $res -eq 35 ]; then
+    $insecure && $CURL -m 20 -s -f "${PROTO}://${URL}" $DEST
+    res=$?
+  fi
+  if [ $res -eq 0 ]; then
+    exit 0
+  else
+    [ -n "$verbose" ] && echo "failed with exit code $res"
+    exit 1
+  fi
 fi
-[ $res -eq 0 ] && exit 0
-[ $res -ne 1 ] && exit 1
 
 if [ -n "$LINKS" ] ; then
   [ -n "$2" ] && DEST="${2}/$filename" || DEST="$filename"
@@ -77,7 +92,12 @@ if [ -n "$LINKS" ] ; then
   $LINKS -source 1 "${PROTO}://${URL}" > $DEST
   res=$?
 fi
-[[ $res -eq 0 ]] && exit 0
+if [ $res -eq 0 ]; then
+  exit 0
+else
+  [ -n "$verbose" ] && echo "failed with exit code $res"
+  exit 1
+fi
 
 exit 1
 

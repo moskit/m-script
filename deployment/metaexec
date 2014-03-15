@@ -17,7 +17,7 @@
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
-M_ROOT=$(cd "$rpath/../" && pwd)
+[ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
 genline() {
@@ -302,7 +302,7 @@ Other options:
 
 EOF
   else
-    echo -e "Usage: ${0##*/} <options>\n    Possible options: $possible_options\n    For detailed help use ${0##*/} --help --verbose\n"
+    echo -e "Usage: ${0##*/} <options>\n    Possible options: $possible_options\n    For detailed help use ${0##*/} --help\n"
   fi
   exit 0
 fi
