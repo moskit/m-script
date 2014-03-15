@@ -43,7 +43,7 @@ local_ips() {
     $IFC | grep inet | awk -F'addr:' '{print $2}' | sed 's|^ ||' | cut -sd' ' -f1
   else
     # TODO: get the list from /proc/net/tcp etc
-    # lets assume we have this at least, won't harm
+    # lets assume we have at least this, won't harm
     echo '127.0.0.1'
   fi
 }

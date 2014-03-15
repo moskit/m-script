@@ -19,8 +19,8 @@ conf="$rpath/${rcommand%.mon}.conf"
 ### for main process execution, it depends on the system speed and RUNDELAY
 ### setting
 # timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
-# [ -n "$FREQ" -a -n "$timeshift" ] && interval=$(($FREQ + $timeshift))
-# [ -z $interval -a -n "$FREQ" ] && interval=$FREQ
+# [ -n "$FREQ" ] && [ -n "$timeshift" ] && interval=$(($FREQ + $timeshift))
+# [ -z $interval ] && [ -n "$FREQ" ] && interval=$FREQ
 
 ### in case this monitor needs longer interval between runs
 ### interval can be anything that the 'date' utility can recognize
