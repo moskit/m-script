@@ -62,20 +62,20 @@ IFS='
 '
 
 # Standalone servers
-if [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
+if [ `cat "$PWD/../../standalone/MongoDB/mongo_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
   clustername="MongoDB Servers"
   open_cluster "$clustername"
   close_cluster_line
-    for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
+    for rs in `cat "$PWD/../../standalone/MongoDB/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"
-      for s in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | grep "|$rs|"` ; do
+      for s in `cat "$PWD/../../standalone/MongoDB/mongo_servers.list" | grep "|$rs|"` ; do
         print_mongo_server "$clustername" "$s"
       done
     done
 ### Not members of any RS
-    for s in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | grep ^.*\|$` ; do
+    for s in `cat "$PWD/../../standalone/MongoDB/mongo_servers.list" | grep ^.*\|$` ; do
       print_mongo_server "$clustername" "$s"
     done
     
@@ -84,21 +84,21 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null | w
 fi
 
 # Shard servers
-if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc -l` -gt 0 ] ; then
+if [ `cat "$PWD/../../standalone/MongoDB/mongo_shards.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
   clustername="Shard Servers"
   open_cluster "$clustername"
   close_cluster_line
-    for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
+    for rs in `cat "$PWD/../../standalone/MongoDB/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"
-      for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$rs|"` ; do
+      for s in `cat "$PWD/../../standalone/MongoDB/mongo_shards.list" | grep "|$rs|"` ; do
         print_mongo_server "$clustername" "$s"
       done
     done
 ### Not members of any RS
-    for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep ^.*\|$` ; do
+    for s in `cat "$PWD/../../standalone/MongoDB/mongo_shards.list" | grep ^.*\|$` ; do
       print_mongo_server "$s"
     done
   close_cluster
