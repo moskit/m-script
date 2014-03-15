@@ -121,8 +121,8 @@ parse_data() {
   [ -z "$pagesInMemory_prev" ] && pagesInMemory_prev=$pagesInMemory
   if [ -n "$pagesInMemory" ] ; then
     mempagesize=`getconf PAGESIZE || echo 4096`
-    dataInMemory=`expr $mempagesize \* $pagesInMemory`
-    echo -e "\n In-memory data:\n\nData size, MB:   `solve 2 "$dataInMemory / 1048576"`\nOver seconds:   $overSeconds\n"
+    dataInMemory=`expr $mempagesize \* $pagesInMemory / 1048576`
+    echo -e "\n In-memory data:\n\nData size, MB:   $dataInMemory\nOver seconds:   $overSeconds\n"
   fi
   
   if [ "X$SQLITE3" == "X1" ] ; then

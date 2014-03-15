@@ -49,7 +49,7 @@ print_mongo_server() {
     scanorder=`expr "$scanorder" : "^\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_oper\">${fastmod} / ${idhack} / ${scanorder}</div>"
     
-    replops=`echo "$report" | grep '^Total' | cut -d':' -f2`
+    replops=`echo "$report" | grep '^Total' | cut -d' ' -f2`
     replops=`expr "$replops" : "^\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_repl\">${replops}</div>"
 
