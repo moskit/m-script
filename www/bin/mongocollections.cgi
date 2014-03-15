@@ -6,7 +6,7 @@ scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 
 print_cgi_headers
-print_nav_bar "MongoDB|Servers" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
+print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
 print_page_title "Collection" "Status" "Sharded" "Primary" "Records" "Data Size" "Index Size"
 
 [ -f "$PWD/../../standalone/$saname/data/databases.dat" ] || exit 0

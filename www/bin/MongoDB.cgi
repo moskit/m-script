@@ -4,7 +4,7 @@ scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
-print_nav_bar "MongoDB|Servers" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
+print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
 print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Bandwidth In/Out (Mbytes/sec)" "Operations (N/sec)" "Locks Curr/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
 
 print_mongo_server() {
@@ -15,8 +15,7 @@ print_mongo_server() {
   name="${host%:*}"
   nodeid="$clname|${name}:${port}"
   [ ${#name} -gt 14 ] && namep="${name:0:7}..${name:(-7)}" || namep=$name
-  install -d "$PWD/../$scriptname/$clname/${name}:${port}"
-  [ -n "$port" ] && wport=`expr $port + 1000`
+  [ -d "$PWD/../$scriptname/$clname/${name}:${port}" ] && install -d "$PWD/../$scriptname/$clname/${name}:${port}"
   
   report=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.report" 2>/dev/null`
   rawdata=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.dat" 2>/dev/null`
@@ -88,6 +87,7 @@ elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null |
   
 fi
 
+# Shard servers
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
   clustername="Shard Servers"
