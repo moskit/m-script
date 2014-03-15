@@ -1,0 +1,162 @@
+#!/bin/bash
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+source "$M_ROOT/lib/functions.sh"
+LOG="$M_ROOT/logs/sa.log"
+
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
+MONGO=`which mongo 2>/dev/null`
+[ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
+source "$rpath/servers.conf"
+[ -e "$rpath/${rcommand%.mon}.conf" ] && source "$rpath/${rcommand%.mon}.conf"
+[ -z "$INTERVAL" ] && INTERVAL=600
+if [ -n "$AUTH_LOGIN" ]; then
+  if [ -n "$AUTH_PASSWD" ]; then
+    AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
+  else
+    echo "Password is not set for user $AUTH_LOGIN"
+  fi
+fi
+
+M_TEMP="$M_TEMP/MongoDB"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+
+check_interval $INTERVAL
+
+# mongo localhost:27017/admin --quiet --eval "db.currentOp().inprog.forEach(function(d){ if(d.waitingForLock) print(d.op)})" | sort | uniq -c
+
+parse_data() {
+  timeindexnow=`date +"%s"`
+  lasttimeindex=`cat "$M_TEMP/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 210`
+  echo $timeindexnow > "$M_TEMP/${1}.lasttimeindex"
+  timediff=`expr $timeindexnow - $lasttimeindex`
+  for d in `cat "$rpath/data/${1}.ext.dat" "$rpath/data/${1}.ext.dat.prev" 2>/dev/null` ; do
+    eval "`echo "$d"`"
+  done
+  echo -e "Server $1 ** `date`\n-----------------------------------------\n"
+  [ -n "$totalOpen" ] && echo "Open cursors:   $totalOpen"
+  
+  [ -n "$lastFlushMs" ] && echo -e "\n Flush to disk:\n\nLast flush time (ms):   $lastFlushMs"
+  [ -n "$avgFlushMs" ] && echo "Average flush time (ms):   $avgFlushMs"
+
+  [ -n "$durCommits" ] && echo -e "\n Journal:\n\nJournal commits per commit interval:   $durCommits"
+  [ -n "$durWriteJ" ] && [ -n "$durTime" ] && durWriteJPercent=`solve 2 "$durWriteJ / $durTime * 100"` && echo "Time spent to write to journal, %:   $durWriteJPercent"
+  [ -n "$durWriteD" ] && [ -n "$durTime" ] && durWriteDPercent=`solve 2 "$durWriteD / $durTime * 100"` && echo "Time spent to write to journal data files, %:   $durWriteDPercent"
+  
+  [ -z "$indexAccesses_prev" ] && indexAccesses_prev=$indexAccesses
+  [ -n "$indexAccesses" ] && indexAccesses=`solve 1 "($indexAccesses - $indexAccesses_prev) / $timediff"` && echo -e "\n Index usage:\n\nIndex accesses, per second:   $indexAccesses"
+  [ -z "$indexHits_prev" ] && indexHits_prev=$indexHits
+  [ -n "$indexHits" ] && indexHits=`solve 1 "($indexHits - $indexHits_prev) / $timediff"` && echo "Index hits, per second:   $indexHits"
+  [ -z "$indexMisses_prev" ] && indexMisses_prev=$indexMisses
+  [ -n "$indexMisses" ] && indexMisses=`solve 1 "($indexMisses - $indexMisses_prev) / $timediff"` && echo "Index misses, per second:   $indexMisses"
+  
+  [ -z "$opcountersReplInsert_prev" ] && opcountersReplInsert_prev=$opcountersReplInsert
+  if [ -n "$opcountersReplInsert" ]; then
+    echo -e "\n Replication operations / second\n\nOperation Type         Number"
+    opcountersReplInsert=`solve 1 "($opcountersReplInsert - $opcountersReplInsert_prev) / $timediff"`
+    [ -z "$opcountersReplQuery_prev" ] && opcountersReplQuery_prev=$opcountersReplQuery
+    opcountersReplQuery=`solve 1 "($opcountersReplQuery - $opcountersReplQuery_prev) / $timediff"`
+    [ -z "$opcountersReplUpdate_prev" ] && opcountersReplUpdate_prev=$opcountersReplUpdate
+    opcountersReplUpdate=`solve 1 "($opcountersReplUpdate - $opcountersReplUpdate_prev) / $timediff"`
+    [ -z "$opcountersReplDelete_prev" ] && opcountersReplDelete_prev=$opcountersReplDelete
+    opcountersReplDelete=`solve 1 "($opcountersReplDelete - $opcountersReplDelete_prev) / $timediff"`
+    [ -z "$opcountersReplGetmore_prev" ] && opcountersReplGetmore_prev=$opcountersReplGetmore
+    opcountersReplGetmore=`solve 1 "($opcountersReplGetmore - $opcountersReplGetmore_prev) / $timediff"`
+    [ -z "$opcountersReplCommand_prev" ] && opcountersReplCommand_prev=$opcountersReplCommand
+    opcountersReplCommand=`solve 1 "($opcountersReplCommand - $opcountersReplCommand_prev) / $timediff"`
+    opcountersReplTotal=`solve 1 "$opcountersReplQuery + $opcountersReplInsert + $opcountersReplUpdate + $opcountersReplDelete + $opcountersReplGetmore + $opcountersReplCommand"`
+    echo -e "Query               $opcountersReplQuery\nInsert              $opcountersReplInsert\nUpdate              $opcountersReplUpdate\nDelete              $opcountersReplDelete\nGetmore              $opcountersReplGetmore\nCommand              $opcountersReplCommand\nTotal                $opcountersReplTotal"
+  fi
+  
+  [ -z "$scanned_prev" ] && scanned_prev=$scanned
+  [ -n "$scanned" ] && scanned=`solve 1 "($scanned - $scanned_prev) / $timediff"` && echo -e "\n Query Executor Stats\n\nRecords scanned, per second:   $scanned"
+  
+  [ -z "$fastmod_prev" ] && fastmod_prev=$fastmod
+  [ -n "$fastmod" ] && fastmod=`solve 1 "($fastmod - $fastmod_prev) / $timediff"` && echo "\n Operation stats:\n\nFastmod operations, per second:   $fastmod"
+  [ -z "$idhack_prev" ] && idhack_prev=$idhack
+  [ -n "$idhack" ] && idhack=`solve 1 "($idhack - $idhack_prev) / $timediff"` && echo "Idhack operations, per second:   $idhack"
+  [ -n "$scanAndOrder" ] && scanAndOrder=`solve 1 "($scanAndOrder - $scanAndOrder_prev) / $timediff"` && echo "Scan and order operations, per second:   $scanAndOrder"
+  
+  [ -z "$documentDeleted_prev" ] && documentDeleted_prev=$documentDeleted
+  [ -n "$documentDeleted" ] && documentDeleted=`solve 1 "($documentDeleted - $documentDeleted_prev) / $timediff"` && echo "\n Documents:\n\nDeleted, per second:   $documentDeleted"
+  [ -z "$documentInserted_prev" ] && documentInserted_prev=$documentInserted
+  [ -n "$documentInserted" ] && documentInserted=`solve 1 "($documentInserted - $documentInserted_prev) / $timediff"` && echo "Inserted, per second:   $documentInserted"
+  [ -z "$documentReturned_prev" ] && documentReturned_prev=$documentReturned
+  [ -n "$documentReturned" ] && documentReturned=`solve 1 "($documentReturned - $documentReturned_prev) / $timediff"` && echo "Returned, per second:   $documentReturned"
+  [ -z "$documentUpdated_prev" ] && documentUpdated_prev=$documentUpdated
+  [ -n "$documentUpdated" ] && documentUpdated=`solve 1 "($documentUpdated - $documentUpdated_prev) / $timediff"` && echo "Updated, per second:   $documentUpdated"
+  
+  [ -z "$recordMoves_prev" ] && recordMoves_prev=$recordMoves
+  [ -n "$recordMoves" ] && recordMoves=`solve 1 "($recordMoves - $recordMoves_prev) / $timediff"` && echo -e "\nRecord moves (on-disk), per second:   $recordMoves"
+  
+  [ -z "$replApplyBatchesNum_prev" ] && replApplyBatchesNum_prev=$replApplyBatchesNum
+  [ -n "$replApplyBatchesNum" ] && replApplyBatchesNum=`solve 1 "($replApplyBatchesNum - $replApplyBatchesNum_prev) / $timediff"` && echo "\n Replication process stats:\n\nBatches applied, per second:   $replApplyBatchesNum"
+  
+  [ -z "$replApplyBatchesMs_prev" ] && replApplyBatchesMs_prev=$replApplyBatchesMs
+  [ -n "$replApplyBatchesMs" ] && replApplyBatchesMs=`solve 1 "($replApplyBatchesMs - $replApplyBatchesMs_prev) / $timediff * 100"` && echo "Time spent applying batches, %:   $replApplyBatchesMs"
+  
+  [ -z "$replApplyOps_prev" ] && replApplyOps_prev=$replApplyOps
+  [ -n "$replApplyOps" ] && replApplyOps=`solve 1 "($replApplyOps - $replApplyOps_prev) / $timediff"` && echo "Operations applied, per second:   $replApplyOps"
+  
+  [ -z "$replNetworkBytes_prev" ] && replNetworkBytes_prev=$replNetworkBytes
+  [ -n "$replNetworkBytes" ] && replNetworkBytes=`solve 1 "($replNetworkBytes - $replNetworkBytes_prev) / $timediff"` && echo "Network usage, bytes per second:   $replNetworkBytes"
+  
+  [ -z "$replNetworkOps_prev" ] && replNetworkOps_prev=$replNetworkOps
+  [ -n "$replNetworkOps" ] && replNetworkOps=`solve 1 "($replNetworkOps - $replNetworkOps_prev) / $timediff"` && echo "Network usage, operations per second:   $replNetworkOps"
+  
+  [ -z "$replOplogInsertNum_prev" ] && replOplogInsertNum_prev=$replOplogInsertNum
+  [ -n "$replOplogInsertNum" ] && replOplogInsertNum=`solve 1 "($replOplogInsertNum - $replOplogInsertNum_prev) / $timediff"` && echo "Oplog inserts, operations per second:   $replOplogInsertNum"
+  
+  [ -z "$replOplogInsertMs_prev" ] && replOplogInsertMs_prev=$replOplogInsertMs
+  [ -n "$replOplogInsertMs" ] && replOplogInsertMs=`solve 1 "($replOplogInsertMs - $replOplogInsertMs_prev) / $timediff * 100"` && echo "Oplog inserts, time spent, %:   $replOplogInsertMs"
+  
+  [ -z "$replOplogInsertBytes_prev" ] && replOplogInsertBytes_prev=$replOplogInsertBytes
+  [ -n "$replOplogInsertBytes" ] && replOplogInsertBytes=`solve 1 "($replOplogInsertBytes - $replOplogInsertBytes_prev) / $timediff"` && echo "Oplog inserts, bytes per second:   $replOplogInsertBytes"
+  
+  [ -z "$pagesInMemory_prev" ] && pagesInMemory_prev=$pagesInMemory
+  if [ -n "$pagesInMemory" ] ; then
+    echo -e "\n In-memory data:\n\n"
+    mempagesize=`getconf PAGESIZE || echo 4096`
+    dataInMemory=`expr $mempagesize \* $pagesInMemory`
+    echo -e "Data size, MB:   `solve 2 "$dataInMemory / 1048576"`\nOver seconds:   $overSeconds\n"
+  fi
+  
+  if [ "X$SQLITE3" == "X1" ] ; then
+    dbquery "$rpath/extended.sql3" "INSERT INTO extended (timeindex, day, hostport, totalOpen, lastFlushMs, avgFlushMs, durCommits, durWriteJPercent, durWriteDPercent, indexAccesses, indexHits, indexMisses, opcountersReplQuery, opcountersReplInsert, opcountersReplUpdate, opcountersReplDelete, opcountersReplGetmore, opcountersReplCommand, opcountersReplTotal, scanned, fastmod, idhack, scanAndOrder, documentDeleted, documentInserted, documentReturned, documentUpdated, recordMoves, replApplyBatchesNum, replApplyBatchesMs, replApplyOps, replNetworkBytes, replNetworkOps, replOplogInsertNum, replOplogInsertMs, replOplogInsertBytes, dataInMemory, overSeconds) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${totalOpen-0}', '${lastFlushMs-0}', '${avgFlushMs-0}', '${durCommits-0}', '${durWriteJPercent-0}', '${durWriteDPercent-0}', '${indexAccesses-0}', '${indexHits-0}', '${indexMisses-0}', '${opcountersReplQuery-0}', '${opcountersReplInsert-0}', '${opcountersReplUpdate-0}', '${opcountersReplDelete-0}', '${opcountersReplGetmore-0}', '${opcountersReplCommand-0}', '${opcountersReplTotal-0}', '${scanned-0}', '${fastmod-0}', '${idhack-0}', '${scanAndOrder-0}', '${documentDeleted-0}', '${documentInserted-0}', '${documentReturned-0}', '${documentUpdated-0}', '${recordMoves-0}', '${replApplyBatchesNum-0}', '${replApplyBatchesMs-0}', '${replApplyOps-0}', '${replNetworkBytes-0}', '${replNetworkOps-0}', '${replOplogInsertNum-0}', '${replOplogInsertMs-0}', '${replOplogInsertBytes-0}', '${dataInMemory-0}', '${overSeconds-0}')" 2>>"$LOG"
+  fi
+  
+}
+
+if [ -e "$rpath/mongo_shards.list" ] ; then
+  for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
+    [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
+    mv "$rpath/data/${cs}.ext.dat" "$rpath/data/${cs}.ext.dat.prev" 2>/dev/null
+    [ -e "$rpath/data/${cs}.ext.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
+    serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
+    echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
+    statusreport=`parse_data "$cs"`
+    echo "$statusreport" > "$rpath/data/${cs}.ext.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.ext.report"`
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name_ext.html"
+  done &
+fi
+
+if [ -e "$rpath/mongo_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
+    [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"
+    mv "$rpath/data/${cs}.ext.dat" "$rpath/data/${cs}.ext.dat.prev" 2>/dev/null
+    [ -e "$rpath/data/${cs}.ext.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
+    serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
+    echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
+    statusreport=`parse_data "$cs"`
+    echo "$statusreport" > "$rpath/data/${cs}.ext.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.ext.report"`
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name_ext.html"
+  done &
+fi
+
