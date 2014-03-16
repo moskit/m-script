@@ -103,5 +103,5 @@ for ind in `echo "$flavors" | cut -sd'/' -f1 | sort | uniq` ; do
   echo
 done
 
-
+proper_exit 0
 

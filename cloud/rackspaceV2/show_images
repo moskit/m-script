@@ -89,9 +89,9 @@ for ind in `echo "$images" | cut -sd'/' -f1 | sort | uniq` ; do
   name=`echo "$image" | grep '"name"' | cut -sd'|' -f2`
 
   echo "$name|$url" >> "$M_TEMP/image_urls.list"
-  echo -e "$name\t\t$url"
+  echo -e "$name\n$url\n-------------------------------------------------------------------------------"
 
 done
 
-
+proper_exit 0
 
