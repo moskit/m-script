@@ -5,7 +5,7 @@ scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
-print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
+print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Open cursors" "Replication ops, (N/sec)"
 
 print_mongo_server() {
   local clname="$1"
@@ -19,38 +19,41 @@ print_mongo_server() {
   [ -n "$port" ] && wport=`expr $port + 1000`
   
   report=`cat "$PWD/../../standalone/MongoDB/data/${name}:${port}.ext.report" 2>/dev/null`
-  rawdata=`cat "$PWD/../../standalone/MongoDB/data/${name}:${port}.ext.dat" 2>/dev/null`
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
-    echo "<div class=\"servername clickable\" id=\"${nodeid}_name_ext\" onClick=\"showData('${nodeid}_name','/MongoDB')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${nodeid}_name_ext\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
+    echo "<div class=\"servername clickable\" id=\"${nodeid}_name_ext\" onClick=\"showData('${nodeid}_name_ext','/MongoDB')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${nodeid}_name_ext\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     
-    scanned=`echo "$report" | grep '^Records scanned' | cut -d':' -f2`
-    scanned=`expr "$scanned" : "^\ *\(.*[^ ]\)\ *$"`
+    scanned=`echo "$report" | grep '^Records scanned'`
+    scanned=`expr "$scanned" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_scanned\">${scanned}</div>"
     
-    inmemdd=`echo "$report" | grep '^Data size' | cut -d':' -f2`
-    inmemdd=`expr "$inmemdd" : "^\ *\(.*[^ ]\)\ *$"`
-    inmemsec=`echo "$report" | grep '^Over seconds' | cut -d':' -f2`
-    inmemsec=`expr "$inmemsec" : "^\ *\(.*[^ ]\)\ *$"`
+    inmemdd=`echo "$report" | grep '^Data size'`
+    inmemdd=`expr "$inmemdd" : ".*:\ *\(.*[^ ]\)\ *$"`
+    inmemsec=`echo "$report" | grep '^Over seconds'`
+    inmemsec=`expr "$inmemsec" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_inmem\">${inmemdd} / ${inmemsec}</div>"
     
-    indexhits=`echo "$report" | grep '^Index hits' | cut -d':' -f2`
-    indexhits=`expr "$indexhits" : "^\ *\(.*[^ ]\)\ *$"`
-    indexacc=`echo "$report" | grep '^Index accesses' | cut -d':' -f2`
-    indexacc=`expr "$indexacc" : "^\ *\(.*[^ ]\)\ *$"`
+    indexhits=`echo "$report" | grep '^Index hits'`
+    indexhits=`expr "$indexhits" : ".*:\ *\(.*[^ ]\)\ *$"`
+    indexacc=`echo "$report" | grep '^Index accesses'`
+    indexacc=`expr "$indexacc" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_index\">${indexhits} / ${indexacc}</div>"
     
-    fastmod=`echo "$report" | grep '^Fastmod operations' | cut -d':' -f2`
-    fastmod=`expr "$fastmod" : "^\ *\(.*[^ ]\)\ *$"`
-    idhack=`echo "$report" | grep '^Idhack operations' | cut -d':' -f2`
-    idhack=`expr "$idhack" : "^\ *\(.*[^ ]\)\ *$"`
-    scanorder=`echo "$report" | grep '^Scan and order operations' | cut -d':' -f2`
-    scanorder=`expr "$scanorder" : "^\ *\(.*[^ ]\)\ *$"`
+    fastmod=`echo "$report" | grep '^Fastmod operations'`
+    fastmod=`expr "$fastmod" : ".*:\ *\(.*[^ ]\)\ *$"`
+    idhack=`echo "$report" | grep '^Idhack operations'`
+    idhack=`expr "$idhack" : ".*:\ *\(.*[^ ]\)\ *$"`
+    scanorder=`echo "$report" | grep '^Scan and order operations'`
+    scanorder=`expr "$scanorder" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_oper\">${fastmod} / ${idhack} / ${scanorder}</div>"
     
-    replops=`echo "$report" | grep '^Total' | cut -d' ' -f2`
-    replops=`expr "$replops" : "^\ *\(.*[^ ]\)\ *$"`
+    cursors=`echo "$report" | grep '^Open cursors'`
+    cursors=`expr "$cursors" : ".*:\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_cursors\">${cursors}</div>"
+    
+    replops=`echo "$report" | grep '^Total'`
+    replops=`expr "$replops" : "^Total\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_repl\">${replops}</div>"
 
   echo "</div>"
