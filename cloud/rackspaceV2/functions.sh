@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+# Copyright (C) 2014 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,20 +18,18 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
 CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
 
-CURL="$CURL -s"
-V="v2.0"
-[ -z "$CLOUD" ] && echo "CLOUD is not defined" && exit 1
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
-source "$M_ROOT/conf/mon.conf"
-M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
-install -d "$M_TEMP"
-
-cat "$rpath/auth.$V.json" | sed "s|RS_AUTH_USER|$RS_AUTH_USER|;s|RS_AUTH_KEY|$RS_AUTH_KEY|" > "$M_TEMP/auth.req"
-$CURL -X POST -T "$M_TEMP/auth.req" -H "Content-Type: application/json" -H "Accept: application/json" "https://${RS_APIURL#https://}/$V/" | "$M_ROOT/lib/json2txt" > "$M_TEMP/auth.resp"
-rm -f "$M_TEMP/auth.req"
-[ `grep -c ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp"` -eq 1 ] || exit 1
-
-exit 0
-
+try_auth() {
+  local -i i
+  i=0
+  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 146
+    "$rpath"/auth
+    i+=1
+    sleep 10
+  done
+  [ $i -ne 0 ] && log "$i additional auth request(s) due to no reply from API"
+}

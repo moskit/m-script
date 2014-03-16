@@ -1,0 +1,98 @@
+#!/bin/bash
+# Copyright (C) 2014 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+
+#debug=1
+
+[ -n "$debug" ] && debug=true || debug=false
+$debug && LOG="$M_ROOT/logs/show_images.log"
+
+possible_options="noupdate cloud"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//;s/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optname=`echo $s_optname | tr -d '-'`
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
+
+M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+export IAMACHILD CLOUD
+lock_cloudops || exit 10
+
+CURL="$CURL -s -k"
+
+authresp=`cat "$M_TEMP/auth.resp" 2>/dev/null`
+[ -z "$authresp" ] && try_auth
+
+name=`echo "$authresp" | grep '"name"|"cloudServersOpenStack"'`
+[ -z "$n" ] && echo "Error reading authentication response: name \"cloudServersOpenStack\" not found there" && proper_exit 81
+
+n=`echo "$name" | cut -s -d '/' -f4`
+[ `expr "$n" : ".*[^0-9]"` -ne 0 ] && echo "Error reading authentication response: cloudServersOpenStack service index is supposed to be a number, but it is $n" && proper_exit 84
+
+regions=`echo "$authresp" | cut -sd'/' -f4- | grep "^$n/" | cut -sd'/' -f3- | grep -E '"region"|"publicURL"' | sort -n`
+
+for ind in `echo "$regions" | cut -sd'/' -f1 | uniq` ; do
+  region=`echo "$regions" | grep "^$ind/"`
+  echo "${n}: `echo "$region" | grep '"region"' | cut -sd'|' -f2 | tr -d '"'` `echo "$region" | grep '"publicURL"' | cut -sd'|' -f2 | tr -d '"'`"
+done
+
+
+
+
+
+
+
