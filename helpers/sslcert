@@ -1,0 +1,77 @@
+#!/bin/bash
+# Copyright (C) 2014 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
+
+OSSL=`which openssl 2>/dev/null`
+[ -z "$OSSL" ] && echo "openssl utility not found, exiting" && exit 1
+
+possible_options="help verbose debug generate filename days config"
+[ "X$*" == "X" ] && usage="yes"
+
+IFSORIG=$IFS
+IFS='-'
+for s_option in "$@"
+do
+  found=false
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "X$s_optarg" == "Xno" ] && unset $s_optname
+
+  for option in ${possible_options// /-} ; do
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+  done
+  
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFSORIG
+
+found=false
+for option in $necessary_options ; do
+  [ -z "$(eval echo \$$option)" ] && missing_options="$missing_options --${option}," && found=true
+done
+if $found ; then
+  echo "Necessary options: ${missing_options/%,/} not found"
+  exit 1
+fi
+
+generate_selfsigned() {
+  $OSSL req -x509 -newkey rsa:2048 -keyout key.pem -out $filename -days $days -nodes
+}
+
+if [ -n "$generate" ]; then
+  case $generate in
+    ss|self-signed|selfsigned)
+      generate_selfsigned
+      ;;
+    *)
+      echo "generation of $generate is not supported yet"
+      ;;
+  esac
+fi
+
+
+
+
+

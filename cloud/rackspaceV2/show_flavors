@@ -77,19 +77,30 @@ TOKEN=`cat "$M_TEMP/auth.resp" | grep ^0\/\"access\"\/\"token\"\/\"id\" | cut -s
 REGURL=`cat "$M_TEMP/show_regions.resp" | grep "^$REGION|" | cut -sd'|' -f2`
 [ -z "$REGURL" ] && echo "Region $REGION is not found in $M_TEMP/show_regions.resp" >&2 && exit 1
 
-$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$REGURL/images" | /opt/m/lib/json2txt | cut -sd'/' -f3- > "$M_TEMP/show_images.resp"
+$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$REGURL/flavors/detail" | /opt/m/lib/json2txt | cut -sd'/' -f3- > "$M_TEMP/show_flavors.resp"
 
-images=`cat "$M_TEMP/show_images.resp"`
+flavors=`cat "$M_TEMP/show_flavors.resp"`
 
-rm "$M_TEMP/image_urls.list" 2>/dev/null
-for ind in `echo "$images" | cut -sd'/' -f1 | sort | uniq` ; do
-  relind=`echo "$image" | grep '|"self"' | cut -sd'/' -f3`
-  url=`echo "$image" | grep "/$relind/\"href\"|" | cut -sd'|' -f2 | tr -d '"'`
-  name=`echo "$image" | grep '"name"' | cut -sd'|' -f2`
-
-  echo "$name|$url" >> "$M_TEMP/image_urls.list"
-  echo -e "$name\t\t$url"
-
+rm "$M_TEMP/flavor_urls.list" 2>/dev/null
+for ind in `echo "$flavors" | cut -sd'/' -f1 | sort | uniq` ; do
+  flavor=`echo "$flavors" | grep "^$ind/"`
+  id=`echo "$flavor" | grep '"id"' | cut -sd'|' -f2 | tr -d '"'`
+  relind=`echo "$flavor" | grep '|"self"' | cut -sd'/' -f3`
+  url=`echo "$flavor" | grep "/$relind/\"href\"|" | cut -sd'|' -f2 | tr -d '"'`
+  name=`echo "$flavor" | grep '"name"' | cut -sd'|' -f2`
+  extra=`echo "$flavor" | grep 'OS-FLV-WITH-EXT-SPECS' | cut -sd'/' -f3 | tr '|' ':' | tr '"' ' '`
+  extdata=`echo "$flavor" | grep 'OS-FLV-EXT-DATA' | cut -sd':' -f2 | tr -d '"' | tr '|' ':'`
+  ram=`echo "$flavor" | grep '"ram"' | cut -sd'|' -f2 | tr -d '"'`
+  vcpus=`echo "$flavor" | grep '"vcpus"' | cut -sd'|' -f2 | tr -d '"'`
+  swap=`echo "$flavor" | grep '"swap"' | cut -sd'|' -f2 | tr -d '"'`
+  rxtx_factor=`echo "$flavor" | grep '"rxtx_factor"' | cut -sd'|' -f2 | tr -d '"'`
+  disk=`echo "$flavor" | grep '"disk"' | cut -sd'|' -f2 | tr -d '"'`
+  relind=`echo "$flavor" | grep '|"self"' | cut -sd'/' -f3`
+  echo "$id|$url" >> "$M_TEMP/flavor_urls.list"
+  echo -e "$name\n-----------------------------\n\nID: $id   URL: $url\nCPU cores: $vcpus  RAM: $ram  Disk: $disk  Rx/Tx Factor: $rxtx_factor  Swap: $swap"
+  [ -n "$extdata" ] && echo "$extdata"
+  [ -n "$extra" ] && echo "$extra"
+  echo
 done
 
 
