@@ -1,0 +1,107 @@
+#!/bin/bash
+# Copyright (C) 2014 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+
+possible_options="cloud region"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//;s/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optname=`echo $s_optname | tr -d '-'`
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+  done
+   if [[ $found -ne 1 ]]; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -n "$region" ] && REGION=$region
+[ -z "$CLOUD" ] && echo "CLOUD is not defined" >&2 && exit 1
+[ -z "$REGION" ] && echo "REGION is not defined" >&2 && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
+
+M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+export IAMACHILD CLOUD
+lock_cloudops || exit 10
+
+CURL="$CURL -s -k"
+
+TOKEN=`cat "$M_TEMP/auth.resp" | grep ^0\/\"access\"\/\"token\"\/\"id\" | cut -sd'|' -f2 | tr -d '"'`
+[ -f "$M_TEMP/show_regions.resp" ] || "$rpath"/show_regions >/dev/null
+REGURL=`cat "$M_TEMP/show_regions.resp" | grep "^$REGION|" | cut -sd'|' -f2`
+[ -z "$REG" ] && echo "Region $REGION is not found in $M_TEMP/show_regions.resp" >&2 && exit 1
+
+$CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$REGURL/flavors/detail?" | /opt/m/lib/json2txt | cut -sd'/' -f3- > "$M_TEMP/show_images.resp"
+
+images=`cat "$M_TEMP/show_images.resp"`
+
+rm "$M_TEMP/image_urls.list"
+for ind in `echo "$images" | cut -sd'/' -f1 | sort | uniq` ; do
+  image=`echo "$images" | grep "^$ind/"`
+  id=`echo "$image" | grep '"id"' | cut -sd'|' -f2 | tr -d '"'`
+  relind=`echo "$image" | grep '|"self"' | cut -sd'/' -f3`
+  url=`echo "$image" | grep "/$relind/\"href\"|" | cut -sd'|' -f2 | tr -d '"'`
+  name=`echo "$image" | grep '"name"' | cut -sd'|' -f2`
+  extra=`echo "$image" | grep 'OS-FLV-WITH-EXT-SPECS' | cut -sd'/' -f3 | tr '|' ':' | tr '"' ' '`
+  extdata=`echo "$image" | grep 'OS-FLV-EXT-DATA' | cut -sd':' -f2 | tr -d '"' | tr '|' ':'`
+  ram=`echo "$image" | grep '"ram"' | cut -sd'|' -f2 | tr -d '"'`
+  vcpus=`echo "$image" | grep '"vcpus"' | cut -sd'|' -f2 | tr -d '"'`
+  swap=`echo "$image" | grep '"swap"' | cut -sd'|' -f2 | tr -d '"'`
+  rxtx_factor=`echo "$image" | grep '"rxtx_factor"' | cut -sd'|' -f2 | tr -d '"'`
+  disk=`echo "$image" | grep '"disk"' | cut -sd'|' -f2 | tr -d '"'`
+  relind=`echo "$image" | grep '|"self"' | cut -sd'/' -f3`
+  echo "$id|$url" >> "$M_TEMP/image_urls.list"
+  echo -e "$name\n-----------------------------\n\nID: $id   URL: $url\nCPU cores: $vcpus  RAM: $ram  Disk: $disk  Rx/Tx Factor: $rxtx_factor  Swap: $swap"
+  [ -n "$extdata" ] && echo "$extdata"
+  [ -n "$extra" ] && echo "$extra"
+  echo
+done
+
+
+
