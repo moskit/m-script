@@ -5,7 +5,7 @@ scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
-print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Open cursors" "Replication ops, (N/sec)"
+print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
 
 print_mongo_server() {
   local clname="$1"
@@ -40,6 +40,10 @@ print_mongo_server() {
     indexacc=`expr "$indexacc" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_index\">${indexhits} / ${indexacc}</div>"
     
+    cursors=`echo "$report" | grep '^Open cursors'`
+    cursors=`expr "$cursors" : ".*:\ *\(.*[^ ]\)\ *$"`
+    echo "<div class=\"status\" id=\"${nodeid}_cursors\">${cursors}</div>"
+    
     fastmod=`echo "$report" | grep '^Fastmod operations'`
     fastmod=`expr "$fastmod" : ".*:\ *\(.*[^ ]\)\ *$"`
     idhack=`echo "$report" | grep '^Idhack operations'`
@@ -47,11 +51,7 @@ print_mongo_server() {
     scanorder=`echo "$report" | grep '^Scan and order operations'`
     scanorder=`expr "$scanorder" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_oper\">${fastmod} / ${idhack} / ${scanorder}</div>"
-    
-    cursors=`echo "$report" | grep '^Open cursors'`
-    cursors=`expr "$cursors" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status\" id=\"${nodeid}_cursors\">${cursors}</div>"
-    
+
     replops=`echo "$report" | grep '^Total'`
     replops=`expr "$replops" : "^Total\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_repl\">${replops}</div>"
