@@ -75,13 +75,13 @@ CURL="$CURL -s -k"
 TOKEN=`cat "$M_TEMP/auth.resp" | grep ^0\/\"access\"\/\"token\"\/\"id\" | cut -sd'|' -f2 | tr -d '"'`
 [ -f "$M_TEMP/show_regions.resp" ] || "$rpath"/show_regions >/dev/null
 REGURL=`cat "$M_TEMP/show_regions.resp" | grep "^$REGION|" | cut -sd'|' -f2`
-[ -z "$REG" ] && echo "Region $REGION is not found in $M_TEMP/show_regions.resp" >&2 && exit 1
+[ -z "$REGURL" ] && echo "Region $REGION is not found in $M_TEMP/show_regions.resp" >&2 && exit 1
 
 $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$REGURL/flavors/detail?" | /opt/m/lib/json2txt | cut -sd'/' -f3- > "$M_TEMP/show_images.resp"
 
 images=`cat "$M_TEMP/show_images.resp"`
 
-rm "$M_TEMP/image_urls.list"
+rm "$M_TEMP/image_urls.list" 2>/dev/null
 for ind in `echo "$images" | cut -sd'/' -f1 | sort | uniq` ; do
   image=`echo "$images" | grep "^$ind/"`
   id=`echo "$image" | grep '"id"' | cut -sd'|' -f2 | tr -d '"'`

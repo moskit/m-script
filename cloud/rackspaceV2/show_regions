@@ -80,7 +80,7 @@ n=`echo "$name" | cut -s -d '/' -f4`
 
 regions=`echo "$authresp" | cut -sd'/' -f4- | grep "^$n/" | cut -sd'/' -f3- | grep -E '"region"|"publicURL"' | sort -n`
 
-rm "$M_TEMP/show_regions.resp"
+rm "$M_TEMP/show_regions.resp" 2>/dev/null
 
 for ind in `echo "$regions" | cut -sd'/' -f1 | uniq` ; do
   region=`echo "$regions" | grep "^$ind/"`
