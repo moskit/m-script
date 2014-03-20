@@ -24,12 +24,14 @@ source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/monitoring.log"
 netstatbin=`which netstat 2>/dev/null`
 
-monperiod=`expr $timeindexnow - $lasttimeindex 2>/dev/null`
-[ -z "$monperiod" -o $monperiod -le 0 ] 2>/dev/null && timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` && monperiod=`expr $FREQ + $timeshift || echo 200`
+if [ -z "$timediff" ]; then
+  timediff=`expr $timeindexnow - $lasttimeindex 2>/dev/null`
+[ -z "$timediff" -o $timediff -le 0 ] 2>/dev/null && timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` && timediff=`expr $FREQ + $timeshift || echo 210`
+fi
 
 IFS1=$IFS ; IFS='
 '
-config=( `cat "${rpath}/netstat.conf" | grep -v ^$` )
+config=( `cat "$rpath/netstat.conf" | grep -v ^$` )
 
 metrics=$(echo "${config[*]}" | cut -d'|' -f2 | tr '\n' '|'); metrics=${metrics%|}
 
@@ -42,7 +44,7 @@ for st in $curr_values ; do eval $st ; echo $st >> "$M_TEMP/netstat.dat" ; done
 curr_values_arr=( $curr_values )
 
 [ ${#prev_values_arr[*]} -eq 0 ] && log "previous data not found" && exit 1
-dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \\( \\\$${var} - \\\$${var}_prev \\) \\\\* 60 / $monperiod"`"; done) )
+dat_arr=( $(for L in ${prev_values_arr[*]}; do var=${L%=*}; val=${L#*=}; eval "${var}_prev=${val}"; echo "${var}=`eval "expr \\( \\\$${var} - \\\$${var}_prev \\) \\\\* 60 / $timediff"`"; done) )
 
 for st in ${dat_arr[*]} ; do
   resline="${resline}${st%%=*}|integer,"

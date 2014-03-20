@@ -30,13 +30,16 @@ if [ -z "$iptablessave" -o -z "$iptablesbin" ]; then
   log "iptables not installed"
   exit 1
 fi
+
+[ -z "$timeindex" ] && echo "Use mon.run $rcommand" && exit 1
+
 if [ "X$SQLITE3" != "X0" ] && [ "X$1" == "XSQL" ]; then
 
-[ -n "$lasttimeindex" ] || lasttimeindex=`sqlite3 "$rpath/../sysdata" "select timeindex from sysdata order by timeindex desc limit 1"` || lasttimeindex=`cat $M_TEMP/timeindex`
+[ -z "$lasttimeindex" ] && lasttimeindex=`dbquery "$rpath/../sysdata" "select timeindex from sysdata order by timeindex desc limit 1"`
 
 numconn=`$netstatbin -s 2>/dev/null | grep 'connections established' | awk '{print $1}'`
-binputlast=`sqlite3 "$rpath/../sysdata" "select input from sysdata where timeindex='$lasttimeindex'"`
-boutputlast=`sqlite3 "$rpath/../sysdata" "select output from sysdata where timeindex='$lasttimeindex'"`
+binputlast=`dbquery "$rpath/../sysdata" "select input from sysdata where timeindex='$lasttimeindex'"`
+boutputlast=`dbquery "$rpath/../sysdata" "select output from sysdata where timeindex='$lasttimeindex'"`
 
 if [ "$IPTABLES" != "X0" ]; then
   counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
@@ -44,11 +47,12 @@ if [ "$IPTABLES" != "X0" ]; then
   binput=`echo "$counters" | grep ^\:INPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
   boutput=`echo "$counters" | grep ^\:OUTPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
 
-  [ -z "$FREQ" ] && FREQ=200
-  [ -z "$timeshift" ] && timeshift=10
+  if [ -z "$timediff" ]; then
+    [ -z "$FREQ" ] && FREQ=200
+    [ -z "$timeshift" ] && timeshift=10
+    timediff=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || timediff=`expr $FREQ + $timeshift`
+  fi
   
-  diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=`expr $FREQ + $timeshift`
-
   [ -z "$binputlast" ] && binputlast=$binput
   [ -z "$boutputlast" ] && boutputlast=$boutput
   
@@ -56,13 +60,13 @@ if [ "$IPTABLES" != "X0" ]; then
     # GB/month 
     # Number 2.5 represents approximately average number of seconds in one
     # month divided by 1024 twice
-    diffbwin=`solve 2 "25 * ($binput - $binputlast) / ($diffsec * 10240)"`
-    diffbwout=`solve 2 "25 * ($boutput - $boutputlast) / ($diffsec * 10240)"`
+    diffbwin=`solve 2 "25 * ($binput - $binputlast) / ($timediff * 10240)"`
+    diffbwout=`solve 2 "25 * ($boutput - $boutputlast) / ($timediff * 10240)"`
     unitname='GB/month'
   else
     # Mbytes/sec
-    diffbwin=`solve 2 "($binput - $binputlast) / ($diffsec * 1048576)"`
-    diffbwout=`solve 2 "($boutput - $boutputlast) / ($diffsec * 1048576)"`
+    diffbwin=`solve 2 "($binput - $binputlast) / ($timediff * 1048576)"`
+    diffbwout=`solve 2 "($boutput - $boutputlast) / ($timediff * 1048576)"`
     unitname='MB/sec'
   fi
 else
@@ -101,7 +105,7 @@ warnind='<OK> '
 [ "$y3" == "1" ] && warnind='<***>'
 printf "$warnind Output bandwidth:\t\t$diffbwout ${unitname}\n"
 
-sqlite3 "$rpath/../sysdata" "update sysdata set connections='$numconn', input='$binput', output='$boutput', bwidthin='$diffbwin', bwidthout='$diffbwout' where timeindex='$timeindexnow'"
+dbquery "$rpath/../sysdata" "update sysdata set connections='$numconn', input='$binput', output='$boutput', bwidthin='$diffbwin', bwidthout='$diffbwout' where timeindex='$timeindexnow'"
 
 fi
 

@@ -283,7 +283,7 @@ IFS=$IFS1
 }
 
 function newtimeindex() {
-  timeindexnow=$(date +"%s")
+  timeindexnow=`date +"%s"`
   echo $timeindexnow > "$M_TEMP/timeindex.$commlinehash"
   lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash" 2>/dev/null || echo 0`
   export timeindexnow lasttimeindex
@@ -294,14 +294,11 @@ function deltimeindex() {
 }
 
 function timeshift() {
-  fintime=$(date +"%s")
-  if [ -n "$timeshift" ]; then
-    timeshift=$(expr \( $fintime - $timeindexnow + $timeshift \) / 2)
-  else
-    timeshift=$(expr $fintime - $timeindexnow)
-  fi
-  timeshift=$(expr $timeshift - $delay)
-  export timeshift
+  fintime=`date +"%s"`
+  timediff=`expr $fintime - $timeindexnow`
+  timeshift=`expr $timediff - $delay`
+  export timeshift timediff
+  echo $timediff > "$M_TEMP"/timediff
   echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
     MAINSEQ_EXECTIME=`eval "echo \\$MAINSEQ_EXECTIME_$l"`

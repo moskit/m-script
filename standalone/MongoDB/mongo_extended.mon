@@ -32,8 +32,8 @@ check_interval $INTERVAL
 
 parse_data() {
   timeindexnow=`date +"%s"`
-  lasttimeindex=`cat "$M_TEMP/${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 210`
-  echo $timeindexnow > "$M_TEMP/${1}.lasttimeindex"
+  lasttimeindex=`cat "$M_TEMP/${rcommand}.${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 210`
+  echo $timeindexnow > "$M_TEMP/${rcommand}.${1}.lasttimeindex"
   timediff=`expr $timeindexnow - $lasttimeindex`
   for d in `cat "$rpath/data/${1}.ext.dat" "$rpath/data/${1}.ext.dat.prev" 2>/dev/null` ; do
     eval "`echo "$d"`"
