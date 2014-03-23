@@ -95,8 +95,9 @@ for var in BALANCER_PORTS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_REL
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/balancers/[clustername].conf please." && exit 1
 done
 
+NGINX_PROXY_CLUSTER_CONF_DIR=${$NGINX_PROXY_CLUSTER_CONF_DIR%/}
 M_TEMP="$M_TEMP/cloud/$cloud"
-[ -d "$NGINX_PROXY_CLUSTER_CONF_DIR" ] && install -d "$NGINX_PROXY_CLUSTER_CONF_DIR"
+[ -d "$NGINX_PROXY_CLUSTER_CONF_DIR" ] || install -d "$NGINX_PROXY_CLUSTER_CONF_DIR"
 
 for appport in `echo "$BALANCER_PORTS" | tr ',' ' '` ; do
 
