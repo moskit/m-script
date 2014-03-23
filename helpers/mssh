@@ -89,7 +89,7 @@ KEY="$M_ROOT/keys/$KEY"
 if [ -n "$KEY" ] ; then
   if [ -f "$KEY" ]; then
     $SSH $TIMEOUT -i "$KEY" $SSHPORT "$SSH_REMOTE_USER@$host" "$command"
-    [ $? -eq 255 ] && nextkey=true || exit 0
+    [ $? -eq 255 ] && nextkey=true || exit $?
   else
     nextkey=true
   fi
@@ -100,7 +100,7 @@ if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY1" ]; then
     $SSH $TIMEOUT -i "$USERKEY1" $SSHPORT "$SSH_REMOTE_USER@$host" "$command"
-    [ $? -eq 255 ] && nextkey=true || exit 0
+    [ $? -eq 255 ] && nextkey=true || exit $?
   else
     nextkey=true
   fi
@@ -109,7 +109,7 @@ if $nextkey ; then
   nextkey=false
   if [ -f "$USERKEY2" ]; then
     $SSH $TIMEOUT -i "$USERKEY2" $SSHPORT "$REMOTE_USER@$host" "$command"
-    [ $? -eq 255 ] && nextkey=true || exit 0
+    [ $? -eq 255 ] && nextkey=true || exit $?
   else
     nextkey=true
   fi
