@@ -25,7 +25,7 @@ print_mongo_server() {
     
     scanned=`echo "$report" | grep '^Records scanned'`
     scanned=`expr "$scanned" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status\" id=\"${nodeid}_scanned\">${scanned}</div>"
+    echo "<div class=\"status clickable\" id=\"${nodeid}_scanned\" onclick=\"showDetails('${nodeid}_scanned','mongo_records_scanned_graph')>${scanned}</div>"
     
     inmemdd=`echo "$report" | grep '^Data size'`
     inmemdd=`expr "$inmemdd" : ".*:\ *\(.*[^ ]\)\ *$"`
