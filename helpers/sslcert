@@ -57,8 +57,16 @@ if $found ; then
 fi
 
 generate_selfsigned() {
-  $OSSL req -x509 -newkey rsa:2048 -keyout key.pem -out $filename -days $days -nodes
+  $OSSL req -x509 -newkey rsa:2048 -keyout ${filename%.*}.key -out $filename -days $days -nodes
 }
+
+[ -z "$days" ] && days=365
+[ -z "$filename" ] && filename="server.crt"
+[ -n "$help" ] && usage="yes"
+
+if [ -n "$usage" ]; then
+  echo -e "Usage: $rcommand <long-options>\n\n    Options:\n\n      --generate=[type]\t\tgenerates a x509 certificate, the only supported type for now is \"self-signed\"\n\n      --days=[n]\t\t\tperiod of certificate validity in days\n\n      --filename=[path/to/file]\t\tname of the file the new certificate will be saved as\n\n      --verbose\t\t\tshow some additional info\n\n      --help\t\t\tthis help"
+fi
 
 if [ -n "$generate" ]; then
   case $generate in

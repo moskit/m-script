@@ -97,6 +97,8 @@ fi
 [ -z "$cloud" ] && cloud="$CLOUD"
 [ -z "$cloud" ] && echo "cloud is not defined" && exit 1
 
+echo "Updating $BALANCER_TYPE balancer for cluster $cluster in cloud $cloud"
+
 source "$M_ROOT/conf/balancers/${cluster}.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/cloud_functions.sh"

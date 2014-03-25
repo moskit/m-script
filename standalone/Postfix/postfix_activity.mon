@@ -23,6 +23,8 @@ rpath=${rpath%/*}
 source "$rpath/../../lib/functions.sh"
 source "$rpath/postfix.conf"
 [ ! -e "$MAILLOG" ] && echo "log file $MAILLOG does not exist!" && exit 1
+[ -z "$MAXLINES" ] && MAXLINES=1000
+[ `expr "$MAXLINES" : ".*[^0-9]"` -ne 0 ] && MAXLINES=1000
 
 declare -i deferred
 declare -i bounced
@@ -32,32 +34,34 @@ deferred=0 ; bounced=0 ; sent=0
 timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
 [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=210
 
-log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=10000 | grep ' postfix/'`
+log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=$MAXLINES | grep ' postfix/'`
 
-for id in `echo "$log" | grep postfix/qmgr|cut -d':' -f4|sort | uniq`; do
+for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
 
-from=`echo "$log" |grep postfix/qmgr|grep "$id: from" | cut -d'<' -f2| cut -d'>' -f1| head -1`
-to=`echo "$log" |grep "$id: to" | cut -d'<' -f2| cut -d'>' -f1| head -1`
-status=`echo "$log" |grep postfix/smtp| grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}'|tail -1|cut -d' ' -f1`
+  from=`echo "$log" | grep postfix/qmgr | grep "$id: from" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
+  to=`echo "$log" | grep "$id: to" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
+  status=`echo "$log" | grep postfix/smtp | grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}' | tail -1 | cut -d' ' -f1`
 
-case $status in
-  deferred)
-    warn='<***>'
-    deferred+=1
-    ;;
-  bounced)
-    warn='<**>'
-    bounced+=1
-    ;;
-  sent)
-    warn='<OK>'
-    sent+=1
-    ;;
-  *)
-    warn='<*>'
-    ;;
-esac
-echo "${warn} From: $from  To: $to  Status: $status"
+  if [ -n "$status" ]; then
+    case $status in
+      deferred)
+        warn='<***>'
+        deferred+=1
+        ;;
+      bounced)
+        warn='<**>'
+        bounced+=1
+        ;;
+      sent)
+        warn='<OK>'
+        sent+=1
+        ;;
+      *)
+        warn='<*>'
+        ;;
+    esac
+    echo "$warn From: $from  To: $to  Status: $status"
+  fi
 
 done
 

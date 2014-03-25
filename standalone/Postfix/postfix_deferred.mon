@@ -28,7 +28,9 @@ declare -i q1 q2 q3
 q1=0 ; q2=0 ; q3=0
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
-SQLITE=`which sqlite3 2>/dev/null`
+LOG="$M_ROOT/logs/sa.log"
+
+[ ! -d "$SPOOLDIR" ] && log "SPOOLDIR $SPOOLDIR not found, exiting" && exit 1
 
 timenow=`date -u +"%s"`
 
