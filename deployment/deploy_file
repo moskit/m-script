@@ -285,7 +285,7 @@ if [ -z "$local" ]; then
       else
         REGION=`cat "$rpath/../servers.list" | grep ^$ip\| | cut -d'|' -f3`
         CLUSTER=`cat "$rpath/../servers.list" | grep ^$ip\| | cut -d'|' -f5`
-        if `"$M_ROOT"/helpers/mssh $IP test -d "$to"` ; then
+        if `"$M_ROOT"/helpers/mssh $ip test -d "$to"` ; then
           to=${to%/}/${from##*/}
         fi
         prepare_file
