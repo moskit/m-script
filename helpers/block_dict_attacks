@@ -69,43 +69,43 @@ loginbykey=`echo "$logged" | grep "Accepted\\ publickey\\ for"`
 loginbypass=`echo "$logged" | grep "Accepted\\ password\\ for"`
 
 if [ -n "$loginbykey" ]; then
-  echo -e "\nSuccessful logins using key authentication:\n--------------------------------------------\n"
-  echo "$loginbykey" | grep -oE "for\ .*\ from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2,3,4
+  echo -e "\n<OK> Successful logins using key authentication:\n-------------------------------------------------\n"
+  echo "$loginbykey" | grep -oE "for\ .*\ from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2,3,4 | sed 's|^|<OK> |'
 fi
 if [ -n "$loginbypass" ]; then
-  echo -e "\nSuccessful logins using password authentication:\n-------------------------------------------------\n"
-  echo "$loginbypass" | grep -oE "for\ .*\ from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2,3,4
+  echo -e "\n<OK> Successful logins using password authentication:\n------------------------------------------------------\n"
+  echo "$loginbypass" | grep -oE "for\ .*\ from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2,3,4 | sed 's|^|<OK> |'
 fi
 
 if [ -n "$rootfails" ]; then
-  echo -e "\nFailed attempts to login as root:\n---------------------------------\n"
+  echo -e "\n<***> Failed attempts to login as root:\n---------------------------------------\n"
   rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$rootfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
-    echo "${ipaddr}: $invalid attempts"
+    echo "<***> ${ipaddr}: $invalid attempts"
     echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot
   done
 fi
 
 if [ -n "$invalidusers" ]; then
-  echo -e "\nAttempts to login as non-existing user:\n---------------------------------------\n"
+  echo -e "\n<***> Attempts to login as non-existing user:\n---------------------------------------------\n"
   invalidusers=`echo "$invalidusers" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$invalidusers" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
     invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
-    echo "${ipaddr}: $invalid attempts"
+    echo "<***> ${ipaddr}: $invalid attempts"
     echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
 
 if [ -n "$userfails" ]; then
-  echo -e "\nFailed attempts to login as non-root user:\n------------------------------------------\n"
+  echo -e "\n<***> Failed attempts to login as non-root user:\n------------------------------------------------\n"
   userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$userfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$userfails" | sort | uniq` ; do
     invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
-    echo "${ipaddr}: $invalid attempts"
+    echo "<***> ${ipaddr}: $invalid attempts"
     echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
