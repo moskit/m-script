@@ -24,23 +24,6 @@ do
 done
 IFS=$IFSORIG
 
-list_local_servers() {
-  IFSORIG=$IFS ; IFS='
-'
-  for server in `cat "$M_ROOT/servers.list" | grep "|${1}$" | grep -vE "^#|^$|^[[:space:]]*#|"` ; do
-    ip=`echo "$server" | cut -sd'|' -f1`
-    key=`echo "$server" | cut -sd'|' -f2`
-    region=`echo "$server" | cut -sd'|' -f3`
-    name=`echo "$server" | cut -sd'|' -f4`
-    cluster=`echo "$server" | cut -sd'|' -f5`
-    ips=$($M_ROOT/helpers/mssh "$ip" \(IFCFG=`which ifconfig 2>/dev/null` \; if [ -n \"\$IFCFG\" ] \; then \$IFCFG \| sed \'/inet\ /\!d\;s/.*r://\;s/\ .*//\' \| grep -v \'127.0.0.1\' \; else IFCFG=`which ip 2>/dev/null` \; [ -n \"\$IFCFG\" ] \&\& \$IFCFG addr list \| grep \'inet.*scope\ global\' \| while read L \; do expr \"\$L\" : \'inet \(.*\)/\' \; done \; fi\))
-    ips=`echo "$ips" | tr '\n' ' '`
-    [ -n "$ips" ] && status="active" || status="unavailable"
-    echo -e "------------------------------------------------------------------------------\nName: $name    Cluster: $cluster\nIPs: $ips\nStatus: $status"
-  done
-  IFS=$IFSORIG
-}
-
 if [ -n "$cloud" ]; then
   cloud=`echo -e "$cloud" | tr ',' '\n'`
 elif [ -n "$CLOUD" ]; then
@@ -56,7 +39,7 @@ for cld in $cloud ; do
   if [ -n "$CLOUD_PROVIDER" ]; then
     "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
   else
-    list_local_servers "$cld"
+    list_local_servers "$cld" $@
   fi
 done
 

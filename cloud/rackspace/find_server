@@ -16,7 +16,7 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 
 CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
@@ -58,7 +58,7 @@ find_by_ip() {
   # on), so we fall back to the local list in this case, but with verification
   # via getting server details by its ID (this call has no lag)
   [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | grep "|\"${1}\"|" | cut -d'|' -f1`
-  [ `expr "$id" : ".*[^0-9]"` -ne 0 ] && log "Bad ID" && proper_exit 1 65
+  [ `expr "$id" : ".*[^0-9]"` -ne 0 ] && log "Bad ID" && proper_exit 1 61
   if [ -z "$id" ]; then
     log "unable to find server ID by its IP"
     sed -i "/^${1}.*${CLOUD}$/d" "$M_ROOT/servers.list"
@@ -199,10 +199,10 @@ if [ -z "$id" ]; then
     if [ -z "$name" ]; then
       if [ -z "$cluster" ]; then
         echo "One of id, ip, name or cluster is required to identify the server"
-        proper_exit 1 204
+        proper_exit 1 202
       else
         list_the_cluster
-        proper_exit 0 207
+        proper_exit 0 205
       fi
     else
       # ip must be present in servers.list, so it's simple
@@ -218,7 +218,7 @@ if [ -z "$id" ]; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 227
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 221
 
 req="/servers/$id"
 
@@ -256,5 +256,5 @@ else
   cat "$M_TEMP/${rcommand}.resp"
 fi
 
-proper_exit 0 265
+proper_exit 0 259
 

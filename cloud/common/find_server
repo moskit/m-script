@@ -15,10 +15,10 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && unset s_optarg
+  [ "o$s_optarg" == "o$s_optname" ] && unset s_optarg
 
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && break
+    [ "o$s_optname" == "o$option" ] && eval "$s_optname=\"$s_optarg\"" && break
   done
 
 done
@@ -32,13 +32,17 @@ fi
 
 [ -z "$cld" ] && echo "cloud is not defined" && exit 1
 
-source "$M_ROOT/conf/clouds/${cld}.conf"
-
-if [ -z "$CLOUD_PROVIDER" ]; then
-  echo "CLOUD_PROVIDER is not defined"
-  exit 0
+if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
+  source "$M_ROOT/conf/clouds/${cld}.conf"
 else
-  export CLOUD=$cld
+  echo "Cloud $cld configuration not found (conf/clouds/${cld}.conf)"
+  exit 1
+fi
+
+export CLOUD=$cld
+if [ -z "$CLOUD_PROVIDER" ]; then
+  "$M_ROOT"/cloud/common/find_noncloud_server --cloud=$cld $@
+else
   "$M_ROOT"/cloud/$CLOUD_PROVIDER/find_server --cloud=$cld $@
 fi
 
