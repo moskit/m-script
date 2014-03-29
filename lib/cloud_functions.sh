@@ -19,6 +19,11 @@ dpath=${dpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$dpath/../")
 [ -z "$LOG" ] && LOG="$M_ROOT/logs/cloud.log"
+
+log() {
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${CLOUD}/${0##*/}: ${@}">>$LOG
+}
+
 if [ -n "$CLOUD" ]; then
   source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 else
@@ -30,10 +35,6 @@ else
   fi
   [ -z "$CLOUD" ] && log "Not sourcing cloud_functions, CLOUD is not defined" && exit 1
 fi
-
-log() {
-  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${CLOUD}/${0##*/}: ${@}">>$LOG
-}
 
 lock_cloudops() {
   local LOG="$M_ROOT/logs/cloud.log"

@@ -8,21 +8,38 @@ rpath=${0%/*}
 possible_options="cloud"
 necessary_options=""
 
-IFS1=$IFS
+IFSORIG=$IFS
 IFS='-'
 for s_option in "$@"
 do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && unset s_optarg
+  [ "o$s_optarg" == "o$s_optname" ] && unset s_optarg
 
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && break
+    [ "o$s_optname" == "o$option" ] && eval "$s_optname=\"$s_optarg\"" && break
   done
 
 done
-IFS=$IFS1
+IFS=$IFSORIG
+
+list_local_servers() {
+  IFSORIG=$IFS ; IFS='
+'
+  for server in `cat "$M_ROOT/servers.list" | grep "|${1}$" | grep -vE "^#|^$|^[[:space:]]*#|"` ; do
+    ip=`echo "$server" | cut -sd'|' -f1`
+    key=`echo "$server" | cut -sd'|' -f2`
+    region=`echo "$server" | cut -sd'|' -f3`
+    name=`echo "$server" | cut -sd'|' -f4`
+    cluster=`echo "$server" | cut -sd'|' -f5`
+    ips=$($M_ROOT/helpers/mssh "$ip" \(IFCFG=`which ifconfig 2>/dev/null` \; if [ -n \"\$IFCFG\" ] \; then \$IFCFG \| sed \'/inet\ /\!d\;s/.*r://\;s/\ .*//\' \| grep -v \'127.0.0.1\' \; else IFCFG=`which ip 2>/dev/null` \; [ -n \"\$IFCFG\" ] \&\& \$IFCFG addr list \| grep \'inet.*scope\ global\' \| while read L \; do expr \"\$L\" : \'inet \(.*\)/\' \; done \; fi\))
+    ips=`echo "$ips" | tr '\n' ' '`
+    [ -n "$ips" ] && status="active" || status="unavailable"
+    echo -e "------------------------------------------------------------------------------\nName: $name    Cluster: $cluster\nIPs: $ips\nStatus: $status"
+  done
+  IFS=$IFSORIG
+}
 
 if [ -n "$cloud" ]; then
   cloud=`echo -e "$cloud" | tr ',' '\n'`
@@ -33,8 +50,13 @@ else
 fi
 
 for cld in $cloud ; do
+  echo "*** Cloud $cld"
   export CLOUD=$cld
   source "$M_ROOT/conf/clouds/${cld}.conf"
-  "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
+  if [ -n "$CLOUD_PROVIDER" ]; then
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
+  else
+    list_local_servers "$cld"
+  fi
 done
 
