@@ -62,7 +62,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 list_local_servers() {
   IFSORIG=$IFS ; IFS='
 '
-  for server in `cat "$M_ROOT/servers.list" | grep "|${1}$" | grep -vE "^#|^$|^[[:space:]]*#"` ; do
+  for server in `cat "$M_ROOT/servers.list" | grep "|${CLOUD}$" | grep -vE "^#|^$|^[[:space:]]*#"` ; do
     ip=`echo "$server" | cut -sd'|' -f1`
     key=`echo "$server" | cut -sd'|' -f2`
     region=`echo "$server" | cut -sd'|' -f3`
