@@ -39,7 +39,7 @@ for cld in $cloud ; do
   if [ -n "$CLOUD_PROVIDER" ]; then
     "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
   else
-    list_local_servers "$cld" $@
+    "$M_ROOT"/cloud/common/show_noncloud_servers --cloud=$cld $@
   fi
 done
 
