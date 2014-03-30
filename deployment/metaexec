@@ -400,7 +400,15 @@ USER_FROM_CLUSTER=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -s -d'|' 
 [ -n "$test" ] && T='--test'
 CURRTASKDIR="$WORK_DIR/${role}.${task}.$timestampact"
 export CURRTASKDIR
-install $V -d "$CURRTASKDIR"
+if [ -d "$CURRTASKDIR" ]; then
+  declare -i m ; m=1
+  while [ -d "${CURRTASKDIR}_$m" ]; do
+    m+=1
+  done
+  install $V -d "${CURRTASKDIR}_$m"
+else
+  install $V -d "$CURRTASKDIR"
+fi
 touch "$CURRTASKDIR/log"
 
 if [ -z "$flavor" ] ; then
@@ -435,11 +443,11 @@ if [ -n "$newserver" ]; then
         res=$ip
       fi
       [[ $res -eq 2 ]] && log "Timeout waiting for the server ready" && break
-      [[ $res -eq 5 ]] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 411
+      [[ $res -eq 5 ]] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 438
       # various weird errors below, exit 1 
-      [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 413
-      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 414
-      [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 415
+      [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 440
+      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 441
+      [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 442
       [[ $res -eq 1 ]] && log "Something went wrong, unable to add a server to the cluster $cluster"
       if [ -z "$ip" ]; then
         log "Was unable either to start a cloud server in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
@@ -447,7 +455,7 @@ if [ -n "$newserver" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
-    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 423
+    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 450
   else
     echo "*** This is a test"
   fi
@@ -475,8 +483,8 @@ fi
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
   #KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
   KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 467
-  [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 468
-  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 469
+  [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 478
+  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 479
   # it's here because startserver function cause re-reading cloud config
   [ -n "$SSHPORT" ] || SSHPORT=22
   if [ -z "$list" ] ; then
@@ -497,7 +505,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       if ! $loggedin && [ -n "$newserver" ]; then
         # stop useless server and tell the parent process that something's wrong
         "$M_ROOT"/cloud/$CLOUD_PROVIDER/stop_server --ip=$ip
-        proper_exit 13 488
+        proper_exit 13 500
       fi
     fi
     #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
@@ -568,7 +576,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
 
         if ! $skipthis ; then
           (IFS=$IFSORIG ; run_meta $meta)
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && proper_exit 1 559
+          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && proper_exit 1 571
         fi
       fi
       metan+=1
@@ -586,7 +594,7 @@ if [ -z "$list" ] ; then
 fi
 echo
 if [ -n "$newserver" ]; then
-  proper_exit 0 577
+  proper_exit 0 589
 fi
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then

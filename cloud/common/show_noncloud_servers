@@ -70,8 +70,8 @@ list_local_servers() {
     name=`echo "$server" | cut -sd'|' -f4`
     cluster=`echo "$server" | cut -sd'|' -f5`
     ips=$($M_ROOT/helpers/mssh "$ip" \(IFCFG=`which ifconfig 2>/dev/null` \; if [ -n \"\$IFCFG\" ] \; then \$IFCFG \| sed \'/inet\ /\!d\;s/.*r://\;s/\ .*//\' \| grep -v \'127.0.0.1\' \; else IFCFG=`which ip 2>/dev/null` \; [ -n \"\$IFCFG\" ] \&\& \$IFCFG addr list \| grep \'inet.*scope\ global\' \| while read L \; do expr \"\$L\" : \'inet \(.*\)/\' \; done \; fi\))
-    ips=`echo "$ips" | tr '\n' ' '`
     [ -n "$ips" ] && status="active" || status="unavailable"
+    ips=`echo "$ips" | tr '\n' ' '`
     echo -e "------------------------------------------------------------------------------\nName: $name    Cluster: $cluster\nIPs: $ips\nStatus: $status"
   done
   IFS=$IFSORIG
