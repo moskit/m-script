@@ -64,6 +64,7 @@ list_local_servers() {
 '
   for server in `cat "$M_ROOT/servers.list" | grep "|${CLOUD}$" | grep -vE "^#|^$|^[[:space:]]*#"` ; do
     ip=`echo "$server" | cut -sd'|' -f1`
+    [ -z "$ip" ] && continue
     key=`echo "$server" | cut -sd'|' -f2`
     region=`echo "$server" | cut -sd'|' -f3`
     name=`echo "$server" | cut -sd'|' -f4`

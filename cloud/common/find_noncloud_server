@@ -21,17 +21,17 @@ rpath=${0%/*}
 possible_options="cloud name ip return verbose cluster help"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
-[ -z "$ARGV" ] && ${0} --help
+ARGV=`echo $@ | sed 's/^--//' | sed 's/ --/|/g'`
+[ -z "$ARGV" ] && $0 --help
 IFS1=$IFS
 IFS='|'
 for s_option in $ARGV
 do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "o$s_optarg" == "o$s_optname" ] && s_optarg="yes"
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+    [ "o$s_optname" == "o$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
    if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
@@ -42,7 +42,7 @@ IFS=$IFS1
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ $found -eq 1 ]]; then
   missing_options=${missing_options#*,}
