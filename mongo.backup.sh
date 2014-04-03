@@ -60,13 +60,13 @@ full_coll_backup() {
 
 if [ "X$compression" == "Xgzip" ] && [ -n "$GZIP" ] ; then
   compress=$GZIP
-  ext=".gz"
+  ext="gz"
   TAR="$TAR czf"
 fi
 
 if [ "X$compression" == "Xbzip2" ] && [ -n "$BZIP2" ] ; then
   compress=$BZIP2
-  ext=".bz2"
+  ext="bz2"
   TAR="$TAR cjf"
 fi
 
@@ -197,7 +197,7 @@ else
         install -d "$MBD/${db}.${archname}"
         if [ -n "$compress" ] ; then
           for collection in `$MONGO $DBHOST/$db $USER $PASS --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
-            $MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log" | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
+            ($MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: ${db}.${collection} dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: ${db}.${collection} dump failed" >>"$M_ROOT/m_backup.log") | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
           done
         fi
     # --------------------

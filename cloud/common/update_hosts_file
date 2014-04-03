@@ -53,8 +53,10 @@ if [ -n "$1" ] ; then
       clustername=`echo $cluster | cut -d'|' -f1`
       mpath=`echo $cluster | cut -d'|' -f8`
       if [ -n "$mpath" ] ; then
-        "$rpath"/cloudsync --cluster=$clustername "$M_ROOT/servers.list" "$mpath/"
+        "$rpath"/cloudexec --cluster=$clustername mv "$M_ROOT/servers.list" "$M_ROOT/servers.list.tmp"
+        "$rpath"/cloudsync --cluster=$clustername "$M_ROOT/servers.list" "$mpath/servers.list"
         "$rpath"/cloudexec --cluster=$clustername "$mpath/cloud/common/$rcommand"
+        "$rpath"/cloudexec --cluster=$clustername mv "$M_ROOT/servers.list.tmp" "$M_ROOT/servers.list"
       fi
     done
   else
