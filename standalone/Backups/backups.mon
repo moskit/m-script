@@ -21,8 +21,7 @@ rpath=${0%/*}
 source "$rpath/backups.conf"
 
 for bconf in `echo $BACKUPS | tr ',' ' '` ; do
-  rm "$rpath/data/${bconf}.dat" 2>/dev/null
-  if [ `echo "$bconf" | cut -b1` == `/` ]; then
+  if [ "`echo "$bconf" | cut -b1`" == "/" ]; then
     [ -e "$bconf" ] && source "$bconf" || continue
   else
     if [ -e "$M_ROOT/conf/$bconf" ]; then
@@ -32,9 +31,10 @@ for bconf in `echo $BACKUPS | tr ',' ' '` ; do
     fi
   fi
   [ -z "$localbackuppath" ] && localbackuppath="$M_ROOT/backups"
-  for backupfolder in `find "$localbackuppath" -mindepth 1 -maxdepth 1 -type d -printf "%f"` ; do
-    files=`find "$localbackuppath/$backupfolder" -mindepth 1 -maxdepth 1 -type d -printf "\"%f\", "`
-    echo "{ folder : \"$backupfolder\", files : { \"${files%, }\" } }" >> "$rpath/data/${bconf}.json"
-  done
+  
+  searchfolder="backup.local"
+  bfiles=`(cd $localbackuppath && find $searchfolder -mindepth 1 -maxdepth $MAXDEPTH -type f | cut -sd '/' -f2-)`
+  echo "$bfiles" > "$rpath/data/${bconf}.local.dat"
+
 done
 
