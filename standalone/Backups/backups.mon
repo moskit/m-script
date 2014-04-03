@@ -1,0 +1,40 @@
+#!/bin/bash
+# Copyright (C) 2008-2014 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "$rpath/backups.conf"
+
+for bconf in `echo $BACKUPS | tr ',' ' '` ; do
+  rm "$rpath/data/${bconf}.dat" 2>/dev/null
+  if [ `echo "$bconf" | cut -b1` == `/` ]; then
+    [ -e "$bconf" ] && source "$bconf" || continue
+  else
+    if [ -e "$M_ROOT/conf/$bconf" ]; then
+      source "$M_ROOT/conf/$bconf" || continue
+    else
+      [ -e "$M_ROOT/$bconf" ] && source "$M_ROOT/$bconf" || continue
+    fi
+  fi
+  [ -z "$localbackuppath" ] && localbackuppath="$M_ROOT/backups"
+  for backupfolder in `find "$localbackuppath" -mindepth 1 -maxdepth 1 -type d -printf "%f"` ; do
+    files=`find "$localbackuppath/$backupfolder" -mindepth 1 -maxdepth 1 -type d -printf "\"%f\", "`
+    echo "{ folder : \"$backupfolder\", files : { \"${files%, }\" } }" >> "$rpath/data/${bconf}.json"
+  done
+done
+
