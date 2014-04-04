@@ -405,10 +405,10 @@ if [ -d "$CURRTASKDIR" ]; then
   while [ -d "${CURRTASKDIR}_$m" ]; do
     m+=1
   done
-  install $V -d "${CURRTASKDIR}_$m"
-else
-  install $V -d "$CURRTASKDIR"
+  CURRTASKDIR="${CURRTASKDIR}_$m"
 fi
+install $V -d "$CURRTASKDIR"
+export CURRTASKDIR
 touch "$CURRTASKDIR/log"
 
 if [ -z "$flavor" ] ; then
