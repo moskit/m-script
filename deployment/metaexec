@@ -179,7 +179,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp"
 [ "X$*" == "X" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -217,6 +217,7 @@ fi
 [ "X$help" == "Xyes" ] && debug=true
 export verbose debug
 [ -n "$repeat" ] && timestamp=repeat
+[ -n "$newtimestamp" ] && unset timestamp timestampact
 [ -n "$usage" ] && help="yes" && debug=false
 
 if [ "X$help" == "Xyes" ] ; then
@@ -278,9 +279,11 @@ Repeat options:
   --repeat		repeats the last meta execution starting from the
 			command that failed during the previous run; if there
 			were no failed commands, does nothing
-  --timestamp=[string]	repeats execution of the session defined by its
+  --timestamp=[string]  	repeats execution of the session defined by its
 			timestamp; session timestamp is shown when metascript
 			execution has finished, either successfully or not
+  --newtimestamp    forces new timestamp generation; necessary if metaexec
+      command is included in the script that is run by another metaexec command
 
 Other options:
 
