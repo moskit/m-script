@@ -340,7 +340,7 @@ if [ -n "$timestamp" ] ; then
   if [ -n "$timestampact" ]; then
     argfile=`find "$WORK_DIR"/*.$timestampact/ -maxdepth 1 -name ARGV`
     if [ -f "$argfile" ]; then
-      sed -i "/^newserver/d;/^test/d;/^verbose/d;/^debug/d" "$argfile"
+      sed -i "/^newserver=/d;/^test=/d;/^verbose=/d;/^debug=/d;/^timestamp=/d" "$argfile"
       source "$argfile"
     else
       echo "Process with timestamp $timestampact cannot be repeated, no arguments file found"
@@ -400,7 +400,7 @@ USER_FROM_CLUSTER=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -s -d'|' 
 [ -n "$test" ] && T='--test'
 CURRTASKDIR="$WORK_DIR/${role}.${task}.$timestampact"
 export CURRTASKDIR
-if [ -d "$CURRTASKDIR" ]; then
+if [ -d "$CURRTASKDIR" ] && [ -z "$timestamp" ]; then
   declare -i m ; m=1
   while [ -d "${CURRTASKDIR}_$m" ]; do
     m+=1
