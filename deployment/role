@@ -155,7 +155,7 @@ else
 fi
 
 if [ "X$command1" == "Xclone" ]; then 
-  [ -z "$method" ] && echo -e "Using default method: copy\n    (other available methods are: symlink, copywithlinks - see 'role --help' for details)"
+  [ -z "$method" ] && echo -e "Using default method: copy\n    (other available methods are: symlink, copywithlinks - see 'role --help' for details)" && method="copy"
   case $method in
     copy|cp)
       methodcommand=`which cp 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-u\n-L"`"
