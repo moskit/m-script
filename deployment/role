@@ -151,7 +151,7 @@ if [ -n "$role" ]; then
     echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
   fi
 else
-  [ "X$command1" != "Xcreate" ] && echo "Role is not defined" && exit 1
+  [ "_$command1" != "_create" ] && [ "_$command1" != "_clone" ]  && echo "Role is not defined" && exit 1
 fi
 
 if [ "X$command1" == "Xclone" ]; then 
@@ -167,6 +167,7 @@ if [ "X$command1" == "Xclone" ]; then
       methodcommand=`which cp 2>/dev/null` ; methodcommand="`echo -e "$methodcommand\n-u\n-d"`"
       ;;
   esac
+  [ -z "$methodcommand" ] && echo "Command not found for method ${method}, aborting" && exit 1
 fi
 
 IFS='
