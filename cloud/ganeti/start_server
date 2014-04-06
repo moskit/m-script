@@ -26,7 +26,7 @@ IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
 [ -z "$ROUTE" ] && echo "route utility not found" && exit 1
 [ -z "$IPR2" ] && echo "ip utility not found" && exit 1
-possible_options="cloud region flavor cluster image name return verbose test cdrom vnc"
+possible_options="cloud region flavor cluster image name return verbose test cdrom makedisk vnc"
 necessary_options="cluster"
 
 LOG="$M_ROOT/logs/cloud.log"
@@ -69,6 +69,7 @@ source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
 if [ -n "$cdrom" ]; then
   [ "$cdrom" == "yes" ] && echo -e "\nOption --cdrom assumes path to ISO image:\n  --cdrom=/path/to/image" && exit 1
+  makedisk="yes"
   [ `echo "$cdrom" | cut -b1` != "/" ] && log "restoring absolute path required by Ganeti: $cdrom --> $PWD/$cdrom" && cdrom="$PWD/$cdrom"
   [ ! -e "$cdrom" ] && log "\nFile $cdrom does not exist" && exit 1
 fi
@@ -160,21 +161,24 @@ request() {
   sed -i "/^$ip/d" /etc/hosts
   echo "$ip $name" >> /etc/hosts
   
-  if [ -z "$cdrom" ]; then
-    log "sending request with command: $GNTI add -n $node -o $ios $iparams $hvparams $name"
-    $GNTI add -n $node -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
-    res=$?
-  else
+  if [ -n "$makedisk" ]; then
+    log "creating empty disk(s) for $name"
     log "sending request with command: $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name"
     $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
     res+=$?
-    if [ $res -eq 0 ]; then
-      [[ "$hvparams" == "-H" ]] && hvparams="-H " || hvparams="${hvparams},"
-      hvparams="${hvparams}boot_order=cdrom,cdrom_image_path=\"$cdrom\""
-      log "sending request with command: $GNTI startup $hvparams $name"
-      $GNTI startup $hvparams $name >>"$LOG" 2>&1
-      res+=$?
+    if [ -n "$cdrom" ]; then
+      if [ $res -eq 0 ]; then
+        [[ "$hvparams" == "-H" ]] && hvparams="-H " || hvparams="${hvparams},"
+        hvparams="${hvparams}boot_order=cdrom,cdrom_image_path=\"$cdrom\""
+        log "sending request with command: $GNTI startup $hvparams $name"
+        $GNTI startup $hvparams $name >>"$LOG" 2>&1
+        res+=$?
+      fi
     fi
+  else
+    log "sending request with command: $GNTI add -n $node -o $ios $iparams $hvparams $name"
+    $GNTI add -n $node -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
+    res=$?
   fi
   [ $res -ne 0 ] && return $res
 }
