@@ -148,6 +148,7 @@ function runscript() {
       fi
     done
   fi
+  echo >> "$rpath/report"
   al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'` > "$rpath/alert3"
   al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'` > "$rpath/alert2"
   al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'` > "$rpath/alert1"

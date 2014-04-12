@@ -39,7 +39,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   db=${hpdb#*|}
   if [ "X$SHARDING" == "Xmanual" ]; then
     dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-    echo "$dbdat" >> "$rpath/data/${db}.${hp}.dat"
+    echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"
     collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
     echo "$collections" > "$rpath/data/${db}.${hp}.collections"
     for coll in `echo "$collections"`

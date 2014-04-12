@@ -68,7 +68,7 @@ cr() {
 }
 
 exitrole() {
-  unset M_ROLE M_CLUSTER ROLES_ROOT role flavor cr
+  unset M_ROLE M_CLUSTER role flavor
   set_default_ps
 }
 

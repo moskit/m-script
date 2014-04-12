@@ -35,6 +35,6 @@ for bconf in `echo $BACKUPS | tr ',' ' '` ; do
   searchfolder="backup.local"
   bfiles=`(cd $localbackuppath && find $searchfolder -mindepth 1 -maxdepth $MAXDEPTH -type f | cut -sd '/' -f2-)`
   echo "$bfiles" > "$rpath/data/${bconf}.local.dat"
-
+  
 done
 

@@ -132,7 +132,7 @@ for cld in $cloud ; do
       $list || continue
     fi
     if [ -n "$names" ] ; then
-      find_name $IP
+      rname=`find_name $IP`
       if [ -z "$rname" ] ; then
         KEY=`find_key server $IP`
         [ -n "$SSH" ] && [ -f "$KEY" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`

@@ -204,7 +204,7 @@ else
     # 
       else
         $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log"
-        [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp"
+        [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar.${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp"
         [ -n "$TAR" ] && popd
         cat "$M_ROOT/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$M_ROOT/m_backup.error" && rm -f "$M_ROOT/logs/mongo.backup.tmp"
         rm -rf "$MBD/${db}.${archname}" 2>>"$M_ROOT/m_backup.error"

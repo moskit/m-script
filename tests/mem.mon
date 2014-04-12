@@ -83,7 +83,7 @@ echo -e "Memory usage:\n----------------\n"
 totalmemused=`solve 2 "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
 totalramused=`solve 2 "$ractiveram / $rtotalram * 100"`
 totalramfree=`solve 2 "$rfreeram / $rtotalram * 100"`
-totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100"`
+totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100" || echo 0`
 totalmemfree=`solve 2 "100 - $totalmemused"`
 
 if [ $SYSMEM_3 -gt 0 ] 2>/dev/null ; then
