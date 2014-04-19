@@ -20,7 +20,6 @@ rpath=${0%/*}
 #*/
 
 store_vars() {
-  varfile="$CURRTASKDIR/${file}.var"
   [ -n "$verbose" ] && echo "Sourcing $1"
   for LINE in `cat "$1" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     # to respect environment variables and variables passed from command line
@@ -166,6 +165,7 @@ RETVAL=0
 IFS1=$IFS; IFS='
 '
 # save variables to a file
+varfile="$CURRTASKDIR/${file}.var"
 if [ -f "$varfile" ]; then
   rm "$varfile"
 fi
