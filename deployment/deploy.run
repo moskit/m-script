@@ -21,17 +21,8 @@ rpath=${0%/*}
 
 store_vars() {
   varfile="$CURRTASKDIR/${file}.var"
-  local role="$1"
-  if [ -f "$varfile" ]; then
-    [ -n "$verbose" ] && echo "Reading existing variables"
-    source "$varfile"
-  else
-    touch "$varfile"
-  fi
-  # should not be readable by others, sensitive things may be there
-  chmod 600 "$varfile"
-  [ -n "$verbose" ] && echo "Sourcing $ROLES_ROOT/$role/role.conf"
-  for LINE in `cat "$ROLES_ROOT/$role/role.conf" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+  [ -n "$verbose" ] && echo "Sourcing $1"
+  for LINE in `cat "$1" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
     # to respect environment variables and variables passed from command line
     pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
     if [ -n "$pvar" ]; then
@@ -175,10 +166,17 @@ RETVAL=0
 IFS1=$IFS; IFS='
 '
 # save variables to a file
+if [ -f "$varfile" ]; then
+  rm "$varfile"
+fi
+touch "$varfile"
+# should not be readable by others, sensitive things may be there
+chmod 600 "$varfile"
+  
 # first goes the actual role. Variables assigned are not being overwritten
 # by included roles, thus actual role has higher priority
 if [ -e "$ROLES_ROOT/$role/role.conf" ] ; then
-  store_vars $role
+  store_vars "$ROLES_ROOT/$role/role.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
 # if some other role's script is included in meta script, source its variables
@@ -188,12 +186,17 @@ realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/||"`
 roleincluded=${realfile%%/*} #*/
 if [ "X$roleincluded" != "X$role" ] ; then
   if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ] ; then
-    store_vars $roleincluded
+    store_vars "$ROLES_ROOT/$roleincluded/role.conf"
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
     export ROLEINCL=$roleincluded
   fi
 fi
-
+# last and least, common role
+if [ -e "$ROLES_ROOT/common/role.conf" ] ; then
+  store_vars "$ROLES_ROOT/common/role.conf"
+  [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
+fi
+  
 # command-line options (variables from this script) must be saved too
 IFS2=$IFS ; IFS=$' \t\n'
 for option in `echo $possible_options | sed 's/,/ /g'`; do

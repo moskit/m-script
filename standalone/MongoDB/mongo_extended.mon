@@ -12,7 +12,7 @@ DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
-source "$rpath/servers.conf"
+source "$rpath/mongo_servers.conf"
 [ -e "$rpath/${rcommand%.mon}.conf" ] && source "$rpath/${rcommand%.mon}.conf"
 [ -z "$INTERVAL" ] && INTERVAL=600
 if [ -n "$AUTH_LOGIN" ]; then
