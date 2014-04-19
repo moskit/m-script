@@ -31,7 +31,7 @@ if [ -z "$iptablessave" -o -z "$iptablesbin" ]; then
   exit 1
 fi
 
-[ -z "$timeindex" ] && echo "Use mon.run $rcommand" && exit 1
+[ -z "$timeindexnow" ] && echo "Use mon.run $rcommand" && exit 1
 
 if [ "X$SQLITE3" != "X0" ] && [ "X$1" == "XSQL" ]; then
 

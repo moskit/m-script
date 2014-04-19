@@ -142,7 +142,7 @@ function runscript() {
         if alert_blocked ${mon##*/} ; then
           log "=== alert is blocked for $mon"
           echo "$monoutput" >> "$rpath/report.blocked"
-        else  
+        else
           echo "$monoutput" >> "$rpath/report"
         fi
       fi
