@@ -79,7 +79,7 @@ parse_data() {
   [ -z "$fastmod_prev" ] && fastmod_prev=$fastmod
   [ -n "$fastmod" ] && fastmod=`solve 1 "($fastmod - $fastmod_prev) / $timediff"` && echo -e "\n Operation stats:\n\nFastmod operations, per second:   $fastmod"
   [ -z "$idhack_prev" ] && idhack_prev=$idhack
-  [ -n "$idhack" ] && idhack=`solve 1 "($idhack - $idhack_prev) / $timediff"` && echo "Idhack operations, per second:   $idhack"149.3.143.170
+  [ -n "$idhack" ] && idhack=`solve 1 "($idhack - $idhack_prev) / $timediff"` && echo "Idhack operations, per second:   $idhack"
   [ -n "$scanAndOrder" ] && scanAndOrder=`solve 1 "($scanAndOrder - $scanAndOrder_prev) / $timediff"` && echo "Scan and order operations, per second:   $scanAndOrder"
   
   [ -z "$documentDeleted_prev" ] && documentDeleted_prev=$documentDeleted

@@ -27,6 +27,8 @@ source "$dpath/../conf/dash.conf"
 timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 
 SQL=`which sqlite3 2>/dev/null`
+CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+export CLOUDS
 
 print_cgi_headers() {
 cat << "EOF"
