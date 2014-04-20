@@ -51,8 +51,13 @@ IFS1=$IFS; IFS='
 '; for eater in `echo "$io_eaters"` ; do
   io=`echo "$eater" | cut -d' ' -f1`
   pid=`echo "$eater" | cut -d' ' -f2`
-  [ -d /proc/$pid ] || continue
   echo "${pid}|`find_cmd $pid`|${io}"
+  if [ ! -d /proc/$pid ]; then
+    echo "  process already finished"
+    continue
+  else
+    echo "  files, opened by this process:"
+  fi
   if [ -d /proc/$pid/fdinfo ]; then
     cd /proc/$pid/fdinfo
     grep -L '^pos:[[:space:]]*0$' * | while read l ; do
@@ -60,7 +65,7 @@ IFS1=$IFS; IFS='
       sleep 1
       a=`grep ^pos $l | awk '{print $2}'`
       c=`expr $a - $b`
-      [ $c -ne 0 ] && echo "`readlink ../fd/$l` $c"
+      echo "    `readlink ../fd/$l` :: $c"
     done
   fi
 done
