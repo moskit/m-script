@@ -80,7 +80,7 @@ check_results() {
     vardescr=`echo "$var2ck" | cut -s -d'|' -f2`
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
     [ -z "$vardescr" ] && vardescr=$varname
-    [ "$varname" == "$vartype" ] && vartype=real
+    [ -z "$vartype" ] && vartype=real
     thr1=`eval "echo \\$${varname}_1"`
     thr2=`eval "echo \\$${varname}_2"`
     thr3=`eval "echo \\$${varname}_3"`
@@ -171,19 +171,24 @@ log() {
 }
 
 find_delta() {
+  # Finds the difference between current monitor results and previous results
+  # Supposed to be called only once from a monitor, so should include all vars
+  # Usage: find_delta "var1|type,var2|type,..."
+  #    or: find_delta "var1,var2,..."   (quotes can be omitted in this case)
+  # type can be: 1. integer 2. anything else or empty means floating point
   if [ -f "$M_TEMP/${0##*/}.delta" ]; then
     arrprev=( `cat "$M_TEMP/${0##*/}.delta" | cut -d'|' -f2` )
   fi
-  arrnames=( $(IFS=','; for f in $1; do echo -n "${f%%:*} "; done) )
-  echo "$(IFS=','; for f in $1; do echo "${f}|`eval "echo \\$${f%%:*}"`"; done)" > "$M_TEMP/${0##*/}.delta"
-  arrcurr=( $(IFS=','; for f in $1; do echo "`eval "echo \\$${f%%:*}"`:${f#*:} "; done) )
+  arrnames=( $(IFS=','; for f in $1; do echo -n "${f%%|*} "; done) )
+  echo "$(IFS=','; for f in $1; do echo "${f}|`eval "echo \\$${f%%|*}"`"; done)" > "$M_TEMP/${0##*/}.delta"
+  arrcurr=( $(IFS=','; for f in $1; do echo "`eval "echo \\$${f%%|*}"`|${f#*|} "; done) )
   [ ${#arrcurr[*]} -ne ${#arrprev[*]} ] && return
   for ((i=0; i<${#arrcurr[*]}; i++)); do
-    if [ "X${arrcurr[$i]#*:}" == "Xinteger" ]; then
-      arrval+=( `expr ${arrcurr[$i]%%:*} - ${arrprev[$i]} 2>/dev/null || echo 0` )
+    if [ "X${arrcurr[$i]#*|}" == "Xinteger" ]; then
+      arrval+=( `expr ${arrcurr[$i]%%|*} - ${arrprev[$i]} 2>/dev/null || echo 0` )
     else
       # TODO: bc silently defaults non-numeric arguments to 0
-      arrval+=( `echo "scale=2; ${arrcurr[$i]%%:*} - ${arrprev[$i]}" | bc 2>/dev/null || echo 0` )
+      arrval+=( `echo "scale=2; ${arrcurr[$i]%%|*} - ${arrprev[$i]}" | bc 2>/dev/null || echo 0` )
     fi
   done
 

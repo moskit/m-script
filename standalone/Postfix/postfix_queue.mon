@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -25,11 +26,15 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
 
 timenow=`date -u +"%s"`
+[ ! -d "$SPOOLDIR" ] && log "SPOOLDIR $SPOOLDIR not found, exiting" && exit 1
 
-for q in deferred active maildrop hold bounce corrupt saved ; do
-  qtype=$q
-  qlength=`find $SPOOLDIR/$q -type f | wc -l`
+for qtype in deferred active maildrop hold bounce corrupt saved ; do
+  qlength=`find $SPOOLDIR/$qtype -type f 2>/dev/null | wc -l`
   store_results "qtype|text,qlength|integer"
+#  eval "$qtype=\"$qlength\""
 done
 
+#find_delta "deferred|integer,active|integer,maildrop|integer,hold|integer,bounce|integer,corrupt|integer,saved|integer"
+
+check_results "deferred||integer,active||integer,maildrop||integer,hold||integer,bounce||integer,corrupt||integer,saved||integer"
 
