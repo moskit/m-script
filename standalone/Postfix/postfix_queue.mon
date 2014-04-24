@@ -36,5 +36,5 @@ done
 
 #find_delta "deferred|integer,active|integer,maildrop|integer,hold|integer,bounce|integer,corrupt|integer,saved|integer"
 
-check_results "deferred||integer,active||integer,maildrop||integer,hold||integer,bounce||integer,corrupt||integer,saved||integer"
+check_results "deferred|Number of messages in 'deferred' queue|integer,active|Number of messages in 'active' queue|integer,maildrop|Number of messages in 'maildrop' queue|integer,hold|Number of messages in 'hold' queue|integer,bounce|Number of messages in 'bounce' queue|integer,corrupt|Number of messages in 'corrupt' queue|integer,saved|Number of messages in 'saved' queue|integer"
 
