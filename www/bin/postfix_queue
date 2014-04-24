@@ -4,10 +4,11 @@ source "$PWD/../../conf/dash.conf"
 source "$PWD/../../conf/mon.conf"
 source "$PWD/../../lib/dash_functions.sh"
 
+[ "X$2" == "Xlocalhost" ] || ip="$2"
 for qtype in $GRAPHS_FOR ; do
   ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name "$2.standalone_Postfix_postfix_queue.db_postfix_queue_qtype_$qtype.$qtype.svg")
   if [ -z "$ex" ] ; then
-    "$PWD"/../../graph --database=standalone/Postfix/postfix_queue.db --table=postfix_queue --metric=qlength --as=$qtype --where="qtype:$qtype" --ip=$2 --perpixel --width=750 --height=300 --padding=10 --legend=160
+    "$PWD"/../../graph --database=standalone/Postfix/postfix_queue.db --table=postfix_queue --metric=qlength --as=$qtype --where="qtype:$qtype" --ip=$ip --perpixel --width=750 --height=300 --padding=10 --legend=160
   fi
   echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/$2.standalone_Postfix_postfix_queue.db_postfix_queue_qtype_$qtype.$qtype.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 done
