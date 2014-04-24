@@ -30,8 +30,8 @@ timenow=`date -u +"%s"`
 
 for qtype in deferred active maildrop hold bounce corrupt saved ; do
   qlength=`find $SPOOLDIR/$qtype -type f 2>/dev/null | wc -l`
+  eval "$qtype=\"$qlength\""
   store_results "qtype|text,qlength|integer"
-#  eval "$qtype=\"$qlength\""
 done
 
 #find_delta "deferred|integer,active|integer,maildrop|integer,hold|integer,bounce|integer,corrupt|integer,saved|integer"
