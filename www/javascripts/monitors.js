@@ -14,8 +14,6 @@ var hideblocked = 1;
 initMonitors = function(upd,updlevel) {
   hideblocked = 1;
   stopUpdater();
-  cursor_saved = $('content').style.cursor
-  cursor_style($('content'),'wait');
   updater = upd;
   startUpdater(updater);
   if (updlevel == 0) {
@@ -25,7 +23,6 @@ initMonitors = function(upd,updlevel) {
     $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
   }
   if ($(updater)) { $(updater).addClassName('active'); }
-  cursor_style($('content'),cursor_saved);
 }
 
 startUpdater = function(updater) {
@@ -33,7 +30,7 @@ startUpdater = function(updater) {
     if (!updater) updater = window.updater;
     //showVars($('messages'), updater + ' stopped');
     pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
-      method: 'get', frequency: 200, decay: 10
+      method: 'get', frequency: 200, decay: 1.5
     });
     updaterstopped = 0;
     //showVars($('messages'), updater + ' started');
