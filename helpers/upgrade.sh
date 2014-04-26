@@ -27,16 +27,11 @@ GIT=`which git 2>/dev/null`
 WGET=`which wget 2>/dev/null`
 if [ "X$GIT" == "X" ]; then
   echo "Git not found! Fetching tarball..."
-  if [ "X$WGET" == "X" ]; then
-    echo "Wget not found! Giving up, sorry..."
-    exit 1
-  else
-    install -d "$M_TEMP"/.update "$M_TEMP".$$
-    $WGET -nH -P "$M_TEMP" http://igorsimonov.com/m_script.latest.tar.gz
-    `which tar` -xzf "$M_TEMP"/m_script.latest.tar.gz -C "$M_TEMP".$$
-    rm -f "$M_TEMP"/m_script.latest.tar.gz
-    mv "$M_TEMP".$$/m/* "$M_TEMP"/.update
-  fi
+  install -d "$M_TEMP"/.update "$M_TEMP".$$
+  "$M_ROOT"/helpers/fetch http://igorsimonov.com/m_script.latest.tar.gz "$M_TEMP"/
+  `which tar` -xzf "$M_TEMP"/m_script.latest.tar.gz -C "$M_TEMP".$$
+  rm -f "$M_TEMP"/m_script.latest.tar.gz
+  mv "$M_TEMP".$$/m/* "$M_TEMP"/.update
 else
   $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update || exit 1
   gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
@@ -44,6 +39,7 @@ fi
 
 [ "X$1" == "Xhelp" ] && echo -e "Usage:\n\n    $rcommand\n\nor:\n\n    $rcommand full  (to update all non-executables - may overwrite your configs!)\n" && exit 0
 [ "X$1" == "Xfull" ] && fullupgrade=true || fullupgrade=false
+[ "X$1" == "Xunnew" ] && unnew=true || unnew=false
 
 find "$M_TEMP"/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
@@ -126,8 +122,11 @@ fi
 rm -rf "$M_TEMP"/.update/
 echo $timeindex >> "$M_ROOT/upgrade.log"
 
-if $fullupgrade ; then
+if $unnew ; then
   find "$M_ROOT" -name "*.new" | grep -vE "\.conf\.|/conf/|\.list\." | while read updated ; do "$M_ROOT"/helpers/unnew $updated ; done
+fi
+if $fullupgrade ; then
+  find "$M_ROOT" -name "*.new" | while read updated ; do "$M_ROOT"/helpers/unnew $updated ; done
 else
   echo -e "Showing files that are not updated and saved with the .new extension added. Note that configuration files are not shown! Use this to find all files if you wish:\n\nfind \"$M_ROOT\" -name \"*.new\"\n\nUse the unnew helper script to overwrite specific files with their new version:\n\nunnew </path/to/file1.new /path/to/file2.new ...>\n\n"
   find "$M_ROOT" -name "*.new" | grep -vE "\.conf\.|/conf/|\.list\."

@@ -3,6 +3,7 @@
 source "$PWD/../../conf/dash.conf"
 source "$PWD/../../conf/mon.conf"
 source "$PWD/../../lib/dash_functions.sh"
+source "$PWD/../../standalone/Postfix/postfix_queue.conf"
 
 [ "X$2" == "Xlocalhost" ] || ip="$2"
 for qtype in $GRAPHS_FOR ; do

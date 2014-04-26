@@ -86,6 +86,9 @@ run_meta() {
   if [ -n "$ignorenocluster" ] ; then
     F="--ignorenocluster"
   fi
+  if [ -n "$ignoreipnotpresent" ] ; then
+    P="--ignoreipnotpresent"
+  fi
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
       thescript=${metascript##*/}
@@ -138,7 +141,7 @@ run_meta() {
     if [ $res -eq 0 ]; then
       [ -e "$CURRTASKDIR/$metascript" ] && rm -f "$CURRTASKDIR/$metascript"
       [ -e "$CURRTASKDIR/$metascript.var" ] && rm -f "$CURRTASKDIR/${metascript}.var"
-      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $F $SU
+      deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $F $P $SU
       res=$?
     fi
     if [ -n "$verbose" ] ; then
@@ -363,7 +366,7 @@ if [ -n "$ip" ] ; then
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
   [ -z "$ipcluster" ] && [ -n "$CLOUD" ] && "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$ip --updatelist
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
-  [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
+  [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$ignoreipnotpresent" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ] ; then
     [ "$cluster" != "$ipcluster" ] && [ -z "$force" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
   else

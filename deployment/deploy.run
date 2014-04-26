@@ -67,7 +67,7 @@ find_name() {
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster ignorenocluster user nosudo parentrole"
+possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster ignorenocluster ignoreipnotpresent user nosudo parentrole"
 necessary_options="file type task role timestamp"
 [ "X$*" == "X" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
 # debug must be passed here as option only
@@ -302,8 +302,8 @@ if [ "$type" == "remote" ] ; then
       [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
       (source "$CURRTASKDIR/${file}.var" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
       res=$?
-    [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
-    [ $res -ne 0 ] && exit 1
+      [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
+      [ $res -ne 0 ] && exit 1
     else
       echo "Remote servers not found, exiting" | tee -a "$M_ROOT/logs/deploy.log"
       RETVAL+=1

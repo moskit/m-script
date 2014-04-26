@@ -10,9 +10,12 @@ print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Shardin
 print_page_title "Collection" "Status" "Sharded" "Primary" "Records" "Data Size" "Index Size"
 
 [ -f "$PWD/../../standalone/$saname/data/databases.dat" ] || exit 0
+source "$PWD/../../standalone/$saname/mongo_databases.conf"
+ignored=`echo "$IGNORED_DBS" | tr ',' ' '`
+ignored=`echo "$ignored" | tr ' ' '\n' | grep -v ^$`
 
 for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|' -f2 | sort | uniq` ; do
-  
+  echo "$ignored" | grep -q "$dbname" && continue
   db_dat="$PWD/../../standalone/$saname/data"/${dbname}.dat
   [ -f "$db_dat" ] || continue
   total_datasize=`cat $db_dat | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`

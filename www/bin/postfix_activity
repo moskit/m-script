@@ -7,7 +7,7 @@ source "$PWD/../../lib/dash_functions.sh"
 [ "X$2" == "Xlocalhost" ] || ip="$2"
 ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name "$2.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg")
 if [ -z "$ex" ] ; then
-"$PWD"/../../graph --database=standalone/Postfix/postfix_activity.db --table=postfix_activity --metric=sent,bounced,deferred --ip=$2 --perpixel --width=750 --height=300 --padding=10 --legend=160
+"$PWD"/../../graph --database=standalone/Postfix/postfix_activity.db --table=postfix_activity --metric=sent,bounced,deferred --ip=$ip --perpixel --width=750 --height=300 --padding=10 --legend=160
 fi
 echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/$2.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 

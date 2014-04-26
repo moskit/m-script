@@ -18,7 +18,7 @@ if [ -n "$AUTH_LOGIN" ]; then
   fi
 fi
 
-source "$rpath/databases.conf" 2>/dev/null
+source "$rpath/mongo_databases.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
 
 [ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
@@ -33,10 +33,15 @@ for hp in $hostport ; do
 done
 echo -e ${databases[*]} | tr ' ' '\n' | sort | uniq > "$rpath/data/databases.dat"
 
+ignored=`echo "$IGNORED_DBS" | tr ',' ' '`
+ignored=`echo "$ignored" | tr ' ' '\n' | grep -v ^$`
+
 for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   
   hp=${hpdb%|*}
   db=${hpdb#*|}
+  echo "$ignored" | grep -q "$db" && continue
+  
   if [ "X$SHARDING" == "Xmanual" ]; then
     dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
     echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"
