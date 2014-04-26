@@ -15,17 +15,18 @@ ignored=`echo "$IGNORED_DBS" | tr ',' ' '`
 ignored=`echo "$ignored" | tr ' ' '\n' | grep -v ^$`
 
 for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|' -f2 | sort | uniq` ; do
-  echo "$ignored" | grep -q "$dbname" && continue
-  db_dat="$PWD/../../standalone/$saname/data"/${dbname}.dat
-  [ -f "$db_dat" ] || continue
-  total_datasize=`cat $db_dat | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`
-  [ "X$total_datasize" == "X0" ] && continue
-  total_ok=`cat "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
-  total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
-  total_count=`cat $db_dat | grep ^0\/\"objects\"\| | cut -d'|' -f2`
+  echo "$ignored" | grep -q "^${dbname}$" && continue
   
-  total_storsize=`cat $db_dat | grep ^0\/\"storageSize\"\| | cut -d'|' -f2`
-  total_indexsize=`cat $db_dat | grep ^0\/\"indexSize\"\| | cut -d'|' -f2`
+  [ -f "$PWD/../../standalone/$saname/data/${dbname}.dat" ] || continue
+  db_dat=`cat "$PWD/../../standalone/$saname/data/${dbname}.dat"`
+  total_datasize=`echo "$db_dat" | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`
+  [ "X$total_datasize" == "X0" ] && continue
+  total_ok=`echo "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
+  total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
+  total_count=`echo "$db_dat" | grep ^0\/\"objects\"\| | cut -d'|' -f2`
+  
+  total_storsize=`echo "$db_dat" | grep ^0\/\"storageSize\"\| | cut -d'|' -f2`
+  total_indexsize=`echo "$db_dat" | grep ^0\/\"indexSize\"\| | cut -d'|' -f2`
   total_datasize=`expr $total_datasize / 1048576`
   csunits="MB"
   
@@ -39,7 +40,7 @@ for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|
   fi
   
   total_datasize="$total_datasize $csunits"
-  total_chunks=`cat $db_dat | grep ^0\/\"nchunks\"\| | cut -d'|' -f2`
+  total_chunks=`echo "$db_dat" | grep ^0\/\"nchunks\"\| | cut -d'|' -f2`
   
   open_cluster "$dbname"
   

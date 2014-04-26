@@ -40,7 +40,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   
   hp=${hpdb%|*}
   db=${hpdb#*|}
-  echo "$ignored" | grep -q "$db" && continue
+  echo "$ignored" | grep -q "^${db}$" && continue
   
   if [ "X$SHARDING" == "Xmanual" ]; then
     dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`

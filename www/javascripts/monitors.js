@@ -14,7 +14,8 @@ var hideblocked = 1;
 initMonitors = function(upd,updlevel) {
   hideblocked = 1;
   stopUpdater();
-  document.documentElement.style.cursor = 'wait';
+  cursor_saved = $('content').style.cursor
+  cursor_style($('content'),'wait');
   updater = upd;
   startUpdater(updater);
   if (updlevel == 0) {
@@ -24,7 +25,7 @@ initMonitors = function(upd,updlevel) {
     $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
   }
   if ($(updater)) { $(updater).addClassName('active'); }
-  document.documentElement.style.cursor = '';
+  cursor_style($('content'),cursor_saved);
 }
 
 startUpdater = function(updater) {
