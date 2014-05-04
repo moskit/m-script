@@ -39,6 +39,9 @@ log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlin
 for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
 
   from=`echo "$log" | grep postfix/qmgr | grep "$id: from" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
+  # no from normally means that it's relayed to some filter; comment this line
+  # if you want these to be shown too
+  [ -z "$from" ] && continue
   to=`echo "$log" | grep "$id: to" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
   status=`echo "$log" | grep postfix/smtp | grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}' | tail -1 | cut -d' ' -f1`
 

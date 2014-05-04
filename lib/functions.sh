@@ -86,21 +86,21 @@ check_results() {
     thr3=`eval "echo \\$${varname}_3"`
     val=`eval "echo \\$${varname}"`
     if [ "$vartype" == "real" ]; then
-      [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> $vardescr is $val" && continue
-      [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  $vardescr is $val" && continue
-      [ `echo "scale=2; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   $vardescr is $val" && continue
+      [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+      [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+      [ `echo "scale=2; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
     fi
     if [ "$vartype" == "real4" ]; then
-      [ `echo "scale=4; $val >= $thr3" | bc` -eq 1 ] && echo "<***> $vardescr is $val" && continue
-      [ `echo "scale=4; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  $vardescr is $val" && continue
-      [ `echo "scale=4; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   $vardescr is $val" && continue
+      [ `echo "scale=4; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+      [ `echo "scale=4; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+      [ `echo "scale=4; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
     fi
     if [ "$vartype" == "integer" ]; then
-      [ `expr $val \>= $thr3` -eq 1 ] && echo "<***> $vardescr is $val" && continue
-      [ `expr $val \>= $thr2` -eq 1 ] && echo "<**>  $vardescr is $val" && continue
-      [ `expr $val \>= $thr1` -eq 1 ] && echo "<*>   $vardescr is $val" && continue
+      [ `expr $val \>= $thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+      [ `expr $val \>= $thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+      [ `expr $val \>= $thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
     fi
-    echo "<OK>  $vardescr is $val"
+    echo "<OK>  ${vardescr}: $val"
   done
   IFS=$IFSORIG
 }

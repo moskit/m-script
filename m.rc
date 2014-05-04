@@ -64,7 +64,7 @@ cr() {
     export CLOUD
   fi
   set_default_ps
-  source role.conf
+  [ -f role.conf ] && source role.conf
 }
 
 exitrole() {

@@ -28,7 +28,7 @@ source "$M_ROOT/lib/functions.sh"
 timenow=`date -u +"%s"`
 [ ! -d "$SPOOLDIR" ] && log "SPOOLDIR $SPOOLDIR not found, exiting" && exit 1
 
-for qtype in deferred active maildrop hold bounce corrupt saved ; do
+for qtype in deferred active maildrop hold corrupt saved ; do
   qlength=`find $SPOOLDIR/$qtype -type f 2>/dev/null | wc -l`
   eval "$qtype=\"$qlength\""
   store_results "qtype|text,qlength|integer"
@@ -36,5 +36,5 @@ done
 
 #find_delta "deferred|integer,active|integer,maildrop|integer,hold|integer,bounce|integer,corrupt|integer,saved|integer"
 
-check_results "deferred|Number of messages in 'deferred' queue|integer,active|Number of messages in 'active' queue|integer,maildrop|Number of messages in 'maildrop' queue|integer,hold|Number of messages in 'hold' queue|integer,bounce|Number of messages in 'bounce' queue|integer,corrupt|Number of messages in 'corrupt' queue|integer,saved|Number of messages in 'saved' queue|integer"
+check_results "deferred|Messages in 'deferred' queue|integer,active|Messages in 'active' queue|integer,maildrop|Messages in 'maildrop' queue|integer,hold|Messages in 'hold' queue|integer,corrupt|Messages in 'corrupt' queue|integer,saved|Messages in 'saved' queue|integer"
 

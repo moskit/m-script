@@ -62,7 +62,7 @@ for coll in $sharded ; do
   echo -e ${collshardinfo[*]} | tr ' ' '\n' > "$rpath/data/shards.$coll"
   
   [ -f "$rpath/data/sharding.changelog.${coll}.dat" ] && mv "$rpath/data/sharding.changelog.${coll}.dat" "$rpath/data/sharding.changelog.${coll}.dat.prev"
-  $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c, \"ns\" : \"$coll\" } ).count() ) } )" > "${rpath}/data/sharding.changelog.${coll}.dat"
+  $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c, \"ns\" : \"$coll\" } ).count() ) } )" > "$rpath/data/sharding.changelog.${coll}.dat"
   $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c, \"ns\" : \"$coll\" } ).count() ) } )" >> "$rpath/data/sharding.changelog.${coll}.dat"
   
   cldiff=`$DIFF "$rpath/data/sharding.changelog.${coll}.dat.prev" "$rpath/data/sharding.changelog.${coll}.dat"`
@@ -91,6 +91,9 @@ done &
 #    currshard2=`$MONGO $AUTH "$confserver"/config --quiet --eval "db."`
 #  fi
 
+### to find chunks size without locking the whole db
+# mongo "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | sed 's|"|\\"|g;s|\$|\\$|g' | while read MINMAX ; do echo "$MINMAX" ; mongo "${shard}:${shardport}"/$db --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns}\", keyPattern: { \"_id\": 1}, $MINMAX }))" ; sleep 100 ; done
+### TODO: keyPattern can be obtained from config.collections
 
 unset masters
 
