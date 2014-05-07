@@ -127,5 +127,10 @@ for appport in `echo "$BALANCER_PORTS" | tr ',' ' '` ; do
 
 done
 
-$NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND
+# Comes as a shock, but sometimes distro builders don't respect POSIX
+output=`$NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND`
+res=$?
+echo "$output" | grep -qiE "fail|error" && res=1
+
+exit $res
 

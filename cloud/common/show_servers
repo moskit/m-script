@@ -33,7 +33,7 @@ else
 fi
 
 for cld in $cloud ; do
-  echo "*** Cloud $cld"
+  [ -n "$PS1" ] && echo "*** Cloud $cld"
   export CLOUD=$cld
   source "$M_ROOT/conf/clouds/${cld}.conf"
   if [ -n "$CLOUD_PROVIDER" ]; then

@@ -106,8 +106,8 @@ find_source() {
 
 prepare_file() {
   [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
-  [ -f "$ROLES_ROOT/$role/role.conf" ] && store_vars "$ROLES_ROOT/$role/role.conf"
-  source "${tmpfile}.var"
+  [ -f "$ROLES_ROOT/$role/role.conf" ] && store_vars "$ROLES_ROOT/$role/role.conf" || echo "role.conf not found!"
+  [ -f "${tmpfile}.var" ] && source "${tmpfile}.var"
   rm -f "$tmpfile" "${tmpfile}.orig"
   cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \

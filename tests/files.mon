@@ -42,9 +42,9 @@ for chng in `$DIFF "$M_TEMP/files.mon.prev" "$M_TEMP/files.mon.tmp"  | grep ^\> 
     3)
     warn='<***>' ;;
     2)
-    warn='<**> ' ;;
+    warn='<**>' ;;
     1)
-    warn='<*>  ' ;;
+    warn='<*>' ;;
   esac
   echo "$warn File `echo "$chng" | cut -d'|' -f1` has been changed"
 done

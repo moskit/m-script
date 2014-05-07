@@ -83,7 +83,6 @@ echo -e "Memory usage:\n----------------\n"
 totalmemused=`solve 2 "($rusedram + $rusedswap) / ($rtotalram + $rtotalswap) * 100"`
 totalramused=`solve 2 "$ractiveram / $rtotalram * 100"`
 totalramfree=`solve 2 "$rfreeram / $rtotalram * 100"`
-totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100" || echo 0`
 totalmemfree=`solve 2 "100 - $totalmemused"`
 
 if [ $SYSMEM_3 -gt 0 ] 2>/dev/null ; then
@@ -128,21 +127,24 @@ fi
 echo -e "$warnind Used RAM:\t\t\t${musedram} MB" 
 echo -e "$warnind Free RAM:\t\t\t${mfreeram} MB (${totalramfree}%)"
 
-if [ $SWAP_3 -gt 0 ] 2>/dev/null ; then
-  y1=`echo "$totalswapused >= $SWAP_1" | bc`
-  y2=`echo "$totalswapused >= $SWAP_2" | bc`
-  y3=`echo "$totalswapused >= $SWAP_3" | bc`
-  warnind='<OK> '
-  [ $y1 -eq 1 ] && warnind=' <*> '
-  [ $y2 -eq 1 ] && warnind='<**> '
-  [ $y3 -eq 1 ] && warnind='<***>'
-else
-  warnind='<***>'
+if [ $rtotalswap -ne 0 ]; then
+  totalswapused=`solve 2 "$rusedswap / $rtotalswap * 100" || echo 0`
+  if [ $SWAP_3 -gt 0 ] 2>/dev/null ; then
+    y1=`echo "$totalswapused >= $SWAP_1" | bc`
+    y2=`echo "$totalswapused >= $SWAP_2" | bc`
+    y3=`echo "$totalswapused >= $SWAP_3" | bc`
+    warnind='<OK> '
+    [ $y1 -eq 1 ] && warnind=' <*> '
+    [ $y2 -eq 1 ] && warnind='<**> '
+    [ $y3 -eq 1 ] && warnind='<***>'
+  else
+    warnind='<***>'
+  fi
+  echo -e "$warnind Used Swap:\t\t${musedswap} MB"
+  echo -e "$warnind Free Swap:\t\t${mfreeswap} MB"
 fi
-echo -e "$warnind Used Swap:\t\t${musedswap} MB"
-echo -e "$warnind Free Swap:\t\t${mfreeswap} MB"
 
-if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
+if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
   dbquery "$rpath/../sysdata" "update sysdata set totalram=$rtotalram, freeram=$rfreeram, activeram=$ractiveram, totalswap=$rtotalswap, freeswap=$rfreeswap, uptime=$ruptime, loadavg=$x, procnum=$rtotalprocess where timeindex='$timeindexnow'"
 fi
 
