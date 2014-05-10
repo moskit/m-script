@@ -99,7 +99,7 @@ generate_name() {
 check_cluster_limit() {
   cluster="$*"
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
+  [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 0
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
   [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
@@ -117,7 +117,7 @@ check_cluster_limit() {
 check_cluster_minimum() {
   cluster="$*"
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && log "cluster is not defined, exiting" && return 1
+  [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 0
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
   [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
