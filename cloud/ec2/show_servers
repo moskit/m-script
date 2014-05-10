@@ -81,8 +81,8 @@ list_servers() {
     [ -f "$M_TEMP/servers.ips.prev" ] && slist="$M_TEMP/servers.ips.prev"
   fi
   if [ -n "$slist" ]; then
-    [ "X$view" == "Xraw" ] && cat "$M_TEMP/servers.ips" && return
-    for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3 | sort | uniq` ; do
+    [ "_$view" == "_raw" ] && cat "$M_TEMP/servers.ips" && return
+    for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
       server=`grep ^$sn\/ "$M_TEMP/servers.ips"`
       intIP=`echo "$server" | grep '/"privateIpAddress"/0' | cut -d'|' -f2 | tr -d '"'`
@@ -95,12 +95,19 @@ list_servers() {
       izone=`echo "$server" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
       iaki=`echo "$server" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
       #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
-      [ "X$NETWORK" == "Xexternal" ] && iname=`get_iname $extIP` || iname=`get_iname $intIP`
+      if [ "_$NETWORK" == "_external" ] ; then
+        IP=$extIP
+      else
+        IP=$intIP
+      fi
+      iname=`get_iname $IP`
       
       tags=`echo "$server" | grep '/"tagSet"/'`
       iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f11`
       if [ -n "$iclustertag" ]; then
         icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+      else
+        [ -z "$all" ] && continue
       fi
       
       ikey=`echo "$server" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
@@ -113,53 +120,46 @@ list_servers() {
         bdevsince=`echo "$bdevs" | grep "/$bdev/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
         ebs+=("$bdevid|$bdevname|$bdevsince")
       done
-      
-      if [ "X$NETWORK" == "Xexternal" ] ; then
-        IP=$extIP
-      else
-        IP=$intIP
-      fi
-      
+
+      # icluster - cluster defined in this server metadata
+      # checking it against clusters.conf allows to separate projects, or
+      # cluster groups within the same cloud
       if [ -z "$icluster" ] ; then
         # servers having no cluster in metadata but added manually to servers.list
         icluster=`grep ^$IP\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+        [ -z "$icluster" ] && [ -z "$all" ] && log "Server $IP has no cluster tag and not present in servers.list" && continue
       else
-        # no icluster means that server will not be shown, but only if there
-        # is no option --all. With this option, however, we want to see all
-        # clusters assigned via metadata
-        [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+        [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && continue
       fi
 
       if [ -z "$update_servers_list" ] ; then
-        # icluster existence condition is needed for the case there are multiple
-        # projects (cluster groups) in the same cloud.
-        # Note that if you use same names for clusters in different cluster
-        # groups, you'll get them mixed here.
-        if [ -n "$icluster" -o -n "$all" ] ; then
-          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
-          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
-          case $view in
-            list)
-              echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
-              echo "${ebs[*]}" | sed 's_^_EBS: _g;s_|_  _g'
-              ;;
-            table)
-              echo "$id|$iname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
-              echo "${ebs[*]}" | sed 's_^_EBS: _g'
-              ;;
-            column)
-              echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
-              echo "${ebs[*]}" | sed 's_^_EBS: _g;s_|_  _g'
-              ;;
-            none)
-              ;;
-            *)
-              echo -e "------------------------------------------------------------------------------\nServer ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIP    Private IP: $intIP\nServer image: $imageId    AKI: $iaki    ARI: $iari\nServer size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
-              echo "${ebs[*]}" | sed 's_^_  EBS: _g;s_|_  _g'
-              ;;
-          esac
-          icount+=1
+
+        if [ -n "$cluster" ]; then
+          [ "$cluster" != "$icluster" ] && continue
         fi
+        [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
+        case $view in
+          list)
+            echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
+            echo "${ebs[*]}" | sed 's_^_EBS: _g;s_|_  _g'
+            ;;
+          table)
+            echo "$id|$iname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
+            echo "${ebs[*]}" | sed 's_^_EBS: _g'
+            ;;
+          column)
+            echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
+            echo "${ebs[*]}" | sed 's_^_EBS: _g;s_|_  _g'
+            ;;
+          none)
+            ;;
+          *)
+            echo -e "------------------------------------------------------------------------------\nServer ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIP    Private IP: $intIP\nServer image: $imageId    AKI: $iaki    ARI: $iari\nServer size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
+            echo "${ebs[*]}" | sed 's_^_  EBS: _g;s_|_  _g'
+            ;;
+        esac
+        icount+=1
+
       else
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then

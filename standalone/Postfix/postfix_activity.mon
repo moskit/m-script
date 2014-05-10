@@ -48,11 +48,11 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
   if [ -n "$status" ]; then
     case $status in
       deferred)
-        warn='<***>'
+        warn='<**>'
         deferred+=1
         ;;
       bounced)
-        warn='<**>'
+        warn='<***>'
         bounced+=1
         ;;
       sent)

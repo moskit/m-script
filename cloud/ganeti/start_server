@@ -27,7 +27,7 @@ IPR2=`which ip 2>/dev/null`
 [ -z "$ROUTE" ] && echo "route utility not found" && exit 1
 [ -z "$IPR2" ] && echo "ip utility not found" && exit 1
 possible_options="cloud region flavor cluster image name return verbose test cdrom makedisk vnc"
-necessary_options="cluster"
+necessary_options=
 
 LOG="$M_ROOT/logs/cloud.log"
 SSHK=`which ssh-keygen 2>/dev/null`
@@ -59,6 +59,11 @@ if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
   echo "Necessary options: $missing_options not found"
   exit 1
+fi
+
+if [ -n "$help" ]; then
+  echo -e "Usage: $rcommand <options>\n\n  possible options: $possible_options"
+  exit 0
 fi
 
 [ -n "$verbose" ] && debug=1
@@ -180,7 +185,7 @@ request() {
     $GNTI add -n $node -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
     res=$?
   fi
-  [ $res -ne 0 ] && return $res
+  [ $res -ne 0 ] && return $res || return 0
 }
 
 find_idev() {
