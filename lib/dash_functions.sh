@@ -195,13 +195,13 @@ IFS=$IFS1
 }
 
 print_timeline() {
-  timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
-  [ -n "$1" ] && freqdef=$1 || freqdef=$FREQ
+  [ -n "$2" ] && interval=$2 || interval=$FREQ
+  timerange=`expr $slotline_length \* \( $interval - $timeshift \)` || timerange=10000
   dfptoldest=`date -d "-$timerange sec"`
   dfpthour=`date -d "$dfptoldest" +"%H"`
   echo -e "<div class=\"server\">\n<span class=\"servername\">${1}</span>"
   for ((n=0; n<$slotline_length; n++)) ; do
-    dfpttimediff=`expr $n \* \( $freqdef - $timeshift \)`
+    dfpttimediff=`expr $n \* \( $interval - $timeshift \)`
     dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`
     dfpthournew=`date -d "$dfpttimestamp" +"%H"`
     if [ "_$dfpthournew" == "_$dfpthour" ] ; then
