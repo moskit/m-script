@@ -23,8 +23,6 @@ M_ROOT=$(readlink -f "$dpath/..")
 source "$dpath/../conf/mon.conf"
 source "$dpath/../conf/dash.conf"
 [ -n "$timeshift" ] || timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=10
-[ -n "$freqdef" ] || freqdef=$FREQ
-timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 
 SQL=`which sqlite3 2>/dev/null`
 CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
@@ -197,6 +195,8 @@ IFS=$IFS1
 }
 
 print_timeline() {
+  timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
+  [ -n "$1" ] && freqdef=$1 || freqdef=$FREQ
   dfptoldest=`date -d "-$timerange sec"`
   dfpthour=`date -d "$dfptoldest" +"%H"`
   echo -e "<div class=\"server\">\n<span class=\"servername\">${1}</span>"
@@ -204,7 +204,7 @@ print_timeline() {
     dfpttimediff=`expr $n \* \( $freqdef - $timeshift \)`
     dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`
     dfpthournew=`date -d "$dfpttimestamp" +"%H"`
-    if [ "X$dfpthournew" == "X$dfpthour" ] ; then
+    if [ "_$dfpthournew" == "_$dfpthour" ] ; then
       echo "<div class=\"chunk timeline\">&nbsp;</div>"
     else
       echo "<div class=\"chunk hour\">${dfpthournew}:00</div>"
