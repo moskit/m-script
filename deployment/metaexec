@@ -334,7 +334,7 @@ export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 
 log "Starting metaexec with arguments $@"
 
-[ -n "$IFCFG" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+localip=`"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'`
 
 if [ -n "$timestamp" ] ; then
   [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
@@ -487,14 +487,12 @@ if [ "$output" == "console" ] ; then
 fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
-  #KEY=`grep "^${cluster}|" "${rpath}/../conf/clusters.conf" | cut -d'|' -f2`
   KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 467
   [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 486
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 487
-  # it's here because startserver function cause re-reading cloud config
+  # it's here because startserver function re-reads cloud config
   [ -n "$SSHPORT" ] || SSHPORT=22
   if [ -z "$list" ] ; then
-    #SSH="$SSH -i \"${rpath}/../keys/${KEY}\" -o StrictHostKeyChecking=no"
     $debug && log "ensuring the target server $ip is accessible"
     if [ -z "$test" -a -n "$ip" ] ; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do

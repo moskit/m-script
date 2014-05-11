@@ -407,7 +407,8 @@ else
       echo "curl not found, not testing connection to VNC"
     else
       [[ "$vnc" == "0.0.0.0" ]] && vnc="localhost"
-      vncport=`$GNTI info "$name" | grep 'Allocated network port' | cut -d':' -f2 | tr -d' '`
+      vncport=`$GNTI info "$name" | grep 'Allocated network port' | cut -d':' -f2 | tr -d ' '`
+      [ -z "$vncport" ] && vncport=11001
       for ((k=0; k<3; k++)); do
         $CURL "${vnc}:${vncport}"
         [ $? -eq 0 ] && exit_status=0 && break
