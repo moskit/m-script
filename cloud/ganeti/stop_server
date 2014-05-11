@@ -74,7 +74,7 @@ tscluster=$(cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f4
 thekey=`"$M_ROOT"/helpers/find_key cluster $tscluster`
 
 request() {
-  ssh -i "$thekey" -o StrictHostKeyChecking=no root@$name \(swapoff -a \&\& poweroff\) >>"$LOG" 2>&1 </dev/null &
+  ssh -i "$thekey" -o StrictHostKeyChecking=no -o ConnectTimeout=$CONNECT_TIMEOUT root@$name \(swapoff -a \&\& poweroff\) >>"$LOG" 2>&1 </dev/null &
   sleep 10
   $GNTI shutdown $name >/dev/null 2>&1
   $GNTI remove -f $name >/dev/null 2>&1
@@ -94,7 +94,7 @@ if [[ $reqres -eq 0 ]] ; then
   log "server name ${name}, id ${id}, IP ${ip} terminated succesfully" | tee -a "$rpath"/../ganeti.log
   SSHK=`which ssh-keygen 2>/dev/null`
   [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
-  for ipa in ${IPS} ; do
+  for ipa in $IPS ; do
     if [ -n "$ipa" ] ; then
       $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "$ipa removed from known_hosts"
       sed -i "/^$ipa|/d" "$M_ROOT/servers.list" && log "$ipa removed from servers.list"
@@ -114,6 +114,8 @@ if [[ $reqres -eq 0 ]] ; then
       esac
     fi
   fi
+else
+  echo "Error stopping server" >&2
 fi
 
 proper_exit 0 119
