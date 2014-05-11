@@ -197,6 +197,11 @@ IFS=$IFS1
 print_timeline() {
   [ -n "$2" ] && interval=$2 || interval=$FREQ
   timerange=`expr $slotline_length \* \( $interval - $timeshift \)` || timerange=10000
+  # print every 1st hour
+  factor=1
+  [ $interval -gt 1000 ] && factor=2
+  local -i i
+  i=0
   dfptoldest=`date -d "-$timerange sec"`
   dfpthour=`date -d "$dfptoldest" +"%H"`
   echo -e "<div class=\"server\">\n<span class=\"servername\">${1}</span>"
@@ -207,7 +212,13 @@ print_timeline() {
     if [ "_$dfpthournew" == "_$dfpthour" ] ; then
       echo "<div class=\"chunk timeline\">&nbsp;</div>"
     else
-      echo "<div class=\"chunk hour\">${dfpthournew}:00</div>"
+      i+=1
+      if [ $i -eq $factor ]; then
+        echo "<div class=\"chunk hour\">${dfpthournew}:00</div>"
+        i=0
+      else
+        echo "<div class=\"chunk timeline\">&nbsp;</div>"
+      fi
       dfpthour=$dfpthournew
     fi
   done
