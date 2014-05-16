@@ -104,7 +104,7 @@ cat -E $1 | while read LINE ; do
       ;;
     esac
   fi
-  echo "${data[$cursor]}" | grep -qE "<|>" && datatype[$cursor]="pre"
+  data[$cursor]=`echo "${data[$cursor]}" | tr -d '<>'`
 #echo "== $LINE" ; echo "-- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
   if [ $cursor -eq 3 ] ; then
     case ${datatype[*]} in
