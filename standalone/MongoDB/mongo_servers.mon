@@ -402,3 +402,6 @@ mmin=`expr $ccl \* 3 / 60 + 1`
 find "$rpath/data/" -mmin +$mmin -exec rm {} \;
 exit 0
 
+
+### mongo localhost:27018/admin --quiet --eval "db.currentOp().inprog.forEach(function(d){ if(d.waitingForLock) print(d.op)})" | sort | uniq -c
+
