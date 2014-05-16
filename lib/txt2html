@@ -41,9 +41,6 @@ format() {
   ok|w1|w2|w3)
     echo "<div class=\"info info_$2\">${1}</div>"
     ;;
-  pre)
-    echo "<pre class=\"info info_$3\">${1}</pre>"
-    ;;
   esac
 }
 
@@ -181,9 +178,6 @@ cat -E $1 | while read LINE ; do
       "empty")
         cursor=0
         [ -n "$tableflag" ] && echo "</table>" && unset tableflag
-        ;;
-      "pre")
-        format ${data[1]} pre ${datastyle[1]}
         ;;
     esac
   fi
