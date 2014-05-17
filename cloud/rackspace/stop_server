@@ -49,9 +49,9 @@ for s_option in $ARGV
 do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
    if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
@@ -212,7 +212,7 @@ cat "$M_TEMP/${rcommand}.resp" >> "$LOG"
 
 IPS=( `echo -e "$ipint\n$ipext\n$ip" | sort | uniq` )
 
-if [ $reqres -eq 0 -a `grep -c "itemNotFound" "$M_TEMP/${rcommand}.resp"` -eq 0 ]; then
+if [ $reqres -eq 0 ] && [ `grep -c "itemNotFound" "$M_TEMP/${rcommand}.resp"` -eq 0 ]; then
   log "Server name ${name}, id ${id}, IP ${IPS[*]} terminated successfully"
   echo -e "`date`\n\nServer ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
   removed=true
@@ -235,15 +235,11 @@ if [ $removed -o $force ]; then
   done
   
   for bcluster in $APP_SERVERS ; do
-    [ "X${bcluster%%|*}" == "X$cluster" ] && needs_balancer=true
+    [ "_${bcluster%%|*}" == "_$cluster" ] && needs_balancer=true
   done
   if $needs_balancer ; then
     if [ -n "$BALANCER" ] ; then
-      case "$BALANCER" in
-      nginx)
-        update_nginx_proxy
-        ;;
-      esac
+      update_balancer
     fi
   fi
 fi

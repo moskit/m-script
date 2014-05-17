@@ -182,7 +182,7 @@ startserver() {
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name"
 [ "X$*" == "X" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -193,11 +193,11 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
-  [ "X$s_optarg" == "Xno" ] && unset $s_optname
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_no" ] && unset $s_optname
 
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
   
   if ! $found ; then 
@@ -217,13 +217,13 @@ if $found ; then
 fi
 
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
-[ "X$help" == "Xyes" ] && debug=true
+[ -n "$help" ] && debug=true
 export verbose debug
 [ -n "$repeat" ] && timestamp=repeat
 [ -n "$newtimestamp" ] && unset timestamp timestampact
 [ -n "$usage" ] && help="yes" && debug=false
 
-if [ "X$help" == "Xyes" ] ; then
+if [ -n "$help" ] ; then
   if $debug ; then
     cat << "EOF"
 Usage: ${0##*/} <options>
@@ -330,7 +330,15 @@ export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$ignoreipnotpresent" -o -n "$force" -o -n "$ignorenocluster" ] && ignorenocluster="yes" && force="yes"
 [ -n "$user" ] && SSH_REMOTE_USER="$user"
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
-[ "x$nosudo" == "xyes" ] && SU="--nosudo"
+[ -n "$nosudo" ] && SU="--nosudo"
+if [ -n "$name" ] && [ -z "$ip" ]; then
+  ip=`find_ip $name`
+  [ $? -ne 0 ] && echo "Unable to resolve name $name" >&2 && exit 1
+  if [ `expr "$ip" : "[^[0-9.]]*" 2>/dev/null` -ne 0 ] ; then
+    echo "name $name resolved to IP that does not look correct: $ip"
+    exit 1
+  fi
+fi
 
 log "Starting metaexec with arguments $@"
 
@@ -338,7 +346,7 @@ localip=`"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'`
 
 if [ -n "$timestamp" ] ; then
   [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
-  if [ "X$timestamp" == "Xrepeat" ]; then
+  if [ "_$timestamp" == "_repeat" ]; then
     timestampact=`ls -1tr "$WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
   else
     timestampact="$timestamp"
@@ -359,7 +367,7 @@ fi
 
 if [ -n "$ip" ] ; then
   [ -n "$newserver" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
-  if [[ $ip =~ [^[0-9.]]* ]] ; then
+  if [ `expr "$ip" : "[^[0-9.]]*" 2>/dev/null` -ne 0 ] ; then
     echo "Something's wrong with IP: $ip"
     exit 1
   fi

@@ -134,10 +134,31 @@ check_cluster_minimum() {
 
 find_name() {
   NAME=`grep "^${1}|" "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f4`
-  [ -n "$NAME" ] && echo "$NAME" && return 0 || NAME=`grep -E "^${1}[[:space:]]|[[:space:]]${1}[[:space:]]" /etc/hosts`
-  [ -n "$NAME" ] && NAME=$(for N in $NAME ; do [[ "$N" =~ '\.' ]] || DNAME=$N ; done)
-  [ -n "$DNAME" ] && NAME=$DNAME || NAME=`echo $NAME | awk '{print $2}' | cut -d'.' -f1`
-  echo "$NAME"
+  if [ -n "$NAME" ]; then
+    echo "$NAME"
+    return 0
+  else
+    log "getting name for IP $1 from /etc/hosts"
+    NAME=`grep -E "^${1}[[:space:]]|[[:space:]]${1}[[:space:]]" /etc/hosts | head -1`
+    if [ -n "$NAME" ]; then
+      NAME=$(for N in $NAME ; do [[ "$N" =~ '\.' ]] || DNAME=$N ; done)
+      [ -n "$DNAME" ] && NAME=$DNAME || NAME=`echo $NAME | awk '{print $2}' | cut -d'.' -f1`
+      echo "$NAME"
+      return 0
+    else
+      log "getting hostname for IP $1 from the host"
+      NAME=`get_hostname $1`
+      echo $NAME | awk '{print $2}' | cut -d'.' -f1
+      return 0
+    fi
+  fi
+  return 1
+}
+
+find_ip() {
+  IP=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1`
+  [ -z "$IP" ] && return 1
+  echo "$IP"
 }
 
 proper_exit() {
