@@ -120,7 +120,8 @@ check_cluster_minimum() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 1
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 1
+  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud
+  source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
@@ -157,7 +158,8 @@ test_cluster_minimum() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 0
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 0
+  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud
+  source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 0
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
