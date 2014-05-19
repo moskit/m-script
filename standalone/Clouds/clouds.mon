@@ -100,7 +100,7 @@ for cloud in ${clouds[*]} ; do
       [ $res -eq 1 ] && log "update_servers_list error" && exit 1
     else
       echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
-      exit 0
+      exit 10
     fi
   else
     log "updating servers.list"

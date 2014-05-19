@@ -244,5 +244,5 @@ if [ $removed -o $force ]; then
   fi
 fi
 
-proper_exit $exit_status 245
+proper_exit $exit_status 247
 

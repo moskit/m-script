@@ -101,7 +101,8 @@ check_cluster_limit() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 0
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud
+  source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
@@ -110,7 +111,7 @@ check_cluster_limit() {
   [ -z "$n" ] && n=0
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   #[ `expr $n \>= 0` -gt 0 ] || return 1
-  [ `expr $limit \>= $n` -gt 0 ] 2>/dev/null && return 0
+  [ `expr $limit \> $n` -gt 0 ] 2>/dev/null && return 0
   return 1
 }
 
@@ -119,7 +120,7 @@ check_cluster_minimum() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 0
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
@@ -128,7 +129,7 @@ check_cluster_minimum() {
   n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_servers --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
-  [ `expr $limit \<= $n` -gt 0 ] && return 0
+  [ `expr $limit \< $n` -gt 0 ] && return 0
   return 1
 }
 
@@ -156,7 +157,7 @@ find_name() {
 }
 
 find_ip() {
-  IP=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1`
+  IP=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1 | tail -1`
   [ -z "$IP" ] && return 1
   echo "$IP"
 }

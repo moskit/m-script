@@ -142,9 +142,11 @@ printreturn() {
 }
 
 log "Checking cluster $cluster limit..."
-check_cluster_limit $cluster || proper_exit 5 152
+check_cluster_limit "$cluster" || proper_exit 5 152
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
 [ -z "$name" ] && proper_exit 6 154
+log "Double-checking name"
+find_server --name="$name" --updatelist >/dev/null 2>&1 && log "Server with name $name already exists!" && exit 6
 find_image
 [ -z "$imageid" ] && proper_exit 7 156
 find_flavor

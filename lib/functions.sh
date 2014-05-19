@@ -61,7 +61,6 @@ store_results() {
     $SQLBIN -echo "$dbfile" "CREATE TABLE $dbtable (timeindex integer, day varchar(8), $cfields)" >>$M_ROOT/monitoring.log 2>&1
   fi
   dbquery "$dbfile" "INSERT INTO $dbtable (timeindex, day, $fields) values ($timeindex, '$day', $values)"
-  unset `echo $fields | tr ',' ' '`
 }
 
 check_results() {
@@ -81,10 +80,10 @@ check_results() {
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
     [ -z "$vardescr" ] && vardescr=$varname
     [ -z "$vartype" ] && vartype=real
-    thr1=`eval "echo \\$${varname}_1"`
-    thr2=`eval "echo \\$${varname}_2"`
-    thr3=`eval "echo \\$${varname}_3"`
-    val=`eval "echo \\$${varname}"`
+    thr1=`eval "echo \"\\$${varname}_1\""`
+    thr2=`eval "echo \"\\$${varname}_2\""`
+    thr3=`eval "echo \"\\$${varname}_3\""`
+    val=`eval "echo \"\\$${varname}\""`
     if [ "$vartype" == "real" ]; then
       [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
       [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
@@ -300,7 +299,6 @@ EOF
 }
 
 check_interval() {
-  # in seconds
   [ -z "$rpath" ] && rpath="$M_TEMP"
   interval=`date -d "1970/01/01 +$1" +"%s" 2>>/dev/null`
   [ -z "$interval" ] && return 1
