@@ -229,9 +229,9 @@ for cld in $CLOUD ; do
       for servername in `echo "$serverlist" | cut -d'|' -f4 | sort | uniq` ; do
         server=`echo "$serverlist" | grep "|$servername|"`
         if [ `echo "$server" | wc -l` -gt 1 ]; then
-          log "more than one server named $servername is found:"
+          echo "more than one server named $servername is found:"
           for s in `echo "$server"` ; do
-            log "$s"
+            echo "$s"
           done
         fi
         for s in `echo "$server"` ; do

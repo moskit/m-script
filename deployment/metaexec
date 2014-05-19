@@ -313,14 +313,14 @@ EOF
   exit 0
 fi
 
+source "$M_ROOT/conf/deployment.conf"
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
+
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
-
-source "$M_ROOT/conf/deployment.conf"
-source "$M_ROOT/lib/functions.sh"
-source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deployment/roles
 [ -z "$WORK_DIR" ] && WORK_DIR=/root/deploy.tmp
