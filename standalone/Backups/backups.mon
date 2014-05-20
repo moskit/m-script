@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-rcommand=${0##*/}
-rpath=${0%/*}
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$rpath/backups.conf"
@@ -30,7 +31,7 @@ for bconf in `echo $BACKUPS | tr ',' ' '` ; do
       [ -e "$M_ROOT/$bconf" ] && source "$M_ROOT/$bconf" || continue
     fi
   fi
-  [ -z "$localbackuppath" ] && localbackuppath="$M_ROOT/backups"
+  [ -z "$localbackuppath" ] && localbackuppath="$M_ROOT"
   
   searchfolder="backup.local"
   bfiles=`(cd $localbackuppath && find $searchfolder -mindepth 1 -maxdepth $MAXDEPTH -type f | cut -sd '/' -f2-)`
