@@ -78,7 +78,7 @@ if [ -n "$loginbypass" ]; then
 fi
 
 if [ -n "$rootfails" ]; then
-  echo -e "\n<***> Failed attempts to login as root:\n---------------------------------------\n"
+  echo -e "\n<**> Failed attempts to login as root:\n---------------------------------------\n"
   rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$rootfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
@@ -89,7 +89,7 @@ if [ -n "$rootfails" ]; then
 fi
 
 if [ -n "$invalidusers" ]; then
-  echo -e "\n<***> Attempts to login as non-existing user:\n---------------------------------------------\n"
+  echo -e "\n<**> Attempts to login as non-existing user:\n---------------------------------------------\n"
   invalidusers=`echo "$invalidusers" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$invalidusers" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
@@ -100,7 +100,7 @@ if [ -n "$invalidusers" ]; then
 fi
 
 if [ -n "$userfails" ]; then
-  echo -e "\n<***> Failed attempts to login as non-root user:\n------------------------------------------------\n"
+  echo -e "\n<**> Failed attempts to login as non-root user:\n------------------------------------------------\n"
   userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   echo "$userfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$userfails" | sort | uniq` ; do
