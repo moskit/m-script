@@ -225,7 +225,6 @@ M_TEMP="$M_TEMP/backups"
 export M_TEMP
 declare -i res
 
-localbackuppath="$rpath"
 install -d "$M_TEMP" 2>$stderrto
 # If config files collection is not set by option, we use all files having names
 # like backup*.conf from the conf folder
@@ -245,7 +244,7 @@ do
   backupconf="$M_ROOT/conf/$bconf"
   [ -f "$backupconf" ] || continue
   source "$backupconf"
-
+  [ -z "$localbackuppath" ] && localbackuppath="$rpath"
   if [ "$r_proto" == "ftp" ]
   then
     ftpput=`which ncftpput 2>/dev/null`
