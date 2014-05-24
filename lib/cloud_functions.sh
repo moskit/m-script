@@ -203,7 +203,9 @@ find_ip() {
 
 proper_exit() {
   log "exit at line: $2 status: $1"
-  [ -z "$IAMACHILD" ] && log "I am a parent, unlocking" && unlock_cloudops || log "I am a child, cannot unlock"
+  if [ -z "$nolock" ]; then
+    [ -z "$IAMACHILD" ] && log "I am a parent, unlocking" && unlock_cloudops || log "I am a child, cannot unlock"
+  fi
   exit $1
 }
 

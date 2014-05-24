@@ -188,8 +188,8 @@ if [ "X$roleincluded" != "X$role" ] ; then
   if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ] ; then
     store_vars "$ROLES_ROOT/$roleincluded/role.conf"
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
-    export ROLEINCL=$roleincluded
   fi
+  export ROLEINCL=$roleincluded
 fi
 # last and least, common role
 if [ -e "$ROLES_ROOT/common/role.conf" ] ; then

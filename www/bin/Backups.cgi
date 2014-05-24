@@ -12,4 +12,6 @@ source "$PWD/../../standalone/$scriptname/backups.conf"
 for bconf in `echo $BACKUPS | tr ',' ' '` ; do
   open_cluster "Backup configuration: $bconf"
   cat "$PWD/../../standalone/$scriptname/data/${bconf}.local.dat" | while read LINE ; do 
+  
+  
 done

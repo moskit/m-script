@@ -43,7 +43,7 @@ fi
 
 find "$M_TEMP"/.update -type d -name .git | xargs rm -rf
 echo "Checking directories:"
-for script in `find "$M_TEMP/.update" -type d`; do
+for script in `find "$M_TEMP/.update" -mindepth 1 -type d`; do
   sc=`echo "$script" | sed "s|$M_TEMP/.update/||"`
   echo -n "$sc ... "
   if [ ! -e "$M_ROOT/$sc" ]; then
