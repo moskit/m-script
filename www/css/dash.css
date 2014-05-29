@@ -254,11 +254,11 @@ span.indent {
 }
 
 .w1 {
-  background-color: #860;
+  background-color: #A80;
 }
 
 .w2 {
-  background-color: orange;
+  background-color: #F70;
 }
 
 .w3 {
@@ -273,14 +273,14 @@ span.indent {
 }
 
 .w1marked {
-  background-color: #860;
+  background-color: #A80;
   width: 8px !important;
   height: 16px !important;
   border: 1px solid blue;
 }
 
 .w2marked {
-  background-color: orange;
+  background-color: #F70;
   width: 8px !important;
   height: 16px !important;
   border: 1px solid blue;
@@ -324,11 +324,11 @@ span.indent {
 }
 
 .tablerow_w1 {
-  color: #860;
+  color: #A80;
 }
 
 .tablerow_w2 {
-  color: orange;
+  color: #F70;
 }
 
 .tablerow_w3 {
