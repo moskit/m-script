@@ -298,13 +298,13 @@ if [ -z "$local" ]; then
           IP=${server%%|*}
           if [ -n "$region" ] ; then
             REGION=`echo $server | cut -d'|' -f3`
-            [ "X$REGION" == "X$region" ] || continue
+            [ "_$REGION" == "_$region" ] || continue
           fi
           if [ -n "$cl" ] ; then
             CLUSTER=`echo $server | cut -d'|' -f5`
-            [ "X$CLUSTER" == "X$cl" ] || continue
+            [ "_$CLUSTER" == "_$cl" ] || continue
           fi
-          if [ "X$verbose" == "Xyes" ] ; then
+          if [ "_$verbose" == "_yes" ] ; then
             echo
             echo "### Server: $server"
             echo

@@ -22,7 +22,7 @@ rpath=${BASH_SOURCE%/*}
 #*/
 
 log() {
-  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ${0##*/}: $@">>$LOG
+  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${CLOUD}/${0##*/}: $@">>$LOG
 }
 
 find_cluster_key() {

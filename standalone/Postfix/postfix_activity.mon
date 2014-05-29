@@ -44,6 +44,15 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
   [ -z "$from" ] && continue
   to=`echo "$log" | grep "$id: to" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
   status=`echo "$log" | grep postfix/smtp | grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}' | tail -1 | cut -d' ' -f1`
+  if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+    reason=`echo "$log" | grep postfix/smtp | grep 'status=' | grep "$id: to" | awk -F'said: ' '{print $2}' | awk -F' \\(in reply' '{print $1}'`
+    if $LOG_REASONS ; then
+      echo "$to|$status|$reason" >> "$rpath/data/error_replies.log"
+    fi
+    reason="  Reason: $reason"
+  else
+    unset reason
+  fi
 
   if [ -n "$status" ]; then
     case $status in
@@ -63,7 +72,7 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
         warn='<*>'
         ;;
     esac
-    echo "$warn From: $from  To: $to  Status: $status"
+    echo "$warn From: $from  To: $to  Status: ${status}${reason}"
   fi
 
 done

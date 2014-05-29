@@ -230,7 +230,7 @@ list_servers() {
     done
   else
     echo "No data. Run without --noupdate"
-    proper_exit 0 225
+    proper_exit 0 233
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
     [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^$listip\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^$listip\|/d "$M_ROOT/servers.list"
