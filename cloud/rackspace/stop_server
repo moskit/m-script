@@ -38,7 +38,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 trap unlock_cloudops 3
 trap unlock_cloudops 15
 
-possible_options="cloud id name ip verbose force last first cluster"
+possible_options="cloud id name ip verbose force last first cluster nochecks"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -59,6 +59,10 @@ do
   fi
 done
 IFS=$IFS1
+
+if [ -n "$help" ]; then
+  echo "Possible options: $possible_options"
+fi
 
 [ -n "$cluster" ] && [ `grep -c \|$cluster\| "$M_ROOT"/servers.list` -eq 0 ] && log "No cluster $cluster in servers.list" && exit 1
 [ -z "$cluster" ] && cluster=$M_CLUSTER
@@ -191,7 +195,9 @@ try_auth() {
 
 exit_status=0 # TODO
 
-check_cluster_minimum "$cluster" || proper_exit 5 192
+if [ -z "$nochecks" ]; then
+  check_cluster_minimum "$cluster" || proper_exit 5 192
+fi
 try_auth
 reqres=`request`
 [ $reqres -gt 0 ] && log "API request returned status $reqres"

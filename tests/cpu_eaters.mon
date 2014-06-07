@@ -20,9 +20,9 @@ ps haxo pcpu,cmd | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep
   a=${LINE%% *}; a=${a#*.}
   pr=${LINE#* }
   if [[ $a -gt $CPU_EATERS_MIN ]]; then
-    [ `expr $a \>= $CPUE_USAGE_3` -eq 1 ] && echo "<***> Process \"$pr\" is using ${a}% of CPU"
-    [ `expr $a \>= $CPUE_USAGE_2` -eq 1 ] && echo "<**> Process \"$pr\" is using ${a}% of CPU"
-    [ `expr $a \>= $CPUE_USAGE_1` -eq 1 ] && echo "<*> Process \"$pr\" is using ${a}% of CPU"
+    [ `expr $a \>= $CPUE_USAGE_3` -eq 1 ] && echo "<***> Process \"$pr\" is using ${a}% of CPU" && continue
+    [ `expr $a \>= $CPUE_USAGE_2` -eq 1 ] && echo "<**> Process \"$pr\" is using ${a}% of CPU" && continue
+    [ `expr $a \>= $CPUE_USAGE_1` -eq 1 ] && echo "<*> Process \"$pr\" is using ${a}% of CPU" && continue
     [ `expr $a \<= $CPUE_USAGE_1` -eq 1 ] && echo "<OK> Process \"$pr\" is using ${a}% of CPU"
   fi
 done

@@ -24,7 +24,7 @@ rpath=${xcommand%/*}
 [ -z "$SSH" ] && SSH=`which ssh 2>/dev/null`
 
 [ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+[ -n "$IFCFG" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
 
 source "$rpath/conf/mon.conf"
 source "$rpath/lib/functions.sh"
@@ -32,7 +32,7 @@ source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 
 LOG="$rpath/logs/dashboard.log"
-[ -n "$debug" ] && debug=false || debug=true
+[ -n "$debug" ] && debug=true || debug=false
 timeindexnow=`date +"%s"`
 
 monitor="$1"

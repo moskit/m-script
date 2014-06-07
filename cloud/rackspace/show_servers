@@ -155,7 +155,7 @@ list_servers() {
             ;;
         esac
       done
-      if [ "X$NETWORK" == "Xexternal" ] ; then
+      if [ "_$NETWORK" == "_external" ] ; then
         IP=$extIP
       else
         IP=$intIP
