@@ -332,7 +332,7 @@ case $1 in
     newtimeindex
     runscript SQL
     mailalert
-    [ -n "$DASHBOARD" ] && gendash servers "$M_ROOT/report" marked
+    gendash servers "$M_ROOT/report" marked
     runactions
     deltimeindex
     cleanup
@@ -369,7 +369,7 @@ case $1 in
     runscript SQL
     mailreport
     mailalert
-    [ -n "$DASHBOARD" ] && genreport servers "$M_ROOT/report"
+    genreport servers "$M_ROOT/report"
     deltimeindex
     cleanup
   ;;
@@ -378,7 +378,7 @@ case $1 in
     runscript "$1" $SQL
     timeshift
     mailalert
-    [ -n "$DASHBOARD" ] && gendash servers "$M_ROOT/report"
+    gendash servers "$M_ROOT/report"
     runactions
     deltimeindex
     cleanup

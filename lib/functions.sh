@@ -105,6 +105,7 @@ check_results() {
 }
     
 gendash() {
+  [ -z "$DASHBOARD" ] && return
   local name
   local LOG="$M_ROOT/logs/dashboard.log"
   if [ -n "$1" ]; then
@@ -139,6 +140,7 @@ gendash() {
 }
 
 genreport() {
+  [ -z "$DASHBOARD" ] && return
   local name
   if [ -n "$1" ]; then
     name="$1"
@@ -183,7 +185,7 @@ find_delta() {
   arrcurr=( $(IFS=','; for f in $1; do echo "`eval "echo \\$${f%%|*}"`|${f#*|} "; done) )
   [ ${#arrcurr[*]} -ne ${#arrprev[*]} ] && return
   for ((i=0; i<${#arrcurr[*]}; i++)); do
-    if [ "X${arrcurr[$i]#*|}" == "Xinteger" ]; then
+    if [ "_${arrcurr[$i]#*|}" == "_integer" ]; then
       arrval+=( `expr ${arrcurr[$i]%%|*} - ${arrprev[$i]} 2>/dev/null || echo 0` )
     else
       # TODO: bc silently defaults non-numeric arguments to 0
@@ -210,7 +212,7 @@ unblock_alert() {
 alert_blocked() {
   if [ -f "$M_ROOT/${1}.lock" ] ; then
     cyclesleft=`cat "$M_ROOT/${1}.lock"`
-    if [ "X$cyclesleft" == "X0" ]; then
+    if [ "_$cyclesleft" == "_0" ]; then
       unblock_alert && return 1
     else
       cyclesleft=`expr $cyclesleft - 1 || echo 0`
@@ -241,7 +243,7 @@ action_blocked() {
     if [ `echo "$cyclesleft" | wc -l` -gt 1 ];then
       cyclesleft=`echo "$cyclesleft" | sort -n | tail -1`
     fi
-    if [ "X$cyclesleft" == "X0" ]; then
+    if [ "_$cyclesleft" == "_0" ]; then
       unblock_action "$@" && log "unblocking action ${@} due to 0 cycles left" && return 1 || log "error unblocking action ${@} which had 0 cycles left"
     else
       cyclesleft=`expr $cyclesleft - 1 2>/dev/null` || cyclesleft=0
