@@ -82,6 +82,8 @@ else
   log "changes found in servers.list, so it is backuped to $M_TEMP"
 fi
 
+declare -a catline
+
 for cloud in ${clouds[*]} ; do
   log "cloud $cloud"
   export CLOUD=$cloud
@@ -143,10 +145,10 @@ for cloud in ${clouds[*]} ; do
     test_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"
     test_cluster_minimum "$cl" || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
   done
-  catline="$catline \"$M_ROOT/cloud/servers.list.${cloud}\""
+  catline+=("$M_ROOT/cloud/servers.list.${cld}")
 done
 
-cat $catline > "$M_ROOT/servers.list"
+cat ${catline[*]} > "$M_ROOT/servers.list"
 
 # By now the diff of current and backuped servers.list files contains
 # non-cloud servers (including those not yet reported by API)
