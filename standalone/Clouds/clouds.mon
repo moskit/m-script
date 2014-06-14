@@ -87,6 +87,7 @@ declare -a catline
 for cloud in ${clouds[*]} ; do
   log "cloud $cloud"
   export CLOUD=$cloud
+  catline+=("$M_ROOT/cloud/servers.list.${cloud}")
   source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   source "$M_ROOT/lib/cloud_functions.sh"
   [ -z "$API_CALLS_FREQ" ] && API_CALLS_FREQ=1
@@ -145,7 +146,7 @@ for cloud in ${clouds[*]} ; do
     test_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"
     test_cluster_minimum "$cl" || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
   done
-  catline+=("$M_ROOT/cloud/servers.list.${cloud}")
+  
 done
 
 log "concatenating cloud lists: ${catline[*]}"
