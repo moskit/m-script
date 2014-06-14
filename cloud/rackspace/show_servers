@@ -120,6 +120,7 @@ list_servers() {
   IFS='
 '
   if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
+    declare -a serverlist
     for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
       for LINE in `grep "/\"servers\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
@@ -215,7 +216,7 @@ list_servers() {
       else
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
-            declare -a serverlist
+            
             key=`grep ^$icluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
             for ip in $IP ; do
               ip=`echo $ip | tr -d ' '`
@@ -223,13 +224,14 @@ list_servers() {
               serverlist+=("$ip|$key|$region|$name|$icluster|$CLOUD")
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
-            log "saving generated list (${#serverlist[*]} servers)"
-            for ((i=0; i<${#serverlist[*]}; i++)); do echo "${serverlist[$i]}"; done > "$M_ROOT/cloud/servers.list.${CLOUD}"
+            
           fi
         fi
       fi
       
     done
+    log "saving generated list (${#serverlist[*]} servers)"
+    for ((i=0; i<${#serverlist[*]}; i++)); do echo "${serverlist[$i]}"; done > "$M_ROOT/cloud/servers.list.${CLOUD}"
   else
     echo "No data. Run without --noupdate"
     proper_exit 0 233
