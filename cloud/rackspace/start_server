@@ -36,11 +36,12 @@ for s_option in $ARGV
 do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
   done
-   if [[ $found -ne 1 ]]; then 
+   if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
@@ -142,15 +143,15 @@ printreturn() {
 }
 
 log "Checking cluster $cluster limit..."
-check_cluster_limit "$cluster" || proper_exit 5 152
+check_cluster_limit "$cluster" || proper_exit 5 146
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 154
+[ -z "$name" ] && proper_exit 6 148
 log "Double-checking name"
-find_server --name="$name" --updatelist >/dev/null 2>&1 && log "Server with name $name already exists!" && exit 6
+find_server --name="$name" --updatelist >/dev/null 2>&1 && log "Server with name $name already exists!" && proper_exit 6 150
 find_image
-[ -z "$imageid" ] && proper_exit 7 156
+[ -z "$imageid" ] && proper_exit 7 152
 find_flavor
-[ -z "$flavorid" ] && proper_exit 8 158
+[ -z "$flavorid" ] && proper_exit 8 154
 thekey=`cat "$rpath/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
 [ -f "$rpath/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
 [ -f "$rpath/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
@@ -159,7 +160,7 @@ PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_rsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $rpath/../../keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 167
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $rpath/../../keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 163
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
 cat "$rpath/create_server.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$M_TEMP/${rcommand}.req"
 
@@ -170,7 +171,7 @@ try_auth() {
   local -i i
   i=0
   while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 188
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 174
     "$M_ROOT/cloud/$CLOUD_PROVIDER"/auth
     i+=1
     sleep 10

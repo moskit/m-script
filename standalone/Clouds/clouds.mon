@@ -79,7 +79,7 @@ if [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ]; then
   log "no changes in servers.list"
 else
   cp "$M_ROOT/servers.list" "$M_TEMP/servers.list"
-  log "changes found in servers.list"
+  log "changes found in servers.list, so it is backuped to $M_TEMP"
 fi
 
 for cloud in ${clouds[*]} ; do
@@ -93,7 +93,7 @@ for cloud in ${clouds[*]} ; do
     if [[ $cyclescount -ge $API_CALLS_FREQ ]]; then
       echo 0 > "$rpath/${cloud}.cycles.count"
       log "updating servers.list"
-      "$M_ROOT/cloud/common"/update_servers_list --cloud=$cloud
+      "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cloud --update_servers_list
       res=$?
       [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
       [ $res -eq 0 ] && log "list updated successfully"
@@ -104,7 +104,7 @@ for cloud in ${clouds[*]} ; do
     fi
   else
     log "updating servers.list"
-    "$M_ROOT/cloud/common"/update_servers_list --cloud=$cloud
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cloud --update_servers_list
     res=$?
     [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
     [ $res -eq 0 ] && log "list updated successfully"
@@ -143,11 +143,14 @@ for cloud in ${clouds[*]} ; do
     test_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"
     test_cluster_minimum "$cl" || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
   done
+  catline="$catline \"$M_ROOT/cloud/servers.list.${cloud}\""
 done
+
+cat $catline > "$M_ROOT/servers.list"
 
 # By now the diff of current and backuped servers.list files contains
 # non-cloud servers (including those not yet reported by API)
-noncloud=`$DIFF "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1 | grep '^>' | sed 's|^> ||'`
+noncloud=`$DIFF "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1 | grep '^>' | sed 's|^> ||' | grep -vE '^#|[[:space:]]*#'`
 if [ -n "$noncloud" ]; then
   cloud="noncloud"
   log "non-cloud or new servers found, generating the list"
@@ -159,7 +162,7 @@ if [ -n "$noncloud" ]; then
     ncip=`echo $LINE | cut -d'|' -f1`
     ncname=`echo $LINE | cut -d'|' -f4`
     nccluster=`echo $LINE | cut -d'|' -f5`
-    [ "X$NETWORK" == "Xexternal" ] && echo "|$ncname||$ncip||$nccluster||" >> "$M_TEMP/$cloud/full.servers.list" || echo "|$ncname|||$ncip|$nccluster||" >> "$M_TEMP/$cloud/full.servers.list"
+    [ "_$NETWORK" == "_external" ] && echo "|$ncname||$ncip||$nccluster||" >> "$M_TEMP/$cloud/full.servers.list" || echo "|$ncname|||$ncip|$nccluster||" >> "$M_TEMP/$cloud/full.servers.list"
   done
   log "list generated"
   IFS=$IFS1

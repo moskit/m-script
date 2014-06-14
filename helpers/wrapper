@@ -61,7 +61,7 @@ do
   for option in `echo $possible_options | sed 's/ /-/g'`; do 
     [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
+  [ "_$s_option" == "_$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
@@ -69,7 +69,7 @@ do
 done
 IFS=$IFS1
 
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   echo "Usage: ${0##*/} <options> start|stop|restart|status"
   echo 
   echo "Options: $possible_options"
@@ -119,12 +119,12 @@ case $s_param in
       echo "No configuration file" >>"$logfile"
     fi
     [ -n "$chdir" ] && cd "$chdir"
-    if [ -n "$user" -a "$UID" == "0" ] ; then
+    if [ -n "$user" ] && [ "$UID" == "0" ] ; then
       su $user -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null" &
       succ=$?
       pid=$!
       echo $pid > "$pidfile"
-    elif [ -n "$group" -a "$UID" == "0" ] ; then
+    elif [ -n "$group" ] && [ "$UID" == "0" ] ; then
       sg $group -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null" &
       succ=$?
       pid=$!

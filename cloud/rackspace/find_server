@@ -33,11 +33,12 @@ for s_option in $ARGV
 do
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
   done
-   if [[ $found -ne 1 ]]; then 
+   if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi

@@ -40,13 +40,13 @@ IFS='|'
 for s_option in $ARGV
 do
   s_optname=${s_option%%=*}
-  s_optname=`echo $s_optname | tr -d '-'`
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
   done
-   if [[ $found -ne 1 ]]; then 
+   if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
@@ -92,6 +92,7 @@ request() {
   URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
   TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
   URL=`eval "echo $URL"` ; TOKEN=`eval "echo $TOKEN"`
+  log "calling API"
   $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   if [ -n "`find "$M_TEMP" -mtime -2 -name flavors.resp`" ]; then
     if grep -q \"code\"\|401$ "$M_TEMP/flavors.resp" ; then
@@ -161,7 +162,7 @@ list_servers() {
         IP=$intIP
       fi
       for ip in $IP ; do
-        ip=${ip#* } ; ip=${ip% *}
+        ip=`echo $ip | tr -d ' '`
         if [ -z "$icluster" ] ; then
           # servers having no cluster in metadata but added manually to servers.list
           icluster=`grep ^$ip\| "$M_ROOT/servers.list" | cut -d'|' -f5`
@@ -171,7 +172,7 @@ list_servers() {
           # no icluster means that server will not be shown, but only if there
           # is no option --all. With this option, however, we want to see all
           # clusters assigned via metadata
-          [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
+          [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
           $debug && [ -n "$update_servers_list" ] && unset ecf
         fi
       done
@@ -180,12 +181,12 @@ list_servers() {
         # projects (cluster groups) in the same cloud.
         # Note that if you use same names for clusters in different cluster
         # groups, you'll get them mixed here.
-        if [ -n "$icluster" -o -n "$all" ] ; then
-          [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
+        if [ -n "$icluster" ] || [ -n "$all" ] ; then
+          [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
           
-          [ "X$status" != "X$istatus" ] && [ "X$status" != "Xall" ] && continue
-          extIP=${extIP#* } ; extIP=${extIP% *}
-          intIP=${intIP#* } ; intIP=${intIP% *}
+          [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
+          extIP=`echo $extIP | tr -d ' '`
+          intIP=`echo $intIP | tr -d ' '`
           check_super_cluster $extIP "$icluster" && continue
           check_super_cluster $intIP "$icluster" && continue
           case $view in
@@ -214,15 +215,16 @@ list_servers() {
       else
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
-            
+            declare -a serverlist
             key=`grep ^$icluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
             for ip in $IP ; do
-              ip=${ip#* } ; ip=${ip% *}
-              sed -i /^$ip\|/d "$M_ROOT/servers.list"
+              ip=`echo $ip | tr -d ' '`
               check_super_cluster $ip "$icluster" && continue
-              echo "$ip|$key|$region|$name|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
+              serverlist+=("$ip|$key|$region|$name|$icluster|$CLOUD")
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
+            log "saving generated list (${#serverlist[*]} servers)"
+            for ((i=0; i<${#serverlist[*]}; i++)); do echo "${serverlist[$i]}"; done > "$M_ROOT/cloud/servers.list.${CLOUD}"
           fi
         fi
       fi
@@ -232,9 +234,6 @@ list_servers() {
     echo "No data. Run without --noupdate"
     proper_exit 0 233
   fi
-  for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^$listip\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^$listip\|/d "$M_ROOT/servers.list"
-  done
   IFS=$IFS1
 }
 
