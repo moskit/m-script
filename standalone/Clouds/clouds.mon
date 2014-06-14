@@ -145,10 +145,11 @@ for cloud in ${clouds[*]} ; do
     test_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"
     test_cluster_minimum "$cl" || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
   done
-  catline+=("$M_ROOT/cloud/servers.list.${cld}")
+  catline+=("$M_ROOT/cloud/servers.list.${cloud}")
 done
 
-cat ${catline[*]} > "$M_ROOT/servers.list"
+log "concatenating cloud lists: ${catline[*]}"
+[ -n "${catline[*]}" ] && cat ${catline[*]} > "$M_ROOT/servers.list" 2>/dev/null
 
 # By now the diff of current and backuped servers.list files contains
 # non-cloud servers (including those not yet reported by API)
