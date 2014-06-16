@@ -230,15 +230,17 @@ list_servers() {
       fi
       
     done
-    if [ ${#serverlist[*]} -eq 0 ]; then
-      log "ERROR: generated list is empty, not saving it"
-    else
-      log "saving generated list (${#serverlist[*]} servers)"
-      for ((i=0; i<${#serverlist[*]}; i++)); do echo "${serverlist[$i]}"; done > "$M_ROOT/cloud/servers.list.${CLOUD}"
+    if [ -z "$noupdate" ]; then
+      if [ ${#serverlist[*]} -eq 0 ]; then
+        log "ERROR: generated list is empty, not saving it"
+      else
+        log "saving generated list (${#serverlist[*]} servers)"
+        for ((i=0; i<${#serverlist[*]}; i++)); do echo "${serverlist[$i]}"; done > "$M_ROOT/cloud/servers.list.${CLOUD}"
+      fi
     fi
   else
-    echo "No data. Run without --noupdate"
-    proper_exit 0 233
+    echo "No local data found. Run without --noupdate"
+    proper_exit 1 233
   fi
   IFS=$IFS1
 }

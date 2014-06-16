@@ -138,6 +138,9 @@ case $s_param in
 
     if [[ $succ -eq 0 ]] && [ -n "$pid" ]; then
       [ -d /proc/$pid ] && echo "done (PID `cat "$pidfile"|grep -v ^$|tail -1`)" || echo "error" | tee -a "$logfile"
+    else
+      [ -d /proc/$pid ] && echo "started (PID `cat "$pidfile"|grep -v ^$|tail -1`) w
+ith non-zero exit status" || echo "error: not started"
     fi
 
     [ -n "$cdback" ] && cd "$cdback"
