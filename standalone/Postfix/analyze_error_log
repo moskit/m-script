@@ -15,13 +15,21 @@ if [ -e "$rpath/data/error.log" ]; then
     errnum=${sn##*|}
     pattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep -v '|%.*%$' | cut -d'|' -f3 | tr '\n' '|'`
     pattern=${pattern%|}
-    exclpattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|'`
+    exclpattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|' | tr -d '%'`
     exclpattern=${exclpattern%|}
     if [ -n "$pattern" ]; then
       if [ -n "$exclpattern" ]; then
-        match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+        if [ -n "$errnum" ]; then
+          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+        else
+          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+        fi
       else
-        match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+        if [ -n "$errnum" ]; then
+          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+        else
+          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+        fi
       fi
     fi
     matched=`echo "$match" | wc -l`
