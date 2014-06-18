@@ -1,0 +1,31 @@
+#!/bin/bash
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+source "$rpath/../../lib/functions.sh"
+source "$rpath/postfix.conf"
+
+[ -z "$1" ] && day=`date -d "-1 day" +"%Y%m%d"` || day="$1"
+
+if [ -e "$rpath/data/error.log" ]; then
+  for sn in `cat "$rpath/error_patterns.conf" | grep -vE "^$|^#|^[[:space:]]#" | cut -sd'|' -f1,2 | sort | uniq` ; do
+    status=${sn%%|*}
+    errnum=${sn##*|}
+    pattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep -v '|%.*%$' | tr '\n' '|'`
+    exclpattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep '|%.*%$' | tr '\n' '|'`
+    match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1 | sort | uniq`
+    matched=`echo "$match" | wc -l`
+    if [ $matched -gt 0 ]; then
+      echo "$match" >> "$rpath/data/${status}.${errnum}.log"
+      echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
+    else
+      echo "<OK> No pattern match for status ${status}, error number ${errnum}"
+    fi
+  done
+  rm "$rpath/data/error.log"
+else
+  echo "<OK> Error log is empty"
+fi
+

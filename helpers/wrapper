@@ -197,7 +197,7 @@ ith non-zero exit status" || echo "error: not started"
   status)
     [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
     [ -e "$pidfile" ] || pidfile="$rpath/${rcommand##*/}.pid"
-    if [ -f "$pidfile" ]; then
+    if [ -e "$pidfile" ]; then
       pid=`cat "$pidfile"|grep -v ^$|tail -1`
       if [ -n "$pid" ] ; then
         [ -d "/proc/$pid" ] && echo "${0##*/} is running (pid $pid)" || echo "pidfile exists, but process $pid is not running"
@@ -209,6 +209,6 @@ ith non-zero exit status" || echo "error: not started"
     fi
     ;;
   *)
-    ${0} --help && exit 0
+    $0 --help && exit 0
     ;;
 esac

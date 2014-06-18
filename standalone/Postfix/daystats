@@ -1,0 +1,31 @@
+#!/bin/bash
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+LOG_ERRORS=false
+ANALYZE_ERRORS=false
+
+source "$rpath/../../lib/functions.sh"
+source "$rpath/postfix.conf"
+
+[ -z "$1" ] && day=`date -d "-1 day" +"%Y%m%d"` || day="$1"
+
+sent=`dbquery "$rpath/postfix_activity.db" "select sum(sent) from postfix_activity where day='$day'"`
+bounced=`dbquery "$rpath/postfix_activity.db" "select sum(bounced) from postfix_activity where day='$day'"`
+deferred=`dbquery "$rpath/postfix_activity.db" "select sum(deferred) from postfix_activity where day='$day'"`
+
+echo -e "Stats for `date -d "-1 day"`\n---------------------------------------\n\nSent successfully:  $sent\nBounced:  $bounced\nDeferred:  $deferred\n"
+
+echo -e "Current queues state:\n"
+cat "$rpath/postfix_queue.mon.report"
+
+echo -e "Messages in 'deferred' queue:\nOlder than `expr $AGE1 / 3600 2>/dev/null` hours:  `dbquery "$rpath/postfix_deferred.db" "select q1 from postfix_deferred where day='$day' order by timeindex desc limit 1"`\nOlder than `expr $AGE2 / 3600 2>/dev/null` hours:  `dbquery "$rpath/postfix_deferred.db" "select q2 from postfix_deferred where day='$day' order by timeindex desc limit 1"`\nOlder than `expr $AGE3 / 3600 2>/dev/null` hours:  `dbquery "$rpath/postfix_deferred.db" "select q3 from postfix_deferred where day='$day' order by timeindex desc limit 1"`\n"
+
+if $LOG_ERRORS ; then
+  if $ANALYZE_ERRORS ; then
+    "$rpath"/analyze_error_log "$day"
+  fi
+fi
+
