@@ -33,6 +33,7 @@ if [ -e "$rpath/data/error.log" ]; then
       fi
     fi
     matched=`echo -n "$match" | wc -l`
+    [ -z "$errnum" ] && errnum="empty"
     if [ $matched -gt 0 ]; then
       echo "$match" >> "$rpath/data/$logname"
       echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"

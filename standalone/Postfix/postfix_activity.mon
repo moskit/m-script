@@ -81,6 +81,7 @@ done
 store_results "deferred|integer,bounced|integer,sent|integer"
 
 if $LOG_ERRORS && $ANALYZE_ERRORS ; then
+  echo "--------------------------------------------------------"
   "$rpath"/analyze_error_log
 fi
 
