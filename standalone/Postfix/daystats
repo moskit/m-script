@@ -16,7 +16,7 @@ sent=`dbquery "$rpath/postfix_activity.db" "select sum(sent) from postfix_activi
 bounced=`dbquery "$rpath/postfix_activity.db" "select sum(bounced) from postfix_activity where day='$day'"`
 deferred=`dbquery "$rpath/postfix_activity.db" "select sum(deferred) from postfix_activity where day='$day'"`
 
-echo -e "Stats for `date -d "-1 day"`\n---------------------------------------\n\nSent successfully:  $sent\nBounced:  $bounced\nDeferred:  $deferred\n"
+echo -e "Postfix mail server stats for `date -d "-1 day"`\n-----------------------------------------------------------\n\nSent successfully:  $sent\nBounced:  $bounced\nDeferred:  $deferred\n"
 
 echo -e "Current queues state:\n"
 cat "$rpath/postfix_queue.mon.report"
