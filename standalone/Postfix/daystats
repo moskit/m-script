@@ -23,9 +23,4 @@ cat "$rpath/postfix_queue.mon.report"
 
 echo -e "Messages in 'deferred' queue:\nOlder than `expr $AGE1 / 3600 2>/dev/null` hours:  `dbquery "$rpath/postfix_deferred.db" "select q1 from postfix_deferred where day='$day' order by timeindex desc limit 1"`\nOlder than `expr $AGE2 / 3600 2>/dev/null` hours:  `dbquery "$rpath/postfix_deferred.db" "select q2 from postfix_deferred where day='$day' order by timeindex desc limit 1"`\nOlder than `expr $AGE3 / 3600 2>/dev/null` hours:  `dbquery "$rpath/postfix_deferred.db" "select q3 from postfix_deferred where day='$day' order by timeindex desc limit 1"`\n"
 
-if $LOG_ERRORS ; then
-  if $ANALYZE_ERRORS ; then
-    "$rpath"/analyze_error_log "$day"
-  fi
-fi
 
