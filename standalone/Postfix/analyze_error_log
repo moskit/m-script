@@ -5,9 +5,8 @@ rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$rpath/../../lib/functions.sh"
+KEEP_LOG=false
 source "$rpath/postfix.conf"
-
-[ -z "$1" ] && day=`date -d "-1 day" +"%Y%m%d"` || day="$1"
 
 if [ -e "$rpath/data/error.log" ]; then
   for sn in `cat "$rpath/error_patterns.conf" | grep -vE "^$|^#|^[[:space:]]#" | cut -sd'|' -f1,2 | sort | uniq` ; do
@@ -32,7 +31,7 @@ if [ -e "$rpath/data/error.log" ]; then
         fi
       fi
     fi
-    matched=`echo "$match" | wc -l`
+    matched=`echo -n "$match" | wc -l`
     if [ $matched -gt 0 ]; then
       echo "$match" >> "$rpath/data/${status}.${errnum}.log"
       echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
@@ -40,7 +39,7 @@ if [ -e "$rpath/data/error.log" ]; then
       echo "<OK> No pattern match for status ${status}, error number ${errnum}"
     fi
   done
-  rm "$rpath/data/error.log"
+  $KEEP_LOG && cat "$rpath/data/error.log" 2>/dev/null >> "$rpath/data/error.log.save" || rm "$rpath/data/error.log"
 else
   echo "<OK> Error log is empty"
 fi

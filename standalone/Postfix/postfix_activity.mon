@@ -73,11 +73,17 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
         warn='<*>'
         ;;
     esac
-    echo "$warn From: $from  To: $to  Status: ${status}"
+    echo "$warn From: $from  To: $to  Status: $status"
   fi
 
 done
 
 store_results "deferred|integer,bounced|integer,sent|integer"
+
+if $LOG_ERRORS && $ANALYZE_ERRORS ; then
+  "$rpath"/analyze_error_log
+fi
+
+exit 0
 
 
