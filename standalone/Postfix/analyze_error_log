@@ -16,6 +16,7 @@ if [ -e "$rpath/data/error.log" ]; then
     pattern=${pattern%|}
     exclpattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|' | tr -d '%'`
     exclpattern=${exclpattern%|}
+    logname=`echo "${status}.${errnum}.${pattern}.-${exclpattern}.log" | tr '|' '_' | tr -d '/' '_'`
     if [ -n "$pattern" ]; then
       if [ -n "$exclpattern" ]; then
         if [ -n "$errnum" ]; then
@@ -33,13 +34,14 @@ if [ -e "$rpath/data/error.log" ]; then
     fi
     matched=`echo -n "$match" | wc -l`
     if [ $matched -gt 0 ]; then
-      echo "$match" >> "$rpath/data/${status}.${errnum}.log"
+      echo "$match" >> "$rpath/data/$logname"
       echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
     else
       echo "<OK> No pattern match for status ${status}, error number ${errnum}"
     fi
   done
-  $KEEP_LOG && cat "$rpath/data/error.log" 2>/dev/null >> "$rpath/data/error.log.save" || rm "$rpath/data/error.log"
+  $KEEP_LOG && cat "$rpath/data/error.log" 2>/dev/null >> "$rpath/data/error.log.save"
+  rm "$rpath/data/error.log"
 else
   echo "<OK> Error log is empty"
 fi
