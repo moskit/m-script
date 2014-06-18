@@ -171,6 +171,11 @@ cat -E $1 | while read LINE ; do
         format ${data[2]} tablerow_${datastyle[2]}
         cursor=0
         ;;
+      "dashline info")
+        format ${data[1]} ${datastyle[1]}
+        format ${data[2]} ${datastyle[2]}
+        cursor=0
+        ;;
     esac
   fi
   if [ $cursor -eq 1 ] ; then
