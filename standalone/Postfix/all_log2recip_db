@@ -1,0 +1,39 @@
+#!/bin/bash
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+source "$rpath/../../lib/functions.sh"
+source "$rpath/postfix.conf"
+
+[ -z "$1" ] && log="$rpath/data/all.log" || log="$1"
+
+while read LINE ; do
+  to=`echo "$LINE" | cut -sd'|' -f1`
+  [ -z "$to" ] && continue
+  status=`echo "$LINE" | cut -sd'|' -f2`
+  [ -z "$status" ] && continue
+  info=`echo "$LINE" | cut -sd'|' -f3`
+  reason=`expr "$info" : "[a-z]*\ (\(.*\))$"`
+  counter=`dbquery "$rpath/data/recipients.db" "SELECT counter FROM recipients WHERE email='$to'"`
+  if [ -z "$counter" ]; then
+    if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+      counter=1
+    else
+      counter=0
+    fi
+    dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (email, status, counter, reason) VALUES ('$to', '$status', '$counter', '$reason')"
+  else
+    if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+      counter=`expr $counter + 1 2>/dev/null`
+    else
+      counter=0
+    fi
+      dbquery "$rpath/data/recipients.db" "UPDATE recipients (email, status, counter, reason) SET status='$status', counter='$counter', reason='$reason' WHERE email='$to'"
+  fi
+
+done < "$log"
+

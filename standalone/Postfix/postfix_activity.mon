@@ -19,7 +19,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
-
+RECIPIENT_STATS=false
 LOG_ERRORS=false
 source "$rpath/../../lib/functions.sh"
 source "$rpath/postfix.conf"
@@ -46,8 +46,27 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
   to=`echo "$log" | grep "$id: to" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
   info=`echo "$log" | grep postfix/smtp | grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}' | tail -1`
   status=`echo "$info" | cut -d' ' -f1`
-  if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+  if $RECIPIENT_STATS ; then
     reason=`expr "$info" : "[a-z]*\ (\(.*\))$"`
+    counter=`dbquery "$rpath/data/recipients.db" "SELECT counter FROM recipients WHERE email='$to'"`
+    if [ -z "$counter" ]; then
+      if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+        counter=1
+      else
+        counter=0
+      fi
+      dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (email, status, counter, reason) VALUES ('$to', '$status', '$counter', '$reason')"
+    else
+      if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+        counter=`expr $counter + 1 2>/dev/null`
+      else
+        counter=0
+      fi
+        dbquery "$rpath/data/recipients.db" "UPDATE recipients (email, status, counter, reason) SET status='$status', counter='$counter', reason='$reason' WHERE email='$to'"
+    fi
+  fi
+  if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
+    [ -z "$reason" ] && reason=`expr "$info" : "[a-z]*\ (\(.*\))$"`
     if $LOG_ERRORS ; then
       echo "$to|$status|$reason" >> "$rpath/data/error.log"
     fi
