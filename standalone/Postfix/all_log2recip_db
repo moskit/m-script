@@ -32,7 +32,7 @@ while read LINE ; do
     else
       counter=0
     fi
-      dbquery "$rpath/data/recipients.db" "UPDATE recipients (email, status, counter, reason) SET status='$status', counter='$counter', reason='$reason' WHERE email='$to'"
+      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET status='$status', counter='$counter', reason='$reason' WHERE email='$to'"
   fi
 
 done < "$log"
