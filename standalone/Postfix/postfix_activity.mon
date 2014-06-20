@@ -47,7 +47,7 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
   info=`echo "$log" | grep postfix/smtp | grep 'status=' | grep "$id: to" | awk -F'status=' '{print $2}' | tail -1`
   status=`echo "$info" | cut -d' ' -f1`
   if $RECIPIENT_STATS ; then
-    reason=`expr "$info" : "[a-z]*\ (\(.*\))$"`
+    reason=`expr "$info" : "[a-z]*\ (\(.*\))$" | sed "s|'|''|g"`
     counter=`dbquery "$rpath/data/recipients.db" "SELECT counter FROM recipients WHERE email='$to'"`
     if [ -z "$counter" ]; then
       if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
@@ -66,7 +66,7 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
     fi
   fi
   if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
-    [ -z "$reason" ] && reason=`expr "$info" : "[a-z]*\ (\(.*\))$"`
+    [ -z "$reason" ] && reason=`expr "$info" : "[a-z]*\ (\(.*\))$" | sed "s|'|''|g"`
     if $LOG_ERRORS ; then
       echo "$to|$status|$reason" >> "$rpath/data/error.log"
     fi
