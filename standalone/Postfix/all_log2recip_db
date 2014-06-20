@@ -33,6 +33,6 @@ while read LINE ; do
     fi
       dbquery "$rpath/data/recipients.db" "UPDATE recipients SET status='$status', counter='$counter', reason='$info' WHERE email='$to'"
   fi
-
+  unset info
 done < "$log"
 
