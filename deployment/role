@@ -154,7 +154,7 @@ else
   [ "_$command1" != "_create" ] && [ "_$command1" != "_clone" ]  && echo "Role is not defined" && exit 1
 fi
 
-if [ "X$command1" == "Xclone" ]; then 
+if [ "_$command1" == "_clone" ]; then 
   [ -z "$method" ] && echo -e "Using default method: copy\n    (other available methods are: symlink, copywithlinks - see 'role --help' for details)" && method="copy"
   case $method in
     copy|cp)
@@ -218,7 +218,9 @@ case $command1 in
         printcol "Script"
         printcol "Meta"
         echo "Role"
-        for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l`; do
+        [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` )
+        allscripts+=( `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l` )
+        for sc in ${allscripts[*]} ; do
           scr="${sc/$ROLES_ROOT\//}" && scr="${scr/$param1\//}"
           for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
             [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
@@ -266,10 +268,14 @@ case $command1 in
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "File"
         echo "Script"
-        for fl in `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` `find "$ROLES_ROOT/$param1/common/files/" -maxdepth 1 -type f -o -type l` ; do
-          for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
-            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
-          done
+        [ -n "$flavor" ] && allfiles=( `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` )
+        allfiles+=( `find "$ROLES_ROOT/$param1/common/files/" -maxdepth 1 -type f -o -type l` )
+        for fl in ${allfiles[*]} ; do
+          if [ -n "$flavor" ]; then
+            for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
+              [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
+            done
+          fi
           for sc in `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l` ; do
             [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci common/${sc##*/}"
           done
