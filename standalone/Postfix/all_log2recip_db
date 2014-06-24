@@ -17,6 +17,7 @@ while read LINE ; do
   status=`echo "$LINE" | cut -sd'|' -f2`
   [ -z "$status" ] && continue
   info=`echo "$LINE" | cut -sd'|' -f3 | sed "s|'|''|g"`
+  sdate=`echo "$LINE" | cut -sd'|' -f4`
   counter=`dbquery "$rpath/data/recipients.db" "SELECT counter FROM recipients WHERE email='$to'"`
   if [ -z "$counter" ]; then
     if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
@@ -24,15 +25,15 @@ while read LINE ; do
     else
       counter=0
     fi
-    dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (email, status, counter, reason) VALUES ('$to', '$status', '$counter', '$info')"
+    dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (date, email, status, counter, reason) VALUES ('$sdate', '$to', '$status', '$counter', '$info')"
   else
     if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
       counter=`expr $counter + 1 2>/dev/null`
     else
       counter=0
     fi
-      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET status='$status', counter='$counter', reason='$info' WHERE email='$to'"
+      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET date='$sdate', status='$status', counter='$counter', reason='$info' WHERE email='$to'"
   fi
-  unset info
+  unset info sdate
 done < "$log"
 
