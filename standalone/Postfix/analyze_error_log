@@ -50,7 +50,8 @@ if [ -e "$rpath/data/error.log" ]; then
             to=`echo "$line" | cut -sd'|' -f1`
             sdate=`echo "$line" | cut -sd'|' -f4`
             [ -z "$sdate" ] && sdate=$now
-          dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$sdate', custom='$rule' WHERE email='$to'"
+            dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$sdate', custom='$rule' WHERE email='$to'"
+          done
         fi
       else
         echo "<OK> No pattern match for rule '$rule'"
