@@ -64,7 +64,7 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
       else
         counter=0
       fi
-      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET date='$sdate', status='$status', counter='$counter', reason='$reason' WHERE email='$to'"
+      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET date='$sdate', status='$status', counter='$counter', reason='$reason', custom='' WHERE email='$to'"
     fi
   fi
   if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then

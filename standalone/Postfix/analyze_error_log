@@ -44,7 +44,7 @@ if [ -e "$rpath/data/error.log" ]; then
       matched=`echo -n "$match" | wc -l`
       if [ $matched -gt 0 ]; then
         echo "$match" >> "$rpath/data/${rule}.log"
-        echo "<**> Pattern match for rule '$rule':  $matched times"
+        echo "<**> Pattern match for rule '$rule', error number '$errnum', status '$status':  $matched times"
         if $RECIPIENT_STATS ; then
           for line in `echo "$match"`; do
             to=`echo "$line" | cut -sd'|' -f1`
@@ -54,7 +54,7 @@ if [ -e "$rpath/data/error.log" ]; then
           done
         fi
       else
-        echo "<OK> No pattern match for rule '$rule'"
+        echo "<OK> No pattern match for rule '$rule', error number '$errnum', status '$status'"
       fi
       
     done
