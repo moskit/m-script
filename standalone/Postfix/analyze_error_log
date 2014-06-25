@@ -18,36 +18,40 @@ if [ -e "$rpath/data/error.log" ]; then
     match_cond=`echo "$conf" | grep "^$rule|" | cut -sd'|' -f2,3,4 | sort | uniq | grep -v ^$`
     for status_errnum in `echo "$match_cond" | cut -sd'|' -f1,2 | sort | uniq` ; do
     
-    errnum=`echo "$status_errnum" | cut -sd'|' -f2`
-    status=`echo "$status_errnum" | cut -sd'|' -f1`
-    pattern=`echo "$match_cond" | grep "^$status_errnum|" | grep -v '|%.*%$' | cut -d'|' -f3 | tr '\n' '|'`
-    pattern=${pattern%|}
-    exclpattern=`echo "$match_cond" | grep "^$status_errnum|" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|' | tr -d '%'`
-    exclpattern=${exclpattern%|}
-    
-    if [ -n "$pattern" ]; then
-      if [ -n "$exclpattern" ]; then
-        if [ -n "$errnum" ]; then
-          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+      errnum=`echo "$status_errnum" | cut -sd'|' -f2`
+      status=`echo "$status_errnum" | cut -sd'|' -f1`
+      pattern=`echo "$match_cond" | grep "^$status_errnum|" | grep -v '|%.*%$' | cut -d'|' -f3 | tr '\n' '|'`
+      pattern=${pattern%|}
+      exclpattern=`echo "$match_cond" | grep "^$status_errnum|" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|' | tr -d '%'`
+      exclpattern=${exclpattern%|}
+      
+      if [ -n "$pattern" ]; then
+        if [ -n "$exclpattern" ]; then
+          if [ -n "$errnum" ]; then
+            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+          else
+            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+          fi
         else
-          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
-        fi
-      else
-        if [ -n "$errnum" ]; then
-          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
-        else
-          match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+          if [ -n "$errnum" ]; then
+            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+          else
+            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+          fi
         fi
       fi
-    fi
-    matched=`echo -n "$match" | wc -l`
-    [ -z "$errnum" ] && errnum="empty"
-    if [ $matched -gt 0 ]; then
-      echo "$match" >> "$rpath/data/${rule}.log"
-      echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
-    else
-      echo "<OK> No pattern match for status ${status}, error number ${errnum}"
-    fi
+      matched=`echo -n "$match" | wc -l`
+      [ -z "$errnum" ] && errnum="empty"
+      if [ $matched -gt 0 ]; then
+        echo "$match" >> "$rpath/data/${rule}.log"
+        echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
+      else
+        echo "<OK> No pattern match for status ${status}, error number ${errnum}"
+      fi
+      if $RECIPIENT_STATS ; then
+        dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$now', custom='$rule' WHERE email='$to'"
+      fi
+    done
   done
   $KEEP_LOG && cat "$rpath/data/error.log" 2>/dev/null >> "$rpath/data/error.log.save"
   rm "$rpath/data/error.log"
@@ -57,7 +61,4 @@ fi
 
 IFS=$IFSORIG
 
-if $RECIPIENT_STATS ; then
-  dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$now', custom='$rule' WHERE email='$to'"
-fi
 
