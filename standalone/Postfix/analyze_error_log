@@ -9,6 +9,7 @@ KEEP_LOG=false
 RECIPIENT_STATS=false
 
 source "$rpath/postfix.conf"
+now=`date +"%b %d %H:%M:%S"`
 
 IFS='
 '
@@ -41,16 +42,20 @@ if [ -e "$rpath/data/error.log" ]; then
         fi
       fi
       matched=`echo -n "$match" | wc -l`
-      [ -z "$errnum" ] && errnum="empty"
       if [ $matched -gt 0 ]; then
         echo "$match" >> "$rpath/data/${rule}.log"
-        echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
+        echo "<**> Pattern match for rule '$rule':  $matched times"
+        if $RECIPIENT_STATS ; then
+          for line in `echo "$match"`; do
+            to=`echo "$line" | cut -sd'|' -f1`
+            sdate=`echo "$line" | cut -sd'|' -f4`
+            [ -z "$sdate" ] && sdate=$now
+          dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$sdate', custom='$rule' WHERE email='$to'"
+        fi
       else
-        echo "<OK> No pattern match for status ${status}, error number ${errnum}"
+        echo "<OK> No pattern match for rule '$rule'"
       fi
-      if $RECIPIENT_STATS ; then
-        dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$now', custom='$rule' WHERE email='$to'"
-      fi
+      
     done
   done
   $KEEP_LOG && cat "$rpath/data/error.log" 2>/dev/null >> "$rpath/data/error.log.save"
