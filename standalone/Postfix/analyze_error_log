@@ -11,9 +11,12 @@ RECIPIENT_STATS=false
 source "$rpath/postfix.conf"
 now=`date +"%b %d %H:%M:%S"`
 
+[ -z "$1" ] && errorlog="$rpath/data/error.log" || errorlog="$1"
+
 IFS='
 '
-if [ -e "$rpath/data/error.log" ]; then
+
+if [ -e "$errorlog" ]; then
   conf=`cat "$rpath/error_patterns.conf" | grep -vE "^$|^#|^[[:space:]]#"`
   for rule in `echo "$conf" | cut -sd'|' -f1 | sort | uniq | grep -v ^$` ; do
     match_cond=`echo "$conf" | grep "^$rule|" | cut -sd'|' -f2,3,4 | sort | uniq | grep -v ^$`
@@ -29,15 +32,15 @@ if [ -e "$rpath/data/error.log" ]; then
       if [ -n "$pattern" ]; then
         if [ -n "$exclpattern" ]; then
           if [ -n "$errnum" ]; then
-            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+            match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
           else
-            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+            match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | grep -viE "$exclpattern" | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
           fi
         else
           if [ -n "$errnum" ]; then
-            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+            match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
           else
-            match=`grep "|$status|" "$rpath/data/error.log" | cut -d'|' -f1,3 | grep -v '^$' | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
+            match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
           fi
         fi
       fi
