@@ -120,12 +120,14 @@ case $s_param in
     fi
     [ -n "$chdir" ] && cd "$chdir"
     if [ -n "$user" ] && [ "$UID" == "0" ] ; then
-      su $user -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null" &
+      fullcommand="$command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done)"
+      exec -a "$rcommand" su -m $user -c "exec $fullcommand 1>>\"$logfile\" 2>>\"$logfile\"" &
       succ=$?
       pid=$!
       echo $pid > "$pidfile"
     elif [ -n "$group" ] && [ "$UID" == "0" ] ; then
-      sg $group -c "exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null" &
+      fullcommand="$command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done)"
+      exec -a "$rcommand" sg -m $group -c "exec $fullcommand 1>>\"$logfile\" 2>>\"$logfile\"" &
       succ=$?
       pid=$!
       echo $pid > "$pidfile"

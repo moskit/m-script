@@ -6,17 +6,25 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$rpath/../../lib/functions.sh"
 KEEP_LOG=false
+RECIPIENT_STATS=false
+
 source "$rpath/postfix.conf"
 
+IFS='
+'
 if [ -e "$rpath/data/error.log" ]; then
-  for sn in `cat "$rpath/error_patterns.conf" | grep -vE "^$|^#|^[[:space:]]#" | cut -sd'|' -f1,2 | sort | uniq` ; do
-    status=${sn%%|*}
-    errnum=${sn##*|}
-    pattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep -v '|%.*%$' | cut -d'|' -f3 | tr '\n' '|'`
+  conf=`cat "$rpath/error_patterns.conf" | grep -vE "^$|^#|^[[:space:]]#"`
+  for rule in `echo "$conf" | cut -sd'|' -f1 | sort | uniq | grep -v ^$` ; do
+    match_cond=`echo "$conf" | grep "^$rule|" | cut -sd'|' -f2,3,4 | sort | uniq | grep -v ^$`
+    for status_errnum in `echo "$match_cond" | cut -sd'|' -f1,2 | sort | uniq` ; do
+    
+    errnum=`echo "$status_errnum" | cut -sd'|' -f2`
+    status=`echo "$status_errnum" | cut -sd'|' -f1`
+    pattern=`echo "$match_cond" | grep "^$status_errnum|" | grep -v '|%.*%$' | cut -d'|' -f3 | tr '\n' '|'`
     pattern=${pattern%|}
-    exclpattern=`grep "^$sn|" "$rpath/error_patterns.conf" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|' | tr -d '%'`
+    exclpattern=`echo "$match_cond" | grep "^$status_errnum|" | grep '|%.*%$' | cut -d'|' -f3 | tr '\n' '|' | tr -d '%'`
     exclpattern=${exclpattern%|}
-    [ -n "$exclpattern" ] && logname=`echo "${status}.${errnum}.${pattern}.-${exclpattern}.log" | tr '|' '_' | tr '/' '_'` || logname=`echo "${status}.${errnum}.${pattern}.log" | tr '|' '_' | tr '/' '_'`
+    
     if [ -n "$pattern" ]; then
       if [ -n "$exclpattern" ]; then
         if [ -n "$errnum" ]; then
@@ -35,7 +43,7 @@ if [ -e "$rpath/data/error.log" ]; then
     matched=`echo -n "$match" | wc -l`
     [ -z "$errnum" ] && errnum="empty"
     if [ $matched -gt 0 ]; then
-      echo "$match" >> "$rpath/data/$logname"
+      echo "$match" >> "$rpath/data/${rule}.log"
       echo "<**> Pattern match for status ${status}, error number ${errnum}:  $matched times"
     else
       echo "<OK> No pattern match for status ${status}, error number ${errnum}"
@@ -45,5 +53,11 @@ if [ -e "$rpath/data/error.log" ]; then
   rm "$rpath/data/error.log"
 else
   echo "<OK> Error log is empty"
+fi
+
+IFS=$IFSORIG
+
+if $RECIPIENT_STATS ; then
+  dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$now', custom='$rule' WHERE email='$to'"
 fi
 
