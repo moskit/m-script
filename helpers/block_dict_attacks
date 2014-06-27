@@ -80,7 +80,7 @@ fi
 if [ -n "$rootfails" ]; then
   echo -e "\n<**> Failed attempts to login as root:\n---------------------------------------\n"
   rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
-  echo "$rootfails" | sed "s_$_|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
+  echo "$rootfails" | sed "s_$_|${BLOCK_CALLER}_" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"

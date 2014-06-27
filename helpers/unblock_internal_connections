@@ -74,9 +74,8 @@ Options:
                             Multiple clusters are not allowed.
                             MUST be defined. To specify all servers, use 
                             --cluster=all. If you run this command from msh
-                            being cr'ed into a role, this role cluster is used
+                            while cr'ed into a role, this role cluster is used
                             by default (M_CLUSTER environment variable).
-  --all                   - alias for --cluster=all.
   --ip=IP                 - target ip for a single server operation.
                             If ip is defined, cluster and region are ignored.
   --region=region         - installs rules to all servers from this region.
@@ -88,8 +87,8 @@ Options:
   --fromip                - allows connections from this IP. This IP doesn't 
                             have to be present in servers.list
                             
-                            If no "from" options are defined, source IPs default
-                            to all servers from servers.list.
+                            If none of "from" options is defined, source IPs
+                            default to all servers from servers.list.
   
   --verbose               - verbose output.
 

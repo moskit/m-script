@@ -147,7 +147,7 @@ check_cluster_limit "$cluster" || proper_exit 5 146
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
 [ -z "$name" ] && proper_exit 6 148
 log "Double-checking name"
-find_server --name="$name" --updatelist >/dev/null 2>&1 && log "Server with name $name already exists!" && proper_exit 6 150
+IAMACHILD=1 find_server --name="$name" --updatelist >/dev/null 2>&1 && log "Server with name $name already exists!" && proper_exit 6 150
 find_image
 [ -z "$imageid" ] && proper_exit 7 152
 find_flavor

@@ -47,7 +47,7 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
   info=`echo "$log" | grep 'postfix/smtp\[' | grep -v 'relay=127\.0\.0\.1' | grep 'status=' | grep "$id: to" | tail -1`
   status=`echo "$info" | awk -F'status=' '{print $2}' | cut -d' ' -f1`
   sdate=`echo "$info" | awk '{print $1" "$2" "$3}'`
-  sdate=`date -s "$sdate" 2>/dev/null`
+  sdate=`date -d "$sdate" 2>/dev/null`
   [ -z "$sdate" ] && sdate=`date`
   if $RECIPIENT_STATS ; then
     reason=`expr "$info" : ".*status=[a-z]*\ (\(.*\))$" | sed "s|'|''|g"`
