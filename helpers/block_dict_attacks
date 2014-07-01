@@ -56,7 +56,7 @@ if ! expr "$period" : ".*[^[0-9]]*" >/dev/null; then period="$period sec" ; fi
 [ -z "$maxlines" ] && maxlines=500
 [ -z "$maxfail" ] && maxfail=5
 [ -z "$maxfailroot" ] && maxfailroot=3
-[ -z "$timeformat" ] && timeformat="%b %d %H:%M:%S"
+[ -z "$timeformat" ] && timeformat="%b %_d %H:%M:%S"
 [ -z "$method" ] && method="REJECT"
 export BLOCK_CALLER="$rcommand"
 

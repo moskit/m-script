@@ -55,7 +55,7 @@ source "$rpath/../conf/mon.conf"
 # defaults
 [ -n "$interval" ] && period="$interval"
 [ -z "$maxlines" ] && maxlines=1000
-[ -z "$safetylimit" ] && safetylimit=50
+[ -z "$safetylimit" ] && safetylimit=200
 
 if [ -n "$period" ]; then
   if ! expr "$period" : ".*[^[0-9]]*" >/dev/null ; then
