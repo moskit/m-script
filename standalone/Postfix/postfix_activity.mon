@@ -55,10 +55,12 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
     reason=`expr "$info" : ".*status=[a-z]*\ (\(.*\))$" | sed "s|'|''|g"`
     errorcounter=`dbquery "$rpath/data/recipients.db" "SELECT errorcounter FROM recipients WHERE email='$to'"`
     successcounter=`dbquery "$rpath/data/recipients.db" "SELECT successcounter FROM recipients WHERE email='$to'"`
-    if [ -z "$counter" ]; then
+    if [ -z "$errorcounter" ] && [ -z "$successcounter" ]; then
       if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
         errorcounter=1
+        successcounter=0
       else
+        errorcounter=0
         successcounter=1
       fi
       dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (date, email, status, errorcounter, successcounter, reason) VALUES ('$sdate', '$to', '$status', '$errorcounter', '$successcounter', '$reason')"
