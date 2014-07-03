@@ -9,7 +9,7 @@ KEEP_LOG=false
 RECIPIENT_STATS=false
 
 source "$rpath/postfix.conf"
-now=`date +"%b %d %H:%M:%S"`
+now=`date +"%b %_d %H:%M:%S"`
 
 [ -z "$1" ] && errorlog="$rpath/data/error.log" || errorlog="$1"
 
@@ -18,7 +18,8 @@ IFS='
 
 if [ -e "$errorlog" ]; then
   conf=`cat "$rpath/error_patterns.conf" | grep -vE "^$|^#|^[[:space:]]#"`
-  for rule in `echo "$conf" | cut -sd'|' -f1 | sort | uniq | grep -v ^$` ; do
+  for rule in `echo "$conf" | cut -sd'|' -f1 | sort | uniq` ; do
+    [ -z "$rule" ] && continue
     match_cond=`echo "$conf" | grep "^$rule|" | cut -sd'|' -f2,3,4 | sort | uniq | grep -v ^$`
     for status_errnum in `echo "$match_cond" | cut -sd'|' -f1,2 | sort | uniq` ; do
     
@@ -43,6 +44,12 @@ if [ -e "$errorlog" ]; then
             match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | grep -iE "$pattern" | cut -d'|' -f1,2 | sort | uniq`
           fi
         fi
+      else
+        if [ -n "$errnum" ]; then
+          match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | grep " $errnum " | cut -d'|' -f1,2 | sort | uniq`
+        else
+          match=`grep "|$status|" "$errorlog" | cut -d'|' -f1,3 | grep -v '^$' | cut -d'|' -f1,2 | sort | uniq`
+        fi
       fi
       matched=`echo -n "$match" | wc -l`
       if [ $matched -gt 0 ]; then
@@ -52,8 +59,9 @@ if [ -e "$errorlog" ]; then
           for line in `echo "$match"`; do
             to=`echo "$line" | cut -sd'|' -f1`
             sdate=`echo "$line" | cut -sd'|' -f4`
+            sreason=`echo "$line" | cut -sd'|' -f3`
             [ -z "$sdate" ] && sdate=$now
-            dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$sdate', custom='$rule' WHERE email='$to'"
+            dbquery "$rpath/data/recipients.db" "UPDATE recipients SET custom_date='$sdate', custom='$rule', custom_reason='$sreason' WHERE email='$to'"
           done
         fi
       else

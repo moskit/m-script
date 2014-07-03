@@ -37,6 +37,8 @@ timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
 
 log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=$MAXLINES | grep ' postfix/'`
 
+get_lock
+
 for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
 
   from=`echo "$log" | grep postfix/qmgr | grep "$id: from" | cut -d'<' -f2 | cut -d'>' -f1 | head -1`
@@ -51,21 +53,22 @@ for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
   [ -z "$sdate" ] && sdate=`date`
   if $RECIPIENT_STATS ; then
     reason=`expr "$info" : ".*status=[a-z]*\ (\(.*\))$" | sed "s|'|''|g"`
-    counter=`dbquery "$rpath/data/recipients.db" "SELECT counter FROM recipients WHERE email='$to'"`
+    errorcounter=`dbquery "$rpath/data/recipients.db" "SELECT errorcounter FROM recipients WHERE email='$to'"`
+    successcounter=`dbquery "$rpath/data/recipients.db" "SELECT successcounter FROM recipients WHERE email='$to'"`
     if [ -z "$counter" ]; then
       if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
-        counter=1
+        errorcounter=1
       else
-        counter=0
+        successcounter=1
       fi
-      dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (date, email, status, counter, reason) VALUES ('$sdate', '$to', '$status', '$counter', '$reason')"
+      dbquery "$rpath/data/recipients.db" "INSERT INTO recipients (date, email, status, errorcounter, successcounter, reason) VALUES ('$sdate', '$to', '$status', '$errorcounter', '$successcounter', '$reason')"
     else
       if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
-        counter=`expr $counter + 1 2>/dev/null`
+        errorcounter=`expr $errorcounter + 1 2>/dev/null`
       else
-        counter=0
+        successcounter=`expr $successcounter + 1 2>/dev/null`
       fi
-      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET date='$sdate', status='$status', counter='$counter', reason='$reason', custom='' WHERE email='$to'"
+      dbquery "$rpath/data/recipients.db" "UPDATE recipients SET date='$sdate', status='$status', errorcounter='$errorcounter', successcounter='$successcounter', reason='$reason', custom='' WHERE email='$to'"
     fi
   fi
   if [ "_$status" == "_bounced" ] || [ "_$status" == "_deferred" ]; then
@@ -105,6 +108,8 @@ if $LOG_ERRORS && $ANALYZE_ERRORS ; then
   echo "--------------------------------------------------------"
   "$rpath"/analyze_error_log
 fi
+
+release_lock
 
 exit 0
 
