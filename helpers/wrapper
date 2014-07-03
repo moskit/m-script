@@ -121,28 +121,35 @@ case $s_param in
     [ -n "$chdir" ] && cd "$chdir"
     if [ -n "$user" ] && [ "$UID" == "0" ] ; then
       fullcommand="$command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done)"
-      exec -a "$rcommand" su -m $user -c "exec $fullcommand 1>>\"$logfile\" 2>>\"$logfile\"" &
+      fullcommand="$fullcommand 1>>\"$logfile\" 2>>\"$errorlogfile\" </dev/null & { echo \$!; }"
+      pid=`su -m $user -c "$fullcommand"`
       succ=$?
-      pid=$!
-      echo $pid > "$pidfile"
+      if [ -n "$pid" ]; then
+        echo $pid > "$pidfile"
+      else
+        succ=1
+      fi
     elif [ -n "$group" ] && [ "$UID" == "0" ] ; then
       fullcommand="$command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done)"
-      exec -a "$rcommand" sg -m $group -c "exec $fullcommand 1>>\"$logfile\" 2>>\"$logfile\"" &
+      fullcommand="$fullcommand 1>>\"$logfile\" 2>>\"$errorlogfile\" </dev/null & { echo \$!; }"
+      pid=`sg -m $group -c "$fullcommand"`
       succ=$?
-      pid=$!
-      echo $pid > "$pidfile"
+      if [ -n "$pid" ]; then
+        echo $pid > "$pidfile"
+      else
+        succ=1
+      fi
     else
-      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) >>"$logfile" 2>&1 </dev/null &
+      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>"$logfile" 2>>$errorlogfile </dev/null &
       succ=$?
       pid=$!
       echo $pid > "$pidfile"
     fi
 
-    if [[ $succ -eq 0 ]] && [ -n "$pid" ]; then
+    if [ $succ -eq 0 ]; then
       [ -d /proc/$pid ] && echo "done (PID `cat "$pidfile"|grep -v ^$|tail -1`)" || echo "error" | tee -a "$logfile"
     else
-      [ -d /proc/$pid ] && echo "started (PID `cat "$pidfile"|grep -v ^$|tail -1`) w
-ith non-zero exit status" || echo "error: not started"
+      [ -d /proc/$pid ] && echo "started (PID `cat "$pidfile"|grep -v ^$|tail -1`) but init exited with error" || echo "error: not started"
     fi
 
     [ -n "$cdback" ] && cd "$cdback"
