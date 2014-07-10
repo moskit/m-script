@@ -275,7 +275,7 @@ if [ "$type" == "remote" ] ; then
         fi
       else
       # install remote workdir
-        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" sudo install -d "$CURRTASKDIR/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
+        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" sudo install -o $SSH_REMOTE_USER -d "$CURRTASKDIR/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
         # copy the script to remote server
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/$file" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/$file" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
         # copy config to remote server
