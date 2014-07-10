@@ -329,8 +329,12 @@ export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
 [ -n "$ignoreipnotpresent" -o -n "$force" -o -n "$ignorenocluster" ] && ignorenocluster="yes" && force="yes"
 [ -n "$user" ] && SSH_REMOTE_USER="$user"
-[ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
-[ -n "$nosudo" ] && SU="--nosudo"
+if [ -z "$SSH_REMOTE_USER" ]; then
+  SSH_REMOTE_USER="root"
+  SU="--nosudo"
+else
+  [ -n "$nosudo" ] && SU="--nosudo --user=$SSH_REMOTE_USER" || SU="--user=$SSH_REMOTE_USER"
+fi
 if [ -n "$name" ] && [ -z "$ip" ]; then
   ip=`find_ip $name`
   [ $? -ne 0 ] && echo "Unable to resolve name $name" >&2 && exit 1
@@ -408,7 +412,14 @@ else
 fi
 export role cluster
 USER_FROM_CLUSTER=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f13`
-[ -n "$USER_FROM_CLUSTER" ] && SSH_REMOTE_USER="$USER_FROM_CLUSTER" && unset nosudo SU
+if [ -n "$USER_FROM_CLUSTER" ]; then
+  SSH_REMOTE_USER="$USER_FROM_CLUSTER"
+  if [ "$USER_FROM_CLUSTER" == "root" ]; then
+    SU="--nosudo"
+  else
+    [ -n "$nosudo" ] && SU="--nosudo --user=$USER_FROM_CLUSTER" || SU="--user=$USER_FROM_CLUSTER"
+  fi
+fi
 
 [ -n "$verbose" ] && V='--verbose'
 [ -n "$test" ] && T='--test'

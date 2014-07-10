@@ -1,4 +1,18 @@
 #!/bin/bash
+# Copyright (C) 2012-2014 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
@@ -91,7 +105,7 @@ done &
 #    currshard2=`$MONGO $AUTH "$confserver"/config --quiet --eval "db."`
 #  fi
 
-### to find chunks size without locking the whole db
+### to find chunks size without locking whole db
 # mongo "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | sed 's|"|\\"|g;s|\$|\\$|g' | while read MINMAX ; do echo "$MINMAX" ; mongo "${shard}:${shardport}"/$db --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns}\", keyPattern: { \"_id\": 1}, $MINMAX }))" ; sleep 100 ; done
 ### TODO: keyPattern can be obtained from config.collections
 

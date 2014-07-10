@@ -75,7 +75,7 @@ unset debug
 
 IFS1=$IFS
 IFS='-'
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=0
   case ${s_option} in
@@ -107,7 +107,7 @@ do
       found=1
     fi
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
+  [ "_$s_option" == "_$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
@@ -115,7 +115,7 @@ do
 done
 IFS=$IFS1
 
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   echo -e -n "Usage: ${0##*/}"" <options> <positional parameters>\n\n"
   if [ -n "$possible_options" ] ; then
     echo -e " <options> <positional parameters>\n\n  Possible options: $possible_options"
@@ -156,7 +156,7 @@ if [ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$dry" ]; then
 fi
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
-[ "X$timestamp" == "Xrepeat" ] && timestamp=`ls -1tr "$WORK_DIR/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
+[ "_$timestamp" == "_repeat" ] && timestamp=`ls -1tr "$WORK_DIR/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
 [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
 export role task timestamp   ## exports the working dir
 install -d "$WORK_DIR/${role}.${task}.${timestamp}/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
@@ -184,7 +184,7 @@ fi
 [ -h "$ROLES_ROOT/$file" ] && realfile=`readlink -f "$ROLES_ROOT/$file"` || realfile="$ROLES_ROOT/$file"
 realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/||"`
 roleincluded=${realfile%%/*} #*/
-if [ "X$roleincluded" != "X$role" ] ; then
+if [ "_$roleincluded" != "_$role" ] ; then
   if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ] ; then
     store_vars "$ROLES_ROOT/$roleincluded/role.conf"
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
@@ -252,7 +252,7 @@ if [ "$type" == "remote" ] ; then
   if [ -n "$ips" ]; then
     for IP in $ips ; do
       find_name $IP
-      if [ "x$nosudo" == "xyes" ]; then
+      if [ "_$nosudo" == "_yes" ]; then
         # install remote workdir
         $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" install -d "$CURRTASKDIR/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
         # copy the script to remote server
