@@ -281,8 +281,8 @@ if [ "$type" == "remote" ] ; then
         # copy config to remote server
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/${file}.var" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/${file}.var" >> "$M_ROOT/logs/deploy.log" 2>&1
         $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nservername=\\\"$NAME\\\"\" \>\> \"$CURRTASKDIR/${file}.var\"
-        # config and script need to be concatenated for sudo
-        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat \"$CURRTASKDIR/${file}.var\" \"$CURRTASKDIR/$file\" \>\> \"$CURRTASKDIR/${file}.sudo\"
+        # profile, config and script need to be concatenated for sudo
+        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat .bash_profile \"$CURRTASKDIR/${file}.var\" \"$CURRTASKDIR/$file\" \>\> \"$CURRTASKDIR/${file}.sudo\"
         if [ -n "$dry" ] ; then
           [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
           $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat \"$CURRTASKDIR/$file\" | while read output ; do [ -n "$verbose" ] && echo "$output" ; sudo echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
@@ -291,7 +291,7 @@ if [ "$type" == "remote" ] ; then
           [ $res -ne 0 ] && exit 1
         else
           [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-          $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "sudo bash \"$CURRTASKDIR/${file}.sudo\" 2>&1 || echo \"${timestamp}_ERROR\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+          $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "sudo bash \"$CURRTASKDIR/${file}.sudo\" 2>&1 || echo \"${timestamp}_ERROR\"" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
           res=$?
           [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
           [ $res -ne 0 ] && exit 1
