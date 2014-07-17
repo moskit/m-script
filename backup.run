@@ -302,21 +302,21 @@ do
 
   echo "Using configuration file ${backupconf}..." >> $stdinto
   if [ -z "$remotehost" ]; then
-    [ "X$xferdirection" != "Xto-local" ] && echo "Backup is set to be $xferdirection but remote host is not set" >> $stderrto && exit 1
+    [ "_$xferdirection" != "_to-local" ] && echo "Backup is set to be $xferdirection but remote host is not set" >> $stderrto && exit 1
   fi
   ARCOPTS=""
   
-  [ "X$followlinks" != "Xyes" ] || ARCOPTS="$ARCOPTS -h"
-  [ "X$numericids" != "Xyes" ] || ARCOPTS="$ARCOPTS --numeric-owner"
-  [ "X$preserveperm" != "Xyes" ] || ARCOPTS="$ARCOPTS -p"
-  [ "X$samefs" != "Xyes" ] || ARCOPTS="$ARCOPTS --one-file-system"
+  [ "_$followlinks" != "_yes" ] || ARCOPTS="$ARCOPTS -h"
+  [ "_$numericids" != "_yes" ] || ARCOPTS="$ARCOPTS --numeric-owner"
+  [ "_$preserveperm" != "_yes" ] || ARCOPTS="$ARCOPTS -p"
+  [ "_$samefs" != "_yes" ] || ARCOPTS="$ARCOPTS --one-file-system"
   [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && ARCOPTS="$ARCOPTS -v" && echo "TAR options are: $ARCOPTS" >> $dbginto
   
   if [ -z "$nonbackup" -a -z "$onlyclean" ]; then
     install -d "$localbackuppath/backup.local"
     install -d "$localbackuppath/backup.tmp"
   fi
-  install -d "${locallogpath}/logs"
+  install -d "$locallogpath/logs"
 
   if [ -f "$M_ROOT/conf/${backupconf}.exclude" ]; then
     echo "Excluding files matching patterns from $rpath/${backupconf}.exclude" >> $stdinto
@@ -372,19 +372,18 @@ do
       do
         if [ -n "$LINE" ]; then
           linetoname=`echo "$LINE" | sed 's|/|_|g'`
-          if [ "X$compression" == "Xgzip" ]; then
+          if [ "_$compression" == "_gzip" ]; then
             [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.gz" >> $dbginto
             tar $ARCOPTS -c -z -f "$localbackuppath/$archname.$linetoname.tar.gz" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
             splitfile ${localbackuppath}/$archname.$linetoname.tar.gz
           fi
-          if [ "X$compression" == "Xbzip2" ]
+          if [ "_$compression" == "_bzip2" ]
           then
             [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar.bz2" >> $dbginto
             tar $ARCOPTS -c -j -f "$localbackuppath/$archname.$linetoname.tar.bz2" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
             splitfile "$localbackuppath/$archname.$linetoname.tar.bz2"
           fi
-          if [ "X$compression" == "X" ]
-          then
+          if [ -z "$compression" ]; then
             [ -n "$debugflag" ] && echo "Creating archive $archname.$linetoname.tar" >> $dbginto
           	tar $ARCOPTS -c -f "$localbackuppath/$archname.$linetoname.tar" "$LINE" 2>"$M_TEMP/$archname.$linetoname.tar.log" 1>>$stdinto
             splitfile "$localbackuppath/$archname.$linetoname.tar"
@@ -392,12 +391,14 @@ do
           
           if [ -f "$M_TEMP/$archname.$linetoname.tar.log" ]; then
             tarerr=$(grep '^tar:' "$M_TEMP/$archname.$linetoname.tar.log" | grep -v 'Removing leading' | grep -v 'as we read')
-            [ -n "$tarerr" ] && echo "$tarerr" >> $stderrto
-            echo "Tar: ${LINE} copied with some errors, see $locallogpath/logs/m_backup.error" >> $stdinto
+            if [ -n "$tarerr" ]; then
+              echo "$tarerr" >> $stderrto
+              echo "Tar: $LINE copied with some errors, see $stderrto for details" >> $stdinto
+            fi
             echo "Tar: $LINE copied `grep '^Total bytes written:' "$M_TEMP/$archname.$linetoname.tar.log" | cut -d' ' -f5,6`" >>$stdinto
-          else
-            echo "Tar: $LINE copied successfully `grep '^Total bytes written:' "$M_TEMP/$archname.$linetoname.tar.log" | cut -d' ' -f5,6`" >>$stdinto 2>/dev/null
             rm -f "$M_TEMP/$archname.$linetoname.tar.log"
+          else
+            echo "WARNING: tar did not provide any output"
           fi
         fi
       done < "${backupconf}.list"

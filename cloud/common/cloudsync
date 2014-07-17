@@ -39,9 +39,11 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
+declare -i RETVAL
+RETVAL=0
 
 cleanup() {
-  if [ "x$threaded" == "xyes" ]; then
+  if [ "_$threaded" == "_yes" ]; then
     for ((i=0; i<$n; i++)) ; do
       if [ -n "${pid[$n]}" ]; then
         [ -d /proc/${pid[$n]} ] && kill ${pid[$n]}
@@ -62,7 +64,7 @@ cleanup() {
 }
 
 remote_sync() {
-  if [ "X$verbose" == "Xyes" ] ; then
+  if [ "_$verbose" == "_yes" ] ; then
     NAME=`echo $server | cut -d'|' -f4`
     echo
     echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
@@ -123,10 +125,10 @@ do
     ;;
   esac
   for option in `echo $possible_options`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}"
+    [ "_$s_optname" == "_$option" ] && eval "$option=${s_optarg}"
   done
 done
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> <local path> <remote path>
 
@@ -160,10 +162,8 @@ trap cleanup EXIT
 
 for cld in $CLOUD ; do
 
-  declare -i RETVAL
-  RETVAL=0
   [ -n "$recursive" ] && recursive="-r"
-  [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+  localip=`localips`
   if [ -n "$ip" ] ; then
     cluster= ; region=
     if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
@@ -195,13 +195,13 @@ for cld in $CLOUD ; do
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && echo "No clusters found" && exit 1
 
-  [ "x$cluster" == "xall" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+  [ "_$cluster" == "_all" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
   declare -i n
   IFS1=$IFS
   IFS='
   '
-  if [ "X$command" != "X" ] ; then
+  if [ -n "$command" ] ; then
     from=${command%% *}
     ## Deployment system integration ##
     if [ ! -e "$from" ]; then
@@ -237,17 +237,17 @@ for cld in $CLOUD ; do
         for s in `echo "$server"` ; do
           IP=${server%%|*}
           if [ -n "$ip" ] ; then
-            [ "X$IP" == "X$ip" ] || continue
+            [ "_$IP" == "_$ip" ] || continue
           fi
           if [ -n "$region" ] ; then
             REGION=`echo $server | cut -d'|' -f3`
-            [ "X$REGION" == "X$region" ] || continue
+            [ "_$REGION" == "_$region" ] || continue
           fi
           if [ -n "$cluster" ] ; then
             CLUSTER=`echo $server | cut -d'|' -f5`
-            [ "X$CLUSTER" == "X$cluster" ] || continue
+            [ "_$CLUSTER" == "_$cluster" ] || continue
           fi
-          if [ "x$threaded" == "xyes" ]; then
+          if [ "_$threaded" == "_yes" ]; then
             #res[$n]=$(remote_exec) 2>&1 </dev/null &
             remote_sync > "$M_TEMP/$$.$n" 2>&1 &
             pid[$n]=$!
@@ -257,7 +257,7 @@ for cld in $CLOUD ; do
           n+=1
         done
       done
-      if [ "x$threaded" == "xyes" ]; then
+      if [ "_$threaded" == "_yes" ]; then
         for ((i=0; i<$n; i++)); do
           while true ; do
             # always waiting here, for forced exit see cleanup()
@@ -265,7 +265,7 @@ for cld in $CLOUD ; do
               sleep 1
             done
             cat "$M_TEMP/$$.$i" && rm -f "$M_TEMP/$$.$i"
-            unset pid[$i] res[$i]
+            unset pid[$i]
             break
           done
         done
