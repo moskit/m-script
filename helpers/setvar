@@ -125,7 +125,7 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
   else
     for ((i=1; i<=3; i++)) ; do
       s_var=${nivar}_$i
-      s_val=`eval "echo \\${s_value}${i}"`
+      s_val=`eval "echo \"\\$s_value\${i}\""`
       for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
         echo -n "Found in $conf ...   "
         set_var || retval+=1
