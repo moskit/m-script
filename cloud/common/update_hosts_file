@@ -78,6 +78,7 @@ if [ -n "$1" ] ; then
       else
         "$rpath"/cloudsync --nolocalhost --cluster="$1" "$M_ROOT/servers.list" "\"$mpath\"/"
         "$rpath"/cloudexec --nolocalhost --cluster="$1" "\"$mpath\"/cloud/common/$rcommand"
+      fi
     fi
   fi
 fi

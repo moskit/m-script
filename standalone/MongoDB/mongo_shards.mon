@@ -69,7 +69,7 @@ for coll in $sharded ; do
     shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.${coll#*.}.totalIndexSize()" 2>>$LOG`
     collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
     
-    if [ "X$SQLITE3" == "X1" ] ; then
+    if [ "_$SQLITE3" == "_1" ] ; then
       dbquery "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
     fi
   done

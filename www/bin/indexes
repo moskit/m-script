@@ -42,20 +42,22 @@ fi
 storage_size="$storage_size $csunits"
 print_table_2 "Storage size" $storage_size
 
-lastext_size=`echo "$collinfo" | grep ^0\/\"lastExtentSize\" | cut -d'|' -f2`
-lastext_size=`expr $lastext_size / 1024`
+### not really useful
+#lastext_size=`echo "$collinfo" | grep ^0\/\"lastExtentSize\" | cut -d'|' -f2`
+#lastext_size=`expr $lastext_size / 1024`
 
-csunits="KB"
-if [ ${#lastext_size} -gt 3 ] ; then
-  lastext_size=`expr $lastext_size / 1024` && csunits="MB"
-elif [ ${#lastext_size} -gt 6 ] ; then
-  lastext_size=`expr $lastext_size / 1048576` && csunits="GB"
-fi
-lastext_size="$lastext_size $csunits"
-print_table_2 "Last extent size" $lastext_size
+#csunits="KB"
+#if [ ${#lastext_size} -gt 3 ] ; then
+#  lastext_size=`expr $lastext_size / 1024` && csunits="MB"
+#elif [ ${#lastext_size} -gt 6 ] ; then
+#  lastext_size=`expr $lastext_size / 1048576` && csunits="GB"
+#fi
+#lastext_size="$lastext_size $csunits"
+#print_table_2 "Last extent size" $lastext_size
 
-extents_num=`echo "$collinfo" | grep ^0\/\"numExtents\" | cut -d'|' -f2`
-print_table_2 "Extents number" $extents_num
+#extents_num=`echo "$collinfo" | grep ^0\/\"numExtents\" | cut -d'|' -f2`
+#print_table_2 "Extents number" $extents_num
+###
 
 echo "</div>"
 
