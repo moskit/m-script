@@ -335,19 +335,19 @@ get_lock() {
       sleep $((RANDOM%10))
       continue
     else
-      log "lock acquired"
+      log "lock acquired by $callername"
       break
     fi
   done
   if [ -f "$callerfolder/${callername}.lock" ] ; then
-    log "giving up acquiring the lock..."
+    log "$callername has given up acquiring the lock..."
     exit 1
   fi
   echo $$ > "$callerfolder/${callername}.lock"
 }
 
 release_lock() {
-  rm "$callerfolder/${callername}.lock"
+  rm "$callerfolder/${callername}.lock" && log "$callername has released the lock" || log "$callername has failed to release the lock (did not exist?)"
 }
 
 unlock_exit() {

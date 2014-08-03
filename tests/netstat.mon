@@ -51,7 +51,7 @@ for st in ${dat_arr[*]} ; do
   eval $st
 done
 IFS=$IFS1
-[ "X$1" == "XSQL" ] && store_results "$resline"
+[ "_$1" == "_SQL" ] && store_results "$resline"
 
 echo -e "\nNetwork stats\n-------------\n\n"
 
