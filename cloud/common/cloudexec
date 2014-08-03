@@ -53,7 +53,7 @@ cleanup() {
 }
 
 remote_exec() {
-  if [ "X$verbose" == "Xyes" ] ; then
+  if [ "_$verbose" == "_yes" ] ; then
     echo -e "\n=  Server: $servername ($IP)  Cluster: $CLUSTER"
   fi
   if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
@@ -61,7 +61,7 @@ remote_exec() {
   else
     KEY=`$M_ROOT/helpers/find_key server $IP`
     [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
-    if [ "x$nosudo" == "xyes" ]; then
+    if [ "_$nosudo" == "_yes" ]; then
       $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; $command\)
     else
       $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; sudo $command\)
@@ -107,7 +107,7 @@ do
     [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg"
   done
 done
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> command
 
@@ -159,7 +159,7 @@ result=0
 
 for cld in $CLOUD ; do
 
-  [ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+  localip=`"$M_ROOT/helpers"/localips 2>/dev/null`
   if [ -n "$ip" ] ; then
     cluster= ; region=
     if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
@@ -201,7 +201,7 @@ for cld in $CLOUD ; do
   if [ -n "$command" ] ; then
     for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
       [ -n "$user" ] && SSH_REMOTE_USER="$user"
-      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$cluster|" | cut -s -d'|' -f13`
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$icluster|" | cut -s -d'|' -f13`
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
       n=0
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE

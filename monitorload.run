@@ -31,8 +31,8 @@
 ### END INIT INFO
 
 rpath=$(readlink -f "$BASH_SOURCE")
-rcommand=${BASH_SOURCE##*/}
-rpath=${rpath%/*}
+#rcommand=${BASH_SOURCE##*/}
+rpath="${rpath%/*}"
 #*/
 ## The root folder for descendant processes. It is not recommended to rely on
 ## this in scripts, because they would mess up things if executed independently
@@ -40,8 +40,8 @@ rpath=${rpath%/*}
 ## is not.
 export M_ROOT="$rpath"
 
-pidfile=/var/run/${rcommand}.pid
-mgpidfile=/var/run/${rcommand}.http.pid
+pidfile=/var/run/monitorload.pid
+mgpidfile=/var/run/monitorload.http.pid
 [ -f "$rpath/conf/mon.conf" ] && source "$rpath/conf/mon.conf" || exit 1
 [ `find "$rpath/standalone/rc" -maxdepth 1 -type l | wc -l` -gt 0 ] && source "$rpath/lib/functions.sh"
 
@@ -104,7 +104,7 @@ start)
     "$rpath"/lib/mq.run &
     
 ### Tests that run if load has changed - we are interested in more metrics here
-    if [ "X$x" == "X1" ]; then
+    if [ "_$x" == "_1" ]; then
 ## A pause is necessary here, because it is practically the same moment as test
 ## at line 114 from the previous run, so lock file doesn't really work.
 ## But the full cycle is not a good idea because we want to know what caused
@@ -195,7 +195,7 @@ stop)
   else
     echo "$pidfile not found!"
   fi
-  if [ "X$MONGOOSE" == "X1" ] ; then
+  if [ "_$MONGOOSE" == "_1" ] ; then
     if [ -f $mgpidfile ] ; then
       echo "3" > "$rpath/connections.mon.lock"
       pid=`cat $mgpidfile|tail -1`

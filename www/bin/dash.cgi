@@ -13,7 +13,7 @@ print_timeline "Server"
 close_cluster
 
 # localhost first; if it belongs to a listed cluster, that cluster will be the first
-for localip in `localips | grep -v '127.0.0.1'` ; do
+for localip in `"$PWD/../../helpers"/localips | grep -v '127.0.0.1'` ; do
   localserver=`grep ^$localip\| "$PWD/../../servers.list"`
   [ -z "$localserver" ] && continue
   localcluster=`echo "$localserver" | cut -d'|' -f5`

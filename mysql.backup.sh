@@ -26,11 +26,11 @@ else
   source "$1"
 fi
 
-MYSQL="$(which mysql)"
-MYSQLDUMP="$(which mysqldump)"
-CHOWN="$(which chown)"
-CHMOD="$(which chmod)"
-GZIP="$(which gzip)"
+MYSQL=`which mysql 2>/dev/null`
+MYSQLDUMP=`which mysqldump 2>/dev/null`
+CHOWN=`which chown 2>/dev/null`
+CHMOD=`which chmod 2>/dev/null`
+GZIP=`which gzip 2>/dev/null`
 
 [ -z "$mysqluser" ] && echo "Error: database user not defined" >> "$rpath/m_backup.error" && exit 1
 [ -z "$mysqlhost" ] && echo "Error: database host not defined" >> "$rpath/m_backup.error" && exit 1
@@ -45,14 +45,16 @@ else
 fi
 
 [ ! -d $MBD ] && install -d $MBD
-if [ -z "$mysqlpass" ]; then
-  PASS=""
-else
+if [ -n "$mysqlpass" ]; then
   PASS="-p$mysqlpass"
 fi
 
+if [ -n "$debugflag" ]; then
+  VERB="-v"
+fi
+
 if [ -z "$mysqldblist" ]; then
-  mysqldblist="$($MYSQL -u $mysqluser -h $mysqlhost $PASS -Bse 'show databases')" 2>>"$rpath/m_backup.error"
+  mysqldblist="$($MYSQL "-u$mysqluser" -h $mysqlhost "$PASS" -Bse 'show databases')" 2>>"$rpath/m_backup.error"
 fi
 
 for db in $mysqldblist ; do
@@ -65,7 +67,7 @@ for db in $mysqldblist ; do
     
   if $dumpdb ; then
     FILE="$MBD/$db.$archname.gz"
-    $MYSQLDUMP -u$mysqluser -h$mysqlhost $PASS $db 2>>"$rpath/m_backup.error" | $GZIP > $FILE 2>>${rpath}/m_backup.error && echo "mysql: $db dumped OK" >>"$rpath/m_backup.log"
+    $MYSQLDUMP "-u$mysqluser" -h$mysqlhost "$PASS" $VERB "$db" 2>>"$rpath/m_backup.error" | $GZIP > $FILE 2>>"$rpath/m_backup.error" && echo "mysql: $db dumped OK" >>"$rpath/m_backup.log"
   fi
 done
 

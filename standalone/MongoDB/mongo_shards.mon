@@ -35,7 +35,7 @@ if [ -n "$AUTH_LOGIN" ]; then
 fi
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
-source "$rpath/${rcommand}.conf" 2>/dev/null
+source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
 [ -z "$depth" ] && depth=5
 
 source "$M_ROOT/conf/mon.conf"
@@ -47,7 +47,8 @@ timeindexnow=`date +"%s"`
 a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && log "No configuration servers found" && exit 1
 
-confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/null | tail -1 | cut -d'|' -f1`
+confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/null | tail -1 | cut -sd'|' -f1`
+[ -z "$confserver" ] && confserver=`head -1 "$rpath/mongo_config_servers.list" 2>/dev/null | cut -sd'|' -f1`
 [ -z "$confserver" ] && log "No configuration servers found" && exit 1
 
 sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.collections.find( {}, { _id : 1 } ).forEach(printjson)" 2>>$LOG | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"'`
