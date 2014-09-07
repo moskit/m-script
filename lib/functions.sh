@@ -41,7 +41,7 @@ store_results() {
       log "Non-standard file location, unable to determine where the database is, caller parent folder is ${callerparent##*/}, caller folder is ${callerfolder##*/}"
       exit 1
     fi
-    dbtable="${callername}"
+    dbtable="$callername"
   else
     dbfile="${2%%|*}"
     dbtable="${2##*|}"
@@ -347,7 +347,7 @@ get_lock() {
 }
 
 release_lock() {
-  rm "$callerfolder/${callername}.lock" && log "locak released" || log "failed to release the lock (did not exist?)"
+  rm "$callerfolder/${callername}.lock" && log "lock released" || log "failed to release the lock (did not exist?)"
 }
 
 unlock_exit() {

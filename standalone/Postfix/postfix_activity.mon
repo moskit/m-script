@@ -37,6 +37,8 @@ timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
 
 log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=$MAXLINES | grep ' postfix/'`
 
+LOG="$M_ROOT/logs/sa.log"
+
 get_lock
 
 for id in `echo "$log" | grep postfix/qmgr | cut -d':' -f4 | sort | uniq`; do
