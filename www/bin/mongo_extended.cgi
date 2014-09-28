@@ -37,7 +37,7 @@ print_mongo_server() {
     indexhits=`expr "$indexhits" : ".*:\ *\(.*[^ ]\)\ *$"`
     indexacc=`echo "$report" | grep '^Index accesses'`
     indexacc=`expr "$indexacc" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status\" id=\"${nodeid}_index\">${indexhits} / ${indexacc}</div>"
+    echo "<div class=\"status clickable\" id=\"${nodeid}_index\" onclick=\"showDetails('${nodeid}_index','mongo_index_hits_graph')\">${indexhits} / ${indexacc}</div>"
     
     cursors=`echo "$report" | grep '^Open cursors'`
     cursors=`expr "$cursors" : ".*:\ *\(.*[^ ]\)\ *$"`

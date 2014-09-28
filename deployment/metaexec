@@ -181,7 +181,7 @@ startserver() {
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
-[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+
 possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name"
 [ "X$*" == "X" ] && usage="yes"
 

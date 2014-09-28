@@ -34,7 +34,7 @@ if [ -z "$RSYNC" ] ; then
     echo "Neither rsync nor scp is found. Exiting" && exit 1
   fi
 fi
-[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
+
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "SSH utility not found, exiting" && exit 1
 [ -n "$SSHPORT" ] || SSHPORT=22
@@ -94,7 +94,7 @@ possible_options="cluster help region verbose recursive ip nolocalhost user clou
 commflag=0
 for s_option in "${@}"
 do
-  case ${s_option} in
+  case $s_option in
   --*=*)
     if [ "$commflag" == "1" ] ; then
       command="$command ${s_option}"
@@ -249,7 +249,7 @@ for cld in $CLOUD ; do
           fi
           if [ "_$threaded" == "_yes" ]; then
             #res[$n]=$(remote_exec) 2>&1 </dev/null &
-            remote_sync > "$M_TEMP/$$.$n" 2>&1 &
+            (remote_sync > "$M_TEMP/$$.$n" 2>&1 || echo "ERROR") &
             pid[$n]=$!
           else
             remote_sync
