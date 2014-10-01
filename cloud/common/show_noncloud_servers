@@ -74,7 +74,7 @@ list_listed_servers() {
     if `echo "$localips" | grep -q "^${ip}$"` ; then
       ips="$localips"
     else
-      ips=`cloudexec --cluster="$cluster" localips \| grep -v "^127"`
+      ips=`cloudexec --cluster="$cluster" --ip=$ip localips \| grep -v "^127"`
     fi
     [ -n "$ips" ] && status="active" || status="unavailable"
     ips=`echo "$ips" | tr '\n' ' '`
