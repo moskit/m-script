@@ -117,8 +117,8 @@ for cloud in ${clouds[*]} ; do
         [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
         [ $res -eq 0 ] && log "list received"
         [ $res -eq 1 ] && log "API query error" && exit 1
-        cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
       fi
+      cp "$M_TEMP/$cloud/show_servers.resp" "$M_TEMP/$cloud/show_servers.resp.prev"
     else
       log "no changes found"
       continue
