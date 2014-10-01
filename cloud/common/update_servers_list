@@ -15,5 +15,5 @@ for cld in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | 
 done
 
 log "concatenating cloud lists: ${catline[*]}"
-[ -n "${catline[*]}" ] && cat ${catline[*]} > "$M_ROOT/servers.list" 2>/dev/null
+[ -n "${catline[*]}" ] && cat "${catline[*]}" > "$M_ROOT/servers.list" 2>/dev/null
 

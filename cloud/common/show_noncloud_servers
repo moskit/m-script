@@ -59,7 +59,9 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-list_local_servers() {
+localips=`localips | grep -v "^127"`
+
+list_listed_servers() {
   IFSORIG=$IFS ; IFS='
 '
   for server in `cat "$M_ROOT/servers.list" | grep "|${CLOUD}$" | grep -vE "^#|^$|^[[:space:]]*#"` ; do
@@ -69,7 +71,11 @@ list_local_servers() {
     region=`echo "$server" | cut -sd'|' -f3`
     name=`echo "$server" | cut -sd'|' -f4`
     cluster=`echo "$server" | cut -sd'|' -f5`
-    ips=$($M_ROOT/helpers/mssh "$ip" \(IFCFG=`which ifconfig 2>/dev/null` \; if [ -n \"\$IFCFG\" ] \; then \$IFCFG \| sed \'/inet\ /\!d\;s/.*r://\;s/\ .*//\' \| grep -v \'127.0.0.1\' \; else IFCFG=`which ip 2>/dev/null` \; [ -n \"\$IFCFG\" ] \&\& \$IFCFG addr list \| grep \'inet.*scope\ global\' \| while read L \; do expr \"\$L\" : \'inet \(.*\)/\' \; done \; fi\))
+    if `echo "$localips" | grep -q "^${ip}$"` ; then
+      ips="$localips"
+    else
+      ips=`cloudexec --cluster="$cluster" localips \| grep -v "^127"`
+    fi
     [ -n "$ips" ] && status="active" || status="unavailable"
     ips=`echo "$ips" | tr '\n' ' '`
     echo -e "------------------------------------------------------------------------------\nName: $name    Cluster: $cluster\nIPs: $ips\nStatus: $status"
@@ -77,6 +83,6 @@ list_local_servers() {
   IFS=$IFSORIG
 }
 
-list_local_servers
+list_listed_servers
 
 
