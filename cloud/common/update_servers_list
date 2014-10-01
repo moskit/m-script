@@ -10,7 +10,11 @@ declare -a catline
 
 for cld in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`; do
   source "$M_ROOT/conf/clouds/${cld}.conf"
-  "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld --forceupdate --update_servers_list $@
+  [ -n "$CLOUD_PROVIDER" ] && "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld --forceupdate --update_servers_list $@
+  res=$?
+  [ $res -eq 10 ] && log "$cld list is not updated: failed to acquire cloud operations lock" && continue
+  [ $res -eq 0 ] && log "$cld list updated successfully"
+  [ $res -eq 1 ] && log "ERROR $cld list is not updated" && continue
   catline+=("$M_ROOT/cloud/servers.list.${cld}")
 done
 

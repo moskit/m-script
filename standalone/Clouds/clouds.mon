@@ -72,16 +72,6 @@ IFS=$IFS1
 
 clouds=( `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
 
-# might be manual edits of servers.list: non-cloud servers and servers added by
-# start_server that have not yet reported by API (there might be delays)
-# so it cannot be compared with the list obtained from API
-if [ -z "`$DIFF -q "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1`" ]; then
-  log "no changes in servers.list"
-else
-  cp "$M_ROOT/servers.list" "$M_TEMP/servers.list"
-  log "changes found in servers.list, so it is backuped to $M_TEMP"
-fi
-
 declare -a catline
 
 for cloud in ${clouds[*]} ; do
@@ -150,29 +140,7 @@ for cloud in ${clouds[*]} ; do
 done
 
 log "concatenating cloud lists: ${catline[*]}"
-[ -n "${catline[*]}" ] && cat ${catline[*]} > "$M_ROOT/servers.list" 2>/dev/null
+[ -n "${catline[*]}" ] && cat "${catline[*]}" > "$M_ROOT/servers.list" 2>/dev/null
 
-# By now the diff of current and backuped servers.list files contains
-# non-cloud servers (including those not yet reported by API)
-noncloud=`$DIFF "$M_ROOT/servers.list" "$M_TEMP/servers.list" 2>&1 | grep '^>' | sed 's|^> ||' | grep -vE '^#|[[:space:]]*#'`
-if [ -n "$noncloud" ]; then
-  cloud="noncloud"
-  log "non-cloud or new servers found, generating the list"
-  [ -d "$M_TEMP/$cloud" ] || install -d "$M_TEMP/$cloud"
-  [ -f "$M_TEMP/$cloud/full.servers.list" ] && rm "$M_TEMP/$cloud/full.servers.list"
-  IFS1=$IFS; IFS='
-'
-  for LINE in `echo $noncloud` ; do
-    ncip=`echo $LINE | cut -d'|' -f1`
-    ncname=`echo $LINE | cut -d'|' -f4`
-    nccluster=`echo $LINE | cut -d'|' -f5`
-    [ "_$NETWORK" == "_external" ] && echo "|$ncname||$ncip||$nccluster||" >> "$M_TEMP/$cloud/full.servers.list" || echo "|$ncname|||$ncip|$nccluster||" >> "$M_TEMP/$cloud/full.servers.list"
-  done
-  log "list generated"
-  IFS=$IFS1
-  gen_html_table > "$M_TEMP/$cloud/full.servers.list.html"
-fi
-
-  
-
+exit 10
 
