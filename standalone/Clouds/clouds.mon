@@ -97,7 +97,7 @@ for cloud in ${clouds[*]} ; do
     fi
   else
     log "updating servers.list"
-    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cloud --update_servers_list
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud="$cloud" --update_servers_list
     res=$?
     [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
     [ $res -eq 0 ] && log "list updated successfully"
