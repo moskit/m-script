@@ -14,14 +14,14 @@ if [ "$(mountpoint -d /)" = "$(mountpoint -d "$TARGET")" ]; then
 fi
 
 echo "Creating network interfaces file..."
-mv "%{M_TEMP}%/interfaces" "$TARGET/etc/network/"
+mv "%{M_TEMP}%/interfaces" "$TARGET/etc/sysconfig/network-scripts/ifcfg-eth0"
 echo "Installing SSH keys..."
 install -m 700 -d "$TARGET/root/.ssh"
-cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
+echo "%{PUBLIC_KEY}%" >> "$TARGET/root/.ssh/authorized_keys"
 chmod 600 "$TARGET/root/.ssh/authorized_keys"
 echo "Setting up hostname..."
 echo "%{ip}% %{name}%" >> "$TARGET/etc/hosts"
-[ -f "$TARGET/etc/hostname" ] && echo "%{name}%" > "$TARGET/etc/hostname"
+echo "HOSTNAME=\"%{name}%\"" >> "$TARGET/etc/sysconfig/network"
 chroot "$TARGET" hostname %{name}%
 echo "Configuring resolver..."
 echo -e "nameserver %{GANETI_DNS1}%\nnameserver %{GANETI_DNS2}%" > /etc/resolv.conf

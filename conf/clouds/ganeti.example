@@ -13,6 +13,10 @@ NAME="Ganeti Cluster"
 # assigns them automatically to each new instance.
 GANETI_NETWORK=10.1.1.0
 
+# must be two (or edit network_if* template)
+GANETI_DNS1=8.8.8.8
+GANETI_DNS2=8.8.4.4
+
 # API URL
 GANETI_APIURL=localhost
 

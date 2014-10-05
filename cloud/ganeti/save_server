@@ -102,6 +102,7 @@ fi
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 source "$M_ROOT/cloud/$CLOUD_PROVIDER/functions.sh"
 
 [ -z "$M_TEMP" ] && M_TEMP="/tmp/m_script"
@@ -115,7 +116,11 @@ if [ -z "$imagename" ]; then
     [ -z "$imagename" ] && imagename="$params"
   fi
 fi
-[ -z "$imagename" ] && log "image name is mandatory, not saving" && exit 1
+[ -z "$imagename" ] && log "unable to determine image name, and it is not provided. It is mandatory, not saving" && exit 1
+
+[ -z "$name" ] && [ -n "$id" ] && name="$id"
+[ -z "$name" ] && [ -n "$ip" ] && name=`find_name $ip`
+[ -z "$name" ] && log "unable to determine source" && exit 1
 
 vm="$name"
 vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm" 2>/dev/null`
@@ -124,7 +129,7 @@ vmstate=`echo "$vmini" | cut -d'|' -f1`
 
 [ -z "$vmstate" ] && echo "Instance $vm not found" && exit 1
 
-[ "$vmstate" != "N" ] && echo "Instance must be stopped" && exit 1
+[ "$vmstate" != "N" ] && echo "Instance must be shut down" && exit 1
 
 disktype="`echo "$vmini" | cut -d'|' -f2`"
 disksize="`echo "$vmini" | cut -d'|' -f3`"

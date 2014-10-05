@@ -506,9 +506,9 @@ if [ "$output" == "console" ] ; then
 fi
 
 if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
-  KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 467
-  [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 486
-  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 487
+  KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 509
+  [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
+  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
   # it's here because startserver function re-reads cloud config
   [ -n "$SSHPORT" ] || SSHPORT=22
   if [ -z "$list" ] ; then
@@ -528,7 +528,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
       if ! $loggedin && [ -n "$newserver" ]; then
         # stop useless server and tell the parent process that something's wrong
         "$M_ROOT"/cloud/$CLOUD_PROVIDER/stop_server --ip=$ip
-        proper_exit 13 508
+        proper_exit 13 531
       fi
     fi
     #[ -z "$SCP" ] && echo "SCP not found!" && exit 1

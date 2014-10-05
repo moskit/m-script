@@ -16,12 +16,15 @@ fi
 echo "Creating network interfaces file..."
 mv "%{M_TEMP}%/interfaces" "$TARGET/etc/conf.d/net"
 echo "Installing SSH keys..."
-chroot "$TARGET" install -m 700 -d /root/.ssh
+install -m 700 -d "$TARGET/root/.ssh"
 cp "%{PUBLIC_KEY}%" "$TARGET/root/.ssh/authorized_keys"
 chmod 600 "$TARGET/root/.ssh/authorized_keys"
 echo "Setting up hostname..."
 echo "%{ip}% %{name}%" >> "$TARGET/etc/hosts"
 echo "hostname=\"%{name}%\"" > "$TARGET/etc/conf.d/hostname"
+chroot "$TARGET" hostname %{name}%
+echo "Configuring resolver..."
+echo -e "nameserver %{GANETI_DNS1}%\nnameserver %{GANETI_DNS2}%" > /etc/resolv.conf
 
 exit 0
 
