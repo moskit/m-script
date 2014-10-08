@@ -20,6 +20,11 @@ GANETI_DNS2=8.8.4.4
 # API URL
 GANETI_APIURL=localhost
 
+# OS guessing from flavor name (for templates selection). Set it to false
+# if you need custom templates, or use names from which OS name cannot be
+# guessed (does not include it in any form).
+GUESS_OS=true
+
 # Default gateway for Ganeti instances. Defaults to the first IP of the network.
 GANETI_GATEWAY=
 

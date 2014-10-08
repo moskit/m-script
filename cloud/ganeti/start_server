@@ -312,9 +312,12 @@ log "gateway: $GANETI_GATEWAY  broadcast: $broadcast"
 
 flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11 | tail -1`
 flfound=false
-for flvar in gentoo debian redhat centos fedora suse mint ubuntu lfs ; do
-  [ `echo "$flavor" | grep -c -i "$flvar"` -ne 0 ] && flfound=true && break
-done
+
+if $GUESS_OS ; then
+  for flvar in gentoo debian redhat centos fedora suse mint ubuntu lfs ; do
+    [ `echo "$flavor" | grep -c -i "$flvar"` -ne 0 ] && flfound=true && break
+  done
+fi
 $flfound || flvar=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f5 | cut -d'+' -f2 | tail -1`
 
 case $flvar in

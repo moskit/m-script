@@ -14,68 +14,57 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
-### Uncomment below and put your servers list to conf/servers.conf if you need 
-### to monitor multiple servers.
-### Details and examples can be found in doc/multiple_servers.txt.
-
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 IFS1=$IFS
 IFS='
 '
-echo ""
-echo "Other servers availability"
-echo "--------------------------"
-echo ""
+echo -e "Servers availability\n--------------------------\n"
+
 PING=`which ping 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
 CURL=`which curl 2>/dev/null`
-LYNX=`which lynx 2>/dev/null`
-LINKS=`which links 2>/dev/null`
-WGET=`which wget 2>/dev/null`
-for mserver in `cat ${rpath}/../conf/servers.conf|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
-do
-  serverip=`echo $mserver|awk '{print $1}'`
-  servername=`echo $mserver|awk '{print $2}'`
-  serverport=`echo $mserver|awk '{print $3}'`
+if [ -z "$CURL" ]; then
+  LYNX=`which lynx 2>/dev/null`
+  LINKS=`which links 2>/dev/null`
+  WGET=`which wget 2>/dev/null`
+fi
+[ -z "$TIMEOUT" ] && TIMEOUT=5
 
-  if [ "X$serverport" == "X" ] ; then
+for mserver in `cat "$rpath/../conf/servers.conf" | grep -vE "^$|^#|^[[:space:]]*#"`
+do
+  serverip=`echo $mserver|cut -sd'|' -f1`
+  servername=`echo $mserver|cut -sd'|' -f2`
+  serverport=`echo $mserver|cut -sd'|' -f3`
+
+  [ -z "$servername" ] && servername=$serverip
+  if [ -z "$serverport" ] ; then
     for ((i=0; i<3; i++)) ; do
       $PING -c1 $serverip >/dev/null
-      if [ "$?" == "0" ] ; then
-        pingtest="yes"
-      fi
+      [ $? -ne 0 ] && testres=false
     done
-    if [ "x$pingtest" == "xyes" ]; then
+    if $testres ; then
       echo "<OK> $servername is online (ping test)"
     else
       echo "<***> Ping probe to $servername failed!"
     fi
-    unset pingtest
-  elif [ "X$serverport" == "X22" ] ; then
-    [ "X$SSH" == "X" ] && echo "SSH client not found!" && continue
-    $SSH $serverip pwd >/dev/null
-    if [ "$?" == "0" ] ; then
-      sshtest="yes"
-    fi
-    if [ "x$sshtest" == "xyes" ]; then
+    unset testres
+  elif [ "_$serverport" == "_22" ] ; then
+    [ -z "$SSH" ] && echo "SSH client not found!" && continue
+    $SSH "-o ConnectTimeout=$TIMEOUT" $serverip echo -n >/dev/null 2>&1
+    [ $? -ne 0 ] && testres=false
+    if $testres ; then
       echo "<OK> $servername is online (SSH test)"
     else
       echo "<***> SSH test connect to $servername failed!"
     fi
-    unset sshtest
+    unset testres
   else
-    if [ "X$CURL" != "X" ]; then
-      $CURL -m 5 -s ${serverip}:$serverport > /dev/null 2>&1
-      res=$?
-      # Checking only connection to host:port here
-      if [ $res -ne 7 -a $res -ne 28 ] ; then
-        curltest="yes"
-      fi
-      case $res in
+    if [ -n "$CURL" ]; then
+      $CURL -m $TIMEOUT -s "${serverip}:$serverport" > /dev/null 2>&1
+      testres=$?
+      case $testres in
         7)
         echo "<***> Curl test connect to $servername failed!"
         ;;
@@ -100,43 +89,34 @@ do
       esac
       continue
     fi
-    if [ "X$LYNX" != "X" ]; then
+    if [ -n "$LYNX" ]; then
       $LYNX -dump http://${serverip}:$serverport > /dev/null 2>&1
-      if [ "$?" == "0" ] ; then
-        lynxtest="yes"
-      fi
-      if [ "x$lynxtest" == "xyes" ]; then
-        echo "<OK> $servername is online (Lynx test, port $serverport)"
+      if $testres ; then
+        echo "<OK> $servername is online (Lynx test, port ${serverport})"
       else
-        echo "<***> Lynx test connect to $servername failed!"
+        echo "<***> Lynx test connect to $servername:${serverport} failed!"
       fi
-      unset lynxtest
+      unset testres
       continue
     fi
-    if [ "X$LINKS" != "X" ]; then
+    if [ -n "$LINKS" ]; then
       $LINKS -dump http://${serverip}:$serverport > /dev/null 2>&1
-      if [ "$?" == "0" ] ; then
-        linkstest="yes"
-      fi
-      if [ "x$linkstest" == "xyes" ]; then
-        echo "<OK> $servername is online (Links test, port $serverport)"
+      if $testres ; then
+        echo "<OK> $servername is online (Links test, port ${serverport})"
       else
-        echo "<***> Links test connect to $servername failed!"
+        echo "<***> Links test connect to $servername:${serverport} failed!"
       fi
-      unset linkstest
+      unset testres
       continue
     fi
-    if [ "X$WGET" != "X" ]; then
+    if [ -n "$WGET" ]; then
       $WGET -O - http://${serverip}:$serverport > /dev/null 2>&1
-      if [ "$?" == "0" ] ; then
-        wgettest="yes"
-      fi
-      if [ "x$wgettest" == "xyes" ]; then
-        echo "<OK> $servername is online (Wget test, port $serverport)"
+      if $testres ; then
+        echo "<OK> $servername is online (Wget test, port ${serverport})"
       else
-        echo "<***> Wget test connect to $servername failed!"
+        echo "<***> Wget test connect to $servername:${serverport} failed!"
       fi
-      unset wgettest
+      unset testres
       continue
     fi
   fi
