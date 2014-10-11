@@ -65,7 +65,7 @@ store_results() {
 
 check_results() {
   # syntax:
-  # check_results var1<|description|datatype1>,var2<|description|datatype2>,...
+  # check_results "var1<|description|datatype1>,var2<|description|datatype2>,.."
   # where datatype can be real (default, slower but more universal) or integer
   # if description is omitted, variable name will be used in report
   [ -z "$1" ] && return 1
@@ -76,29 +76,51 @@ check_results() {
   IFS=','
   for var2ck in $1 ; do
     varname=`echo "$var2ck" | cut -d'|' -f1`
+    thr1=`eval "echo \"\\$${varname}_1\""`
+    [ -z "$thr1" ] && continue
+    thr2=`eval "echo \"\\$${varname}_2\""`
+    thr3=`eval "echo \"\\$${varname}_3\""`
+    val=`eval "echo \"\\$${varname}\""`
     vardescr=`echo "$var2ck" | cut -s -d'|' -f2`
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
     [ -z "$vardescr" ] && vardescr=$varname
     [ -z "$vartype" ] && vartype=real
-    thr1=`eval "echo \"\\$${varname}_1\""`
-    thr2=`eval "echo \"\\$${varname}_2\""`
-    thr3=`eval "echo \"\\$${varname}_3\""`
-    val=`eval "echo \"\\$${varname}\""`
-    if [ "$vartype" == "real" ]; then
-      [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-      [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-      [ `echo "scale=2; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
-    fi
-    if [ "$vartype" == "real4" ]; then
-      [ `echo "scale=4; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-      [ `echo "scale=4; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-      [ `echo "scale=4; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
-    fi
-    if [ "$vartype" == "integer" ]; then
-      [ `expr $val \>= $thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-      [ `expr $val \>= $thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-      [ `expr $val \>= $thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
-    fi
+    
+    case $vartype in
+      real)
+        if [ `echo "scale=2; $thr1 < 0" | bc` -eq 1 ]; then
+          [ `echo "scale=2; $val <= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val <= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val <= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+        else
+          [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+        fi
+        ;;
+      real4)
+        if [ `echo "scale=4; $thr1 < 0" | bc` -eq 1 ]; then
+          [ `echo "scale=4; $val <= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val <= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val <= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+        else
+          [ `echo "scale=4; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+        fi
+        ;;
+      integer)
+        if [ `expr $thr3 \< 0` -eq 1 ]; then
+          [ `expr $val \<= $thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `expr $val \<= $thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `expr $val \<= $thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+        else
+          [ `expr $val \>= $thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+        fi
+        ;;
+    esac
     echo "<OK>  ${vardescr}: $val"
   done
   IFS=$IFSORIG

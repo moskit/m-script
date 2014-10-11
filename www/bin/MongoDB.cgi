@@ -25,7 +25,7 @@ print_mongo_server() {
     echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${role}\" title=\"${role}\">`echo $role 2>/dev/null | cut -b 1 | sed 's|.|\U&|'`</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     echo "<div class=\"status status_short clickable\" id=\"${nodeid}_http\" onclick=\"showURL('${nodeid}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${nodeid}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
-    if [ "X`echo "$rawdata" | grep ^status= | cut -d'=' -f2`" == "X1" ] ; then
+    if [ "_`echo "$rawdata" | grep ^status= | cut -d'=' -f2`" == "_1" ] ; then
       echo "<div class=\"status status_short statusok clickable\" id=\"${nodeid}_status\" onclick=\"showDetails('${nodeid}_status','mongostatus')\">OK</div>"
     else
       echo "<div class=\"status status_short statuserr clickable\" id=\"${nodeid}_status\" onclick=\"showDetails('${nodeid}_status','mongostatus')\">Error</div>"

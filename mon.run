@@ -107,7 +107,7 @@ function runscript() {
   echo -e "$etitle" >> "$LOG"
   echo -e "$etitle" > "$rpath/report"
 
-  if [ "X$1" == "XSQL" ]; then
+  if [ "_$1" == "_SQL" ]; then
     
     for script in "$rpath/rc/"*.mon  #*/
     do

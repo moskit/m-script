@@ -103,8 +103,7 @@ install -d "$M_TEMP"
 find_ip() {
   class=${GANETI_NETWORK%.*}
   [ -z "$class" ] && class="10.1.1"
-  maxip=`cat "$M_ROOT/servers.list" | cut -d'|' -f1 | grep ^$class | sort | uniq | tail -1`
-  maxip=${maxip##*.}
+  maxip=`cat "$M_ROOT/servers.list" | cut -d'|' -f1 | grep "^${class}\." | cut -sd'.' -f4 | sort -n | uniq | tail -1`
   if [ -n "$maxip" ]; then
     [ "$maxip" == "254" ] && echo "No more IPs available!" && proper_exit 1 82
     echo "${class}.$((maxip+1))"

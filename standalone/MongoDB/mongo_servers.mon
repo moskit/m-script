@@ -80,8 +80,7 @@ function ip_to_name() {
 
 function collect_hosts() {
   for name in $@ ; do
-    port=${name#*:}
-    [ "X$port" == "X$name" ] && port=""
+    port=`echo "$name" | cut -sd':' -f2`
     ip_to_name $name
     [ -n "$port" ] || port=$defaultport
     configips="$configips ${rname}:$port"
@@ -154,8 +153,11 @@ function parse_data() {
   
   echo -e "Query               $ops_queriesps\nInsert              $ops_insertsps\nUpdate              $ops_updatesps\nDelete              $ops_deletesps\nGetmore              $ops_getmoresps\nCommand              $ops_commandsps\nTotal                $ops_totalqps"
   
-  if [ "X$SQLITE3" == "X1" ] ; then
+  if [ "_$SQLITE3" == "_1" ] ; then
     dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory, recordsScanned) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}', '${recordsScanned-0}')" 2>>"$LOG"
+  fi
+  if [ "_$ENABLE_CHECKS" == "_1" ]; then
+    check_results "memRes|Resident memory (MB)|real,memVir|Virtual memory (MB)|real,memMapped|Mapped memory (MB)|real,memMappedWJournal|Mapped memory incl. journal (MB)|real,infoHeapUsage|Heap usage (MB)|real,connCurrent|Connections used|integer,connAvailable|Connections available|integer,bw_in|Bandwidth inbound (MB/sec)|real,bw_out|Bandwidth outbound (MB/sec)|real,net_reqps|Network requests / sec|integer,ops_insertsps|Inserts / sec|integer,ops_queriesps|Queries / sec|integer,ops_updatesps|Updates / sec|integer,ops_deletesps|Deletes / sec|integer,ops_getmoresps|Getmores / sec|integer,ops_commandsps|Commands / sec|integer,ops_totalqps|QPS total / sec|integer,lockTime|Global lock time (%)|real,lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters recstatsPageFaults recstatsNotInMemory recordsScanned scanned
   fi
   unset status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable bw_in bw_out net_reqps ops_insertsps ops_queriesps ops_updatesps ops_deletesps ops_getmoresps ops_commandsps ops_totalqps lockRatio lockTime lockTime_prev lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters recstatsPageFaults recstatsNotInMemory recordsScanned scanned
 }
@@ -164,7 +166,7 @@ function parse_data() {
 
 if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   defaultport=27019
-  MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | sed 's|,| |g'`
+  MONGO_CONFIG_SERVERS=`echo $MONGO_CONFIG_SERVERS | tr ',' ' '`
   for name in $MONGO_CONFIG_SERVERS ; do
     if [ `grep -c ^$name\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] ; then
       noncluster=1
@@ -172,8 +174,8 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
       cluster=1
     fi
   done
-  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && log "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
-  if [ "X$cluster" == "X1" ] ; then
+  [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "_$cluster" == "_1" ] ; then
     for name in $MONGO_CONFIG_SERVERS ; do
       port=${name#*:}
       clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
@@ -196,7 +198,7 @@ else
 ## Config servers are not defined
 
   defaultport=27017
-  MONGO_SERVERS=`echo $MONGO_SERVERS | sed 's|,| |g'`
+  MONGO_SERVERS=`echo $MONGO_SERVERS | tr ',' ' '`
   for name in $MONGO_SERVERS ; do
     if [ `grep -c ^${name%:*}\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] ; then
       noncluster=1
@@ -204,8 +206,8 @@ else
       cluster=1
     fi
   done
-  [ "X$cluster" == "X1" ] && [ "X$noncluster" == "X1" ] && log "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
-  if [ "X$cluster" == "X1" ] ; then
+  [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  if [ "_$cluster" == "_1" ] ; then
     for name in $MONGO_SERVERS ; do
       port=${name#*:}
       clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
@@ -217,12 +219,12 @@ else
   
   ## Collecting servers list
   [ -f "$M_TEMP/mongo_servers.list" ] && rm -f "$M_TEMP/mongo_servers.list"
-  # For hosts from servers.conf
+  # For hosts from mongo_servers.conf
   for mongohost in $configips ; do
     mongoport=${mongohost##*:}
     mongohost="${mongohost%:*}"
     # Is it a part of a replica set?
-    if [ "X`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()" | tail -1`" != "Xnull" ] ; then
+    if [ "_`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()" | tail -1`" != "_null" ] ; then
       replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1`
       find_rsmemberrole "${mongohost}:${mongoport}"
     fi
@@ -254,9 +256,6 @@ else
 fi
 
 for configip in $configips ; do
-# Despite variable name this is not necessarily config servers, so might be
-# replica sets
-# master=`find_master ${configip} || echo ${configip}`
   mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({\"ping\" : { \\$gt : "$lastping" }}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
   mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -s -d'|' -f2 | tr -d '"' | grep -v ^$ | sort -n`

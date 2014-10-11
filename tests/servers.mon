@@ -37,7 +37,7 @@ do
   serverip=`echo $mserver|cut -sd'|' -f1`
   servername=`echo $mserver|cut -sd'|' -f2`
   serverport=`echo $mserver|cut -sd'|' -f3`
-
+  testres=true
   [ -z "$servername" ] && servername=$serverip
   if [ -z "$serverport" ] ; then
     for ((i=0; i<3; i++)) ; do
@@ -96,7 +96,6 @@ do
       else
         echo "<***> Lynx test connect to $servername:${serverport} failed!"
       fi
-      unset testres
       continue
     fi
     if [ -n "$LINKS" ]; then
@@ -106,7 +105,6 @@ do
       else
         echo "<***> Links test connect to $servername:${serverport} failed!"
       fi
-      unset testres
       continue
     fi
     if [ -n "$WGET" ]; then
@@ -116,7 +114,6 @@ do
       else
         echo "<***> Wget test connect to $servername:${serverport} failed!"
       fi
-      unset testres
       continue
     fi
   fi
