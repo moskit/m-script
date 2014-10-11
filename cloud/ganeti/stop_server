@@ -27,7 +27,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 
-possible_options="cloud id name ip verbose"
+possible_options="cloud id name ip verbose cluster"
 necessary_options=""
 
 ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
@@ -72,6 +72,8 @@ if [ -z "$name" ] ; then
 fi
 [ -z "$name" ] && echo "Unable to find this server" && exit 1
 tscluster=$(cat "$M_ROOT/servers.list" | grep -vE "^#|^$|^[[:space:]]#" | cut -d'|' -f4,5 | grep ^$name\| | cut -d'|' -f2)
+[ -z "$tscluster" ] && tscluster="$cluster"
+[ -z "$tscluster" ] && echo "Cluster cannot be found, please provide its name ecplicitely (option --cluster)" && exit 1
 thekey=`"$M_ROOT"/helpers/find_key cluster $tscluster`
 
 request() {
@@ -83,7 +85,7 @@ request() {
 }
 
 IPS=`($GNTI list --no-headers -o name,nic.ips $name || echo "ERROR") | tr ',' ' ' | tail -1`
-if [ "X$IPS" == "XERROR" ]; then
+if [ "_$IPS" == "_ERROR" ]; then
   echo "Error getting IPs of the instance ${name}. Non-existing instance?"
   exit 1
 fi
@@ -104,7 +106,7 @@ if [[ $reqres -eq 0 ]] ; then
   done
   needs_balancer=false
   for bcluster in $APP_SERVERS ; do
-    [ "X${bcluster%%|*}" == "X$tscluster" ] && needs_balancer=true
+    [ "_${bcluster%%|*}" == "_$tscluster" ] && needs_balancer=true
   done
   if $needs_balancer ; then
     if [ -n "$BALANCER" ] ; then
