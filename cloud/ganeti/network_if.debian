@@ -22,7 +22,7 @@ chmod 600 "$TARGET/root/.ssh/authorized_keys"
 echo "Setting up hostname..."
 echo "%{ip}% %{name}%" >> "$TARGET/etc/hosts"
 [ -f "$TARGET/etc/hostname" ] && echo "%{name}%" > "$TARGET/etc/hostname"
-chroot "$TARGET" "hostname %{name}%"
+chroot "$TARGET" "/bin/hostname %{name}%"
 echo "Configuring resolver..."
 if [ -n "%{GANETI_DNS1}%" ]; then
   echo "nameserver %{GANETI_DNS1}%" >> "$TARGET/etc/resolv.conf"
