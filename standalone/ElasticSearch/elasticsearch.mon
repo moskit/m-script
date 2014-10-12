@@ -194,9 +194,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
 #    done
 #  done
   
-  clusternodes=`cat "$rpath/data/${escluster}.nodes" 2>/dev/null | grep ^0\/\"nodes\"\/ | cut -d'/' -f3 | sort | uniq`
-  issingle=`echo "$clusternodes" | wc -l`
-  for clusternode in $clusternodes ; do
+  for clusternode in `cat "$rpath/data/${escluster}.nodes" 2>/dev/null | grep ^0\/\"nodes\"\/ | cut -d'/' -f3 | sort | uniq` ; do
     clusternode=`echo $clusternode | sed 's|-|\\\-|g;s|"||g'`
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^0\/\"master_node\" "$rpath/data/${escluster}.nodes" | grep -c "$clusternode"`
@@ -216,17 +214,18 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     fi
     eval "${escluster}nodes+=( \"${hostport}\" )"
     echo -e "clusternode_id|$clusternode\nip|$nodehost\nmaster|$ismaster" > "$rpath/data/${escluster}.${rname}.dat.tmp"
-    # with only one node handler _cluster/nodes is not available
-    if [ $issingle -eq 1 ]; then
-      ($CURL -m 5 "http://$clusterhost1/_cluster/stats?process&jvm&network&transport&http" || $CURL -m 10 "http://$clusterhost2/_cluster/stats?process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
+    
+    if $HANDLE_NODES ; then
+      ($CURL -m 5 "http://$clusterhost1/_nodes/$clusternode/stats?process&jvm&network&transport&http" || $CURL -m 5 "http://$clusterhost2/_nodes/$clusternode/stats?process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
     else
-      ($CURL -m 5 "http://$clusterhost1/_cluster/nodes/$clusternode/stats?process&jvm&network&transport&http" || $CURL -m 10 "http://$clusterhost2/_cluster/nodes/$clusternode/stats?process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"  #  | sed 's_^\([^[:space:]]*\) _\1|_g'
+      ($CURL -m 5 "http://$clusterhost1/_cluster/nodes/$clusternode/stats?process&jvm&network&transport&http" || $CURL -m 5 "http://$clusterhost2/_cluster/nodes/$clusternode/stats?process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
     fi
+
     mv "$rpath/data/${escluster}.${rname}.dat" "$rpath/data/${escluster}.${rname}.dat.prev"
     mv "$rpath/data/${escluster}.${rname}.dat.tmp" "$rpath/data/${escluster}.${rname}.dat"
     $debug && log "    JSON stats parsed and saved to file"
     
-    if [ "X$SQLITE3" == "X1" ] ; then
+    if [ "_$SQLITE3" == "_1" ] ; then
       master=`grep ^master\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       ind_size=`grep ^\"indices\"\/\"store\"\/\"size_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       ind_docsnum=`grep ^\"indices\"\/\"docs\"\/\"count\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
