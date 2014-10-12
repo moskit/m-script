@@ -45,12 +45,23 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
   close_line
 
     for node in `cat $PWD/../../standalone/$scriptname/${clustername}.nodes.list | sort` ; do
-      [ "X`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "X1" ] && role="M" || unset role
+      [ "_`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "_1" ] && role="M" || unset role
       open_line "$node||$clustername" "$scriptname"
 
         echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" 2>/dev/null | grep ^\\"name\\"\||cut -d'|' -f2 | tr -d '"'`</div>"
-        echo "<div class=\"status\" id=\"${node}_mem\">`grep ^\\"jvm\\"\/\\"mem\\"\/\\"heap_used\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'` / `grep ^\\"jvm\\"\/\\"mem\\"\/\\"heap_committed\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d 'mb"'`</div>"
-        echo "<div class=\"status\" id=\"${node}_size\">`grep ^\\"indices\\"/\\"store\\"/\\"size\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d '"'`</div>"
+        
+        heap_used_in_bytes=`grep ^\"jvm\"\/\"mem\"\/\"heap_used_in_bytes\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`
+        heap_used_in_mbytes=`echo "scale=2; $heap_used_in_bytes / 1048576" | bc`
+        heap_committed_in_bytes=`grep ^\"jvm\"\/\"mem\"\/\"heap_committed_in_bytes\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`
+        heap_committed_in_mbytes=`echo "scale=2; $heap_committed_in_bytes / 1048576" | bc`
+        
+        echo "<div class=\"status\" id=\"${node}_mem\">${heap_used_in_mbytes} / ${heap_committed_in_mbytes}</div>"
+        
+        indices_size_in_bytes=`grep ^\"indices\"/\"store\"/\"size_in_bytes\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d '"'`
+        indices_size_in_mbytes=`echo "scale=2; $indices_size_in_bytes / 1048576" | bc`
+        
+        echo "<div class=\"status\" id=\"${node}_size\">${indices_size_in_mbytes}</div>"
+        
         echo "<div class=\"status\" id=\"${node}_docs\">`grep ^\\"indices\\"/\\"docs\\"/\\"count\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^\\"process\\"/\\"open_file_descriptors\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_conn\">`grep ^\\"http\\"/\\"current_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^\\"transport\\"/\\"server_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
