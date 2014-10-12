@@ -216,7 +216,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     echo -e "clusternode_id|$clusternode\nip|$nodehost\nmaster|$ismaster" > "$rpath/data/${escluster}.${rname}.dat.tmp"
     
     if $HANDLE_NODES ; then
-      ($CURL -m 5 "http://$clusterhost1/_nodes/$clusternode/stats?process&jvm&network&transport&http" || $CURL -m 5 "http://$clusterhost2/_nodes/$clusternode/stats?process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
+      ($CURL -m 5 "http://$clusterhost1/_nodes/$clusternode/stats/process,jvm,network,transport,http" || $CURL -m 5 "http://$clusterhost2/_nodes/$clusternode/stats/process,jvm,network,transport,http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
     else
       ($CURL -m 5 "http://$clusterhost1/_cluster/nodes/$clusternode/stats?process&jvm&network&transport&http" || $CURL -m 5 "http://$clusterhost2/_cluster/nodes/$clusternode/stats?process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
     fi
