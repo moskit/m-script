@@ -79,9 +79,9 @@ do
     ;;
   esac
   for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$option=$s_optarg" && found=1
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
+  [ "_$s_option" == "_$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
@@ -123,7 +123,7 @@ Options:
                                     chains created by this script
                                     Note that it does not do anything with the
                                     blocked IPs lists $M_TEMP/ip_block.const
-                                    and $M_TEMP/ip_block.tmp. Backup them if
+                                    and $M_TEMP/ip_block.tmp.
 
 EOF
 
