@@ -226,7 +226,7 @@ source "$rpath/../conf/clouds/${CLOUD}.conf"
 export PATH="$M_ROOT/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
 [ -n "$SSHPORT" ] || SSHPORT=22
 
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+localip=`"$M_ROOT"/helpers/localips`
 install -d "$M_TEMP/deployment/"
 IFS1=$IFS
 IFS='
@@ -278,7 +278,7 @@ if [ -z "$local" ]; then
   else
     if [ -n "$ip" ] ; then
     # Single destination: region, cluster, cloud are ignored
-      if [ `echo $ip | grep -c "^$localip$"` -ne 0 ] ; then
+      if [ `echo "$localip" | grep -c "^$ip$"` -ne 0 ] ; then
         prepare_file
         echo "${tmpfile##*/}...  "
         cp -up "$tmpfile" "$to" && echo "Success"
@@ -309,7 +309,7 @@ if [ -z "$local" ]; then
             echo "### Server: $server"
             echo
           fi
-          if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+          if [ `echo "$localip$" | grep -c "^$IP$"` -ne 0 ] ; then
             prepare_file
             echo "${tmpfile##*/}...  "
             cp -up "$tmpfile" "$to" && echo "Success"
