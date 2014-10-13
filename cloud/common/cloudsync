@@ -69,7 +69,7 @@ remote_sync() {
     echo
     echo "=  Server: $NAME ($IP)  Cluster: $CLUSTER"
   fi
-  if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+  if [ `echo "$localip" | grep -c "^$IP$"` -ne 0 ] ; then
     if [ -z "$nolocalhost" ]; then
       [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
     fi
