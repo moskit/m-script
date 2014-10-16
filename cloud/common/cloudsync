@@ -159,11 +159,12 @@ trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
-
+localip=`localips`
+  
 for cld in $CLOUD ; do
 
   [ -n "$recursive" ] && recursive="-r"
-  localip=`localips`
+
   if [ -n "$ip" ] ; then
     cluster= ; region=
     if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then

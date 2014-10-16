@@ -468,11 +468,11 @@ if [ -n "$newserver" ]; then
         res=$ip
       fi
       [[ $res -eq 2 ]] && log "Timeout waiting for the server ready" && break
-      [[ $res -eq 5 ]] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 446
+      [[ $res -eq 5 ]] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 471
       # various weird errors below, exit 1 
-      [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 448
-      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 449
-      [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 450
+      [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 473
+      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 474
+      [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 475
       [[ $res -eq 1 ]] && log "Something went wrong, unable to add a server to the cluster $cluster"
       if [ -z "$ip" ]; then
         log "Was unable either to start a cloud server in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
@@ -480,7 +480,7 @@ if [ -n "$newserver" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
-    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 458
+    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 483
   else
     echo "*** This is a test"
   fi
