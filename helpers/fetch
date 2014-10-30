@@ -36,7 +36,7 @@ filename=${URL##*/}
 echo "Protocol: $PROTO"
 echo "URL: $URL"
 
-[ "X$PROTO" == "X" ] && PROTO="http"
+[ -z "$PROTO" ] && PROTO="http"
 
 if [ -n "$WGET" ] ; then
   [ -n "$2" ] && DEST="-P ${2}"

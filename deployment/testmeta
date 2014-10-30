@@ -127,7 +127,7 @@ for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]#%-`"' ; for l in `cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | tr -d '{' | tr -d '}' | sort | uniq) ; do
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]#%-`"' ; for l in `cat "$ROLES_ROOT/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | tr -d '{}' | sort | uniq | grep -v '^\$ip$') ; do
       echo -n "$var :: "
       a=`eval "echo \"$var\""`
       if [ -z "$a" ] ; then

@@ -196,11 +196,12 @@ IFS=$IFS1
 }
 
 print_timeline() {
+  # print_timeline "title" <interval>
   [ -n "$2" ] && interval=$2 || interval=$FREQ
   timerange=`expr $slotline_length \* \( $interval - $timeshift \)` || timerange=10000
   # print every 1st hour
   factor=1
-  [ $interval -gt 1000 ] && factor=2
+  [ $interval -gt 1000 ] 2>/dev/null && factor=2
   local -i i
   i=0
   dfptoldest=`date -d "-$timerange sec"`

@@ -18,18 +18,12 @@ MAILX=`which mail 2>/dev/null`
 M_TEMP="$M_TEMP/elasticsearch"
 LOG="$M_ROOT/logs/sa.log"
 source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 timeindexnow=`date +"%s"`
 debug=false
 
 get_lock
-
-function ip_to_name() {
-  rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
-  [ -n "$rname1" ] && rname2=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $3}'` || rname=${1%:*}
-  [ -n "$rname2" ] && [ ${#rname2} -lt ${#rname1} ] && rname=$rname2 || rname=$rname1
-  [ -n "$rname" ] || rname=${1%:*}
-}
 
 function print_servers() {
   for host in $@ ; do
@@ -39,9 +33,9 @@ function print_servers() {
 
 function collect_hosts() {
   for name in $@ ; do
-    port=${name#*:}
-    [ "X$port" == "X$name" ] && unset port
-    ip_to_name $name
+    port=`echo "$name" | cut -sd':' -f2`
+    rname=`find_name "${name%%:*}"`
+    [ -z "$rname" ] && rname="${name%%:*}"
     [ -n "$port" ] || port=$defaultport
     configips="$configips ${rname}:$port"
   done
