@@ -336,7 +336,7 @@ else
   [ -n "$nosudo" ] && SU="--nosudo --user=$SSH_REMOTE_USER" || SU="--user=$SSH_REMOTE_USER"
 fi
 if [ -n "$name" ] && [ -z "$ip" ]; then
-  ip=`find_ip $name`
+  ip=`name_to_ip $name`
   [ $? -ne 0 ] && echo "Unable to resolve name $name" >&2 && exit 1
   if [ `expr "$ip" : "[^[0-9.]]*" 2>/dev/null` -ne 0 ] ; then
     echo "name $name resolved to IP that does not look correct: $ip"

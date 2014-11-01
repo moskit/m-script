@@ -35,7 +35,8 @@ DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
-#source "$rpath/${rcommand%.mon}.conf" || true
+[ -e "$rpath/${rcommand%.mon}.conf" ] && source "$rpath/${rcommand%.mon}.conf"
+
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
     AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
@@ -68,21 +69,22 @@ for ns in $sharded ; do
   keypattern=`$MONGO $AUTH "$confserver"/config --quiet --eval "db.collections.find({\"_id\":\"${ns}\"}).forEach(function(c) {printjson(c.key)})"`
   for shard in $shards ; do
     if [ -n "$2" ]; then [ "$2" != "$shard" ] && continue ; fi
-    rm "$rpath/${shard}.${ns}.chunks"
+    rm "$rpath/${shard}.${ns}.chunks" 2>/dev/null
     shardhost=`cat "$rpath/mongo_shards.list" 2>/dev/null | cut -sd'|' -f1 | grep "^${shard}:" | head -1`
     [ -z "$shardhost" ] && echo "Host not found for shard $shard" && continue
 
-    $MONGO $AUTH "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | while read MINMAX ; do
+    $MONGO $AUTH "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"$shard\", \"ns\" : \"$ns\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | while read MINMAX ; do
+      # echo "$MINMAX" >&2
       MIN=`expr "$MINMAX" : "^min\ :\ \(\{.*\}\),"`
       MAX=`expr "$MINMAX" : ".*max\ :\ \(\{.*\}\)"`
       SIZE=`$MONGO $AUTH "$shardhost" --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns}\", keyPattern: ${keypattern}, $MINMAX }))" | "$M_ROOT"/lib/json2txt | grep '"size"|' | cut -sd'|' -f2`
       echo "$ns|$MIN|$MAX|$SIZE" >> "$rpath/${shard}.${ns}.chunks"
       if $MERGE_EMPTY_CHUNKS ; then
         mongos=`head -n $((RANDOM%$a+1)) "$rpath/mongo_mongos_servers.list" 2>/dev/null | tail -1 | cut -sd'|' -f1`
-        if [ -n "$mongos" ] ; then
-          if [ "_$MIN" == "_$max" ]; then
-            # merging
-            $MONGO $AUTH "$mongos"/admin --quiet --eval "db.runCommand( { mergeChunks : \"$ns\" , bounds : [ \"$min\" , \"$MAX\" } )"
+        if [ -n "$mongos" ]; then
+          if [ "_$MIN" == "_$max" ] && ([ $size -eq 0 ] || [ $SIZE -eq 0 ]); then
+            log "merging chunks ($shard/$ns): << $min , $max >> + << $MIN , $MAX >> using mongos: $mongos"
+            $MONGO $AUTH "$mongos"/admin --quiet --eval "db.runCommand( { mergeChunks : \"$ns\" , bounds : [ \"$min\" , \"$MAX\" ] } )"
             size=`expr $size + $SIZE`
           else
             min=$MIN
@@ -90,7 +92,8 @@ for ns in $sharded ; do
           fi
           max=$MAX
         fi
-      sleep $SLEEP
+        sleep $SLEEP
+      fi
     done
   done
 done

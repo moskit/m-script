@@ -199,10 +199,16 @@ find_name() {
   return 1
 }
 
-find_ip() {
+name_to_ip() {
   IP=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1 | tail -1`
   [ -z "$IP" ] && return 1
   echo "$IP"
+}
+
+ip_to_name() {
+  name=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "^${1}|" | cut -d'|' -f2 | tail -1`
+  [ -z "$name" ] && return 1
+  echo "$name"
 }
 
 proper_exit() {
