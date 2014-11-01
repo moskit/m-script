@@ -103,11 +103,12 @@ $debug && log "server lists updated"
 
 for node in `cat "$rpath"/*.es_servers.list 2>/dev/null` ; do
   if $HANDLE_NODES ; then
-    allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state/metadata"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+    allclusters="$allclusters $node|`$CURL -m 2 "http://$node/_cluster/state/_"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   else
-    allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+    allclusters="$allclusters $node|`$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   fi
 done
+
 [ -z "$allclusters" ] && log "no ES clusters found, exiting" && unlock_exit 1
 
 $debug && log "ES cluster(s) found: $allclusters"
@@ -116,7 +117,7 @@ date > "$rpath/elasticsearch.mon.report"
 echo -e "-----------------------------\n" >> "$rpath/elasticsearch.mon.report"
 
 ### allclusters and escluster mean ES cluster, not servers cluster!
-for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
+for escluster in `echo "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
   #rm -f "$rpath/${escluster}.nodes.list"
   #mv "$rpath/${escluster}.dat" "$rpath/${escluster}.dat.prev"
   clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
@@ -127,9 +128,9 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   [ -n "$clusterport1" ] && clusterport="$clusterport1" || clusterport="$clusterport2"
   $debug && log "ES cluster ${escluster}: 2 random hosts selected: $clusterhost1 and $clusterhost2"
   
-  ($CURL -m 2 "http://$clusterhost1/_cluster/health" || $CURL -m 5 "http://$clusterhost2/_cluster/health") | "$M_ROOT"/lib/json2txt > "$rpath/${escluster}.dat.tmp"
+  health=`($CURL -m 2 "http://$clusterhost1/_cluster/health" || $CURL -m 5 "http://$clusterhost2/_cluster/health") | "$M_ROOT"/lib/json2txt`
   mv "$rpath/${escluster}.dat" "$rpath/${escluster}.dat.prev"
-  mv "$rpath/${escluster}.dat.tmp" "$rpath/${escluster}.dat"
+  echo "$health" > "$rpath/${escluster}.dat"
   $debug && log "ES cluster ${escluster}: health data collected"
   
   IFS1=$IFS
