@@ -13,17 +13,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
-
 echo_usage() {
   echo -e "\n  Usage: $rcommand <database.collection> <shard name>\n\n         With shard omitted all shards will be analyzed\n         With database.collection omitted all sharded collections will be amalyzed\n\n"
 }
-
 if [ -n "$1" ]; then
   if [ "$1" == "--help" ]; then
     echo_usage && exit 0
@@ -31,16 +28,14 @@ if [ -n "$1" ]; then
     [ `expr "$1" : "^.*\."` -eq 0 ] && echo_usage && exit 1
   fi
 fi
-
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
 [ -z "$SLEEP" ] && SLEEP=20
-
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
-source "$rpath/${rcommand%.mon}.conf"
+#source "$rpath/${rcommand%.mon}.conf" || true
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
     AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
@@ -49,10 +44,14 @@ if [ -n "$AUTH_LOGIN" ]; then
   fi
 fi
 source "$M_ROOT/conf/mon.conf"
-
 M_TEMP="$M_TEMP/MongoDB"
 install -d "$M_TEMP"
 timeindexnow=`date +"%s"`
+if [ -n "$MERGE_EMPTY_CHUNKS" ]; then
+  MERGE_EMPTY_CHUNKS=true
+else
+  MERGE_EMPTY_CHUNKS=false
+fi
 
 a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && log "No configuration servers found" && exit 1
@@ -65,26 +64,37 @@ sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\
 shards=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.distinct(\"shard\").forEach( function(c) {print(c)} )" 2>>$LOG`
 
 for ns in $sharded ; do
-  if [ -n "$1" ]; then [ "$1" != "$coll" ] && continue ; fi
-  keypattern=`$MONGO $AUTH "$confserver"/config --quiet --eval "db.collections.find({\"_id\":\"${ns}\"}).forEach(function(c) {printjson(c.key)})" | sed 's|"|\\"|g'`
+  if [ -n "$1" ]; then [ "$1" != "$ns" ] && continue ; fi
+  keypattern=`$MONGO $AUTH "$confserver"/config --quiet --eval "db.collections.find({\"_id\":\"${ns}\"}).forEach(function(c) {printjson(c.key)})"`
   for shard in $shards ; do
-    rm "$rpath/shard.${shard}.emptychunks"
     if [ -n "$2" ]; then [ "$2" != "$shard" ] && continue ; fi
-    shardhost=`cat "$rpath/mongo_shards.list" 2>/dev/null | cut -sd'|' -f1,2 | grep "|$shard$" | cut -sd'|' -f1`
+    rm "$rpath/${shard}.${ns}.chunks"
+    shardhost=`cat "$rpath/mongo_shards.list" 2>/dev/null | cut -sd'|' -f1 | grep "^${shard}:" | head -1`
     [ -z "$shardhost" ] && echo "Host not found for shard $shard" && continue
-    
-    #$MONGO $AUTH "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print(tojson(c.min) + '|' + tojson(c.max))})" | while read MINMAX ; do
-    #  MIN=`echo "$MINMAX" | cut -sd'|' -f1`
-    #  MAX=`echo "$MINMAX" | cut -sd'|' -f2`
-    
-    $MONGO $AUTH "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | sed 's|"|\\"|g;s|\$|\\$|g' | while read MINMAX ; do
-      size=`$MONGO $AUTH "$shardhost"/${ns%%.*} --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns#*.}\", keyPattern: ${keypattern}, $MINMAX }))" | "$M_ROOT"/lib/json2txt | grep '"size"|' | cut -sd'|' -f2`
-      if [ "_$size" == "_0" ]; then
-        echo "$ns|$MINMAX" >> "$rpath/shard.${shard}.emptychunks"
-      fi
+
+    $MONGO $AUTH "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | while read MINMAX ; do
+      MIN=`expr "$MINMAX" : "^min\ :\ \(\{.*\}\),"`
+      MAX=`expr "$MINMAX" : ".*max\ :\ \(\{.*\}\)"`
+      SIZE=`$MONGO $AUTH "$shardhost" --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns}\", keyPattern: ${keypattern}, $MINMAX }))" | "$M_ROOT"/lib/json2txt | grep '"size"|' | cut -sd'|' -f2`
+      echo "$ns|$MIN|$MAX|$SIZE" >> "$rpath/${shard}.${ns}.chunks"
+      if $MERGE_EMPTY_CHUNKS ; then
+        mongos=`head -n $((RANDOM%$a+1)) "$rpath/mongo_mongos_servers.list" 2>/dev/null | tail -1 | cut -sd'|' -f1`
+        if [ -n "$mongos" ] ; then
+          if [ "_$MIN" == "_$max" ]; then
+            # merging
+            $MONGO $AUTH "$mongos"/admin --quiet --eval "db.runCommand( { mergeChunks : \"$ns\" , bounds : [ \"$min\" , \"$MAX\" } )"
+            size=`expr $size + $SIZE`
+          else
+            min=$MIN
+            size=$SIZE
+          fi
+          max=$MAX
+        fi
       sleep $SLEEP
     done
   done
 done
+
+
 
 
