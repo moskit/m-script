@@ -64,6 +64,7 @@ if [ -n "$ES_SERVERS" ] ; then
       host=`echo "$server" | cut -d':' -f1`
       port=`echo "$server" | cut -sd':' -f2`
       clustername=`cat "$M_ROOT/servers.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
+      [ -z "$clustername" ] && log "Cluster name for server $server not found, check your settings!" && continue
       [ "_$clustername" == "_$clusternameprev" ] && continue
       
       clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
@@ -76,8 +77,9 @@ if [ -n "$ES_SERVERS" ] ; then
   else
   # ES_SERVERS contains clusters
     for name in $ES_SERVERS ; do
-      clustername=`echo "$server" | cut -d':' -f1`
-      port=`echo "$server" | cut -sd':' -f2`
+      clustername=`echo "$name" | cut -d':' -f1`
+      [ -z "$clustername" ] && log "Cluster name $name not found, check your settings!" && continue
+      port=`echo "$name" | cut -sd':' -f2`
       clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
       collect_hosts $clusterips
       eval "${clustername}ips=\"$configips\""
@@ -90,6 +92,7 @@ else
   unlock_exit 1
 fi
 $debug && log "hosts collected"
+rm "$rpath"/*.es_servers.list 2>/dev/null
 
 # These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
@@ -99,7 +102,11 @@ done
 $debug && log "server lists updated"
 
 for node in `cat "$rpath"/*.es_servers.list 2>/dev/null` ; do
-  allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | awk -F'|' "{print \\"$node|\\" \\$2}" | tr -d '"'`"
+  if $HANDLE_NODES ; then
+    allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state/metadata"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+  else
+    allclusters="$allclusters `$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | cut -d'/' -f2 | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+  fi
 done
 [ -z "$allclusters" ] && log "no ES clusters found, exiting" && unlock_exit 1
 
@@ -172,9 +179,12 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     unset name status timed_out number_of_nodes number_of_data_nodes active_primary_shards active_shards relocating_shards initializing_shards unassigned_shards
   fi
   $debug && log "ES cluster ${escluster}: health data stored in database"
-  
-  ($CURL -m 3 "http://$clusterhost1/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://$clusterhost2/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt > "$rpath/data/${escluster}.nodes.tmp"
-  mv "$rpath/data/${escluster}.nodes.tmp" "$rpath/data/${escluster}.nodes"
+  if $HANDLE_NODES ; then
+    nodes=`($CURL -m 3 "http://$clusterhost1/_cluster/state/nodes" || $CURL -m 6 "http://$clusterhost2/_cluster/state/nodes") | "$M_ROOT"/lib/json2txt`
+  else
+    nodes=`($CURL -m 3 "http://$clusterhost1/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://$clusterhost2/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt`
+  fi
+  echo "$nodes" > "$rpath/data/${escluster}.nodes"
   $debug && log "ES cluster ${escluster}: nodes list compiled"
   # at last, the full list of nodes for ES cluster (might be scattered across
   # different servers clusters and clusters might not all be defined in .conf)
@@ -196,7 +206,7 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
     nodehost=${nodehost#/transport_address|}
     nodehost=${nodehost%:*}
     nodehost=${nodehost##*/}
-    ip_to_name "$nodehost"
+    rname=`ip_to_name "$nodehost" 2>/dev/null`
     clusternode=`echo $clusternode | sed 's|\\\||g'`
     $debug && log "ES cluster ${escluster}: getting details of the node $clusternode from host $rname (${nodehost})"
     
@@ -251,7 +261,12 @@ for escluster in `echo $allclusters | sed 's| |\n|g' | cut -d'|' -f2 | sort | un
   
   eval echo -e \${${escluster}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${escluster}.nodes.list
   
-  ($CURL -m 5 "http://$clusterhost1/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://$clusterhost2/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt > "$rpath/data/${escluster}.routing"
+  if $HANDLE_NODES ; then
+    routes=`($CURL -m 5 "http://$clusterhost1/_cluster/state/routing_table" || $CURL -m 10 "http://$clusterhost2/_cluster/state/routing_table") | "$M_ROOT"/lib/json2txt`
+  else
+    routes=`($CURL -m 5 "http://$clusterhost1/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://$clusterhost2/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt`
+  fi
+  echo "$routes" > "$rpath/data/${escluster}.routing"
   $debug && log "ES cluster ${escluster}: routing data collected"
   
   declare -i m
