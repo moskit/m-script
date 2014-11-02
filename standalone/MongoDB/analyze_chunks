@@ -108,7 +108,7 @@ for ns in $sharded ; do
         sleep $SLEEP
       fi
       if $SPLIT_LARGE_CHUNKS ; then
-        sizepercent=`echo "$SIZE / 104857600 * 100" | bc`
+        sizepercent=`echo "$SIZE / 1048576 / $maxsize * 100" | bc`
         if [ `echo "$sizepercent > $LARGE_CHUNK_DEF" | bc` -eq 1 ]; then
           if [ -n "$mongos" ]; then
             log "splitting chunk ($shard/$ns): << $MIN , $MAX >> (size: ${SIZE}, $sizepercent of max) using mongos: $mongos"
