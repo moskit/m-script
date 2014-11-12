@@ -96,7 +96,7 @@ for ns in $sharded ; do
         if [ -n "$mongos" ]; then
           if [ "_$MIN" == "_$max" ] && ([ $size -eq 0 ] || [ $SIZE -eq 0 ]); then
             log "merging chunks ($shard/$ns): << $min , $max >> + << $MIN , $MAX >> using mongos: $mongos"
-            mergeres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { mergeChunks : \"$ns\" , bounds : [ \"$min\" , \"$MAX\" ] } ))"`
+            mergeres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { mergeChunks : \"$ns\" , bounds : [ $min , $MAX ] } ))"`
             log "$mergeres"
             size=`expr $size + $SIZE`
           else
@@ -112,7 +112,7 @@ for ns in $sharded ; do
         if [ `echo "$sizepercent > $LARGE_CHUNK_DEF" | bc` -eq 1 ]; then
           if [ -n "$mongos" ]; then
             log "splitting chunk ($shard/$ns): << $MIN , $MAX >> (size: ${SIZE}, $sizepercent of max) using mongos: $mongos"
-            splitres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { split : \"$ns\" , bounds : [ \"$MIN\" , \"$MAX\" ] } ))"`
+            splitres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { split : \"$ns\" , bounds : [ $MIN , $MAX ] } ))"`
             log "$splitres"
           fi
         fi

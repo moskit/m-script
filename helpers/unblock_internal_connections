@@ -98,7 +98,7 @@ fi
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither target cluster nor target IP is defined! If you want to specify all clusters, use --cluster=all." && exit 1
 
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
+localip=`$rpath/localips`
 
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
@@ -109,18 +109,18 @@ IFS='
 '
 
 findchain_local() {
-  upperchain=`$IPT -L $1 | grep -v ^Chain | grep -v ^target | grep -vE "^ACCEPT|^REJECT|^DROP|^LOG|^[[:space:]]" | head -1 | awk '{print $1}'`
+  upperchain=`$IPT -L $1 -n | grep -v ^Chain | grep -v ^target | grep -vE "^ACCEPT|^REJECT|^DROP|^LOG|^[[:space:]]" | head -1 | awk '{print $1}'`
   if [ -n "$upperchain" ] ; then
-    $IPT -L $upperchain >/dev/null && echo $upperchain || echo $1
+    $IPT -L $upperchain -n >/dev/null && echo $upperchain || echo $1
   else
     echo $1
   fi
 }
 
 findchain_remote() {
-  upperchain=`$SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 | grep -v ^Chain | grep -v ^target | grep -vE \"^ACCEPT|^REJECT|^DROP|^LOG|^[[:space:]]\" | head -1 | awk '{print \\$1}'"`
+  upperchain=`$SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "\`which iptables 2>/dev/null\` -L $1 -n | grep -v ^Chain | grep -v ^target | grep -vE \"^ACCEPT|^REJECT|^DROP|^LOG|^[[:space:]]\" | head -1 | awk '{print \\$1}'"`
   if [ -n "$upperchain" ] ; then
-    $SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain" >/dev/null && echo $upperchain  || echo $1
+    $SSH -i "$3" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $2 "$IPT -L $upperchain -n" >/dev/null && echo $upperchain  || echo $1
   else
     echo $1
   fi
@@ -128,11 +128,11 @@ findchain_remote() {
 
 unblock_ip() {
   mainchain="INPUT"
-  if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+  if [ `echo "$localip" | grep -c "^$IP$"` -ne 0 ] ; then
     [ -n "$IPT" ] || continue
     rchain=`findchain_local $mainchain`
     [ -n "$rchain" ] || continue
-    [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+    [ "_$verbose" == "_yes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
     existing=`$IPTS | grep -E "\-A $rchain \-s $IP2UB \-j ACCEPT|\-A $rchain \-s $IP2UB/[0-9]* \-j ACCEPT" | wc -l`
     if [[ $existing -eq 0 ]] ; then
       $IPT -I "$rchain" -s $IP2UB -j ACCEPT
@@ -150,7 +150,7 @@ unblock_ip() {
   else
     rchain=`findchain_remote $mainchain $IP "$KEY"`
     [ -n "$rchain" ] || continue
-    [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+    [ "_$verbose" == "_yes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
     command="\`which iptables-save 2>/dev/null\` | grep -E \"\-A $rchain \-s $IP2UB \-j ACCEPT|\-A $rchain \-s $IP2UB/[0-9]* \-j ACCEPT\" | wc -l"
     existing=`$SSH -i "$KEY" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $IP "$command"`
     if [[ $existing -eq 0 ]] ; then
@@ -171,11 +171,11 @@ unblock_ip() {
   fi
   unset rchain
   mainchain="OUTPUT"
-  if [ `echo $IP | grep -c "^$localip$"` -ne 0 ] ; then
+  if [ `echo "$localip" | grep -c "^$IP$"` -ne 0 ] ; then
     [ -n "$IPT" ] || continue
     rchain=`findchain_local $mainchain`
     [ -n "$rchain" ] || continue
-    [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+    [ "_$verbose" == "_yes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
     existing=`$IPTS | grep -E "\-A $rchain \-d $IP2UB \-j ACCEPT|\-A $rchain \-d $IP2UB/[0-9]* \-j ACCEPT" | wc -l`
     if [[ $existing -eq 0 ]] ; then
       $IPT -I "$rchain" -d $IP2UB -j ACCEPT
@@ -193,7 +193,7 @@ unblock_ip() {
   else
     rchain=`findchain_remote $mainchain $IP "$KEY"`
     [ -n "$rchain" ] || continue
-    [ "X$verbose" == "Xyes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
+    [ "_$verbose" == "_yes" ] && echo "Chain: $rchain  Unblocking $IP2UB"
     command="\`which iptables-save 2>/dev/null\` | grep -E \"\-A $rchain \-d $IP2UB \-j ACCEPT|\-A $rchain \-d $IP2UB/[0-9]* \-j ACCEPT\" | wc -l"
     existing=`$SSH -i "$KEY" -p $SSHPORT $TIMEOUT -o StrictHostKeyChecking=no $IP "$command"`
     if [[ $existing -eq 0 ]] ; then
@@ -220,19 +220,19 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
   IP=${dserver%%|*}
   DCLUSTER=`echo "$dserver" | cut -sd'|' -f5`
   # we do not want to mess with super cluster unless it is our explicit target
-  [ "x$DCLUSTER" == "x$SUPER_CLUSTER" ] && [ "X$DCLUSTER" != "X$cluster" ] && continue
-  [ -n "$ip" ] && [ "X$IP" != "X$ip" ] && continue
+  [ "_$DCLUSTER" == "_$SUPER_CLUSTER" ] && [ "_$DCLUSTER" != "_$cluster" ] && continue
+  [ -n "$ip" ] && [ "_$IP" != "_$ip" ] && continue
   KEY=`"$rpath"/find_key server $IP` || continue
   if [ -n "$region" ] ; then
     DREGION=`echo $dserver | cut -d'|' -f3`
-    [ "X$DREGION" == "X$region" ] || continue
+    [ "_$DREGION" == "_$region" ] || continue
   fi
   if [ -z "$ip" ]; then
-    if [ "x$cluster" != "xall" ] ; then
-      [ "X$DCLUSTER" == "X$cluster" ] || continue
+    if [ "_$cluster" != "_all" ] ; then
+      [ "_$DCLUSTER" == "_$cluster" ] || continue
     fi
   fi
-  if [ "X$verbose" == "Xyes" ] ; then
+  if [ "_$verbose" == "_yes" ] ; then
     echo
     echo "--- Server: $dserver"
     echo
@@ -245,14 +245,14 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
     for sserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
       if [ -n "$fromregion" ] ; then
       SREGION=`echo $sserver | cut -d'|' -f3`
-      [ "X$SREGION" == "X$fromregion" ] || continue
+      [ "_$SREGION" == "_$fromregion" ] || continue
       fi
       SCLUSTER=`echo $sserver | cut -d'|' -f5`
       if [ -n "$fromcluster" ] ; then
-        [ "X$SCLUSTER" == "X$fromcluster" ] || continue
+        [ "_$SCLUSTER" == "_$fromcluster" ] || continue
       fi
       IP2UB=${sserver%%|*}
-      [ "X$SCLUSTER" == "X$SUPER_CLUSTER" ] && [ "X$DCLUSTER" != "X$SUPER_CLUSTER" ] && [ `echo $localip | grep -c $IP2UB` -eq 0 ] && continue
+      [ "_$SCLUSTER" == "_$SUPER_CLUSTER" ] && [ "_$DCLUSTER" != "_$SUPER_CLUSTER" ] && [ `echo "$localip" | grep -c $IP2UB` -eq 0 ] && continue
 
       unblock_ip
 

@@ -33,7 +33,7 @@ fi
 
 [ -z "$timeindexnow" ] && echo "Use mon.run $rcommand" && exit 1
 
-if [ "X$SQLITE3" != "X0" ] && [ "X$1" == "XSQL" ]; then
+if [ "_$SQLITE3" != "_0" ] && [ "_$1" == "_SQL" ]; then
 
 [ -z "$lasttimeindex" ] && lasttimeindex=`dbquery "$rpath/../sysdata" "select timeindex from sysdata order by timeindex desc limit 1"`
 
@@ -41,7 +41,7 @@ numconn=`$netstatbin -s 2>/dev/null | grep 'connections established' | awk '{pri
 binputlast=`dbquery "$rpath/../sysdata" "select input from sysdata where timeindex='$lasttimeindex'"`
 boutputlast=`dbquery "$rpath/../sysdata" "select output from sysdata where timeindex='$lasttimeindex'"`
 
-if [ "$IPTABLES" != "X0" ]; then
+if [ "_$IPTABLES" != "_0" ]; then
   counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
   [ -z "$counters" ] && $iptablesbin -Z && counters=`$iptablessave | grep -A 3 ^\*filter | grep ^\:`
   binput=`echo "$counters" | grep ^\:INPUT | cut -d'[' -f2 | cut -d']' -f1 | cut -d':' -f2`
@@ -56,7 +56,7 @@ if [ "$IPTABLES" != "X0" ]; then
   [ -z "$binputlast" ] && binputlast=$binput
   [ -z "$boutputlast" ] && boutputlast=$boutput
   
-  if [ "X$BW_UNITS" == "XGBM" ] ; then
+  if [ "_$BW_UNITS" == "_GBM" ] ; then
     # GB/month 
     # Number 2.5 represents approximately average number of seconds in one
     # month divided by 1024 twice
