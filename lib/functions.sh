@@ -68,6 +68,7 @@ check_results() {
   # check_results "var1<|description|datatype1>,var2<|description|datatype2>,.."
   # where datatype can be real (default, slower but more universal) or integer
   # if description is omitted, variable name will be used in report
+  # Do not use commas in description! They are used as separators here.
   [ -z "$1" ] && return 1
   callerconf="${caller%.mon}.conf"
   [ "$callerconf" == "${caller}.conf" ] && log "Monitor script must have extension .mon" && return 1
@@ -75,7 +76,7 @@ check_results() {
   IFSORIG=$IFS
   IFS=','
   for var2ck in $1 ; do
-    varname=`echo "$var2ck" | cut -d'|' -f1`
+    varname=`echo "$var2ck" | cut -s -d'|' -f1`
     thr1=`eval "echo \"\\$${varname}_1\""`
     [ -z "$thr1" ] && continue
     thr2=`eval "echo \"\\$${varname}_2\""`
