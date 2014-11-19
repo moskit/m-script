@@ -89,7 +89,7 @@ cat -E $1 | while read LINE ; do
       datatype[$cursor]="table"
       datastyle[$cursor]="table"
       ;;
-      -*)
+      ---*)
       data[$cursor]=""
       datatype[$cursor]="dashline"
       datastyle[$cursor]="dashline"

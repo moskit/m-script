@@ -40,7 +40,7 @@ debug=true
 [ -n "$SSHPORT" ] || SSHPORT=22
 
 IFCFG=`which ifconfig 2>/dev/null`
-possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min"
+possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min fromfile"
 necessary_options=""
 source "$rpath/conf/mon.conf"
 source "$rpath/conf/dash.conf"
@@ -67,11 +67,11 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
-  [ "X$s_optarg" == "Xno" ] && unset $s_optname
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_no" ] && unset $s_optname
   
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
   
   if ! $found ; then 
@@ -91,7 +91,7 @@ if $found ; then
 fi
 
 # "metric help from to ip new database table size width height scale padding legend fontsize strokewidth pointsize"
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
 cat << "EOF"
 Usage: ${0##*/} --metric=metric <other options>
 
@@ -106,13 +106,13 @@ Options:
                         Server must be present in servers.list
                         If empty, means localhost
                     
---from=<date/time>      time of the beginning of the graph in any format
+--from=<date/time>      Time of the beginning of the graph in any format
                         acceptable by the 'date' utility
 
---to=<date/time>        graph end time in any format acceptable by the 'date'
+--to=<date/time>        Graph end time in any format acceptable by the 'date'
                         utility
 
---metric=<metric>       metric = database field name
+--metric=<metric>       Metric = database field name
                         Multiple metrics accepted, separated by comma, no spaces
                   
 --database=<path/to/database>
@@ -120,7 +120,7 @@ Options:
                         The default is sysdata
                     
 --table=<table name>    The default is sysdata
-
+                        
 --size=<small|thumbnail>
                         If not defined, it's the default big graph
                         
@@ -154,7 +154,7 @@ fi
 found=0
 
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
@@ -163,10 +163,16 @@ if [[ found -eq 1 ]]; then
 fi
 
 [ -z "$debug" ] && debug=false || debug=true
+if [ -n "$fromfile" ]; then
+  [ ! -e "$fromfile" ] && echo "File $fromfile not found!" && exit 1
+  perpixel="yes"
+  metric=`head -1 "$fromfile" | cut -sd'|' -f2- | tr '|' ','`
+  metric="${metric%,}"
+fi
 
-[ "X$IFCFG" != "X" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//'`
+localip=`localips`
 if [ -n "$ip" ] ; then
-  if [ `echo $ip | grep -c "^$localip$"` -ne 0 ] ; then
+  if [ `echo "$localip" | grep -c "^$ip$"` -ne 0 ] ; then
     localip="yes"
   else
     unset localip
@@ -194,7 +200,7 @@ colors=( "#009900" "#000099" "#999900" "#660000" "#990099" "#009999" "#666600" "
 [ -n "$width" ] && graphH=$width
 [ -n "$height" ] && graphV=$height
 [ -n "$graphH" ] && [ -n "$graphV" ] || (log "Define graph size in conf/dash.conf or as command-line options" && exit 1)
-if [ "X$size" == "Xsmall" ] ; then
+if [ "_$size" == "_small" ] ; then
   graphH=`expr $graphH / 2`
   graphV=`expr $graphV / 2`
   padding=`expr $padding / 2`
@@ -204,7 +210,7 @@ if [ "X$size" == "Xsmall" ] ; then
   strokewidth=1
   pointsize=`expr $pointsize / 2`
 fi
-if [ "Xsize" == "Xthumbnail" ] ; then
+if [ "_$size" == "_thumbnail" ] ; then
   graphH=`expr $graphH / 4`
   graphV=`expr $graphV / 4`
   padding=`expr $padding / 4`
@@ -214,7 +220,7 @@ if [ "Xsize" == "Xthumbnail" ] ; then
   strokewidth=1
   pointsize=`expr $pointsize / 4`
 fi
-[ "X$min" == "Xauto" ] && minauto=true || minauto=false
+[ "_$min" == "_auto" ] && minauto=true || minauto=false
 [ -z "$legendpos" ] && legendpos=left
 [ "$legendpos" == "left" ] && legendH=$legend && legendV=0
 [ "$legendpos" == "below" ] && legendH=0 && legendV=$legend
@@ -370,7 +376,7 @@ if [ -n "$perpixel" ]; then
   fi
 
   mpl=${mp%%.*}
-  [ "X$mpl" == "X" ] && mpl=0
+  [ -z "$mpl" ] && mpl=0
   if [[ $mpl -eq 0 ]]; then
     ll=${mp##*.}
     ll=`expr $ll : 0*`
@@ -448,7 +454,7 @@ else
     value=${where#*:}
     QUERY="$QUERY AND $field='$value'"
   fi
-  if [ "X$sIP" == "Xlocalhost" ] ; then
+  if [ "_$sIP" == "_localhost" ] ; then
     $debug && log "$SQL3 \"$rpath/$database\" \"$QUERY\""
     $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting $smetric data from $rpath/${database}, server $sIP"
   else
@@ -479,7 +485,7 @@ else
   done
   sn=`echo $metric | tr ',' ' ' | wc -w`
   $debug && log "this graph maximum: $metricmax  minimum: $metricmin  (option 'min' is set to '$min')" 
-  if [ "X$scale" == "Xyes" ] ; then
+  if [ "_$scale" == "_yes" ] ; then
     sadd=`solve 2 "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve 2 "$metricmax / $sn"` 2>/dev/null || sadd=10
     snadd=0
     n=2
@@ -635,7 +641,7 @@ if [[ $hourX -lt $countminX ]] ; then
       currpointsec=`date -u -d "1970/01/01 +$currpoint sec"`
       thehour=`date -u -d "$currpointsec" +"%H"`
       theday=`date -u -d "$currpointsec" +"%d"`
-      if [ "X$theday" != "X$thedayprev" ]; then
+      if [ "_$theday" != "_$thedayprev" ]; then
         if [ -n "$thedayprev" ]; then
           daymark=`date -u -d "$currpointsec -$thehour hour" +"%s"`
           daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
@@ -667,7 +673,7 @@ else
     currpointsec=`date -u -d "1970/01/01 +$currpoint sec"`
     thehour=`date -u -d "$currpointsec" +"%H"`
     theday=`date -u -d "$currpointsec" +"%d"`
-    if [ "X$theday" != "X$thedayprev" ]; then
+    if [ "_$theday" != "_$thedayprev" ]; then
       if [ -n "$thedayprev" ]; then
         daymark=`date -u -d "$currpointsec -$thehour hour" +"%s"`
         daymark=`expr \( $daymark - $from \) / $perdotX + $startX`
@@ -754,7 +760,7 @@ do
   [[ `expr $i + $ires` -gt $imax ]] && unset imark imarkfp
   irev=`expr $graphV - $i`
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"${irev}.5\\" x2=\\"$mY2\\" y2=\\"${irev}.5\\" />"`"
-  if [ "X$scale" != "Xyes" ] ; then
+  if [ "_$scale" != "_yes" ] ; then
     if [ -n "$perpixel" ] ; then
       textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style=\\"text-anchor: end\\">$imark</text>"`"
     else
@@ -773,9 +779,9 @@ echo -e "<g id=\"axis\">\n<path id=\"y\" style=\"fill:none;stroke:#000;stroke-wi
 
 # Marks
 echo -e "<g id=\"marks\" shape-rendering=\"geometricPrecision\" style=\"fill:none;stroke:#999;stroke-width:1;\">\n${marksX}\n${marksY}\n</g>\n<g id=\"marks_text\" text-rendering=\"optimizeSpeed\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$textX" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo $textY >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+[ "_$scale" == "_yes" ] || echo $textY >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 echo "<text font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\" x=\"$axisXX\" y=\"$axisXY\">$axisX</text>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
-[ "X$scale" == "Xyes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$axisY</text>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
+[ "_$scale" == "_yes" ] || echo "<text x=\"$axisYX\" y=\"$axisYY\" font-family=\"Verdana\" font-size=\"$fontsize\" fill=\"#666\">$axisY</text>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 echo "</g>" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
 
 # Graphs
@@ -816,7 +822,7 @@ log "slegendY=$slegendY"
 
   echo -n "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
   if [ -z "$perpixel" ]; then  
-    if [ "X$scale" == "Xyes" ] ; then cat "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" ; else cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} ; fi | while read LINE
+    if [ "_$scale" == "_yes" ] ; then cat "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" ; else cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} ; fi | while read LINE
     do
       X=`echo $LINE | cut -d'|' -f1`
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}

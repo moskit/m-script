@@ -5,7 +5,7 @@ scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
-print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Bandwidth In/Out (Mbytes/sec)" "Operations (N/sec)" "Locks Curr/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
+print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
 
 print_mongo_server() {
   local clname="$1"
@@ -32,9 +32,10 @@ print_mongo_server() {
     fi
     
     echo "<div class=\"status\" id=\"${nodeid}_mem\">`echo "$rawdata" | grep ^memRes= | cut -d'=' -f2` / `echo "$rawdata" | grep ^memVir= | cut -d'=' -f2`</div>"
+
+    connections=`echo "$report" | grep ' connections: ' | cut -d':' -f2 | sed 's| *||g'`
+    echo "<div class=\"status\" id=\"${nodeid}_conn\">`echo "$connections" 2>/dev/null | head -1` / `echo "$connections" 2>/dev/null | tail -1`</div>" 2>/dev/null
     
-    bwinout=`echo "$report" | grep '^Bandwidth ' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status\" id=\"${nodeid}_bw\">`echo "$bwinout" 2>/dev/null | head -1` / `echo "$bwinout" 2>/dev/null | tail -1`</div>" 2>/dev/null
     qps=`echo "$report" | grep '^Network requests per second' | cut -d':' -f2 | sed 's| *||g'`
     [ -n "$qps" ] || rps=`echo "$report" | grep '^Total' | awk '{print $2}'`
     

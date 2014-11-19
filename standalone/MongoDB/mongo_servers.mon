@@ -294,7 +294,7 @@ if [ -n "$shardhosts" ] ; then
     # might be multiple hosts here, not needed now, it'll be dealt with later
     shardhost=${shardhost%%,*}
     shardport=${shardhost#*:}
-    if [ "X`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()" 2>>"$LOG" | tail -1)`" != "Xnull" ] ; then
+    if [ "_`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()" 2>>"$LOG" | tail -1)`" != "_null" ] ; then
       replicaset=`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1)`
     fi
     ip_to_name ${shardhost%:*}

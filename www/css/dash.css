@@ -509,15 +509,21 @@ div.info {
 }
 
 div.left {
-  width: 25%;
+  width: 35%;
   float: left;
   display: table;
+  font-weight: normal;
+  color: #321;
+  margin: 0px !important;
 }
 
 div.right {
-  width: 65%;
+  width: 55%;
   float: right;
   display: table;
+  font-weight: normal;
+  color: #321;
+  margin: 0px !important;
 }
 
 #messages {

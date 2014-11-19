@@ -272,14 +272,15 @@ do
     fi
   done
   if [[ $socketfound -ne 1 ]]; then
-    echo "<***> Service $sname listening on $t is a new service"
+    echo "<***> Service $sname listening on unix socket $t is a new service"
     echo -e "<***>     Command line: `cat /proc/$spid/cmdline | tr '\0' ' '`\n<***>     Executable: `readlink /proc/$spid/exe`\n<***>     Files opened:\n$(find /proc/$spid/fd -type l | while read f ; do expr `readlink $f` : "\(.*\)/.*$" ; done | grep -v ^$ | sort | uniq -c)\n\n"
   fi
 done < "$M_TEMP/sockets.$$"
 
 if [[ ${#sockets[*]} -gt 0 ]]
 then
- echo "<***> There is no services listening on unix sockets: ${sockets[*]}"
+ echo "
+ "
 fi
 
 rm -f "$M_TEMP"/ports.*.$$ "$M_TEMP"/sockets.$$
