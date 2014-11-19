@@ -17,7 +17,7 @@ print_mongo_server() {
   [ ${#name} -gt 14 ] && namep="${name:0:7}..${name:(-7)}" || namep=$name
   [ -d "$PWD/../MongoDB/$clname/${name}:${port}" ] && install -d "$PWD/../MongoDB/$clname/${name}:${port}"
   
-  report=`cat "$PWD/../../standalone/MongoDB/data/${name}:${port}.ext.report" 2>/dev/null`
+  report=`cat "$PWD/../../standalone/MongoDB/${name}:${port}.ext.report" 2>/dev/null`
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   

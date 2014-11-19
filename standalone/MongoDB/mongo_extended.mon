@@ -139,8 +139,8 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
     echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
     statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/data/${cs}.ext.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.ext.report"`
+    echo "$statusreport" > "$rpath/${cs}.ext.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.ext.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name_ext.html"
   done &
 fi
@@ -153,8 +153,8 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
     echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
     statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/data/${cs}.ext.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.ext.report"`
+    echo "$statusreport" > "$rpath/${cs}.ext.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.ext.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name_ext.html"
   done &
 fi

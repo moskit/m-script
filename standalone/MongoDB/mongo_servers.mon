@@ -347,8 +347,8 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
       echo "$serverstatus" > "$rpath/data/${cs}.dat"
     fi
     statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
+    echo "$statusreport" > "$rpath/${cs}.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/${cs}/${cs}_name.html"
   done &
 fi
@@ -366,8 +366,8 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
       echo "$serverstatus" > "$rpath/data/${cs}.dat"
     fi
     statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
+    echo "$statusreport" > "$rpath/${cs}.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/${cs}/${cs}_name.html"
   done &
 fi
@@ -385,8 +385,8 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
       echo "$serverstatus" > "$rpath/data/${cs}.dat"
     fi
     statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
+    echo "$statusreport" > "$rpath/${cs}.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
   done &
 fi
@@ -404,8 +404,8 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
       [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
     fi
     statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/data/${cs}.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/data/${cs}.report"`
+    echo "$statusreport" > "$rpath/${cs}.report"
+    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
   done &
 fi
