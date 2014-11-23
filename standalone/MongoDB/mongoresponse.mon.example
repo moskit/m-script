@@ -5,11 +5,13 @@ rcomm=${rpath##*/}
 rpath=${rpath%/*}
 source "$rpath/../../lib/functions.sh"
 [ -f "$rpath/${rcomm%mon}conf" ] && source "$rpath/${rcomm%mon}conf"
+[ -z "$MONGOLOGFILE" ] && echo "Create $rpath/${rcomm%mon}conf and assign path to the log file to watch to variable MONGOLOGFILE there" && exit 1
+[ -f "$MONGOLOGFILE" ] && echo "Log file $MONGOLOGFILE does not exist" && exit 1
 
 timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
 [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=200
 
-SLOW=`"$M_ROOT"/helpers/logreader --file=/var/log/mongo/shard.log --timeformat='%a %b %e %H:%M' --period="$period sec" | grep [0-9][0-9][0-9][0-9][0-9]ms$ | grep -v LockPinger | grep -v writebacklisten`
+SLOW=`"$M_ROOT"/helpers/logreader --file="$MONGOLOGFILE" --timeformat='%a %b %e %H:%M' --period="$period sec" | grep [0-9][0-9][0-9][0-9][0-9]ms$ | grep -v LockPinger | grep -v writebacklisten`
 
 if [ -z "$SLOW" ] ; then
   echo "<OK>  No slow queries"

@@ -49,8 +49,7 @@ for server in `"$M_ROOT"/cloud/common/get_ips --cluster=$CLUSTER --nolocal` ; do
     echo "${server}: error getting time delta"
   fi
 done
-[ ${#servers[*]} -eq 0 ] && log "unable to collect clock drift data from remote 
-servers" && exit 0
+[ ${#servers[*]} -eq 0 ] && log "unable to find servers to test in cluster \"$CLUSTER\"" && exit 0
 
 deltaavg=`echo "scale=2; $deltasum / ${#servers[*]}" | bc`
 
@@ -92,5 +91,6 @@ for ((i=0; i<${#servers[*]}; i++)); do
     echo
   fi
 done
+
 
 

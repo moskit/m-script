@@ -21,17 +21,23 @@ rpath=${0%/*}
 
 source "$M_ROOT/conf/mon.conf"
 source "${0%.mon}.conf"
+maxrepage=`expr $FREQ \* 2 || echo 400`
 
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
-  [ `find "$M_ROOT/standalone/$sa" -name "*.report" -prune | wc -l` -eq 0 ] && continue
-  sarep=`cat "$M_ROOT/standalone/$sa"/*.report`
+  safolder=`echo "$sa" | cut -sd'|' -f1`
+  sareplist=`find "$M_ROOT/standalone/$sa" -name "*.report" -mmin $maxrepage -prune`
+  [ `echo "$sareplist" | wc -l` -eq 0 ] && continue
+  indflag=`echo "$sa" | cut -sd'|' -f2`
   # make the standalone monitor print at least one line with indicator
   # (<OK>,<*>,<**>,<***>) to make this monitor print the whole output to its
-  # report
-  if `echo "$sarep" | grep -qE '<\*|<OK>'` ; then
-    echo -e "\n$sa\n---------------\n\n$sarep"
+  # report (see comment in conf file if you need only indicator lines)
+  indlines=`cat $sareplist | grep -E '<\*|<OK>'`
+  if [ `echo "$indlines" | wc -l` -ne 0 ] ; then
+    if [ -n "$indflag" ]; then
+      echo -e "\n$sa\n---------------\n\n$indlines"
+    else
+      echo -e "\n$sa\n---------------\n\n$sarep"
+    fi
   fi
-  # this is necessary to avoid sending the same alert again
-  rm "$M_ROOT/standalone/$sa"/*.report
 done
 
