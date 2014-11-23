@@ -130,6 +130,7 @@ parse_data() {
   fi
   if [ "_$ENABLE_CHECKS" == "_1" ]; then
     check_results "totalOpen|Open cursors|integer,lastFlushMs|Last flush duration in ms|integer,avgFlushMs|Average flush duration in ms|real,durCommits,durWriteJPercent,durWriteDPercent,indexAccesses,indexHits,indexMisses,opcountersReplQuery,opcountersReplInsert,opcountersReplUpdate,opcountersReplDelete,opcountersReplGetmore,opcountersReplCommand,opcountersReplTotal,scanned,fastmod,idhack,scanAndOrder,documentDeleted,documentInserted,documentReturned,documentUpdated,recordMoves,replApplyBatchesNum,replApplyBatchesMs,replApplyOps,replNetworkBytes,replNetworkOps,replOplogInsertNum,replOplogInsertMs,replOplogInsertBytes,dataInMemory,overSeconds" 2>>"$LOG"
+  fi
 }
 
 if [ -e "$rpath/mongo_shards.list" ] ; then

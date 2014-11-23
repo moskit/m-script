@@ -31,13 +31,17 @@ for sa in `echo "$SATESTS" | tr ',' ' '` ; do
   # make the standalone monitor print at least one line with indicator
   # (<OK>,<*>,<**>,<***>) to make this monitor print the whole output to its
   # report (see comment in conf file if you need only indicator lines)
-  indlines=`cat $sareplist | grep -E '<\*|<OK>'`
-  if [ `echo "$indlines" | wc -l` -ne 0 ] ; then
-    if [ -n "$indflag" ]; then
-      echo -e "\n$sa\n---------------\n\n$indlines"
-    else
-      echo -e "\n$sa\n---------------\n\n$sarep"
-    fi
+  if [ -n "$indflag" ]; then
+    echo -e "\n$sa\n---------------\n\n"
+    for sarep in $sareplist ; do
+      sareport=`cat $sarep 2>/dev/null`
+      if echo "$sareport" | grep -qE '<\*|<OK>' ; then
+        echo "$sareport" | grep -E '<\*|<OK>|^Server|^\-\-\-'
+      fi
+    done
+  else
+    sareport=`cat $sareplist 2>/dev/null`
+    echo -e "\n$sa\n---------------\n\n$sareport"
   fi
 done
 
