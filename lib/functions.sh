@@ -72,7 +72,7 @@ check_results() {
   [ -z "$1" ] && return 1
   callerconf="${caller%.mon}.conf"
   [ "$callerconf" == "${caller}.conf" ] && log "Monitor script must have extension .mon" && return 1
-  source "$callerconf"
+  [ -e "$callerconf" ] && source "$callerconf"
   IFSORIG=$IFS
   IFS=','
   for var2ck in $1 ; do

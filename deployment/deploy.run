@@ -69,7 +69,7 @@ SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 possible_options="help verbose debug ip cluster type file key role flavor timestamp task dry cloud ignoreemptycluster ignorenocluster ignoreipnotpresent user nosudo parentrole"
 necessary_options="file type task role timestamp"
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
+[ -z "$*" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
 # debug must be passed here as option only
 unset debug
 
@@ -175,7 +175,7 @@ chmod 600 "$varfile"
   
 # first goes the actual role. Variables assigned are not being overwritten
 # by included roles, thus actual role has higher priority
-if [ -e "$ROLES_ROOT/$role/role.conf" ] ; then
+if [ -e "$ROLES_ROOT/$role/role.conf" ]; then
   store_vars "$ROLES_ROOT/$role/role.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
@@ -184,15 +184,15 @@ fi
 [ -h "$ROLES_ROOT/$file" ] && realfile=`readlink -f "$ROLES_ROOT/$file"` || realfile="$ROLES_ROOT/$file"
 realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/||"`
 roleincluded=${realfile%%/*} #*/
-if [ "_$roleincluded" != "_$role" ] ; then
-  if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ] ; then
+if [ "_$roleincluded" != "_$role" ]; then
+  if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ]; then
     store_vars "$ROLES_ROOT/$roleincluded/role.conf"
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
   fi
   export ROLEINCL=$roleincluded
 fi
 # last and least, common role
-if [ -e "$ROLES_ROOT/common/role.conf" ] ; then
+if [ -e "$ROLES_ROOT/common/role.conf" ]; then
   store_vars "$ROLES_ROOT/common/role.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
 fi
@@ -223,15 +223,15 @@ for LINE in `cat "$ROLES_ROOT/$file"` ; do
   [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "$CURRTASKDIR/$file" || echo "$LINE" >> "$CURRTASKDIR/$file"
 done
  
-if [ "$type" == "remote" ] ; then
-  if [ -z "$cluster" ] && [ -n "$ip" ] ; then
+if [ "$type" == "remote" ]; then
+  if [ -z "$cluster" ] && [ -n "$ip" ]; then
     cluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
     if [ -z "$cluster" ]; then
       echo "Unable to find cluster name" >> "$M_ROOT/logs/deploy.log"
       [ -z "$ignorenocluster" ] && exit 1
     fi
   fi
-  if [ -n "$ip" ] ; then
+  if [ -n "$ip" ]; then
     key=`"$M_ROOT"/helpers/find_key server "$ip"`
   else
     key=`"$M_ROOT"/helpers/find_key cluster "$cluster"`
@@ -240,8 +240,8 @@ if [ "$type" == "remote" ] ; then
   [ ! -f "$key" ] && echo "Key $key does not exist" >> "$M_ROOT/logs/deploy.log" && exit 1
   echo "using key $key" >> "$M_ROOT/logs/deploy.log"
   echo "`date +"%H:%M:%S"` REMOTE $file" >> "$M_ROOT/logs/deploy.log"
-  if [ -z "$ip" ] ; then
-    if [ -n "$dry" ] ; then
+  if [ -z "$ip" ]; then
+    if [ -n "$dry" ]; then
       ips=`get_ips --cluster="$cluster" --limit=1`
     else
       ips=`get_ips --cluster="$cluster"`
@@ -260,7 +260,7 @@ if [ "$type" == "remote" ] ; then
         # copy config to remote server
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/${file}.var" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/${file}.var" >> "$M_ROOT/logs/deploy.log" 2>&1
         $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e "ip=$IP\\nservername=$NAME" \>\> "$CURRTASKDIR/${file}.var"
-        if [ -n "$dry" ] ; then
+        if [ -n "$dry" ]; then
         [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
           $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "(source \"$CURRTASKDIR/${file}.var\" && cat \"$CURRTASKDIR/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
           res=$?
@@ -283,7 +283,7 @@ if [ "$type" == "remote" ] ; then
         $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nservername=\\\"$NAME\\\"\" \>\> \"$CURRTASKDIR/${file}.var\"
         # profile, config and script need to be concatenated for sudo
         $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat .bash_profile \"$CURRTASKDIR/${file}.var\" \"$CURRTASKDIR/$file\" \>\> \"$CURRTASKDIR/${file}.sudo\"
-        if [ -n "$dry" ] ; then
+        if [ -n "$dry" ]; then
           [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
           $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat \"$CURRTASKDIR/$file\" | while read output ; do [ -n "$verbose" ] && echo "$output" ; sudo echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
           res=$?
@@ -299,7 +299,7 @@ if [ "$type" == "remote" ] ; then
       fi
     done
   else
-    if [ -n "$dry" ] ; then
+    if [ -n "$dry" ]; then
       echo "Remote servers not found, testing locally" | tee -a "$rpath/../logs/deploy.log"
       [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
       (source "$CURRTASKDIR/${file}.var" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
@@ -311,9 +311,9 @@ if [ "$type" == "remote" ] ; then
       RETVAL+=1
     fi
   fi
-elif [ "$type" == "local" ] ; then
+elif [ "$type" == "local" ]; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "$M_ROOT/logs/deploy.log"
-  if [ -n "$dry" ] ; then
+  if [ -n "$dry" ]; then
     [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
     (source "$CURRTASKDIR/${file}.var" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
     res=$?

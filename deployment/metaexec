@@ -162,13 +162,13 @@ run_meta() {
   else
     [ -n "$use_color" ] && printf "\033[01;31m"
     echo "Error parsing command: $meta"
-    if [ "X$metatype" == "Xlocal" -o "X$metatype" == "Xremote" -o "X$metatype" == "Xinclude" ]; then
+    if [ "_$metatype" == "_local" ] || [ "_$metatype" == "_remote" ] || [ "_$metatype" == "_include" ]; then
       echo "Looks like script is not defined"
     else
       echo "Looks like type is not defined"
     fi
     [ -n "$use_color" ] && printf "\033[0m"
-    [ -z "$dry" ] && proper_exit 1 162
+    [ -z "$dry" ] && proper_exit 1 171
   fi
 }
 
@@ -183,7 +183,7 @@ SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 
 possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name"
-[ "X$*" == "X" ] && usage="yes"
+[ -z "$*" ] && usage="yes"
 
 IFSORIG=$IFS
 IFS='-'
@@ -223,7 +223,7 @@ export verbose debug
 [ -n "$newtimestamp" ] && unset timestamp timestampact
 [ -n "$usage" ] && help="yes" && debug=false
 
-if [ -n "$help" ] ; then
+if [ -n "$help" ]; then
   if $debug ; then
     cat << "EOF"
 Usage: ${0##*/} <options>
@@ -348,7 +348,7 @@ log "Starting metaexec with arguments $@"
 
 localip=`"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'`
 
-if [ -n "$timestamp" ] ; then
+if [ -n "$timestamp" ]; then
   [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
   if [ "_$timestamp" == "_repeat" ]; then
     timestampact=`ls -1tr "$WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
@@ -369,7 +369,7 @@ else
   timestampact=`date +"%y_%m_%d_%H_%M_%S"`
 fi
 
-if [ -n "$ip" ] ; then
+if [ -n "$ip" ]; then
   [ -n "$newserver" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
   if [ `expr "$ip" : "[^[0-9.]]*" 2>/dev/null` -ne 0 ] ; then
     echo "Something's wrong with IP: $ip"
@@ -379,16 +379,16 @@ if [ -n "$ip" ] ; then
   [ -z "$ipcluster" ] && [ -n "$CLOUD" ] && "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$ip --updatelist
   ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
   [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$ignoreipnotpresent" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
-  if [ -n "$cluster" ] ; then
+  if [ -n "$cluster" ]; then
     [ "$cluster" != "$ipcluster" ] && [ -z "$force" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
   else
     cluster=$ipcluster
   fi
 else
   # Cluster must be defined! If it is still not, we'll find it using the role
-  if [ -z "$cluster" ] ; then
-    if [ -z "$role" ] ; then
-      if [ -n "$M_ROLE" ] ; then
+  if [ -z "$cluster" ]; then
+    if [ -z "$role" ]; then
+      if [ -n "$M_ROLE" ]; then
         role=$M_ROLE
         cluster=$M_CLUSTER
       fi
@@ -403,7 +403,7 @@ else
     fi
   else
     # role by cluster
-    if [ -z "$role" ] ; then
+    if [ -z "$role" ]; then
       role=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10`
       echo "Using role ${role}, default for cluster $cluster"
       [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
@@ -436,7 +436,7 @@ install $V -d "$CURRTASKDIR"
 export CURRTASKDIR
 touch "$CURRTASKDIR/log"
 
-if [ -z "$flavor" ] ; then
+if [ -z "$flavor" ]; then
   flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11`
   [ -z "$flavor" ] && echo -e "Unable to find the flavor of this cluster/server OS\n\n (hint: option --flavor is available)\n" && exit 1 || echo "Using flavor $flavor, default for cluster $cluster"
 fi
@@ -489,7 +489,7 @@ fi
 # Default output is console, colored if colors are supported
 [ -z "$output" ] && output=console
 use_color=false
-if [ "$output" == "console" ] ; then
+if [ "$output" == "console" ]; then
    if [ -z "$M_COLOR" ]; then
     # Thanks to Gentoo guys for this part, I couldn't do better
     safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
@@ -505,15 +505,15 @@ if [ "$output" == "console" ] ; then
   fi
 fi
 
-if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
+if [ `echo $ip | grep -c "^$localip$"` -eq 0 ]; then
   KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 509
   [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
   # it's here because startserver function re-reads cloud config
   [ -n "$SSHPORT" ] || SSHPORT=22
-  if [ -z "$list" ] ; then
+  if [ -z "$list" ]; then
     $debug && log "ensuring the target server $ip is accessible"
-    if [ -z "$test" -a -n "$ip" ] ; then
+    if [ -z "$test" -a -n "$ip" ]; then
       for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
         $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
         if [ $? -ne 0 ]; then
@@ -564,7 +564,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     
     declare -i metan
     metan=1
-    if [ -n "$command" ] ; then
+    if [ -n "$command" ]; then
       for commandn in `echo -e $command | tr ',' '\n'` ; do
         for meta in `cat "$CURRTASKDIR"/meta` ; do
           meta=`eval "echo $meta"`
@@ -584,7 +584,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
     for meta in `cat "$CURRTASKDIR"/meta` ; do
       meta=`eval "echo $meta"`
       skipthis=false
-      if [ -n "$list" ] ; then
+      if [ -n "$list" ]; then
         echo "$metan $meta"
         if [ "$list" == "unfold" ]; then
           echo '--------------------------------------------------------------------------------'
@@ -592,7 +592,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
           echo '--------------------------------------------------------------------------------'
         fi
       else
-        if [ -n "$skip" ] ; then
+        if [ -n "$skip" ]; then
           for skipn in `echo -e $skip | tr ',' '\n'` ; do
             [[ $skipn -eq $metan ]] && skipthis=true
           done
@@ -610,7 +610,7 @@ if [ `echo $ip | grep -c "^$localip$"` -eq 0 ] ; then
 else
   echo "Setting up self is not supported"
 fi
-if [ -z "$list" ] ; then
+if [ -z "$list" ]; then
   echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
   # the best place for this seems to be here
   [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30

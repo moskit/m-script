@@ -213,8 +213,6 @@ if [ -n "$fgflag" ]; then
 fi
 export stdinto stderrto
 
-RSYNC_RSH_BK=$RSYNC_RSH
-
 ###################################################################
 # Main loop. Runs as many times as many config files used  #
 ###################################################################
@@ -905,8 +903,6 @@ EOF
   [ -f "$stdinto" ] && cat $stdinto >> "$locallogpath/logs/m_backup.log"
   rm -f $rpath/m_backup.{error,log} 2>/dev/null
   rm -f $M_TEMP/$archname*log 2>/dev/null
-### Now it's time to restore some environment variables
-  export RSYNC_RSH="$RSYNC_RSH_BK"
 done
 [ -n "$fgflag" ] && kill `cat "$M_TEMP/backup.fg.pid"`
 

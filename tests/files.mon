@@ -30,7 +30,10 @@ mv "$M_TEMP/files.mon.tmp" "$M_TEMP/files.mon.prev"
 
 while read FILE ; do
   file=`echo "$FILE" | cut -d'|' -f1`
-  [ -e "$file" ] || continue
+  if [ ! -e "$file" ]; then
+    echo "<***> File $file does not exist!"
+    continue
+  fi
   echo "$file|`$MD "$file" | cut -d' ' -f1`" >> "$M_TEMP/files.mon.tmp"
 done <"${0%.mon}.conf"
 
