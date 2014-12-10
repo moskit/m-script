@@ -20,7 +20,7 @@ rpath=${0%/*}
 IFS1=$IFS
 IFS='
 '
-echo -e "Servers availability\n--------------------------\n"
+echo -e "\nServers availability\n--------------------------\n"
 
 PING=`which ping 2>/dev/null`
 SSH=`which ssh 2>/dev/null`
