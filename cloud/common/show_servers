@@ -15,10 +15,10 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "o$s_optarg" == "o$s_optname" ] && unset s_optarg
+  [ "_$s_optarg" == "_$s_optname" ] && unset s_optarg
 
   for option in ${possible_options// /-} ; do
-    [ "o$s_optname" == "o$option" ] && eval "$s_optname=\"$s_optarg\"" && break
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && break
   done
 
 done
@@ -34,8 +34,13 @@ fi
 
 for cld in $cloud ; do
   [ -n "$PS1" ] && echo "*** Cloud $cld"
-  export CLOUD=$cld
-  source "$M_ROOT/conf/clouds/${cld}.conf"
+  if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
+    source "$M_ROOT/conf/clouds/${cld}.conf"
+    export CLOUD=$cld
+  else
+    echo "No configuration found for cloud $cld"
+    continue
+  fi
   if [ -n "$CLOUD_PROVIDER" ]; then
     "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud=$cld $@
   else

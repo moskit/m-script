@@ -9,6 +9,6 @@ print_timeline Server
 open_cluster "SSH Logins"
 close_cluster_line
 open_line "localhost"
-print_dashline showlogs folder "dict_blocker/localhost"
+print_dashline showlogs folder "auth/localhost"
 close_line
 close_cluster
