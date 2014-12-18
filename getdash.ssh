@@ -23,9 +23,6 @@ rpath=${xcommand%/*}
 [ -z "$SCP" ] && echo "scp utility not found, exiting" && exit 1
 [ -z "$SSH" ] && SSH=`which ssh 2>/dev/null`
 
-[ -f "/sbin/ifconfig" ] && IFCFG=/sbin/ifconfig || IFCFG=`which ifconfig 2>/dev/null`
-[ -n "$IFCFG" ] && localip=`$IFCFG | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1'` || localip="ifconfig_not_found"
-
 source "$rpath/conf/mon.conf"
 source "$rpath/lib/functions.sh"
 
@@ -69,8 +66,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
     for server in `grep "|${cld}$" "$rpath/servers.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       time0=`date +"%s"`
-      ip=${server%%|*}
-      [ `echo $ip | grep -c "^$localip$"` -ne 0 ] && continue
+      localips | grep -q "^${server%%|*}$" && continue
       key=`"$M_ROOT"/helpers/find_key server $ip`
       servername=`echo $server | cut -d'|' -f4`
       [ -d "$rpath/www/$monitor/$cld/$clustered_as/$servername" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$servername"

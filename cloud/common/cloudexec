@@ -64,7 +64,7 @@ remote_exec() {
     if [ "_$nosudo" == "_yes" ]; then
       $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; $command\)
     else
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; sudo $command\)
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" sudo bash -c \"test -e \\\"$M_ROOT_REMOTE/m.rc\\\" \&\& source \\\"$M_ROOT_REMOTE/m.rc\\\" \; export ip=$IP \; $command\"
     fi
   fi
 }
