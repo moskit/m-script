@@ -66,7 +66,8 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
     for server in `grep "|${cld}$" "$rpath/servers.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       time0=`date +"%s"`
-      localips | grep -q "^${server%%|*}$" && continue
+      ip=${server%%|*}
+      localips | grep -q "^$ip$" && continue
       key=`"$M_ROOT"/helpers/find_key server $ip`
       servername=`echo $server | cut -d'|' -f4`
       [ -d "$rpath/www/$monitor/$cld/$clustered_as/$servername" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$servername"
