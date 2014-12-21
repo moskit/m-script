@@ -26,7 +26,7 @@ SSH=`which ssh 2>/dev/null`
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 
 if [ -n "$SSHPORT" ]; then
-  [ $SSHPORT != "22" ] && SSHPORT="-p $SSHPORT" || unset SSHPORT
+  [ "$SSHPORT" != "22" ] && SSHPORT="-p $SSHPORT" || unset SSHPORT
 fi
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 nextkey=false
