@@ -49,15 +49,15 @@ do
   esac
 
   for option in `echo $possible_options | sed 's/ /-/g'`; do 
-    [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
+    [ -n "$s_optname" ] && [ "_$s_optname" == "_$option" ] && eval "$option=\"${s_optarg}\"" && found=1
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
+  [ "_$s_option" == "_$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
 done
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   echo "Usage: ${0##*/} <options> <textfile>"
   echo 
   echo "Options:"
@@ -103,7 +103,7 @@ case $type in
       done
     fi
     if [[ $exc -lt 0 ]] ; then
-      for ((i=$exc; i<=0; i++)) ; do
+      for ((i=$exc; i<0; i++)) ; do
         emptychunks="${emptychunks}<div class=\"chunk empty\">&nbsp;</div>\n"
       done
       dashhtml="${emptychunks}\n`cat "$M_ROOT/www/$folder/dash.html" | grep 'div\ id='`"

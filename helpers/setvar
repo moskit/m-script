@@ -27,7 +27,7 @@ do
   esac
   if [ -n "$s_optname" ]; then
     for option in `echo $possible_options | sed 's/ /-/g'`; do
-      if [ "X$s_optname" == "X$option" ]; then
+      if [ "_$s_optname" == "_$option" ]; then
         if [ -n "$s_optarg" ]; then
           eval "$s_optname=\"$s_optarg\""
         else
@@ -114,11 +114,11 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
       echo -n "Found in $conf ...   "
       set_var_table || retval+=1
     done
-    for conf in `grep -l "${s_var}=" "$M_ROOT/conf/clouds"/*.conf` ; do
+    for conf in `grep -l "${s_var}=" "$M_ROOT/conf/clouds"/*.conf 2>/dev/null` ; do
       echo -n "Found in $conf ...   "
       set_var || retval+=1
     done
-    for conf in `grep -l "${s_var}=" "$M_ROOT/conf/balancers"/*.conf` ; do
+    for conf in `grep -l "${s_var}=" "$M_ROOT/conf/balancers"/*.conf 2>/dev/null` ; do
       echo -n "Found in $conf ...   "
       set_var || retval+=1
     done

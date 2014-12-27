@@ -26,6 +26,8 @@ if [ -z "$localcluster" ]; then
   echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
   cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
   echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"
+else
+  [ -d "../servers/$localcloud/$localcluster/$localserver" ] || install -d "../servers/$localcloud/$localcluster/$localserver"
 fi
 
 for cluster in `find ../servers/*/* -maxdepth 0 -type d 2>/dev/null`
@@ -47,7 +49,7 @@ do
   print_cluster_inline "sizeh" "imgh" "cld" "region" "role"
   close_cluster_line
 
-  if [ "x$cls" == "x$localcluster" -a "x$cld" == "x$localcloud" ]; then
+  if [ "_$cls" == "_$localcluster" ] && [ "_$cld" == "_$localcloud" ]; then
     node="${cld}/${cls}|${localserver}"
     echo -e "<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"${node}_status\" onclick=\"showDetails('${node}_status','serverdetails')\">${localserver:0:20}</span>"
     cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
@@ -55,7 +57,8 @@ do
     [ -e "../servers/localhost/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
     echo -e "</div>\n<div class=\"details\" id=\"${node}_details\"></div>"
   fi
-  for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | sort`
+
+  for server in `find $cluster/* -maxdepth 0 -type d 2>/dev/null | grep -v "^$cluster/$localserver$" | sort`
   do
     node="${cld}/${cls}|${server##*/}"
     serverh="${server##*/}"
