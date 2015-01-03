@@ -175,9 +175,10 @@ cat -E $1 | while read LINE ; do
         # draw a line and pass the info to the next resolver
         # remember that HTML5 treats HR semantically only
         echo "<HR size=\"1\" width=\"90%\">"
-        data[1]=${data[2]} ; datastyle[1]="info"
-        unset data[2] datastyle[2]
-        cursor=0
+        data[1]=${data[2]}
+        datatype[1]="info"
+        unset data[2] datatype[2]
+        cursor+=-1
         ;;
     esac
   fi

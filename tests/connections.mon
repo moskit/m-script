@@ -237,7 +237,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
   fi
 fi
 
-echo -e "  Name              Socket file\n"
+echo -e "\n  Name              Socket file\n"
 
 $SOCKCONNS | grep STREAM > "$M_TEMP/sockets.$$"
 
