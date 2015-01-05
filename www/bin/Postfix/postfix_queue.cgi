@@ -15,14 +15,14 @@ if [ -n "$POSTFIX_CLUSTERS" ]; then
     for pfcluster in `echo "$POSTFIX_CLUSTERS" | tr ',' ' '`; do
       open_cluster "$cloud|Queue Monitor"
         close_cluster_line
-        print_dashlines postfix_queue folder "postfix_queue/$cloud/Queue Monitor"
+        print_dashlines "Postfix/postfix_queue" folder "postfix_queue/$cloud/Queue Monitor"
       close_cluster
     done
   done
 else
   open_cluster "localhost"
     close_cluster_line
-    print_dashlines postfix_queue folder "postfix_queue"
+    print_dashlines "Postfix/postfix_queue" folder "postfix_queue"
   close_cluster
 fi
 

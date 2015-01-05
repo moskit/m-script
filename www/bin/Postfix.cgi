@@ -14,13 +14,13 @@ if [ -n "$POSTFIX_CLUSTERS" ]; then
     for pfcluster in `echo "$POSTFIX_CLUSTERS" | tr ',' ' '`; do
       open_cluster "$cloud|Activity Monitor"
         close_cluster_line
-        print_dashlines postfix_activity folder "postfix_activity/$cloud/Activity Monitor"
+        print_dashlines "Postfix/postfix_activity" folder "postfix_activity/$cloud/Activity Monitor"
       close_cluster
     done
   done
 else
   open_cluster "localhost"
     close_cluster_line
-    print_dashlines postfix_activity folder "postfix_activity"
+    print_dashlines "Postfix/postfix_activity" folder "postfix_activity"
   close_cluster
 fi

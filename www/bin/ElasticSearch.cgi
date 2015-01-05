@@ -39,7 +39,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
   
   open_line "$clustername|hilited" eshealth
       for esst in $esstatus ; do
-        echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
+        echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','ElasticSearch/esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
       echo "<div id=\"data_${clustername}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div>"
   close_line

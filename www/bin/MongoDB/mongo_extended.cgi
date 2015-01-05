@@ -26,19 +26,19 @@ print_mongo_server() {
     
     scanned=`echo "$report" | grep '^Records scanned'`
     scanned=`expr "$scanned" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_scanned\" onclick=\"showDetails('${nodeid}_scanned','mongo_records_scanned_graph')\">${scanned}</div>"
+    echo "<div class=\"status clickable\" id=\"${nodeid}_scanned\" onclick=\"showDetails('${nodeid}_scanned','MongoDB/mongo_records_scanned_graph')\">${scanned}</div>"
     
     inmemdd=`echo "$report" | grep '^Data size'`
     inmemdd=`expr "$inmemdd" : ".*:\ *\(.*[^ ]\)\ *$"`
     inmemsec=`echo "$report" | grep '^Over seconds'`
     inmemsec=`expr "$inmemsec" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_inmem\" onclick=\"showDetails('${nodeid}_inmem','mongo_data_inram_graph')\">${inmemdd} / ${inmemsec}</div>"
+    echo "<div class=\"status clickable\" id=\"${nodeid}_inmem\" onclick=\"showDetails('${nodeid}_inmem','MongoDB/mongo_data_inram_graph')\">${inmemdd} / ${inmemsec}</div>"
     
     indexhits=`echo "$report" | grep '^Index hits'`
     indexhits=`expr "$indexhits" : ".*:\ *\(.*[^ ]\)\ *$"`
     indexacc=`echo "$report" | grep '^Index accesses'`
     indexacc=`expr "$indexacc" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_index\" onclick=\"showDetails('${nodeid}_index','mongo_index_hits_graph')\">${indexhits} / ${indexacc}</div>"
+    echo "<div class=\"status clickable\" id=\"${nodeid}_index\" onclick=\"showDetails('${nodeid}_index','MongoDB/mongo_index_hits_graph')\">${indexhits} / ${indexacc}</div>"
     
     cursors=`echo "$report" | grep '^Open cursors'`
     cursors=`expr "$cursors" : ".*:\ *\(.*[^ ]\)\ *$"`
