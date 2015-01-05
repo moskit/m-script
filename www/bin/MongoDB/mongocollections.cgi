@@ -3,7 +3,7 @@
 saname="MongoDB"
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-M_ROOT="$PWD/../../"
+M_ROOT="$PWD/../../.."
 source "$M_ROOT/lib/dash_functions.sh"
 
 print_cgi_headers

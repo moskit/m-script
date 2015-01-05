@@ -1,6 +1,6 @@
 #!/bin/bash
 
-M_ROOT="$PWD/../../"
+M_ROOT="$PWD/../.."
 parent="$1"
 node="$2"
 IFS='

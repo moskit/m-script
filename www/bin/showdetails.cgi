@@ -10,6 +10,8 @@ script=`echo $QUERY_STRING | tr '&' '\n' | grep '^script' | sed 's@script=@@;s@%
 cluster=`echo $QUERY_STRING | tr '&' '\n' | grep '^cluster' | sed 's@cluster=@@;s@%2F@/@g;s@%20@ @g;s@%3A@:@g'`
 server=`echo $QUERY_STRING | tr '&' '\n' | grep '^server' | sed 's@server=@@;s@%2F@/@g;s@%20@ @g;s@%3A@:@g'`
 
-scriptname=${script##*/}
-[ -f "$PWD/$scriptname" ] && "$PWD/$scriptname" "$cluster" "$server" 2>>"$PWD/../../logs/dashboard.log"
-
+if [ -f "$PWD/$script" ]; then
+  "$PWD/$script" "$cluster" "$server" 2>>"$PWD/../../logs/dashboard.log"
+else
+  echo "ERROR script $PWD/$script not found" >> "$PWD/../../logs/dashboard.log"
+fi

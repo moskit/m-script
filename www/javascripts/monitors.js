@@ -231,7 +231,7 @@ hideAll = function(e) {
     targ = targ.parentNode.parentNode;
     $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
     $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
-  if (updaterstopped == 1) startUpdater();
+  //if (updaterstopped == 1) startUpdater();
   } else {
     hideblocked = 0;
   }

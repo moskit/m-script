@@ -1,6 +1,6 @@
 #!/bin/bash
 
-M_ROOT="$PWD/../../"
+M_ROOT="$PWD/../.."
 source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/dash_functions.sh"
