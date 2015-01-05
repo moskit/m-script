@@ -6,7 +6,8 @@ window.onload = function() {
   el = document.body;
   el.observe('click', hideAll);
   fillTabs();
-  window.setTimeout(function(){initMonitors(tab)}, 300);
+  waitforTab(tab);
+  initMonitors(tab);
 }
 
 var pu = null;
@@ -25,14 +26,27 @@ initMonitors = function(updater) {
   if (updview) {
     $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
   } else {
-    if ($('view0')) { $('view0').addClassName('active'); }
+    if ($('view0')) $('view0').addClassName('active');
   }
-  if ($(updtab)) { $(updtab).addClassName('active'); }
-  if ($(updview)) { $(updview).addClassName('active'); }
+  if ($(updtab)) $(updtab).addClassName('active');
+  waitforButton(updater);
+  if ($(updater)) $(updater).addClassName('active');
 }
 
 setUpdater = function(updater) {
   window.location.search = '?' + updater;
+}
+
+waitforTab = function(tab) {
+  for(var i=1;i<10;i++) {
+    setTimeout(function(){ if ($(tab)) return; }, 500);
+  }
+}
+
+waitforButton = function(updater) {
+  for(var i=1;i<10;i++) {
+    setTimeout(function(){ if ($(updater)) return; }, 1000);
+  }
 }
 
 startUpdater = function(updater) {

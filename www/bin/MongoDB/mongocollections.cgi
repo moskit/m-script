@@ -54,7 +54,7 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     coll_name=`echo "$collinfo" | grep ^0\/\"ns\"\| | cut -d'|' -f2 | tr -d '"'`
     coll_name=${coll_name#*.}
     [ -z "$coll_name" ] && continue
-    open_line "$coll_name" indexes
+    open_line "$coll_name" "MongoDB/indexes"
     coll_ok=`echo "$collinfo" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
     coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
     coll_sharded=`echo "$collinfo" | grep ^0\/\"sharded\"\| | cut -d'|' -f2`
@@ -81,7 +81,7 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     fi
     coll_indexsize="$coll_indexsize $csunits"
     
-    print_inline "coll_status" "coll_sharded" "coll_primary" "coll_count|mongo_coll_count_graph" "coll_size|mongo_coll_size_graph" "coll_indexsize|mongo_coll_indexsize_graph"
+    print_inline "coll_status" "coll_sharded" "coll_primary" "coll_count|MongoDB/mongo_coll_count_graph" "coll_size|MongoDB/mongo_coll_size_graph" "coll_indexsize|MongoDB/mongo_coll_indexsize_graph"
     close_line "$coll_name"
     
   done
