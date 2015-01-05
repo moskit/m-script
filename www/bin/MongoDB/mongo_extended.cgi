@@ -2,7 +2,7 @@
 
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-M_ROOT="$PWD/../../../"
+M_ROOT="$PWD/../../"
 source "$M_ROOT/lib/dash_functions.sh"
 print_cgi_headers 
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
