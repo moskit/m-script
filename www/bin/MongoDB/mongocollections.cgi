@@ -3,22 +3,23 @@
 saname="MongoDB"
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-source "$PWD/../../lib/dash_functions.sh"
+M_ROOT="$PWD/../../../"
+source "$M_ROOT/lib/dash_functions.sh"
 
 print_cgi_headers
-print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
+"MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 print_page_title "Collection" "Status" "Sharded" "Primary" "Records" "Data Size" "Index Size"
 
-[ -f "$PWD/../../standalone/$saname/data/databases.dat" ] || exit 0
-source "$PWD/../../standalone/$saname/mongo_databases.conf"
+[ -f "$M_ROOT/standalone/$saname/data/databases.dat" ] || exit 0
+source "$M_ROOT/standalone/$saname/mongo_databases.conf"
 ignored=`echo "$IGNORED_DBS" | tr ',' ' '`
 ignored=`echo "$ignored" | tr ' ' '\n' | grep -v ^$`
 
-for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|' -f2 | sort | uniq` ; do
+for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -f2 | sort | uniq` ; do
   echo "$ignored" | grep -q "^${dbname}$" && continue
   
-  [ -f "$PWD/../../standalone/$saname/data/${dbname}.dat" ] || continue
-  db_dat=`cat "$PWD/../../standalone/$saname/data/${dbname}.dat"`
+  [ -f "$M_ROOT/standalone/$saname/data/${dbname}.dat" ] || continue
+  db_dat=`cat "$M_ROOT/standalone/$saname/data/${dbname}.dat"`
   total_datasize=`echo "$db_dat" | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`
   [ "X$total_datasize" == "X0" ] && continue
   total_ok=`echo "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
@@ -47,7 +48,7 @@ for dbname in `cat "$PWD/../../standalone/$saname/data/databases.dat" | cut -d'|
   print_cluster_inline "total_status" "-" "-" "total_count" "total_datasize" "total_indexsize"
   close_cluster_line
   
-  for coll in "$PWD/../../standalone/$saname/data"/${dbname}.*.dat ; do
+  for coll in "$M_ROOT/standalone/$saname/data"/${dbname}.*.dat ; do
     collinfo=`cat "$coll"`
     [ -z "$collinfo" ] && continue
     coll_name=`echo "$collinfo" | grep ^0\/\"ns\"\| | cut -d'|' -f2 | tr -d '"'`

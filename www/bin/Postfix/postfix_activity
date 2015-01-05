@@ -1,8 +1,9 @@
 #!/bin/bash
 
-source "$PWD/../../conf/dash.conf"
-source "$PWD/../../conf/mon.conf"
-source "$PWD/../../lib/dash_functions.sh"
+M_ROOT="$PWD/../../../"
+source "$M_ROOT/conf/dash.conf"
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/dash_functions.sh"
 
 [ "X$2" == "Xlocalhost" ] || ip="$2"
 ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name "$2.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg")

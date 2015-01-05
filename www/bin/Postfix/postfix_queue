@@ -1,9 +1,10 @@
 #!/bin/bash
 
-source "$PWD/../../conf/dash.conf"
-source "$PWD/../../conf/mon.conf"
-source "$PWD/../../lib/dash_functions.sh"
-source "$PWD/../../standalone/Postfix/postfix_queue.conf"
+M_ROOT="$PWD/../../../"
+source "$M_ROOT/conf/dash.conf"
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/dash_functions.sh"
+source "$M_ROOT/standalone/Postfix/postfix_queue.conf"
 
 [ "X$2" == "Xlocalhost" ] || ip="$2"
 for qtype in $GRAPHS_FOR ; do

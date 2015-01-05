@@ -3,15 +3,16 @@
 saname="MongoDB"
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
-source "$PWD/../../lib/dash_functions.sh"
+M_ROOT="$PWD/../../../"
+source "$M_ROOT/lib/dash_functions.sh"
 
 print_cgi_headers
-print_nav_bar "MongoDB|Servers" "mongo_extended|Extended" "mongosharding|Sharding" "mongocollections|Collections" "mongologger|Log Monitor"
+"MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 print_page_title "Collection" "Status" "Count" "Data Size" "Size on Disk" "Index Size" "Chunks"
 
-for db in `find "$PWD/../../standalone/$saname/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|$PWD/../../standalone/$saname/data/shards.||g" | cut -d'.' -f1 | sort | uniq | grep -v ^$` ; do
+for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|$M_ROOT/standalone/$saname/data/shards.||g" | cut -d'.' -f1 | sort | uniq | grep -v ^$` ; do
 
-  db_dat="$PWD/../../standalone/$saname/data"/${db}.dat
+  db_dat="$M_ROOT/standalone/$saname/data"/${db}.dat
   [ -f "$db_dat" ] || continue
   total_ok=`cat "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
   total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
@@ -37,9 +38,9 @@ for db in `find "$PWD/../../standalone/$saname/data" -mindepth 1 -maxdepth 1 -ty
   print_cluster_inline "total_status" "total_count" "total_datasize" "total_storsize" "total_indexsize" "total_chunks"
   close_cluster_line "$db"
   
-  for coll in "$PWD/../../standalone/$saname/data"/shards.${db}.* ; do
-    coll=`echo $coll | sed "s|$PWD/../../standalone/$saname/data/shards.${db}.||"`
-    coll_dat="$PWD/../../standalone/$saname/data"/${db}.${coll}.dat
+  for coll in "$M_ROOT/standalone/$saname/data"/shards.${db}.* ; do
+    coll=`echo $coll | sed "s|$M_ROOT/standalone/$saname/data/shards.${db}.||"`
+    coll_dat="$M_ROOT/standalone/$saname/data"/${db}.${coll}.dat
     open_line "$coll" shards
     if [ -f "$coll_dat" ]; then
       coll_ok=`cat $coll_dat | grep ^0\/\"ok\"\| | cut -d'|' -f2`

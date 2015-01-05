@@ -6,7 +6,7 @@ source "$PWD/../../lib/dash_functions.sh"
 CURL=`which curl 2>/dev/null`
 
 print_cgi_headers
-print_nav_bar "ElasticSearch|Nodes" "es_logs|Logs"
+print_nav_bar "ElasticSearch|Nodes" "ElasticSearch/es_logs|Logs"
 print_page_title "ID" "Node" "Heap used / committed" "Indices size" "Indices docs number" "Open file descriptors" "Conn http / transport"
 
 for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.nodes" 2>/dev/null` ; do

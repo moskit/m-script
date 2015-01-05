@@ -1,4 +1,7 @@
-# 1394745887
-SQLITE=`which sqlite3 2>/dev/null`
-$SQLITE "../standalone/MongoDB/extended.sql3" "CREATE TABLE extended (timeindex integer, day varchar(8), hostport text, totalOpen integer, lastFlushMs integer, avgFlushMs real, durCommits integer, durWriteJPercent real, durWriteDPercent real, indexAccesses real, indexHits real, indexMisses real, opcountersReplQuery real, opcountersReplInsert real, opcountersReplUpdate real, opcountersReplDelete real, opcountersReplGetmore real, opcountersReplCommand real, opcountersReplTotal real, scanned real, fastmod real, idhack real, scanAndOrder real, documentDeleted real, documentInserted real, documentReturned real, documentUpdated real, recordMoves real, replApplyBatchesNum real, replApplyBatchesMs real, replApplyOps real, replNetworkBytes real, replNetworkOps real, replOplogInsertNum real, replOplogInsertMs real, replOplogInsertBytes real, dataInMemory integer, overSeconds integer, PRIMARY KEY(timeindex, hostport))"
-
+# 1420417834
+install -d /opt/m/www/bin/MongoDB /opt/m/www/bin/ElasticSearch /opt/m/www/bin/Postfix
+rm /opt/m/www/bin/mongo*
+rm /opt/m/www/bin/indexes
+rm /opt/m/www/bin/shards
+rm /opt/m/www/bin/es*
+rm /opt/m/www/bin/postfix*

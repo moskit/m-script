@@ -1,8 +1,12 @@
-init = function() {
+window.onload = function() {
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  var tab = vars[0];
+  if (!tab) var tab = 'dash';
   el = document.body;
   el.observe('click', hideAll);
   fillTabs();
-  initMonitors('dash', 0);
+  window.setTimeout(function(){initMonitors(tab)}, 300);
 }
 
 var pu = null;
@@ -11,18 +15,24 @@ var updaterstopped = 1;
 var updaterlevel = 0;
 var hideblocked = 1;
 
-initMonitors = function(upd,updlevel) {
+initMonitors = function(updater) {
   hideblocked = 1;
   stopUpdater();
-  updater = upd;
   startUpdater(updater);
-  if (updlevel == 0) {
-    $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
-    if ($('view0')) { $('view0').addClassName('active'); }
-  } else {
+  updtab = updater.split('/')[0];
+  updview = updater.split('/')[1];
+  $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+  if (updview) {
     $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+  } else {
+    if ($('view0')) { $('view0').addClassName('active'); }
   }
-  if ($(updater)) { $(updater).addClassName('active'); }
+  if ($(updtab)) { $(updtab).addClassName('active'); }
+  if ($(updview)) { $(updview).addClassName('active'); }
+}
+
+setUpdater = function(updater) {
+  window.location.search = '?' + updater;
 }
 
 startUpdater = function(updater) {
@@ -66,7 +76,7 @@ showVars = function(result_div,newvar) {
 fillTabs = function() {
   var the_url = '/bin/filltabs.cgi';
   new Ajax.Request(the_url, {
-    onSuccess: function(response) {
+    onComplete: function(response) {
       $('tabs').update(response.responseText);
     }
   });

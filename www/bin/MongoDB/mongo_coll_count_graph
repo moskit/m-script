@@ -1,8 +1,9 @@
 #!/bin/bash
 
-source "$PWD/../../conf/dash.conf"
-source "$PWD/../../conf/mon.conf"
-source "$PWD/../../lib/dash_functions.sh"
+M_ROOT="$PWD/../../../"
+source "$M_ROOT/conf/dash.conf"
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/dash_functions.sh"
 
 ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.collcount.svg)
 if [ -z "$ex" ] ; then

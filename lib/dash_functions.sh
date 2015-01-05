@@ -238,14 +238,14 @@ print_nav_bar() {
   ## Views provided as arguments have the highest priority
   if [ -n "$1" ]; then
     [ "${1%%|*}" == "$callername" ] && dfpnbactive=" active"
-    echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${1%%|*}', 0)\">${1#*|}</li>"
+    echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('${1%%|*}')\">${1#*|}</li>"
       shift
       while [ -n "$1" ]; do
         # not printing if not exists
         if [ -x "$M_ROOT/www/bin/${1%%|*}.cgi" ]; then
           unset dfpnbactive
           [ "${1%%|*}" == "$callername" ] && dfpnbactive=" active"
-          echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"initMonitors('${1%%|*}', 1)\">${1#*|}</li>\n"
+          echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"setUpdater('${1%%|*}')\">${1#*|}</li>\n"
         fi
         shift
       done
@@ -261,13 +261,13 @@ print_nav_bar() {
         view=`cat "$M_ROOT/standalone/$saname/nav.bar" | head -1`
         if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
           [ "${view%%|*}" == "$callername" ] && dfpnbactive=" active"
-          echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view%%|*}', 0)\">${view#*|}</li>"
+          echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('${view%%|*}')\">${view#*|}</li>"
           unset dfpnbactive
         fi
         for view in `cat "$M_ROOT/standalone/$saname/nav.bar" | tail -n +2`; do
           if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
             [ "${view%%|*}" == "$callername" ] && dfpnbactive=" active"
-            echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view%%|*}', 1)\">${view#*|}</li>"
+            echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('${view%%|*}')\">${view#*|}</li>"
             unset dfpnbactive
           fi
         done
@@ -283,13 +283,13 @@ print_nav_bar() {
         if [ "$view" == "$saname" ]; then
           if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
             [ "$view" == "$callername" ] && dfpnbactive=" active"
-            v0="<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view}', 0)\">${view}</li>"
+            v0="<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('${view}')\">${view}</li>"
             unset dfpnbactive
           fi
         else
           if [ -x "$M_ROOT/www/bin/${view%%|*}.cgi" ]; then
             [ "$view" == "$callername" ] && dfpnbactive=" active"
-            v1="<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"initMonitors('${view}', 1)\">${view}</li>"
+            v1="<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('${view}')\">${view}</li>"
             unset dfpnbactive
           fi
         fi
