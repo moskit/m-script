@@ -1,6 +1,6 @@
 #!/bin/bash
 
-M_ROOT="$PWD/../../../"
+M_ROOT="$PWD/../../"
 source "$M_ROOT/conf/dash.conf"
 timerange=`expr $slotline_length \* \( $freqdef - $timeshift \)` || timerange=10000
 oldest=`date -d "-$timerange sec" +"%H:%M"`
