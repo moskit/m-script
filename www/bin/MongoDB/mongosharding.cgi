@@ -6,7 +6,8 @@ scriptname=${scriptname##*/}
 M_ROOT="$PWD/../../../"
 source "$M_ROOT/lib/dash_functions.sh"
 
-print_cgi_headers "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
+print_cgi_headers 
+print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 print_page_title "Collection" "Status" "Count" "Data Size" "Size on Disk" "Index Size" "Chunks"
 
 for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type f -name shards.*.* | sed "s|$M_ROOT/standalone/$saname/data/shards.||g" | cut -d'.' -f1 | sort | uniq | grep -v ^$` ; do

@@ -4,7 +4,8 @@ scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 M_ROOT="$PWD/../../../"
 source "$M_ROOT/lib/dash_functions.sh"
-print_cgi_headers "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
+print_cgi_headers 
+print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
 
 print_mongo_server() {
