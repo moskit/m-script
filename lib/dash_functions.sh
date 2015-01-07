@@ -237,15 +237,19 @@ print_nav_bar() {
   # other buttons IDs become CGI scripts names (with .cgi extension)
   ## Views provided as arguments have the highest priority
   if [ -n "$1" ]; then
-    [ "${1%%|*}" == "$callername" ] && dfpnbactive=" active"
-    echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('${1%%|*}')\">${1#*|}</li>"
+    dfpnbcgi="${1%%|*}"
+    dfpnbbtn="${1#*|}"
+    [ "${dfpnbcgi#*/}" == "$callername" ] && dfpnbactive=" active"
+    echo -e "<div id=\"views\">\n<ul id=\"viewsnav\">\n<li class=\"viewsbutton$dfpnbactive\" id=\"view0\" onClick=\"setUpdater('$dfpnbcgi')\">$dfpnbbtn</li>"
       shift
       while [ -n "$1" ]; do
+        dfpnbcgi="${1%%|*}"
+        dfpnbbtn="${1#*|}"
         # not printing if not exists
         if [ -x "$M_ROOT/www/bin/${1%%|*}.cgi" ]; then
           unset dfpnbactive
-          [ "${1%%|*}" == "$callername" ] && dfpnbactive=" active"
-          echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"setUpdater('${1%%|*}')\">${1#*|}</li>\n"
+          [ "${dfpnbcgi#*/}" == "$callername" ] && dfpnbactive=" active"
+          echo -e "<li class=\"viewsbutton$dfpnbactive\" id=\"${1%%|*}\" onClick=\"setUpdater('$dfpnbcgi')\">$dfpnbbtn</li>\n"
         fi
         shift
       done

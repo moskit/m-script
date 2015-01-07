@@ -1,70 +1,63 @@
 window.onload = function() {
-  var query = window.location.search.substring(1);
-  var vars = query.split("&");
-  var tab = vars[0];
-  if (!tab) var tab = 'dash';
   el = document.body;
   el.observe('click', hideAll);
   fillTabs();
-  waitforTab(tab);
-  initMonitors(tab);
+  initMonitors(updater);
 }
 
-var pu = null;
-var updater = null;
+var query = window.location.search.substring(1);
+var vars = query.split("&");
+var updater = vars[0];
+if (!updater) var updater = 'dash';
+var pu;
 var updaterstopped = 1;
-var updaterlevel = 0;
 var hideblocked = 1;
 
 initMonitors = function(updater) {
   hideblocked = 1;
   stopUpdater();
   startUpdater(updater);
-  updtab = updater.split('/')[0];
-  updview = updater.split('/')[1];
-  $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+  var updtab = updater.split('/')[0];
+  var updview = updater.split('/')[1];
+  setTimeout(function waitforTab() {
+    if (document.body.contains($(updtab))) {
+      $$('#tabs ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+      $(updtab).addClassName('active');
+    } else {
+      setTimeout(waitforTab, 100);
+    }
+  }, 100);
+
   if (updview) {
-    $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+    setTimeout(function waitforView() {
+      if (document.body.contains($(updater))) {
+        $$('#views ul li').each(function(value) { if (value.hasClassName('active')) value.removeClassName('active');});
+        $(updater).addClassName('active');
+      } else {
+        setTimeout(waitforView, 100);
+      }
+    }, 100);
   } else {
     if ($('view0')) $('view0').addClassName('active');
   }
-  if ($(updtab)) $(updtab).addClassName('active');
-  waitforButton(updater);
-  if ($(updater)) $(updater).addClassName('active');
 }
 
 setUpdater = function(updater) {
   window.location.search = '?' + updater;
 }
 
-waitforTab = function(tab) {
-  for(var i=1;i<10;i++) {
-    setTimeout(function(){ if ($(tab)) return; }, 500);
-  }
-}
-
-waitforButton = function(updater) {
-  for(var i=1;i<10;i++) {
-    setTimeout(function(){ if ($(updater)) return; }, 1000);
-  }
-}
-
 startUpdater = function(updater) {
   if (updaterstopped == 1) {
-    if (!updater) updater = window.updater;
-    //showVars($('messages'), updater + ' stopped');
     pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
-      method: 'get', frequency: 200, decay: 1.5
+      method: 'get', frequency: 20, decay: 1.5
     });
     updaterstopped = 0;
-    //showVars($('messages'), updater + ' started');
   }
 }
 
 stopUpdater = function() {
   if (updaterstopped == 0) {
     if (pu) { pu.stop(); pu = undefined; }
-    //showVars($('messages'), updater + ' stopped');
     updaterstopped = 1;
   }
 }
@@ -90,7 +83,7 @@ showVars = function(result_div,newvar) {
 fillTabs = function() {
   var the_url = '/bin/filltabs.cgi';
   new Ajax.Request(the_url, {
-    onComplete: function(response) {
+    onSuccess: function(response) {
       $('tabs').update(response.responseText);
     }
   });
@@ -245,7 +238,7 @@ hideAll = function(e) {
     targ = targ.parentNode.parentNode;
     $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
     $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
-  //if (updaterstopped == 1) startUpdater();
+  if (updaterstopped == 1) startUpdater();
   } else {
     hideblocked = 0;
   }
