@@ -72,7 +72,8 @@ if [ -n "$ES_SERVERS" ] ; then
       clusternameprev=$clustername
       clusternames="$clusternames $clustername"
       collect_hosts $clusterips
-      eval "${clustername}ips=\"$configips\""
+      clustervar=`echo "$clustername" | tr -d '\ -'`
+      eval "${clustervar}ips=\"$configips\""
     done
   else
   # ES_SERVERS contains clusters
@@ -82,7 +83,8 @@ if [ -n "$ES_SERVERS" ] ; then
       port=`echo "$name" | cut -sd':' -f2`
       clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
       collect_hosts $clusterips
-      eval "${clustername}ips=\"$configips\""
+      clustervar=`echo "$clustername" | tr -d '\ -'`
+      eval "${clustervar}ips=\"$configips\""
       unset clusterips configips
       clusternames="$clusternames $clustername"
     done
@@ -96,8 +98,9 @@ rm "$rpath"/*.es_servers.list 2>/dev/null
 
 # These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
+  clustervar=`echo "$cluster" | tr -d '\ -'`
   touch "$rpath/${cluster}.es_servers.list"
-  [ -n "`eval echo -e \$${cluster}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_servers.list"`" ] && eval echo -e \$${cluster}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_servers.list"
+  [ -n "`eval echo -e \$${clustervar}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_servers.list"`" ] && eval echo -e \$${cluster}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_servers.list"
 done
 $debug && log "server lists updated"
 

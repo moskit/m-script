@@ -49,7 +49,7 @@ setUpdater = function(updater) {
 startUpdater = function(updater) {
   if (updaterstopped == 1) {
     pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
-      method: 'get', frequency: 20, decay: 1.5
+      method: 'get', frequency: 100, decay: 1.5
     });
     updaterstopped = 0;
   }
@@ -238,7 +238,7 @@ hideAll = function(e) {
     targ = targ.parentNode.parentNode;
     $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
     $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
-  if (updaterstopped == 1) startUpdater();
+  if (updaterstopped == 1) startUpdater(updater);
   } else {
     hideblocked = 0;
   }
