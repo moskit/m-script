@@ -37,14 +37,15 @@ if [ -n "$AUTH_LOGIN" ]; then
 fi
 source "$M_ROOT/conf/mon.conf"
 
+timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
+[ -n "$timeshift" ] && period=`expr $FREQ + $timeshift` || period=$FREQ
+lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
+
 touch "$rpath/mongo_mongos_servers.list" "$rpath/mongo_config_servers.list" "$rpath/mongo_shards.list" "$rpath/mongo_servers.list"
 M_TEMP="$M_TEMP/MongoDB"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
-[ -n "$timeshift" ] && period=`expr $FREQ + $timeshift` || period=$FREQ
 
-lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
 
 function print_servers() {
   for host in $@ ; do

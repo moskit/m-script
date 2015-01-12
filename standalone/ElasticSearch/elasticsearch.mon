@@ -39,6 +39,7 @@ function collect_hosts() {
     [ -n "$port" ] || port=$defaultport
     configips="$configips ${rname}:$port"
   done
+  configips="${configips#* }"
 }
 
 if [ -n "$ES_SERVERS" ] ; then
@@ -100,15 +101,15 @@ rm "$rpath"/*.es_servers.list 2>/dev/null
 for cluster in $clusternames ; do
   clustervar=`echo "$cluster" | tr -d '\ -'`
   touch "$rpath/${cluster}.es_servers.list"
-  [ -n "`eval echo -e \$${clustervar}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_servers.list"`" ] && eval echo -e \$${cluster}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_servers.list"
+  [ -n "`eval echo -e \\$${clustervar}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_servers.list"`" ] && eval echo -e \$${clustervar}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_servers.list"
 done
 $debug && log "server lists updated"
 
 for node in `cat "$rpath"/*.es_servers.list 2>/dev/null` ; do
   if $HANDLE_NODES ; then
-    allclusters="$allclusters $node|`$CURL -m 2 "http://$node/_cluster/state/_"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+    allclusters="$allclusters\n$node|`$CURL -m 2 "http://$node/_cluster/state/_"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   else
-    allclusters="$allclusters $node|`$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+    allclusters="$allclusters\n$node|`$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   fi
 done
 
@@ -120,11 +121,11 @@ date > "$rpath/elasticsearch.mon.report"
 echo -e "-----------------------------\n" >> "$rpath/elasticsearch.mon.report"
 
 ### allclusters and escluster mean ES cluster, not servers cluster!
-for escluster in `echo "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
+for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v ^$` ; do
   #rm -f "$rpath/${escluster}.nodes.list"
   #mv "$rpath/${escluster}.dat" "$rpath/${escluster}.dat.prev"
-  clusterhost1=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
-  clusterhost2=`echo $allclusters | sed 's| |\n|g' | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
+  clusterhost1=`echo -e "$allclusters" | grep "|${escluster}$" | sort | uniq | tail -1` ; clusterhost1=${clusterhost1%|*}
+  clusterhost2=`echo -e "$allclusters" | grep "|${escluster}$" | sort | uniq | head -1` ; clusterhost2=${clusterhost2%|*}
   clusterport1=${clusterhost1#*:}
   clusterport2=${clusterhost2#*:}
   [[ "$clusterport1" == "$clusterport2" ]] || echo "Different port numbers for cluster ${escluster}: $clusterport1 $clusterport2  - please keep your environment sane!"

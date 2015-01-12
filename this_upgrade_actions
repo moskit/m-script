@@ -1,7 +1,3 @@
-# 1420417834
-install -d /opt/m/www/bin/MongoDB /opt/m/www/bin/ElasticSearch /opt/m/www/bin/Postfix
-rm /opt/m/www/bin/mongo*
-rm /opt/m/www/bin/indexes
-rm /opt/m/www/bin/shards
-rm /opt/m/www/bin/es*
-rm /opt/m/www/bin/postfix*
+# 1421071997
+$SQLITE "$rpath/shards.sql3" "create table changelog (timeindex integer, day varchar(8), hostport text, database varchar(64), collection varchar(64), event varchar(64), status varchar(64), number integer)"
+$SQLITE "$rpath/shards.sql3" "create index tdc on changelog (timeindex, hostport, database, collection)"

@@ -61,7 +61,7 @@ start)
   echo $$ > $pidfile
   
   [ -n "$FREQ" ] || FREQ=200
-  if [ "X$MONGOOSE" == "X1" ] ; then
+  if [ "_$MONGOOSE" == "_1" ] ; then
     echo -n "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
     if [ -z "$MG" ] ; then

@@ -33,16 +33,17 @@ if [ -n "$AUTH_LOGIN" ]; then
     echo "Password is not set for user $AUTH_LOGIN"
   fi
 fi
-DIFF=`which diff 2>/dev/null`
-[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
-source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
-[ -z "$depth" ] && depth=5
 
+source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
 source "$M_ROOT/conf/mon.conf"
+
+timeindexnow=`date +"%s"`
+timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
+[ -n "$timeshift" ] && period=`expr $FREQ + $timeshift` || period=$FREQ
+lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
 
 M_TEMP="$M_TEMP/MongoDB"
 install -d "$M_TEMP"
-timeindexnow=`date +"%s"`
 
 a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && log "No configuration servers found" && exit 1
@@ -58,6 +59,7 @@ rm -f "$rpath/sharding.report"
 for coll in $sharded ; do
 
   database=${coll%%.*}
+  collection=${coll#*.}
   rm -f "$rpath/data/shards.$coll"
   shards=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.distinct(\"shard\").forEach( function(c) {print(c + '|' + db.chunks.find({ \"ns\" : \"$coll\" , \"shard\" : c }).count() ) } )" 2>>$LOG`
   collshardinfo=()
@@ -66,19 +68,27 @@ for coll in $sharded ; do
     shchunks=`echo $shard | cut -d'|' -f2`
     shhost=`grep \|$shname\| "$rpath"/mongo_shards.list 2>/dev/null | grep \|master$ | cut -d'|' -f1`
     [ -z "$shhost" ] && continue
-    shdatasize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.${coll#*.}.dataSize()" 2>>$LOG`
-    shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.${coll#*.}.totalIndexSize()" 2>>$LOG`
+    shdatasize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.dataSize()" 2>>$LOG`
+    shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.totalIndexSize()" 2>>$LOG`
     collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
     
+    events=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"time\" : { \\$gt : $lastping }, \"server\" : \"$shhost\", \"ns\" : \"$coll\"},{\"_id\":0,\"what\":1,\"details.note\":1}).forEach(function(c) { print(c.what + '|' + c.details.note) })"`
+    
     if [ "_$SQLITE3" == "_1" ] ; then
-      dbquery "$rpath/mongodb.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '${coll#*.}', '$shchunks', '$shdatasize', '$shindexsize')"
+      for event in `echo "$events" | sort | uniq -c | grep '|' | sed 's|^\ *||'` ; do
+        ev=`echo "$event" | cut -sd' ' -f2 | cut -sd'|' -f1`
+        status=`echo "$event" | cut -sd'|' -f2`
+        number=`echo "$event" | cut -sd' ' -f1`
+        dbquery "$rpath/shards.sql3" "INSERT into events (timeindex, day, hostport, database, collection, event, status, number) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$ev', '$status', '$number')"
+      done    
+      dbquery "$rpath/shards.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$shchunks', '$shdatasize', '$shindexsize')"
     fi
   done
   echo -e ${collshardinfo[*]} | tr ' ' '\n' > "$rpath/data/shards.$coll"
   
-  [ -f "$rpath/data/sharding.changelog.${coll}.dat" ] && mv "$rpath/data/sharding.changelog.${coll}.dat" "$rpath/data/sharding.changelog.${coll}.dat.prev"
-  $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"what\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"what\" : c, \"ns\" : \"$coll\" } ).count() ) } )" > "$rpath/data/sharding.changelog.${coll}.dat"
-  $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.distinct(\"details.note\").forEach( function(c) {print(c + '|' + db.changelog.find( { \"details.note\" : c, \"ns\" : \"$coll\" } ).count() ) } )" >> "$rpath/data/sharding.changelog.${coll}.dat"
+  
+  
+  $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"time\" : { \$gt : ISODate(\"`date -d "-240 sec" +"%Y-%m-%dT%H:%M:%S"`\")}},{\"_id\":0,\"server\":1,\"what\":1,\"ns\":1,\"details.note\":1}).forEach(printjson)" > "$rpath/data/sharding.changelog.${coll}.dat"
   
   cldiff=`$DIFF "$rpath/data/sharding.changelog.${coll}.dat.prev" "$rpath/data/sharding.changelog.${coll}.dat"`
   if [ -n "$cldiff" ] ; then
@@ -86,29 +96,11 @@ for coll in $sharded ; do
     
     leftdiff=`echo "$cldiff" | grep ^\< | tr -d '^\< '`
     rightdiff=`echo "$cldiff" | grep ^\> | tr -d '^\> '`
-    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "X$SQLITE3" == "X1" ] && dbquery "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
+    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "_$SQLITE3" == "_1" ] && dbquery "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
   fi
-
-  # latest chunks of this collection
-  #$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.find( { ns : \"${coll}\" }, { _id : 0, shard : 1, min : 1, max : 1 } ).sort({_id:-1}).limit(${depth}).forEach(printjson)" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${coll}.chunks"
 
 done &
 
-  # the last split chunk and the server it has been splitted on:
-#  lastsplit=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({what:\"split\", ns:\"${coll}\"}, { server:1, _id:0, \"details.right.min._id\":1 }).sort({time:-1}).limit(1).forEach(printjson)" | "$M_ROOT"/lib/json2txt | cut -d'|' -f2`
-#  lastsplitserver=`echo "$lastsplit" | head -1`
-#  lastsplitchunk=`echo "$lastsplit" | tail -1 | cut -d'"' -f2`
-  # chunk could be moved after split:
-#  chunkmovedto=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"details.min._id\":ObjectId(\"$lastsplitchunk\"), what:\"moveChunk.start\"},{\"details.to\":1, _id:0}).sort({time:1}).forEach(printjson)" | "$M_ROOT"/lib/json2txt | cut -d'|' -f2`
-#  if [ -n "$chunkmovedto" ] ; then
-#    currshard2=$chunkmovedto
-#  else
-#    currshard2=`$MONGO $AUTH "$confserver"/config --quiet --eval "db."`
-#  fi
-
-### to find chunks size without locking whole db
-# mongo "$confserver"/config --quiet --eval "db.chunks.find({\"shard\" : \"${shard}\", \"ns\" : \"${ns}\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | sed 's|"|\\"|g;s|\$|\\$|g' | while read MINMAX ; do echo "$MINMAX" ; mongo "${shard}:${shardport}"/$db --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns}\", keyPattern: { \"_id\": 1}, $MINMAX }))" ; sleep 100 ; done
-### TODO: keyPattern can be obtained from config.collections
 
 unset masters
 

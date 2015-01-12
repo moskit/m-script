@@ -228,7 +228,7 @@ a:active { color: #393; }
 
 span.indent {
   margin-left: 6px;
-  width: 199px;
+  width: 209px;
   font-size: inherit;
   font-weight: inherit;
   float: left;
@@ -439,7 +439,7 @@ span.indent {
 
 .servername {
   height: 16px;
-  width: 180px;
+  width: 190px;
   margin-left: 25px;
   padding: 2px 0px;
   font-weight: bold;
@@ -462,7 +462,7 @@ span.indent {
 }
 
 .status {
-  width: 88px;
+  width: 96px;
   height: 100%;
   padding: 2px 0px;
   text-align: center;
