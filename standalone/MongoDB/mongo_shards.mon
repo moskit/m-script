@@ -86,21 +86,7 @@ for coll in $sharded ; do
   done
   echo -e ${collshardinfo[*]} | tr ' ' '\n' > "$rpath/data/shards.$coll"
   
-  
-  
-  $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"time\" : { \$gt : ISODate(\"`date -d "-240 sec" +"%Y-%m-%dT%H:%M:%S"`\")}},{\"_id\":0,\"server\":1,\"what\":1,\"ns\":1,\"details.note\":1}).forEach(printjson)" > "$rpath/data/sharding.changelog.${coll}.dat"
-  
-  cldiff=`$DIFF "$rpath/data/sharding.changelog.${coll}.dat.prev" "$rpath/data/sharding.changelog.${coll}.dat"`
-  if [ -n "$cldiff" ] ; then
-    timeindex=`date +"%s"`
-    
-    leftdiff=`echo "$cldiff" | grep ^\< | tr -d '^\< '`
-    rightdiff=`echo "$cldiff" | grep ^\> | tr -d '^\> '`
-    for metric in `echo -e "$leftdiff\n$rightdiff" | cut -d'|' -f1 | sort | uniq` ; do echo -n "$metric|" ; old=`echo "$leftdiff" | grep ^$metric\| | cut -d'|' -f2` ; new=`echo "$rightdiff" | grep ^$metric\| | cut -d'|' -f2` ; val=`expr $new - $old` ; echo $val ; done | while read line ; do echo "$line" | sed 's_|_:  _g' >> "$rpath/sharding.report" ; [ "_$SQLITE3" == "_1" ] && dbquery "$rpath/mongodb.sql3" "INSERT into changelog (timeindex, database, collection, event, value) values (${timeindex}, '$database', '${coll#*.}', '${line%%|*}', '${line##*|}')" ; done
-  fi
-
 done &
-
 
 unset masters
 

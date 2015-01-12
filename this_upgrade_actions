@@ -1,3 +1,8 @@
-# 1421071997
-$SQLITE "$rpath/shards.sql3" "create table changelog (timeindex integer, day varchar(8), hostport text, database varchar(64), collection varchar(64), event varchar(64), status varchar(64), number integer)"
-$SQLITE "$rpath/shards.sql3" "create index tdc on changelog (timeindex, hostport, database, collection)"
+# 1421073000
+echo -e "\n  *** Dropping tables, may take some time!\n"
+cp "$M_ROOT/standalone/MongoDB/mongodb.sql3" "$M_ROOT/standalone/MongoDB/mongodb.sql3.1421073000"
+
+$SQLITE "$M_ROOT/standalone/MongoDB/mongodb.sql3" "drop table shards"
+$SQLITE "$M_ROOT/standalone/MongoDB/mongodb.sql3" "drop table changelog"
+$SQLITE "$M_ROOT/standalone/MongoDB/shards.sql3" "create table changelog (timeindex integer, day varchar(8), hostport text, database varchar(64), collection varchar(64), event varchar(64), status varchar(64), number integer)"
+$SQLITE "$M_ROOT/standalone/MongoDB/shards.sql3" "create index tdc on changelog (timeindex, hostport, database, collection)"
