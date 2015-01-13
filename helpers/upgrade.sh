@@ -101,7 +101,7 @@ if [ -f "$M_ROOT/this_upgrade_actions" ] ; then
     if [ `expr $thists \> $lastts` -eq 1 ] ; then
       echo "`date` Running this upgrade specific actions script" >> "$M_ROOT/upgrade_actions.log"
       
-      bash "$M_ROOT/this_upgrade_actions" "$rpath" >> "$M_ROOT/upgrade_actions.log"
+      bash "$M_ROOT/this_upgrade_actions" "$rpath" 2>&1 | tee -a "$M_ROOT/upgrade_actions.log"
       if [[ $? -eq 0 ]] ; then
         echo "OK"
         install -d "$M_ROOT/upgrade_actions"

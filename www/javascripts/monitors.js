@@ -14,6 +14,8 @@ var updaterstopped = 1;
 var hideblocked = 1;
 
 initMonitors = function(updater) {
+  var title = document.title;
+  document.title = title + " - " + updater;
   hideblocked = 1;
   stopUpdater();
   startUpdater(updater);

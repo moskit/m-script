@@ -20,9 +20,9 @@ rcommand=${BASH_SOURCE##*/}
 rpath=${rpath%/*}
 #*/ (this is needed to fool vi syntax highlighting)
 
-[ "X$1" == "Xdefault" ] && defopt=1
-[ "X$1" == "Xuninstall" ] && defopt=2
-[ "X$1" == "Xreinit" ] && defopt=3
+[ "_$1" == "_default" ] && defopt=1
+[ "_$1" == "_uninstall" ] && defopt=2
+[ "_$1" == "_reinit" ] && defopt=3
 
 # Checking dependencies
 
@@ -174,6 +174,7 @@ if `grep -q "^MONGOOSE=1" "$rpath/conf/mon.conf"` ; then
   echo "You may want to adjust access settings for the web interface."
   echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
   echo "and edit $rpath/conf/mongoose.conf"
+  sed -i "s|<title></title>|<title>M-Script - `hostname`</title>|" "$rpath/www/dashboard/index.html"
 fi
       
 if [ -z "$IPTABLES" ]; then
