@@ -55,7 +55,7 @@ lock_cloudops() {
   while [ -f "$M_ROOT/cloud/cloud.${CLOUD}.lock" ]; do
     sleep 10
     i+=1
-    log "$i :: cloud operations are locked"
+    log "$i :: waiting for a lock"
     [ $i -gt 50 ] && log "failed to acquire the lock" && return 1
   done
   touch "$M_ROOT/cloud/cloud.${CLOUD}.lock"
