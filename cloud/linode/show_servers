@@ -232,8 +232,14 @@ list_servers() {
               serverlist+=("$ip|$key|$region|$name|$icluster|$CLOUD")
               $debug && [ -n "$ecf" ] && log "$ip ($name) added"
             done
-            
           fi
+        elif [ -n "$all" ]; then
+          for ip in $IP ; do
+            ip=`echo $ip | tr -d ' '`
+            check_super_cluster $ip "$icluster" && continue
+            serverlist+=("$ip|$key|$region|$name|$icluster|$CLOUD")
+            $debug && [ -n "$ecf" ] && log "$ip ($name) added"
+          done
         fi
       fi
       
