@@ -123,9 +123,8 @@ list_servers() {
     allips=`cat "$M_TEMP/ips.list"`
     for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
-      for LINE in `grep "/\"servers\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
-        LINE=`echo $LINE | awk -F"\"servers\"/$sn/" '{print $2}'`
-        lvar=`echo $LINE | cut -d'|' -f1 | tr -d '"'`
+      for LINE in `grep "/\"DATA\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
+        lvar=`echo $LINE | cut -d'/' -f4 | tr -d '"'`
         if [ -n "$filter" ] ; then
           for fvar in `echo -e $filter | tr ',' '\n'` ; do            
             [[ $lvar =~ $fvar ]] || continue 2
