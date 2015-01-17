@@ -76,7 +76,6 @@ lock_cloudops || exit 10
 CURL="$CURL -s -k"
 declare -i icount
 
-[ -n "$short" ] && req='/servers' || req='/servers/detail'
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="active"
@@ -86,11 +85,9 @@ request() {
   local updateflavors updateimages
   updateflavors=false
   updateimages=false
-  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
-  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2`
-  URL=`eval "echo $URL"` ; TOKEN=`eval "echo $TOKEN"`
+
   log "calling API"
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}${req}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
   if [ -n "`find "$M_TEMP" -mtime -2 -name flavors.resp`" ]; then
     if grep -q \"code\"\|401$ "$M_TEMP/flavors.resp" ; then
       updateflavors=true
@@ -105,10 +102,15 @@ request() {
   else
     updateimages=true
   fi
-  $updateflavors && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/flavors/detail" | "$M_ROOT/lib/json2txt" > "$M_TEMP/flavors.resp"
-  (nump=0; f=false ; cat "$M_TEMP/flavors.resp" | grep -E "/\"id\"\||/\"name\"\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/flavors.list"
-  $updateimages && $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/images/detail" | "$M_ROOT/lib/json2txt" > "$M_TEMP/images.resp"
-  (nump=0; f=false ; cat "$M_TEMP/images.resp" | grep -E "/\"id\"\||/\"name\"\|" | cut -d'/' -f3,4 | while read L ; do num=`echo $L | cut -d'/' -f1`; if $f ; then [ $num -ne $nump ] && echo || echo -n "|"; fi; echo -n -e "$L" | cut -d'|' -f2 | tr -d '\n'; nump=$num; f=true ; done; echo) > "$M_TEMP/images.list"
+  
+  # IPs of all nodes
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" > "$M_TEMP/ips.list"
+  
+  $updateflavors && $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt" > "$M_TEMP/flavors.resp"
+  cat "$M_TEMP/flavors.resp" | grep \"LABEL\" | cut -sd'/' -f3,4 | sed 's|/"LABEL"||' > "$M_TEMP/flavors.list"
+  
+  $updateimages && $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt" > "$M_TEMP/images.resp"
+  cat "$M_TEMP/flavors.resp" | grep \"LABEL\" | cut -sd'/' -f3,4 | sed 's|/"LABEL"||' > "$M_TEMP/images.list"
 }
 
 list_servers() {
@@ -118,6 +120,7 @@ list_servers() {
 '
   if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
     declare -a serverlist
+    allips=`cat "$M_TEMP/ips.list"`
     for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
       for LINE in `grep "/\"servers\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
@@ -128,31 +131,39 @@ list_servers() {
             [[ $lvar =~ $fvar ]] || continue 2
           done
         fi
-        lvalue=`echo $LINE | cut -d'|' -f2`
-        lvalue=`eval "echo $lvalue"`
+        lvalue=`echo $LINE | cut -d'|' -f2 | tr -d '"'`
         case $lvar in
-          imageId)
-            [ -n "$resolveids" ] && imageId=`imageid $lvalue` || imageId=$lvalue
+          LINODEID)
+            id=$lvalue
             ;;
-          flavorId)
+          LABEL)
+            name="$value"
+            ;;
+          DISTRIBUTIONVENDOR)
+            imageId="$value"
+            ;;
+          PLANID)
             [ -n "$resolveids" ] && flavorId=`flavorid $lvalue` || flavorId=$lvalue
             ;;
-          status)
-            istatus=`echo $lvalue | sed 's|.|\l&|g'`
+          STATUS)
+            istatus=$lvalue
             ;;
-          addresses/public/*)
-            extIP="$extIP $lvalue"
-            ;;
-          addresses/private/*)
-            intIP="$intIP $lvalue"
-            ;;
-          metadata/cluster)
+          LPM_DISPLAYGROUP)
             icluster="$lvalue"
             ;;
           *)
             eval "$lvar=\"$lvalue\""
             ;;
         esac
+      done
+      IPsn=`echo "$allips" | grep "\"LINODEID\"|" | cut -d'/' -f3`
+      for ipsn in IPsn ; do
+        ipdata=`echo "$allips" | grep \/$ipsn\/`
+        if `echo "$ipdata" | grep -q '"ISPUBLIC"|1'` ; then
+          extIP="$extIP `echo "$ipdata" | grep "/\"IPADDRESS\"|" | cut -sd'|' -f2 | tr -d '"'`"
+        else
+          intIP="$intIP `echo "$ipdata" | grep "/\"IPADDRESS\"|" | cut -sd'|' -f2 | tr -d '"'`"
+        fi
       done
       if [ "_$NETWORK" == "_external" ] ; then
         IP=$extIP
@@ -237,58 +248,9 @@ list_servers() {
     fi
   else
     echo "No local data found. Run without --noupdate"
-    proper_exit 1 233
+    proper_exit 1 251
   fi
   IFS=$IFS1
 }
 
-imageid() {
-  iname=`grep ^$1\| "$M_TEMP/images.list" | cut -d'|' -f2 | tr -d '"'`
-  [ -z "$iname" ] && return 1
-  echo "$iname"
-}
-
-flavorid() {
-  fname=`grep ^$1\| "$M_TEMP/flavors.list" | cut -d'|' -f2 | tr -d '"'`
-  [ -z "$fname" ] && return 1
-  echo "$fname"
-}
-
-try_auth() {
-  local -i i
-  i=0
-  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
-    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 249
-    "$M_ROOT/cloud/$CLOUD_PROVIDER"/auth
-    i+=1
-    sleep 10
-  done
-  [ $i -ne 0 ] && log "$i additional auth request(s) due to no reply from API"
-}
-
-# force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
-# if no setting, force update is disabled
-if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
-  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/${rcommand}.resp 2>/dev/null || echo 0` || echo 86400)
-  [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] 2>/dev/null && log "$M_TEMP/${rcommand}.resp is older than $FORCE_LIST_UPDATE_AFTER sec, update forced" && unset noupdate
-fi
-if [ -z "$noupdate" ] ; then
-  try_auth
-  request
-  declare -i n
-  n=0
-  while [ `grep -c \"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
-    [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 269
-    [ $n -gt 1 ] && sleep 30
-    rm -f "$M_TEMP/auth.resp"
-    try_auth
-    request
-    n+=1
-  done
-  [ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
-fi
-list_servers
-
-[ -n "$count" ] && echo $icount
-proper_exit 0 281
 

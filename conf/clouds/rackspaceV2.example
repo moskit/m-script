@@ -6,7 +6,7 @@ CLOUD_PROVIDER=rackspace
 
 # Short, or internal, name is the name of this file without extension.
 # Below is a long name that appears in reports, alerts and web interface
-NAME="Rackspace Cloud"
+CLOUD_NAME="Rackspace Cloud"
 
 RS_AUTH_USER=
 RS_AUTH_KEY=

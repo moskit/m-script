@@ -1,44 +1,16 @@
-################################
-##  Ganeti cluster management ##
-################################
-# Local cloud, managed by Ganeti. Xen, KVM, LXC based local/clustered instances
+#####################################
+##  Rackspace cloud configuration  ##
+#####################################
 
-CLOUD_PROVIDER=ganeti
+CLOUD_PROVIDER=rackspace
 
 # Short, or internal, name is the name of this file without extension.
 # Below is a long name that appears in reports, alerts and web interface
-CLOUD_NAME="Ganeti Cluster"
+CLOUD_NAME="Rackspace Cloud"
 
-# Class C (/24) network for Ganeti cluster. IPs are static (no DHCP), M-Script
-# assigns them automatically to each new instance.
-GANETI_NETWORK=10.1.1.0
-
-# must be two (or edit network_if* template)
-GANETI_DNS1=8.8.8.8
-GANETI_DNS2=8.8.4.4
-
-# API URL
-GANETI_APIURL=localhost
-
-# OS guessing from flavor name (for templates selection). Set it to false
-# if you need custom templates, or use names from which OS name cannot be
-# guessed (does not include it in any form).
-GUESS_OS=true
-
-# Default gateway for Ganeti instances. Defaults to the first IP of the network.
-GANETI_GATEWAY=
-
-# Ganeti folders
-GANETI_FOLDERS_ROOT="/srv/ganeti"
-GANETI_CONF_FOLDER="/etc/ganeti"
-IMAGE_DIR="/var/cache/ganeti-instance-image"
-
-# Various Ganeti default settings
-CDINSTALL="no"
-FILESYSTEM="ext3"
-NOMOUNT="no"
-IMAGE_DEBUG="no"
-
+LIN_AUTH_USER=
+LIN_AUTH_KEY=
+LIN_APIURL="https://api.linode.com"
 
 ####################
 ## Common options ##

@@ -6,7 +6,7 @@ CLOUD_PROVIDER=ec2
 
 # Short, or internal, name is the name of this file without extension.
 # Below is a long name that appears in reports, alerts and web interface
-NAME="Amazon EC2"
+CLOUD_NAME="Amazon EC2"
 
 EC2_PRIVATE_KEY=
 EC2_CERT=

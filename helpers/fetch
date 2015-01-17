@@ -39,6 +39,7 @@ echo "URL: $URL"
 [ -z "$PROTO" ] && PROTO="http"
 
 if [ -n "$WGET" ] ; then
+  $insecure && WGET="$WGET --no-check-certificate"
   [ -n "$2" ] && DEST="-P ${2}"
   if [ -n "$verbose" ]; then
     echo "Fetching with Wget"
@@ -51,10 +52,6 @@ if [ -n "$WGET" ] ; then
   if [ $res -eq 0 ] ; then
     exit 0
   else
-    if [ $res -eq 5 ] ; then
-      $insecure && $WGET -q --no-check-certificate -nH -N $DEST "${PROTO}://${URL}"
-      res=$?
-    fi
     if [ $res -eq 0 ]; then
       exit 0
     else

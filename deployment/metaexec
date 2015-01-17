@@ -505,7 +505,7 @@ if [ "$output" == "console" ]; then
   fi
 fi
 
-if [ `echo $ip | grep -c "^$localip$"` -eq 0 ]; then
+if [ `localips | grep "^$ip$"` -eq 0 ]; then
   KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 509
   [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
   [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
