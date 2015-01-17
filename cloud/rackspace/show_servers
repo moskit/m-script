@@ -180,7 +180,7 @@ list_servers() {
         # Note that if you use same names for clusters in different cluster
         # groups, you'll get them mixed here.
         if [ -n "$icluster" ] || [ -n "$all" ] ; then
-          [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
+          [ -z "$all" ] && [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
           
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
           extIP=`echo $extIP | tr -d ' '`

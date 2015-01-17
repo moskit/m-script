@@ -52,7 +52,7 @@ IFS=$IFS1
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
@@ -78,7 +78,7 @@ declare -i icount
 
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -z "$status" -a -n "$state" ] && status=$state
-[ -z "$status" ] && status="active"
+[ -z "$status" ] && status="1"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
 request() {
@@ -124,7 +124,7 @@ list_servers() {
     for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
       for LINE in `grep "/\"DATA\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
-        lvar=`echo $LINE | cut -d'/' -f4 | tr -d '"'`
+        lvar=`echo $LINE | cut -d'|' -f1 | cut -d'/' -f4 | tr -d '"'`
         if [ -n "$filter" ] ; then
           for fvar in `echo -e $filter | tr ',' '\n'` ; do            
             [[ $lvar =~ $fvar ]] || continue 2
@@ -136,10 +136,10 @@ list_servers() {
             id=$lvalue
             ;;
           LABEL)
-            name="$value"
+            name="$lvalue"
             ;;
           DISTRIBUTIONVENDOR)
-            imageId="$value"
+            imageId="$lvalue"
             ;;
           PLANID)
             [ -n "$resolveids" ] && flavorId=`flavorid $lvalue` || flavorId=$lvalue
@@ -150,26 +150,23 @@ list_servers() {
           LPM_DISPLAYGROUP)
             icluster="$lvalue"
             ;;
-          *)
-            eval "$lvar=\"$lvalue\""
-            ;;
         esac
       done
-      IPsn=`echo "$allips" | grep "\"LINODEID\"|" | cut -d'/' -f3`
-      for ipsn in IPsn ; do
+      IPsn=`echo "$allips" | grep "\"LINODEID\"|$id" | cut -d'/' -f3`
+      for ipsn in $IPsn ; do
         ipdata=`echo "$allips" | grep \/$ipsn\/`
         if `echo "$ipdata" | grep -q '"ISPUBLIC"|1'` ; then
-          extIP="$extIP `echo "$ipdata" | grep "/\"IPADDRESS\"|" | cut -sd'|' -f2 | tr -d '"'`"
+          extIP="$extIP`echo "$ipdata" | grep '"IPADDRESS"|' | cut -sd'|' -f2 | tr -d '"'`\n"
         else
-          intIP="$intIP `echo "$ipdata" | grep "/\"IPADDRESS\"|" | cut -sd'|' -f2 | tr -d '"'`"
+          intIP="$intIP`echo "$ipdata" | grep '"IPADDRESS"|' | cut -sd'|' -f2 | tr -d '"'`\n"
         fi
       done
       if [ "_$NETWORK" == "_external" ] ; then
-        IP=$extIP
+        IP="$extIP"
       else
-        IP=$intIP
+        IP="$intIP"
       fi
-      for ip in $IP ; do
+      for ip in `echo -e "$IP" | grep -v ^$` ; do
         ip=`echo $ip | tr -d ' '`
         if [ -z "$icluster" ] ; then
           # servers having no cluster in metadata but added manually to servers.list
@@ -191,10 +188,9 @@ list_servers() {
         # groups, you'll get them mixed here.
         if [ -n "$icluster" ] || [ -n "$all" ] ; then
           [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
-          
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
-          extIP=`echo $extIP | tr -d ' '`
-          intIP=`echo $intIP | tr -d ' '`
+          extIP=`echo -e "$extIP" | tr -d ' ' | tr '\n' ' '`
+          intIP=`echo -e "$intIP" | tr -d ' ' | tr '\n' ' '`
           check_super_cluster $extIP "$icluster" && continue
           check_super_cluster $intIP "$icluster" && continue
           case $view in
