@@ -81,6 +81,14 @@ declare -i icount
 [ -z "$status" ] && status="1"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
+flavorid() {
+  grep ^$1\| "$M_TEMP/flavors.list" | cut -sd'|' -f2
+}
+
+imageid() {
+  grep ^$1\| "$M_TEMP/images.list" | cut -sd'|' -f2
+}
+
 request() {
   local updateflavors updateimages
   updateflavors=false
@@ -110,7 +118,7 @@ request() {
   cat "$M_TEMP/flavors.resp" | grep \"LABEL\" | cut -sd'/' -f3,4 | sed 's|/"LABEL"||' > "$M_TEMP/flavors.list"
   
   $updateimages && $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt" > "$M_TEMP/images.resp"
-  cat "$M_TEMP/flavors.resp" | grep \"LABEL\" | cut -sd'/' -f3,4 | sed 's|/"LABEL"||' > "$M_TEMP/images.list"
+  cat "$M_TEMP/images.resp" | grep \"LABEL\" | cut -sd'/' -f3,4 | sed 's|/"LABEL"||' > "$M_TEMP/images.list"
 }
 
 list_servers() {
@@ -139,7 +147,7 @@ list_servers() {
             name="$lvalue"
             ;;
           DISTRIBUTIONVENDOR)
-            imageId="$lvalue"
+            [ -n "$resolveids" ] && imageId=`imageid $lvalue` || imageId=$lvalue
             ;;
           PLANID)
             [ -n "$resolveids" ] && flavorId=`flavorid $lvalue` || flavorId=$lvalue
@@ -191,6 +199,8 @@ list_servers() {
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
           extIP=`echo -e "$extIP" | tr -d ' ' | tr '\n' ' '`
           intIP=`echo -e "$intIP" | tr -d ' ' | tr '\n' ' '`
+          extIP="${extIP%% *}"
+          intIP="${intIP%% *}"
           check_super_cluster $extIP "$icluster" && continue
           check_super_cluster $intIP "$icluster" && continue
           case $view in
