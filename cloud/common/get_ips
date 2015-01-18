@@ -21,7 +21,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 SSH=`which ssh 2>/dev/null`
-possible_options="cluster help region delimiter limit names quoted spaces thishost private public local nolocal cloud"
+possible_options="cluster help region delimiter limit names quoted spaces thishost private public local nolocal cloud verbose"
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"
@@ -80,19 +80,24 @@ source "$M_ROOT/lib/cloud_functions.sh"
 [ -n "$thishost" ] && local="yes"
 
 if [ -n "$local" -o -n "$nolocal" ] ; then
-  localips=`find_local_ips`
+  localips=`localips`
 fi
 
 if [ -n "$cloud" ]; then
   cloud=`echo -e "$cloud" | tr ',' '\n'`
+  if [ "$cloud" == "all" ]; then
+    cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+  fi
 elif [ -n "$CLOUD" ]; then
   cloud=$CLOUD
 else
   cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 fi
 
-for cld in $cloud ; do
+[ -n "$verbose" ] && [ -n "$delimiter" ] && verbose=true || verbose=false
 
+for cld in $cloud ; do
+  $verbose && echo "Cloud: $cld"
   if [ -n "$local" ] ; then
     unset cluster
     IPS=$localips
@@ -100,8 +105,8 @@ for cld in $cloud ; do
     IPS=`cat "$M_ROOT/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$"`
     [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
     cluster=`echo -e $cluster | tr ',' '\n'`
-    [ -n "$all" ] && cluster=all
-    [ "_$cluster" == "_all" ] && cluster=`cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+
+    [ "_$cluster" == "_all" ] && cluster=`cat "$M_ROOT/servers.list" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
     [ -z "$cluster" ] && cluster=$M_CLUSTER
     [ -z "$cluster" ] && echo "No clusters found" && exit 1
   fi
@@ -130,6 +135,7 @@ for cld in $cloud ; do
         [ "_$CLUSTER" == "_$cl" ] && list=true && break
       done
       $list || continue
+      $verbose && echo "  Cluster: $CLUSTER"
     fi
     if [ -n "$names" ] ; then
       rname=`find_name $IP`
@@ -146,7 +152,7 @@ for cld in $cloud ; do
         ips="${ips}`printf "${IP}${delimiter}"`"
       fi
     else
-      echo $IP
+      $verbose && echo "    $IP" || echo $IP
     fi
     n+=1
     [ -n "$limit" ] && [ $n -gt $limit ] && break

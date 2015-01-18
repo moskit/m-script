@@ -96,18 +96,10 @@ request() {
 
   log "calling API"
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
-  if [ -n "`find "$M_TEMP" -mtime -2 -name flavors.resp`" ]; then
-    if grep -q \"code\"\|401$ "$M_TEMP/flavors.resp" ; then
-      updateflavors=true
-    fi
-  else
+  if [ ! -n "`find "$M_TEMP" -mtime -2 -name flavors.resp`" ]; then
     updateflavors=true
   fi
-  if [ -n "`find "$M_TEMP" -mtime -2 -name images.resp`" ]; then
-    if grep -q \"code\"\|401$ "$M_TEMP/images.resp" ; then
-      updateimages=true
-    fi
-  else
+  if [ ! -n "`find "$M_TEMP" -mtime -2 -name images.resp`" ]; then
     updateimages=true
   fi
   
@@ -147,7 +139,7 @@ list_servers() {
             name="$lvalue"
             ;;
           DISTRIBUTIONVENDOR)
-            [ -n "$resolveids" ] && imageId=`imageid $lvalue` || imageId=$lvalue
+            imageId="$lvalue"
             ;;
           PLANID)
             [ -n "$resolveids" ] && flavorId=`flavorid $lvalue` || flavorId=$lvalue
