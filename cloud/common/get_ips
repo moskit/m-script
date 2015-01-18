@@ -74,6 +74,18 @@ if [ "_$help" == "_yes" ] ; then
   exit 0
 fi
 
+printip() {
+  if [ -n "$delimiter" ] ; then
+    if [ -n "$quoted" ] ; then
+      ips="${ips}`printf "\\"${1}\\"$delimiter"`"
+    else
+      ips="${ips}`printf "${1}${delimiter}"`"
+    fi
+  else
+    $verbose && echo "    $1" || echo $1
+  fi
+}
+
 source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -n "$public" -a -n "$private" ] && unset public private
@@ -94,72 +106,60 @@ else
   cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 fi
 
-[ -n "$verbose" ] && [ -n "$delimiter" ] && verbose=true || verbose=false
+[ -n "$verbose" ] && [ -z "$delimiter" ] && verbose=true || verbose=false
 
-for cld in $cloud ; do
-  $verbose && echo "Cloud: $cld"
-  if [ -n "$local" ] ; then
-    unset cluster
-    IPS=$localips
-  else
-    IPS=`cat "$M_ROOT/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$"`
-    [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
-    cluster=`echo -e $cluster | tr ',' '\n'`
-
-    [ "_$cluster" == "_all" ] && cluster=`cat "$M_ROOT/servers.list" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
-    [ -z "$cluster" ] && cluster=$M_CLUSTER
-    [ -z "$cluster" ] && echo "No clusters found" && exit 1
-  fi
-
-  IFSORIG=$IFS
-  IFS='
-'
-  declare -i n
-  n=1
-  [ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
-  for server in $IPS ; do
-    list=false
-    IP=${server%%|*}
-    if [ -n "$public" -o -n "$private" ]; then
-      ipchk=`expr "$IP" : '\(10\..*\..*\..*\|192\.168\..*\..*\|172\.1[6-9]\..*\..*\|172\.2[0-9]\..*\..*\|172\.3[0-1]\..*\..*\)'`
-      [ -n "$private" ] && [ -z "$ipchk" ] && continue
-      [ -n "$public" ] && [ -n "$ipchk" ] && continue
-    fi
-    if [ -n "$region" ] ; then
-      REGION=`echo $server | cut -d'|' -f3`
-      [ "_$REGION" == "_$region" ] || continue
-    fi
-    if [ -n "$cluster" ] ; then
-      for cl in $cluster ; do
-        CLUSTER=`echo $server | cut -d'|' -f5`
-        [ "_$CLUSTER" == "_$cl" ] && list=true && break
-      done
-      $list || continue
-      $verbose && echo "  Cluster: $CLUSTER"
-    fi
-    if [ -n "$names" ] ; then
-      rname=`find_name $IP`
-      if [ -z "$rname" ] ; then
-        KEY=`find_key server $IP`
-        [ -n "$SSH" ] && [ -f "$KEY" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
-      fi
-      [ -n "$rname" ] && IP=$rname
-    fi
-    if [ -n "$delimiter" ] ; then
-      if [ -n "$quoted" ] ; then
-        ips="${ips}`printf "\\"${IP}\\"$delimiter"`"
-      else
-        ips="${ips}`printf "${IP}${delimiter}"`"
-      fi
-    else
-      $verbose && echo "    $IP" || echo $IP
-    fi
-    n+=1
-    [ -n "$limit" ] && [ $n -gt $limit ] && break
+if [ -n "$local" ] ; then
+  unset cluster
+  IPS=$localips
+  for IP in `echo "$IPS"`; do
+    printip "$1"
   done
-  IFS=$IFSORIG
+else
+  for cld in $cloud ; do
+    $verbose && echo "Cloud: $cld"
+    
+    cluster=`echo -e "$cluster" | tr ',' '\n'`
 
-done
+    [ "_$cluster" == "_all" ] && cluster=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+    [ -z "$cluster" ] && cluster=$M_CLUSTER
+    [ -z "$cluster" ] && echo "No clusters found" && continue
 
+    IFSORIG=$IFS
+    IFS='
+  '
+    declare -i n
+    n=1
+    [ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
+    for cl in `echo -e "$cluster"` ; do
+      $verbose && echo "  Cluster: $cl"
+      IPS=`cat "$M_ROOT/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -sd'|' -f1,5 | grep "|${cl}$" | cut -sd'|' -f1`
+      [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | sed 's_^_\^_;s_$_\$_' | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
+      
+      for IP in `echo "$IPS"`; do
+      
+      if [ -n "$public" -o -n "$private" ]; then
+        ipchk=`expr "$IP" : '\(10\..*\..*\..*\|192\.168\..*\..*\|172\.1[6-9]\..*\..*\|172\.2[0-9]\..*\..*\|172\.3[0-1]\..*\..*\)'`
+        [ -n "$private" ] && [ -z "$ipchk" ] && continue
+        [ -n "$public" ] && [ -n "$ipchk" ] && continue
+      fi
+
+      if [ -n "$names" ] ; then
+        rname=`find_name $IP`
+        if [ -z "$rname" ] ; then
+          KEY=`find_key server $IP`
+          [ -n "$SSH" ] && [ -f "$KEY" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
+        fi
+        [ -n "$rname" ] && IP=$rname
+      fi
+
+      printip "$IP"
+
+      n+=1
+      [ -n "$limit" ] && [ $n -gt $limit ] && break
+    done
+    IFS=$IFSORIG
+
+  done
+fi
 [ -n "$ips" ] && echo "$ips" | sed "s|${delimiter}$||" || exit 0
 
