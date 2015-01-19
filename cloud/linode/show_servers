@@ -116,19 +116,22 @@ request() {
   if $updateflavors ; then
     flavors=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt"` 
     echo "$flavors" > "$M_TEMP/flavors.resp"
-    echo "$flavors" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$flavors" | grep \/$sn\/ | grep \"PLANID\" | cut -sd'|' -f2`|`echo "$flavors" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" > "$M_TEMP/flavors.list" ; done
+    rm "$M_TEMP/flavors.list"
+    echo "$flavors" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$flavors" | grep \/$sn\/ | grep \"PLANID\" | cut -sd'|' -f2`|`echo "$flavors" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/flavors.list" ; done
   fi
   
   if $updateimages ; then
     images=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt"` 
     echo "$images" > "$M_TEMP/images.resp"
-    echo "$images" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$images" | grep \/$sn\/ | grep \"DISTRIBUTIONID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" > "$M_TEMP/images.list" ; done
+    rm "$M_TEMP/images.list"
+    echo "$images" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$images" | grep \/$sn\/ | grep \"DISTRIBUTIONID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/images.list" ; done
   fi
 
   if $updateregions ; then
     regions=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters" | "$M_ROOT/lib/json2txt"` 
     echo "$regions" > "$M_TEMP/regions.resp"
-    echo "$regions" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$regions" | grep \/$sn\/ | grep \"DATACENTERID\" | cut -sd'|' -f2`|`echo "$regions" | grep \/$sn\/ | grep \"LOCATION\" | cut -sd'|' -f2`" > "$M_TEMP/regions.list" ; done
+    rm "$M_TEMP/regions.list"
+    echo "$regions" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$regions" | grep \/$sn\/ | grep \"DATACENTERID\" | cut -sd'|' -f2`|`echo "$regions" | grep \/$sn\/ | grep \"LOCATION\" | cut -sd'|' -f2`" >> "$M_TEMP/regions.list" ; done
   fi
 }
 
