@@ -191,21 +191,27 @@ list_servers() {
       else
         IP="$intIP"
       fi
-      for ip in `echo -e "$IP" | grep -v ^$` ; do
-        ip=`echo $ip | tr -d ' '`
-        if [ -z "$icluster" ] ; then
-          # servers having no cluster in metadata but added manually to servers.list
-          icluster=`grep ^$ip\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-          $debug && [ -n "$update_servers_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed `[ -n "$icluster" ] && echo "$icluster" || echo "none"`"
-          break
-        else
-          # no icluster means that server will not be shown, but only if there
-          # is no option --all. With this option, however, we want to see all
-          # clusters assigned via metadata
-          [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
-          $debug && [ -n "$update_servers_list" ] && unset ecf
-        fi
-      done
+      if [ -n "$IP" ]; then
+        for ip in `echo -e "$IP" | grep -v ^$` ; do
+          ip=`echo $ip | tr -d ' '`
+          if [ -z "$icluster" ] ; then
+            # servers having no cluster in metadata but added manually to servers.list
+            icluster=`grep ^$ip\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+            $debug && [ -n "$update_servers_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed `[ -n "$icluster" ] && echo "$icluster" || echo "none"`"
+            break
+          else
+            # no icluster means that server will not be shown, but only if there
+            # is no option --all. With this option, however, we want to see all
+            # clusters assigned via metadata
+            [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
+            $debug && [ -n "$update_servers_list" ] && unset ecf
+          fi
+        done
+      else
+        # if no IP, it shouldn't make way to servers.list
+        [ -n "$update_servers_list" ] && continue
+        
+      fi
       if [ -z "$update_servers_list" ] ; then
         # icluster existence condition is needed for the case there are multiple
         # projects (cluster groups) in the same cloud.
@@ -214,12 +220,16 @@ list_servers() {
         if [ -n "$icluster" ] || [ -n "$all" ] ; then
           [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
-          extIP=`echo -e "$extIP" | tr -d ' ' | tr '\n' ' '`
-          intIP=`echo -e "$intIP" | tr -d ' ' | tr '\n' ' '`
-          extIP="${extIP%% *}"
-          intIP="${intIP%% *}"
-          check_super_cluster $extIP "$icluster" && continue
-          check_super_cluster $intIP "$icluster" && continue
+          if [ -n "$extIP" ]; then
+            extIP=`echo -e "$extIP" | tr -d ' ' | tr '\n' ' '`
+            extIP="${extIP%% *}"
+            check_super_cluster $extIP "$icluster" && continue
+          fi
+          if [ -n "$intIP" ]; then
+            intIP=`echo -e "$intIP" | tr -d ' ' | tr '\n' ' '`
+            intIP="${intIP%% *}"
+            check_super_cluster $intIP "$icluster" && continue
+          fi
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"

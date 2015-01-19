@@ -23,7 +23,7 @@ rpath=${BASH_SOURCE%/*}
 
 SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "command ssh not found" && exit 1
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 
 if [ -n "$SSHPORT" ]; then
   [ "$SSHPORT" != "22" ] && SSHPORT="-p $SSHPORT" || unset SSHPORT

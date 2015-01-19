@@ -28,7 +28,8 @@ if [ -n "$cloud" ]; then
   cloud=`echo -e "$cloud" | tr ',' '\n'`
 elif [ -n "$CLOUD" ]; then
   cloud=$CLOUD
-else
+fi
+if [ -z "$cloud" ] || [ "_$cloud" == "_all" ]; then
   cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 fi
 
