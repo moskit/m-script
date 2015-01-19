@@ -179,18 +179,6 @@ disk_request() {
 
 ip_request() {
   unset jobid
-  if [ "_$PUBLIC_IP" == "_yes" ]; then
-    log "Sending public IP request..."
-    $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}\""
-    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.publicip.resp"
-    $dry && return 0
-    extIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`
-    if [ -z "$extIP" ]; then
-      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`"
-      return 1
-    fi
-  fi
-  unset jobid
   if [ "_$PRIVATE_IP" == "_yes" ]; then
     log "Sending private IP request..."
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}\""
@@ -202,6 +190,10 @@ ip_request() {
       return 1
     fi
   fi
+}
+
+get_assigned_ip() {
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}" | grep '"IPADDRESS"|' | cut -sd'|' -f2 | tr -d '"'
 }
 
 metadata_request() {
@@ -218,7 +210,7 @@ metadata_request() {
 save_details() {
   log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
-  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nImageID|$imageid\nFlavorID|$flavorid\nRegionID|$regionid\nPublicIP|$extIP\nPrivateIP|$intIP\n" >> "$rpath/../linode.log"
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nImageID|$imageid\nFlavorID|$flavorid\nRegionID|$regionid\nPublicIP|$extIP\nPrivateIP|$intIP\nPassword|$ROOTPASS\n" >> "$rpath/../linode.log"
   echo "$newid|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster" >> "$rpath/../${CLOUD}.list"
   chmod 600 "$rpath/../linode.log" "$rpath/../${CLOUD}.list"
   if [ "_$NETWORK" == "_external" ] ; then
@@ -309,8 +301,9 @@ else
   $dry && newid=666
   if [ -n "$newid" ] ; then
     disk_request && log "Disks created" || exit_status=2
-    ip_request && log "IPs attached" || exit_status=1
+    ip_request && log "IPs added" || exit_status=1
     metadata_request && log "Metadata updated" || exit_status=1
+    extIP=`get_assigned_ip`
     $dry || save_details
     #$dry || set_hostname
 
