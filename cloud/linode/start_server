@@ -107,6 +107,7 @@ find_flavor() {
   fi
   sn=`grep \/\"PLANID\"\|${flavorid}$ "$M_TEMP/flavors.resp" | cut -sd'/' -f3`
   maxdisksize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"DISK\" | cut -sd'|' -f2`
+  maxdisksize=`expr $maxdisksize \* 1024`
   ramsize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"RAM\" | cut -sd'|' -f2`
   if [ -z "$SWAP_PARTITION" ]; then
     swapdisksize=0
@@ -115,13 +116,13 @@ find_flavor() {
   else
     swapdisksize=$SWAP_PARTITION
   fi
-  disksize=`expr \($maxdisksize - $swapdisksize\) \* 1024`
+  disksize=`expr $maxdisksize - $swapdisksize`
   if [ -z "$disksize" ]; then
     log "Disk size cannot be determined, cannot continue"
     log "maxdisksize="
     return 1
   elif [ `expr $disksize : .*[^[0-9]]*` -gt 0 ]; then
-    log "Disk size format error (disksize=${disksize}). It must be a positive number (disk size in Gigabytes)"
+    log "Disk size format error (disksize=${disksize}). It must be a positive number (disk size in Megabytes)"
     return 1
   fi
 }
