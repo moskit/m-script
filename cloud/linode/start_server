@@ -23,7 +23,7 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="cloud region flavor cluster image name return verbose"
+possible_options="cloud region flavor cluster image name return verbose debug"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
@@ -47,6 +47,7 @@ IFS=$IFS1
 
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
+[ -n "$debug" ] && debug=true || debug-false
 
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
@@ -74,6 +75,7 @@ regionid() {
 find_image() {
   if [ -n "$image" ]; then
     if [ ! -f "$M_TEMP/images.resp" ]; then
+      $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions\""
       $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt" > "$M_TEMP/images.resp"
     fi
     grep -q \/\"DISTRIBUTIONID\"\|${image}$ "$M_TEMP/images.resp" && imageid=$image && log "Image ID for the new server is $imageid (`imageid $imageid`) based on command-line option" && return
@@ -90,6 +92,7 @@ find_image() {
 find_flavor() {
   if [ -n "$flavor" ]; then
     if [ ! -f "$M_TEMP/flavors.resp" ]; then
+      $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans\""
       $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt" > "$M_TEMP/flavors.resp"
     fi
     grep -q \/\"PLANID\"\|${flavor}$ "$M_TEMP/flavors.resp" && flavorid=$flavor && log "Flavor ID for the new server is $flavorid (`flavorid $flavorid`) based on command-line option" && return
@@ -105,15 +108,16 @@ find_flavor() {
   maxdisksize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"DISK\" | cut -sd'|' -f2`
   ramsize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"RAM\" | cut -sd'|' -f2`
   if [ -z "$SWAP_PARTITION" ]; then
-    disksize=$maxdisksize
+    swapdisksize=0
   elif [ "$SWAP_PARTITION" == "2xRAM" ]; then
-    swapdisksize=`expr 2 \* ramsize / 1024`
+    swapdisksize=`expr 2 \* $ramsize / 1024`
   else
     swapdisksize=$SWAP_PARTITION
   fi
   disksize=`expr $maxdisksize - $swapdisksize`
   if [ -z "$disksize" ]; then
     log "Disk size cannot be determined, cannot continue"
+    log "maxdisksize="
     return 1
   elif [ `expr $disksize : .*[^[0-9]]*` -gt 0 ]; then
     log "Disk size format error (disksize=${disksize}). It must be a positive number (disk size in Gigabytes)"
@@ -124,6 +128,7 @@ find_flavor() {
 find_region() {
   if [ -n "$region" ]; then
     if [ ! -f "$M_TEMP/regions.resp" ]; then
+      $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters\""
       $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters" | "$M_ROOT/lib/json2txt" > "$M_TEMP/regions.resp"
     fi
     grep -q \/\"DATACENTERID\"\|${region}$ "$M_TEMP/regions.resp" && regionid=$region && log "flavor ID for the new server is $regionid (`regionid $regionid`) based on command-line option" && return
@@ -139,27 +144,30 @@ find_region() {
 
 request() {
   log "Sending request..."
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid\""
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
 }
 
 disk_request() {
   log "Sending root disk request..."
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}\""
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.rootdisk.resp"
   jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
   if [ -n "$jobid" ]; then
     wait_ready $jobid || return 1
   else
-    log "`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`"
+    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`"
     return 1
   fi
   if [ -n "$swapdisksize" ]; then
     log "Sending swap disk request..."
+    $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}\""
     $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.swapdisk.resp"
     jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
     if [ -n "$jobid" ]; then
       wait_ready $jobid || return 1
     else
-      log "`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`"
+      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`"
       return 1
     fi
   fi
@@ -168,19 +176,21 @@ disk_request() {
 ip_request() {
   if [ "_$PUBLIC_IP" == "_yes" ]; then
     log "Sending public IP request..."
+    $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}\""
     $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.publicip.resp"
     extIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`
     if [ -z "$extIP" ]; then
-      log "`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`"
+      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`"
       return 1
     fi
   fi
   if [ "_$PRIVATE_IP" == "_yes" ]; then
     log "Sending private IP request..."
+    $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}\""
     $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.privateip.resp"
     intIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`
     if [ -z "$intIP" ]; then
-      log "`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`"
+      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`"
       return 1
     fi
   fi
@@ -188,10 +198,11 @@ ip_request() {
 
 metadata_request() {
   log "Sending metadata update request..."
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}\""
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.update.resp"
   res=`grep \/\"LinodeID\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`
   if [ -z "$res" ]; then
-    log "`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`"
+    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`"
     return 1
   fi
 }
@@ -216,6 +227,7 @@ wait_ready() {
   waittimeout=600
   waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}\""
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     jobstatus=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}" | "$M_ROOT/lib/json2txt"`

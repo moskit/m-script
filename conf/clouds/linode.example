@@ -2,7 +2,7 @@
 ##  Rackspace cloud configuration  ##
 #####################################
 
-CLOUD_PROVIDER=rackspace
+CLOUD_PROVIDER=linode
 
 # Short, or internal, name is the name of this file without extension.
 # Below is a long name that appears in reports, alerts and web interface
