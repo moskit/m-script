@@ -191,8 +191,9 @@ list_servers() {
       else
         IP="$intIP"
       fi
-      if [ -n "$IP" ]; then
-        for ip in `echo -e "$IP" | grep -v ^$` ; do
+      IPsanitized=`echo -e "$IP" | grep -v ^$`
+      if [ -n "$IPsanitized" ]; then
+        for ip in $IPsanitized ; do
           ip=`echo $ip | tr -d ' '`
           if [ -z "$icluster" ] ; then
             # servers having no cluster in metadata but added manually to servers.list
