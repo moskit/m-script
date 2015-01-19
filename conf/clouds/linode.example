@@ -18,7 +18,7 @@ ROOTFS=ext4
 # 1. Empty or not defined means no swap partition.
 # 2. "2xRAM" means that swap partition size will be calculated as
 #    2 x available RAM.
-# 3. Number (no letters!) means size in Gigabytes.
+# 3. Number (no letters!) means size in Megabytes.
 
 # Public IP (create if "yes")
 PUBLIC_IP=yes
