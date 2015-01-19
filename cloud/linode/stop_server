@@ -1,0 +1,6 @@
+curl -s "https://api.linode.com/?api_key=kxLgURqOujK64hvxaFQC09cMOdD0s39J1GsZUlS3xC2MQqSwJ4V6uxmTEagfuz5P&api_action=linode.shutdown&LinodeID=817798"
+curl -s "https://api.linode.com/?api_key=kxLgURqOujK64hvxaFQC09cMOdD0s39J1GsZUlS3xC2MQqSwJ4V6uxmTEagfuz5P&api_action=linode.job.list&LinodeID=817798" | /opt/m/lib/json2txt
+curl -s "https://api.linode.com/?api_key=kxLgURqOujK64hvxaFQC09cMOdD0s39J1GsZUlS3xC2MQqSwJ4V6uxmTEagfuz5P&api_action=linode.disk.delete&LinodeID=817798&DiskID=2797220"
+ curl -s "https://api.linode.com/?api_key=kxLgURqOujK64hvxaFQC09cMOdD0s39J1GsZUlS3xC2MQqSwJ4V6uxmTEagfuz5P&api_action=linode.disk.delete&LinodeID=817798&DiskID=2797219"
+ curl -s "https://api.linode.com/?api_key=kxLgURqOujK64hvxaFQC09cMOdD0s39J1GsZUlS3xC2MQqSwJ4V6uxmTEagfuz5P&api_action=linode.job.list&LinodeID=817798" | /opt/m/lib/json2txt
+ curl -s "https://api.linode.com/?api_key=kxLgURqOujK64hvxaFQC09cMOdD0s39J1GsZUlS3xC2MQqSwJ4V6uxmTEagfuz5P&api_action=linode.delete&LinodeID=817798" | /opt/m/lib/json2txt

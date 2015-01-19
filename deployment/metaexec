@@ -473,6 +473,7 @@ if [ -n "$newserver" ]; then
       [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 473
       [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 474
       [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 475
+      [[ $res -eq 9 ]] && log "Failed to find out what region (datacenter) to use, define it in clusters.conf, please" && proper_exit 1 476
       [[ $res -eq 1 ]] && log "Something went wrong, unable to add a server to the cluster $cluster"
       if [ -z "$ip" ]; then
         log "Was unable either to start a cloud server in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
