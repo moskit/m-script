@@ -165,10 +165,17 @@ if [ -z "$id" ]; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 221
+[ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 168
 echo "ID found: $id"
 
 $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list&LinodeID=${id}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+
+if ! `grep -q \/\"LINODEID\"\|${id}$ "$M_TEMP/${rcommand}.resp"` ; then
+  echo "No server found with ID $id"
+  sed -i "/|${id}|.*${CLOUD}$/d" "$M_ROOT/servers.list"
+  sed -i "/^${id}|/d" "$M_ROOT/cloud/${CLOUD}.list"
+  proper_exit 1 177
+fi
 
 if [ -n "$updatelist" ]; then
   serverdetails="`cat "$M_TEMP/${rcommand}.resp"`"
