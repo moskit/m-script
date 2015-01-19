@@ -23,7 +23,7 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="v1.0"
 
-possible_options="cloud region flavor cluster image name return verbose debug"
+possible_options="cloud region flavor cluster image name return verbose debug dry"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
@@ -47,7 +47,8 @@ IFS=$IFS1
 
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
-[ -n "$debug" ] && debug=true || debug-false
+[ -n "$debug" ] && debug=true || debug=false
+[ -n "$dry" ] && dry=true || dry=false
 
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
@@ -145,13 +146,14 @@ find_region() {
 request() {
   log "Sending request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid\""
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
 }
 
 disk_request() {
+  unset jobid
   log "Sending root disk request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}\""
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.rootdisk.resp"
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.rootdisk.resp"
   jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
   if [ -n "$jobid" ]; then
     wait_ready $jobid || return 1
@@ -159,10 +161,12 @@ disk_request() {
     log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`"
     return 1
   fi
+  unset jobid
   if [ -n "$swapdisksize" ]; then
     log "Sending swap disk request..."
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}\""
-    $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.swapdisk.resp"
+    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.swapdisk.resp"
+    $dry && return 0
     jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
     if [ -n "$jobid" ]; then
       wait_ready $jobid || return 1
@@ -174,20 +178,24 @@ disk_request() {
 }
 
 ip_request() {
+  unset jobid
   if [ "_$PUBLIC_IP" == "_yes" ]; then
     log "Sending public IP request..."
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}\""
-    $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.publicip.resp"
+    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addpublic&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.publicip.resp"
+    $dry && return 0
     extIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`
     if [ -z "$extIP" ]; then
       log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.publicip.resp" | cut -sd'|' -f2`"
       return 1
     fi
   fi
+  unset jobid
   if [ "_$PRIVATE_IP" == "_yes" ]; then
     log "Sending private IP request..."
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}\""
-    $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.privateip.resp"
+    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.privateip.resp"
+    $dry && return 0
     intIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`
     if [ -z "$intIP" ]; then
       log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`"
@@ -199,7 +207,7 @@ ip_request() {
 metadata_request() {
   log "Sending metadata update request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}\""
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.update.resp"
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.update.resp"
   res=`grep \/\"LinodeID\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`
   if [ -z "$res" ]; then
     log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`"
@@ -297,12 +305,13 @@ if [ -n "$errors" ]; then
   proper_exit 1 257
 else
   newid=`grep \/\"LinodeID\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+  $dry && newid=666
   if [ -n "$newid" ] ; then
     disk_request && log "Disks created" || exit_status=2
     ip_request && log "IPs attached" || exit_status=1
     metadata_request && log "Metadata updated" || exit_status=1
-    save_details
-    set_hostname
+    $dry || save_details
+    #$dry || set_hostname
 
     [ -n "$return" ] && printreturn $return
 
