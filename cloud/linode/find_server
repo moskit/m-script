@@ -55,9 +55,9 @@ find_by_ip() {
 
 find_by_name() {
   [ -z "$1" ] && return 1
-  id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | cut -d'|' -f1,2 | grep "|${name}$" | cut -d'|' -f1`
+  id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | cut -d'|' -f1,2 | grep "|${1}$" | cut -d'|' -f1`
   # falling back to the local list
-  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep "|${name}$" | cut -d'|' -f1`
+  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1`
   if [ -z "$id" ]; then
     log "unable to find server ID by its name"
     sed -i "/|${1}|.*${CLOUD}$/d" "$M_ROOT/servers.list"
@@ -166,16 +166,9 @@ if [ -z "$id" ]; then
   fi
 fi
 [ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 221
+echo "ID found: $id"
 
-request() {
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}$req" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
-}
-
-request
-
-if [ `grep -c ^0\/\"itemNotFound\"\/\"code\"\|404$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
-  echo "Server with ID $id does not exist" && proper_exit 1 245
-fi
+$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list&LinodeID=${id}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
 
 if [ -n "$updatelist" ]; then
   serverdetails="`cat "$M_TEMP/${rcommand}.resp"`"
