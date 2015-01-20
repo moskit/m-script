@@ -506,111 +506,115 @@ if [ "$output" == "console" ]; then
   fi
 fi
 
-if [ `localips | grep "^$ip$"` -eq 0 ]; then
-  KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 509
-  [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
-  [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
-  # it's here because startserver function re-reads cloud config
-  [ -n "$SSHPORT" ] || SSHPORT=22
-  if [ -z "$list" ]; then
-    $debug && log "ensuring the target server $ip is accessible"
-    if [ -z "$test" -a -n "$ip" ]; then
-      for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
-        $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
-        if [ $? -ne 0 ]; then
-          echo "Unable to login to the server $ip using key ${KEY}, trying again...">>"$LOG"
-          loggedin=false
-          sleep $SERVER_CHECKS_PERIOD
-        else
-          loggedin=true
-          break
-        fi
-      done
-      if ! $loggedin && [ -n "$newserver" ]; then
-        # stop useless server and tell the parent process that something's wrong
-        "$M_ROOT"/cloud/$CLOUD_PROVIDER/stop_server --ip=$ip
-        proper_exit 13 531
-      fi
-    fi
-    #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
-
-    #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
-
-    if [ -z "$timestamp" ]; then
-    ## Saving arguments to make re-run simpler
-      $debug && log "saving command-line arguments for possible repeat of the sequence"
-      IFS2=$IFS ; IFS=$' \t\n'
-      for option in `echo $possible_options | sed 's/,/ /g'`; do
-        echo "${option}=\"`eval "echo \\$${option}"`\"" >> "$CURRTASKDIR/ARGV"
-      done
-      IFS=$IFS2
-      echo -e "flavor=$flavor\ncluster=$cluster\nrole=$role\n" >> "$CURRTASKDIR/ARGV"
-      if [ -n "$newserver" ]; then
-        echo "ip=\"$ip\"" >> "$CURRTASKDIR/ARGV"
-      fi
-    else
-      rm "$CURRTASKDIR"/meta 2>/dev/null
-    fi
-    ##
+if [ -n "$ip" ]; then
+  if [ `localips | grep "^$ip$"` -ne 0 ]; then
+    log "IP $ip is local. Setting up self is not supported."
+    proper_exit 1 512
   fi
-  echo
-  if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
-    meta="$command"
-    run_meta $meta
+fi
+
+KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 509
+[ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
+[ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
+# it's here because startserver function re-reads cloud config
+[ -n "$SSHPORT" ] || SSHPORT=22
+if [ -z "$list" ]; then
+  $debug && log "ensuring the target server $ip is accessible"
+  if [ -z "$test" -a -n "$ip" ]; then
+    for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
+      $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
+      if [ $? -ne 0 ]; then
+        echo "Unable to login to the server $ip using key ${KEY}, trying again...">>"$LOG"
+        loggedin=false
+        sleep $SERVER_CHECKS_PERIOD
+      else
+        loggedin=true
+        break
+      fi
+    done
+    if ! $loggedin && [ -n "$newserver" ]; then
+      # stop useless server and tell the parent process that something's wrong
+      "$M_ROOT"/cloud/$CLOUD_PROVIDER/stop_server --ip=$ip
+      proper_exit 13 531
+    fi
+  fi
+  #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
+
+  #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
+
+  if [ -z "$timestamp" ]; then
+  ## Saving arguments to make re-run simpler
+    $debug && log "saving command-line arguments for possible repeat of the sequence"
+    IFS2=$IFS ; IFS=$' \t\n'
+    for option in `echo $possible_options | sed 's/,/ /g'`; do
+      echo "${option}=\"`eval "echo \\$${option}"`\"" >> "$CURRTASKDIR/ARGV"
+    done
+    IFS=$IFS2
+    echo -e "flavor=$flavor\ncluster=$cluster\nrole=$role\n" >> "$CURRTASKDIR/ARGV"
+    if [ -n "$newserver" ]; then
+      echo "ip=\"$ip\"" >> "$CURRTASKDIR/ARGV"
+    fi
   else
     rm "$CURRTASKDIR"/meta 2>/dev/null
-    IFS='
-'
-    cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
-    
-    declare -i metan
-    metan=1
-    if [ -n "$command" ]; then
-      for commandn in `echo -e $command | tr ',' '\n'` ; do
-        for meta in `cat "$CURRTASKDIR"/meta` ; do
-          meta=`eval "echo $meta"`
-          if [[ $commandn -eq $metan ]]; then
-            if [ $metan -eq 1 ]; then
-              newmeta="$meta"
-            else
-              newmeta="${newmeta}\n${meta}"
-            fi
-          fi
-          metan+=1
-        done
-        metan=1
-      done
-      echo -e "$newmeta" > "$CURRTASKDIR/meta"
-    fi
-    for meta in `cat "$CURRTASKDIR"/meta` ; do
-      meta=`eval "echo $meta"`
-      skipthis=false
-      if [ -n "$list" ]; then
-        echo "$metan $meta"
-        if [ "$list" == "unfold" ]; then
-          echo '--------------------------------------------------------------------------------'
-          role show script "${meta#* }" | sed 's|\\\$|$|g'
-          echo '--------------------------------------------------------------------------------'
-        fi
-      else
-        if [ -n "$skip" ]; then
-          for skipn in `echo -e $skip | tr ',' '\n'` ; do
-            [[ $skipn -eq $metan ]] && skipthis=true
-          done
-        fi
-
-        if ! $skipthis ; then
-          (IFS=$IFSORIG ; run_meta $meta)
-          [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && proper_exit 1 579
-        fi
-      fi
-      metan+=1
-    done
-    IFS=$IFSORIG
   fi
-else
-  echo "Setting up self is not supported"
+  ##
 fi
+echo
+if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
+  meta="$command"
+  run_meta $meta
+else
+  rm "$CURRTASKDIR"/meta 2>/dev/null
+  IFS='
+'
+  cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+  
+  declare -i metan
+  metan=1
+  if [ -n "$command" ]; then
+    for commandn in `echo -e $command | tr ',' '\n'` ; do
+      for meta in `cat "$CURRTASKDIR"/meta` ; do
+        meta=`eval "echo $meta"`
+        if [[ $commandn -eq $metan ]]; then
+          if [ $metan -eq 1 ]; then
+            newmeta="$meta"
+          else
+            newmeta="${newmeta}\n${meta}"
+          fi
+        fi
+        metan+=1
+      done
+      metan=1
+    done
+    echo -e "$newmeta" > "$CURRTASKDIR/meta"
+  fi
+  for meta in `cat "$CURRTASKDIR"/meta` ; do
+    meta=`eval "echo $meta"`
+    skipthis=false
+    if [ -n "$list" ]; then
+      echo "$metan $meta"
+      if [ "$list" == "unfold" ]; then
+        echo '--------------------------------------------------------------------------------'
+        role show script "${meta#* }" | sed 's|\\\$|$|g'
+        echo '--------------------------------------------------------------------------------'
+      fi
+    else
+      if [ -n "$skip" ]; then
+        for skipn in `echo -e $skip | tr ',' '\n'` ; do
+          [[ $skipn -eq $metan ]] && skipthis=true
+        done
+      fi
+
+      if ! $skipthis ; then
+        (IFS=$IFSORIG ; run_meta $meta)
+        [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && proper_exit 1 579
+      fi
+    fi
+    metan+=1
+  done
+  IFS=$IFSORIG
+fi
+
 if [ -z "$list" ]; then
   echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
   # the best place for this seems to be here

@@ -123,28 +123,28 @@ request() {
   if $updateflavors ; then
     flavors=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt"` 
     echo "$flavors" > "$M_TEMP/flavors.resp"
-    rm "$M_TEMP/flavors.list"
+    rm "$M_TEMP/flavors.list" 2>/dev/null
     echo "$flavors" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$flavors" | grep \/$sn\/ | grep \"PLANID\" | cut -sd'|' -f2`|`echo "$flavors" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/flavors.list" ; done
   fi
   
   if $updateimages ; then
     images=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt"` 
     echo "$images" > "$M_TEMP/images.resp"
-    rm "$M_TEMP/images.list"
+    rm "$M_TEMP/images.list" 2>/dev/null
     echo "$images" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$images" | grep \/$sn\/ | grep \"DISTRIBUTIONID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/images.list" ; done
   fi
 
   if $updateregions ; then
     regions=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters" | "$M_ROOT/lib/json2txt"` 
     echo "$regions" > "$M_TEMP/regions.resp"
-    rm "$M_TEMP/regions.list"
+    rm "$M_TEMP/regions.list" 2>/dev/null
     echo "$regions" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$regions" | grep \/$sn\/ | grep \"DATACENTERID\" | cut -sd'|' -f2`|`echo "$regions" | grep \/$sn\/ | grep \"LOCATION\" | cut -sd'|' -f2`" >> "$M_TEMP/regions.list" ; done
   fi
   
   if $updatekernels ; then
     kernels=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels" | "$M_ROOT/lib/json2txt"` 
     echo "$kernels" > "$M_TEMP/kernels.resp"
-    rm "$M_TEMP/kernels.list"
+    rm "$M_TEMP/kernels.list" 2>/dev/null
     echo "$kernels" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$kernels" | grep \/$sn\/ | grep \"KERNELID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/kernels.list" ; done
   fi
 }
