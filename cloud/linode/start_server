@@ -19,9 +19,9 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 CURL=`which curl 2>/dev/null`
-
 CURL="$CURL -s -k"
-V="v1.0"
+
+SSH=`which ssh 2>/dev/null`
 
 possible_options="cloud region flavor cluster image name return verbose debug dry"
 necessary_options=""
@@ -73,6 +73,10 @@ regionid() {
   grep ^$1\| "$M_TEMP/regions.list" | cut -sd'|' -f2
 }
 
+kernelid() {
+  grep ^$1\| "$M_TEMP/kernels.list" | cut -sd'|' -f2
+}
+
 find_image() {
   if [ -n "$image" ]; then
     if [ ! -f "$M_TEMP/images.resp" ]; then
@@ -108,18 +112,21 @@ find_flavor() {
   sn=`grep \/\"PLANID\"\|${flavorid}$ "$M_TEMP/flavors.resp" | cut -sd'/' -f3`
   maxdisksize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"DISK\" | cut -sd'|' -f2`
   maxdisksize=`expr $maxdisksize \* 1024`
-  ramsize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"RAM\" | cut -sd'|' -f2`
+  log "Max disk size: $maxdisksize"
   if [ -z "$SWAP_PARTITION" ]; then
     swapdisksize=0
+    log "Swap disk is not enabled"
   elif [ "$SWAP_PARTITION" == "2xRAM" ]; then
+    ramsize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"RAM\" | cut -sd'|' -f2`
     swapdisksize=`expr 2 \* $ramsize`
+    log "Swap disk is set to 2xRAM. RAM size is $ramsize, swap disk size is $swapdisksize"
   else
     swapdisksize=$SWAP_PARTITION
+    log "Swap disk is set to $SWAP_PARTITION"
   fi
   disksize=`expr $maxdisksize - $swapdisksize`
   if [ -z "$disksize" ]; then
     log "Disk size cannot be determined, cannot continue"
-    log "maxdisksize="
     return 1
   elif [ `expr $disksize : .*[^[0-9]]*` -gt 0 ]; then
     log "Disk size format error (disksize=${disksize}). It must be a positive number (disk size in Megabytes)"
@@ -144,6 +151,16 @@ find_region() {
   fi
 }
 
+find_kernel() {
+  if [ -n "$KERNEL_ID" ]; then
+    if [ ! -f "$M_TEMP/kernels.resp" ]; then
+      $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels\""
+      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels" | "$M_ROOT/lib/json2txt" > "$M_TEMP/kernels.resp"
+    fi
+    grep -q \/\"KERNELID\"\|${KERNEL_ID}$ "$M_TEMP/kernels.resp" && kernelid=$KERNEL_ID && log "Kernel ID for the new server is $kernelid (`kernelid $kernelid`) based on cloud configuration" && return
+  fi
+}
+
 request() {
   log "Sending request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid\""
@@ -156,6 +173,7 @@ disk_request() {
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootPass=${ROOTPASS}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}\""
   $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootPass=${ROOTPASS}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.rootdisk.resp"
   jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
+  rootdiskid=`grep \/\"DiskID\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
   if [ -n "$jobid" ]; then
     wait_ready $jobid || return 1
   else
@@ -169,6 +187,7 @@ disk_request() {
     $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.swapdisk.resp"
     $dry && return 0
     jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
+    swapdiskid=`grep \/\"DiskID\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
     if [ -n "$jobid" ]; then
       wait_ready $jobid || return 1
     else
@@ -176,6 +195,11 @@ disk_request() {
       return 1
     fi
   fi
+}
+
+create_config() {
+  log "Creating config..."
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.create_config.resp"
 }
 
 ip_request() {
@@ -225,7 +249,7 @@ save_details() {
 
 wait_ready() {
   log "Waiting for job ${1} to finish..."
-  waittimeout=600
+  waittimeout=1200
   waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}\""
@@ -233,6 +257,7 @@ wait_ready() {
     sleep $waitperiod
     jobstatus=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}" | "$M_ROOT/lib/json2txt"`
     if [ "_`echo "$jobstatus" | grep \/\"HOST_SUCCESS\" | cut -sd'|' -f2`" == "_1" ]; then
+      log "Job $1 finished"
       return 0
     else
       log "  ...`echo "$jobstatus" | grep \/\"DURATION\" | cut -sd'|' -f2`"
@@ -262,6 +287,22 @@ printreturn() {
         ;;
     esac
   done
+}
+
+set_hostname() {
+  if [ -n "$extIP" ]; then
+    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
+    sshres=$?
+  fi
+  if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
+    [ $? -ne 0 ] && $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
+    sshres=$?
+  fi
+  return $sshres
+}
+
+boot_request() {
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.boot&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.boot.resp"
 }
 
 log "Checking cluster $cluster limit..."
@@ -305,9 +346,13 @@ else
     ip_request && log "IPs added" || exit_status=1
     metadata_request && log "Metadata updated" || exit_status=1
     extIP=`get_assigned_ip`
+    create_config
     $dry || save_details
-    #$dry || set_hostname
-
+    boot_request || proper_exit 10 335
+    if ! $dry ; then
+      set_hostname || log "Was unable to set hostname"
+    fi
+    
     [ -n "$return" ] && printreturn $return
 
   else

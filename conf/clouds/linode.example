@@ -19,9 +19,13 @@ ROOTFS=ext4
 # 2. "2xRAM" means that swap partition size will be calculated as
 #    2 x available RAM.
 # 3. Number (no letters!) means size in Megabytes.
+SWAP_PARTITION="2xRAM"
 
 # Private IP (create if "yes")
 PRIVATE_IP=
+
+# Kernel ID
+KERNEL_ID=
 
 ####################
 ## Common options ##
