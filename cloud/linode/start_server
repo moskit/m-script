@@ -85,7 +85,7 @@ find_image() {
     fi
     grep -q \/\"DISTRIBUTIONID\"\|${image}$ "$M_TEMP/images.resp" && imageid=$image && log "Image ID for the new server is $imageid (`imageid $imageid`) based on command-line option" && return
   fi
-  imageid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f6`
+  imageid=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f6`
   if grep -q \/\"DISTRIBUTIONID\"\|${imageid}$ "$M_TEMP/images.resp" ; then
     log "Image ID for the new server is $imageid (`imageid $imageid`) based on the cluster $cluster default"
   else
@@ -102,7 +102,7 @@ find_flavor() {
     fi
     grep -q \/\"PLANID\"\|${flavor}$ "$M_TEMP/flavors.resp" && flavorid=$flavor && log "Flavor ID for the new server is $flavorid (`flavorid $flavorid`) based on command-line option" && return
   fi
-  flavorid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f5`
+  flavorid=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f5`
   if grep -q \/\"PLANID\"\|${flavorid}$ "$M_TEMP/flavors.resp" ; then
     log "Flavor ID for the new server is $flavorid (`flavorid $flavorid`) based on the cluster $cluster default"
   else
@@ -142,7 +142,7 @@ find_region() {
     fi
     grep -q \/\"DATACENTERID\"\|${region}$ "$M_TEMP/regions.resp" && regionid=$region && log "flavor ID for the new server is $regionid (`regionid $regionid`) based on command-line option" && return
   fi
-  regionid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f3`
+  regionid=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f3`
   if grep -q \/\"DATACENTERID\"\|${regionid}$ "$M_TEMP/regions.resp" ; then
     log "Datacenter ID for the new server is $regionid (`regionid $regionid`) based on the cluster $cluster default"
   else
@@ -236,14 +236,14 @@ save_details() {
   log "Saving details of the new server..."
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nImageID|$imageid\nFlavorID|$flavorid\nRegionID|$regionid\nPublicIP|$extIP\nPrivateIP|$intIP\nPassword|$ROOTPASS\n" >> "$rpath/../linode.log"
-  echo "$newid|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster" >> "$rpath/../${CLOUD}.list"
-  chmod 600 "$rpath/../linode.log" "$rpath/../${CLOUD}.list"
+  echo "$newid|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster" >> "$M_ROOT/cloud/${CLOUD}.list"
+  chmod 600 "$M_ROOT/cloud/linode.log" "$M_ROOT/cloud/${CLOUD}.list"
   if [ "_$NETWORK" == "_external" ] ; then
     slip=$extIP
   else
     slip=$intIP
   fi
-  echo "$slip|$thekey|$region|$name|$cluster|$CLOUD" >> "$rpath/../../servers.list"
+  echo "$slip|$thekey|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
   return 0
 }
 
@@ -318,18 +318,18 @@ find_flavor || proper_exit 8 154
 find_region || proper_exit 9 197
 [ -z "$regionid" ] && proper_exit 9 268
 thekey=`cat "$rpath/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
-[ -f "$rpath/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
-[ -f "$rpath/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
+[ -f "$M_ROOT/keys/${thekey}.pub" ] && pubkey=${thekey}.pub
+[ -f "$M_ROOT/keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
 PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_rsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $rpath/../../keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 246
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $M_ROOT/keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 246
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | "$M_ROOT"/lib/urlencode`
 ROOTPASS=`head /dev/urandom -c200 | tr -dc 'a-zA-Z0-9' | cut -b -20`
 
-source "$rpath/../../conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 exit_status=0
 
 request && log "Request sent" || proper_exit 1 252

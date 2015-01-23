@@ -46,9 +46,10 @@ IFS=$IFS1
 
 find_by_ip() {
   [ -z "$1" ] && return 1
-  id=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" | grep \/\"LinodeID\" | cut -sd'|' -f2`
+  res=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt"`
+  id=`echo "$res" | grep \/\"LinodeID\" | cut -sd'|' -f2`
   if [ -z "$id" ]; then
-    log "`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`"
+    log "`echo "$res" | grep \/\"ERRORARRAY\" | cut -sd'|' -f2`"
     return 1
   fi
 }
@@ -57,7 +58,7 @@ find_by_name() {
   [ -z "$1" ] && return 1
   id=`IAMACHILD=1 "$rpath"/show_servers --cloud=$CLOUD --forceupdate --view=table | cut -d'|' -f1,2 | grep "|${1}$" | cut -d'|' -f1`
   # falling back to the local list
-  [ -z "$id" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1`
+  [ -z "$id" ] && [ -f "$M_ROOT/cloud/${CLOUD}.list" ] && id=`cat "$M_ROOT/cloud/${CLOUD}.list" | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1`
   if [ -z "$id" ]; then
     log "unable to find server ID by its name"
     sed -i "/|${1}|.*${CLOUD}$/d" "$M_ROOT/servers.list"
@@ -74,7 +75,36 @@ list_the_cluster() {
   fi
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
 
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" > "$M_TEMP/ips.list"
+  allips=`cat "$M_TEMP/ips.list"`
+  
+  # "$newid|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster"
+  for ip in `echo "$ips"` ; do
+    sn=`echo "$allips" | grep "|${ip}$" | cut -sd'/' -f3`
+    
+    if [ -z "$sn" ]; then
+      sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
+      sed -i "/|\"${ip}\"|/d" "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null
+    else
+      thisip=`echo "$allips" | grep \/$sn\/`
+      thisid=`echo "$thisip" | grep /\"LINODEID\" | cut -sd'|' -f2`
+      if ! grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" ; then
+        serverdetails=`IAMACHILD=1 "$rpath"/get_server_details --ip=$ip 2>/dev/null`
+        [ -z "$serverdetails" ] && continue
+        icluster=`echo "$serverdetails" | grep ^LPM_DISPLAYGROUP\| | cut -sd'|' -f2`
+        key="`grep "^$icluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+        name=`echo "$serverdetails" | grep ^LABEL\| | cut -sd'|' -f2`
+        flavorid=`echo "$serverdetails" | grep ^PLANID\| | cut -sd'|' -f2`
+        regionid=`echo "$serverdetails" | grep ^DATACENTERID\| | cut -sd'|' -f2`
+        extIP=`echo "$serverdetails" | grep ^extIP\| | cut -sd'|' -f2`
+        intIP=`echo "$serverdetails" | grep ^intIP\| | cut -sd'|' -f2`
+        if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
+          echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+        fi
+      fi
+    fi
 
+  done
   cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$"
 }
 
@@ -168,7 +198,7 @@ fi
 [ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 168
 echo "ID found: $id"
 
-$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list&LinodeID=${id}" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list&LinodeID=${id}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
 
 if ! `grep -q \/\"LINODEID\"\|${id}$ "$M_TEMP/${rcommand}.resp"` ; then
   echo "No server found with ID $id"
@@ -178,17 +208,17 @@ if ! `grep -q \/\"LINODEID\"\|${id}$ "$M_TEMP/${rcommand}.resp"` ; then
 fi
 
 if [ -n "$updatelist" ]; then
-  serverdetails="`cat "$M_TEMP/${rcommand}.resp"`"
+  serverdetails=`IAMACHILD=1 "$rpath"/get_server_details --id=$id 2>/dev/null`
   if [[ "$NETWORK" == "external" ]]; then
-    ip="`echo "$serverdetails" | grep '/"addresses"/"public"/0|' | cut -s -d'|' -f2 | tr -d '"'`"
+    ip="`echo "$serverdetails" | grep 'extIP|' | cut -s -d'|' -f2 | tr -d '"'`"
   else
-    ip="`echo "$serverdetails" | grep '/"addresses"/"private"/0|' | cut -s -d'|' -f2 | tr -d '"'`"
+    ip="`echo "$serverdetails" | grep 'intIP|' | cut -s -d'|' -f2 | tr -d '"'`"
   fi
   if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
-    name="`echo "$serverdetails" | grep '"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
-    cluster="`echo "$serverdetails" | grep '"metadata"/"cluster"|' | cut -s -d'|' -f2 | tr -d '"'`"
-    key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
-    echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
+    name="`echo "$serverdetails" | grep '^LABEL|' | cut -s -d'|' -f2`"
+    icluster="`echo "$serverdetails" | grep ^LPM_DISPLAYGROUP\| | cut -s -d'|' -f2`"
+    key="`grep "^$icluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2`"
+    echo "$ip|$key||$name|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
   fi
 else
   cat "$M_TEMP/${rcommand}.resp"

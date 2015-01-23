@@ -68,6 +68,4 @@ NAME_INDEX_LENGTH=3
 # There is no default, so if this is unset or empty, the feature is disabled.
 FORCE_LIST_UPDATE_AFTER=1800
 
-# tag name to define cluster (default: "cluster")
-# CLUSTER_TAG=
 

@@ -16,12 +16,12 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 CURL=`which curl 2>/dev/null`
 
 CURL="$CURL -s -k"
-V="v1.0"
 
 possible_options="cloud id name ip return verbose"
 necessary_options=""
@@ -47,18 +47,18 @@ done
 IFS=$IFS1
 
 find_by_ip() {
-  if [ -f "$M_TEMP/show_servers.resp" ] ; then
-    sn=`grep addresses "$M_TEMP/show_servers.resp" | grep "\"${1}\"$" | cut -d'/' -f3`
-    id=`grep "/$sn/\"id\"|" "$M_TEMP/show_servers.resp" | cut -d'|' -f2`
-  fi
-  if [ -z "$id" ] ; then
-    id=`IAMACHILD=1 $rpath/show_servers --forceupdate --view=table | grep "|$1|" | cut -d'|' -f1`
+  [ -z "$1" ] && return 1
+  res=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt"`
+  id=`echo "$res" | grep \/\"LinodeID\" | cut -sd'|' -f2`
+  if [ -z "$id" ]; then
+    log "`echo "$res" | grep \/\"ERRORARRAY\" | cut -sd'|' -f2`"
+    return 1
   fi
 }
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "X$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ $found -eq 1 ]]; then
   missing_options=${missing_options#*,}
@@ -69,10 +69,11 @@ fi
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
 
-source "$rpath/../../conf/mon.conf"
-source "$rpath/../../conf/clouds/${CLOUD}.conf"
-source "$rpath/../../lib/cloud_functions.sh"
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
+
 if [ -z "$IAMACHILD" ]; then
   lock_cloudops || exit 10
 fi
@@ -96,25 +97,32 @@ if [ -z "$id" ] ; then
 fi
 [ -z "$id" ] && echo "Unable to find ID of this server" && proper_exit 1 99
 
-req="/servers/$id"
+# a minimum required for find_server
+# "$newid|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster"
 
 request() {
-  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
-  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}$req" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  resips=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=$id" | "$M_ROOT/lib/json2txt"` || return 1
+  resdetails=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list&LinodeID=$id" | "$M_ROOT/lib/json2txt"` || return 1
+  return 0
 }
 
-[ -f "$M_TEMP/auth.resp" ] || "$rpath"/auth
-request
-if [ `grep -c \/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
-  "$rpath"/auth
-  request
-fi
-if `grep -q '"id"|' "$M_TEMP/${rcommand}.resp"` ; then
-  cat "$M_TEMP/${rcommand}.resp"
+if ! request ; then
+  err="`echo "$resips" | grep '"ERRORMESSAGE"|'``echo "$resdetails"| grep '"ERRORMESSAGE"|'`"
+  log "$err"
+  echo "$err" >&2
+  proper_exit 1 113
 else
-  proper_exit 1 118
+  out="LinodeID|$id"
+  for sn in `echo "$resips" | cut -sd'/' -f3 | sort | uniq` ; do
+    if [ "_`echo "$resips" | grep \/$sn\/ | grep \/\"ISPUBLIC\" | cut -sd'|' -f2`" == "_1" ]; then
+      out="${out}\nextIP|`echo -n "$resips" | grep \/\"IPADDRESS\" | cut -sd'|' -f2`"
+    else
+      out="${out}\nintIP|`echo -n "$resips" | grep \/\"IPADDRESS\" | cut -sd'|' -f2`"
+    fi
+  done
+  out="${out}\n`echo "$resdetails" | cut -sd'/' -f 4- | tr -d '"'`"
+  echo -e "$out"
 fi
 
-proper_exit 0 121
+proper_exit 0 116
 
