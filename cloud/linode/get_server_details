@@ -114,10 +114,13 @@ if ! request ; then
 else
   out="LinodeID|$id"
   for sn in `echo "$resips" | cut -sd'/' -f3 | sort | uniq` ; do
-    if [ "_`echo "$resips" | grep \/$sn\/ | grep \/\"ISPUBLIC\" | cut -sd'|' -f2`" == "_1" ]; then
-      out="${out}\nextIP|`echo -n "$resips" | grep \/\"IPADDRESS\" | cut -sd'|' -f2`"
+    ispublic=`echo "$resips" | grep \/$sn\/ | grep \/\"ISPUBLIC\" | cut -sd'|' -f2`
+    if [ "_${ispublic}" == "_1" ]; then
+      extIP=`echo -n "$resips" | grep \/\"IPADDRESS\" | cut -sd'|' -f2`
+      out="${out}\nextIP|$extIP"
     else
-      out="${out}\nintIP|`echo -n "$resips" | grep \/\"IPADDRESS\" | cut -sd'|' -f2`"
+      intIP=`echo -n "$resips" | grep \/\"IPADDRESS\" | cut -sd'|' -f2`
+      out="${out}\nintIP|$intIP"
     fi
   done
   out="${out}\n`echo "$resdetails" | cut -sd'/' -f 4- | tr -d '"'`"
