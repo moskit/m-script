@@ -174,7 +174,7 @@ if `grep -q "^MONGOOSE=1" "$rpath/conf/mon.conf"` ; then
   echo "You may want to adjust access settings for the web interface."
   echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
   echo "and edit $rpath/conf/mongoose.conf"
-  sed -i "s|<title></title>|<title>M-Script - `hostname`</title>|" "$rpath/www/dashboard/index.html"
+  sed -i "s|<title></title>|<title>M - `hostname`</title>|" "$rpath/www/dashboard/index.html"
 fi
       
 if [ -z "$IPTABLES" ]; then

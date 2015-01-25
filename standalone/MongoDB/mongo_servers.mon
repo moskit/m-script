@@ -225,8 +225,8 @@ else
     mongoport=${mongohost##*:}
     mongohost="${mongohost%:*}"
     # Is it a part of a replica set?
-    if [ "_`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()" | tail -1`" != "_null" ] ; then
-      replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1`
+    replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1`
+    if [ $? -eq 0 ] ; then
       find_rsmemberrole "${mongohost}:${mongoport}"
     fi
     echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
