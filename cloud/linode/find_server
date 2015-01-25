@@ -113,7 +113,7 @@ list_the_cluster() {
     fi
 
   done
-  cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$"
+  cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|${cluster}\||\|${cluster}$"
 }
 
 found=0
