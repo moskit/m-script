@@ -93,9 +93,13 @@ list_the_cluster() {
         serverdetails=`IAMACHILD=1 "$rpath"/get_server_details --ip=$ip 2>/dev/null`
         [ -z "$serverdetails" ] && continue
         icluster=`echo "$serverdetails" | grep ^LPM_DISPLAYGROUP\| | cut -sd'|' -f2`
-        key="`grep "^$icluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
-        [ -z "$key" ] && key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
-        if=`echo "$serverdetails" | grep ^LABEL\| | cut -sd'|' -f2`
+        if [ -n "$icluster" ]; then
+          if [ "_$icluster" != "_$cluster" ]; then
+            log "ERROR in servers.list: IP $ip is listed in cluster ${cluster}, meanwhile the cluster tag (LPM_DISPLAYGROUP) value is ${icluster}"
+          fi
+        fi
+        key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+        id=`echo "$serverdetails" | grep ^LinodeID\| | cut -sd'|' -f2`
         name=`echo "$serverdetails" | grep ^LABEL\| | cut -sd'|' -f2`
         flavorid=`echo "$serverdetails" | grep ^PLANID\| | cut -sd'|' -f2`
         regionid=`echo "$serverdetails" | grep ^DATACENTERID\| | cut -sd'|' -f2`
@@ -104,7 +108,7 @@ list_the_cluster() {
         if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
           echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
         fi
-        
+        echo "$id|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster" >> "$M_ROOT/cloud/${CLOUD}.list"
       fi
     fi
 
