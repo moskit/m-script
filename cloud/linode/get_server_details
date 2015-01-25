@@ -49,7 +49,8 @@ IFS=$IFS1
 find_by_ip() {
   [ -z "$1" ] && return 1
   res=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt"`
-  id=`echo "$res" | grep \/\"LinodeID\" | cut -sd'|' -f2`
+  sn=`echo "$res" | grep '"IPADDRESS"|' | grep "\"$1\"" | cut -sd'/' -f3`
+  id=`echo "$res" | grep \/$sn\/ | grep \/\"LINODEID\" | cut -sd'|' -f2`
   if [ -z "$id" ]; then
     log "`echo "$res" | grep \/\"ERRORARRAY\" | cut -sd'|' -f2`"
     return 1

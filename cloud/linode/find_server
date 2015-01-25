@@ -48,7 +48,7 @@ find_by_ip() {
   [ -z "$1" ] && return 1
   res=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt"`
   sn=`echo "$res" | grep '"IPADDRESS"|' | grep "\"$1\"" | cut -sd'/' -f3`
-  id=`echo "$res" | grep \/$sn\/ | grep \/\"LinodeID\" | cut -sd'|' -f2`
+  id=`echo "$res" | grep \/$sn\/ | grep \/\"LINODEID\" | cut -sd'|' -f2`
   if [ -z "$id" ]; then
     log "`echo "$res" | grep \/\"ERRORARRAY\" | cut -sd'|' -f2`"
     return 1
@@ -81,7 +81,7 @@ list_the_cluster() {
   
   # "$newid|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster"
   for ip in `echo "$ips"` ; do
-    sn=`echo "$allips" | grep "|${ip}$" | cut -sd'/' -f3`
+    sn=`echo "$allips" | grep "|\"${ip}\"$" | cut -sd'/' -f3`
     
     if [ -z "$sn" ]; then
       sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/servers.list"
@@ -89,11 +89,13 @@ list_the_cluster() {
     else
       thisip=`echo "$allips" | grep \/$sn\/`
       thisid=`echo "$thisip" | grep /\"LINODEID\" | cut -sd'|' -f2`
-      if ! grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" ; then
+      if ! grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null ; then
         serverdetails=`IAMACHILD=1 "$rpath"/get_server_details --ip=$ip 2>/dev/null`
         [ -z "$serverdetails" ] && continue
         icluster=`echo "$serverdetails" | grep ^LPM_DISPLAYGROUP\| | cut -sd'|' -f2`
         key="`grep "^$icluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+        [ -z "$key" ] && key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+        if=`echo "$serverdetails" | grep ^LABEL\| | cut -sd'|' -f2`
         name=`echo "$serverdetails" | grep ^LABEL\| | cut -sd'|' -f2`
         flavorid=`echo "$serverdetails" | grep ^PLANID\| | cut -sd'|' -f2`
         regionid=`echo "$serverdetails" | grep ^DATACENTERID\| | cut -sd'|' -f2`
@@ -102,6 +104,7 @@ list_the_cluster() {
         if ! `grep -q "^${ip}|" "$M_ROOT/servers.list"` ; then
           echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/servers.list"
         fi
+        
       fi
     fi
 
@@ -111,7 +114,7 @@ list_the_cluster() {
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ $found -eq 1 ]]; then
   missing_options=${missing_options#*,}
@@ -225,5 +228,5 @@ else
   cat "$M_TEMP/${rcommand}.resp"
 fi
 
-proper_exit 0 259
+proper_exit 0 228
 
