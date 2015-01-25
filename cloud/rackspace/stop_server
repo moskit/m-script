@@ -19,10 +19,6 @@ rpath=${0%/*}
 #*/ (this is needed to fix vi syntax highlighting)
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 CURL=`which curl 2>/dev/null`
-LYNX=`which lynx 2>/dev/null`
-LINKS=`which links 2>/dev/null`
-WGET=`which wget 2>/dev/null`
-
 CURL="$CURL -s -k"
 V="v1.0"
 
