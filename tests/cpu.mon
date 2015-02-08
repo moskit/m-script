@@ -27,7 +27,7 @@ source "$M_ROOT/lib/functions.sh"
 [ -z "$CPUUPERIOD" ] && CPUUPERIOD=1
 [ -z "$CPUUSAMPLES" ] && CPUUSAMPLES=5
 
-$VMSTAT -n $CPUUPERIOD $CPUUSAMPLES | awk '{ print $13"|"$14"|"$16 }' | tail -5 > $M_TEMP/cpuusage
+$VMSTAT -n $CPUUPERIOD $CPUUSAMPLES | awk '{ print $13"|"$14"|"$16 }' | tail -n $CPUUSAMPLES > $M_TEMP/cpuusage
 
 usavg=0
 syavg=0

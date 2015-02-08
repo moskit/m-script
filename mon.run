@@ -219,7 +219,8 @@ function runactions() {
           if [ -z "$nalerts" ]; then
             if [[ $line =~ $pattern ]]; then
               alert_match=true
-              var_extracted=`expr "$line" : "$pattern" 2>/dev/null`
+              XVAR=`expr "$line" : "$pattern" 2>/dev/null`
+              export XVAR
               break
             fi
           else
