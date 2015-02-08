@@ -68,7 +68,7 @@ check_results() {
   # check_results "var1<|description|datatype1>,var2<|description|datatype2>,.."
   # where datatype can be real (default, slower but more universal) or integer
   # if description is omitted, variable name will be used in report
-  # Do not use commas in description! They are used as separators here.
+  # Do not use commas in description! They are used as separators.
   [ -z "$1" ] && return 1
   callerconf="${caller%.mon}.conf"
   [ "$callerconf" == "${caller}.conf" ] && log "Monitor script must have extension .mon" && return 1
@@ -89,7 +89,7 @@ check_results() {
     
     case $vartype in
       real)
-        if [ `echo "scale=2; $thr1 < 0" | bc` -eq 1 ]; then
+        if [ `echo "scale=2; $thr3 <= 0" | bc` -eq 1 ]; then
           [ `echo "scale=2; $val <= -$thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
           [ `echo "scale=2; $val <= -$thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
           [ `echo "scale=2; $val <= -$thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
@@ -100,7 +100,7 @@ check_results() {
         fi
         ;;
       real4)
-        if [ `echo "scale=4; $thr1 < 0" | bc` -eq 1 ]; then
+        if [ `echo "scale=4; $thr3 <= 0" | bc` -eq 1 ]; then
           [ `echo "scale=4; $val <= -$thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
           [ `echo "scale=4; $val <= -$thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
           [ `echo "scale=4; $val <= -$thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
@@ -111,7 +111,7 @@ check_results() {
         fi
         ;;
       integer)
-        if [ `expr $thr3 \< 0` -eq 1 ]; then
+        if [ `expr $thr3 \<= 0` -eq 1 ]; then
           [ `expr $val \<= -$thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
           [ `expr $val \<= -$thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
           [ `expr $val \<= -$thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue

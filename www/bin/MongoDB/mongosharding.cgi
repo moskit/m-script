@@ -75,7 +75,7 @@ for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type 
   done
   close_cluster
 done
-
+echo "<br/>"
 print_timeline "Sharding Events"
 
 

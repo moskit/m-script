@@ -210,12 +210,16 @@ function runactions() {
       alert_match=false
       
       [[ $level -eq 0 ]] && levelmax=0 || levelmax=3
+      
+      pattern_match=`echo "$pattern" | sed 's_\\(__g;s_\\)__g'`
+      pattern_extract=".*${pattern}"
 
       for ((i=$level; i<=$levelmax; i++)) ; do
         while read line ; do
           if [ -z "$nalerts" ]; then
             if [[ $line =~ $pattern ]]; then
               alert_match=true
+              var_extracted=`expr "$line" : "$pattern" 2>/dev/null`
               break
             fi
           else
@@ -230,10 +234,18 @@ function runactions() {
                 [ -z "$timeshift" ] && timeshift=`cat "$M_TEMP/timeshift"`
                 cinterval=`expr $cinterval + $FREQ + $timeshift`
                 sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}|${cinterval}%" "$M_TEMP/consequent_alerts.tmp"
-                [[ $calerts -ge $nalerts ]] && [[ $cinterval -ge $alerts_interval ]] && alert_match=true && break
+                if [[ $calerts -ge $nalerts ]] && [[ $cinterval -ge $alerts_interval ]]; then
+                  alert_match=true
+                  var_extracted=`expr "$line" : "$pattern" 2>/dev/null`
+                  break
+                fi
               else
                 sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}%" "$M_TEMP/consequent_alerts.tmp"
-                [[ $calerts -ge $nalerts ]] && alert_match=true && break
+                if [[ $calerts -ge $nalerts ]]; then
+                  alert_match=true
+                  var_extracted=`expr "$line" : "$pattern" 2>/dev/null`
+                  break
+                fi
               fi
             fi
           fi

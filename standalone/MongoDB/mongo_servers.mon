@@ -225,9 +225,11 @@ else
     mongoport=${mongohost##*:}
     mongohost="${mongohost%:*}"
     # Is it a part of a replica set?
-    replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1`
+    replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
     if [ $? -eq 0 ] ; then
       find_rsmemberrole "${mongohost}:${mongoport}"
+    else
+      unset replicaset rsmemberrole
     fi
     echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
   done
@@ -292,15 +294,17 @@ if [ -n "$shardhosts" ] ; then
     shard=`eval "echo $shard"` ; shardhost=`eval "echo $shardhost"`
     #ifreplicaset=${shardhost%%/*}
     shardhost=${shardhost#*/}
-    # might be multiple hosts here, not needed now, it'll be dealt with later
+    # may be multiple hosts here, not needed now, it'll be dealt with later
     shardhost=${shardhost%%,*}
     shardport=${shardhost#*:}
-    if [ "_`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()" 2>>"$LOG" | tail -1)`" != "_null" ] ; then
-      replicaset=`(IFS=$IFSORG ; $MONGO $AUTH "${shardhost%:*}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG" | tail -1)`
+    replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
+    if [ $? -eq 0 ] ; then
+      find_rsmemberrole "${shardhost}:${shardport}"
+    else
+      unset replicaset rsmemberrole
     fi
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
-    find_rsmemberrole "${shardhost}:${shardport}"
     shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"

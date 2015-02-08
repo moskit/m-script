@@ -115,7 +115,7 @@ EOF
   only-cleanup|only-clean|only-remove)
     nonbackup='yes'
     onlyclean='yes'
-    if [ "X$s_optarg" == "Xhelp" ]; then
+    if [ "_$s_optarg" == "_help" ]; then
       cat <<"EOF"
     This option is useful for cleaning up disk space. It only removes
   outdated backups, if finds any. 
@@ -124,13 +124,13 @@ EOF
   Usage: --only-clean or --only-clean=yes
 EOF
       exit 0
-    elif [ "X$s_optarg" != "X" ] && [ "X$s_optarg" != "Xyes" ]; then
+    elif [ -n "$s_optarg" ] && [ "_$s_optarg" != "_yes" ]; then
       echo 'Wrong syntax! Use --only-clean=help to get more help' | tee -a $stderrto
       exit 1
     fi
   ;;
   config|configfile|configfiles)
-    if [ "X$s_optarg" == "Xhelp" ]; then
+    if [ "_$s_optarg" == "_help" ]; then
       cat <<"EOF"
     You can create as many backup configuration files as you want and backup
   files from or to many hosts at once. But you cannot do all backups in 
@@ -150,7 +150,7 @@ EOF
   configuration files for non-common tasks.
 EOF
       exit 0
-    elif [ "X$s_optarg" == "X" ] || [ "X$s_optarg" == "Xyes" ]; then
+    elif [ -z "$s_optarg" ] || [ "_$s_optarg" == "_yes" ]; then
       echo 'Wrong syntax! Use --configfiles=help to get more help' >> $stderrto
       exit 1
     fi
@@ -165,7 +165,7 @@ EOF
   ;;
   fg|foreground)
     fgflag='yes'
-    if [ "X$s_optarg" == "Xhelp" ]; then
+    if [ "_$s_optarg" == "_help" ]; then
       cat <<"EOF"
     This option makes all output go to stdin.
     
@@ -173,7 +173,7 @@ EOF
     
 EOF
       exit 0
-    elif [ "X$s_optarg" != "X" ] && [ "X$s_optarg" != "Xyes" ]; then
+    elif [ -n "$s_optarg" ] && [ "_$s_optarg" != "_yes" ]; then
       echo 'Wrong syntax! Use --fg=help to get more help' | tee -a $stderrto
       exit 1
     fi
@@ -247,7 +247,7 @@ do
   then
     ftpput=`which ncftpput 2>/dev/null`
     ftpget=`which ncftpget 2>/dev/null`
-    if [ "X$ftpput" == "X" ]
+    if [ -z "$ftpput" ]
     then
       echo 'To use FTP uploads please install NcFTP client' >> $stderrto
       exit 1
@@ -256,7 +256,7 @@ do
   if [ "$r_proto" == "scp" ]
   then
     SCP="`which scp 2>/dev/null` -r -q"
-    if [ "X$SCP" == "X" ]
+    if [ -z "$SCP" ]
     then
       echo "No scp command found! Is OpenSSH installed?" >> $stderrto
       exit 1
@@ -266,8 +266,8 @@ do
   fi
   if [ "$r_proto" == "rsync" ]
   then
-    RSYNC="`which rsync 2>/dev/null`"
-    if [ "X$RSYNC" == "X" ]
+    RSYNC=`which rsync 2>/dev/null`
+    if [ -z "$RSYNC" ]
     then
       echo 'No rsync command found!' >> $stderrto
       exit 1
@@ -277,7 +277,7 @@ do
   fi
   if [ "$r_proto" == "s3" ]
   then
-    S3="`which s3cmd 2>/dev/null`"
+    S3=`which s3cmd 2>/dev/null`
     if [ -z "$S3" ]
     then
       echo 'No s3cmd command found!' >> $stderrto
@@ -290,9 +290,9 @@ do
   [ -z "$remoteuser" ] && remoteuser=$USER
   
   locallogpath=$localbackuppath
-  if [ "X$onlyclean" == "Xyes" ]; then
+  if [ "_$onlyclean" == "_yes" ]; then
     localrmpath="$localbackuppath"
-    [ "X${0%/*}" == "X$localrmpath" ] && localrmpath="$localbackuppath/backup.local"
+    [ "_${0%/*}" == "_$localrmpath" ] && localrmpath="$localbackuppath/backup.local"
   else
     localrmpath="$localbackuppath/backup.local"
   fi
@@ -489,10 +489,10 @@ do
 # Starting files transfer
     case $r_proto in 
     ftp)
-      [ "X$followlinks" != "Xyes" ] || FTPOPTS="$FTPOPTS"
-      [ "X$numericids" != "Xyes" ] || FTPOPTS="$FTPOPTS"
-      [ "X$preserveperm" != "Xyes" ] || FTPOPTS="$FTPOPTS"
-      [ "X$samefs" != "Xyes" ] || FTPOPTS="$FTPOPTS"
+      [ "_$followlinks" != "_yes" ] || FTPOPTS="$FTPOPTS"
+      [ "_$numericids" != "_yes" ] || FTPOPTS="$FTPOPTS"
+      [ "_$preserveperm" != "_yes" ] || FTPOPTS="$FTPOPTS"
+      [ "_$samefs" != "_yes" ] || FTPOPTS="$FTPOPTS"
       FTPOPTS="$ftpoptions $FTPOPTS"
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && FTPOPTS="$FTPOPTS -d $stdinto" && echo "FTP options are: $FTPOPTS" >> $stdinto
       ftptime=`(time -p $ftpput $FTPOPTS -R -V -u$remoteuser -p$remotepw -m $remotehost $remotepath $localbackuppath/* 2>$M_TEMP/$archname.ftp.log 1>>$dbginto) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
@@ -510,12 +510,12 @@ do
       rm -f $M_TEMP/$archname.ftp.log
     ;;
     scp)
-      [ "X$followlinks" != "Xyes" ] || SCPOPTS="$SCPOPTS"
-      [ "X$numericids" != "Xyes" ] || SCPOPTS="$SCPOPTS"
-      [ "X$preserveperm" != "Xyes" ] || SCPOPTS="$SCPOPTS -p"
-      [ "X$samefs" != "Xyes" ] || SCPOPTS="$SCPOPTS"
-      [ "X$bwlimit" != "X" ] && SCPOPTS="$SCPOPTS -l $bwlimit"
-      [ "X$xfercompression" != "Xyes" ] || SCPOPTS="$SCPOPTS -C"
+      [ "_$followlinks" != "_yes" ] || SCPOPTS="$SCPOPTS"
+      [ "_$numericids" != "_yes" ] || SCPOPTS="$SCPOPTS"
+      [ "_$preserveperm" != "_yes" ] || SCPOPTS="$SCPOPTS -p"
+      [ "_$samefs" != "_yes" ] || SCPOPTS="$SCPOPTS"
+      [ -n "$bwlimit" ] && SCPOPTS="$SCPOPTS -l $bwlimit"
+      [ "_$xfercompression" != "_yes" ] || SCPOPTS="$SCPOPTS -C"
       SCPOPTS="$scpoptions $SCPOPTS"
       [ -n "$debugflag" -a -z "$nonbackup" -a -z "$onlyclean" ] && SCPOPTS="$SCPOPTS -v" && echo "SCP options are: $SCPOPTS" >> $dbginto
       scptime=`(time -p $SCP $SCPOPTS "$localbackuppath"/* "$remoteuser"@"${remotehost}:${remotepath}" 2>"$M_TEMP/$archname.scp.log" 1>>$dbginto) 2>&1 | grep 'real' | cut -d' ' -f2 | cut -d'.' -f1`  #*/
@@ -556,12 +556,12 @@ do
       rm -f "$M_TEMP/$archname.rsync.log"
     ;;
     s3)
-      [ "X$followlinks" != "Xyes" ] || S3OPTS="$S3OPTS"
-      [ "X$numericids" != "Xyes" ] || S3OPTS="$S3OPTS"
-      [ "X$preserveperm" != "Xyes" ] && S3OPTS="$S3OPTS --no-preserve"
-      [ "X$samefs" != "Xyes" ] || S3OPTS="$S3OPTS"
-      [ "X$bwlimit" != "X" ] && S3OPTS="$S3OPTS"
-      [ "X$xfercompression" != "Xyes" ] || S3OPTS="$S3OPTS"
+      [ "_$followlinks" != "_yes" ] || S3OPTS="$S3OPTS"
+      [ "_$numericids" != "_yes" ] || S3OPTS="$S3OPTS"
+      [ "_$preserveperm" != "_yes" ] && S3OPTS="$S3OPTS --no-preserve"
+      [ "_$samefs" != "_yes" ] || S3OPTS="$S3OPTS"
+      [ -n "$bwlimit" ] && S3OPTS="$S3OPTS"
+      [ "_$xfercompression" != "_yes" ] || S3OPTS="$S3OPTS"
       S3OPTS="$s3options $S3OPTS"
       remotepath=${remotepath#/}
       s3target="s3://`echo "${remotehost%/}/${remotepath%/}/" | sed 's|s3://||;s|//|/|g'`"
@@ -593,17 +593,17 @@ do
   if [ "$xferdirection" == "from-remote" ]
   then
     # If we want remote operations
-    if [ "X$onlypickup" != "Xyes" ]
+    if [ "_$onlypickup" != "_yes" ]
     then
       # we need SSH client to be present then
       SSH=`which ssh`
-      if [ "X$SSH" == "X" ]
+      if [ -z "$SSH" ]
       then
         echo "No SSH client found! Consider using --only-pickup option"
         exit 1
       fi
       echo "install -d ${remotepath}/backup.local && install -d ${remotepath}/backup.tmp && install -d $M_TEMP" > ${rpath}/remote.backup.sh
-      if [ "X$replaceflag" == "X" ]; then
+      if [ -z "$replaceflag" ]; then
         echo -e 'archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"\necho "${archname}" > ${rpath}/lastbackup.${bconf}.archname\narchname=`cat ${rpath}/lastbackup.${bconf}.archname`' >> ${rpath}/remote.backup.sh
       fi
       echo 'ARCOPTS="'${ARCOPTS}'"' >> ${rpath}/remote.backup.sh
@@ -611,18 +611,18 @@ do
       echo 'rm -f ${remotepath}/*.tar*' >> ${rpath}/remote.backup.sh
       for DB in ${databases}
       do
-        echo 'rm -f ${remotepath}/${DB}/*.tar*' >> ${rpath}/remote.backup.sh
+        echo 'rm "$remotepath/$DB"/*.tar*' >> "$rpath/remote.backup.sh"
       done
-      if [ -f "${rpath}/${backupconf}.list" ]; then
+      if [ -f "$rpath/${backupconf}.list" ]; then
         while read LINE ; do
           if [ -n "${LINE}" ]; then
             echo "LINE=${LINE}" >> ${rpath}/remote.backup.sh
             linetoname=`echo ${LINE} | sed 's|/|_|g'`
             echo "linetoname=${linetoname}" >> ${rpath}/remote.backup.sh
-            if [ "X${compression}" == "Xgzip" ]; then
+            if [ "_${compression}" == "_gzip" ]; then
               echo 'tar ${ARCOPTS} -c -z -f ${remotepath}/$archname.$linetoname.tar.gz ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
             fi
-            if [ "X${compression}" == "Xbzip2" ]; then
+            if [ "_${compression}" == "_bzip2" ]; then
               echo 'tar ${ARCOPTS} -c -j -f ${remotepath}/$archname.$linetoname.tar.bz2 ${LINE} 2>$M_TEMP/$archname.$linetoname.tar.log' >> ${rpath}/remote.backup.sh
             fi
             cat >> ${rpath}/remote.backup.sh <<"EOF"
@@ -635,7 +635,7 @@ do
     echo "Tar: ${LINE} copied successfully `grep '^Total bytes written:' $M_TEMP/$archname.$linetoname.tar.log | cut -d' ' -f5,6`" >>"${remotepath}/m_backup.log" 2>/dev/null
     rm -f $M_TEMP/$archname.$linetoname.tar.log
   fi
-  if [ X$keepremote == "Xyes" ]; then
+  if [ "_$keepremote" == "_yes" ]; then
     cp -r ${remotepath}/* ${remotepath}/backup.local 2>>${remotepath}/m_backup.error
   fi
   if [ "X$removeoldremote" == "Xyes" ]; then
@@ -729,9 +729,9 @@ EOF
   fi
 
 # Copying backups to proper location
-  if [ "X$keeplocal" == "Xyes" ] && [ "X$nonbackup" == "X" ]
+  if [ "_$keeplocal" == "_yes" ] && [ -z "$nonbackup" ]
   then
-    if [ "X$debugflag" == "X" ]
+    if [ -z "$debugflag" ]
     then
       cp -r $localbackuppath/* $localbackuppath/../backup.local 2>>$stderrto #*/
     else
@@ -744,7 +744,7 @@ EOF
 # Removing outdated backups #
 #############################
 
-  if [ "X$removeoldlocal" == "Xyes" ]
+  if [ "_$removeoldlocal" == "_yes" ]
   then
     [ $keeplocaldays -gt 0 ] && keeplocaldays=`expr $keeplocaldays - 1`
     [ -n "$debugflag" ] && rmv='-v'
@@ -752,7 +752,7 @@ EOF
   fi
   if [ "$xferdirection" == "to-remote" ]
   then
-    if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ] && [ -n "$remotehost" ]; then
+    if [ "_$removeoldremote" == "_yes" ] && [ "_$keepremote" == "_yes" ] && [ -n "$remotehost" ]; then
       case $r_proto in 
       ftp)
         echo "Removing remote files via FTP is not (yet) supported." >>$stderrto
@@ -760,31 +760,31 @@ EOF
       s3)
         remotepath1="$s3target"
         while true; do
-          `which s3cmd` ls "$remotepath1" > $M_TEMP/s3list.$$
+          s3list=`$S3 ls "$remotepath1"`
           if [ -n "$debugflag" ]; then
-            echo "=== In $remotepath1 `cat $M_TEMP/s3list.$$|wc -l` objects found" >> $dbginto
+            echo "=== In $remotepath1 `echo "$s3list" | wc -l` objects found" >> $dbginto
           fi
-          grep DIR $M_TEMP/s3list.$$ | sed 's|^[[:space:]]*DIR[[:space:]]*||g' >> $M_TEMP/s3dirs.$$
+          s3dirs=`echo "$s3list" | grep DIR | sed 's|^[[:space:]]*DIR[[:space:]]*||'`
           if [ -n "$debugflag" ]; then
-            echo "=== `cat $M_TEMP/s3dirs.$$|wc -l` are directories" >> $dbginto
+            echo "=== `echo "$s3dirs" | wc -l` are directories" >> $dbginto
           fi
-          grep -v ^[[:space:]]*DIR[[:space:]]* $M_TEMP/s3list.$$ >> $M_TEMP/s3files.$$
+          s3files=`echo "$s3list" | grep -v ^[[:space:]]*DIR[[:space:]]`
           if [ -n "$debugflag" ]; then
-            echo "=== `cat $M_TEMP/s3files.$$|wc -l` are files" >> $dbginto
+            echo "=== `echo "$s3files" | wc -l` are files" >> $dbginto
           fi
           for ((i=0; i < $keepremotedays; i++)); do
             d2k=$(date -d "`date +"%Y/%m/%d"` - $i days" +"%Y-%m-%d")
-            sed -i "/$d2k/d" $M_TEMP/s3files.$$
+            s3files=`echo "$s3files" | sed "/$d2k/d"`
           done
           if [ -n "$debugflag" ]; then
-            echo "=== `cat $M_TEMP/s3files.$$|wc -l` files have been marked for removal" >> $dbginto
+            echo "=== `echo "$s3files" | wc -l` files have been marked for removal" >> $dbginto
           fi
-          for s3file in `cat $M_TEMP/s3files.$$ | awk -F's3://' '{print $2}'`; do
-            `which s3cmd` del "s3://${s3file}" 2>>$stderrto 1>>$stdinto
+          for s3file in `echo "$s3files" | awk -F's3://' '{print $2}'`; do
+            $S3 del "s3://${s3file}" 2>>$stderrto 1>>$stdinto
           done
-          if [ `cat $M_TEMP/s3dirs.$$ | grep -v ^$ | wc -l` -gt 0 ]; then
-            remotepath1="`head -1 $M_TEMP/s3dirs.$$`"
-            sed -i '1d' $M_TEMP/s3dirs.$$ 2>>$stderrto 1>>$stdinto
+          if [ `echo "$s3dirs" | grep -v ^$ | wc -l` -gt 0 ]; then
+            remotepath1="`echo "$s3dirs" | head -1`"
+            s3dirs=`echo "$s3dirs" | sed '1d'`
             if [ -n "$debugflag" ]; then
               echo "=== Entering $remotepath1 directory" >> $dbginto
             fi
@@ -793,7 +793,6 @@ EOF
             break
           fi
         done
-        rm -f $M_TEMP/s3dirs.$$ $M_TEMP/s3files.$$ $M_TEMP/s3list.$$
       ;;
       *)
         SSH=`which ssh`
@@ -823,7 +822,7 @@ EOF
   fi
   if [ "$xferdirection" == "to-local" ]
   then
-    if [ "X$removeoldremote" == "Xyes" ] && [ "X$keepremote" == "Xyes" ]; then
+    if [ "_$removeoldremote" == "_yes" ] && [ "_$keepremote" == "_yes" ]; then
       [ $keepremotedays -gt 0 ] && keepremotedays=`expr $keepremotedays - 1`
       find "$remotepath" -mtime +$keepremotedays -type f 2>>$stderrto > "$M_TEMP/remote_files_to_remove.list"
       declare -i res
@@ -904,6 +903,6 @@ EOF
   rm -f $rpath/m_backup.{error,log} 2>/dev/null
   rm -f $M_TEMP/$archname*log 2>/dev/null
 done
-[ -n "$fgflag" ] && kill `cat "$M_TEMP/backup.fg.pid"`
+[ -n "$fgflag" ] && kill `cat "$M_TEMP/backup.fg.pid" 2>/dev/null` 2>/dev/null
 
 
