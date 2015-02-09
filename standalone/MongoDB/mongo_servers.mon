@@ -297,6 +297,7 @@ if [ -n "$shardhosts" ] ; then
     # may be multiple hosts here, not needed now, it'll be dealt with later
     shardhost=${shardhost%%,*}
     shardport=${shardhost#*:}
+    shardhost=${shardhost%:*}
     replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
     if [ $? -eq 0 ] ; then
       find_rsmemberrole "${shardhost}:${shardport}"
