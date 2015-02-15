@@ -174,6 +174,7 @@ function runactions() {
   IFS1=$IFS; IFS='
 '
   for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
+    action=`echo "$action" | sed 's_\\$_\\\\$_'`
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
     for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
@@ -215,16 +216,19 @@ function runactions() {
       pattern_extract=".*${pattern}"
 
       for ((i=$level; i<=$levelmax; i++)) ; do
+
         while read line ; do
+
+[[ $line =~ $pattern_match ]] && log "pattern $pattern_match matched!"
           if [ -z "$nalerts" ]; then
-            if [[ $line =~ $pattern ]]; then
+            if [[ $line =~ $pattern_match ]]; then
               alert_match=true
-              XVAR=`expr "$line" : "$pattern" 2>/dev/null`
+              XVAR=`expr "$line" : "$pattern_extract" 2>/dev/null`
               export XVAR
               break
             fi
           else
-            if [[ $line =~ $pattern ]] ; then
+            if [[ $line =~ $pattern_match ]] ; then
               action_alert_found=true
               if [ -z "$calerts" ]; then
                 calerts=1
@@ -237,14 +241,14 @@ function runactions() {
                 sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}|${cinterval}%" "$M_TEMP/consequent_alerts.tmp"
                 if [[ $calerts -ge $nalerts ]] && [[ $cinterval -ge $alerts_interval ]]; then
                   alert_match=true
-                  var_extracted=`expr "$line" : "$pattern" 2>/dev/null`
+                  XVAR=`expr "$line" : "$pattern_extract" 2>/dev/null`
                   break
                 fi
               else
                 sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|${calerts}%" "$M_TEMP/consequent_alerts.tmp"
                 if [[ $calerts -ge $nalerts ]]; then
                   alert_match=true
-                  var_extracted=`expr "$line" : "$pattern" 2>/dev/null`
+                  XVAR=`expr "$line" : "$pattern_extract" 2>/dev/null`
                   break
                 fi
               fi
@@ -259,7 +263,7 @@ function runactions() {
         # to make them ORed, add marks to the beginning of action, enclosed in
         # percent sign, e.g. %1% [action], %2% [action] and so on
         all_alerts_found=true
-        log "alert match"
+        log "alert match! XVAR: $XVAR"
       else
         all_alerts_found=false
       fi
@@ -323,9 +327,10 @@ function timeshift() {
 function action() {
   local newfile=false
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
+log "action: matching $act"
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
-  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@" && echo "<***> Action triggered: $@" >> "$rpath/alert"
+  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
   "$rpath"/lib/mq.run &
 }
@@ -344,9 +349,9 @@ case $1 in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
     runscript SQL
-    runactions
     mailalert
     gendash servers "$M_ROOT/report" marked
+    runactions
     deltimeindex
     cleanup
   ;;
@@ -390,9 +395,9 @@ case $1 in
     newtimeindex
     runscript "$1" $SQL
     timeshift
-    runactions
     mailalert
     gendash servers "$M_ROOT/report"
+    runactions
     deltimeindex
     cleanup
   ;;
