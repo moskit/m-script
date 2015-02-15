@@ -99,7 +99,7 @@ function cleanup() {
 function runscript() {
   local LOG="$rpath/monitoring.log"
   daynow=$(date +"%Y%m%d")
-  if [ "X$SQLITE3" == "X1" ] && ([ "X$1" == "XSQL" ] || [ "X$2" == "XSQL" ])
+  if [ "_$SQLITE3" == "_1" ] && ([ "_$1" == "_SQL" ] || [ "_$2" == "_SQL" ])
   then
     dbquery "$rpath/sysdata" "insert into sysdata (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
@@ -341,7 +341,7 @@ source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 declare -i delay ; delay=0
 export M_TEMP FREQ M_ROOT THRESHOLD SQLITE3 IPTABLES
-[ "X$2" == "XSQL" ] && SQL=SQL
+[ "_$2" == "_SQL" ] && SQL=SQL
 [ -d $M_TEMP ] || install -d $M_TEMP
 etitle="------------------------------\n`date`\n------------------------------"
 
