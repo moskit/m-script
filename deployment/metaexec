@@ -507,7 +507,7 @@ if [ "$output" == "console" ]; then
 fi
 
 if [ -n "$ip" ]; then
-  if [ `localips | grep "^$ip$"` -ne 0 ]; then
+  if [ `"$M_ROOT"/helpers/localips | grep "^$ip$"` -ne 0 ]; then
     log "IP $ip is local. Setting up self is not supported."
     proper_exit 1 512
   fi

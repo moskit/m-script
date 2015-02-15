@@ -211,7 +211,7 @@ function runactions() {
       
       [[ $level -eq 0 ]] && levelmax=0 || levelmax=3
       
-      pattern_match=`echo "$pattern" | sed 's_\\(__g;s_\\)__g'`
+      pattern_match=`echo "$pattern" | sed 's_\\\(__g;s_\\\)__g'`
       pattern_extract=".*${pattern}"
 
       for ((i=$level; i<=$levelmax; i++)) ; do
@@ -325,7 +325,7 @@ function action() {
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
-  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
+  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@" && echo "<***> Action triggered: $@" >> "$rpath/alert"
   $newfile && chmod 600 "$rpath/actions.in"
   "$rpath"/lib/mq.run &
 }
@@ -344,9 +344,9 @@ case $1 in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
     runscript SQL
+    runactions
     mailalert
     gendash servers "$M_ROOT/report" marked
-    runactions
     deltimeindex
     cleanup
   ;;
@@ -390,9 +390,9 @@ case $1 in
     newtimeindex
     runscript "$1" $SQL
     timeshift
+    runactions
     mailalert
     gendash servers "$M_ROOT/report"
-    runactions
     deltimeindex
     cleanup
   ;;
