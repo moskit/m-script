@@ -134,14 +134,14 @@ source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
 [ -n "$SSHPORT" ] || SSHPORT=22
 # in case it is started not by metaexec
 if [ -z "$CURRTASKDIR" ]; then
-  CURRTASKDIR="$WORK_DIR/${role}.${task}.$timestamp"
+  CURRTASKDIR="$M_DEPL_WORK_DIR/${role}.${task}.$timestamp"
   export CURRTASKDIR
 fi
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$dry" -o -n "$test" ] && dry="yes"
 export debug verbose dry
 # These must exist
-[ -z "$WORK_DIR" ] && echo "WORK_DIR is not set, check deployment.conf" && exit 1
+[ -z "$M_DEPL_WORK_DIR" ] && echo "M_DEPL_WORK_DIR is not set, check deployment.conf" && exit 1
 [ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT is not set, check deployment.conf" && exit 1
 
 [ -z "$ip" -a -n "$ignorenocluster" ] && echo "Either IP or non-empty cluster is necessary" && exit 1
@@ -156,10 +156,10 @@ if [ -n "$cluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$dry" ]; then
 fi
 [ -z "$task" ] && task="notask"
 [ -z "$role" ] && role="norole"
-[ "_$timestamp" == "_repeat" ] && timestamp=`ls -1tr "$WORK_DIR/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
+[ "_$timestamp" == "_repeat" ] && timestamp=`ls -1tr "$M_DEPL_WORK_DIR/${role}.${task}.*" | tail -1` && timestamp=${timestamp##*.}
 [ -z "$timestamp" ] && timestamp=`date +"%y_%m_%d_%H_%M"`
 export role task timestamp   ## exports the working dir
-install -d "$WORK_DIR/${role}.${task}.${timestamp}/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
+install -d "$M_DEPL_WORK_DIR/${role}.${task}.${timestamp}/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
 declare -i RETVAL
 RETVAL=0
 IFS1=$IFS; IFS='

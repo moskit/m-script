@@ -323,7 +323,7 @@ export CLOUD
 [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
 
 [ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deployment/roles
-[ -z "$WORK_DIR" ] && WORK_DIR=/root/deploy.tmp
+[ -z "$M_DEPL_WORK_DIR" ] && M_DEPL_WORK_DIR=/root/deploy.tmp
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
@@ -351,12 +351,12 @@ localip=`"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'`
 if [ -n "$timestamp" ]; then
   [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
   if [ "_$timestamp" == "_repeat" ]; then
-    timestampact=`ls -1tr "$WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
+    timestampact=`ls -1tr "$M_DEPL_WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
   else
     timestampact="$timestamp"
   fi
   if [ -n "$timestampact" ]; then
-    argfile=`find "$WORK_DIR"/*.$timestampact/ -maxdepth 1 -name ARGV`
+    argfile=`find "$M_DEPL_WORK_DIR"/*.$timestampact/ -maxdepth 1 -name ARGV`
     if [ -f "$argfile" ]; then
       sed -i "/^newserver=/d;/^test=/d;/^verbose=/d;/^debug=/d;/^timestamp=/d" "$argfile"
       source "$argfile"
@@ -423,7 +423,7 @@ fi
 
 [ -n "$verbose" ] && V='--verbose'
 [ -n "$test" ] && T='--test'
-CURRTASKDIR="$WORK_DIR/${role}.${task}.$timestampact"
+CURRTASKDIR="$M_DEPL_WORK_DIR/${role}.${task}.$timestampact"
 export CURRTASKDIR
 if [ -d "$CURRTASKDIR" ] && [ -z "$timestamp" ]; then
   declare -i m ; m=1
@@ -507,7 +507,7 @@ if [ "$output" == "console" ]; then
 fi
 
 if [ -n "$ip" ]; then
-  if [ `"$M_ROOT"/helpers/localips | grep "^$ip$"` -ne 0 ]; then
+  if [ `"$M_ROOT"/helpers/localips | grep -c "^$ip$"` -ne 0 ]; then
     log "IP $ip is local. Setting up self is not supported."
     proper_exit 1 512
   fi
@@ -619,7 +619,7 @@ if [ -z "$list" ]; then
   echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
   # the best place for this seems to be here
   [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30
-  find "$WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
+  find "$M_DEPL_WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
 fi
 echo
 if [ -n "$newserver" ]; then

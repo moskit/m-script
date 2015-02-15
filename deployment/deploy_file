@@ -106,7 +106,11 @@ find_source() {
 
 prepare_file() {
   [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
-  [ -f "$ROLES_ROOT/$role/role.conf" ] && store_vars "$ROLES_ROOT/$role/role.conf" || echo "role.conf not found!"
+  if [ -f "$ROLES_ROOT/$role/role.conf" ]; then
+    store_vars "$ROLES_ROOT/$role/role.conf"
+  else
+    echo "role.conf for role $role not found!"
+  fi
   [ -f "${tmpfile}.var" ] && source "${tmpfile}.var"
   rm -f "$tmpfile" "${tmpfile}.orig"
   cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
@@ -134,9 +138,9 @@ prepare_file() {
     fi
   done
   if [ -n "$role" -a -n "$task" -a -n "$timestamp" ] ; then
-    install -d "$WORK_DIR/${role}.${task}.${timestamp}/files"
-    cp "$tmpfile" "$WORK_DIR/${role}.${task}.${timestamp}/files/"
-    cp "$tmpfile".{var,orig} "$WORK_DIR/${role}.${task}.${timestamp}/files/"
+    install -d "$M_DEPL_WORK_DIR/${role}.${task}.${timestamp}/files"
+    cp "$tmpfile" "$M_DEPL_WORK_DIR/${role}.${task}.${timestamp}/files/"
+    cp "$tmpfile".{var,orig} "$M_DEPL_WORK_DIR/${role}.${task}.${timestamp}/files/"
   fi
 }
 
