@@ -40,7 +40,7 @@ IFS1=$IFS
 IFS='-'
 for s_option in "$@"
 do
-  found=0
+  found=false
   case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
@@ -59,10 +59,10 @@ do
   possible_options="$command_options $wrapper_options"
   
   for option in `echo $possible_options | sed 's/ /-/g'`; do 
-    [ -n "$s_optname" ] && [ "X$s_optname" == "X$option" ] && eval "$option=\"${s_optarg}\"" && found=1
+    [ -n "$s_optname" ] && [ "_$s_optname" == "_$option" ] && eval "$option=\"${s_optarg}\"" && found=true
   done
-  [ "_$s_option" == "_$s_param" ] && found=1
-  if [[ $found -ne 1 ]]; then 
+  [ "_$s_option" == "_$s_param" ] && found=true
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
@@ -92,12 +92,15 @@ fi
 [ -n "$errlogfile" ] || errlogfile=$logfile
 [ -n "$pidfile" ] || pidfile="/var/run/${rcommand##*/}.pid"
 
-for option in $necessary_options ; do
-  [ -z "$(eval echo \$$option)" ] && missing_options="$missing_options --${option}," && found=true
-done
-if $found ; then
-  echo "Necessary options: ${missing_options/%,/} not found"
-  exit 1
+if [ -n "$necessary_options" ]; then
+  found=false
+  for option in $necessary_options ; do
+    [ -z "$(eval echo \$$option)" ] && missing_options="$missing_options --${option}," && found=true
+  done
+  if $found ; then
+    echo "Necessary options: ${missing_options/%,/} not found"
+    exit 1
+  fi
 fi
 
 [ -n "$chdir" ] && cdback=$PWD
@@ -121,7 +124,7 @@ case $s_param in
     [ -n "$chdir" ] && cd "$chdir"
     if [ -n "$user" ] && [ "$UID" == "0" ] ; then
       fullcommand="$command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done)"
-      fullcommand="$fullcommand 1>>\"$logfile\" 2>>\"$errorlogfile\" </dev/null & { echo \$!; }"
+      fullcommand="$fullcommand 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null & { echo \$!; }"
       pid=`su -m $user -c "$fullcommand"`
       succ=$?
       if [ -n "$pid" ]; then
@@ -131,7 +134,7 @@ case $s_param in
       fi
     elif [ -n "$group" ] && [ "$UID" == "0" ] ; then
       fullcommand="$command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done)"
-      fullcommand="$fullcommand 1>>\"$logfile\" 2>>\"$errorlogfile\" </dev/null & { echo \$!; }"
+      fullcommand="$fullcommand 1>>\"$logfile\" 2>>\"$errlogfile\" </dev/null & { echo \$!; }"
       pid=`sg -m $group -c "$fullcommand"`
       succ=$?
       if [ -n "$pid" ]; then
@@ -140,7 +143,7 @@ case $s_param in
         succ=1
       fi
     else
-      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>"$logfile" 2>>$errorlogfile </dev/null &
+      exec -a $rcommand $command $(for po in $command_options ; do printf " --${po}=`eval "echo \\$\${po}"`" ; done) 1>>"$logfile" 2>>$errlogfile </dev/null &
       succ=$?
       pid=$!
       echo $pid > "$pidfile"
