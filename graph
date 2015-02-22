@@ -743,8 +743,11 @@ else
   imark=0
   shiftY=0
 fi
-ires=`expr 100 \* $res / $perdotY`
-log "ires: 100 \* $res / $perdotY = $ires"
+ires=`echo "$mp * $res" | bc`
+ires=${ires%.*}
+log "ires: $mp * $res = $ires"
+# if ires is not integer, it will be a catastrophe below
+expr $ires : .*[^0-9] >/dev/null && log "ERROR: ires value is not integer! Exiting.." && exit 1
 i=`expr $legendV + $padding + $axis`
 log "i: $legendV + $padding + $axis = $i"
 imax=`expr $i + $areaV`

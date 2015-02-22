@@ -20,10 +20,11 @@
 # ln -s /path-to/monitoringload.run /etc/init.d
 ### For chkconfig:
 # chkconfig:   2345 99 1
-# description: monitorload
+# description: M-Script monitoring service
 # processname: monitorload.run
+### LSB
 ### BEGIN INIT INFO
-# Provides:          monitorload
+# Provides:          M-Script monitoring service
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Required-Start:
@@ -61,11 +62,11 @@ start)
   echo $$ > $pidfile
   
   [ -n "$FREQ" ] || FREQ=200
-  if [ "_$MONGOOSE" == "_1" ] ; then
+  if [ "_$MONGOOSE" == "_1" ]; then
     echo -n "Starting web interface...      "
     MG=`which mongoose 2>/dev/null`
-    if [ -z "$MG" ] ; then
-      if [ -f "$rpath/mongoose" ] ; then
+    if [ -z "$MG" ]; then
+      if [ -f "$rpath/mongoose" ]; then
         MG="$rpath/mongoose"
       else
         echo -e "Error\nMongoose is enabled in $rpath/conf/mon.conf but not found"
@@ -110,7 +111,7 @@ start)
 ## But the full cycle is not a good idea because we want to know what caused
 ## the load. So we need just some delay to secure the lock.
 ## If load is not too high, all tests run
-      if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
+      if [[ $rloadabs -lt $LOAD_CRIT ]]; then
         "$rpath"/mon.run -ao </dev/null &
       else
 ## otherwise, these tests only
@@ -121,22 +122,16 @@ start)
     sleep $FREQ
 
 ## Tests that are disabled if load average is too high
-    if [[ $rloadabs -lt $LOAD_CRIT ]] ; then
+    if [[ $rloadabs -lt $LOAD_CRIT ]]; then
       "$rpath"/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
-      if [ -n "$DASHBOARD_TRANSPORT" ] ; then
+      if [ -n "$DASHBOARD_TRANSPORT" ]; then
       # means that we need to fetch reports from other servers
         case $DASHBOARD_TRANSPORT in
           SSH)
             "$rpath"/getdash.ssh 2>>"$rpath/logs/dashboard.log" </dev/null &
           ;;
           JSON)
-          
-          ;;
-          XML)
-          
-          ;;
-          HTML)
-          
+            "$rpath"/getdash.json 2>>"$rpath/logs/dashboard.log" </dev/null &
           ;;
           *)
           echo "Fetching data with $DASHBOARD_TRANSPORT is not supported" >> "$rpath/logs/dashboard.log"
@@ -195,8 +190,8 @@ stop)
   else
     echo "$pidfile not found!"
   fi
-  if [ "_$MONGOOSE" == "_1" ] ; then
-    if [ -f $mgpidfile ] ; then
+  if [ "_$MONGOOSE" == "_1" ]; then
+    if [ -f $mgpidfile ]; then
       echo "3" > "$rpath/connections.mon.lock"
       pid=`cat $mgpidfile|tail -1`
       printf "Stopping web interface (PID $pid)...       "
@@ -226,7 +221,7 @@ status)
   else
     echo "${0##*/} is not running"
   fi
-  if [ -f $mgpidfile ] ; then
+  if [ -f $mgpidfile ]; then
     pid=`cat $mgpidfile|tail -1`
     if [ -d /proc/$pid ]; then
       echo "HTTP is running (pid $pid)"

@@ -36,6 +36,7 @@ ARCH=i386
 # Default: internal
 NETWORK=
 
+
 # In case you are using non-standard SSH port
 SSHPORT=
 

@@ -37,7 +37,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
     prevstatus=$thisesstatus
   done
   
-  open_line "$clustername|hilited" eshealth
+  open_line "$clustername|hilited" ElasticSearch/eshealth
       for esst in $esstatus ; do
         echo "<div class=\"status\" id=\"${clustername}_http\" onclick=\"showDetails('${clustername}_name','ElasticSearch/esstatus')\" style=\"color: $esst ; font-weight: bold ;\">$esst</div>"
       done
@@ -46,7 +46,7 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
 
     for node in `cat $PWD/../../standalone/$scriptname/${clustername}.nodes.list | sort` ; do
       [ "_`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat"|grep ^master\||cut -d'|' -f2`" == "_1" ] && role="M" || unset role
-      open_line "$node||$clustername" "$scriptname"
+      open_line "$node||$clustername"
 
         echo "<div class=\"status\" id=\"${node}_host\"><span class=\"master\">$role</span>`cat "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" 2>/dev/null | grep ^\\"name\\"\||cut -d'|' -f2 | tr -d '"'`</div>"
         
