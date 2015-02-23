@@ -1,0 +1,81 @@
+#!/bin/bash
+
+possible_options="db dbname host port concurrency collection number"
+necessary_options=""
+
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -z "$dbname" ] && dbname=m_test
+[ -z "$collection" ] && collection=testdata
+[ -z "$number" ] && number=1000
+
+declare -a a
+declare -a b
+
+generate_data() {
+  for ((n=0; n<$concurrency; n++)); do
+    a[$n]="db.runCommand( { insert : ${collection}, documents : [ $(for ((i=0; i<$number; i++)); do echo "{ string : \"`head /dev/urandom -c100 | tr -dc 'a-zA-Z0-9' | cut -b -10`\" }," ; done | sed 's_,$__') ] } )"
+    echo -n "."
+  done &
+}
+
+test_mongo() {
+  MONGO=`which mongo 2>/dev/null`
+  [ -z "$MONGO" ] && echo "No mongo client found" && exit 1
+  echo -n "Preparing the attack: ${host}:${port}, ${dbname}.${collection} ... "
+  $MONGO ${host}:${port}/admin --quiet --eval "db = db.getSiblingDB(\"$dbname\"); db.${collection}.ensureIndex( { \"_id\" : 1 } )"
+  echo "ready"
+  echo -n "Generating the data "
+  generate_data
+  echo "ready"
+  echo -n "Starting the attack "
+  t1=`date +"%s%N"`
+  for ((n=0; n<$concurrency; n++)); do
+    b[$n]=`$MONGO ${host}:${port}/admin --quiet --eval "db = db.getSiblingDB(\"$dbname\"); $a[$n]" && echo "done"`
+    echo -n "."
+  done &
+  while true ; do
+    found=false
+    for ((n=0; n<$concurrency; n++)); do
+      [ -z "$b[$n]" ] && found=true
+    done
+    if $found ; then
+      continue
+    else
+      t2=`date +"%s%N"`
+      break
+    fi
+  done
+  inserted=`expr $concurrency \* $number`
+  time=`echo "scale 9; ($t2 - $t1)/1000000000" | bc`
+  qps=`echo "scale 2; $inserted / $time" | bc`
+  echo "Inserted $inserted records in $time seconds; QPS=$qps"
+}
+
+case $db in
+  mongo|mongodb)
+    test_mongo
+    ;;
+  *)
+    echo "No test available for $db"
+    ;;
+esac
+
+
