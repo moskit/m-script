@@ -31,9 +31,10 @@ declare -a b
 
 generate_data() {
   for ((n=0; n<$concurrency; n++)); do
-    a[$n]="db.runCommand( { insert : ${collection}, documents : [ $(for ((i=0; i<$number; i++)); do echo "{ string : \"`head /dev/urandom -c100 | tr -dc 'a-zA-Z0-9' | cut -b -10`\" }," ; done | sed 's_,$__') ] } )"
+    a[$n]="db.runCommand( { insert : ${collection}, documents : [ $(for ((i=0; i<$number; i++)); do echo "{ string : \"`head /dev/urandom -c100 | tr -dc 'a-zA-Z0-9' | cut -b -10`\" }," ; done) ] } )"
+    a[$n]=`echo "${a[$n]}" | sed 's_,\ \]__'`
     echo -n "."
-  done &
+  done
 }
 
 test_mongo() {
@@ -48,13 +49,13 @@ test_mongo() {
   echo -n "Starting the attack "
   t1=`date +"%s%N"`
   for ((n=0; n<$concurrency; n++)); do
-    b[$n]=`$MONGO ${host}:${port}/admin --quiet --eval "db = db.getSiblingDB(\"$dbname\"); $a[$n]" && echo "done"`
+    b[$n]=`$MONGO ${host}:${port}/admin --quiet --eval "db = db.getSiblingDB(\"$dbname\"); ${a[$n]}" 2>/dev/null && echo "done"`
     echo -n "."
   done &
   while true ; do
     found=false
     for ((n=0; n<$concurrency; n++)); do
-      [ -z "$b[$n]" ] && found=true
+      [ -z "${b[$n]}" ] && found=true
     done
     if $found ; then
       continue
@@ -64,8 +65,8 @@ test_mongo() {
     fi
   done
   inserted=`expr $concurrency \* $number`
-  time=`echo "scale 9; ($t2 - $t1)/1000000000" | bc`
-  qps=`echo "scale 2; $inserted / $time" | bc`
+  time=`echo "scale=9; ($t2 - $t1)/1000000000" | bc`
+  qps=`echo "scale=2; $inserted / $time" | bc`
   echo "Inserted $inserted records in $time seconds; QPS=$qps"
 }
 
