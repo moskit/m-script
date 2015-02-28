@@ -20,4 +20,3 @@ done
 
 log "concatenating cloud lists: ${catline[*]}"
 [ -n "${catline[*]}" ] && cat "${catline[*]}" > "$M_ROOT/servers.list" 2>/dev/null
-

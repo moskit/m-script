@@ -31,8 +31,8 @@ declare -a b
 
 generate_data() {
   for ((n=0; n<$concurrency; n++)); do
-    a[$n]="db.runCommand( { insert : ${collection}, documents : [ $(for ((i=0; i<$number; i++)); do echo "{ string : \"`head /dev/urandom -c100 | tr -dc 'a-zA-Z0-9' | cut -b -10`\" }," ; done) ] } )"
-    a[$n]=`echo "${a[$n]}" | sed 's_,\ \]__'`
+    a[$n]="db.runCommand( { insert : \"${collection}\", documents : [ $(for ((i=0; i<$number; i++)); do echo "{ string : \"`head /dev/urandom -c100 | tr -dc 'a-zA-Z0-9' | cut -b -10`\" }," ; done) ] } )"
+    a[$n]=`echo "${a[$n]}" | sed 's_,\ \]_\ \]_'`
     echo -n "."
   done
 }
