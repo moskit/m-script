@@ -41,12 +41,13 @@ for CL in `cat "$M_TEMP/$cloud/full.servers.list" | cut -d'|' -f6 | sort | uniq`
     LN=`grep ^$ID\| "$M_TEMP/$cloud/full.servers.list"`
     name="`echo $LN | cut -d'|' -f2`"
     status="`echo $LN | cut -d'|' -f3`"
-    pubIP="`echo $LN | cut -d'|' -f4`"
-    privIP="`echo $LN | cut -d'|' -f5`"
-    cluster="`echo $LN | cut -d'|' -f6`"
+    region="`echo $LN | cut -d'|' -f4`"
+    pubIP="`echo $LN | cut -d'|' -f5`"
+    privIP="`echo $LN | cut -d'|' -f6`"
+    cluster="`echo $LN | cut -d'|' -f7`"
     `grep -q ^$cluster\| "$M_ROOT/conf/clusters.conf"` && trclass="thiscluster" || trclass="thatcluster"
-    image="`echo $LN | cut -d'|' -f7`"
-    size="`echo $LN | cut -d'|' -f8`"
+    image="`echo $LN | cut -d'|' -f8`"
+    size="`echo $LN | cut -d'|' -f9`"
     echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
   done
 done
@@ -56,13 +57,14 @@ done
     LN=`grep ^$ID\| "$M_TEMP/$cloud/full.servers.list"`
     name="`echo $LN | cut -d'|' -f2`"
     status="`echo $LN | cut -d'|' -f3`"
-    pubIP="`echo $LN | cut -d'|' -f4`"
-    privIP="`echo $LN | cut -d'|' -f5`"
+    region="`echo $LN | cut -d'|' -f4`"
+    pubIP="`echo $LN | cut -d'|' -f5`"
+    privIP="`echo $LN | cut -d'|' -f6`"
     cluster="`grep ^$privIP\| "$M_ROOT/servers.list" | cut -d'|' -f5`"
     [ -z "$cluster" ] && cluster="`grep ^$pubIP\| "$M_ROOT/servers.list" | cut -d'|' -f5`"
     [ -z "$cluster" ] && trclass="nocluster" || trclass="mancluster"
-    image="`echo $LN | cut -d'|' -f7`"
-    size="`echo $LN | cut -d'|' -f8`"
+    image="`echo $LN | cut -d'|' -f8`"
+    size="`echo $LN | cut -d'|' -f9`"
     echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
     
   done

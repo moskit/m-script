@@ -192,7 +192,7 @@ list_servers() {
               echo "ID: $id  Name: $name  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
               ;;
             table)
-              echo "$id|$name|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId"
+              echo "$id|$name|$istatus|$region|$extIP|$intIP|$icluster|$imageId|$flavorId"
               ;;
             column)
               echo -e "ID: $id\nName: $name\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
