@@ -462,7 +462,7 @@ span.indent {
 }
 
 .status {
-  width: 96px;
+  width: 94px;
   height: 100%;
   padding: 2px 0px;
   text-align: center;
@@ -471,6 +471,12 @@ span.indent {
   word-wrap: break-word;
   color: #777777;
   display: inline-block;
+  border-right: 2px solid white;
+}
+
+.clustername .status {
+  width: 96px;
+  border-right: none;
 }
 
 .status_short {

@@ -30,7 +30,7 @@ $debug && LOG="$M_ROOT/logs/show_servers.log"
 possible_options="cluster state filter region short noupdate view update_servers_list forceupdate all status count resolveids cloud"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//' | sed 's/ --/|/g'`
 
 IFS1=$IFS
 IFS='|'

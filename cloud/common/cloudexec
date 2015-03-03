@@ -57,14 +57,14 @@ remote_exec() {
     echo -e "\n=  Server: $servername ($IP)  Cluster: $CLUSTER"
   fi
   if [ `echo "$localip" | grep -c "^$IP$"` -ne 0 ] ; then
-    [ -z "$nolocalhost" ] && eval $command
+    [ -z "$nolocalhost" ] && eval "$command"
   else
     KEY=`$M_ROOT/helpers/find_key server $IP`
     [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
     if [ "_$nosudo" == "_yes" ]; then
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; $command\)
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; "$command"\)
     else
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" sudo bash -c \"test -e \\\"$M_ROOT_REMOTE/m.rc\\\" \&\& source \\\"$M_ROOT_REMOTE/m.rc\\\" \; export ip=$IP \; $command\"
+      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" sudo bash -c \"test -e \\\"$M_ROOT_REMOTE/m.rc\\\" \&\& source \\\"$M_ROOT_REMOTE/m.rc\\\" \; export ip=$IP \; "$command"\"
     fi
   fi
 }
@@ -220,11 +220,11 @@ for cld in $CLOUD ; do
           [ -n "$limit" ] && [[ $n -ge $limit ]] && break
           IP=${s%%|*}
           if [ -n "$ip" ] ; then
-            [ "X$ip" == "X$IP" ] || continue
+            [ "_$ip" == "_$IP" ] || continue
           fi
           if [ -n "$region" ] ; then
             REGION=`echo $s | cut -d'|' -f3`
-            [ "X$REGION" == "X$region" ] || continue
+            [ "_$REGION" == "_$region" ] || continue
           fi
           CLUSTER=`echo $s | cut -d'|' -f5`
           # if server's cluster is not found, it's a bug, but it's a good idea to
@@ -234,7 +234,7 @@ for cld in $CLOUD ; do
           else
             [ "$CLUSTER" == "$icluster" ] || continue
           fi
-          if [ "x$threaded" == "xyes" ]; then
+          if [ "_$threaded" == "_yes" ]; then
             #res[$n]=$(remote_exec) 2>&1 </dev/null &
             (remote_exec > "$M_TEMP/$$.$n" 2>&1 || echo "ERROR") &
             pid[$n]=$!
@@ -245,7 +245,7 @@ for cld in $CLOUD ; do
           n+=1
         done
       done
-      if [ "x$threaded" == "xyes" ]; then
+      if [ "_$threaded" == "_yes" ]; then
         for ((i=0; i<$n; i++)); do
           while true ; do
             # always waiting here, for forced exit see cleanup()

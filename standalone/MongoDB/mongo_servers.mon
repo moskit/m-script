@@ -110,7 +110,7 @@ function parse_data() {
   net_reqps=`solve 1 "($netReqn - $netReqn_prev) / $timediff"`
   echo "Network requests per second:   $net_reqps"
   
-  if [ -n "$lockTime" ] ; then
+  if [ -n "$lockTime" ]; then
     echo -e "\n Global lock\n"
     [ -z "$lockTime_prev" ] && lockTime_prev=$lockTime
     lockTime=`solve 2 "(${lockTime} - ${lockTime_prev}) / $timediff / 10000"`
