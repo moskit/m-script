@@ -68,13 +68,13 @@ if [ -z "$BC" ]; then
     case $OS in
     debian)
       export DEBIAN_FRONTEND=noninteractive
-      `which apt-get` install bc -y
+      `which apt-get` install bc -y || exit 1
       ;;
     gentoo)
-      `which emerge` bc
+      `which emerge` bc || exit 1
       ;;
     redhat)
-      [ "X`which yum`" == "X" ] || `which yum` install bc -y
+      `which yum` install bc -y || exit 1
       ;;
     *)
       echo
@@ -328,7 +328,7 @@ mvperc1=`expr $memvirt \* 100 / $memtotal / 2 2>/dev/null`
 [ $? -ne 0 ] && mvperc1=1000
 mvperc2=`expr $mvperc1 \* 3 / 2 2>/dev/null`
 [ $? -ne 0 ] && mvperc2=1500
-mvperc2=`expr $mvperc1 \* 2 2>/dev/null`
+mvperc3=`expr $mvperc1 \* 2 2>/dev/null`
 [ $? -ne 0 ] && mvperc3=2000
 if [ -f "$rpath/tests/memory_eaters.conf" ]; then
   sed -i "s|MEM_VIR_1=.*|MEM_VIR_1=$mvperc1|" "$rpath/tests/memory_eaters.conf"

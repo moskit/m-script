@@ -294,16 +294,25 @@ if [ -n "$shardhosts" ] ; then
     shard=`eval "echo $shard"` ; shardhost=`eval "echo $shardhost"`
     #ifreplicaset=${shardhost%%/*}
     shardhost=${shardhost#*/}
-    # may be multiple hosts here, not needed now, it'll be dealt with later
-    shardhost=${shardhost%%,*}
-    shardport=${shardhost#*:}
-    shardhost=${shardhost%:*}
-    replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
+    shardhost1=${shardhost%%,*}
+    shardport1=${shardhost1#*:}
+    shardhost1=${shardhost1%:*}
+    replicaset=`$MONGO $AUTH "${shardhost1}:${shardport1}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
     if [ $? -eq 0 ] ; then
-      find_rsmemberrole "${shardhost}:${shardport}"
+      find_rsmemberrole "${shardhost1}:${shardport1}"
     else
-      unset replicaset rsmemberrole
+      shardhost1=`echo "$shardhost" | cut -sd',' -f2`
+      shardport1=${shardhost1#*:}
+      shardhost1=${shardhost1%:*}
+      replicaset=`$MONGO $AUTH "${shardhost1}:${shardport1}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
+      if [ $? -eq 0 ] ; then
+        find_rsmemberrole "${shardhost1}:${shardport1}"
+      else
+        unset replicaset rsmemberrole
+      fi
     fi
+    shardhost=$shardhost1
+    shardport=$shardport1
     ip_to_name ${shardhost%:*}
     shardhost="$rname"
     shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
