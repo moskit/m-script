@@ -106,7 +106,7 @@ else
   cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 fi
 
-[ -n "$verbose" ] && [ -z "$delimiter" ] && verbose=true || verbose=false
+[ "_$verbose" == "_yes" ] && [ -z "$delimiter" ] && verbose=true || verbose=false
 
 if [ -n "$local" ] ; then
   unset cluster

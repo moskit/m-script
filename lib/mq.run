@@ -109,7 +109,7 @@ for ((n=0; n<$limit; n++)); do
   JOBID=`head -1 "$M_ROOT/actions.q" | cut -d'|' -f2`
   log "--- executing job: $JOB ID: $JOBID"
   sed -i "1d" "$M_ROOT"/actions.q && log "job: $JOB ID: $JOBID has been removed from the queue"
-  echo "( $JOB )" | sh - >> $LOG 2>&1
+  echo "( $JOB )" | /bin/bash - >> $LOG 2>&1
   res=$?
   if [ $res -ne 0 ] ; then
     log "=== job: $JOB ID: $JOBID has failed: exit status $res"

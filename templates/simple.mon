@@ -22,14 +22,15 @@ conf="$rpath/${rcommand%.mon}.conf"
 # [ -n "$FREQ" ] && [ -n "$timeshift" ] && interval=$(($FREQ + $timeshift))
 # [ -z $interval ] && [ -n "$FREQ" ] && interval=$FREQ
 
+### in case check_interval function is used (see below):
+# interval=`cat "$rpath/${rcommand%.mon}.interval.tmp"`
+### this line must be before check_interval!
+
 ### in case this monitor needs longer interval between runs
 ### interval can be anything that the 'date' utility can recognize
 ### (see 'man date' section DATE STRING)
-### in case you need time since the last run:
-# interval=`cat "$rpath/${rcommand%.mon}.interval.tmp"`
 # check_interval "5 min" || exit 0
-
-### or, if you use get_lock function:
+### if you use get_lock function:
 # check_interval "5 min" || unlock_exit 0
 
 ### prints date header to the report file

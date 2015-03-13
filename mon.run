@@ -81,7 +81,7 @@ function mailalert() {
     echo "================ sending alert =================" >> "$rpath/monitoring.log"
     cat "$rpath/alert" >> "$rpath/monitoring.log"
     echo "================================================" >> "$rpath/monitoring.log"
-    for MLINE in `cat "$rpath/conf/mail.alert.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#|awk '{print $1}'`
+    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#" | awk '{print $1}'`
     do
       recipn=`grep "^$MLINE" "$rpath/conf/mail.alert.list" | awk '{print $2}'`
       if ([ -z "$recipn" ] || [ $recipn -le $aln ]) ; then
@@ -174,7 +174,7 @@ function runactions() {
   IFS1=$IFS; IFS='
 '
   for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
-    action=`echo "$action" | sed 's_\\$_\\\\$_'`
+    #action=`echo "$action" | sed 's_\\$_\\\\$_'`
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
     for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
@@ -213,18 +213,16 @@ function runactions() {
       [[ $level -eq 0 ]] && levelmax=0 || levelmax=3
       
       pattern_match=`echo "$pattern" | sed 's_\\\(__g;s_\\\)__g'`
-      pattern_extract=".*${pattern}"
+      pattern_extract="\ *${pattern}"
 
       for ((i=$level; i<=$levelmax; i++)) ; do
 
         while read line ; do
-
-[[ $line =~ $pattern_match ]] && log "pattern $pattern_match matched!"
+          [ -z "$line" ] && continue
           if [ -z "$nalerts" ]; then
             if [[ $line =~ $pattern_match ]]; then
               alert_match=true
               XVAR=`expr "$line" : "$pattern_extract" 2>/dev/null`
-              export XVAR
               break
             fi
           else
@@ -254,6 +252,7 @@ function runactions() {
               fi
             fi
           fi
+          export XVAR
         done <"$rpath/alert$i"
       done   ## <-- finished reading alerts
       
@@ -274,9 +273,14 @@ function runactions() {
     done   ## <-- finished reading config
     
     if $all_alerts_found ; then
+      XVARTXT="; XVAR: $XVAR"
       log "all alerts found for action: $action ; block enabled, cycles: $blockccl"
       [ -n "$blockccl" ] && block_action $blockccl "$action"
-      echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: $action\n" >> "$rpath/monitoring.log" | tee -a $LOG
+      echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: ${action}${XVARTXT}\n" >> "$rpath/monitoring.log" | tee -a $LOG
+      for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#" | awk '{print $1}'`
+      do
+        echo "`date +"%m.%d %H:%M:%S"` alert pattern $pattern_match initiated action: ${action}${XVARTXT}" | $MAILX -s "Action triggered! Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE"
+      done
       action_or=`expr "$action" : "^%.*%\ \(.*\)"`
       [ -z "$action_or" ] && action $action || action $action_or
       [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
