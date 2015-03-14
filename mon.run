@@ -174,10 +174,10 @@ function runactions() {
   IFS1=$IFS; IFS='
 '
   for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
-    #action=`echo "$action" | sed 's_\\$_\\\\$_'`
+    actiongrep=`echo "$action" | sed 's_\\$_\\\\$_'`
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
-    for confline in `grep -E "\|${action}\||\|${action}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
+    for confline in `grep -E "\|${actiongrep}\||\|${actiongrep}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       pattern=`echo $confline | cut -d'|' -f1`
       level=`echo $confline | cut -s -d'|' -f2`
       nalerts=`echo $confline | cut -s -d'|' -f4`
