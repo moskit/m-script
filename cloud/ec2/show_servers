@@ -42,8 +42,7 @@ request() {
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" > "$M_TEMP/${rcommand}.resp"
-  cat "$M_TEMP/${rcommand}.resp" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/servers.ips"
+  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
 }
 
 get_iname() {
@@ -71,20 +70,21 @@ get_iname() {
 }
 
 list_servers() {
+  $debug && [ -n "$update_servers_list" ] && echo -e "\n`date`\n=====================\n" >> $LOG
   IFS1=$IFS
   IFS='
 '
-  [ -f "$M_ROOT/servers.list" ] || touch "$M_ROOT/servers.list"
-  if [ -f "$M_TEMP/servers.ips" ]; then
-    slist="$M_TEMP/servers.ips"
-  else
-    [ -f "$M_TEMP/servers.ips.prev" ] && slist="$M_TEMP/servers.ips.prev"
-  fi
-  if [ -n "$slist" ]; then
-    [ "_$view" == "_raw" ] && cat "$M_TEMP/servers.ips" && return
-    for sn in `cat "$M_TEMP/servers.ips" | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
+
+  if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
+    [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
+    declare -a serverlist
+    
+#==============================================================================
+    for sn in `cat "$M_TEMP/${rcommand}.resp" | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
-      server=`grep ^$sn\/ "$M_TEMP/servers.ips"`
+
+      server=`grep ^$sn\/ "$M_TEMP/${rcommand}.resp"`
+      
       intIP=`echo "$server" | grep '/"privateIpAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       extIP=`echo "$server" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
       id=`echo "$server" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`
@@ -121,17 +121,6 @@ list_servers() {
         ebs+=("$bdevid|$bdevname|$bdevsince")
       done
 
-      # icluster - cluster defined in this server metadata
-      # checking it against clusters.conf allows to separate projects, or
-      # cluster groups within the same cloud
-      if [ -z "$icluster" ] ; then
-        # servers having no cluster in metadata but added manually to servers.list
-        icluster=`grep ^$IP\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-        [ -z "$icluster" ] && [ -z "$all" ] && log "Server $IP has no cluster tag and not present in servers.list" && continue
-      else
-        [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && continue
-      fi
-
       if [ -z "$update_servers_list" ] ; then
 
         if [ -n "$cluster" ]; then
@@ -164,9 +153,9 @@ list_servers() {
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
-            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)" && key="$ikey"
+            [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)" && key="$ikey"
             sed -i /^$IP\|/d "$M_ROOT/servers.list"
-            [ "X$istatus" == "Xrunning" ] && echo "$IP|$key|$region|$iname|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
+            [ "_$istatus" == "_running" ] && echo "$IP|$key|$region|$iname|$icluster|$CLOUD" >> "$M_ROOT/servers.list"
 
           fi
         fi
@@ -174,11 +163,11 @@ list_servers() {
       
     done
   else
-    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/servers.ips and run without --noupdate if necessary."
+    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/${rcommand}.resp and run without --noupdate if necessary."
     exit 1
   fi
   for listip in `cat "$M_ROOT/servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|\"$listip\"$ "$M_TEMP/servers.ips"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
+    [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/servers.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/servers.list"
   done
   IFS=$IFS1
 }
@@ -241,7 +230,7 @@ localip=`localips`
 
 if [ -z "$noupdate" ]; then
   changed=0
-  [ -f "$M_TEMP/servers.ips" ] && mv "$M_TEMP/servers.ips" "$M_TEMP/servers.ips.prev" || touch "$M_TEMP/servers.ips.prev"
+  [ -f "$M_TEMP/${rcommand}.resp" ] && mv "$M_TEMP/${rcommand}.resp" "$M_TEMP/${rcommand}.resp.prev" || touch "$M_TEMP/${rcommand}.resp.prev"
   [ -f "$M_TEMP/servers.bdevs" ] && mv "$M_TEMP/servers.bdevs" "$M_TEMP/servers.bdevs.prev" || touch "$M_TEMP/servers.bdevs.prev"
   [ -n "$verbose" ] && log "sending request"
   request
@@ -254,8 +243,8 @@ else
     [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
   fi
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
-  [ ! -e "$M_TEMP/servers.ips" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/servers.ips not found" && exit 1
-  [ `cat "$M_TEMP/servers.ips" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/servers.ips is empty" && exit 1
+  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && exit 1
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
 fi
 
 list_servers

@@ -86,10 +86,10 @@ if [ -n "$cdrom" ]; then
 fi
 if [ -n "$vnc" ]; then
   if [ "$vnc" == "yes" ]; then
-    log "\nWARNING: setting vnc_bind_address to 0.0.0.0.\nUse firewall to restrict access.\nYou may also want to use specific IP, e.g.:\n  --vnc=10.10.10.10\n"
+    log "WARNING: setting vnc_bind_address to 0.0.0.0. Use firewall to restrict access. You may also want to use specific IP, e.g.:  --vnc=10.10.10.10"
     vnc="0.0.0.0"
   fi
-  [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && log "\nArgument for --vnc must be a valid IPv4 or IPv6 address\n" && exit 1
+  [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && log "Argument for --vnc must be a valid IPv4 or IPv6 address" && exit 1
   VNC="serial_console=false,vnc_bind_address=$vnc"
 fi
 
@@ -159,13 +159,18 @@ request() {
   [ -z "$node" -o -z "$ios" -o -z "$iparams" ] && log "error parsing parameters for cluster $cluster" && return 1
   hvparams=`echo $iparams | awk -F'-H ' '{print $2}' | cut -d' ' -f1`
   iparams=`echo $iparams | sed "s|-H $hvparams ||"`
+  hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
   if [ -z "$hvparams" ]; then
-    hvparams="-H"
-    #hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
-    [ -n "$vnc" ] && hvparams="-H ${VNC}"
+    hvparams="-H $hvdef"
+    [ -n "$vnc" ] && hvparams="-H ${hvdef}:${VNC}"
   else
-    hvparams="-H ${hvparams}"
     [ -n "$vnc" ] && hvparams="${hvparams},${VNC}"
+    hvname=`echo "$hvparams" | cut -sd':' -f1 | tr -d ' '`
+    if [ -z "$hvname" ]; then
+      hvparams="${hvdef}:${hvparams}"
+    else
+      hvparams="${hv}:${hvparams}"
+    fi
   fi
 
   sed -i "/^$ip/d" /etc/hosts
@@ -271,7 +276,7 @@ done
 log "using OSPATH $OSPATH"
 # OS required for the new server
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
-[ -z "$OSNAME" ] && log "Unable to find OS for cluster $cluster" && proper_exit 1 212
+[ -z "$OSNAME" ] && log "Unable to find OS in clusters.conf for cluster $cluster" && proper_exit 1 212
 
 if [ -d "$OSPATH/$OSNAME" ]; then
   cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/"* "$OSPATH/$OSNAME/"

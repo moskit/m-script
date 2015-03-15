@@ -155,6 +155,7 @@ list_servers() {
   IFS='
 '
   if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
+    [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
     declare -a serverlist
     allips=`cat "$M_TEMP/ips.list"`
     for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
@@ -225,7 +226,6 @@ list_servers() {
       else
         # if no IP, it shouldn't make way to servers.list
         [ -n "$update_servers_list" ] && continue
-        
       fi
       if [ -z "$update_servers_list" ] ; then
         # icluster existence condition is needed for the case there are multiple
