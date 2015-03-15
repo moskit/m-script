@@ -76,11 +76,13 @@ source "$M_ROOT/lib/cloud_functions.sh"
 if [ -n "$cdrom" ]; then
   [ "$cdrom" == "yes" ] && echo -e "\nOption --cdrom assumes path to ISO image:\n  --cdrom=/path/to/image" && exit 1
   makedisk="yes"
-  [ `echo "$cdrom" | cut -b1` != "/" ] && log "restoring absolute path required by Ganeti:"
-  if [ -f "$PWD/$cdrom" ]; then
-    cdrom="$PWD/$cdrom" && log "  $PWD/$cdrom"
-  elif [ -f "$M_ROOT/cloud/ganeti/os-images/$cdrom" ]; then
-    cdrom="$M_ROOT/cloud/ganeti/os-images/$cdrom" && log "  $M_ROOT/cloud/ganeti/os-images/$cdrom"
+  if [ `echo "$cdrom" | cut -b1` != "/" ]; then
+    log "restoring absolute path required by Ganeti:"
+    if [ -f "$PWD/$cdrom" ]; then
+      cdrom="$PWD/$cdrom" && log "  $PWD/$cdrom"
+    elif [ -f "$M_ROOT/cloud/ganeti/os-images/$cdrom" ]; then
+      cdrom="$M_ROOT/cloud/ganeti/os-images/$cdrom" && log "  $M_ROOT/cloud/ganeti/os-images/$cdrom"
+    fi
   fi
   [ ! -f "$cdrom" ] && log "\nFile $cdrom does not exist" && exit 1
 fi
@@ -167,10 +169,9 @@ request() {
     [ -n "$vnc" ] && hvparams="${hvparams},${VNC}"
     hvname=`echo "$hvparams" | cut -sd':' -f1 | tr -d ' '`
     if [ -z "$hvname" ]; then
-      hvparams="${hvdef}:${hvparams}"
-    else
-      hvparams="${hv}:${hvparams}"
+      hv=$hvdef
     fi
+    hvparams="${hv}:${hvparams}"
   fi
 
   sed -i "/^$ip/d" /etc/hosts
@@ -184,7 +185,7 @@ request() {
     if [ -n "$cdrom" ]; then
       if [ $res -eq 0 ]; then
         #[[ "$hvparams" == "-H" ]] && hvparams="-H " || hvparams="${hvparams},"
-        hvparams="-H boot_order=cdrom,cdrom_image_path=$cdrom"
+        hvparams="-H ${hv}:boot_order=cdrom,cdrom_image_path=$cdrom"
         log "sending request with command: $GNTI startup $hvparams $name"
         $GNTI startup $hvparams $name >>"$LOG" 2>&1
         res+=$?
