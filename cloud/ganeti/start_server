@@ -161,17 +161,32 @@ request() {
   [ -z "$node" -o -z "$ios" -o -z "$iparams" ] && log "error parsing parameters for cluster $cluster" && return 1
   hvparams=`echo $iparams | awk -F'-H ' '{print $2}' | cut -d' ' -f1`
   iparams=`echo $iparams | sed "s|-H $hvparams ||"`
-  hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d' '`
+  hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d ' '`
   if [ -z "$hvparams" ]; then
-    hvparams="-H $hvdef"
-    [ -n "$vnc" ] && hvparams="-H ${hvdef}:${VNC}"
+    # if no -H provided at all, adding it with the default hypervisor
+    hvname=$hvdef
+    [ -n "$vnc" ] && hvparams="${VNC}"
   else
-    [ -n "$vnc" ] && hvparams="${hvparams},${VNC}"
-    hvname=`echo "$hvparams" | cut -sd':' -f1 | tr -d ' '`
-    if [ -z "$hvname" ]; then
-      hv=$hvdef
+    hvparams1=`echo "$hvparams" | cut -sd':' -f2 | tr -d ' '`
+    # is there anything after colon?
+    if [ -z "$hvparams1" ]; then
+      # so the only param there is hypervisor
+      hvname=$hvparams
+      unset hvparams
+      [ -n "$vnc" ] && hvparams="${VNC}"
+    else
+      [ -n "$vnc" ] && hvparams1="${hvparams1},${VNC}"
+      hvname=`echo "$hvparams" | cut -sd':' -f1 | tr -d ' '`
+      hvparams=$hvparams1
     fi
-    hvparams="${hv}:${hvparams}"
+    if [ -z "$hvname" ]; then
+      hvname=$hvdef
+    fi
+  fi
+  if [ -z "${hvparams}" ]; then
+    hvparams="-H ${hvname}"
+  else
+    hvparams="-H ${hvname}:${hvparams}"
   fi
 
   sed -i "/^$ip/d" /etc/hosts
