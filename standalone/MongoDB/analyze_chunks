@@ -83,7 +83,8 @@ for ns in $sharded ; do
   for shard in $shards ; do
     if [ -n "$2" ]; then [ "$2" != "$shard" ] && continue ; fi
     rm "$rpath/${shard}.${ns}.chunks" 2>/dev/null
-    shardhost=`cat "$rpath/mongo_shards.list" 2>/dev/null | cut -sd'|' -f1 | grep "^${shard}:" | head -1`
+    shardhost=`cat "$rpath/mongo_shards.list" 2>/dev/null | grep "|$shard|.*|master$" | cut -sd'|' -f1`
+    [ -z "$shardhost" ] && shardhost=`cat "$rpath/mongo_shards.list" 2>/dev/null | grep "|$shard|" | cut -sd'|' -f1 | head -1`
     [ -z "$shardhost" ] && echo "Host not found for shard $shard" && continue
 
     $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.find({\"shard\" : \"$shard\", \"ns\" : \"$ns\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | while read MINMAX ; do
