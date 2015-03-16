@@ -23,7 +23,7 @@ OSSL=`which openssl 2>/dev/null`
 [ -z "$OSSL" ] && echo "openssl utility not found, exiting" && exit 1
 
 possible_options="help verbose debug generate filename length days config"
-[ "X$*" == "X" ] && usage="yes"
+[ -z "$*" ] && usage="yes"
 
 IFSORIG=$IFS
 IFS='-'
@@ -33,11 +33,11 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
-  [ "X$s_optarg" == "Xno" ] && unset $s_optname
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_no" ] && unset $s_optname
 
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
   
   if ! $found ; then 
@@ -57,7 +57,11 @@ if $found ; then
 fi
 
 generate_selfsigned() {
-  $OSSL req -x509 -newkey rsa:2048 -keyout ${filename%.*}.key -out $filename -days $days -nodes
+  $OSSL req -x509 -newkey rsa:${length} -keyout ${filename%.*}.key -out $filename -days $days -nodes
+}
+
+generate_csr() {
+  $OSSL req -out ${filename%.*}.csr -new -newkey rsa:${length} -nodes -keyout ${filename%.*}.key
 }
 
 [ -n "$help" ] && usage="yes"
@@ -76,7 +80,10 @@ if [ -n "$generate" ]; then
   
   case $generate in
     ss|self-signed|selfsigned)
-      generate_selfsigned "$length" "$days"
+      generate_selfsigned
+      ;;
+    csr|request)
+      generate_csr
       ;;
     *)
       echo "generation of $generate is not supported yet"
