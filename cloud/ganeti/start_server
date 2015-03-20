@@ -200,7 +200,7 @@ request() {
     if [ -n "$cdrom" ]; then
       if [ $res -eq 0 ]; then
         #[[ "$hvparams" == "-H" ]] && hvparams="-H " || hvparams="${hvparams},"
-        hvparams="-H boot_order=cdrom,cdrom_image_path=$cdrom"
+        hvparams="-H boot_order=cdrom,cdrom_image_path=$cdrom,cdrom_disk_type=scsi,kernel_path="
         log "sending request with command: $GNTI startup $hvparams $name"
         $GNTI startup $hvparams $name >>"$LOG" 2>&1
         res+=$?

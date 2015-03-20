@@ -22,7 +22,7 @@ rpath=${0%/*}
 OSSL=`which openssl 2>/dev/null`
 [ -z "$OSSL" ] && echo "openssl utility not found, exiting" && exit 1
 
-possible_options="help verbose debug generate filename length days config"
+possible_options="help verbose debug info url generate filename length days config"
 [ -z "$*" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -64,6 +64,19 @@ generate_csr() {
   $OSSL req -out ${filename%.*}.csr -new -newkey rsa:${length} -nodes -keyout ${filename%.*}.key
 }
 
+read_csr() {
+  [ -z "$filename" ] && echo "Option --filename is mandatory" && exho 1
+  [ -e "$filename" ] && echo "File $filename not found" && exit 1
+  [ -n "$url" ] && echo "Option --url is ignored"
+  $OSSL req -in $filename -noout -text
+}
+
+cert_summary() {
+  if [ -n "$filename" ]; then
+    $OSSL x509 -in $filename -noout -text
+  fi
+}
+
 [ -n "$help" ] && usage="yes"
 
 if [ -n "$usage" ]; then
@@ -72,6 +85,7 @@ if [ -n "$usage" ]; then
 fi
 
 if [ -n "$generate" ]; then
+  [ -n "$info" ] && echo "Option 'info' and 'generate' can't go together" && exit 1
   [ -z "$days" ] && days=365
   [ -z "$length" ] && length=2048
   [ -z "$filename" ] && filename="server.crt"
@@ -87,6 +101,24 @@ if [ -n "$generate" ]; then
       ;;
     *)
       echo "generation of $generate is not supported yet"
+      ;;
+  esac
+fi
+
+if [ -n "$info" ]; then
+  [ -n "$generate" ] && echo "Option 'info' and 'generate' can't go together" && exit 1
+  case $info in
+    req|csr|CSR)
+      read_csr
+      ;;
+    x509|cert|certificate)
+      cert_summary
+      ;;
+    rsa|key)
+      test_key
+      ;;
+    *)
+      echo "info=$info not supported"
       ;;
   esac
 fi

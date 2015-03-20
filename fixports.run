@@ -19,7 +19,7 @@ rpath=${0%/*}
 #*/
 source "$rpath/conf/mon.conf"
 install -d "$M_TEMP"
-echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> "${rpath}/monitoring.log"
+echo "`date +"%H:%M:%S"` == Running $0 $* ==" >> "$rpath/monitoring.log"
 lockfile=`find "$rpath" -maxdepth 1 -name mon.run.lock -mmin +60`
 if [ -n "$lockfile" ] ; then
   ls -l $lockfile >> "$rpath/monitoring.log"
@@ -44,12 +44,10 @@ fi
 touch "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` >>> Fixports.run: locking" >> "$rpath/monitoring.log"
 
 [ -x /bin/netstat ] && NETSTATCMD='/bin/netstat'
-[ "X$NETSTATCMD" == "X" ] && NETSTATCMD=`which netstat 2>/dev/null`
-if [ `uname` == "Linux" ]; then
-  if [ "X$NETSTATCMD" == "X" ]; then
-    echo "Netstat utility not found! Aborting.."
-    exit 1
-  fi
+[ -z "$NETSTATCMD" ] && NETSTATCMD=`which netstat 2>/dev/null`
+if [ -z "$NETSTATCMD" ]; then
+  echo "Netstat utility not found! Aborting.."
+  exit 1
 fi
 rm -f "$M_TEMP"/netstat.*.tmp 2>/dev/null
 
@@ -72,13 +70,13 @@ udp6head=`cat /proc/net/udp6 | grep ' 0A ' | head -n $inuseudp6 | wc -l`
 fi
 if ([[ $tcphead -eq $inusetcp ]] || ([ -n "$inusetcp6" ] && [[ $tcp6head -eq $inusetcp6 ]])); then
   if ([[ $inusetcp -ne 0 ]] || [[ $inusetcp6 -ne 0 ]]); then
-    echo "fixports: TCP ports monitor is disabled" >> "${rpath}/monitoring.log"
+    echo "fixports: TCP ports monitor is disabled" >> "$rpath/monitoring.log"
   fi
 else
   # No point in parsing of more than 100 lines of LISTENING ports, increase this
   # if you want
-  $NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }' > "$M_TEMP"/netstat.tcp.tmp
-  [ `cat "$M_TEMP"/netstat.tcp.tmp | wc -l` -gt `cat "$M_TEMP"/netstat.tcp.tmp | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log" && rm -f "$M_TEMP"/netstat.tcp.tmp
+  tcpports=`$NETSTATCMD -tlpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$7 }'`
+  [ `echo "$tcpports" | wc -l` -gt `echo "$tcpports" | uniq | wc -l` ] && echo "fixports: TCP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log"
 fi
 
 if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $inuseudp6 ]])); then
@@ -86,78 +84,78 @@ if ([[ $udphead -eq $inuseudp ]] || ([ -n "$inuseudp6" ] && [[ $udp6head -eq $in
     echo "fixports: UDP ports monitor is disabled" >> "$rpath/monitoring.log"
   fi
 else
-  $NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }' >> "$M_TEMP"/netstat.udp.tmp
-  [ `cat "$M_TEMP"/netstat.udp.tmp | wc -l` -gt `cat "$M_TEMP"/netstat.udp.tmp | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log" && rm -f "$M_TEMP"/netstat.udp.tmp
+  udpportd=`$NETSTATCMD -ulpn | head -100 | grep -v ^Proto | grep -v ^Active | awk '{ print $4" "$6 }'`
+  [ `echo "$udpports" | wc -l` -gt `echo "$udpports" | uniq | wc -l` ] && echo "fixports: UDP ports monitor is disabled due to duplicates in netstat output" >> "$rpath/monitoring.log"
 fi
 
 rm -f "$rpath"/ports.*.list
 IFS1=$IFS
 IFS='
 '
-if [ -e "$M_TEMP"/netstat.tcp.tmp ] ; then
-  while read LINE
-  do
-    skip=false
-    prog=${LINE#* }
-    ppid=$(echo $prog | cut -d/ -f1)
-    prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
-    port=${LINE% *}
-    for exclport in `cat "$rpath/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
-    do
-      if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
-        if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
-          skip=true && break
-        else
-          portif=${port%:*}
-          portnum=${port##*:}
-          xports=${exclport%%|*}
-          port1=${xports%-*}
-          port2=${xports#*-}
-          [ $portnum -gt $port1 -a $portnum -lt $port2 ] && skip=true && break
-        fi
-      fi
-    done
-    $skip && skip=false || echo "$port|$prog|$ppid" >> "$rpath/ports.tcp.list"
-  done < "$M_TEMP"/netstat.tcp.tmp
-fi
-if [ -e "$M_TEMP"/netstat.udp.tmp ] ; then
-  while read LINE
-  do
-    skip=false
-    prog=${LINE#* }
-    ppid=$(echo $prog | cut -d/ -f1)
-    prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
-    port=${LINE% *}
-    for exclport in `cat "$rpath/conf/ports.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
-    do
-      if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
-        if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
-          skip=true && break
-        else
-          portif=${port%:*}
-          portnum=${port##*:}
-          xports=${exclport%%|*}
-          port1=${xports%-*}
-          port2=${xports#*-}
-          [ $portnum -gt $port1 -a $portnum -lt $port2 ] && skip=true && break
-        fi
-      fi
-    done
-    $skip && skip=false || echo "$port|$prog|$ppid" >> "$rpath/ports.udp.list"
-  done < "$M_TEMP"/netstat.udp.tmp
-fi
-# UNIX SOCKETS
-$NETSTATCMD -xlpn 2>/dev/null | grep STREAM > "$M_TEMP"/netstat.sockets.tmp
-rm -f "${rpath}/sockets.list"
-while read LINE
+
+for LINE in `echo "$tcpports"`
 do
-  for exclsocket in `cat "$rpath/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+  skip=false
+  prog=${LINE#* }
+  ppid=$(echo $prog | cut -d/ -f1)
+  prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+  port=${LINE% *}
+  for exclport in `cat "$rpath/conf/ports.exclude" | grep -vE '^#|^$|^[[:space:]]*#'`
+  do
+    if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
+      if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
+        skip=true && break
+      else
+        portif=${port%:*}
+        portnum=${port##*:}
+        xports=${exclport%%|*}
+        port1=${xports%-*}
+        port2=${xports#*-}
+        [ $portnum -gt $port1 -a $portnum -lt $port2 ] && skip=true && break
+      fi
+    fi
+  done
+  $skip && skip=false || echo "$port|$prog|$ppid" >> "$rpath/ports.tcp.list"
+done
+
+
+for LINE in `echo "$udpports"`
+do
+  skip=false
+  prog=${LINE#* }
+  ppid=$(echo $prog | cut -d/ -f1)
+  prog=$(echo $prog | cut -d/ -f2 | cut -d: -f1)
+  port=${LINE% *}
+  for exclport in `cat "$rpath/conf/ports.exclude" | grep -vE '^#|^$|^[[:space:]]*#'`
+  do
+    if [ `expr $exclport : ".*$prog"` -gt 0 ] ; then
+      if [ `expr $exclport : "[0-9]*-[0-9]*"` -eq 0 ] ; then
+        skip=true && break
+      else
+        portif=${port%:*}
+        portnum=${port##*:}
+        xports=${exclport%%|*}
+        port1=${xports%-*}
+        port2=${xports#*-}
+        [ $portnum -gt $port1 -a $portnum -lt $port2 ] && skip=true && break
+      fi
+    fi
+  done
+  $skip && skip=false || echo "$port|$prog|$ppid" >> "$rpath/ports.udp.list"
+done
+
+# UNIX SOCKETS
+sockets=`$NETSTATCMD -xlpn 2>/dev/null | grep STREAM`
+rm -f "$rpath/sockets.list"
+for LINE in `echo "$sockets"`
+do
+  for exclsocket in `cat "$rpath/conf/sockets.exclude" | grep -vE '^#|^$|^[[:space:]]*#'`
   do
     skip=false
     [[ $LINE =~ $exclsocket ]] && skip=true && break
   done
   $skip && skip=false || echo "${LINE##*[[:space:]]}" >> "$rpath/sockets.list"
-done < "$M_TEMP"/netstat.sockets.tmp
+done
 IFS=$IFS1
 rm -f "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` <<< Lock file removed by the process called as $0 $* " >> "$rpath/monitoring.log"
 echo  >> "$rpath/monitoring.log"
