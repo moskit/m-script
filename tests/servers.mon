@@ -32,20 +32,33 @@ if [ -z "$CURL" ]; then
 fi
 [ -z "$TIMEOUT" ] && TIMEOUT=5
 
+getwarn() {
+  [ -z "$probetime3" ] && return
+  [ `echo "scale=2; $t >= $probetime3" | bc` -eq 1 ] && warn='<***>'
+  [ -z "$warn" ] && [ `echo "scale=2; $t >= $probetime2" | bc` -eq 1 ] && warn='<**>'
+  [ -z "$warn" ] && [ `echo "scale=2; $t >= $probetime1" | bc` -eq 1 ] && warn='<*>'  
+}
+
 for mserver in `cat "$rpath/../conf/servers.conf" | grep -vE "^$|^#|^[[:space:]]*#"`
 do
+  unset warn
   serverip=`echo $mserver|cut -sd'|' -f1`
   servername=`echo $mserver|cut -sd'|' -f2`
   serverport=`echo $mserver|cut -sd'|' -f3`
+  probetime1=`echo $mserver|cut -sd'|' -f4`
+  probetime2=`echo $mserver|cut -sd'|' -f5`
+  probetime3=`echo $mserver|cut -sd'|' -f6`
   testres=true
   [ -z "$servername" ] && servername=$serverip
   if [ -z "$serverport" ] ; then
     for ((i=0; i<3; i++)) ; do
       t=`(time -p $PING -c1 $serverip >/dev/null) 2>&1 | grep real | cut -d' ' -f2`
       [ $? -ne 0 ] && testres=false
+      getwarn
     done
+    [ -z "$warn" ] && warn='<OK>'
     if $testres ; then
-      echo "<OK> $servername is online (ping test, connect time $t sec)"
+      echo "$warn $servername is online (ping test, connect time $t sec)"
     else
       echo "<***> Ping probe to $servername failed!"
     fi
@@ -54,8 +67,10 @@ do
     [ -z "$SSH" ] && echo "SSH client not found!" && continue
     t=`(time -p $SSH "-o ConnectTimeout=$TIMEOUT" $serverip echo -n >/dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
     [ $? -ne 0 ] && testres=false
+    getwarn
+    [ -z "$warn" ] && warn='<OK>'
     if $testres ; then
-      echo "<OK> $servername is online (SSH test, connect time $t sec)"
+      echo "$warn $servername is online (SSH test, connect time $t sec)"
     else
       echo "<***> SSH test connect to $servername failed!"
     fi
@@ -64,6 +79,8 @@ do
     if [ -n "$CURL" ]; then
       t=`(time -p $CURL -m $TIMEOUT -s "${serverip}:$serverport" > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
       testres=$?
+      getwarn
+      [ -z "$warn" ] && warn='<OK>'
       case $testres in
         7)
         echo "<***> Curl test connect to $servername failed!"
@@ -81,16 +98,19 @@ do
         echo "<**> Curl test: unsupported protocol"
         ;;
         0)
-        echo "<OK> $servername is online (Curl test, port $serverport, connect time $t sec)"
+        echo "$warn $servername is online (Curl test, port $serverport, connect time $t sec)"
         ;;
         *)
-        echo "<OK> Curl test returned code $res for $servername port $serverport"
+        echo "<OK> Curl test returned code $res for $servername port $serverport, connect time was $t sec"
         ;;
       esac
       continue
     fi
     if [ -n "$LYNX" ]; then
       t=`(time -p $LYNX -dump http://${serverip}:$serverport > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      [ $? -ne 0 ] && testres=false
+      getwarn
+      [ -z "$warn" ] && warn='<OK>'
       if $testres ; then
         echo "<OK> $servername is online (Lynx test, port ${serverport}, connect time $t sec)"
       else
@@ -100,6 +120,9 @@ do
     fi
     if [ -n "$LINKS" ]; then
       t=`(time -p $LINKS -dump http://${serverip}:$serverport > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      [ $? -ne 0 ] && testres=false
+      getwarn
+      [ -z "$warn" ] && warn='<OK>'
       if $testres ; then
         echo "<OK> $servername is online (Links test, port ${serverport}, connect time $t sec)"
       else
@@ -109,6 +132,9 @@ do
     fi
     if [ -n "$WGET" ]; then
       t=`(time -p $WGET -O - http://${serverip}:$serverport > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      [ $? -ne 0 ] && testres=false
+      getwarn
+      [ -z "$warn" ] && warn='<OK>'
       if $testres ; then
         echo "<OK> $servername is online (Wget test, port ${serverport}, connect time $t sec)"
       else
