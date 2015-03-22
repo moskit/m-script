@@ -362,7 +362,7 @@ case $flvar in
 esac
 export OPERATING_SYSTEM=$flvar
 
-# installing software via chroot has proven to be unreliable
+# installing software via chroot proved to be unreliable
 
 cp "$M_TEMP/network" "$HOOKS_DIR/"
 chmod 755 "$HOOKS_DIR/network"
@@ -375,14 +375,14 @@ if [ -z "$test" ]; then
     sleep 20
   else
     log "request returned status $reqexit"
-    proper_exit 1 337
+    proper_exit 1 378
   fi
   wait_ready $V 
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
       $ROUTE add -host $ip dev $idev
-      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 344
+      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 385
     else
       log "Instance started, but tap device doesn't exist"
       proper_exit 1 347
@@ -403,7 +403,7 @@ if [ -z "$test" ]; then
   fi
 else
   log "This was a test, not sending request, exiting"
-  proper_exit 0 365
+  proper_exit 0 406
 fi
 
 $SSHK -q -R "$ip" >/dev/null
@@ -462,5 +462,5 @@ if [ -n "$return" ]; then
   done
 fi
 
-proper_exit $exit_status 422
+proper_exit $exit_status 465
 

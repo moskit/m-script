@@ -121,6 +121,9 @@ map_disk0() {
   $KPARTX -a -p- $blockdev > /dev/null
   filesystem_dev="/dev/mapper/$filesystem_dev_base"
   if [ ! -b "$filesystem_dev" ]; then
+    `which dmsetup` mknodes
+  fi
+  if [ ! -b "$filesystem_dev" ]; then
     log_error "Can't find kpartx mapped partition: $filesystem_dev"
     exit 1
   fi
