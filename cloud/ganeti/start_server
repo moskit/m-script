@@ -280,7 +280,7 @@ log "SSH public key $PUBLIC_KEY is going to be injected"
 
 # Ganeti cluster must be running, and this script can run on master node only
 $GNTC master-ping
-[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && proper_exit 1 200
+[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && proper_exit 1 283
 # If it's alive, we can get some info from it
 OSPATH=`$GNTC info | grep 'OS search path'`
 OSPATH="${OSPATH##*: }"
@@ -292,7 +292,7 @@ done
 log "using OSPATH $OSPATH"
 # OS required for the new server
 OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
-[ -z "$OSNAME" ] && log "Unable to find OS in clusters.conf for cluster $cluster" && proper_exit 1 212
+[ -z "$OSNAME" ] && log "Unable to find OS in clusters.conf for cluster $cluster" && proper_exit 1 295
 
 if [ -d "$OSPATH/$OSNAME" ]; then
   cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/"* "$OSPATH/$OSNAME/"
