@@ -64,8 +64,7 @@ do
     fi
     unset testres
   elif [ "_$serverport" == "_22" ] ; then
-    [ -z "$SSH" ] && echo "SSH client not found!" && continue
-    t=`(time -p $SSH "-o ConnectTimeout=$TIMEOUT" $serverip echo -n >/dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+    t=`(time -p mssh $serverip echo -n >/dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
     [ $? -ne 0 ] && testres=false
     getwarn
     [ -z "$warn" ] && warn='<OK>'
