@@ -85,6 +85,7 @@ generate_name() {
   [ -z "$cluster" ] && log "Cluster is not defined, exiting" && return 1
   nam=$(cat "$M_ROOT/servers.list" | grep -vE "^#|^$|^[[:space:]]#" | grep \|${cluster}\| | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
+  nam=`sanitize_hostname $nam`
   am=0 ; lm=0
   num=$(cat "$M_ROOT/servers.list" | grep -vE "^#|^$|^[[:space:]]#" | cut -d'|' -f4 | grep ^$nam[0-9] | while read name ; do a=`expr "X$name" : "X$nam\([0-9]*\)"` ; l=${#a} ; [[ `expr $l \> ${lm}` -gt 0 ]] && lm=$l ; [[ `expr $a \> ${am}` -gt 0 ]] && am=$a ; echo "$am|$lm" ; done | tail -1)
   am=${num%|*} ; lm=${num#*|}
@@ -98,6 +99,13 @@ generate_name() {
   fi
   [ -n "$lm" ] || lm=$NAME_INDEX_LENGTH
   echo "$nam`until [[ ${#am} -eq $lm ]] ; do am="0$am" ; m0="0$m0" ; [[ ${#am} -gt $lm ]] && exit 1 ; echo $m0 ; done | tail -1`$am"
+}
+
+sanitize_hostname() {
+  [ -z "$1" ] && echo "ERROR: empty hostname has been passed to sanitizer" && return
+  # M-Script allows any symbols in cluster names, but only underscore and dots
+  # are converted to hyphen in the resulting hostnames, anything else is deleted
+  echo "$1" | sed 's|[^a-zA-Z0-9._-]||g;s|[._]|-|g;s|^-*||'
 }
 
 check_cluster_limit() {
