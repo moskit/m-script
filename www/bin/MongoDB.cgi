@@ -8,6 +8,7 @@ print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongo
 print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
 
 print_mongo_server() {
+  IFS2=$IFS ; IFS=$IFS1
   local clname="$1"
   local host=`echo "$2" | cut -d'|' -f1`
   local role=`echo "$2" | cut -d'|' -f4`
@@ -60,6 +61,7 @@ print_mongo_server() {
     
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
+  IFS=$IFS2
 }
 
 IFS1=$IFS
