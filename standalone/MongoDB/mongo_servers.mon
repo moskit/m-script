@@ -72,9 +72,9 @@ function find_rsmemberrole() {
   votes=`echo "$members" | grep "^${membernum}\/" | grep votes | cut -sd'|' -f2`
   tags=`echo "$members" | grep "^${membernum}\/" | grep tags | cut -sd'|' -f2 | tr '\n' ' '`
   if [ -n "$master" ] && [ "$master" == "$1" ]; then
-    rsmemberrole='|master=${priority}=${votes}=${tags}'
+    rsmemberrole="|master=${priority}=${votes}=${tags}"
   elif [ $arbiter -eq 1 ]; then
-    rsmemberrole='|arbiter=${priority}=${votes}=${tags}'
+    rsmemberrole="|arbiter=${priority}=${votes}=${tags}"
   else
     slavedelay=`echo "$members" | grep "^${membernum}\/" | grep slaveDelay | cut -sd'|' -f2`
     hidden=`echo "$members" | grep "^${membernum}\/" | grep hidden | cut -sd'|' -f2`
