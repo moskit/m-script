@@ -9,6 +9,7 @@ print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongo
 print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
 
 print_mongo_server() {
+  IFS2=$IFS ; IFS=$IFS1
   local clname="$1"
   local host=`echo "$2" | cut -d'|' -f1`
   local role=`echo "$2" | cut -d'|' -f4`
@@ -32,7 +33,7 @@ print_mongo_server() {
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
-    echo "<div class=\"servername clickable\" id=\"${nodeid}_name_ext\" onClick=\"showData('${nodeid}_name_ext','/MongoDB')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleind}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name_ext\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
+    echo "<div class=\"servername clickable\" id=\"${nodeid}_name_ext\" onClick=\"showData('${nodeid}_name_ext','/MongoDB')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name_ext\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     
     scanned=`echo "$report" | grep '^Records scanned'`
     scanned=`expr "$scanned" : ".*:\ *\(.*[^ ]\)\ *$"`
@@ -68,6 +69,7 @@ print_mongo_server() {
 
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
+  IFS=$IFS2
 }
 
 IFS1=$IFS
