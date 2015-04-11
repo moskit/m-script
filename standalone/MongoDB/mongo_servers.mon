@@ -57,7 +57,7 @@ function find_master() {
   im=`(IFS=$IFSORG ; $MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().primary" 2>>"$LOG" | grep -v arning | tail -1)`
   if [ -z "$im" ] ; then
     im=`(IFS=$IFSORG ; $MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().ismaster" 2>>"$LOG" |tail -1)`
-    [ "X$im" == "Xtrue" ] && im=$1
+    [ "_$im" == "_true" ] && im=$1
   fi
   [ -n "$im" ] && echo $im || (log "Unable to find master for replica set (asked ${1})" && exit 1)
 }
@@ -68,8 +68,19 @@ function find_rsmemberrole() {
   members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
   membernum=`echo "$members" | grep "$1" | cut -d'/' -f1`
   arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
-  [ $arbiter -eq 1 ] && rsmemberrole='|arbiter'
-  [ -n "$master" ] && [ "$master" == "$1" ] && rsmemberrole='|master'
+  priority=`echo "$members" | grep "^${membernum}\/" | grep priority | cut -sd'|' -f2`
+  votes=`echo "$members" | grep "^${membernum}\/" | grep votes | cut -sd'|' -f2`
+  tags=`echo "$members" | grep "^${membernum}\/" | grep tags | cut -sd'|' -f2 | tr '\n' ' '`
+  if [ -n "$master" ] && [ "$master" == "$1" ]; then
+    rsmemberrole='|master=${priority}=${votes}=${tags}'
+  elif [ $arbiter -eq 1 ]; then
+    rsmemberrole='|arbiter=${priority}=${votes}=${tags}'
+  else
+    slavedelay=`echo "$members" | grep "^${membernum}\/" | grep slaveDelay | cut -sd'|' -f2`
+    hidden=`echo "$members" | grep "^${membernum}\/" | grep hidden | cut -sd'|' -f2`
+    buildindexes=`echo "$members" | grep "^${membernum}\/" | grep buildIndexes | cut -sd'|' -f2`
+    rsmemberrole="|slave=${hidden}=${slavedelay}=${buildindexes}=${priority}=${votes}=${tags}"
+  fi
 }
 
 function ip_to_name() {
