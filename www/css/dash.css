@@ -608,19 +608,31 @@ div.right {
   margin-left: 2px;
 }
 
-.master {
+.masterM {
   color: red;
   float: right;
   margin-left: 10px;
 }
 
-.slave {
+.slaveS {
   color: blue;
   float: right;
   margin-left: 10px;
 }
 
-.arbiter {
+.slaveSH {
+  color: #8080FF;
+  float: right;
+  margin-left: 10px;
+}
+
+.slaveSD {
+  color: #B080FF;
+  float: right;
+  margin-left: 10px;
+}
+
+.arbiterA {
   color: gray;
   float: right;
   margin-left: 10px;
