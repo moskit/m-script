@@ -6,7 +6,7 @@ source "$PWD/../../lib/dash_functions.sh"
 source "$PWD/../../standalone/$scriptname/mongo_servers.conf"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-if [ "_DBENGINE" == "_WT" ]; then
+if [ "_$DBENGINE" == "_WT" ]; then
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Cache used / Configured  (MB)"
 else
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"

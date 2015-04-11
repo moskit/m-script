@@ -130,7 +130,7 @@ function parse_data() {
     lockTime=0
     lockRatio=0
   fi
-  if [ "_DBENGINE" == "_WT" ]; then
+  if [ "_$DBENGINE" == "_WT" ]; then
     cacheMaxSizeMB=`solve $cacheMaxSize / 1048576`
     inTheCacheMB=`solve $inTheCacheMB / 1048576`
     echo -e "\n Cache usage\n\nCache configured (MB):   $cacheMaxSizeMB\nCache used (MB):   $inTheCacheMB\nCache used (%):   `solve 1 "$inTheCache / $cacheMaxSize * 100"`"
