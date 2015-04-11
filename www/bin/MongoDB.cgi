@@ -3,9 +3,14 @@
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
+source "$PWD/../../standalone/$scriptname/mongo_servers.conf"
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
+if [ "_DBENGINE" == "_WT" ]; then
+  print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Cache used / Configured  (MB)"
+else
+  print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
+fi
 
 print_mongo_server() {
   IFS2=$IFS ; IFS=$IFS1
@@ -54,10 +59,15 @@ print_mongo_server() {
     
     locktime=`echo "$report" | grep '^Lock time ' | cut -d':' -f2 | sed 's| *||g'`
     echo "<div class=\"status clickable\" id=\"${nodeid}_locks\" onclick=\"showDetails('${nodeid}_locks','MongoDB/mongolocks')\">`echo "$locktime" 2>/dev/null | head -1` / `echo "$locktime" 2>/dev/null | tail -1`</div>" 2>/dev/null
-    
-    notinmemory=`echo "$report" | grep '^Records not found in memory' | cut -d':' -f2 | sed 's| *||g'`
-    pagefaults=`echo "$report" | grep '^Page fault exceptions' | cut -d':' -f2 | sed 's| *||g'`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_recstats\" onclick=\"showDetails('${nodeid}_recstats','MongoDB/mongorecstats')\">`echo "$notinmemory" | head -1` / `echo "$pagefaults" | tail -1`</div>"
+    if [ "_DBENGINE" == "_WT" ]; then
+      cacheused=`echo "$report" | grep '^Cache used \(MB' | cut -d':' -f2 | sed 's| *||g'`
+      cacheconf=`echo "$report" | grep '^Cache configured' | cut -d':' -f2 | sed 's| *||g'`
+      echo "<div class=\"status clickable\" id=\"${nodeid}_cachestats\" onclick=\"showDetails('${nodeid}_cachestats','MongoDB/mongocachestats')\">`echo "$cacheused" | head -1` / `echo "$cacheconf" | tail -1`</div>"
+    else
+      notinmemory=`echo "$report" | grep '^Records not found in memory' | cut -d':' -f2 | sed 's| *||g'`
+      pagefaults=`echo "$report" | grep '^Page fault exceptions' | cut -d':' -f2 | sed 's| *||g'`
+      echo "<div class=\"status clickable\" id=\"${nodeid}_recstats\" onclick=\"showDetails('${nodeid}_recstats','MongoDB/mongorecstats')\">`echo "$notinmemory" | head -1` / `echo "$pagefaults" | tail -1`</div>"
+    fi
     
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"

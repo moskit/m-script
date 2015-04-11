@@ -34,7 +34,16 @@ if (objStatus.globalLock) {
   print('lockClientsReaders=' + objStatus.globalLock.activeClients.readers);
   print('lockClientsWriters=' + objStatus.globalLock.activeClients.writers);
 }
-if (objStatus.recordStats) {
-  print('accessesNotInMemory=' + objStatus.recordStats.accessesNotInMemory);
-  print('pageFaultExceptionsThrown=' + objStatus.recordStats.pageFaultExceptionsThrown);
+if (objStatus.storageEngine.name = 'wiredTiger') {
+  print('storageEngine=wiredTiger');
+  if (objStatus.wiredTiger.cache) {
+    print('inTheCache=' + objStatus.wiredTiger.cache.bytes currently in the cache);
+    print('cacheMaxSize=' + objStatus.wiredTiger.cache.maximum bytes configured);
+  }
+} else {
+  print('storageEngine=MMAPv1');
+  if (objStatus.recordStats) {
+    print('accessesNotInMemory=' + objStatus.recordStats.accessesNotInMemory);
+    print('pageFaultExceptionsThrown=' + objStatus.recordStats.pageFaultExceptionsThrown);
+  }
 }

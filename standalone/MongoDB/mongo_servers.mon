@@ -130,15 +130,17 @@ function parse_data() {
     lockTime=0
     lockRatio=0
   fi
-  
-  [ -z "$accessesNotInMemory_prev" ] && accessesNotInMemory_prev=$accessesNotInMemory
-  [ -n "$accessesNotInMemory" ] && recstatsNotInMemory=`solve 1 "($accessesNotInMemory - $accessesNotInMemory_prev) / $timediff"`
-  
-  [ -z "$pageFaultExceptionsThrown_prev" ] && pageFaultExceptionsThrown_prev=$pageFaultExceptionsThrown
-  [ -n "$pageFaultExceptionsThrown" ] && recstatsPageFaults=`solve 1 "($pageFaultExceptionsThrown - $pageFaultExceptionsThrown_prev) / $timediff"`
-  
-  echo -e "\n Access Stats\n\nRecords not found in memory:   $recstatsNotInMemory\nPage fault exceptions:   $recstatsPageFaults\n"
-  
+  if [ "_DBENGINE" == "_WT" ]; then
+    cacheMaxSizeMB=`solve $cacheMaxSize / 1048576`
+    inTheCacheMB=`solve $inTheCacheMB / 1048576`
+    echo -e "\n Cache usage\n\nCache configured (MB):   $cacheMaxSizeMB\nCache used (MB):   $inTheCacheMB\nCache used (%):   `solve 1 "$inTheCache / $cacheMaxSize * 100"`"
+  else
+    [ -z "$accessesNotInMemory_prev" ] && accessesNotInMemory_prev=$accessesNotInMemory
+    [ -n "$accessesNotInMemory" ] && recstatsNotInMemory=`solve 1 "($accessesNotInMemory - $accessesNotInMemory_prev) / $timediff"`
+    [ -z "$pageFaultExceptionsThrown_prev" ] && pageFaultExceptionsThrown_prev=$pageFaultExceptionsThrown
+    [ -n "$pageFaultExceptionsThrown" ] && recstatsPageFaults=`solve 1 "($pageFaultExceptionsThrown - $pageFaultExceptionsThrown_prev) / $timediff"`
+    echo -e "\n Access Stats\n\nRecords not found in memory:   $recstatsNotInMemory\nPage fault exceptions:   $recstatsPageFaults\n"
+  fi
   echo -e "\n Operations / second\n\nOperation Type         Number"
   
   # Total
