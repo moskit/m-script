@@ -18,7 +18,7 @@ MAILX=`which mail 2>/dev/null`
 M_TEMP="$M_TEMP/elasticsearch"
 LOG="$M_ROOT/logs/sa.log"
 source "$M_ROOT/lib/functions.sh"
-source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh" 2>/dev/null
 
 timeindexnow=`date +"%s"`
 debug=false
@@ -64,17 +64,24 @@ if [ -n "$ES_SERVERS" ] ; then
     for server in $ES_SERVERS ; do
       host=`echo "$server" | cut -d':' -f1`
       port=`echo "$server" | cut -sd':' -f2`
+      [ -z "$port" ] && port=9200
       clustername=`cat "$M_ROOT/servers.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
-      [ -z "$clustername" ] && log "Cluster name for server $server not found, check your settings!" && continue
-      [ "_$clustername" == "_$clusternameprev" ] && continue
-      
-      clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
-      
-      clusternameprev=$clustername
-      clusternames="$clusternames $clustername"
-      collect_hosts $clusterips
-      clustervar=`echo "$clustername" | tr -d '\ -'`
-      eval "${clustervar}ips=\"$configips\""
+      if [ -z "$clustername" ]; then
+        # no cloud, so it's a single host
+        configips="${server}:${port}"
+        clusternames="${server}"
+        clustervar="${server}"
+      else
+        [ "_$clustername" == "_$clusternameprev" ] && continue
+        
+        clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
+        
+        clusternameprev=$clustername
+        clusternames="$clusternames $clustername"
+        collect_hosts $clusterips
+        clustervar=`echo "$clustername" | tr -d '\ -'`
+        eval "${clustervar}ips=\"$configips\""
+      fi
     done
   else
   # ES_SERVERS contains clusters

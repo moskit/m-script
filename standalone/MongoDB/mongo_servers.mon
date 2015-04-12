@@ -411,7 +411,6 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
-    $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_shards.list"
       rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
@@ -419,6 +418,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
       mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
       [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
       echo "$serverstatus" > "$rpath/data/${cs}.dat"
+      $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null)
     fi
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/${cs}.report"
