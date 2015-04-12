@@ -35,6 +35,12 @@ if [ -n "$AUTH_LOGIN" ]; then
     echo "Password is not set for user $AUTH_LOGIN"
   fi
 fi
+if [ "_$DBENGINE" == "_WT" ]; then
+  WT=true
+else
+  WT=false
+fi
+
 source "$M_ROOT/conf/mon.conf"
 
 timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
@@ -130,9 +136,10 @@ function parse_data() {
     lockTime=0
     lockRatio=0
   fi
-  if [ "_$DBENGINE" == "_WT" ]; then
-    cacheMaxSizeMB=`solve $cacheMaxSize / 1048576`
-    inTheCacheMB=`solve $inTheCacheMB / 1048576`
+  if $WT ; then
+    
+    cacheMaxSizeMB=`solve 1 "$cacheMaxSize / 1048576"`
+    inTheCacheMB=`solve 1 "$inTheCache / 1048576"`
     echo -e "\n Cache usage\n\nCache configured (MB):   $cacheMaxSizeMB\nCache used (MB):   $inTheCacheMB\nCache used (%):   `solve 1 "$inTheCache / $cacheMaxSize * 100"`"
   else
     [ -z "$accessesNotInMemory_prev" ] && accessesNotInMemory_prev=$accessesNotInMemory
@@ -247,7 +254,7 @@ else
     echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
   done
   
-  # Getting hosts list for every found replica set
+  # Getting hosts list for every replica set found
   for rs in `cat "$M_TEMP/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
     for rshost in `cat "$M_TEMP/mongo_servers.list" | grep "|$rs|" | cut -d'|' -f1` ; do
       replicahosts=`$MONGO $AUTH "$rshost/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG"`
@@ -384,7 +391,7 @@ fi
 if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
-    serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.js" 2>/dev/null`
+    serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.mongos.js" 2>/dev/null`
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_mongos_servers.list"
       rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
@@ -404,6 +411,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
+    $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_shards.list"
       rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
