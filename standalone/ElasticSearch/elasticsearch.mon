@@ -18,6 +18,7 @@ MAILX=`which mail 2>/dev/null`
 M_TEMP="$M_TEMP/elasticsearch"
 LOG="$M_ROOT/logs/sa.log"
 source "$M_ROOT/lib/functions.sh"
+[ -z "$CLOUD" ] && CLOUD=localhost
 source "$M_ROOT/lib/cloud_functions.sh" 2>/dev/null
 
 timeindexnow=`date +"%s"`
@@ -64,7 +65,7 @@ if [ -n "$ES_SERVERS" ] ; then
     for server in $ES_SERVERS ; do
       host=`echo "$server" | cut -d':' -f1`
       port=`echo "$server" | cut -sd':' -f2`
-      [ -z "$port" ] && port=9200
+      [ -z "$port" ] && port=$defaultport
       clustername=`cat "$M_ROOT/servers.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
       if [ -z "$clustername" ]; then
         # no cloud, so it's a single host

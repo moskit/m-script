@@ -209,12 +209,20 @@ find_name() {
 
 name_to_ip() {
   IP=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1 | tail -1`
+  if [ -z "$IP" ]; then
+    IP=`grep -E "\ $name\ |\ $name$" /etc/hosts | tail -1`
+    IP=`expr "$IP" : ".*\([0-9.]\)\ "`
+  fi
   [ -z "$IP" ] && return 1
   echo "$IP"
 }
 
 ip_to_name() {
   name=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "^${1}|" | cut -d'|' -f2 | tail -1`
+  if [ -z "$name" ]; then
+    name=`grep -E "^$IP\ |\ $IP\ " /etc/hosts | tail -1`
+    name=`expr "$name" : ".*\s\(.*\)\s*$"`
+  fi
   [ -z "$name" ] && return 1
   echo "$name"
 }
