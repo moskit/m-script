@@ -69,7 +69,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 [ -n "$update_servers_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 M_TEMP="$M_TEMP/cloud/$CLOUD"
-install -d "$M_TEMP"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 

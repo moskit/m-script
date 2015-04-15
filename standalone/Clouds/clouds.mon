@@ -92,6 +92,7 @@ declare -a catline
 for cloud in ${clouds[*]} ; do
   log "cloud $cloud"
   export CLOUD=$cloud
+  [ -d "$M_TEMP/$CLOUD" ] || install -d "$M_TEMP/$CLOUD"
   catline+=("$M_ROOT/cloud/servers.list.${cloud}")
   source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   source "$M_ROOT/lib/cloud_functions.sh"

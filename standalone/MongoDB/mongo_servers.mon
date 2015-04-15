@@ -57,8 +57,11 @@ ip_to_name() {
     name=`grep -E "^$IP\ |\ $IP\ " /etc/hosts | tail -1`
     name=`expr "$name" : ".*\s\(.*\)\s*$"`
   fi
-  [ -z "$name" ] && return 1
-  echo "$name"
+  if [ -z "$name" ]; then
+    echo "$1"
+  else
+    echo "$name"
+  fi
 }
 
 function print_servers() {
@@ -100,7 +103,7 @@ function find_rsmemberrole() {
 function collect_hosts() {
   for name in $@ ; do
     port=`echo "$name" | cut -sd':' -f2`
-    ip_to_name $name
+    rname=`ip_to_name ${name%:*}`
     [ -n "$port" ] || port=$defaultport
     configips="$configips ${rname}:$port"
   done
@@ -299,7 +302,7 @@ else
     replicalist=()
     for replicahost in $replicahosts ; do
       [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
-      ip_to_name "$replicahost"
+      rname=`ip_to_name "$replicahost"`
       [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
       find_rsmemberrole "$replicahost"
       replicalist+=("${rname}:${replicahost##*:}||${rs}${rsmemberrole}")
@@ -367,7 +370,7 @@ if [ -n "$shardhosts" ] ; then
     fi
     shardhost=$shardhost1
     shardport=$shardport1
-    ip_to_name ${shardhost%:*}
+    rname=`ip_to_name ${shardhost%:*}`
     shardhost="$rname"
     shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
   done
@@ -385,7 +388,7 @@ if [ -n "$shardhosts" ] ; then
 
     for replicahost in $replicahosts ; do
       [ `grep -c "^$replicahost|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
-      ip_to_name "$replicahost"
+      rname=`ip_to_name "$replicahost"`
       [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
       find_rsmemberrole "$replicahost"
       shardlist+=("$replicahost|${rs}${rsmemberrole}")
