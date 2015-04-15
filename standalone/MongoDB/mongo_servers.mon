@@ -136,8 +136,9 @@ function parse_data() {
     lockTime=0
     lockRatio=0
   fi
-  if $WT ; then
-    
+  if $WT && [ -n "$wtstatus" ]; then
+    cacheMaxSize=`echo "$wtstatus" | grep '"maximum bytes configured"' | cut -d'|' -f2`
+    inTheCache=`echo "$wtstatus" | grep '"bytes currently in the cache"' | cut -d'|' -f2`
     cacheMaxSizeMB=`solve 1 "$cacheMaxSize / 1048576"`
     inTheCacheMB=`solve 1 "$inTheCache / 1048576"`
     echo -e "\n Cache usage\n\nCache configured (MB):   $cacheMaxSizeMB\nCache used (MB):   $inTheCacheMB\nCache used (%):   `solve 1 "$inTheCache / $cacheMaxSize * 100"`"
@@ -411,6 +412,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
     serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
+    
     if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
       sed -i "/$cs/d" "$rpath/mongo_shards.list"
       rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
@@ -418,7 +420,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
       mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
       [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
       echo "$serverstatus" > "$rpath/data/${cs}.dat"
-      $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null)
+      $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
     fi
     statusreport=`parse_data "$cs"`
     echo "$statusreport" > "$rpath/${cs}.report"

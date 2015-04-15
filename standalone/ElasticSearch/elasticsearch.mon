@@ -74,15 +74,13 @@ if [ -n "$ES_SERVERS" ] ; then
         clustervar="${server}"
       else
         [ "_$clustername" == "_$clusternameprev" ] && continue
-        
         clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
-        
         clusternameprev=$clustername
         clusternames="$clusternames $clustername"
         collect_hosts $clusterips
         clustervar=`echo "$clustername" | tr -d '\ -'`
-        eval "${clustervar}ips=\"$configips\""
       fi
+      eval "${clustervar}ips=\"$configips\""
     done
   else
   # ES_SERVERS contains clusters
