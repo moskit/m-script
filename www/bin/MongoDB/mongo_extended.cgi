@@ -6,7 +6,11 @@ M_ROOT="$PWD/../../.."
 source "$M_ROOT/lib/dash_functions.sh"
 print_cgi_headers 
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
+if [ "_$DBENGINE" == "_WT" ]; then
+  print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
+else
+  print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
+fi
 
 print_mongo_server() {
   IFS2=$IFS ; IFS=$IFS1
