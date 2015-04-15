@@ -4,9 +4,14 @@ scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
 source "$PWD/../../standalone/$scriptname/mongo_servers.conf"
+if [ "_$DBENGINE" == "_WT" ]; then
+  WT=true
+else
+  WT=false
+fi
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-if [ "_$DBENGINE" == "_WT" ]; then
+if $WT ; then
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Cache used / configured  (MB)"
 else
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
@@ -59,7 +64,7 @@ print_mongo_server() {
     
     locktime=`echo "$report" | grep '^Lock time ' | cut -d':' -f2 | sed 's| *||g'`
     echo "<div class=\"status clickable\" id=\"${nodeid}_locks\" onclick=\"showDetails('${nodeid}_locks','MongoDB/mongolocks')\">`echo "$locktime" 2>/dev/null | head -1` / `echo "$locktime" 2>/dev/null | tail -1`</div>" 2>/dev/null
-    if [ "_$DBENGINE" == "_WT" ]; then
+    if $WT ; then
       cacheused=`echo "$report" | grep '^Cache used (MB' | cut -d':' -f2 | sed 's| *||g'`
       cacheconf=`echo "$report" | grep '^Cache configured' | cut -d':' -f2 | sed 's| *||g'`
       echo "<div class=\"status clickable\" id=\"${nodeid}_cachestats\" onclick=\"showDetails('${nodeid}_cachestats','MongoDB/mongocachestats')\">`echo "$cacheused" | head -1` / `echo "$cacheconf" | tail -1`</div>"

@@ -15,6 +15,9 @@ MONGO=`which mongo 2>/dev/null`
 source "$rpath/mongo_servers.conf"
 [ -e "$rpath/${rcommand%.mon}.conf" ] && source "$rpath/${rcommand%.mon}.conf"
 [ -z "$INTERVAL" ] && INTERVAL=600
+
+check_interval $INTERVAL
+
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
     AUTH="-u $AUTH_LOGIN -p $AUTH_PASSWD"
@@ -26,9 +29,29 @@ fi
 M_TEMP="$M_TEMP/MongoDB"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-check_interval $INTERVAL
+if [ "_$DBENGINE" == "_WT" ]; then
+  WT=true
+else
+  WT=false
+fi
 
 # mongo localhost:27017/admin --quiet --eval "db.currentOp().inprog.forEach(function(d){ if(d.waitingForLock) print(d.op)})" | sort | uniq -c
+
+get_serverstatus() {
+  mv "$rpath/data/${cs}.ext.dat" "$rpath/data/${cs}.ext.dat.prev" 2>/dev/null
+  [ -e "$rpath/data/${cs}.ext.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
+  serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
+  
+  echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
+  if $WT ; then
+    mv "$rpath/data/${cs}.ext.wt.dat" "$rpath/data/${cs}.ext.wt.dat.prev" 2>/dev/null
+    wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
+    echo "$wtstatus" > "$rpath/data/${cs}.ext.wt.dat"
+  fi
+  statusreport=`parse_data "$cs"`
+  echo "$statusreport" > "$rpath/${cs}.ext.report"
+  reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.ext.report"`
+}
 
 parse_data() {
   timeindexnow=`date +"%s"`
@@ -118,11 +141,23 @@ parse_data() {
   [ -z "$replOplogInsertBytes_prev" ] && replOplogInsertBytes_prev=$replOplogInsertBytes
   [ -n "$replOplogInsertBytes" ] && replOplogInsertBytes=`solve 1 "($replOplogInsertBytes - $replOplogInsertBytes_prev) / $timediff"` && echo "Oplog inserts, bytes per second:   $replOplogInsertBytes"
   
-  [ -z "$pagesInMemory_prev" ] && pagesInMemory_prev=$pagesInMemory
-  if [ -n "$pagesInMemory" ] ; then
-    mempagesize=`getconf PAGESIZE || echo 4096`
-    dataInMemory=`expr $mempagesize \* $pagesInMemory / 1048576`
-    echo -e "\n In-memory data:\n\nData size, MB:   $dataInMemory\nOver seconds:   $overSeconds\n"
+  if $WT ; then
+    wtastatusprev=`cat "$rpath/data/${cs}.ext.wt.dat.prev"`
+    blockRead=`echo "$wtstatus" | grep '"block-manager"/"bytes read"' | cut -d'|' -f2`
+    blockWrite=`echo "$wtstatus" | grep '"block-manager"/"bytes written"' | cut -d'|' -f2`
+    blockReadPrev=`echo "$wtstatusprev" | grep '"block-manager"/"bytes read"' | cut -d'|' -f2`
+    blockWritePrev=`echo "$wtstatusprev" | grep '"block-manager"/"bytes written"' | cut -d'|' -f2`
+    blockReadMBs=`solve 1 "($blockRead - $blockReadPrev) / 1048576 / $timediff"`
+    blockWriteMBs=`solve 1 "($blockWrite - $blockWritePrev) / 1048576 / $timediff"`
+    filesOpen=`echo "$wtstatus" | grep '"files currently open"' | cut -d'|' -f2`
+    echo -e "\n WiredTiger metrics:\n\nData read (MB/sec):   $blockReadMBs\nData written (MB/sec):   $blockWriteMBs\nFiles open:   $filesOpen\n"
+  else
+    [ -z "$pagesInMemory_prev" ] && pagesInMemory_prev=$pagesInMemory
+    if [ -n "$pagesInMemory" ] ; then
+      mempagesize=`getconf PAGESIZE || echo 4096`
+      dataInMemory=`expr $mempagesize \* $pagesInMemory / 1048576`
+      echo -e "\n In-memory data:\n\nData size, MB:   $dataInMemory\nOver seconds:   $overSeconds\n"
+    fi
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
@@ -136,13 +171,7 @@ parse_data() {
 if [ -e "$rpath/mongo_shards.list" ] ; then
   for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
-    mv "$rpath/data/${cs}.ext.dat" "$rpath/data/${cs}.ext.dat.prev" 2>/dev/null
-    [ -e "$rpath/data/${cs}.ext.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
-    serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
-    echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
-    statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/${cs}.ext.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.ext.report"`
+    get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name_ext.html"
   done &
 fi
@@ -150,13 +179,7 @@ fi
 if [ -e "$rpath/mongo_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"
-    mv "$rpath/data/${cs}.ext.dat" "$rpath/data/${cs}.ext.dat.prev" 2>/dev/null
-    [ -e "$rpath/data/${cs}.ext.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
-    serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
-    echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
-    statusreport=`parse_data "$cs"`
-    echo "$statusreport" > "$rpath/${cs}.ext.report"
-    reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.ext.report"`
+    get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name_ext.html"
   done &
 fi

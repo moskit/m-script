@@ -4,12 +4,18 @@ scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 M_ROOT="$PWD/../../.."
 source "$M_ROOT/lib/dash_functions.sh"
+source "$PWD/../../standalone/$scriptname/mongo_servers.conf"
+if [ "_$DBENGINE" == "_WT" ]; then
+  WT=true
+else
+  WT=false
+fi
 print_cgi_headers 
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-if [ "_$DBENGINE" == "_WT" ]; then
-  print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
+if $WT ; then
+  print_page_title "host:port" "Records scanned (N/sec)" "Disk reads / writes (MB/sec)" "Files open" "Open cursors" "Fastmod / Idhack / Scan-and-order (N/sec)" "Replication ops (N/sec)"
 else
-  print_page_title "host:port" "Records scanned / (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access, (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order, (N/sec)" "Replication ops, (N/sec)"
+  print_page_title "host:port" "Records scanned (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order (N/sec)" "Replication ops (N/sec)"
 fi
 
 print_mongo_server() {
@@ -43,17 +49,27 @@ print_mongo_server() {
     scanned=`expr "$scanned" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status clickable\" id=\"${nodeid}_scanned\" onclick=\"showDetails('${nodeid}_scanned','MongoDB/mongo_records_scanned_graph')\">${scanned}</div>"
     
-    inmemdd=`echo "$report" | grep '^Data size'`
-    inmemdd=`expr "$inmemdd" : ".*:\ *\(.*[^ ]\)\ *$"`
-    inmemsec=`echo "$report" | grep '^Over seconds'`
-    inmemsec=`expr "$inmemsec" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_inmem\" onclick=\"showDetails('${nodeid}_inmem','MongoDB/mongo_data_inram_graph')\">${inmemdd} / ${inmemsec}</div>"
-    
-    indexhits=`echo "$report" | grep '^Index hits'`
-    indexhits=`expr "$indexhits" : ".*:\ *\(.*[^ ]\)\ *$"`
-    indexacc=`echo "$report" | grep '^Index accesses'`
-    indexacc=`expr "$indexacc" : ".*:\ *\(.*[^ ]\)\ *$"`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_index\" onclick=\"showDetails('${nodeid}_index','MongoDB/mongo_index_hits_graph')\">${indexhits} / ${indexacc}</div>"
+    if $WT ; then
+      blockrd=`echo "$report" | grep 'Data read (MB/sec)'`
+      blockrd=`expr "$blockrd" : ".*:\ *\(.*[^ ]\)\ *$"`
+      blockwr=`echo "$report" | grep 'Data written (MB/sec)'`
+      blockwr=`expr "$blockwr" : ".*:\ *\(.*[^ ]\)\ *$"`
+      openfiles=`echo "$report" | grep 'Files open'`
+      openfiles=`expr "$openfiles" : ".*:\ *\(.*[^ ]\)\ *$"`
+      echo -e "<div class=\"status clickable\" id=\"${nodeid}_blockrdwr\" onclick=\"showDetails('${nodeid}_blockrdwr','MongoDB/mongo_wt_block_readwrite_graph')\">${blockrd} / ${blockwr}</div>\n<div class=\"status\" id=\"${nodeid}_openfiles\"\">${openfiles}</div>"
+    else
+      inmemdd=`echo "$report" | grep '^Data size'`
+      inmemdd=`expr "$inmemdd" : ".*:\ *\(.*[^ ]\)\ *$"`
+      inmemsec=`echo "$report" | grep '^Over seconds'`
+      inmemsec=`expr "$inmemsec" : ".*:\ *\(.*[^ ]\)\ *$"`
+      echo "<div class=\"status clickable\" id=\"${nodeid}_inmem\" onclick=\"showDetails('${nodeid}_inmem','MongoDB/mongo_data_inram_graph')\">${inmemdd} / ${inmemsec}</div>"
+      
+      indexhits=`echo "$report" | grep '^Index hits'`
+      indexhits=`expr "$indexhits" : ".*:\ *\(.*[^ ]\)\ *$"`
+      indexacc=`echo "$report" | grep '^Index accesses'`
+      indexacc=`expr "$indexacc" : ".*:\ *\(.*[^ ]\)\ *$"`
+      echo "<div class=\"status clickable\" id=\"${nodeid}_index\" onclick=\"showDetails('${nodeid}_index','MongoDB/mongo_index_hits_graph')\">${indexhits} / ${indexacc}</div>"
+    fi
     
     cursors=`echo "$report" | grep '^Open cursors'`
     cursors=`expr "$cursors" : ".*:\ *\(.*[^ ]\)\ *$"`

@@ -89,13 +89,6 @@ function find_rsmemberrole() {
   fi
 }
 
-function ip_to_name() {
-  rname1=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $2}'`
-  [ -n "$rname1" ] && rname2=`grep "^${1%:*}[[:space:]]" /etc/hosts | awk '{print $3}'` || rname=${1%:*}
-  [ -n "$rname2" ] && [ ${#rname2} -lt ${#rname1} ] && rname=$rname2 || rname=$rname1
-  [ -n "$rname" ] || rname=${1%:*}
-}
-
 function collect_hosts() {
   for name in $@ ; do
     port=`echo "$name" | cut -sd':' -f2`
