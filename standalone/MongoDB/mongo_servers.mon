@@ -51,7 +51,15 @@ touch "$rpath/mongo_mongos_servers.list" "$rpath/mongo_config_servers.list" "$rp
 M_TEMP="$M_TEMP/MongoDB"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-
+ip_to_name() {
+  name=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "^${1}|" | cut -d'|' -f2 | tail -1`
+  if [ -z "$name" ]; then
+    name=`grep -E "^$IP\ |\ $IP\ " /etc/hosts | tail -1`
+    name=`expr "$name" : ".*\s\(.*\)\s*$"`
+  fi
+  [ -z "$name" ] && return 1
+  echo "$name"
+}
 
 function print_servers() {
   for host in $@ ; do

@@ -4,7 +4,7 @@ scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 M_ROOT="$PWD/../../.."
 source "$M_ROOT/lib/dash_functions.sh"
-source "$PWD/../../standalone/$scriptname/mongo_servers.conf"
+source "$M_ROOT/standalone/MongoDB/mongo_servers.conf"
 if [ "_$DBENGINE" == "_WT" ]; then
   WT=true
 else
