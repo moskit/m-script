@@ -166,6 +166,10 @@ print_dashline() {
 }
 
 print_dashlines() {
+  # if source is a folder:
+  # print_dashlines "onclick" folder /path/to/folder
+  # if source is a database:
+  # print_dashlines "onclick" database "/path/to/db/file" "table name" "server field name" "metric1|L1|L2|L3,metric2|L1|L2|L3,..."
   dfpdsonclick=$1
   dfpdssource=$2
   shift 2
@@ -187,7 +191,10 @@ IFS=$IFS1
       dfpdsdbpath=$1
       shift
       dfpdsdbtable=$1
-      
+      shift
+      dfpdsservernamefield=$1
+      shift
+      dfpdsmetrics=$1
       
       ;;
     esac

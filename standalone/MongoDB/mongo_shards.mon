@@ -54,8 +54,6 @@ confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/n
 
 sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.collections.find( {}, { _id : 1 } ).forEach(printjson)" 2>>$LOG | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"'`
 
-rm -f "$rpath/sharding.report"
-
 for coll in $sharded ; do
 
   database=${coll%%.*}
@@ -71,7 +69,7 @@ for coll in $sharded ; do
     shdatasize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.dataSize()" 2>>$LOG`
     shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.totalIndexSize()" 2>>$LOG`
     collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
-    
+
     events=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"time\" : { \\$gt : $lastping }, \"server\" : \"$shhost\", \"ns\" : \"$coll\"},{\"_id\":0,\"what\":1,\"details.note\":1}).forEach(function(c) { print(c.what + '|' + c.details.note) })"`
     
     if [ "_$SQLITE3" == "_1" ] ; then
@@ -79,6 +77,7 @@ for coll in $sharded ; do
         ev=`echo "$event" | cut -sd' ' -f2 | cut -sd'|' -f1`
         status=`echo "$event" | cut -sd'|' -f2`
         number=`echo "$event" | cut -sd' ' -f1`
+        echo "$coll   $shhost   $ev   $status   $number"
         dbquery "$rpath/shards.sql3" "INSERT into changelog (timeindex, day, hostport, database, collection, event, status, number) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$ev', '$status', '$number')"
       done    
       dbquery "$rpath/shards.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$shchunks', '$shdatasize', '$shindexsize')"
@@ -86,10 +85,9 @@ for coll in $sharded ; do
   done
   echo -e ${collshardinfo[*]} | tr ' ' '\n' > "$rpath/data/shards.$coll"
   
-done &
+done
 
 unset masters
 
-# we don't need a report from this monitor
-exit 10
+exit 0
 
