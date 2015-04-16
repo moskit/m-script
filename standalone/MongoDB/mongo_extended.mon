@@ -142,7 +142,7 @@ parse_data() {
   [ -n "$replOplogInsertBytes" ] && replOplogInsertBytes=`solve 1 "($replOplogInsertBytes - $replOplogInsertBytes_prev) / $timediff"` && echo "Oplog inserts, bytes per second:   $replOplogInsertBytes"
   
   if $WT ; then
-    wtastatusprev=`cat "$rpath/data/${cs}.ext.wt.dat.prev"`
+    wtstatusprev=`cat "$rpath/data/${1}.ext.wt.dat.prev"`
     blockRead=`echo "$wtstatus" | grep '"block-manager"/"bytes read"' | cut -d'|' -f2`
     blockWrite=`echo "$wtstatus" | grep '"block-manager"/"bytes written"' | cut -d'|' -f2`
     blockReadPrev=`echo "$wtstatusprev" | grep '"block-manager"/"bytes read"' | cut -d'|' -f2`

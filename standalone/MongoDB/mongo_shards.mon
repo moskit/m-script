@@ -43,7 +43,7 @@ timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
 lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
 
 M_TEMP="$M_TEMP/MongoDB"
-install -d "$M_TEMP"
+[ -d "$M_TEMP/MongoDB" ] || install -d "$M_TEMP/MongoDB"
 
 a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && log "No configuration servers found" && exit 1
@@ -66,7 +66,7 @@ for coll in $sharded ; do
   for shard in $shards ; do
     shname=`echo $shard | cut -d'|' -f1`
     shchunks=`echo $shard | cut -d'|' -f2`
-    shhost=`grep \|$shname\| "$rpath"/mongo_shards.list 2>/dev/null | grep \|master$ | cut -d'|' -f1`
+    shhost=`grep \|$shname\| "$rpath"/mongo_shards.list 2>/dev/null | grep \|master= | cut -d'|' -f1`
     [ -z "$shhost" ] && continue
     shdatasize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.dataSize()" 2>>$LOG`
     shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.totalIndexSize()" 2>>$LOG`
@@ -79,7 +79,7 @@ for coll in $sharded ; do
         ev=`echo "$event" | cut -sd' ' -f2 | cut -sd'|' -f1`
         status=`echo "$event" | cut -sd'|' -f2`
         number=`echo "$event" | cut -sd' ' -f1`
-        dbquery "$rpath/shards.sql3" "INSERT into events (timeindex, day, hostport, database, collection, event, status, number) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$ev', '$status', '$number')"
+        dbquery "$rpath/shards.sql3" "INSERT into changelog (timeindex, day, hostport, database, collection, event, status, number) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$ev', '$status', '$number')"
       done    
       dbquery "$rpath/shards.sql3" "INSERT into shards (timeindex, day, hostport, database, collection, chunks, datasize, indexsize) values (${timeindexnow}, '`date +"%Y%m%d"`', '$shhost', '$database', '$collection', '$shchunks', '$shdatasize', '$shindexsize')"
     fi
