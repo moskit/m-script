@@ -77,5 +77,8 @@ for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type 
 done
 echo "<br/>"
 print_timeline "Sharding Events"
-
+open_cluster "localhost"
+  close_cluster_line
+  print_dashlines "" folder "mongo_shards"
+close_cluster
 

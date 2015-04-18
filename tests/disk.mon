@@ -24,15 +24,16 @@ source "$M_ROOT/lib/functions.sh"
 
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
 
-if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
-  alltables=`dbquery "$rpath/../sysdata" ".tables"`
+if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
+  alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
 
 echo
 echo "Disks usage:"
 echo "------------"
 echo
-df -m | grep -v ^shm | grep -v ^tmpfs | grep -v ^udev | grep -v ^none | grep -v "^Filesystem" > "$M_TEMP/disk.tmp"
+df -m | grep -vE "^shm|^tmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp"
+df -i | grep -vE "^shm|^tmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp.i"
 printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 while read LINE
 do
@@ -42,7 +43,7 @@ do
     LONGLINE=""
   fi
   # Sometimes df breaks a line, if it is much longer than 80 symbols
-  if [ x$(echo "$LINE" | awk '{ print $6}') == "x" ] && [ -z "$LONGLINE" ]
+  if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]
   then
     LONGLINE="$LINE"
     continue
@@ -76,12 +77,14 @@ do
   fi
   printf "$used%%\n"
   
-  if [ "X$dbquery" == "X1" ] && [ "X$1" == "XSQL" ]; then
+  if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
     diskname=${disk##*/}
-    tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "X$diskname" ] && echo "yes" ; done`
-    [ -z "$tablefound" ] && log "creating table $diskname" && dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
-    unset tablefound
-    [[ `dbquery "$rpath/../sysdata" "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && dbquery "$rpath/../sysdata" "insert into '$diskname' (timeindex) values ('$timeindexnow')"
+    tablefound=false
+    echo "$alltables" | grep -q ^$diskname$ && tablefound=true
+    if ! $tablefound ; then
+      log "creating table $diskname"
+      dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+    fi
     dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used' where timeindex='$timeindexnow'"
   fi
 ## Discovering what this disk really is
@@ -98,6 +101,38 @@ do
     for sldisk in $slaves ; do echo "/dev/$sldisk" >> "$M_TEMP/disk.tmp.ext" ; done
   fi
 done < "$M_TEMP/disk.tmp"
+
+# inodes usage
+df -i | grep -vE "^shm|^tmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp.i"
+
+while read LINE
+do
+  if [ -n "$LONGLINE" ]
+  then
+    LINE="$LONGLINE $LINE"
+    LONGLINE=""
+  fi
+  # Sometimes df breaks a line, if it is much longer than 80 symbols
+  if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]
+  then
+    LONGLINE="$LINE"
+    continue
+  fi
+  disk=$(echo "$LINE" | awk '{ print $1}')
+  mpoint=$(echo "$LINE" | awk '{ print $6}')
+  used=$(echo "$LINE" | awk '{ print $5}' | sed 's@\%@@')
+  unset warnind
+  x1="$(echo "$used >= $DISK_WARN_1" | bc)"
+  x2="$(echo "$used >= $DISK_WARN_2" | bc)"
+  x3="$(echo "$used >= $DISK_WARN_3" | bc)"
+  [ "$x1" == "1" ] && warnind=' <*> '
+  [ "$x2" == "1" ] && warnind='<**> '
+  [ "$x3" == "1" ] && warnind='<***>'
+  echo "$used" >> "$M_TEMP/diskusage.i"
+  [ -n "$warnind" ] && echo "$warnind disk $disk mountpoint $mpoint inodes usage is $used"
+
+done < "$M_TEMP/disk.tmp.i"
+
 swaps=`cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }'`
 echo $swaps >> $M_TEMP/disk.tmp.ext
 for sw in `echo $swaps` ; do
@@ -105,18 +140,13 @@ for sw in `echo $swaps` ; do
 done
 echo
 cat $M_TEMP/disk.tmp.discovered 2>/dev/null
-echo
-echo "Average disk I/O speed:"
-echo "-----------------------"
-echo
-echo "    Disk                  Overall, Mbytes/sec             Current, Mbytes/sec"
-echo
+echo -e "\nAverage disk I/O speed:\n-----------------------\n\n    Disk                  Overall, Mbytes/sec             Current, Mbytes/sec\n"
+
 VMSTAT=`which vmstat 2>/dev/null`
-if [ "X$VMSTAT" != "X" ]; then
-  DISKSTAT="$VMSTAT -d"
-fi
-if [ "X$DISKSTAT" != "X" ]; then
-  $DISKSTAT > "$M_TEMP/diskstat.tmp" 2>&1
+[ -n "$VMSTAT" ] && DISKSTAT="$VMSTAT -d"
+
+if [ -n "$DISKSTAT" ]; then
+  diskstat=`$DISKSTAT 2>/dev/null`
   if [ $? -ne 0 ]; then
     echo "Couldn't get disk stats"
     exit 0
@@ -126,9 +156,9 @@ if [ "X$DISKSTAT" != "X" ]; then
 
     disk=${LINE##*/}
     
-    dr=$(echo $M_TEMP/diskstat.tmp | grep "^${disk} " | awk '{ print $4 }')
-    [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(echo $M_TEMP/diskstat.tmp | grep "^${disk} " | awk '{ print $4 }')
-    drtime=$(echo $M_TEMP/diskstat.tmp | grep "^${disk} " | awk '{ print $5 }')
+    dr=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $4 }')
+    [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $4 }')
+    drtime=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $5 }')
     
     if [[ $drtime -gt 100 ]]; then
       drspeed=`solve 2 "($dr / 2048) / ($drtime / 1000)"`
@@ -141,8 +171,8 @@ if [ "X$DISKSTAT" != "X" ]; then
     for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
     replinerd=`printf "${replinerd}${drspeed}"`
     echo "$drspeed" >> "$M_TEMP/diskiord"
-    dw=$($DISKSTAT | grep "^${disk} " | awk '{ print $8 }')
-    dwtime=$($DISKSTAT | grep "^${disk} " | awk '{ print $9 }')
+    dw=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $8 }')
+    dwtime=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $9 }')
     if [[ $dwtime -gt 100 ]]; then
       dwspeed=`solve 2 "($dw / 2048) / ($dwtime / 1000)"`
     else
@@ -155,17 +185,18 @@ if [ "X$DISKSTAT" != "X" ]; then
     replinerw=`printf "${replinerw}${dwspeed}"`
     echo "$dwspeed" >> $M_TEMP/diskiowr
 
-    if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
+    if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
     
       diskname=${disk##*/}
-      
-      tablefound=`for dbtable in $alltables ; do [ "X$dbtable" == "X$diskname" ] && echo "yes" ; done`
-      [ -n "$tablefound" ] || dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)" 2>/dev/null
-      unset tablefound
-      [[ `dbquery "$rpath/../sysdata" "select count(*) from '$diskname' where timeindex='$timeindexnow'"` -eq 0 ]] && dbquery "$rpath/../sysdata" "insert into '$diskname' (timeindex) values ('$timeindexnow')"
+      tablefound=false
+      echo "$alltables" | grep -q ^$diskname$ && tablefound=true
+      if ! $tablefound ; then
+        log "creating table $diskname"
+        dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+      fi
       [ -n "$dr" ] || dr=0
       diskreads=`solve 2 "($dr / 2048)"`
-      diskreadslast=`dbquery ${rpath}/../sysdata "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
+      diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
       [ -n "$diskreadslast" ] || diskreadslast=0
       drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
       m=`expr length "$replinerd"`
@@ -191,7 +222,8 @@ if [ "X$DISKSTAT" != "X" ]; then
 
 fi
 
-if [ "X$SQLITE3" == "X1" ] && [ "X$1" == "XSQL" ]; then
+# Average values for sysdata table
+if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
   disksnum=`cat "$M_TEMP/diskusage" | wc -l`
   diskusage=0
   if [ -f "$M_TEMP/diskusage" ]; then
