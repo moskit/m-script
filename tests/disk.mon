@@ -204,7 +204,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   
     
     tablefound=false
-    echo "$alltables" | grep -q ^$diskname$ && tablefound=true
+    echo "$alltables" | grep -q ^$disk$ && tablefound=true
     if ! $tablefound ; then
       log "creating table $disk"
       dbquery "$rpath/../sysdata" "create table '$disk' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"

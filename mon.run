@@ -116,7 +116,7 @@ function runscript() {
       mon="$rpath/rc/`readlink $script`"
       if [ -x "$mon" ]; then
         log "$mon"
-        monoutput=`$mon $SQL 2>&1`
+        monoutput=`$mon SQL 2>&1`
         echo "$monoutput" >> "$LOG"
         rmon=${mon##*/}
         if alert_blocked $rmon ; then
@@ -137,7 +137,7 @@ function runscript() {
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY && delay+=$RUNDELAY
       if [ -x "$rpath/tests/$mon" ]; then
         log "$mon"
-        monoutput=$("$rpath"/tests/$mon $SQL 2>&1 ; echo)
+        monoutput=$("$rpath"/tests/$mon SQL 2>&1 ; echo)
         echo "$monoutput" >> "$LOG"
         if alert_blocked ${mon##*/} ; then
           log "=== alert is blocked for $mon"
