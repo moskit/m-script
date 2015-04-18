@@ -28,12 +28,10 @@ if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
 
-echo
-echo "Disks usage:"
-echo "------------"
-echo
-df -m | grep -vE "^shm|^tmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp"
-df -i | grep -vE "^shm|^tmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp.i"
+echo -e "\nDisks usage:\n------------\n"
+
+df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp"
+
 printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 while read LINE
 do
@@ -103,7 +101,7 @@ do
 done < "$M_TEMP/disk.tmp"
 
 # inodes usage
-df -i | grep -vE "^shm|^tmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp.i"
+df -i | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp.i"
 
 while read LINE
 do
@@ -139,88 +137,103 @@ for sw in `echo $swaps` ; do
   echo "$sw is a swap partition" >> $M_TEMP/disk.tmp.discovered
 done
 echo
-cat $M_TEMP/disk.tmp.discovered 2>/dev/null
+
 echo -e "\nAverage disk I/O speed:\n-----------------------\n\n    Disk                  Overall, Mbytes/sec             Current, Mbytes/sec\n"
 
-VMSTAT=`which vmstat 2>/dev/null`
-[ -n "$VMSTAT" ] && DISKSTAT="$VMSTAT -d"
+for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
 
-if [ -n "$DISKSTAT" ]; then
-  diskstat=`$DISKSTAT 2>/dev/null`
-  if [ $? -ne 0 ]; then
-    echo "Couldn't get disk stats"
-    exit 0
-  fi
-
-  for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
-
-    disk=${LINE##*/}
-    
-    dr=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $4 }')
-    [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $4 }')
-    drtime=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $5 }')
-    
-    if [[ $drtime -gt 100 ]]; then
-      drspeed=`solve 2 "($dr / 2048) / ($drtime / 1000)"`
-    else
-      drspeed=0
-    fi
-    replinerd=`printf "$LINE read:"`
-    m=`expr length "$LINE"`
-    l=`expr 22 - $m`
-    for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
-    replinerd=`printf "${replinerd}${drspeed}"`
-    echo "$drspeed" >> "$M_TEMP/diskiord"
-    dw=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $8 }')
-    dwtime=$(echo "$diskstat" | grep "^${disk} " | awk '{ print $9 }')
-    if [[ $dwtime -gt 100 ]]; then
-      dwspeed=`solve 2 "($dw / 2048) / ($dwtime / 1000)"`
-    else
-      dwspeed=0
-    fi
-    replinerw=`printf "$LINE write:"`
-    m=`expr length "$LINE"`
-    l=`expr 21 - $m`
-    for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
-    replinerw=`printf "${replinerw}${dwspeed}"`
-    echo "$dwspeed" >> $M_TEMP/diskiowr
-
-    if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
-    
-      diskname=${disk##*/}
-      tablefound=false
-      echo "$alltables" | grep -q ^$diskname$ && tablefound=true
-      if ! $tablefound ; then
-        log "creating table $diskname"
-        dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+  disk=${LINE##*/}
+  if ! `grep -q $disk$ /proc/partitions` ; then
+    if [ -h /dev/$disk ]; then
+      realdisk=`readlink /dev/$disk`
+      echo "/dev/$disk is a symlink to $realdisk" >> $M_TEMP/disk.tmp.discovered
+    elif [ "$disk" == "root" ]; then
+      realdisk=`grep root= /proc/cmdline`
+      if [ -n "$realdisk" ]; then
+        realdisk=${realdisk#*=}
+        echo "/dev/root is $realdisk" >> $M_TEMP/disk.tmp.discovered
+        if ! `grep -q $realdisk$ /proc/partitions` ; then
+          if [ "${realdisk:0:4}" == "UUID" ]; then
+            realdisk=`readlink /dev/disk/by-uuid/${realdisk:5} 2>/dev/null`
+            echo "this UUID points to $realdisk" >> $M_TEMP/disk.tmp.discovered
+          fi
+        else
+          echo "Unable to resolve $realdisk to any existing partition" >> $M_TEMP/disk.tmp.discovered
+        fi
+      else
+        echo "Unable to resolve /dev/root" >> $M_TEMP/disk.tmp.discovered
       fi
-      [ -n "$dr" ] || dr=0
-      diskreads=`solve 2 "($dr / 2048)"`
-      diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
-      [ -n "$diskreadslast" ] || diskreadslast=0
-      drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
-      m=`expr length "$replinerd"`
-      l=`expr 60 - $m`
-      for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
-      replinerd=`printf "${replinerd}${drspeed}\n"`
-      [ -n "$dw" ] || dw=0
-      diskwrites=`solve 2 "($dw / 2048)"`
-      diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
-      [ -n "$diskwriteslast" ] || diskwriteslast=0
-      dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
-      m=`expr length "$replinerw"`
-      l=`expr 60 - $m`
-      for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
-      replinerw=`printf "${replinerw}${dwspeed}\n"`
-      
-      dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
-      
     fi
-    echo "$replinerd"
-    echo "$replinerw"
-  done
+    [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
+    disk=${realdisk##*/}
+  fi
+  
+  # reading stats
+  dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
+  [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
+  drtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $7 }')
+  
+  if [[ $drtime -gt 100 ]]; then
+    drspeed=`solve 2 "($dr / 2048) / ($drtime / 1000)"`
+  else
+    drspeed=0
+  fi
+  replinerd=`printf "$LINE read:"`
+  m=`expr length "$LINE"`
+  l=`expr 22 - $m`
+  for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
+  replinerd=`printf "${replinerd}${drspeed}"`
+  echo "$drspeed" >> "$M_TEMP/diskiord"
+  dw=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $10 }')
+  dwtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $11 }')
+  if [[ $dwtime -gt 100 ]]; then
+    dwspeed=`solve 2 "($dw / 2048) / ($dwtime / 1000)"`
+  else
+    dwspeed=0
+  fi
+  replinerw=`printf "$LINE write:"`
+  m=`expr length "$LINE"`
+  l=`expr 21 - $m`
+  for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
+  replinerw=`printf "${replinerw}${dwspeed}"`
+  echo "$dwspeed" >> $M_TEMP/diskiowr
 
-fi
+  if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
+  
+    diskname=${disk##*/}
+    tablefound=false
+    echo "$alltables" | grep -q ^$diskname$ && tablefound=true
+    if ! $tablefound ; then
+      log "creating table $diskname"
+      dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+    fi
+    [ -n "$dr" ] || dr=0
+    diskreads=`solve 2 "($dr / 2048)"`
+    diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
+    [ -n "$diskreadslast" ] || diskreadslast=0
+    drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
+    m=`expr length "$replinerd"`
+    l=`expr 60 - $m`
+    for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
+    replinerd=`printf "${replinerd}${drspeed}\n"`
+    [ -n "$dw" ] || dw=0
+    diskwrites=`solve 2 "($dw / 2048)"`
+    diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
+    [ -n "$diskwriteslast" ] || diskwriteslast=0
+    dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
+    m=`expr length "$replinerw"`
+    l=`expr 60 - $m`
+    for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
+    replinerw=`printf "${replinerw}${dwspeed}\n"`
+    
+    dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
+    
+  fi
+  echo "$replinerd"
+  echo "$replinerw"
+done
+
+cat $M_TEMP/disk.tmp.discovered 2>/dev/null
 
 # Average values for sysdata table
 if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
@@ -253,5 +266,5 @@ if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
 fi
 
 rm -f $M_TEMP/disk.tmp* >/dev/null 2>&1
-rm -f $M_TEMP/diskiowr $M_TEMP/diskiord $M_TEMP/diskusage >/dev/null 2>&1
+rm -f $M_TEMP/diskiowr $M_TEMP/diskiord $M_TEMP/diskusage $M_TEMP/diskusage.i >/dev/null 2>&1
 
