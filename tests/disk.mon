@@ -228,7 +228,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
     replinerw=`printf "${replinerw}${dwspeed}\n"`
     
-    dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
+    dbquery "$rpath/../sysdata" "update '$disk' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
     
   fi
   echo "$replinerd"
