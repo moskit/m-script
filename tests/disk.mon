@@ -150,7 +150,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     elif [ "$disk" == "root" ]; then
       realdisk=`grep root= /proc/cmdline`
       if [ -n "$realdisk" ]; then
-        realdisk=${realdisk#*=}
+        realdisk=`echo "$realdisk" | cut -d'=' -f2 | cut -d' ' -f1`
         echo "/dev/root is $realdisk" >> $M_TEMP/disk.tmp.discovered
         if ! `grep -q $realdisk$ /proc/partitions` ; then
           if [ "${realdisk:0:4}" == "UUID" ]; then
@@ -184,6 +184,8 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
   replinerd=`printf "${replinerd}${drspeed}"`
   echo "$drspeed" >> "$M_TEMP/diskiord"
+  
+  # writing stats
   dw=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $10 }')
   dwtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $11 }')
   if [[ $dwtime -gt 100 ]]; then
@@ -200,12 +202,12 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
 
   if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
   
-    diskname=${disk##*/}
+    
     tablefound=false
     echo "$alltables" | grep -q ^$diskname$ && tablefound=true
     if ! $tablefound ; then
-      log "creating table $diskname"
-      dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+      log "creating table $disk"
+      dbquery "$rpath/../sysdata" "create table '$disk' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
     fi
     [ -n "$dr" ] || dr=0
     diskreads=`solve 2 "($dr / 2048)"`
@@ -233,6 +235,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   echo "$replinerw"
 done
 
+echo
 cat $M_TEMP/disk.tmp.discovered 2>/dev/null
 
 # Average values for sysdata table
