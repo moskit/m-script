@@ -127,17 +127,7 @@ do
     disk=${realdisk##*/}
     echo "/dev/$disk" >> "$M_TEMP"/disk.tmp.ext
   fi
-  if [ "_$SQLITE3" == "_1" ]; then
-    tablefound=false
-    echo "$alltables" | grep -q ^$disk$ && tablefound=true
-    if ! $tablefound ; then
-      log "creating table $disk"
-      dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer); create index ti${disk} (timeindex)"
-    fi
-    if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "insert into $disk (timeindex) values ('$timeindexnow')"
-    fi
-  fi
+
 done < "$M_TEMP/disk.tmp"
 
 # inodes usage
@@ -178,17 +168,6 @@ for sw in `echo "$swaps"` ; do
   check_slaves $sw
   swdisk=`resolve_uuid $sw`
   [ -n "$swdisk" ] && echo "/dev/${swdisk##*/}" >> "$M_TEMP/disk.tmp.ext"
-  if [ "_$SQLITE3" == "_1" ]; then
-    tablefound=false
-    echo "$alltables" | grep -q ^${swdisk##*/}$ && tablefound=true
-    if ! $tablefound ; then
-      log "creating table $disk"
-      dbquery "$rpath/../sysdata" "create table ${swdisk##*/} (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer); create index ti${swdisk##*/} (timeindex)"
-    fi
-    if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "insert into $disk (timeindex) values ('$timeindexnow')"
-    fi
-  fi
 done
 echo
 
@@ -199,7 +178,18 @@ if [ "_$SQLITE3" == "_1" ]; then
 
     disk=${LINE##*/}
     [ -z "$disk" ] && continue
-
+    
+    if [ "_$SQLITE3" == "_1" ]; then
+      tablefound=false
+      echo "$alltables" | grep -q ^$disk$ && tablefound=true
+      if ! $tablefound ; then
+        log "creating table $disk"
+        dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer); create index ti${disk} (timeindex)"
+      fi
+      if [ "_$1" == "_SQL" ]; then
+        dbquery "$rpath/../sysdata" "insert into $disk (timeindex) values ('$timeindexnow')"
+      fi
+    fi
     # reading stats
     dr=$(cat /proc/diskstats | grep " $disk " | awk '{ print $6 }')
     [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
