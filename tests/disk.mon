@@ -197,8 +197,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   echo "$dwspeed" >> $M_TEMP/diskiowr
 
   if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
-  
-    
+
     tablefound=false
     echo "$alltables" | grep -q ^$disk$ && tablefound=true
     if ! $tablefound ; then
@@ -207,7 +206,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     fi
     [ -n "$dr" ] || dr=0
     diskreads=`solve 2 "($dr / 2048)"`
-    diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$diskname' where timeindex='$lasttimeindex'"`
+    diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$disk' where timeindex='$lasttimeindex'"`
     [ -n "$diskreadslast" ] || diskreadslast=0
     drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
     m=`expr length "$replinerd"`
@@ -216,7 +215,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     replinerd=`printf "${replinerd}${drspeed}\n"`
     [ -n "$dw" ] || dw=0
     diskwrites=`solve 2 "($dw / 2048)"`
-    diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$diskname' where timeindex='$lasttimeindex'"`
+    diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$disk' where timeindex='$lasttimeindex'"`
     [ -n "$diskwriteslast" ] || diskwriteslast=0
     dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
     m=`expr length "$replinerw"`
