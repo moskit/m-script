@@ -25,7 +25,7 @@ source "$M_ROOT/lib/functions.sh"
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
 sinceboot=`cat /proc/uptime | cut -d'.' -f1` || sinceboot=1000000
 
-if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
+if [ "_$SQLITE3" == "_1" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
 
@@ -76,28 +76,48 @@ do
   fi
   printf "$used%%\n"
   
-  if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
-    diskname=${disk##*/}
-    tablefound=false
-    echo "$alltables" | grep -q ^$diskname$ && tablefound=true
-    if ! $tablefound ; then
-      log "creating table $diskname"
-      dbquery "$rpath/../sysdata" "create table '$diskname' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
-    fi
-    dbquery "$rpath/../sysdata" "update '$diskname' set diskusage='$used' where timeindex='$timeindexnow'"
-  fi
 ## Discovering what this disk really is
-  echo $disk >> "$M_TEMP/disk.tmp.ext"
-  linkedto=`readlink $disk 2>/dev/null`
-  if [ -n "$linkedto" ] ; then
-    echo "Disk $disk is a symlink to $linkedto" >> "$M_TEMP/disk.tmp.discovered"
-    echo "/dev/$linkedto" >> "$M_TEMP/disk.tmp.ext"
+  if `grep -q $disk$ /proc/partitions` ; then
+    echo ${disk##*/} >> "$M_TEMP/disk.tmp.ext"
+  else
+    if [ -h /dev/$disk ]; then
+      realdisk=`readlink /dev/$disk`
+      echo "/dev/$disk is a symlink to $realdisk" >> $M_TEMP/disk.tmp.discovered
+    elif [ "$disk" == "root" ]; then
+      realdisk=`grep root= /proc/cmdline`
+      if [ -n "$realdisk" ]; then
+        realdisk=`echo "$realdisk" | cut -d'=' -f2 | cut -d' ' -f1`
+        echo "/dev/root is $realdisk" >> $M_TEMP/disk.tmp.discovered
+        if ! `grep -q $realdisk$ /proc/partitions` ; then
+          if [ "${realdisk:0:4}" == "UUID" ]; then
+            realdisk=`readlink /dev/disk/by-uuid/${realdisk:5} 2>/dev/null`
+            echo "this UUID points to $realdisk" >> $M_TEMP/disk.tmp.discovered
+          fi
+        else
+          echo "Unable to resolve $realdisk to any existing partition" >> $M_TEMP/disk.tmp.discovered
+        fi
+      else
+        echo "Unable to resolve /dev/root" >> $M_TEMP/disk.tmp.discovered
+      fi
+    else
+      slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
+      if [ -n "$slaves" ] ; then
+        echo "Disk $disk is a logical volume built upon `echo $slaves`" >> "$M_TEMP/disk.tmp.discovered"
+        for sldisk in $slaves ; do echo "/dev/$sldisk" >> "$M_TEMP/disk.tmp.ext" ; done
+      fi
+    fi
+    [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
+    disk=${realdisk##*/}
   fi
-  slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
-  if [ -n "$slaves" ] ; then
-    printf "Disk $disk is a logical volume built upon `echo $slaves`" >> "$M_TEMP/disk.tmp.discovered"
-    printf "\n" >> "$M_TEMP/disk.tmp.discovered"
-    for sldisk in $slaves ; do echo "/dev/$sldisk" >> "$M_TEMP/disk.tmp.ext" ; done
+  if [ "_$SQLITE3" == "_1" ]; then
+    tablefound=false
+    echo "$alltables" | grep -q ^$disk$ && tablefound=true
+    if ! $tablefound ; then
+      log "creating table $disk"
+      dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+    fi
+  elif [ "_$1" == "_SQL" ]; then
+    dbquery "$rpath/../sysdata" "insert into $disk (timeindex, day) values ('$timeindexnow', '$daynow')"
   fi
 done < "$M_TEMP/disk.tmp"
 
@@ -144,30 +164,6 @@ echo -e "\nAverage disk I/O speed:\n-----------------------\n\n    Disk         
 for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
 
   disk=${LINE##*/}
-  if ! `grep -q $disk$ /proc/partitions` ; then
-    if [ -h /dev/$disk ]; then
-      realdisk=`readlink /dev/$disk`
-      echo "/dev/$disk is a symlink to $realdisk" >> $M_TEMP/disk.tmp.discovered
-    elif [ "$disk" == "root" ]; then
-      realdisk=`grep root= /proc/cmdline`
-      if [ -n "$realdisk" ]; then
-        realdisk=`echo "$realdisk" | cut -d'=' -f2 | cut -d' ' -f1`
-        echo "/dev/root is $realdisk" >> $M_TEMP/disk.tmp.discovered
-        if ! `grep -q $realdisk$ /proc/partitions` ; then
-          if [ "${realdisk:0:4}" == "UUID" ]; then
-            realdisk=`readlink /dev/disk/by-uuid/${realdisk:5} 2>/dev/null`
-            echo "this UUID points to $realdisk" >> $M_TEMP/disk.tmp.discovered
-          fi
-        else
-          echo "Unable to resolve $realdisk to any existing partition" >> $M_TEMP/disk.tmp.discovered
-        fi
-      else
-        echo "Unable to resolve /dev/root" >> $M_TEMP/disk.tmp.discovered
-      fi
-    fi
-    [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
-    disk=${realdisk##*/}
-  fi
   
   # reading stats
   dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
@@ -196,14 +192,8 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   replinerw=`printf "${replinerw}${dwspeed}"`
   echo "$dwspeed" >> $M_TEMP/diskiowr
 
-  if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
+  if [ "_$SQLITE3" == "_1" ]; then
 
-    tablefound=false
-    echo "$alltables" | grep -q ^$disk$ && tablefound=true
-    if ! $tablefound ; then
-      log "creating table $disk"
-      dbquery "$rpath/../sysdata" "create table '$disk' (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
-    fi
     [ -n "$dr" ] || dr=0
     diskreads=`solve 2 "($dr / 2048)"`
     diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$disk' where timeindex='$lasttimeindex'"`
@@ -223,7 +213,9 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
     replinerw=`printf "${replinerw}${dwspeed}\n"`
     
-    dbquery "$rpath/../sysdata" "update '$disk' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
+    if [ "_$1" == "_SQL" ]; then
+      dbquery "$rpath/../sysdata" "update '$disk' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
+    fi
     
   fi
   echo "$replinerd"
@@ -234,7 +226,7 @@ echo
 cat $M_TEMP/disk.tmp.discovered 2>/dev/null
 
 # Average values for sysdata table
-if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
+if [ "_$SQLITE3" == "_1" ]; then
   disksnum=`cat "$M_TEMP/diskusage" | wc -l`
   diskusage=0
   if [ -f "$M_TEMP/diskusage" ]; then
@@ -259,8 +251,9 @@ if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
     done < $M_TEMP/diskiowr
     diskiowr=`solve 2 "$diskiowr / $disksnum"`
   fi
-
-  dbquery "$rpath/../sysdata" "update sysdata set diskusage='$diskusage', diskiord='$diskiord', diskiowr='$diskiowr' where timeindex='$timeindexnow'"
+  if [ "_$1" == "_SQL" ]; then
+    dbquery "$rpath/../sysdata" "update sysdata set diskusage='$diskusage', diskiord='$diskiord', diskiowr='$diskiowr' where timeindex='$timeindexnow'"
+  fi
 fi
 
 rm -f $M_TEMP/disk.tmp* >/dev/null 2>&1
