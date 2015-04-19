@@ -132,7 +132,7 @@ do
     echo "$alltables" | grep -q ^$disk$ && tablefound=true
     if ! $tablefound ; then
       log "creating table $disk"
-      dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
+      dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer)"
     fi
     if [ "_$1" == "_SQL" ]; then
       dbquery "$rpath/../sysdata" "insert into $disk (timeindex) values ('$timeindexnow')"
@@ -181,46 +181,47 @@ for sw in `echo "$swaps"` ; do
 done
 echo
 
-echo -e "\nAverage disk I/O speed:\n-----------------------\n\n    Disk                  Overall, Mbytes/sec             Current, Mbytes/sec\n"
+if [ "_$SQLITE3" == "_1" ]; then
+  echo -e "\nAverage disk I/O usage:\n-----------------------\n\n    Disk                           Time percentage                 Mbytes/sec\n"
 
-for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
+  for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
 
-  disk=${LINE##*/}
-  [ -z "$disk" ] && continue
-  
-  # reading stats
-  dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
-  [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
-  drtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $7 }')
+    disk=${LINE##*/}
+    [ -z "$disk" ] && continue
 
-  drspeed=`solve 2 "($dr / 2048) / ($sinceboot)"`
+    # reading stats
+    dr=$(cat /proc/diskstats | grep " $disk " | awk '{ print $6 }')
+    [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
+    drtime=$(cat /proc/diskstats | grep " $disk " | awk '{ print $7 }')
+    lastdrtime=`dbquery "$rpath/../sysdata" "select drtime from $disk where timeindex='$lasttimeindex'"`
+    [ -z "$lastdrtime" ] && lastdrtime=$drtime
+    
+    drratio=`solve 2 "($drtime - $lastdrtime) / $diffsec * 100"`
 
-  replinerd=`printf "$LINE read:"`
-  m=`expr length "$LINE"`
-  l=`expr 22 - $m`
-  for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
-  replinerd=`printf "${replinerd}${drspeed}"`
-  echo "$drspeed" >> "$M_TEMP/diskiord"
-  
-  # writing stats
-  dw=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $10 }')
-  dwtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $11 }')
+    replinerd=`printf "$LINE read:"`
+    m=`expr length "$LINE"`
+    l=`expr 22 - $m`
+    for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
+    replinerd=`printf "${replinerd}${drratio}"`
 
-  dwspeed=`solve 2 "($dw / 2048) / ($sinceboot)"`
+    # writing stats
+    dw=$(cat /proc/diskstats | grep " $disk " | awk '{ print $10 }')
+    dwtime=$(cat /proc/diskstats | grep " $disk " | awk '{ print $11 }')
+    lastdwtime=`dbquery "$rpath/../sysdata" "select dwtime from $disk where timeindex='$lasttimeindex'"`
+    [ -z "$lastdwtime" ] && lastdwtime=$dwtime
+    
+    dwratio=`solve 2 "($dwtime - $lastdwtime) / $diffsec * 100"`
 
-  replinerw=`printf "$LINE write:"`
-  m=`expr length "$LINE"`
-  l=`expr 21 - $m`
-  for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
-  replinerw=`printf "${replinerw}${dwspeed}"`
-  echo "$dwspeed" >> $M_TEMP/diskiowr
-
-  if [ "_$SQLITE3" == "_1" ]; then
+    replinerw=`printf "$LINE write:"`
+    m=`expr length "$LINE"`
+    l=`expr 21 - $m`
+    for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
+    replinerw=`printf "${replinerw}${dwratio}"`
 
     [ -n "$dr" ] || dr=0
     diskreads=`solve 2 "($dr / 2048)"`
     diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$disk' where timeindex='$lasttimeindex'"`
-    [ -n "$diskreadslast" ] || diskreadslast=0
+    [ -n "$diskreadslast" ] || diskreadslast=$diskreads
     drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
     m=`expr length "$replinerd"`
     l=`expr 60 - $m`
@@ -229,7 +230,7 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     [ -n "$dw" ] || dw=0
     diskwrites=`solve 2 "($dw / 2048)"`
     diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$disk' where timeindex='$lasttimeindex'"`
-    [ -n "$diskwriteslast" ] || diskwriteslast=0
+    [ -n "$diskwriteslast" ] || diskwriteslast=$diskwrites
     dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
     m=`expr length "$replinerw"`
     l=`expr 60 - $m`
@@ -237,48 +238,15 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
     replinerw=`printf "${replinerw}${dwspeed}\n"`
     
     if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "update '$disk' set diskusage='$used', diskreads='$diskreads', drspeed='$drspeed', diskwrites='$diskwrites', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
+      dbquery "$rpath/../sysdata" "update $disk set diskusage='$used', diskreads='$diskreads', drtime='$drtime', drspeed='$drspeed', diskwrites='$diskwrites', dwtime='$dwtime', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
     fi
-    
-  fi
-  echo "$replinerd"
-  echo "$replinerw"
-done
+    echo "$replinerd"
+    echo "$replinerw"
+  done
+fi
 
 echo
 cat $M_TEMP/disk.tmp.discovered 2>/dev/null
 
-# Average values for sysdata table
-if [ "_$SQLITE3" == "_1" ]; then
-  disksnum=`cat "$M_TEMP/diskusage" | wc -l`
-  diskusage=0
-  if [ -f "$M_TEMP/diskusage" ]; then
-    while read LINE; do
-      diskusage=`solve 2 "$diskusage + $LINE"`
-    done < $M_TEMP/diskusage
-    diskusage=`solve 2 "$diskusage / $disksnum"`
-  fi
-  diskiord=0
-  if [ -f "$M_TEMP/diskiord" ]; then
-    disksnum=`cat "$M_TEMP/diskiord" | wc -l`
-    while read LINE; do
-      diskiord=`solve 2 "$diskiord + $LINE"`
-    done < "$M_TEMP/diskiord"
-    diskiord=`solve 2 "$diskiord / $disksnum"`
-  fi
-  diskiowr=0
-  if [ -f "$M_TEMP/diskiowr" ]; then
-    disksnum=`cat "$M_TEMP/diskiowr" | wc -l`
-    while read LINE; do
-      diskiowr=`solve 2 "$diskiowr + $LINE"`
-    done < $M_TEMP/diskiowr
-    diskiowr=`solve 2 "$diskiowr / $disksnum"`
-  fi
-  if [ "_$1" == "_SQL" ]; then
-    dbquery "$rpath/../sysdata" "update sysdata set diskusage='$diskusage', diskiord='$diskiord', diskiowr='$diskiowr' where timeindex='$timeindexnow'"
-  fi
-fi
-
-rm -f $M_TEMP/disk.tmp* >/dev/null 2>&1
-rm -f $M_TEMP/diskiowr $M_TEMP/diskiord $M_TEMP/diskusage $M_TEMP/diskusage.i >/dev/null 2>&1
+rm -f $M_TEMP/disk.tmp* $M_TEMP/diskusage $M_TEMP/diskusage.i >/dev/null 2>&1
 
