@@ -55,27 +55,22 @@ if [ "_$SQLITE3" == "_1" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
 
-echo -e "\nDisks usage:\n------------\n"
-
-df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp"
-
-printf "\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
-while read LINE
-do
-  if [ -n "$LONGLINE" ]
-  then
-    LINE="$LONGLINE $LINE"
-    LONGLINE=""
-  fi
-  # Sometimes df breaks a line, if it is much longer than 80 symbols
-  if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]
-  then
-    LONGLINE="$LINE"
-    continue
-  fi
-  disk=$(echo "$LINE" | awk '{ print $1}')
-  mpoint=$(echo "$LINE" | awk '{ print $6}')
-  used=$(echo "$LINE" | awk '{ print $5}' | sed 's@\%@@')
+echo -e "\nDisks usage:\n------------\n\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
+df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
+  #if [ -n "$LONGLINE" ]; then
+  #  LINE="$LONGLINE $LINE"
+  #  LONGLINE=""
+  #fi
+  ## Sometimes df breaks a line, if it is much longer than 80 symbols
+  #if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]; then
+  #  LONGLINE="$LINE"
+  #  continue
+  #fi
+  disk=$(echo "$LINE" | cut -d'|' -f1)
+  mpoint=$(echo "$LINE" | cut -d'|' -f6)
+  used=$(echo "$LINE" | cut -d'|' -f5)
+  usedm=$(echo "$LINE" | cut -d'|' -f3)
+  free=$(echo "$LINE" | cut -d'|' -f4)
   x1="$(echo "$used >= $DISK_WARN_1" | bc)"
   x2="$(echo "$used >= $DISK_WARN_2" | bc)"
   x3="$(echo "$used >= $DISK_WARN_3" | bc)"
@@ -83,7 +78,6 @@ do
   [ "$x1" == "1" ] && warnind=' <*> '
   [ "$x2" == "1" ] && warnind='<**> '
   [ "$x3" == "1" ] && warnind='<***>'
-  echo "$used" >> "$M_TEMP/diskusage"
   printf "$warnind\t$disk"
   m=`expr length $disk`
   l=`expr 32 - $m`
@@ -126,29 +120,27 @@ do
     [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
     disk=${realdisk##*/}
     echo "/dev/$disk" >> "$M_TEMP"/disk.tmp.ext
+    echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage"
   fi
 
 done < "$M_TEMP/disk.tmp"
 
 # inodes usage
-df -i | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" > "$M_TEMP/disk.tmp.i"
-
-while read LINE
-do
-  if [ -n "$LONGLINE" ]
-  then
+df -i | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
+  if [ -n "$LONGLINE" ]; then
     LINE="$LONGLINE $LINE"
     LONGLINE=""
   fi
   # Sometimes df breaks a line, if it is much longer than 80 symbols
-  if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]
-  then
+  if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]; then
     LONGLINE="$LINE"
     continue
   fi
-  disk=$(echo "$LINE" | awk '{ print $1}')
-  mpoint=$(echo "$LINE" | awk '{ print $6}')
-  used=$(echo "$LINE" | awk '{ print $5}' | sed 's@\%@@')
+  disk=$(echo "$LINE" | cut -d'|' -f1)
+  mpoint=$(echo "$LINE" | cut -d'|' -f6)
+  used=$(echo "$LINE" | cut -d'|' -f5)
+  usedm=$(echo "$LINE" | cut -d'|' -f3)
+  free=$(echo "$LINE" | cut -d'|' -f4)
   unset warnind
   x1="$(echo "$used >= $DISK_WARN_1" | bc)"
   x2="$(echo "$used >= $DISK_WARN_2" | bc)"
@@ -156,9 +148,8 @@ do
   [ "$x1" == "1" ] && warnind=' <*> '
   [ "$x2" == "1" ] && warnind='<**> '
   [ "$x3" == "1" ] && warnind='<***>'
-  echo "$used" >> "$M_TEMP/diskusage.i"
   [ -n "$warnind" ] && echo "$warnind disk $disk mountpoint $mpoint inodes usage is $used"
-
+  echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage.i"
 done < "$M_TEMP/disk.tmp.i"
 
 swaps=`cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }'`
@@ -184,10 +175,7 @@ if [ "_$SQLITE3" == "_1" ]; then
       echo "$alltables" | grep -q ^$disk$ && tablefound=true
       if ! $tablefound ; then
         log "creating table $disk"
-        dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer); create index ti${disk} (timeindex)"
-      fi
-      if [ "_$1" == "_SQL" ]; then
-        dbquery "$rpath/../sysdata" "insert into $disk (timeindex) values ('$timeindexnow')"
+        dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disk} on $disk (timeindex);"
       fi
     fi
     # reading stats
@@ -237,9 +225,16 @@ if [ "_$SQLITE3" == "_1" ]; then
     l=`expr 60 - $m`
     for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
     replinerw=`printf "${replinerw}${dwspeed}\n"`
-    
+    du=`grep "$disk|" "$M_TEMP/diskusage" | tail -1`
+    used=`echo "$du" | cut -d'|' -f2`
+    usedm=`echo "$du" | cut -d'|' -f3`
+    free=`echo "$du" | cut -d'|' -f4`
+    dui=`grep "$disk|" "$M_TEMP/diskusage.i" | tail -1`
+    usedi=`echo "$dui" | cut -d'|' -f2`
+    usedmi=`echo "$dui" | cut -d'|' -f3`
+    freei=`echo "$dui" | cut -d'|' -f4`
     if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "update $disk set diskusage='$used', diskreads='$diskreads', drtime='$drtime', drspeed='$drspeed', diskwrites='$diskwrites', dwtime='$dwtime', dwspeed='$dwspeed' where timeindex='$timeindexnow'"
+      dbquery "$rpath/../sysdata" "insert into $disk (timeindex, diskusage, diskusagemb, diskfree, inodeusage, inodeusagei, inodefree, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
     fi
     echo "$replinerd"
     echo "$replinerw"
