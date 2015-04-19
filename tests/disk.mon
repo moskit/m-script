@@ -25,6 +25,32 @@ source "$M_ROOT/lib/functions.sh"
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
 sinceboot=`cat /proc/uptime | cut -d'.' -f1` || sinceboot=1000000
 
+resolve_uuid() {
+  local resdisk
+  if [ "${1:0:4}" == "UUID" ]; then
+    resdisk=`readlink /dev/disk/by-uuid/${1:5} 2>/dev/null`
+    echo "this is UUID that resolves to $resdisk" >> $M_TEMP/disk.tmp.discovered
+  fi
+  echo "$resdisk"
+}
+
+check_slaves() {
+  slaves=`ls /sys/class/block/$1/slaves 2>/dev/null`
+  if [ -n "$slaves" ] ; then
+    echo "Disk $1 is a logical volume built upon `echo $slaves`" >> "$M_TEMP/disk.tmp.discovered"
+    for sldisk in $slaves ; do
+      if `grep -q $sldisk$ /proc/partitions` ; then
+        echo "/dev/$sldisk" >> "$M_TEMP"/disk.tmp.ext
+      else
+        realsldisk=`resolve_uuid $sldisk`
+        if [ -n "$realsldisk" ]; then
+          `grep -q $sldisk$ /proc/partitions` && echo "/dev/$realsldisk" >> "$M_TEMP"/disk.tmp.ext
+        fi
+      fi
+    done
+  fi
+}
+
 if [ "_$SQLITE3" == "_1" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
@@ -77,8 +103,9 @@ do
   printf "$used%%\n"
   
 ## Discovering what this disk really is
+  disk=${disk##*/}
   if `grep -q $disk$ /proc/partitions` ; then
-    echo ${disk##*/} >> "$M_TEMP/disk.tmp.ext"
+    echo $disk >> "$M_TEMP/disk.tmp.ext"
   else
     if [ -h /dev/$disk ]; then
       realdisk=`readlink /dev/$disk`
@@ -88,26 +115,17 @@ do
       if [ -n "$realdisk" ]; then
         realdisk=`echo "$realdisk" | cut -d'=' -f2 | cut -d' ' -f1`
         echo "/dev/root is $realdisk" >> $M_TEMP/disk.tmp.discovered
-        if ! `grep -q $realdisk$ /proc/partitions` ; then
-          if [ "${realdisk:0:4}" == "UUID" ]; then
-            realdisk=`readlink /dev/disk/by-uuid/${realdisk:5} 2>/dev/null`
-            echo "this UUID points to $realdisk" >> $M_TEMP/disk.tmp.discovered
-          fi
-        else
-          echo "Unable to resolve $realdisk to any existing partition" >> $M_TEMP/disk.tmp.discovered
+        if ! `grep -q ${realdisk##*/}$ /proc/partitions` ; then
+          realdisk=`resolve_uuid ${realdisk##*/}`
         fi
       else
         echo "Unable to resolve /dev/root" >> $M_TEMP/disk.tmp.discovered
       fi
-    else
-      slaves=`ls /sys/class/block/${disk##*/}/slaves 2>/dev/null`
-      if [ -n "$slaves" ] ; then
-        echo "Disk $disk is a logical volume built upon `echo $slaves`" >> "$M_TEMP/disk.tmp.discovered"
-        for sldisk in $slaves ; do echo "/dev/$sldisk" >> "$M_TEMP/disk.tmp.ext" ; done
-      fi
     fi
+    check_slaves $disk
     [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
     disk=${realdisk##*/}
+    echo "/dev/$disk" >> "$M_TEMP"/disk.tmp.ext
   fi
   if [ "_$SQLITE3" == "_1" ]; then
     tablefound=false
@@ -116,8 +134,9 @@ do
       log "creating table $disk"
       dbquery "$rpath/../sysdata" "create table $disk (timeindex integer primary key, diskusage real, diskreads real, diskwrites real, drspeed real, dwspeed real)"
     fi
-  elif [ "_$1" == "_SQL" ]; then
-    dbquery "$rpath/../sysdata" "insert into $disk (timeindex, day) values ('$timeindexnow', '$daynow')"
+    if [ "_$1" == "_SQL" ]; then
+      dbquery "$rpath/../sysdata" "insert into $disk (timeindex) values ('$timeindexnow')"
+    fi
   fi
 done < "$M_TEMP/disk.tmp"
 
@@ -153,9 +172,12 @@ do
 done < "$M_TEMP/disk.tmp.i"
 
 swaps=`cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }'`
-echo $swaps >> $M_TEMP/disk.tmp.ext
-for sw in `echo $swaps` ; do
+echo "$swaps" >> "$M_TEMP/disk.tmp.ext"
+for sw in `echo "$swaps"` ; do
   echo "$sw is a swap partition" >> $M_TEMP/disk.tmp.discovered
+  check_slaves $sw
+  swdisk=`resolve_uuid $sw`
+  [ -n "$swdisk" ] && echo "/dev/${swdisk##*/}" >> "$M_TEMP/disk.tmp.ext"
 done
 echo
 
@@ -164,6 +186,7 @@ echo -e "\nAverage disk I/O speed:\n-----------------------\n\n    Disk         
 for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
 
   disk=${LINE##*/}
+  [ -z "$disk" ] && continue
   
   # reading stats
   dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
