@@ -207,7 +207,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     lastdrtime=`dbquery "$rpath/../sysdata" "select drtime from $disk where timeindex='$lasttimeindex'"`
     [ -z "$lastdrtime" ] && lastdrtime=$drtime
     
-    drratio=`solve 2 "($drtime - $lastdrtime) / $diffsec * 100"`
+    drratio=`solve 2 "($drtime - $lastdrtime) / ($diffsec * 1000)"`
 
     replinerd=`printf "$LINE read:"`
     m=`expr length "$LINE"`
@@ -221,7 +221,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     lastdwtime=`dbquery "$rpath/../sysdata" "select dwtime from $disk where timeindex='$lasttimeindex'"`
     [ -z "$lastdwtime" ] && lastdwtime=$dwtime
     
-    dwratio=`solve 2 "($dwtime - $lastdwtime) / $diffsec * 100"`
+    dwratio=`solve 2 "($dwtime - $lastdwtime) / ($diffsec * 1000)"`
 
     replinerw=`printf "$LINE write:"`
     m=`expr length "$LINE"`
