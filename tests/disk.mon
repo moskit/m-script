@@ -23,6 +23,7 @@ source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
+sinceboot=`cat /proc/uptime | cut -d'.' -f1` || sinceboot=1000000
 
 if [ "_$SQLITE3" == "_1" ] && [ "_$1" == "_SQL" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
@@ -172,12 +173,9 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
   [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
   drtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $7 }')
-  
-  if [[ $drtime -gt 100 ]]; then
-    drspeed=`solve 2 "($dr / 2048) / ($drtime / 1000)"`
-  else
-    drspeed=0
-  fi
+
+  drspeed=`solve 2 "($dr / 2048) / ($sinceboot)"`
+
   replinerd=`printf "$LINE read:"`
   m=`expr length "$LINE"`
   l=`expr 22 - $m`
@@ -188,11 +186,9 @@ for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
   # writing stats
   dw=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $10 }')
   dwtime=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $11 }')
-  if [[ $dwtime -gt 100 ]]; then
-    dwspeed=`solve 2 "($dw / 2048) / ($dwtime / 1000)"`
-  else
-    dwspeed=0
-  fi
+
+  dwspeed=`solve 2 "($dw / 2048) / ($sinceboot)"`
+
   replinerw=`printf "$LINE write:"`
   m=`expr length "$LINE"`
   l=`expr 21 - $m`
