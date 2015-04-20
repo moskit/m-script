@@ -123,19 +123,19 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
     echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage"
   fi
 
-done < "$M_TEMP/disk.tmp"
+done
 
 # inodes usage
 df -i | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
-  if [ -n "$LONGLINE" ]; then
-    LINE="$LONGLINE $LINE"
-    LONGLINE=""
-  fi
-  # Sometimes df breaks a line, if it is much longer than 80 symbols
-  if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]; then
-    LONGLINE="$LINE"
-    continue
-  fi
+  #if [ -n "$LONGLINE" ]; then
+  #  LINE="$LONGLINE $LINE"
+  #  LONGLINE=""
+  #fi
+  ## Sometimes df breaks a line, if it is much longer than 80 symbols
+  #if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]; then
+  #  LONGLINE="$LINE"
+  #  continue
+  #fi
   disk=$(echo "$LINE" | cut -d'|' -f1)
   mpoint=$(echo "$LINE" | cut -d'|' -f6)
   used=$(echo "$LINE" | cut -d'|' -f5)
@@ -150,7 +150,7 @@ df -i | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
   [ "$x3" == "1" ] && warnind='<***>'
   [ -n "$warnind" ] && echo "$warnind disk $disk mountpoint $mpoint inodes usage is $used"
   echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage.i"
-done < "$M_TEMP/disk.tmp.i"
+done
 
 swaps=`cat /proc/swaps | grep '^\/dev\/' | awk '{ print $1 }'`
 echo "$swaps" >> "$M_TEMP/disk.tmp.ext"
