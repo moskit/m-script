@@ -30,6 +30,8 @@ echo "`date +"%H:%M:%S"` == Running $commline ==" >> "$rpath/monitoring.log"
 # removing stale lock file
 [ -n "$MAXLOCK" ] || MAXLOCK=30
 lockfile=`find "$rpath" -maxdepth 1 -name mon.run.lock -mmin +$MAXLOCK`
+nextrunlockfile=`find "$rpath" -maxdepth 1 -name next.run.lock`
+[ -n "$nextrunlockfile" ] && rm "$nextrunlockfile" && exit 0
 if [ -n "$lockfile" ] ; then
   ls -l "$lockfile" >> "$rpath/monitoring.log"
   echo "`date +"%H:%M:%S"` *** Lock file is older than $MAXLOCK minutes, removing" >> "$rpath/monitoring.log"
@@ -358,6 +360,7 @@ case $1 in
     runactions
     deltimeindex
     cleanup
+    touch "$M_ROOT/next.run.lock"
   ;;
   -dry | --dry | --dry-run | -test | --test)
     export TEST=1
@@ -394,6 +397,7 @@ case $1 in
     genreport servers "$M_ROOT/report"
     deltimeindex
     cleanup
+    touch "$M_ROOT/next.run.lock"
   ;;
   *.mon)
     newtimeindex
