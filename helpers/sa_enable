@@ -27,3 +27,4 @@ done
 
 [ -x "$rpath/../standalone/$1"/setup.run ] && "$rpath/../standalone/$1"/setup.run && mv "$rpath/../standalone/$1/setup.run" "$rpath/../standalone/$1/setup.run.done" || true
 
+"$rpath"/../monitorload.run restart

@@ -57,7 +57,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
   for cluster in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f5 | sort | uniq` ; do
     SSH_REMOTE_USER=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -s -d'|' -f13`
     [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
-    [ "X$cluster" == "X$SUPER_CLUSTER" ] && continue
+    [ "_$cluster" == "_$SUPER_CLUSTER" ] && continue
     [ -n "$targetcluster" -a "$targetcluster" != "$cluster" ] && continue
     [ -z "$clustered_as" ] && clustered_as="$cluster"
     $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
@@ -95,7 +95,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
       done
       time1=`date +"%s"`
       timediff=`expr $time1 - $time0`
-      if [ "X$SQLITE3" == "X1" ] ; then
+      if [ "_$SQLITE3" == "_1" ] ; then
         daynow=$(date +"%Y%m%d")
         $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$clustered_as/$servername', '$timediff')"
       else
@@ -112,7 +112,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
   for cluster in `find "$rpath/www/$monitor/$cld" -mindepth 1 -maxdepth 1 -type d` ; do
     cluster=${cluster##*/}
     [ -z "$cluster" ] && continue
-    if [ "X$monitor" == "Xservers" ] ; then
+    if [ "_$monitor" == "_servers" ] ; then
       # Clusters not present in clusters.conf are backuped to M_ROOT/mon.backups/dash
       if [ -n "$cluster" -a "$cluster" != "localhost" ]; then
         if [ `grep -c "^$cluster|" "$rpath/conf/clusters.conf"` -eq 0 ]; then

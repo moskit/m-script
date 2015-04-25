@@ -24,5 +24,6 @@ IFS='
   done
 fi
 
-exit 0
+"$rpath"/../monitorload.run restart
 
+exit 0

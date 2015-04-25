@@ -27,3 +27,4 @@ ps haxo pcpu,cmd | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep
   fi
 done
 
+echo

@@ -24,11 +24,25 @@ print_mongo_server() {
   local role=`echo "$2" | cut -d'|' -f4`
   local roleprop=( `echo "$role" | tr '=' ' '` )
   local roleind=`echo $role | cut -b 1 | sed 's|.|\U&|'`
-  if [ "_${roleprop[1]}" == "_true" ]; then
-    [ ${roleprop[2]} -ne 0 ] && roleind="${roleind}D" || roleind="${roleind}H"
+    
+      roleind="${roleind}D" || roleind="${roleind}H"
   fi
   if [ "_${roleprop[0]}" == "_slave" ]; then
-    local roletitle="`echo -e "slave\n\nHidden: ${roleprop[1]}\nDelay: ${roleprop[2]}\nIndexes: ${roleprop[3]}\nPriority: ${roleprop[4]}\nVotes: ${roleprop[5]}\nTags: ${roleprop[6]}"`"
+    if [ ${roleprop[2]} -ne 0 ]; then # it is a delayed secondary
+      if [ "_${roleprop[1]}" == "_true" ]; then
+        if [ ${roleprop[4]} -ne 0 ]; then
+          roleerror="\nERROR: priority is not 0 for a delayed secondary\n"
+          roleerrorclass=" roleerror"
+        fi
+      else
+        roleerror="\n\nERROR: delayed secondary is not hidden"
+        roleerrorclass=" roleerror"
+      fi
+      roleind="${roleind}D"
+    else
+      roleind="${roleind}H"
+    fi
+    local roletitle="`echo -e "slave\n\nHidden: ${roleprop[1]}\nDelay: ${roleprop[2]}\nIndexes: ${roleprop[3]}\nPriority: ${roleprop[4]}\nVotes: ${roleprop[5]}\nTags: ${roleprop[6]}${roleerror}"`"
   else
     local roletitle="`echo -e "${roleprop[0]}\n\nPriority: ${roleprop[1]}\nVotes: ${roleprop[2]}\nTags: ${roleprop[3]}"`"
   fi
@@ -43,7 +57,7 @@ print_mongo_server() {
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
-    echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
+    echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}${roleerror}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     echo "<div class=\"status status_short clickable\" id=\"${nodeid}_http\" onclick=\"showURL('${nodeid}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${nodeid}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
     if [ "_`echo "$rawdata" | grep ^status= | cut -d'=' -f2`" == "_1" ] ; then
@@ -76,6 +90,7 @@ print_mongo_server() {
     
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
+  unset roleerror
   IFS=$IFS2
 }
 

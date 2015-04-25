@@ -55,7 +55,7 @@ if [ "_$SQLITE3" == "_1" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
 
-echo -e "\nDisks usage:\n------------\n\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
+echo -e "\nDisks usage:\n\------------\n\n\tDisk\t\t\t\tMountpoint\t\t\tUsage\n\n"
 df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
   #if [ -n "$LONGLINE" ]; then
   #  LINE="$LONGLINE $LINE"
@@ -119,9 +119,9 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
     check_slaves $disk
     [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
     disk=${realdisk##*/}
-    echo "/dev/$disk" >> "$M_TEMP"/disk.tmp.ext
-    echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage"
+    echo "/dev/$disk" >> "$M_TEMP/disk.tmp.ext"
   fi
+  echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage"
 
 done
 
