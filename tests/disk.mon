@@ -107,7 +107,7 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
     elif [ "$disk" == "root" ]; then
       realdisk=`grep root= /proc/cmdline`
       if [ -n "$realdisk" ]; then
-        realdisk=`echo "$realdisk" | cut -d'=' -f2 | cut -d' ' -f1`
+        realdisk=`expr "$realdisk" : ".*root=\([^[:space:]]*\)"`
         echo "/dev/root is $realdisk" >> $M_TEMP/disk.tmp.discovered
         if ! `grep -q ${realdisk##*/}$ /proc/partitions` ; then
           realdisk=`resolve_uuid ${realdisk##*/}`

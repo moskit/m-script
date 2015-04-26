@@ -204,7 +204,11 @@ IFS=$IFS1
 
 print_timeline() {
   # print_timeline "title" <interval>
-  [ -n "$2" ] && interval=$2 || interval=$FREQ
+  if [ -n "$2" ]; then
+    interval=$2
+  else
+    interval=$FREQ
+  fi
   timerange=`expr $slotline_length \* \( $interval - $timeshift \)` || timerange=10000
   # print every 1st hour
   factor=1
