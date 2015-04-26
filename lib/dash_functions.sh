@@ -209,7 +209,7 @@ print_timeline() {
   else
     interval=$FREQ
   fi
-  timerange=`expr $slotline_length \* \( $interval - $timeshift \)` || timerange=10000
+  timerange=`expr $slotline_length \* \( $interval + $timeshift \)` || timerange=10000
   # print every 1st hour
   factor=1
   [ $interval -gt 1000 ] 2>/dev/null && factor=2
@@ -219,7 +219,7 @@ print_timeline() {
   dfpthour=`date -d "$dfptoldest" +"%H"`
   echo -e "<div class=\"server\">\n<span class=\"servername\">${1}</span>"
   for ((n=0; n<$slotline_length; n++)) ; do
-    dfpttimediff=`expr $n \* \( $interval - $timeshift \)`
+    dfpttimediff=`expr $n \* \( $interval + $timeshift \)`
     dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`
     dfpthournew=`date -d "$dfpttimestamp" +"%H"`
     if [ "_$dfpthournew" == "_$dfpthour" ] ; then
