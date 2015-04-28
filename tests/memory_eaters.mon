@@ -81,7 +81,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       [ "$y1" == "1" ] && warnind='<*>  '
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
-      echo "$warnind Process \"$procname\" is using ${usagemb}MB of RAM"
+      echo "$warnind Process \"$procname\" is using ${usagemb}MB (${usageperc}%) of RAM"
       unset y1 y2 y3 warnind
     fi
     [ -f "$M_TEMP/ps.prev.totals.res" ] && usageprev=`grep " ${procname}$" "$M_TEMP/ps.prev.totals.res" | cut -d' ' -f1 | tail -1` || continue
@@ -101,7 +101,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       [ "$y1" == "1" ] && warnind=' <*> '
       [ "$y2" == "1" ] && warnind='<**> '
       [ "$y3" == "1" ] && warnind='<***>'
-      [ -n "$warnind" ] && echo "$warnind Process \"$procname\" RAM usage $direction by $usagediff percents"
+      [ -n "$warnind" ] && echo "$warnind Process \"$procname\" RAM usage $direction by ${usagediff}%"
       unset y1 y2 y3 warnind
     fi
   done

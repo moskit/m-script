@@ -70,7 +70,7 @@ for coll in $sharded ; do
     shindexsize=`$MONGO $AUTH "$shhost"/admin --quiet --eval "db = db.getSiblingDB(\"$database\"); db.$collection.totalIndexSize()" 2>>$LOG`
     collshardinfo+=("$shname|$shhost|$shchunks|$shdatasize|$shindexsize")
 
-    events=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"time\" : { \\$gt : "$lastping" }, \"server\" : \"${shhost%:*}\", \"ns\" : \"$coll\"},{\"_id\":0,\"what\":1,\"details.note\":1}).forEach(function(c) { print(c.what + '|' + c.details.note) })"`
+    events=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.changelog.find({\"time\" : { \\$gt : $lastping }, \"server\" : \"${shhost%:*}\", \"ns\" : \"$coll\"},{\"_id\":0,\"what\":1,\"details.note\":1}).forEach(function(c) { print(c.what + '|' + c.details.note) })"`
     
     if [ "_$SQLITE3" == "_1" ] ; then
       for event in `echo "$events" | sort | uniq -c | grep '|' | sed 's|^\ *||'` ; do
