@@ -45,7 +45,8 @@ pidfile=/var/run/monitorload.pid
 mgpidfile=/var/run/monitorload.http.pid
 [ -f "$rpath/conf/mon.conf" ] && source "$rpath/conf/mon.conf" || exit 1
 [ `find "$rpath/standalone/rc" -maxdepth 1 -type l | wc -l` -gt 0 ] && source "$rpath/lib/functions.sh"
-
+# to take into account 10 seconds pause needed for lock
+FREQm=`expr $FREQ - 10`
 set +h
 
 case $1 in
@@ -100,26 +101,23 @@ start)
     x="$(echo "$rloadchng > $THRESHOLD" | bc)"
 
 ##### Running tests #####
+
+## A pause to secure the lock
     sleep 10
-    # Running actions from the queue
+    # Running actions from the queue first
     "$rpath"/lib/mq.run &
     
 ### Tests that run if load has changed - we are interested in more metrics here
     if [ "_$x" == "_1" ]; then
-## A pause is necessary here, because it is practically the same moment as test
-## at line 114 from the previous run, so lock file doesn't really work.
-## But the full cycle is not a good idea because we want to know what caused
-## the load. So we need just some delay to secure the lock.
-## If load is not too high, all tests run
       if [[ $rloadabs -lt $LOAD_CRIT ]]; then
         "$rpath"/mon.run -ao </dev/null &
       else
-## otherwise, these tests only
+## if load is too high, these tests only
         "$rpath"/mon.run "$HIGH_LOAD_SEQUENCE" </dev/null &
       fi
     fi
     
-    sleep $FREQ
+    sleep $FREQm
 
 ## Tests that are disabled if load average is too high
     if [[ $rloadabs -lt $LOAD_CRIT ]]; then
@@ -141,7 +139,6 @@ start)
       # Standalone tests, if any
       if [ -d "$rpath/standalone/rc" ]; then
         for sa in `find "$rpath/standalone/rc/" -maxdepth 1  -type l` ; do
-          [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           safolder=$(readlink -f "$sa")
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder" >> "$rpath/logs/sa.log"
           for satest in `find "$sa/rc/" -maxdepth 1 -type l | sort` ; do
