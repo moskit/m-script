@@ -13,13 +13,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 declare -i cursor
 declare -a data
 declare -a datatype
 declare -a datastyle
 cursor=0
-
 format() {
   case $2 in
   tabletitle)
@@ -43,7 +41,6 @@ format() {
     ;;
   esac
 }
-
 IFS1=$IFS
 IFS='
 '
@@ -193,4 +190,3 @@ cat -E $1 | while read LINE ; do
 done
 
 IFS=$IFS1
-
