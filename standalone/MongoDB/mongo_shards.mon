@@ -45,6 +45,9 @@ lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
 M_TEMP="$M_TEMP/MongoDB"
 [ -d "$M_TEMP/MongoDB" ] || install -d "$M_TEMP/MongoDB"
 
+IFS='
+'
+
 a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
 [[ $a -eq 0 ]] && log "No configuration servers found" && exit 1
 
