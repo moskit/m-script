@@ -344,14 +344,21 @@ if [ -f "$rpath/tests/memory_eaters.conf" ]; then
 fi
 echo "done"
 
-echo -e "\nIt is recommended to add periodic full test suite execution by schedule (via Cron daemon). If monitoring daemon fails, such Cron job will restart it. Also some tests are not necessary to be executed very often, e.g. disk.mon, so they can be removed from BASIC_SEQUENCE (see conf/mon.conf) and symlinked into rc folder, which makes them run in \"alert-only\" or \"report\" modes of mon.run, that execute all tests from rc folder rather than BASIC_SEQUENCE.\n"
-read -p "If you type \"0\" here, no Cron jobs will be created. Otherwise type in the number of minutes between periodic mon.run execution in \"alert-only\" mode, the Cron job will be created in file /etc/cron.d/m-script (10, 15, 20 and 30 minutes seem to be reasonable values): " cronperiod
+if [ -z "$defopt" ]; then
+  echo -e "\nIt is recommended to add periodic full test suite execution by schedule (via Cron daemon). If monitoring daemon fails, such Cron job will restart it. Also some tests are not necessary to be executed very often, e.g. disk.mon, so they can be removed from BASIC_SEQUENCE (see conf/mon.conf) and symlinked into rc folder, which makes them run in \"alert-only\" or \"report\" modes of mon.run, that execute all tests from rc folder rather than BASIC_SEQUENCE.\n"
+  read -p "If you type \"0\" here, no Cron jobs will be created. Otherwise type in the number of minutes between periodic mon.run execution in \"alert-only\" mode, the Cron job will be created in file /etc/cron.d/m-script (10, 15, 20 and 30 minutes seem to be reasonable values): " cronperiod
+else
+  cronperiod=30
+fi
 
 if [ $cronperiod -gt 0 ] 2>/dev/null ; then
   sed -i "/mon.run\ \-ao/d" /etc/cron.d/m-script
   if [ $cronperiod -lt 60 ]; then
     echo "*/$cronperiod * * * * root \"$rpath\"/mon.run -ao" >> /etc/cron.d/m-script
   else
+    hourperiod=`expr $cronperiod / 60`
+    echo "0 */$cronperiod * * * root \"$rpath\"/mon.run -ao" >> /etc/cron.d/m-script
+  fi
 fi
 
 [ -d /etc/init.d ] && rcdir=/etc/init.d
