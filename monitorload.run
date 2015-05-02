@@ -214,9 +214,11 @@ status)
       echo "${0##*/} is running (PID $pid)"
     else
       echo "PID file exists, but process PID $pid does not"
+      exit 1
     fi
   else
     echo "${0##*/} is not running"
+    exit 1
   fi
   if [ -f $mgpidfile ]; then
     pid=`cat $mgpidfile|tail -1`
@@ -224,9 +226,11 @@ status)
       echo "HTTP is running (pid $pid)"
     else
       echo "PID file exists, but process PID $pid does not"
+      exit 1
     fi
   else
     echo "HTTP is not running"
+    exit 1
   fi
   ;;
 *)

@@ -376,41 +376,34 @@ else
   bootmon="y"
 fi
 if `echo $bootmon | grep -qi "^y"` ; then
-if [ -n "`which insserv 2>/dev/null`" ] ; then
-  `which insserv` monitorload
-else
-  case $OS in
-  debian)
-    `which update-rc.d` monitorload enable
-    ;;
-  gentoo)
-    `which rc-update` add monitorload default
-    ;;
-  redhat)
-    `which chkconfig` monitorload on
-    ;;
-  *)
-  [ -d /etc/rc3.d ] && ln -s $rcdir/monitorload /etc/rc3.d/S99monitorload
-  [ -d /etc/rc4.d ] && ln -s $rcdir/monitorload /etc/rc4.d/S99monitorload
-  [ -d /etc/rc5.d ] && ln -s $rcdir/monitorload /etc/rc5.d/S99monitorload
-  [ -d /etc/rc0.d ] && ln -s $rcdir/monitorload /etc/rc0.d/K01monitorload
-  [ -d /etc/rc6.d ] && ln -s $rcdir/monitorload /etc/rc6.d/K01monitorload
-  if [ -z "$defopt" ] ; then
-    echo "If you want to start the load monitoring daemon now, run:"
-    echo "$rcdir/monitorload start"
+  if [ -n "`which insserv 2>/dev/null`" ] ; then
+    `which insserv` monitorload
   else
-    $rcdir/monitorload start
+    case $OS in
+    debian)
+      `which update-rc.d` monitorload enable
+      ;;
+    gentoo)
+      `which rc-update` add monitorload default
+      ;;
+    redhat)
+      `which chkconfig` monitorload on
+      ;;
+    *)
+      [ -d /etc/rc3.d ] && ln -s $rcdir/monitorload /etc/rc3.d/S99monitorload
+      [ -d /etc/rc4.d ] && ln -s $rcdir/monitorload /etc/rc4.d/S99monitorload
+      [ -d /etc/rc5.d ] && ln -s $rcdir/monitorload /etc/rc5.d/S99monitorload
+      [ -d /etc/rc0.d ] && ln -s $rcdir/monitorload /etc/rc0.d/K01monitorload
+      [ -d /etc/rc6.d ] && ln -s $rcdir/monitorload /etc/rc6.d/K01monitorload
+      ;;
+    esac
   fi
-  ;;
-  esac
 fi
+
+if [ -z "$defopt" ] ; then
+  echo -e "If you want to start the load monitoring daemon now, execute:\n\n$rcdir/monitorload start"
 else
-  echo "If you want to start the load monitoring daemon now, run:"
-  echo "$rpath/monitorload.run start"
+  $rcdir/monitorload start
 fi
 
-echo -e "\nYou may want to use M-Shell (just execute $rpath/msh).\nIt is just a convenience subshell that doesn't restrict you from using your shell as usual but adds paths and sets all necessary environment variables.\nCheck/edit $rpath/.msh.env to adjust its look and feel\n"
-
-
-#rsync ifconfig
-
+echo -e "\nYou may want to use M-Shell (just execute $rpath/msh).\nIt is just a convenience subshell that doesn't restrict you from using your shell as usual but adds paths and sets all necessary environment variables.\nEdit $rpath/.msh.env to adjust its look and feel\n"
