@@ -53,32 +53,30 @@ if [ -n "$1" ]; then
       clustername=`echo $cluster | cut -sd'|' -f1`
       mpath=`echo $cluster | cut -sd'|' -f8`
       sudouser=`echo $cluster | cut -sd'|' -f13`
-      if [ -n "$mpath" ]; then
-        if [ -n "$sudouser" ]; then
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-          "$rpath"/cloudsync --nolocalhost --cluster=$clustername "$M_ROOT/servers.list" /tmp
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv /tmp/servers.list "\"$mpath\"/servers.list"
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername "\"$mpath\"/cloud/common/$rcommand"
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list.tmp" "$M_ROOT/servers.list"
-        else
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-          "$rpath"/cloudsync --nolocalhost --cluster=$clustername "$M_ROOT/servers.list" "\"$mpath\"/servers.list"
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername "\"$mpath\"/cloud/common/$rcommand"
-          "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list.tmp" "\"$M_ROOT\"/servers.list"
-        fi
+      [ -z "$mpath" ] && mpath=$M_ROOT
+      if [ -n "$sudouser" ]; then
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
+        "$rpath"/cloudsync --nolocalhost --cluster=$clustername "$M_ROOT/servers.list" /tmp
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv /tmp/servers.list "\"$mpath\"/servers.list"
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername "\"$mpath\"/cloud/common/$rcommand"
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list.tmp" "$M_ROOT/servers.list"
+      else
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
+        "$rpath"/cloudsync --nolocalhost --cluster=$clustername "$M_ROOT/servers.list" "\"$mpath\"/servers.list"
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername "\"$mpath\"/cloud/common/$rcommand"
+        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list.tmp" "\"$M_ROOT\"/servers.list"
       fi
     done
   else
     mpath=`grep ^$1\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
-    if [ -n "$mpath" ]; then
-      if [ -n "$sudouser" ]; then
-        "$rpath"/cloudsync --nolocalhost --cluster="$1" "$M_ROOT/servers.list" /tmp
-        "$rpath"/cloudexec --nolocalhost --cluster="$1" mv /tmp/servers.list "\"$mpath\"/"
-        "$rpath"/cloudexec --nolocalhost --cluster="$1" "\"$mpath\"/cloud/common/$rcommand"
-      else
-        "$rpath"/cloudsync --nolocalhost --cluster="$1" "$M_ROOT/servers.list" "\"$mpath\"/"
-        "$rpath"/cloudexec --nolocalhost --cluster="$1" "\"$mpath\"/cloud/common/$rcommand"
-      fi
+    [ -z "$mpath" ] && mpath=$M_ROOT
+    if [ -n "$sudouser" ]; then
+      "$rpath"/cloudsync --nolocalhost --cluster="$1" "$M_ROOT/servers.list" /tmp
+      "$rpath"/cloudexec --nolocalhost --cluster="$1" mv /tmp/servers.list "\"$mpath\"/"
+      "$rpath"/cloudexec --nolocalhost --cluster="$1" "\"$mpath\"/cloud/common/$rcommand"
+    else
+      "$rpath"/cloudsync --nolocalhost --cluster="$1" "$M_ROOT/servers.list" "\"$mpath\"/"
+      "$rpath"/cloudexec --nolocalhost --cluster="$1" "\"$mpath\"/cloud/common/$rcommand"
     fi
   fi
 fi
