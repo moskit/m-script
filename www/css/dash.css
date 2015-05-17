@@ -224,6 +224,7 @@ a:active { color: #393; }
 #content {
   width: 800px;
   display: table;
+  margin-bottom: 50px;
 }
 
 span.indent {

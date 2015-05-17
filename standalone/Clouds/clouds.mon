@@ -82,6 +82,7 @@ update_server_list() {
     [ $res -eq 1 ] && log "update_servers_list error" && exit 1
   else
     log "not updating servers.list (not configured)"
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_servers --cloud="$cloud" --view=raw >/dev/null
   fi
 }
 

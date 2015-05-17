@@ -43,7 +43,7 @@ do
   fi
   echo "$ip $hname" >> /etc/hosts
 done
-IFS=$IFS1
+
 
 [ -n "$error" ] && echo "${error[*]}" && exit 1
 if [ -n "$1" ]; then
@@ -81,3 +81,4 @@ if [ -n "$1" ]; then
   fi
 fi
 
+IFS=$IFS1
