@@ -77,11 +77,15 @@ if [ "_$help" == "_yes" ] ; then
   exit 0
 fi
 
+exitproper() {
+  # to be nice to children
+  $rpath/$rcommand stop
+  rm $pidfile
+  exit 0
+}
 
-
-trap 'exit' 0
-trap 'exit' 3
-trap 'exit' 15
+trap 'exitproper' 3
+trap 'exitproper' 15
 
 [ -n "$config" ] || config="$rpath/${rcommand##*/}.conf"
 [ -e "$config" ] || config="/etc/${rcommand##*/}.conf"

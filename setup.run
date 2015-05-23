@@ -59,8 +59,33 @@ if [ -z "$AWK" ]; then
 fi
 
 if [ -z "$NETSTAT" ]; then
-  echo -e "\nNetstat not found. It is necessary, please install it first.\n"
-  exit 1
+  if [ -z "$defopt" ] ; then
+    echo -e "\nNetstat (part of Net-tools package) not found. It is necessary, please install it first.\n"
+    read -p "Do you want me to install it now?  [y/N] " installns
+  else
+    installns="y"
+  fi
+  if `echo $installns | grep -qi "^y"` ; then
+    case $OS in
+    debian)
+      export DEBIAN_FRONTEND=noninteractive
+      `which apt-get` install net-tools -y || exit 1
+      ;;
+    gentoo)
+      `which emerge` net-tools || exit 1
+      ;;
+    redhat)
+      `which yum` install net-tools -y || exit 1
+      ;;
+    *)
+      echo
+      echo "Unable to determine operating system, sorry.. PLease install Net-tools manually."
+      exit 1
+      ;;
+    esac
+  else
+    exit 1
+  fi
 fi
 
 if [ -z "$BC" ]; then
