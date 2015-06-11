@@ -155,7 +155,7 @@ if [ -z "$MONGOOSE" ]; then
 fi
 if [ -z "$MONGOOSE" ]; then
   if [ -z "$defopt" ] ; then
-    echo -e "\n  Mongoose not found or not in PATH. You need it only in case you want\n  web interface here on this server\n"
+    echo -e "\n  Mongoose not found or not in PATH. It is an embedded HTTP server,\n  you may want it only in case you want web interface\n  for M-Script here on this host.\n  You can also use any other HTTP server, but you will have to configure it.\n"
     read -p "Do you want me to install it now?  [y/N] " installmongoose
   else
     installmongoose="N"
@@ -164,7 +164,7 @@ if [ -z "$MONGOOSE" ]; then
     rm -rf "$rpath/mongoose-source" 2>/dev/null
     (mkdir "$rpath/mongoose-source" && cd "$rpath/mongoose-source" && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose "$rpath/")
     if [ $? -ne 0 ]; then
-      echo -e "\nUnable to compile, disabling it for now. Compile it or install some other way and copy its binary to $rpath/ if you need it"
+      echo -e "\nUnable to compile, disabling it for now. Most likely the problem is missing dependencies.\n  You can resolve them later and execute $rpath/helpers/install_mongoose\n  to repeat this step.\n"
       sed -i "s|MONGOOSE=.*|MONGOOSE=0|g" "$rpath/conf/mon.conf"
     else
       if `grep -q "^MONGOOSE=" "$rpath/conf/mon.conf"` ; then
@@ -202,7 +202,7 @@ if `grep -q "^MONGOOSE=1" "$rpath/conf/mon.conf"` ; then
     echo "r $rpath/www" >> "$rpath/conf/mongoose.conf"
   fi
   echo
-  echo "You may want to adjust access settings for the web interface."
+  echo "You may want to adjust access settings for web interface."
   echo "To do this, read http://code.google.com/p/mongoose/wiki/MongooseManual"
   echo "and edit $rpath/conf/mongoose.conf"
   sed -i "s|<title></title>|<title>M - `hostname`</title>|" "$rpath/www/dashboard/index.html"
@@ -377,7 +377,7 @@ else
 fi
 
 if [ $cronperiod -gt 0 ] 2>/dev/null ; then
-  sed -i "/mon.run\ \-ao/d" /etc/cron.d/m-script
+  [ -f /etc/cron.d/m-script ] && sed -i "/mon.run\ \-ao/d" /etc/cron.d/m-script
   if [ $cronperiod -lt 60 ]; then
     echo "*/$cronperiod * * * * root \"$rpath\"/mon.run -ao" >> /etc/cron.d/m-script
   else
@@ -396,11 +396,11 @@ if [ -z "$defopt" ] ; then
   echo $email > "$rpath/conf/mail.admin.list"
   echo $email > "$rpath/conf/mail.backup.list"
   echo
-  read -p "Do you want load monitoring service to start up at boot automatically? [y/N] " bootmon
+  read -p "Do you want load monitoring service to start up at boot automatically? [Y/n] " bootmon
 else
   bootmon="y"
 fi
-if `echo $bootmon | grep -qi "^y"` ; then
+if ! `echo $bootmon | grep -qi "^n"` ; then
   if [ -n "`which insserv 2>/dev/null`" ] ; then
     `which insserv` monitorload
   else

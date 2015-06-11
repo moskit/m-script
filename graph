@@ -39,7 +39,6 @@ debug=true
 [ -n "$CLOUD" ] && source "$rpath/conf/clouds/${CLOUD}.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 
-IFCFG=`which ifconfig 2>/dev/null`
 possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min fromfile"
 necessary_options=""
 source "$rpath/conf/mon.conf"
@@ -170,7 +169,7 @@ if [ -n "$fromfile" ]; then
   metric="${metric%,}"
 fi
 
-localip=`localips`
+localip=`"$rpath"/helpers/localips`
 if [ -n "$ip" ] ; then
   if [ `echo "$localip" | grep -c "^$ip$"` -ne 0 ] ; then
     localip="yes"
@@ -243,7 +242,7 @@ if [ -z "$perpixel" ] ; then
     from=`date -u -d "$from" +"%s"`
     if [ -n "$to" ] ; then
       tto=`date -u -d "$to"`
-      to=`date -d "$to" +"%s"`
+      to=`date -u -d "$to" +"%s"`
     else
       to=`date +"%s"`
       tto=`date -u`
@@ -261,6 +260,8 @@ if [ -z "$perpixel" ] ; then
 else
   title="Graph: $metric"
   log "Generating graph ${metric}, last $areaH values"
+  to=`date +"%s"`
+  # from for perpixel mode will be calculated later
 fi
 
 ##############################
@@ -302,213 +303,153 @@ fi
 dbname=`echo "$database" | tr '/' '_'`
 [ -z "$table" ] && table="sysdata" || dbname="${dbname}_${table}"
 [ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
-  if [ -n "$as" ] ; then
-    name=`echo "$as" | tr ',' '_' | tr ' ' '_'`
-  else 
-    name=`echo $metric | tr ',' '_' | tr ' ' '_'`
-  fi
+if [ -n "$as" ] ; then
+  name=`echo "$as" | tr ',' '_' | tr ' ' '_'`
+else 
+  name=`echo $metric | tr ',' '_' | tr ' ' '_'`
+fi
 
 if [ -n "$perpixel" ]; then
   $debug && log "per pixel mode"
-  expr $perpixel / 1 >/dev/null 2>&1 || perpixel=1
-  limit=$(($areaH/$perpixel))
-###### Getting min and max values from database
-  if [ `expr $metric : .*,` -eq 0 ] ; then
-    $minauto && minQ="min($metric)"
-    maxQ="max($metric)"
-  else
-    for smetric in `echo $metric | tr ',' ' '` ; do
-      $minauto && minQ="${minQ}min($smetric),"
-      maxQ="${maxQ}max($smetric),"
-    done
-    $minauto && minQ="${minQ%,}"
-    maxQ="${maxQ%,}"
-  fi
-  nonempty=`echo $metric | sed "s|,|\<\>'' and |g"`
-  nonempty="${nonempty}<>''"
-  if [ -n "$where" ] ; then
-    field=${where%%:*}
-    value=${where#*:}
-    $minauto && minQ="select $minQ from (select $metric from $table where $nonempty and  $field='$value' order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where $nonempty and $field='$value' order by timeindex desc limit $limit)"
-  else
-    $minauto && minQ="select $minQ from (select $metric from $table where $nonempty order by timeindex desc limit $limit)"
-    maxQ="select $maxQ from (select $metric from $table where $nonempty order by timeindex desc limit $limit)"
-  fi
-  $debug && log "$maxQ"
-  if [ "$sIP" == "localhost" ]; then
-    $minauto && minres=`$SQL3 "$rpath/$database" "$minQ"`
-    maxres=`$SQL3 "$rpath/$database" "$maxQ"`
-  else
-    minmax=`$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$maxQ ; $minQ\""`
-    maxres=`echo "$minmax" | head -1`
-    $minauto && minres=`echo "$minmax" | tail -1`
-  fi
-  [ -z "$maxres" ] && log "Was unable to find the maximum, exiting" && exit 1
-
-  Nmax=0
-  Nmin=0
-  if $minauto ; then
-    metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve 2 "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
-  else
-    metricminfp=0
-    metricmin=0
-  fi
-  metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve 2 "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
-  $debug && log "metricmaxfp: $metricmaxfp  metricmax: $metricmax"
-  orderm=`expr ${#metricmax} / 3`
-  if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
-    log "Error getting minimum and maximum values for $metric $limit last values"
-    exit 1
-  fi
-  [ -z "$metricmin" ] && metricmin=0
-  [ -z "$metricmax" ] && metricmax=$areaV
-  mp=`solve 2 "$areaV / $metricmax"`
-
-  $debug && log "mp: $mp"
-
-  if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
-  # 1mln is a reasonable limit (scale 2 x 3); make i<=3 to make it a billion
-    for ((i=1; i<=$orderm; i++)); do
-      [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / $metricmax" | bc`
-      $debug && log "mp: $mp"
-    done
-  fi
-
-  mpl=${mp%%.*}
-  [ -z "$mpl" ] && mpl=0
-  if [[ $mpl -eq 0 ]]; then
-    ll=${mp##*.}
-    ll=`expr $ll : 0*`
-    mpl="-$ll"
-  else
-    mpl=${#mpl}
-    ll=0
-  fi
-  mpl=`expr $mpl - 2`
-  d=`echo "scale=$ll+2; 10 ^ $mpl" | bc`
-log "d=$d"
-  bs=`echo "$mp / $d" | bc`
-  if [ `expr $bs \< 20` -eq 1 ]; then
-    mpr=10
-  elif [ `expr $bs \< 50` -eq 1 ]; then
-    mpr=20
-  elif [ `expr $bs \< 100` -eq 1 ]; then
-    mpr=50
-  else
-    mpr=100
-  fi
-  mp=`echo "$mpr * $d" | bc`
-  $debug && log "mp: $mp"
-  metricmax=`solve 2 "$areaV / $mp"`
-  metricmax=${metricmax%%.*}
-  to=`date +"%s"`
-  $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
-  if [ `expr $metric : .*,` -eq 0 ] ; then
-    metricQ="${metric}*${mp}"
-  else
-    for smetric in `echo $metric | tr ',' ' '` ; do
-      metricQ="${metricQ}${smetric}*${mp},"
-    done
-    metricQ="${metricQ%,}"
-  fi
-  if [ -n "$where" ] ; then
-    QUERY="select $metricQ from $table WHERE $field='$value' order by timeindex desc limit $limit"
-    QUERYFROM="select timeindex from $table WHERE $field='$value' order by timeindex desc limit $limit"
-  else
-    QUERYFROM="select timeindex from $table order by timeindex desc limit $limit"
-    QUERY="select $metricQ from $table order by timeindex desc limit $limit"
-  fi
-  $debug && log "$QUERY"
-  if [ "$sIP" == "localhost" ]; then
-    $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
-    from=`$SQL3 "$rpath/$database" "$QUERYFROM" | tail -1`
-  else
-    $debug && log "$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" $SQL3 \"${mpath}/$database\" \"${QUERY}\""
-    $SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
-    from=`$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERYFROM\"" \| tail -1`
-  fi
-  log "from: $from  to: $to"
-  if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 5 ] ; then
-    log "Too few data for graph or connection to $sIP problem. Graph is not generated."
-    exit 1
-  fi
-  sn=`echo $metric | tr ',' ' ' | wc -w`
-
-######## non-perpixel
+  perpixel=true
+  pptail=" ORDER BY timeindex DESC LIMIT $limit"
 else
-  $debug && log "scaled mode (per pixel mode disabled)"
+  perpixel=false
+  pptail=" AND timeindex BETWEEN $from AND $to"
+fi
+
+###### Getting min and max values from database
+if [ `expr $metric : .*,` -eq 0 ] ; then
+  $minauto && minQ="min($metric)"
+  maxQ="max($metric)"
+else
+  for smetric in `echo $metric | tr ',' ' '` ; do
+    $minauto && minQ="${minQ}min($smetric),"
+    maxQ="${maxQ}max($smetric),"
+  done
+  $minauto && minQ="${minQ%,}"
+  maxQ="${maxQ%,}"
+fi
+nonempty=`echo $metric | sed "s|,|\<\>'' and |g"`
+nonempty="${nonempty}<>''"
+if [ -n "$where" ] ; then
+  field=${where%%:*}
+  value=${where#*:}
+  $minauto && minQ="SELECT $minQ FROM (SELECT $metric FROM $table WHERE $nonempty AND  $field='$value'$pptail)"
+  maxQ="SELECT $maxQ FROM (SELECT $metric FROM $table WHERE $nonempty AND $field='$value'$pptail)"
+else
+  $minauto && minQ="SELECT $minQ FROM (SELECT $metric FROM $table WHERE ${nonempty}${pptail})"
+  maxQ="SELECT $maxQ FROM (SELECT $metric FROM $table WHERE ${nonempty}${pptail})"
+fi
+$debug && log "$maxQ"
+if [ "$sIP" == "localhost" ]; then
+  $minauto && minres=`$SQL3 "$rpath/$database" "$minQ"`
+  maxres=`$SQL3 "$rpath/$database" "$maxQ"`
+else
+  minmax=`$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$maxQ ; $minQ\""`
+  maxres=`echo "$minmax" | head -1`
+  $minauto && minres=`echo "$minmax" | tail -1`
+fi
+[ -z "$maxres" ] && log "Was unable to find the maximum, exiting" && exit 1
+
+Nmax=0
+Nmin=0
+if $minauto ; then
+  # required for the case of multiple metrics
+  metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve 2 "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+else
+  metricminfp=0
   metricmin=0
-  metricmax=0
-  # Pre-multiply
-  mp=100
-  qmetric="timeindex"
-  for smetric in `echo $metric | tr ',' ' '` ; do
-    rm -f "$M_TEMP/graph.${sIP}.${dbname}.${smetric}" 2>/dev/null
-    qmetric="${qmetric}, ${smetric}*${mp}"
+fi
+metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve 2 "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
+$debug && log "metricmaxfp: $metricmaxfp  metricmax: $metricmax"
+orderm=`expr ${#metricmax} / 3`
+if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
+  log "Error getting minimum and maximum values for $metric"
+  exit 1
+fi
+[ -z "$metricmin" ] && metricmin=0
+[ -z "$metricmax" ] && metricmax=$areaV
+mp=`solve 2 "$areaV / $metricmax"`
+
+$debug && log "mp: $mp"
+
+if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
+# 1 mln is a reasonable limit (scale 2 x 3); change to i<=3 to make it billion
+  for ((i=1; i<=$orderm; i++)); do
+    [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / $metricmax" | bc`
+    $debug && log "mp: $mp"
   done
-    
-  QUERY="SELECT $qmetric FROM $table WHERE timeindex BETWEEN $from AND $to"
-  if [ -n "$where" ] ; then
-    field=${where%%:*}
-    value=${where#*:}
-    QUERY="$QUERY AND $field='$value'"
-  fi
-  if [ "_$sIP" == "_localhost" ] ; then
-    $debug && log "$SQL3 \"$rpath/$database\" \"$QUERY\""
-    $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting $smetric data from $rpath/${database}, server $sIP"
+fi
+
+mpl=${mp%%.*}
+[ -z "$mpl" ] && mpl=0
+if [[ $mpl -eq 0 ]]; then
+  ll=${mp##*.}
+  ll=`expr $ll : 0*`
+  mpl="-$ll"
+else
+  mpl=${#mpl}
+  ll=0
+fi
+mpl=`expr $mpl - 2`
+d=`echo "scale=$ll+2; 10 ^ $mpl" | bc`
+log "d=$d"
+bs=`echo "$mp / $d" | bc`
+if [ `expr $bs \< 20` -eq 1 ]; then
+  mpr=10
+elif [ `expr $bs \< 50` -eq 1 ]; then
+  mpr=20
+elif [ `expr $bs \< 100` -eq 1 ]; then
+  mpr=50
+else
+  mpr=100
+fi
+mp=`echo "$mpr * $d" | bc`
+$debug && log "mp: $mp"
+metricmax=`solve 2 "$areaV / $mp"`
+metricmax=${metricmax%%.*}
+$debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
+if ! $perpixel ; then
+  metricQ="timeindex,"
+fi
+if [ `expr $metric : .*,` -eq 0 ] ; then
+  metricQ="${metricQ}${metric}*${mp}"
+else
+  for smetric in `echo $metric | tr ',' ' '` ; do
+    metricQ="${metricQ}${smetric}*${mp},"
+  done
+  metricQ="${metricQ%,}"
+fi
+
+if [ -n "$where" ] ; then
+  QUERY="SELECT $metricQ FROM $table WHERE $field='$value'${pptail}"
+  $perpixel && QUERYFROM="SELECT timeindex FROM $table WHERE $field='$value'${pptail}"
+else
+  if ! $perpixel; then
+    pptail=" WHERE timeindex BETWEEN $from AND $to"
   else
-  # -o StrictHostKeyChecking=no
-    $debug && log "$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" $SQL3 \"$mpath/$database\" \"$QUERY\""
-    $SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > "$M_TEMP/graph.${sIP}.${dbname}.${name}" || log "Problem getting data from $rpath/${database}, server $sIP"
+    QUERYFROM="SELECT timeindex FROM ${table}${pptail}"
   fi
-  if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 1 ] ; then
-    log "Too little data for graph. Might be connection to $sIP problems. Graph is not generated."
-    exit 1
-  fi
+  QUERY="SELECT $metricQ FROM ${table}${pptail}"
+fi
+$debug && log "$QUERY"
+if [ "$sIP" == "localhost" ]; then
+  $SQL3 "$rpath/$database" "$QUERY" > "$M_TEMP/graph.${sIP}.${dbname}.${name}"
+  $perpixel && from=`$SQL3 "$rpath/$database" "$QUERYFROM" | tail -1`
+else
+  $debug && log "$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" $SQL3 \"${mpath}/$database\" \"${QUERY}\""
+  $SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERY\"" > $M_TEMP/graph.${sIP}.${dbname}.${name}
+  $perpixel && from=`$SSH $thekey -p $SSHPORT "$SSH_REMOTE_USER"@"$sIP" "$SQL3 \"$mpath/$database\" \"$QUERYFROM\"" \| tail -1`
+fi
+log "from: $from  to: $to"
+if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 5 ] ; then
+  log "Too little data for graph or connection to $sIP problem. Graph is not generated."
+  exit 1
+fi
+sn=`echo $metric | tr ',' ' ' | wc -w`
 
-#####################################################
-#### Processing the data (for non-perpixel mode) ####
-#####################################################
 
-  declare -i n
-  n=2
-  for smetric in `echo $metric | tr ',' ' '` ; do
-    smax=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | sort -n | tail -1` ; smax=${smax%.*}
-    if $minauto ; then
-      smin=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | grep -v ^$ | sort -n | head -1` ; smin=${smin%.*}
-      [[ $metricmin -eq 0 ]] && metricmin=$smin
-      [[ $smin -lt $metricmin ]] && metricmin=$smin
-    fi
-    [[ $smax -gt $metricmax ]] && metricmax=$smax
-    n+=1
-  done
-  sn=`echo $metric | tr ',' ' ' | wc -w`
-  $debug && log "this graph maximum: $metricmax  minimum: $metricmin  (option 'min' is set to '$min')" 
-  if [ "_$scale" == "_yes" ] ; then
-    sadd=`solve 2 "($metricmax - $metricmin) / $sn"` 2>/dev/null || sadd=`solve 2 "$metricmax / $sn"` 2>/dev/null || sadd=10
-    snadd=0
-    n=2
-    for smetric in `echo $metric | tr ',' ' '` ; do
-      rm -f "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" 2>/dev/null
-      smax=`cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | sort -n | tail -1`
-      if [ -n "$smax" ] ; then
-        [ `echo "$smax == 0" | bc` -ne 1 ] && sratio=`solve 2 "$metricmax / $smax / $sn / 1.2"` || sratio=1
-        for LINE in `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n}` ; do
-          st=`echo $LINE | cut -d'|' -f1`
-          [ -z "$st" ] && continue
-          sd=`echo $LINE | cut -d'|' -f2`
-          [ -z "$sd" ] && continue
-          sds=`solve 2 "$sd * $sratio + $snadd"`
-          echo "$st|$sds" >> $M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled
-        done
-      fi
-      snadd=`solve 2 "$snadd + $sadd"`
-      n+=1
-    done
-  fi
-
-fi #### perpixel or not condition end
 
 #####################################
 #### Graph geometry calculations ####
@@ -764,12 +705,7 @@ do
   irev=`expr $graphV - $i`
   marksY="$marksY`echo "<line x1=\\"$mY1\\" y1=\\"${irev}.5\\" x2=\\"$mY2\\" y2=\\"${irev}.5\\" />"`"
   if [ "_$scale" != "_yes" ] ; then
-    if [ -n "$perpixel" ] ; then
-      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style=\\"text-anchor: end\\">$imark</text>"`"
-    else
-      [ -n "$imark" ] && imarkfp=`solve 2 "$imark/$mp"`
-      textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style=\\"text-anchor: end\\">$imarkfp</text>"`"
-    fi
+    textY="${textY}`echo "<text x=\\"$mYT1\\" y=\\"$irev\\" style=\\"text-anchor: end\\">$imark</text>"`"
   fi
 done
 log "marks generated"
@@ -804,7 +740,8 @@ echo "<g id=\"graph\" shape-rendering=\"geometricPrecision\">" >> "$rpath/www/gr
 
 # first column is the X axis, data starts from the column 2
 declare -i n
-[ -z "$perpixel" ] && n=2 || n=1
+$perpixel && n=1 || n=2
+
 declare -i smid ; smid=0
 for smetric in `echo $metric | tr ',' ' '` ; do
   if [ -n "$as" ]; then
@@ -824,14 +761,17 @@ log "slegend=$slegend"
 log "slegendY=$slegendY"
 
   echo -n "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
-  if [ -z "$perpixel" ]; then  
+  if ! $perpixel; then  
     if [ "_$scale" == "_yes" ] ; then cat "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" ; else cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} ; fi | while read LINE
     do
       X=`echo $LINE | cut -d'|' -f1`
+      shiftYY=`expr $areaV + $padding + $metricmin - $shiftY`
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
-      if [ -z "$X" ] || [ -z "$Y" ] ; then continue ; fi
+      if [ -z "$X" ] ; then continue ; fi
       X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
-      Y=`expr $areaV + $padding - \( $Y - $metricmin + $shiftY \) \* 100 / $perdotY`
+      [ -z "$Y" ] && Y=$Yp || Yp=$Y
+      [ -z "$Y" ] && Y=0
+      Y=`expr $shiftYY - $Y`
       echo -n " $X,$Y" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
     done
 #### drawing perpixel graph
