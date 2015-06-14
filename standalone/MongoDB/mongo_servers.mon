@@ -267,7 +267,8 @@ else
   [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
   if [ "_$cluster" == "_1" ] ; then
     for name in $MONGO_SERVERS ; do
-      port=${name#*:}
+      port=`echo "$name" | cut -sd':' -f2`
+      [ -z "$port" ] && port=$defaultport
       clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
     done
     collect_hosts $clusterips
@@ -279,10 +280,11 @@ else
   [ -f "$M_TEMP/mongo_servers.list" ] && rm -f "$M_TEMP/mongo_servers.list"
   # For hosts from mongo_servers.conf
   for mongohost in $configips ; do
-    mongoport=${mongohost##*:}
+    mongoport=`echo "$mongohost" | cut -sd':' -f2`
+    [ -z "$mongoport" ] && mongoport=$defaultport
     mongohost="${mongohost%:*}"
     # Is it a part of a replica set?
-    replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
+    replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id"`
     if [ $? -eq 0 ] ; then
       find_rsmemberrole "${mongohost}:${mongoport}"
     else
@@ -297,7 +299,7 @@ else
       replicahosts=`$MONGO $AUTH "$rshost/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG"`
       res=$?
       replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
-      [ $res -eq 0 ] && break
+      [ $res -eq 0 ] && break || unset replicahosts
     done
     replicalist=()
     for replicahost in $replicahosts ; do
@@ -316,10 +318,10 @@ else
 fi
 
 for configip in $configips ; do
-  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({\"ping\" : { \\$gt : "$lastping" }}, {_id : 1}).forEach(printjson)" 2>>"$LOG"`
+  mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({\"ping\" : { \\$gt : "$lastping" }}, {_id : 1}).forEach(printjson)"`
   res=$?
   mongoses=`echo "$mongoses" | "$M_ROOT/lib/json2txt" | cut -s -d'|' -f2 | tr -d '"' | grep -v ^$ | sort -n`
-  [ $res -eq 0 ] && break
+  [ $res -eq 0 ] && break || unset mongoses
 done
 
 if [ -n "$mongoses" ] ; then
@@ -335,7 +337,7 @@ for configip in $configips ; do
   shardhosts=`$MONGO $AUTH "$configip"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.shards.find({}, {_id:1,host:1}).forEach(printjson)" 2>>"$LOG"`
   res=$?
   shardhosts=`echo "$shardhosts" | "$M_ROOT"/lib/json2txt | tr -d '"'`
-  [ $res -eq 0 ] && break
+  [ $res -eq 0 ] && break || unset shardhosts
 done
 
 if [ -n "$shardhosts" ] ; then
