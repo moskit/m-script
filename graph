@@ -312,7 +312,7 @@ fi
 if [ -n "$perpixel" ]; then
   $debug && log "per pixel mode"
   perpixel=true
-  pptail=" ORDER BY timeindex DESC LIMIT $limit"
+  pptail=" ORDER BY timeindex DESC LIMIT $areaH"
 else
   perpixel=false
   pptail=" AND timeindex BETWEEN $from AND $to"
