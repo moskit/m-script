@@ -55,7 +55,7 @@ print_mongo_server() {
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
-    echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}${roleerror}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
+    echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}${roleerrorclass}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     echo "<div class=\"status status_short clickable\" id=\"${nodeid}_http\" onclick=\"showURL('${nodeid}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${nodeid}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
     if [ "_`echo "$rawdata" | grep ^status= | cut -d'=' -f2`" == "_1" ] ; then
