@@ -33,7 +33,7 @@ print_mongo_server() {
           roleerrorclass=" roleerror"
         fi
       else
-        roleerror="\n\nERROR: delayed secondary is not hidden"
+        roleerror="\n\nERROR: delayed secondary must be hidden"
         roleerrorclass=" roleerror"
       fi
       roleind="${roleind}D"
@@ -88,7 +88,7 @@ print_mongo_server() {
     
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
-  unset roleerror
+  unset roleerror roleerrorclass
   IFS=$IFS2
 }
 

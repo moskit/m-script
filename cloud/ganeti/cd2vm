@@ -63,7 +63,7 @@ mount $filesystem_dev $TARGET || exit 1
 CLEANUP+=("umount -l $TARGET")
 CLEANUP+=("sync")
 
-read -p "Now cd to $TARGET in another terminal. When finished, press Enter here to unmount the disk -> " theenter
+read -p "Now cd to $TARGET in another terminal, VM's disk 0 is mounted there. When finished there, press Enter here to unmount the disk -> " theenter
 
 cleanup
 trap - EXIT
