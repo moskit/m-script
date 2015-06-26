@@ -47,7 +47,7 @@ mtotalmemfree=`solve 2 "$rtotalmemfree / 1024"`
 rtotalprocess=`ps axo pid | grep -vE "^USER|grep|ps" | wc -l`
 rloadavg="$(cat /proc/loadavg | cut -d' ' -f1,2,3)"
 
-echo -e "\nSystem status:\n--------------\nUptime:\t\t\t\t`expr $ruptime / 86400` days `expr \( $ruptime % 86400 \) / 3600`:`expr $ruptime % 86400 % 3600 / 60`\n"
+echo -e "\nSystem status:\n--------------\n\nUptime:\t\t\t\t`expr $ruptime / 86400` days `expr \( $ruptime % 86400 \) / 3600`:`expr $ruptime % 86400 % 3600 / 60`\n"
 
 [[ $ruptime -lt `expr $FREQ \* 4` ]] && echo "<***> System booted up `expr $ruptime / 60` minutes ago"
 
