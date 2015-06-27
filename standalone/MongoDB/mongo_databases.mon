@@ -65,10 +65,13 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     collcount=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); print(db.${coll}.stats().count)" 2>/dev/null`
     collsize=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); print(db.${coll}.stats().size)" 2>/dev/null`
     collindexsize=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); print(db.${coll}.stats().totalIndexSize)" 2>/dev/null`
-    store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
+    
   done &
   if [ "_$SHARDING" == "_manual" ]; then
+    store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
     "$rpath"/nonshard_distributed_dbreport "$db" "$hostport"
+  else
+    store_results "ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
   fi
 done
 
