@@ -55,50 +55,20 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   hp=${hpdb%|*}
   db=${hpdb#*|}
   echo "$ignored" | grep -q "^${db}$" && continue
-  
+
+  dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
+  echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"
+  collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
+  echo "$collections" > "$rpath/data/${db}.${hp}.collections"
+  for coll in `echo "$collections"`; do
+    ns="${db}.${coll}"
+    collcount=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); print(db.${coll}.stats().count)" 2>/dev/null`
+    collsize=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); print(db.${coll}.stats().size)" 2>/dev/null`
+    collindexsize=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); print(db.${coll}.stats().totalIndexSize)" 2>/dev/null`
+    store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
+  done &
   if [ "_$SHARDING" == "_manual" ]; then
-    dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-    echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"
-    collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
-    echo "$collections" > "$rpath/data/${db}.${hp}.collections"
-    for coll in `echo "$collections"`
-    do
-      ns="${db}.${coll}"
-      colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-      if [ -n "$colldat" ]; then
-        echo "$colldat" > "$rpath/data/${db}.${hp}.${coll}.dat"
-        collcount=`echo "$colldat" | grep '0/"count"|' | cut -d '|' -f2`
-        collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
-        collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
-      else
-        log "ERROR no details found for collection $ns"
-        collcount=0
-        collsize=0
-        collindexsize=0
-      fi
-      store_results "hp|text,ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
-    done
     "$rpath"/nonshard_distributed_dbreport "$db" "$hostport"
-  else
-    dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-    echo "$dbdat" > "$rpath/data/${db}.dat"
-    for coll in `$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
-    do
-      ns="${db}.${coll}"
-      colldat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.${coll}.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-      if [ -n "$colldat" ]; then
-        echo "$colldat" > "$rpath/data/${db}.${coll}.dat"
-        collcount=`echo "$colldat" | grep '0/"count"|' | cut -d '|' -f2`
-        collsize=`echo "$colldat" | grep '0/"size"|' | cut -d '|' -f2`
-        collindexsize=`echo "$colldat" | grep '0/"totalIndexSize"|' | cut -d '|' -f2`
-      else
-        log "ERROR no details found for collection $ns"
-        collcount=0
-        collsize=0
-        collindexsize=0
-      fi
-      store_results "ns|text,collcount|integer,collsize|integer,collindexsize|integer" "standalone/MongoDB/databases.sql3|collections"
-    done &
   fi
 done
 

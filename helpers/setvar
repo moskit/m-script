@@ -136,7 +136,6 @@ if [ `expr "$s_var" : ".*_[0-9]$"` -eq 0 ]; then
       done
     done
   fi
-
 else
   s_val=$s_value
   for conf in `grep -l "${s_var}=" "$M_ROOT/tests"/*.conf` ; do
