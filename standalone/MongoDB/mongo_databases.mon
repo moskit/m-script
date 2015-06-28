@@ -57,9 +57,9 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   echo "$ignored" | grep -q "^${db}$" && continue
 
   dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
-  echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"
+  
   collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
-  echo "$collections" > "$rpath/data/${db}.${hp}.collections"
+  
   for coll in `echo "$collections"`; do
     $MONGO $AUTH "$hp/admin" --quiet --eval "var cdb = '$db', cns = '$coll'" "$rpath/collinfo.js" > "$rpath/data/${db}.${coll}.dat"
     eval "`grep coll_count "$rpath/data/${db}.${coll}.dat"`"
@@ -67,9 +67,13 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     eval "`grep coll_indexsize "$rpath/data/${db}.${coll}.dat"`"
   done &
   if [ "_$SHARDING" == "_manual" ]; then
+    echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"
+    echo "$collections" > "$rpath/data/${db}.${hp}.collections"
     store_results "hp|text,ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer" "standalone/MongoDB/databases.sql3|collections"
     "$rpath"/nonshard_distributed_dbreport "$db" "$hostport"
   else
+    echo "$dbdat" > "$rpath/data/${db}.dat"
+    echo "$collections" > "$rpath/data/${db}.collections"
     store_results "ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer" "standalone/MongoDB/databases.sql3|collections"
   fi
 done
