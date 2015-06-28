@@ -1,13 +1,2 @@
-# 1421072959
-SQLITE=`which sqlite3 2>/dev/null`
-echo -e "\n  *** Dropping tables, may take some time!\n"
-cp "$M_ROOT/standalone/MongoDB/mongodb.sql3" "$M_ROOT/standalone/MongoDB/mongodb.sql3.1421073000"
-
-$SQLITE "$M_ROOT/standalone/MongoDB/mongodb.sql3" "drop table shards"
-$SQLITE "$M_ROOT/standalone/MongoDB/mongodb.sql3" "drop table changelog"
-
-$SQLITE "$M_ROOT/standalone/MongoDB/shards.sql3" "create table changelog (timeindex integer, day varchar(8), hostport text, database varchar(64), collection varchar(64), event varchar(64), status varchar(64), number integer)"
-$SQLITE "$M_ROOT/standalone/MongoDB/shards.sql3" "create index tdc on changelog (timeindex, hostport, database, collection)"
-
-$SQLITE "$M_ROOT/standalone/MongoDB/shards.sql3" "CREATE TABLE shards (timeindex integer, day varchar(8), hostport text, database varchar(64), collection varchar(64), chunks integer, datasize integer, indexsize integer)"
-$SQLITE "$M_ROOT/standalone/MongoDB/shards.sql3" "CREATE INDEX thp on shards (timeindex, hostport)"
+# 1435524952
+mv "$M_ROOT/standalone/MongoDB/databases.sql3" "$M_ROOT/standalone/MongoDB/databases.sql3.1435524952"

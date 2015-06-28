@@ -49,20 +49,16 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
   close_cluster_line
   
   for coll in "$M_ROOT/standalone/$saname/data"/${dbname}.*.dat ; do
-    collinfo=`cat "$coll"`
-    [ -z "$collinfo" ] && continue
-    coll_name=`echo "$collinfo" | grep ^0\/\"ns\"\| | cut -d'|' -f2 | tr -d '"'`
-    coll_name=${coll_name#*.}
+    for d in `cat "$coll"` ; do
+      eval "`echo "$d"`"
+    done
+    
     [ -z "$coll_name" ] && continue
+    
     open_line "$coll_name" "MongoDB/indexes"
-    coll_ok=`echo "$collinfo" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
-    coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
-    coll_sharded=`echo "$collinfo" | grep ^0\/\"sharded\"\| | cut -d'|' -f2`
-    coll_primary=`echo "$collinfo" | grep ^0\/\"primary\"\| | cut -d'|' -f2 | tr -d '"'`
-    coll_count=`echo "$collinfo" | grep ^0\/\"count\"\| | cut -d'|' -f2`
-    coll_size=`echo "$collinfo" | grep ^0\/\"size\"\| | cut -d'|' -f2`
-    coll_indexsize=`echo "$collinfo" | grep ^0\/\"totalIndexSize\"\| | cut -d'|' -f2`
 
+    coll_status=$([ "_$coll_ok" == "_1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
+    coll_name=${coll_name#*.}
     coll_size=`expr $coll_size / 1024`
     csunits="KB"
     if [ ${#coll_size} -gt 3 ] ; then

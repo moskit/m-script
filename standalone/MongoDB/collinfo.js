@@ -1,0 +1,9 @@
+db = db.getSiblingDB(cdb);
+var objStatus = db[cns].stats();
+print('coll_name=' + objStatus.ns);
+print('coll_ok=' + objStatus.ok);
+print('coll_count=' + objStatus.count);
+print('coll_size=' + objStatus.size);
+print('coll_indexsize=' + objStatus.totalIndexSize);
+print('coll_sharded=' + objStatus.sharded);
+print('coll_capped=' + objStatus.capped);
