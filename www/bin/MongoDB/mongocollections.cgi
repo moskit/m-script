@@ -54,11 +54,10 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     done
     
     [ -z "$coll_name" ] && continue
-    
+    coll_name=${coll_name#*.}
     open_line "$coll_name" "MongoDB/indexes"
 
     coll_status=$([ "_$coll_ok" == "_1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
-    coll_name=${coll_name#*.}
     coll_size=`expr $coll_size / 1024`
     csunits="KB"
     if [ ${#coll_size} -gt 3 ] ; then
