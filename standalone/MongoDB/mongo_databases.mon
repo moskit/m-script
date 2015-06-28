@@ -61,7 +61,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
   collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
   echo "$collections" > "$rpath/data/${db}.${hp}.collections"
   for coll in `echo "$collections"`; do
-    $MONGO $AUTH "$hp/admin" --quiet --eval "var cdb = '$db', cns = '$coll'" > "$rpath/data/${db}.${coll}.dat"
+    $MONGO $AUTH "$hp/admin" --quiet --eval "var cdb = '$db', cns = '$coll'" "$rpath/collinfo.js" > "$rpath/data/${db}.${coll}.dat"
     eval "`grep coll_count "$rpath/data/${db}.${coll}.dat"`"
     eval "`grep coll_size "$rpath/data/${db}.${coll}.dat"`"
     eval "`grep coll_indexsize "$rpath/data/${db}.${coll}.dat"`"

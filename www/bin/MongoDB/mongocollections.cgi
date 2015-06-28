@@ -8,7 +8,7 @@ source "$M_ROOT/lib/dash_functions.sh"
 
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-print_page_title "Collection" "Status" "Sharded" "Primary" "Records" "Data Size" "Index Size"
+print_page_title "Collection" "Status" "Sharded" "Capped" "Records" "Data Size" "Index Size"
 
 [ -f "$M_ROOT/standalone/$saname/data/databases.dat" ] || exit 0
 source "$M_ROOT/standalone/$saname/mongo_databases.conf"
@@ -77,7 +77,7 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     fi
     coll_indexsize="$coll_indexsize $csunits"
     
-    print_inline "coll_status" "coll_sharded" "coll_primary" "coll_count|MongoDB/mongo_coll_count_graph" "coll_size|MongoDB/mongo_coll_size_graph" "coll_indexsize|MongoDB/mongo_coll_indexsize_graph"
+    print_inline "coll_status" "coll_sharded" "coll_capped" "coll_count|MongoDB/mongo_coll_count_graph" "coll_size|MongoDB/mongo_coll_size_graph" "coll_indexsize|MongoDB/mongo_coll_indexsize_graph"
     close_line "$coll_name"
     
   done
