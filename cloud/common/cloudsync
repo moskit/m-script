@@ -159,7 +159,7 @@ trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
-localip=`localips`
+localip=`"$M_ROOT/helpers"/localips 2>/dev/null`
   
 for cld in $CLOUD ; do
 

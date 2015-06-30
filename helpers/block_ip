@@ -148,7 +148,7 @@ if [ -n "$ips" ] ; then
     ip=`echo "$ip" | tr -d ' '`
     # Never block own IPs! :)
     [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -ne 0 ]] && continue
-    localips | grep -q "^$ip$" && continue
+    "$rpath"/localips | grep -q "^$ip$" && continue
     # If it is not an IP address, consequences are unpredictable
     expr "$ip" : ".*[^[0-9.:/]]*" >/dev/null && continue
     # Empty IP is even worse: everything gets blocked

@@ -226,7 +226,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -n "$name_source" ] && NAME_SOURCE=$name_source
 [ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
 
-localip=`localips`
+localip=`"$M_ROOT"/helpers/localips`
 
 if [ -z "$noupdate" ]; then
   changed=0
