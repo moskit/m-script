@@ -9,3 +9,4 @@ print('coll_indexsize=' + objStatus.totalIndexSize);
 print('coll_sharded=' + objStatus.sharded);
 print('coll_capped=' + objStatus.capped);
 print('coll_chunks=' + objStatus.nchunks);
+print('index_sizes=' + printjson(objStatus.indexSizes));
