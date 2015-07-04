@@ -16,11 +16,11 @@ print_table_2() {
 echo "<div style=\"display: table; width: 720px; margin-left: 60px;\">"
 [ -f "$M_ROOT/standalone/MongoDB/data/${parent}.${node}.dat" ] || exit 0
 
-collinfo=`cat "$M_ROOT/standalone/MongoDB/data/${parent}.${node}.dat"`
+cat "$M_ROOT/standalone/MongoDB/data/${parent}.${node}.dat" | grep ^index_size | while read line ; do eval "$line" ; done
 
-for index in `echo "$collinfo" | grep '^index_sizes=' | cut -d'=' -f2 | "$M_ROOT"/lib/json2txt` ; do
-  index_name=`echo "$index" | cut -d'/' -f2 | cut -d'|' -f1`
-  index_size=`echo "$index" | cut -d'|' -f2`
+for index in ${index[*]} ; do
+  index_name=`echo "$index" | cut -d':' -f1`
+  index_size=`echo "$index" | cut -d':' -f2`
   index_size=`expr $index_size / 1024`
   
   csunits="KB"
