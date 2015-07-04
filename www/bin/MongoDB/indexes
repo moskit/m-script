@@ -15,24 +15,26 @@ print_table_2() {
 
 echo "<div style=\"display: table; width: 720px; margin-left: 60px;\">"
 [ -f "$M_ROOT/standalone/MongoDB/data/${parent}.${node}.dat" ] || exit 0
+declare -a index_size
 
-cat "$M_ROOT/standalone/MongoDB/data/${parent}.${node}.dat" | grep ^index_size | while read line ; do eval "$line" ; done
+for line in `cat "$M_ROOT/standalone/MongoDB/data/${parent}.${node}.dat" | grep ^index_size`; do eval $line ; done
 
-for index in ${index[*]} ; do
-  index_name=`echo "$index" | cut -d':' -f1`
-  index_size=`echo "$index" | cut -d':' -f2`
-  index_size=`expr $index_size / 1024`
-  
+for index in ${index_size[*]} ; do
+  indexname=`echo "$index" | cut -d':' -f1`
+  indexsize=`echo "$index" | cut -d':' -f2`
+  indexsize=`expr $indexsize / 1024`
+
   csunits="KB"
-  if [ ${#index_size} -gt 3 ] ; then
-    index_size=`expr $index_size / 1024` && csunits="MB"
-  elif [ ${#index_size} -gt 6 ] ; then
-    index_size=`expr $index_size / 1048576` && csunits="GB"
+  if [ ${#indexsize} -gt 3 ] ; then
+    indexsize=`expr $indexsize / 1024` && csunits="MB"
+  elif [ ${#indexsize} -gt 6 ] ; then
+    indexsize=`expr $indexsize / 1048576` && csunits="GB"
   fi
-  index_size="$index_size $csunits"
-  print_table_2 $index_name $index_size
+  indexsize="$indexsize $csunits"
+  print_table_2 $indexname $indexsize
 done
 
 
 echo "</div>"
+
 
