@@ -646,6 +646,7 @@ div.right {
 .colltype {
   border: 1px solid silver;
   width: 16px;
+  height: 100%;
 }
 
 div.json {
