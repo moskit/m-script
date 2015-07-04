@@ -140,11 +140,11 @@ start)
       if [ -d "$rpath/standalone/rc" ]; then
         for sa in `find "$rpath/standalone/rc/" -maxdepth 1  -type l` ; do
           safolder=$(readlink -f "$sa")
+          [ -n "$RUNDELAY" ] && sleep $RUNDELAY
           echo "`date +"%H:%M:%S"` Running tests from folder $safolder" >> "$rpath/logs/sa.log"
           for satest in `find "$sa/rc/" -maxdepth 1 -type l | sort` ; do
             rsatest=$(readlink -f "$satest")
             rsatest=${rsatest##*/}
-            [ -n "$RUNDELAY" ] && sleep $RUNDELAY
             echo "`date +"%H:%M:%S"` $satest" >> "$rpath/logs/sa.log"
             sares=`$satest 2>>"$rpath/logs/sa.log"`
             if [ $? -eq 0 ]; then
