@@ -8,7 +8,7 @@ source "$M_ROOT/lib/dash_functions.sh"
 
 print_cgi_headers
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
-print_page_title "Collection" "Status" "Sharded" "Capped" "Records" "Data Size" "Index Size"
+print_page_title "Collection" "Status" "Type" "Records" "Data Size" "Index Size" "Storage Size"
 
 [ -f "$M_ROOT/standalone/$saname/data/databases.dat" ] || exit 0
 source "$M_ROOT/standalone/$saname/mongo_databases.conf"
@@ -58,6 +58,7 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     open_line "$coll_name" "MongoDB/indexes"
 
     coll_status=$([ "_$coll_ok" == "_1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
+
     coll_size=`expr $coll_size / 1024`
     csunits="KB"
     if [ ${#coll_size} -gt 3 ] ; then
@@ -76,7 +77,17 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     fi
     coll_indexsize="$coll_indexsize $csunits"
     
-    print_inline "coll_status" "coll_sharded" "coll_capped" "coll_count|MongoDB/mongo_coll_count_graph" "coll_size|MongoDB/mongo_coll_size_graph" "coll_indexsize|MongoDB/mongo_coll_indexsize_graph"
+    coll_storsize=`expr $coll_storsize / 1024`
+    csunits="KB"
+    if [ ${#coll_storsize} -gt 3 ] ; then
+      coll_storsize=`expr $coll_storsize / 1024` && csunits="MB"
+    elif [ ${#coll_storsize} -gt 6 ] ; then
+      coll_storsize=`expr $coll_storsize / 1048576` && csunits="GB"
+    fi
+    coll_storsize="$coll_storsize $csunits"
+    
+    coll_type=$($coll_sharded && echo -n "<span class=\"colltype\">SH</span>"; $coll_capped && echo -n "<span class=\"colltype\">C</span>"
+    print_inline "coll_status" "coll_type" "coll_count|MongoDB/mongo_coll_count_graph" "coll_size|MongoDB/mongo_coll_size_graph" "coll_indexsize|MongoDB/mongo_coll_indexsize_graph" "coll_storsize"
     close_line "$coll_name"
     
   done

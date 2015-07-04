@@ -643,6 +643,11 @@ div.right {
   background-color: #ff8888;
 }
 
+.colltype {
+  border: 1px solid silver;
+  width: 16px;
+}
+
 div.json {
   margin-left: 20px;
 }
