@@ -10,8 +10,6 @@ print('coll_sharded=' + objStatus.sharded);
 print('coll_capped=' + objStatus.capped);
 print('coll_chunks=' + objStatus.nchunks);
 var indSizes = objStatus.indexSizes;
-var n = 0;
 for (var i in indSizes) {
-  print('index_size[' + n + ']="' + i + ':' + indSizes[i] + '"');
-  n++;
+  print('index_size+=("' + i + ':' + indSizes[i] + '")');
 }
