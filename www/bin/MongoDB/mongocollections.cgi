@@ -86,7 +86,7 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
     fi
     coll_storsize="$coll_storsize $csunits"
     
-    coll_type=$($coll_sharded && echo -n "<span class=\"colltype\">SH</span>"; $coll_capped && echo -n "<span class=\"colltype\">C</span>"
+    coll_type=$($coll_sharded && echo -n "<span class=\"colltype\">SH</span>"; $coll_capped && echo -n "<span class=\"colltype\">C</span>")
     print_inline "coll_status" "coll_type" "coll_count|MongoDB/mongo_coll_count_graph" "coll_size|MongoDB/mongo_coll_size_graph" "coll_indexsize|MongoDB/mongo_coll_indexsize_graph" "coll_storsize"
     close_line "$coll_name"
     
