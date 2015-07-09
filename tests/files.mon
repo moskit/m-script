@@ -26,7 +26,7 @@ DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && echo "diff utility not found" && exit 1
 #source "$M_ROOT/lib/functions.sh"
 
-mv "$M_TEMP/files.mon.tmp" "$M_TEMP/files.mon.prev"
+mv "$M_TEMP/files.mon.tmp" "$M_TEMP/files.mon.prev" 2>/dev/null
 
 while read FILE ; do
   file=`echo "$FILE" | cut -d'|' -f1`
@@ -37,18 +37,19 @@ while read FILE ; do
   echo "$file|`$MD "$file" | cut -d' ' -f1`" >> "$M_TEMP/files.mon.tmp"
 done <"${0%.mon}.conf"
 
-for chng in `$DIFF "$M_TEMP/files.mon.prev" "$M_TEMP/files.mon.tmp"  | grep ^\> | tr -d '^\> '`; do
-  filename=`echo "$chng" | cut -d'|' -f1`
-  alevel=`grep -E "^$filename\||^$filename$" "${0%.mon}.conf" | cut -d'|' -f2`
-  [ -z "$alevel" ] && alevel=1
-  case $alevel in
-    3)
-    warn='<***>' ;;
-    2)
-    warn='<**>' ;;
-    1)
-    warn='<*>' ;;
-  esac
-  echo -e "$warn File `echo "$chng" | cut -d'|' -f1` has been changed"
-done
-
+if [ -e "$M_TEMP/files.mon.prev" ]; then
+  for chng in `$DIFF "$M_TEMP/files.mon.prev" "$M_TEMP/files.mon.tmp"  | grep ^\> | tr -d '^\> '`; do
+    filename=`echo "$chng" | cut -d'|' -f1`
+    alevel=`grep -E "^$filename\||^$filename$" "${0%.mon}.conf" | cut -d'|' -f2`
+    [ -z "$alevel" ] && alevel=1
+    case $alevel in
+      3)
+      warn='<***>' ;;
+      2)
+      warn='<**>' ;;
+      1)
+      warn='<*>' ;;
+    esac
+    echo -e "$warn File `echo "$chng" | cut -d'|' -f1` has been changed"
+  done
+fi
