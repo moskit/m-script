@@ -1,0 +1,123 @@
+#!/bin/bash
+# Copyright (C) 2008-2012 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand="${rpath##*/}"
+rpath="${rpath%/*}"
+[ -n "$M_ROOT" ] || M_ROOT="${rpath%/*}"
+#*/
+
+possible_commands="help title"
+#possible_subcommands="list:metas,scripts,files,roles edit:meta,script,file show:meta,script,file"
+#possible_options="role cluster flavor method all strip"
+
+declare -i ppn
+ppn=1
+
+commfound=false
+#subcommfound=false
+
+IFS1=$IFS
+IFS='-'
+for s_option in "$@"
+do
+  found=false
+  case $s_option in
+  --*=*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
+    ;;
+  --*)
+    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+    s_optarg='yes'
+    ;;
+  *=*)
+    echo "Wrong syntax: options must start with a double dash"
+    exit 1
+    ;;
+  *)
+    s_param=$s_option
+    s_optname=''
+    s_optarg=''
+    case $ppn in
+      1)
+        for comm in ${possible_commands// /-}; do
+          if [ "_$s_param" == "_$comm" ]; then
+            if $commfound ; then
+              echo "Only one command can be executed!"
+              echo "Commands are: $possible_commands"
+              exit 1
+            else
+              found=true
+              commfound=true
+            fi
+          fi
+        done
+        if ! $found ; then 
+          echo "Unknown command: $s_param"
+          exit 1
+        fi
+        command1=$s_param
+        ;;
+      2)
+        if [ -z "$param1" ] ; then
+          param1=$s_param
+        else
+          param2=$s_param
+        fi
+        ;;
+      3)
+        if [ -z "$param2" ] ; then
+          param2=$s_param
+        else
+          echo "Wrong number of positional parameters!"
+          exit 1
+        fi
+        ;;
+      *)
+        echo "Wrong number of positional parameters!"
+        exit 1
+        ;;
+    esac
+    shift
+    ppn+=1
+    ;;
+  esac
+  for option in `echo $possible_options | sed 's| |-|g'`; do
+    if [ "_$s_optname" == "_$option" ]; then
+      if [ -n "$s_optarg" ]; then
+        eval "$s_optname=\"$s_optarg\""
+      else
+        [ -z "$(eval echo \$$option)" ] && eval "$option="
+      fi
+      found=1
+    fi
+  done
+done
+
+case command1 in
+  title)
+    if [ -n "$param1" ] ; then
+      sed -i "s|<title>.*</title>|<title>${param1}</title>|" "$rpath/www/dashboard/index.html"
+    else
+      sed -i "s|<title>.*</title>|<title>`hostname`</title>|" "$rpath/www/dashboard/index.html"
+    fi
+    ;;
+  *)
+    echo "Sorry, command $command1 is not supported yet :("
+    ;;
+esac
+

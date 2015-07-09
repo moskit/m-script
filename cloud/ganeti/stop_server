@@ -73,7 +73,7 @@ fi
 [ -z "$name" ] && echo "Unable to find this server" && exit 1
 tscluster=$(cat "$M_ROOT/servers.list" | grep -vE "^#|^$|^[[:space:]]#" | cut -d'|' -f4,5 | grep ^$name\| | cut -d'|' -f2)
 [ -z "$tscluster" ] && tscluster="$cluster"
-[ -z "$tscluster" ] && echo "Cluster cannot be found, please provide its name ecplicitely (option --cluster)" && exit 1
+[ -z "$tscluster" ] && echo "Cluster cannot be found for this node, you can try to provide its name explicitely (option --cluster)" && exit 1
 thekey=`"$M_ROOT"/helpers/find_key cluster $tscluster`
 
 request() {

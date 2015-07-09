@@ -70,7 +70,7 @@ do
     case $ppn in
       1)
         for comm in ${possible_commands// /-}; do
-          if [ "X$s_param" == "X$comm" ]; then
+          if [ "_$s_param" == "_$comm" ]; then
             if $commfound ; then
               echo "Only one command can be executed!"
               echo "Commands are: $possible_commands"
@@ -89,7 +89,7 @@ do
         ;;
       2)
         for subcomm in ${possible_subcommands// /-}; do
-          [ "X${subcomm%%:*}" == "X$command1" ] && subcommands=${subcomm#*:}
+          [ "_${subcomm%%:*}" == "_$command1" ] && subcommands=${subcomm#*:}
           for sub in ${subcommands//,/-}; do
             if [ "X$s_param" == "X$sub" ]; then
               if $subcommfound ; then
@@ -135,7 +135,7 @@ do
     ;;
   esac
   for option in `echo $possible_options | sed 's| |-|g'`; do
-    if [ "X$s_optname" == "X$option" ]; then
+    if [ "_$s_optname" == "_$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""
       else
