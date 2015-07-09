@@ -108,12 +108,12 @@ do
   done
 done
 
-case command1 in
+case $command1 in
   title)
     if [ -n "$param1" ] ; then
-      sed -i "s|<title>.*</title>|<title>${param1}</title>|" "$rpath/www/dashboard/index.html"
+      sed -i "s|<title>.*</title>|<title>${param1}</title>|" "$M_ROOT/www/dashboard/index.html"
     else
-      sed -i "s|<title>.*</title>|<title>`hostname`</title>|" "$rpath/www/dashboard/index.html"
+      sed -i "s|<title>.*</title>|<title>`hostname`</title>|" "$M_ROOT/www/dashboard/index.html"
     fi
     ;;
   *)
