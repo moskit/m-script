@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "${PWD}/../../lib/dash_functions.sh"
+source "$PWD/../../lib/dash_functions.sh"
 
 print_cgi_headers
 print_timeline Server

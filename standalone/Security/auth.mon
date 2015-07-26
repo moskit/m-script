@@ -21,18 +21,17 @@ rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
-source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/functions.sh" # includes mon.conf
 LOG="$M_ROOT/logs/auth.log"
 blockip=false
+hasrun=false
 source "$rpath/${rcommand%.mon}.conf"
 
 # possible_options="file interval maxlines maxinvalid method maxfail maxfailroot timeformat"
 
 [ -z "$file" ] && echo "file is not defined" >&2 && exit 1
-timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=10
-freqdef=`expr $FREQ + $timeshift` || freqdef=210
-[ -z "$interval" ] && interval="$freqdef sec"
-if ! expr "$interval" : ".*[^[0-9]]*" >/dev/null; then interval="$interval sec" ; fi
+interval=`expr $FREQ + $timeshift 2>/dev/null` || interval=210
+interval="$interval sec"
 [ -z "$maxlines" ] && maxlines=500
 [ -z "$maxfail" ] && maxfail=5
 [ -z "$maxinvalid" ] && maxinvalid=3
@@ -65,7 +64,7 @@ if [ -n "$rootfails" ]; then
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot
+    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot && hasrun=true
   done
 fi
 
@@ -76,7 +75,7 @@ if [ -n "$invalidusers" ]; then
   for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
     invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxinvalid
+    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxinvalid && hasrun=true
   done
 fi
 
@@ -87,7 +86,8 @@ if [ -n "$userfails" ]; then
   for ipaddr in `echo "$userfails" | sort | uniq` ; do
     invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
+    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail && hasrun=true
   done
 fi
 
+$hasrun || "$M_ROOT"/helpers/unblock_ip tmp

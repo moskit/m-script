@@ -26,6 +26,7 @@ callername=${caller%.mon}
 callername=${callername##*/}
 callerfolder=${caller%/*}
 callerparent=${callerfolder%/*}
+timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` || timeshift=10
 
 store_results() {
   # syntax:

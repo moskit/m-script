@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 rcommand=${0##*/}
 rpath=${0%/*}
 #*/
@@ -22,14 +21,15 @@ rpath=${0%/*}
 
 STAT=`which stat 2>/dev/null`
 LOG="$M_ROOT/logs/dashboard.log"
-[ -z "$STAT" ] && log "stat utility not found" && exit 1
+[ -z "$STAT" ] && log "Stat utility not found" && exit 1
 
 possible_options="type css folder"
 necessary_options="type"
 [ $# -eq 0 ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+
 IFS1=$IFS
 IFS='-'
-for s_option in "${@}"
+for s_option in "$@"
 do
   found=0
   case ${s_option} in
@@ -57,6 +57,7 @@ do
     exit 1
   fi
 done
+
 if [ "_$help" == "_yes" ] ; then
   echo "Usage: ${0##*/} <options> <textfile>"
   echo 
@@ -76,7 +77,8 @@ log() {
 [ -d "$M_ROOT/www/$folder" ] || install -d "$M_ROOT/www/$folder"
 source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
-[ -z "$freqdef" ] && freqdef=$FREQ
+[ -n "$timeshift" ] || timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` || timeshift=10
+freqdef=`expr $FREQ + $timeshift`
 
 # to ensure the report file is closed (see gendash function)
 sleep 1
@@ -89,10 +91,11 @@ case $type in
     serverid="`hostname 2>/dev/null || hostname -f 2>/dev/null || ifconfig | sed '/inet\ /!d;s/.*r://;s/\ .*//' | grep -v '127.0.0.1' | tail -1`"
     echo "<div id=\"${id}_${serverid}\" title=\"$id\" class=\"chunk $css\" onclick=\"showData('${id}_${serverid}','/${folder%%/*}')\">&nbsp;<div id=\"data_${id}_${serverid}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
     if [ -e "$textfile" ]; then
-      log "generating HTML from report $textfile (exists) type: $type id: $id folder: $folder css: $css"
-      "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/${id}_${serverid}.html" 2>>"$M_ROOT/logs/dashboard.log"
+      log "Generating HTML from report $textfile (exists) type: $type id: $id folder: $folder css: $css"
+      html=`"$M_ROOT/lib/txt2html" "$textfile"` 2>>"$M_ROOT/logs/dashboard.log"
+      echo "$html" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
     else
-      log "generating HTML from report $textfile (does not exist) type: $type id: $id folder: $folder css: $css"
+      log "Generating HTML from report $textfile (does not exist) type: $type id: $id folder: $folder css: $css"
       echo "<p>No data</p>" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
     fi
     exc=`cat "$M_ROOT/www/$folder/dash.html" | wc -l` 2>>"$M_ROOT/logs/dashboard.log"
@@ -121,7 +124,7 @@ case $type in
       badluck=true
     fi
     if $badluck ; then
-      log "unable to find the oldest file in folder ${folder}. Using calculation based on frequency"
+      log "Unable to find the oldest file in folder ${folder}. Using calculation based on frequency."
       timerange=`expr $slotline_length \* $freqdef / 60` || timerange=166
     else
       #log "oldest file timestamp for folder ${folder}: $oldestfiledate"
@@ -136,7 +139,8 @@ case $type in
     ;;
   report)
     if [ -e "$textfile" ]; then
-      "$M_ROOT/lib/txt2html" "$textfile" >> "$M_ROOT/www/$folder/report.html" 2>>"$M_ROOT/logs/dashboard.log"
+      html=`"$M_ROOT/lib/txt2html" "$textfile"` 2>>"$M_ROOT/logs/dashboard.log"
+      echo "$html" >> "$M_ROOT/www/$folder/report.html"
     else
       echo "<p>No data</p>" >> "$M_ROOT/www/$folder/report.html"
     fi

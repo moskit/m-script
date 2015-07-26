@@ -22,12 +22,12 @@ M_ROOT=$(readlink -f "$dpath/..")
 
 source "$dpath/../conf/mon.conf"
 source "$dpath/../conf/dash.conf"
-[ -n "$timeshift" ] || timeshift=`cat "$M_TEMP"/timeshift 2>/dev/null` || timeshift=10
+[ -n "$timeshift" ] || timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` || timeshift=10
 freqdef=`expr $FREQ + $timeshift`
 
 SQL=`which sqlite3 2>/dev/null`
 CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
-export CLOUDS
+export CLOUDS freqdef
 
 print_cgi_headers() {
 cat << "EOF"
@@ -217,7 +217,7 @@ print_timeline() {
   i=0
   dfptoldest=`date -d "-$timerange sec"`
   dfpthour=`date -d "$dfptoldest" +"%H"`
-  echo -e "<div class=\"server\">\n<span class=\"servername\">${1}</span>"
+  echo -e "<br/>\n<div class=\"server\">\n<span class=\"servername\">${1}</span>"
   for ((n=0; n<$slotline_length; n++)) ; do
     dfpttimediff=`expr $n \* \( $interval + $timeshift \)`
     dfpttimestamp=`date -d "$dfptoldest +$dfpttimediff sec"`

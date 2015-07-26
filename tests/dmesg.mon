@@ -1,0 +1,36 @@
+#!/bin/bash
+# Copyright (C) 2008-2015 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+VMSTAT=`which vmstat`
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
+
+source "$M_ROOT/conf/mon.conf"
+source "${0%.mon}.conf"
+source "$M_ROOT/lib/functions.sh"
+
+[ -x /bin/dmesg ] && DM=/bin/dmesg || DM=`which dmesg 2>/dev/null`
+[ -z "$DM" ] && echo "dmesg not found" && exit 1
+
+chunk=`$DM -xTc`
+
+[ -n "$DMESGLOG" ] && echo "$chunk" >> "$DMESGLOG"
+
+oom=`echo "$chunk" | grep -i "kill"`
+echo "$oom" | sed 's/^/<***> /'
+
