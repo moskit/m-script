@@ -22,7 +22,7 @@ else
   if [ -f "$M_ROOT/tests/${1}" ] ; then
     mon=$1
   elif [ -f "$M_ROOT/tests/${1}.mon" ] ; then
-    mon=${1}.mon
+    mon="${1}.mon"
   else
     echo "Monitor $1 not found"
     exit 1
@@ -32,7 +32,7 @@ else
       echo "Usage: $rcommand [monitor name] <serial number>"
       exit 1
     else
-      ln -s "../tests/${1}.mon" "$M_ROOT/rc/${2}.${1}.mon"
+      ln -s "../tests/$mon" "$M_ROOT/rc/${2}.${mon}"
     fi
   else
     for rcmon in `find "$M_ROOT/rc" -maxdepth 1 -mindepth 1 -type l`; do
@@ -40,7 +40,7 @@ else
       [[ $sn -gt $maxsn ]] && maxsn=$sn 
     done
     newsn=`expr $maxsn + 1`
-    ln -s "../tests/${1}.mon" "$M_ROOT/rc/${newsn}.${1}.mon"
+    ln -s "../tests/$mon" "$M_ROOT/rc/${newsn}.${mon}"
   fi
 
 fi

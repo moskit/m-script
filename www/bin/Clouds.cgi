@@ -10,8 +10,12 @@ load_css "clouds.css"
 
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^[[:space:]]# | cut -s -d'|' -f12 | grep -v ^$ | grep -v "^${CLOUD}$" | sort | uniq` )
 
-#echo "== $CLOUD `cat "${PWD}/../../conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` =="
-#echo "== ${clouds[*]} =="
+open_cluster "Events"
+  close_cluster_line
+  open_line "All clouds"
+    print_dashline "" folder "clouds/localhost"
+  close_line
+close_cluster
 
 for cloud in ${clouds[*]} ; do
   open_cluster "Cloud: $cloud" ; close_cluster_line

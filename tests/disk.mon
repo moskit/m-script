@@ -212,6 +212,10 @@ if [ "_$SQLITE3" == "_1" ]; then
     diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$disk' where timeindex='$lasttimeindex'"`
     [ -n "$diskreadslast" ] || diskreadslast=$diskreads
     drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
+    drwarn="<OK> "
+    [ `echo "scale=2; $drspeed >= $drspeed_3" | bc` -eq 1 ] && drwarn="<***>"
+    [ `echo "scale=2; $drspeed >= $drspeed_2" | bc` -eq 1 ] && drwarn="<**> "
+    [ `echo "scale=2; $drspeed >= $drspeed_3" | bc` -eq 1 ] && drwarn="<*>  "
     m=`expr length "$replinerd"`
     l=`expr 60 - $m`
     for ((n=1; n <= $l; n++)); do replinerd=`printf "$replinerd "`; done
@@ -221,6 +225,10 @@ if [ "_$SQLITE3" == "_1" ]; then
     diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$disk' where timeindex='$lasttimeindex'"`
     [ -n "$diskwriteslast" ] || diskwriteslast=$diskwrites
     dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
+    dwwarn="<OK> "
+    [ `echo "scale=2; $dwspeed >= $dwspeed_3" | bc` -eq 1 ] && dwwarn="<***>"
+    [ `echo "scale=2; $dwspeed >= $dwspeed_2" | bc` -eq 1 ] && dwwarn="<**> "
+    [ `echo "scale=2; $dwspeed >= $dwspeed_3" | bc` -eq 1 ] && dwwarn="<*>  "
     m=`expr length "$replinerw"`
     l=`expr 60 - $m`
     for ((n=1; n <= $l; n++)); do replinerw=`printf "$replinerw "`; done
@@ -236,8 +244,8 @@ if [ "_$SQLITE3" == "_1" ]; then
     if [ "_$1" == "_SQL" ]; then
       dbquery "$rpath/../sysdata" "insert into $disk (timeindex, diskusage, diskusagemb, diskfree, inodeusage, inodeusagei, inodefree, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
     fi
-    echo "$replinerd"
-    echo "$replinerw"
+    echo "$drwarn $replinerd"
+    echo "$dwwarn $replinerw"
   done
 fi
 

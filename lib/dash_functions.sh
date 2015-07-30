@@ -64,7 +64,7 @@ print_cluster_inline() {
   # print_cluster_inline "metric<|onclick><|style>" "metric2<|onclick2><|style2>" ...
   while [ -n "$1" ] ; do
     dfpcistatusarg="$1"
-    if [ "X$dfpcistatusarg" == "X-" ]; then
+    if [ "_$dfpcistatusarg" == "_-" ]; then
       echo "<div id=\"${dfocid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
@@ -118,7 +118,7 @@ print_inline() {
   # print_inline "metric<|onclick><|style>" "metric2<|onclick2><|style2>" ...
   while [ -n "$1" ] ; do
     dfpistatusarg="$1"
-    if [ "X$dfpistatusarg" == "X-" ]; then
+    if [ "_$dfpistatusarg" == "_-" ]; then
       echo "<div id=\"${dfolid}_status\" class=\"clusterstatus\">&dash;</div>"
       shift
       continue
@@ -152,8 +152,8 @@ print_dashline() {
   if [ -n "$dfpdsource" ]; then
     case $dfpdsource in
     folder)
-      [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
-      cat "$dpath/../www/${@}/dash.html" 2>/dev/null
+      [ -d "$dpath/../www/$@" ] || install -d "$dpath/../www/$@"
+      cat "$dpath/../www/$@/dash.html" 2>/dev/null
       ;;
     database)
       dfpddbpath=$1
@@ -176,12 +176,12 @@ print_dashlines() {
   if [ -n "$dfpdssource" ]; then
     case $dfpdssource in
     folder)
-      [ -d "$dpath/../www/${@}" ] || install -d "$dpath/../www/${@}"
+      [ -d "$dpath/../www/$@" ] || install -d "$dpath/../www/$@"
 IFS1=$IFS; IFS='
 '
-      for server in `find "$dpath/../www/${@}/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
+      for server in `find "$dpath/../www/$@/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
         open_line "${server##*/}" "$dfpdsonclick" "${@##*/}"
-        cat "$dpath/../www/${@}/${server##*/}/dash.html" 2>/dev/null
+        cat "$dpath/../www/$@/${server##*/}/dash.html" 2>/dev/null
         close_line "${server##*/}"
       done
 IFS=$IFS1
