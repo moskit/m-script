@@ -65,6 +65,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     eval "`grep coll_count "$rpath/data/${db}.${coll}.dat"`"
     eval "`grep coll_size "$rpath/data/${db}.${coll}.dat"`"
     eval "`grep coll_indexsize "$rpath/data/${db}.${coll}.dat"`"
+    ns="${db}.${coll}"
     if [ "_$SHARDING" == "_manual" ]; then
       store_results "hp|text,ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer" "standalone/MongoDB/databases.sql3|collections"
     else

@@ -35,11 +35,9 @@ Usage: unblock_ip TARGET
 
 where TARGET may be one of:
 
-  tmp               removes all IPs from temporary chain (M_IPBLOCK_TMP) and
-                    deletes the chain itself
+  tmp               removes all IPs from temporary chain (M_IPBLOCK_TMP)
                     
-  const             removes all IPs from constant chain (M_IPBLOCK_CONST) and
-                    deletes the chain itself
+  const             removes all IPs from constant chain (M_IPBLOCK_CONST)
                     
   <IP address>      removes this IP from both temporary and constant chains
 
@@ -60,14 +58,10 @@ remove_ip_from() {
 case $1 in
   tmp|temporary|temp)
     $IPT -F M_IPBLOCK_TMP
-    $IPT -D INPUT -j M_IPBLOCK_TMP
-    $IPT -X M_IPBLOCK_TMP
     rm "$M_TEMP/ip_block.tmp"
     ;;
   const|constant)
     $IPT -F M_IPBLOCK_CONST
-    $IPT -D INPUT -j M_IPBLOCK_CONST
-    $IPT -X M_IPBLOCK_CONST
     rm "$M_TEMP/ip_block.const"
     ;;
   *)
