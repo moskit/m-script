@@ -27,9 +27,9 @@ source "$M_ROOT/lib/functions.sh"
 [ -x /bin/dmesg ] && DM=/bin/dmesg || DM=`which dmesg 2>/dev/null`
 [ -z "$DM" ] && echo "dmesg not found" && exit 1
 
-chunk=`$DM -xTc`
+chunk=`$DM -xTc 2>/dev/null || $DM -c 2>/dev/null`
 
-[ -n "$DMESGLOG" ] && echo "$chunk" >> "$DMESGLOG"
+[ -n "$DMESGLOG" ] && echo -n "$chunk" >> "$DMESGLOG"
 
 oom=`echo "$chunk" | grep -i "kill"`
 echo -n "$oom" | sed 's/^/<***> /'
