@@ -12,7 +12,7 @@ clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^[[:spa
 
 open_cluster "Events"
   close_cluster_line
-  open_line "All clouds"
+  open_line "localhost"
     print_dashline "" folder "clouds/localhost"
   close_line
 close_cluster
