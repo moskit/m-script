@@ -198,7 +198,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     
     dwratio=`solve 2 "($dwtime - $lastdwtime) / ($diffsec * 1000)"`
 
-    replinerw=`printf %-21s "$LINE write:"`
+    replinerw=`printf %-22s "$LINE write:"`
     replinerw=`printf "${replinerw}${dwratio}"`
 
     [ -n "$dr" ] || dr=0

@@ -58,11 +58,9 @@ remove_ip_from() {
 case $1 in
   tmp|temporary|temp)
     $IPT -F M_IPBLOCK_TMP
-    rm "$M_TEMP/ip_block.tmp"
     ;;
   const|constant)
     $IPT -F M_IPBLOCK_CONST
-    rm "$M_TEMP/ip_block.const"
     ;;
   *)
     expr "$1" : ".*[^[0-9.:/]]*" >/dev/null && usage
