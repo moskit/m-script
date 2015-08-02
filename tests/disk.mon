@@ -215,7 +215,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     [ $testres -eq 0 ] && drwarn="<OK> " || drwarn="<`printf %${n}s | tr ' ' '*'`>"
 
     replinerd=`printf %-60s "${drwarn} ${replinerd}"`
-    replinerd=`${replinerd}${drspeed}`
+    replinerd="${replinerd}${drspeed}"
     
     [ -n "$dw" ] || dw=0
     diskwrites=`solve 2 "($dw / 2048)"`
@@ -231,7 +231,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     [ $testres -eq 0 ] && dwwarn="<OK> " || dwwarn="<`printf %${n}s | tr ' ' '*'`>"
 
     replinerw=`printf %-60s "${dwwarn} ${replinerw}"`
-    replinerw=`${replinerw}${dwspeed}`
+    replinerw="${replinerw}${dwspeed}"
     
     du=`grep "$disk|" "$M_TEMP/diskusage" | tail -1`
     used=`echo "$du" | cut -d'|' -f2`
