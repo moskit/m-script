@@ -40,6 +40,8 @@ interval="$interval sec"
 [ -z "$method" ] && method="REJECT"
 export BLOCK_CALLER="$rcommand"
 
+"$M_ROOT"/helpers/unblock_ip tmp
+
 logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --interval="$interval"`
 
 invalidusers=`echo "$logged" | grep "Invalid\\ user"`
@@ -64,7 +66,7 @@ if [ -n "$rootfails" ]; then
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot && hasrun=true
+    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfailroot
   done
 fi
 
@@ -75,7 +77,7 @@ if [ -n "$invalidusers" ]; then
   for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
     invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxinvalid && hasrun=true
+    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxinvalid
   done
 fi
 
@@ -86,8 +88,7 @@ if [ -n "$userfails" ]; then
   for ipaddr in `echo "$userfails" | sort | uniq` ; do
     invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail && hasrun=true
+    $blockip && echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=$maxfail
   done
 fi
 
-$hasrun || "$M_ROOT"/helpers/unblock_ip tmp
