@@ -301,7 +301,7 @@ list_servers() {
     fi
   else
     echo "No local data found. Run without --noupdate"
-    proper_exit 1 251
+    proper_exit 1 304
   fi
   IFS=$IFS1
 }
@@ -318,5 +318,5 @@ fi
 list_servers
 
 [ -n "$count" ] && echo $icount
-proper_exit 0 268
+proper_exit 0 321
 
