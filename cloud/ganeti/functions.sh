@@ -19,7 +19,7 @@
 
 ###
 # This file contains functions extracted from common.sh file which is part of
-# Ganeti because they are useful for helpers. So it's kinda lightweight version
+# Ganeti because they are useful for helpers, plus some additions.
 ###
 
 CLEANUP=( )
@@ -81,3 +81,11 @@ cleanup() {
   fi
 }
 
+fix_routes() {
+  # stop/staring an instance leads to that instance having lost its route
+  # 
+  IPR2=`which ip 2>/dev/null`
+  GNTC=`which gnt-cluster 2>/dev/null`
+  routingtable=`$GNTC info | grep ' link:' | cut -sd':' -f2 | tr -d ' '`
+  $IPR2 route show table $routingtable | cut -sd' ' -f1,2,3 | while read route ; do ip route add $route ; done
+}

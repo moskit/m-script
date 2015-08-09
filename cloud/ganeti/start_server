@@ -21,10 +21,8 @@ rpath=${0%/*}
 export M_ROOT
 GNTI=`which gnt-instance 2>/dev/null`
 GNTC=`which gnt-cluster 2>/dev/null`
-ROUTE=`which route 2>/dev/null`
 IPR2=`which ip 2>/dev/null`
 [ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
-[ -z "$ROUTE" ] && echo "route utility not found" && exit 1
 [ -z "$IPR2" ] && echo "ip utility not found" && exit 1
 possible_options="cloud region flavor cluster image name return verbose test cdrom makedisk vnc"
 necessary_options=
@@ -381,15 +379,15 @@ if [ -z "$test" ]; then
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
-      $ROUTE add -host $ip dev $idev
-      [ $? -ne 0 ] && log "Failure adding the route: $ROUTE add -host $ip dev $idev" && proper_exit 1 385
+      $IPR2 add $ip dev $idev
+      [ $? -ne 0 ] && log "Failure adding the route: $IPR2 add $ip dev $idev" && proper_exit 1 385
     else
       log "Instance started, but tap device doesn't exist"
-      proper_exit 1 347
+      proper_exit 1 388
     fi
   else
     log "Timeout while waiting for the server is up"
-    proper_exit 1 351
+    proper_exit 1 392
   fi
 
   # adding to the list

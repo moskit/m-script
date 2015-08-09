@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+source "$rpath/functions.sh"
+fix_routes

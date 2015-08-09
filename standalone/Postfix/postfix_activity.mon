@@ -115,7 +115,7 @@ if $LOG_ERRORS && $ANALYZE_ERRORS ; then
 fi
 
 if $SASL_AUTH_FAILURES ; then
-  saslflooders=`echo "$log" | grep 'SASL LOGIN authentication failed' | cut -sd '[' -f2 | cut -sd ']' -f1 | grep -v '^$' | sort | uniq`
+  saslflooders=`echo "$log" | grep 'SASL LOGIN authentication failed' | cut -d':' -f5 | cut -sd '[' -f2 | cut -sd ']' -f1 | grep -v '^$' | sort | uniq`
   echo -e "SASL auth failures detected from IPs:\n${saslflooders}" | sed 's|^|<***> |'
   if [ -n "$SASL_AUTH_BLOCK" ]; then
     export BLOCK_CALLER=$rcommand
