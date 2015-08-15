@@ -84,7 +84,7 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
   if [ $l -lt 1 ] ; then
     printf " "
   else
-    for ((n=1; n <= $l; n++)); do printf " "; done
+    printf "%${l}s"
   fi
   printf "$mpoint"
   m=`expr length $mpoint`
@@ -92,7 +92,7 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
   if [ $l -lt 1 ] ; then
     printf " "
   else
-    for ((n=1; n <= $l; n++)); do printf " "; done
+    printf "%${l}s"
   fi
   printf "$used%%\n"
   
@@ -208,7 +208,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
     testres=0
     for n in 3 2 1 ; do
-      thr=`eval echo "\$drspeed_$n"`
+      thr=`eval echo "\\$drspeed_\$n"`
       [ -n "$thr" ] && testres=`solve 2 "$drspeed >= $thr"`
       [ $testres -eq 1 ] && break
     done
@@ -224,7 +224,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
     testres=0
     for n in 3 2 1 ; do
-      thr=`eval echo "\$dwspeed_$n"`
+      thr=`eval echo "\\$dwspeed_\$n"`
       [ -n "$thr" ] && testres=`solve 2 "$dwspeed >= $thr"`
       [ $testres -eq 1 ] && break
     done
