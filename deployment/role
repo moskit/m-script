@@ -91,7 +91,7 @@ do
         for subcomm in ${possible_subcommands// /-}; do
           [ "_${subcomm%%:*}" == "_$command1" ] && subcommands=${subcomm#*:}
           for sub in ${subcommands//,/-}; do
-            if [ "X$s_param" == "X$sub" ]; then
+            if [ "_$s_param" == "_$sub" ]; then
               if $subcommfound ; then
                 echo "Only one subcommand can be executed!"
                 echo "Subcommands for $command1 are: ${subcommands}"
@@ -401,7 +401,7 @@ case $command1 in
     echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.conf"
     ;;
   edit)
-    [ -z "$param1" ] && echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
+    [ -z "$param1" ] && [ "$command2" != "conf" ] 2>/dev/null && echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     [ -n "$VISUAL" ] && ED=$VISUAL
     [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
     [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you want" && ED=`which vim 2>/dev/null`
@@ -446,18 +446,19 @@ case $command1 in
           echo "The file seems binary, sorry. Open it directly if you are certain."
         fi
         ;;
-      conf)
-        if [ -n "$param1" ]; then
-          conf="$ROLES_ROOT/conf/${param1##*/}"
-        else
-          conf="$ROLES_ROOT/conf/${role}.conf"
-        fi
-        echo "Editing file $conf"
-        [ -e "$conf" ] || echo "No such file, creating"
-        $ED "$conf"
-        ;;
       *)
-        echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
+        if [ -z "$command2" ] && [ "_$param1" == "_conf" ]; then
+          if [ -n "$param1" ]; then
+            conf="$ROLES_ROOT/conf/${param1##*/}"
+          else
+            conf="$ROLES_ROOT/conf/${role}.conf"
+          fi
+          echo "Editing file $conf"
+          [ -e "$conf" ] || echo "No such file, creating"
+          $ED "$conf"
+        else
+          echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
+        fi
         ;;
     esac
     ;;
@@ -504,7 +505,7 @@ case $command1 in
         fi
         ;;
       *)
-        echo -e "Usage: role show meta|script|file NAME\n       NAME can be omitted in case of conf"
+        echo -e "Usage: role show meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
         ;;
     esac
     ;;
