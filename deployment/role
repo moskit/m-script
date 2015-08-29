@@ -401,7 +401,7 @@ case $command1 in
     echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.conf"
     ;;
   edit)
-    [ -z "$param1" ] && [ "$command2" != "conf" ] 2>/dev/null && echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
+    [ -z "$param1" ] && [ "_$command2" != "_conf" ] && echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     [ -n "$VISUAL" ] && ED=$VISUAL
     [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
     [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you want" && ED=`which vim 2>/dev/null`
@@ -443,18 +443,22 @@ case $command1 in
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           $ED "$rf"
         else
-          echo "The file seems binary, sorry. Open it directly if you are certain."
+          echo "The file seems binary"
         fi
+        ;;
+      conf)
+        conf="$ROLES_ROOT/conf/${param1##*/}"
+        echo -e "\nEditing file $conf\n"
+        [ -e "$conf" ] || echo "No such file, creating"
+        sleep 3
+        $ED "$conf"
         ;;
       *)
         if [ -z "$command2" ] && [ "_$param1" == "_conf" ]; then
-          if [ -n "$param1" ]; then
-            conf="$ROLES_ROOT/conf/${param1##*/}"
-          else
-            conf="$ROLES_ROOT/conf/${role}.conf"
-          fi
-          echo "Editing file $conf"
+          conf="$ROLES_ROOT/conf/${role}.conf"
+          echo -e "\nEditing file $conf\n"
           [ -e "$conf" ] || echo "No such file, creating"
+          sleep 3
           $ED "$conf"
         else
           echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
@@ -463,7 +467,7 @@ case $command1 in
     esac
     ;;
   show)
-    [ -z "$param1" ] && echo -e "Usage: role show meta|script|file NAME\n       NAME can be omitted in case of conf" && exit 1
+    [ -z "$param1" ] && echo -e "Usage: role show meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     case $command2 in
       meta|task)
         [ ! -e "$ROLES_ROOT/roles/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
@@ -504,8 +508,17 @@ case $command1 in
           file "$rf"
         fi
         ;;
+      conf)
+        conf="$ROLES_ROOT/conf/${param1##*/}"
+        cat "$conf"
+        ;;
       *)
-        echo -e "Usage: role show meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
+        if [ -z "$command2" ] && [ "_$param1" == "_conf" ]; then
+          conf="$ROLES_ROOT/conf/${role}.conf"
+          cat "$conf"
+        else
+          echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
+        fi
         ;;
     esac
     ;;
