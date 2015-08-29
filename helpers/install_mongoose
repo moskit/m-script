@@ -6,41 +6,46 @@ rpath=${xcommand%/*}
 fpath=$(cd $rpath/../ && echo ${PWD})
 #*/
 
-rm -rf ${rpath}/../mongoose-source 2>/dev/null
-(mkdir ${rpath}/../mongoose-source && cd ${rpath}/../mongoose-source && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../)
-if [[ $? -ne 0 ]] ; then
+if [ "_$1" == "_no-download" ]; then
+  [ ! -f "$rpath/../mongoose-source/mongoose.tgz" ] && echo "Put mongoose.tgz into $rpath/../mongoose-source" && exit 1
+  (cd "$rpath/../mongoose-source" && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../)
+else
+  rm -rf "$rpath/../mongoose-source" 2>/dev/null
+  (mkdir "$rpath/../mongoose-source" && cd "$fpath/mongoose-source" && ../helpers/fetch igorsimonov.com/mongoose.tgz && tar xzf mongoose.tgz && cd mongoose && make linux && cp mongoose ../../)
+fi
+if [ $? -ne 0 ] ; then
   echo
   echo "Some error. Compile it or install some other way and copy its binary to M-Script root folder."
-  sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" ${rpath}/../conf/mon.conf
+  sed -i -e "s|MONGOOSE=.*|MONGOOSE=0|g" "$rpath/../conf/mon.conf"
 else
-  if [ `grep -c "^MONGOOSE=" ${rpath}/../conf/mon.conf` -ne 0 ]
+  if [ `grep -c "^MONGOOSE=" "$rpath/../conf/mon.conf"` -ne 0 ]
   then
-    sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" ${rpath}/../conf/mon.conf
+    sed -i -e "s|MONGOOSE=.*|MONGOOSE=1|g" "$rpath/../conf/mon.conf"
   else    
-    echo "MONGOOSE=1" >> ${rpath}/../conf/mon.conf
+    echo "MONGOOSE=1" >> "$rpath/../conf/mon.conf"
   fi
 fi
 
-if [ `grep -c "^MONGOOSE=1" ${rpath}/../conf/mon.conf` -ne 0 ]
+if [ `grep -c "^MONGOOSE=1" "$rpath/../conf/mon.conf"` -ne 0 ]
 then
-  if [ `grep -c "^p " ${rpath}/../conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^p " "$rpath/../conf/mongoose.conf"` -eq 0 ]
   then
     echo
     read -p "Enter a port number for the web interface: [8989] " mongooseport
     [ -n "$mongooseport" ] || mongooseport=8989
-    echo "p $mongooseport" >> ${rpath}/../conf/mongoose.conf
+    echo "p $mongooseport" >> "$rpath/../conf/mongoose.conf"
   fi
-  if [ `grep -c "^d " ${rpath}/../conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^d " "$rpath/../conf/mongoose.conf"` -eq 0 ]
   then
-    echo "d no" >> ${rpath}/../conf/mongoose.conf
+    echo "d no" >> "$rpath/../conf/mongoose.conf"
   fi
-  if [ `grep -c "^g " ${rpath}/../conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^g " "$rpath/../conf/mongoose.conf"` -eq 0 ]
   then
-    echo "g ${fpath}/conf/htaccess" >> ${rpath}/../conf/mongoose.conf
+    echo "g $fpath/conf/htaccess" >> "$rpath/../conf/mongoose.conf"
   fi
-  if [ `grep -c "^r " ${rpath}/../conf/mongoose.conf` -eq 0 ]
+  if [ `grep -c "^r " "$rpath/../conf/mongoose.conf"` -eq 0 ]
   then
-    echo "r ${fpath}/www" >> ${rpath}/../conf/mongoose.conf
+    echo "r $fpath/www" >> "$rpath/../conf/mongoose.conf"
   fi
   echo
   echo "You may want to adjust access settings for the web interface."

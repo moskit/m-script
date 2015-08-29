@@ -108,8 +108,7 @@ if [ -z "$BC" ]; then
       `which yum` install bc -y || exit 1
       ;;
     *)
-      echo
-      echo "Unable to determine operating system, sorry.. PLease install BC manually."
+      echo -e "\nUnable to determine operating system, sorry.. PLease install BC manually."
       exit 1
       ;;
     esac
@@ -140,8 +139,7 @@ if [ -z "$MAILX" ]; then
       `which yum` install mailx -y || exit 1
       ;;
     *)
-      echo
-      echo "Unable to determine operating system, sorry.. PLease install Mailx manually."
+      echo -e "\nUnable to determine operating system, sorry.. PLease install Mailx manually."
       exit 1
       ;;
     esac

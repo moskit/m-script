@@ -132,7 +132,7 @@ echo -e "\n\n-------------------\n${0} $*\n" >> "$rpath/../logs/deploy.log"
 source "$M_ROOT/conf/deployment.conf" || exit 99
 source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
 [ -n "$SSHPORT" ] || SSHPORT=22
-# in case it is started not by metaexec
+# in case it is not started by metaexec
 if [ -z "$CURRTASKDIR" ]; then
   CURRTASKDIR="$M_DEPL_WORK_DIR/${role}.${task}.$timestamp"
   export CURRTASKDIR
@@ -174,28 +174,28 @@ touch "$varfile"
 chmod 600 "$varfile"
 # common role's conf is sourced here to allow global variables that can be
 # used in other role.confs, but its vars are not saved yet
-[ -e "$ROLES_ROOT/common/role.conf" ] && source "$ROLES_ROOT/common/role.conf" 2>>"$LOG"
+[ -e "$ROLES_ROOT/conf/common.conf" ] && source "$ROLES_ROOT/common/common.conf" 2>>"$LOG"
 # first goes the actual role. Variables assigned are not being overwritten
 # by included roles, thus actual role has higher priority
-if [ -e "$ROLES_ROOT/$role/role.conf" ]; then
-  store_vars "$ROLES_ROOT/$role/role.conf"
+if [ -e "$ROLES_ROOT/conf/$role.conf" ]; then
+  store_vars "$ROLES_ROOT/conf/$role.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
 # if some other role's script is included in meta script, source its variables
 # too. Same for scripts symlinked from other roles.
-[ -h "$ROLES_ROOT/$file" ] && realfile=`readlink -f "$ROLES_ROOT/$file"` || realfile="$ROLES_ROOT/$file"
-realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/||"`
+[ -h "$ROLES_ROOT/roles/$file" ] && realfile=`readlink -f "$ROLES_ROOT/roles/$file"` || realfile="$ROLES_ROOT/roles/$file"
+realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/roles||"`
 roleincluded=${realfile%%/*} #*/
 if [ "_$roleincluded" != "_$role" ]; then
-  if [ -e "$ROLES_ROOT/$roleincluded/role.conf" ]; then
-    store_vars "$ROLES_ROOT/$roleincluded/role.conf"
+  if [ -e "$ROLES_ROOT/conf/$roleincluded.conf" ]; then
+    store_vars "$ROLES_ROOT/conf/$roleincluded.conf"
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
   fi
   export ROLEINCL=$roleincluded
 fi
 # last and least, common role
-if [ -e "$ROLES_ROOT/common/role.conf" ]; then
-  store_vars "$ROLES_ROOT/common/role.conf"
+if [ -e "$ROLES_ROOT/common/common.conf" ]; then
+  store_vars "$ROLES_ROOT/common/common.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
 fi
   

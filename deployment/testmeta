@@ -103,9 +103,9 @@ IFS='
 '
 declare -i n
 n=0
-[ ! -e "$ROLES_ROOT/$role/meta.$task" ] && echo "Task $task not found!" && exit 255
+[ ! -e "$ROLES_ROOT/roles/$role/${task}.meta" ] && echo "Task $task not found!" && exit 255
 
-for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
+for meta in `cat "$ROLES_ROOT/roles/$role/${task}.meta"` ; do # | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#`
   n+=1
   ([[ $meta =~ ^# ]] || [[ $meta =~ ^$ ]] || [[ $meta =~ ^[[:space:]]*# ]]) && continue
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m$meta\033[00;39m" || printf "META: $meta"
@@ -114,25 +114,25 @@ for meta in `cat "$ROLES_ROOT/$role/meta.$task"` ; do # | grep -v ^# | grep -v ^
   metascript=`eval "echo $metascript"`
   echo -e "\n type: $metatype  script: $metascript\n"
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-    if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
+    if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       [ -n "$use_color" ] && printf "\033[01;31m"
-      echo "  ERROR :: line $n :: $ROLES_ROOT/$metascript doesn't exist"
+      echo "  ERROR :: line $n :: $ROLES_ROOT/roles/$metascript doesn't exist"
       [ -n "$use_color" ] && printf "\033[00;39m"
       RETVAL+=1
       echo
       continue
     fi
-    source "$ROLES_ROOT/${metascript%%/*}/role.conf"
+    source "$ROLES_ROOT/conf/${metascript%%/*}.conf"
     ### Variant with subshells extraction
     ### IFS1=$IFS ; IFS='
     ### ' ; for LINE in `cat tango/common/update_local_sources | sed 's|&&|\n|g;s_||_\n_g;s|\;|\n|g' | cat` ; do LINE=$(echo $LINE | sed 's|`.*`|subshell|g;s|$(.*)|subshell|g') ; echo $LINE ; done ; IFS=$IFS1
     [ -n "$use_color" ] && printf "\033[01;39mVariables found: \033[00;39m" || printf "Variables found: "
-    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]#%-`"' ; for l in `cat "$ROLES_ROOT/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | tr -d '{}' | sort | uniq | grep -v '^\$ip$') ; do
+    for var in $(IFS2=$IFS ; IFS=$' \t\n\/|=():[]#%-`"' ; for l in `cat "$ROLES_ROOT/roles/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed 's|\\\| |g'` ; do echo $l ; done | grep '^\$' | tr -d '{}' | sort | uniq | grep -v '^\$ip$') ; do
       echo -n "$var :: "
       a=`eval "echo \"$var\""`
       if [ -z "$a" ] ; then
-        if [ `grep -c "${var}=" "$ROLES_ROOT/$metascript"` -eq 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "$ROLES_ROOT/$metascript"` -eq 0 ] ; then
-          if [ `grep -c "${var}=" "$ROLES_ROOT/${metascript%%/*}/role.conf"` -eq 0 ]; then
+        if [ `grep -c "${var}=" "$ROLES_ROOT/roles/$metascript"` -eq 0 ] || [ `grep -c "for[[:space:]]*${var}[[:space:]]*in" "$ROLES_ROOT/roles/$metascript"` -eq 0 ] ; then
+          if [ `grep -c "${var}=" "$ROLES_ROOT/conf/${metascript%%/*}.conf"` -eq 0 ]; then
             [ -n "$use_color" ] && printf "\033[01;31m"
             echo -e "\nERROR :: line $n :: $metascript :: variable $var is not defined"
             RETVAL+=1

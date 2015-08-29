@@ -35,11 +35,11 @@ genline() {
     IFS='
 '
     metascript=`eval "echo $metascript"`
-    if [ -e "$ROLES_ROOT/$metascript" ]; then
+    if [ -e "$ROLES_ROOT/roles/$metascript" ]; then
       irole=${metascript%%/*}
-      cat "$ROLES_ROOT/$metascript" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+      cat "$ROLES_ROOT/roles/$metascript" | grep -v '^#' | grep -v ^$ | grep -v '^[[:space:]]*#' | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     else
-      log "$ROLES_ROOT/$metascript not found"
+      log "$ROLES_ROOT/roles/$metascript not found"
     fi
     ;;
   *)
@@ -90,20 +90,20 @@ run_meta() {
     P="--ignoreipnotpresent"
   fi
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-    if [ ! -e "$ROLES_ROOT/$metascript" ] ; then
+    if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       thescript=${metascript##*/}
       therest=${metascript%/*}
       [ `expr "$therest" : "\.*/"` -gt 0 ] && therest=`expr "$therest" : "\.*/\(.*\)"`
       if [ -z "$therest" ]; then
-        if [ -e "$ROLES_ROOT/$role/$flavor/$thescript" ]; then
+        if [ -e "$ROLES_ROOT/roles/$role/$flavor/$thescript" ]; then
           metascript="$role/$flavor/$thescript"
         else
-          metascript=`find "$ROLES_ROOT" -name "$thescript"`
+          metascript=`find "$ROLES_ROOT/roles" -name "$thescript"`
           if [ -z "$metascript" ]; then
             echo "$metascript not found"
             res=1
           else
-            echo -e "\n$ROLES_ROOT/$role/$flavor/$thescript not found"
+            echo -e "\n$ROLES_ROOT/roles/$role/$flavor/$thescript not found"
             if [ `echo "$metascript" | wc -l` -gt 1 ]; then
               echo "Found more than one scripts with the name ${thescript}:"
               echo "$metascript"
@@ -120,17 +120,17 @@ run_meta() {
         theflavor=`echo "$therest" | cut -d'/' -s -f2`
         [ -z "$therole" -a -z "$theflavor" ] && theflavor="$therest"
         if [ -n "$therole" ]; then
-          msfoundinrole=`find "$ROLES_ROOT/$therole" -name "$thescript"`
-          msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
+          msfoundinrole=`find "$ROLES_ROOT/roles/$therole" -name "$thescript"`
+          msfoundinflavor=`find "$ROLES_ROOT/roles"/*/"$theflavor" -name "$thescript"`
           echo -e -n "Script $metascript not found "
           [ -n "$msfoundinrole" ] && echo -e "\n  Found: $msfoundinrole"
           [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
           res=1
         else
-          if [ -e "$ROLES_ROOT/$role/$theflavor/$thescript" ]; then
+          if [ -e "$ROLES_ROOT/roles/$role/$theflavor/$thescript" ]; then
             metascript="$role/$theflavor/$thescript"
           else
-            msfoundinflavor=`find "$ROLES_ROOT"/*/"$theflavor" -name "$thescript"`
+            msfoundinflavor=`find "$ROLES_ROOT/roles"/*/"$theflavor" -name "$thescript"`
             echo -e -n "Script $metascript not found"
             [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
             res=1
@@ -322,7 +322,7 @@ export CLOUD
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
 
-[ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deployment/roles
+[ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deployment
 [ -z "$M_DEPL_WORK_DIR" ] && M_DEPL_WORK_DIR=/root/deploy.tmp
 
 export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
@@ -567,7 +567,7 @@ else
   rm "$CURRTASKDIR"/meta 2>/dev/null
   IFS='
 '
-  cat "$ROLES_ROOT/$role/meta.$task" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+  cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
   
   declare -i metan
   metan=1

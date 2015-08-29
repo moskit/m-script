@@ -65,14 +65,14 @@ find_source() {
   if [ -f "$from" ] ; then
     fullfrom=$from
   else
-    if [ -f "$ROLES_ROOT/$role/$flavor/files/$from" ] ; then
-      fullfrom="$ROLES_ROOT/$role/$flavor/files/$from"
+    if [ -f "$ROLES_ROOT/roles/$role/$flavor/files/$from" ] ; then
+      fullfrom="$ROLES_ROOT/roles/$role/$flavor/files/$from"
     else
-      echo -n "${rcommand}: neither $from nor $ROLES_ROOT/$role/$flavor/files/$from is found, "
+      echo -n "${rcommand}: neither $from nor $ROLES_ROOT/roles/$role/$flavor/files/$from is found, "
       if [[ "$flavor" != "common" ]] ; then echo -n "guessing flavor=common ... "
-        if [ -f "$ROLES_ROOT/$role/common/files/$from" ] ; then
+        if [ -f "$ROLES_ROOT/roles/$role/common/files/$from" ] ; then
           echo "found"
-          fullfrom="$ROLES_ROOT/$role/common/files/$from"
+          fullfrom="$ROLES_ROOT/roles/$role/common/files/$from"
         else
           echo -n "not found ... "
           notfound=1
@@ -84,12 +84,12 @@ find_source() {
         echo -n "checking if another role is included ... "
         [ -n "$ROLEINCL" ] && echo -n "included role $ROLEINCL found ... "
         if [[ "$role" != "$ROLEINCL" ]] ; then
-          if [ -f "$ROLES_ROOT/$ROLEINCL/$flavor/files/$from" ] ; then
-            fullfrom="$ROLES_ROOT/$ROLEINCL/$flavor/files/$from"
+          if [ -f "$ROLES_ROOT/roles/$roleINCL/$flavor/files/$from" ] ; then
+            fullfrom="$ROLES_ROOT/roles/$roleINCL/$flavor/files/$from"
             echo "the file is found in included role $ROLEINCL ... good"
             realrole=$ROLEINCL
-          elif [ -f "$ROLES_ROOT/$ROLEINCL/common/files/$from" ] ; then
-            fullfrom="$ROLES_ROOT/$ROLEINCL/common/files/$from"
+          elif [ -f "$ROLES_ROOT/roles/$roleINCL/common/files/$from" ] ; then
+            fullfrom="$ROLES_ROOT/roles/$roleINCL/common/files/$from"
             echo "the file is found in included role $ROLEINCL ... good"
             realrole=$ROLEINCL
           else
@@ -106,10 +106,10 @@ find_source() {
 
 prepare_file() {
   [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
-  if [ -f "$ROLES_ROOT/$role/role.conf" ]; then
-    store_vars "$ROLES_ROOT/$role/role.conf"
+  if [ -f "$ROLES_ROOT/conf/$role.conf" ]; then
+    store_vars "$ROLES_ROOT/conf/$role.conf"
   else
-    echo "role.conf for role $role not found!"
+    echo "role config for $role not found!"
   fi
   [ -f "${tmpfile}.var" ] && source "${tmpfile}.var"
   rm -f "$tmpfile" "${tmpfile}.orig"
@@ -256,19 +256,19 @@ fi
 ([ -n "$all" ] || [ "$cluster" == "all" ]) && cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^#|^$|^[[:space:]]*#" | cut -d'|' -f1`
 #[ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no servers found in cluster $cluster" && exit 1
 [ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
-[ -n "$verbose" ] && echo "### Reading configuration from $ROLES_ROOT/$role/role.conf"
+[ -n "$verbose" ] && echo "### Reading configuration from $ROLES_ROOT/conf/$role.conf"
 
 find_source
 # fullfrom and realrole are now defined
 tmpfile="$M_TEMP/deployment/`echo $fullfrom | tr '/' '_'`"
 rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 
-[ -f "$ROLES_ROOT/$role/role.conf" ] && store_vars "$ROLES_ROOT/$role/role.conf"
+[ -f "$ROLES_ROOT/conf/$role.conf" ] && store_vars "$ROLES_ROOT/conf/$role.conf"
 ## ROLEINCL - role of symlinked script or script defined in meta  from another
 ## role
 ## realrole - same as ROLEINCL, but when file to deploy is found in that role,
 ## not just script containing deploy_file
-[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/$ROLEINCL/role.conf" ] && store_vars "$ROLES_ROOT/$ROLEINCL/role.conf"
+[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/$roleINCL.conf" ] && store_vars "$ROLES_ROOT/conf/$roleINCL.conf"
 
 if [ -z "$local" ]; then
 

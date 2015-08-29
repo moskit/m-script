@@ -42,14 +42,14 @@ setup_env() {
 }
 
 cr() {
-  [ -z "$1" ] && cd "$ROLES_ROOT" && return
-  [ "X$1" == "X--list" ] && ls "$ROLES_ROOT" && return
+  [ -z "$1" ] && cd "$ROLES_ROOT/roles" && return
+  [ "X$1" == "X--list" ] && ls "$ROLES_ROOT/roles" && return
   [ "X$1" == "X--reload" ] && cr "$role" && return
-  if [ ! -d "$ROLES_ROOT/$1" ] ; then
+  if [ ! -d "$ROLES_ROOT/roles/$1" ] ; then
     echo "Role $1 doesn't exist. Use cr --list to get the list of roles available."
     return
   fi
-  cd "$ROLES_ROOT/$1"
+  cd "$ROLES_ROOT/roles/$1"
   export M_ROLE="${1%/}"
   export role="${1%/}"
   M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`

@@ -22,11 +22,8 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
 source "$M_ROOT/lib/functions.sh" # includes mon.conf
-LOG="$M_ROOT/logs/auth.log"
 blockip=false
 source "$rpath/${rcommand%.mon}.conf"
-
-# possible_options="file interval maxlines maxinvalid method maxfail maxfailroot timeformat"
 
 [ -z "$file" ] && echo "file is not defined" >&2 && exit 1
 interval=`expr $FREQ + $timeshift 2>/dev/null` || interval=210

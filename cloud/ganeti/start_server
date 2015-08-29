@@ -379,7 +379,7 @@ if [ -z "$test" ]; then
   if [ $? -eq 0 ]; then
     idev=`find_idev $ip`
     if [ -n "$idev" ]; then
-      $IPR2 add $ip dev $idev
+      $IPR2 route add $ip dev $idev
       [ $? -ne 0 ] && log "Failure adding the route: $IPR2 add $ip dev $idev" && proper_exit 1 385
     else
       log "Instance started, but tap device doesn't exist"

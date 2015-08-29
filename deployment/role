@@ -183,12 +183,12 @@ case $command1 in
         printcol "Meta"
         printcol "Scripts"
         echo "Includes"
-        for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\. | sed 's|^meta.||'` ; do
-          ml=`cat "$ROLES_ROOT/$param1/meta.$m" | grep -vE "^$|^#|^[[:space:]]#"`
+        for m in `ls -1 "$ROLES_ROOT/roles/$param1" | grep ^meta\. | sed 's|^meta.||'` ; do
+          ml=`cat "$ROLES_ROOT/roles/$param1/meta.$m" | grep -vE "^$|^#|^[[:space:]]#"`
           sn=`echo "$ml" | wc -l`
           for sc in $ml ; do
             scf="${sc#* }" ; scf="${scf% *}" ; scf=`eval "echo \"$scf\""`
-            [ -e "$ROLES_ROOT/$scf" ] || scerr+=(" *** Script \"$ROLES_ROOT/$scf\" not found")
+            [ -e "$ROLES_ROOT/roles/$scf" ] || scerr+=(" *** Script \"$ROLES_ROOT/roles/$scf\" not found")
           done
           in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
           if [ -z "$in" ] ; then
@@ -218,12 +218,12 @@ case $command1 in
         printcol "Script"
         printcol "Meta"
         echo "Role"
-        [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` )
-        allscripts+=( `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l` )
+        [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l` )
+        allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l` )
         for sc in ${allscripts[*]} ; do
-          scr="${sc/$ROLES_ROOT\//}" && scr="${scr/$param1\//}"
-          for m in `ls -1 "$ROLES_ROOT/$param1" | grep ^meta\.` ; do
-            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
+          scr="${sc/$ROLES_ROOT\/roles\//}" && scr="${scr/$param1\//}"
+          for m in `ls -1 "$ROLES_ROOT/roles/$param1" | grep ^meta\.` ; do
+            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/roles/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
           done
           
           [ -z "$mi" ] && mi="unused"
@@ -237,7 +237,7 @@ case $command1 in
                 unset scr
               fi
             else
-              for r in `grep "${sc##*/}" "$ROLES_ROOT/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
+              for r in `grep "${sc##*/}" "$ROLES_ROOT/roles/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
                 r=`eval "echo \"$r\""`
                 printcol "$scr"
                 printcol "$mis"
@@ -247,8 +247,8 @@ case $command1 in
             fi
           done
           if [ -n "$all" ]; then
-            for or in `find "$ROLES_ROOT" -mindepth 1 -maxdepth 1 -type d ! -name "$param1"` ; do
-              [ `cat "$or/"meta.* 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
+            for or in `find "$ROLES_ROOT/roles" -mindepth 1 -maxdepth 1 -type d ! -name "$param1"` ; do
+              [ `cat "$or/"*.meta 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
             done
             for oris in ${ori[*]} ; do
               printcol "$scr"
@@ -268,15 +268,15 @@ case $command1 in
         [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
         printcol "File"
         echo "Script"
-        [ -n "$flavor" ] && allfiles=( `find "$ROLES_ROOT/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` )
-        allfiles+=( `find "$ROLES_ROOT/$param1/common/files/" -maxdepth 1 -type f -o -type l` )
+        [ -n "$flavor" ] && allfiles=( `find "$ROLES_ROOT/roles/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` )
+        allfiles+=( `find "$ROLES_ROOT/roles/$param1/common/files/" -maxdepth 1 -type f -o -type l` )
         for fl in ${allfiles[*]} ; do
           if [ -n "$flavor" ]; then
-            for sc in `find "$ROLES_ROOT/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
+            for sc in `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
               [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
             done
           fi
-          for sc in `find "$ROLES_ROOT/$param1/common/" -maxdepth 1 -type f -o -type l` ; do
+          for sc in `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l` ; do
             [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci common/${sc##*/}"
           done
           if [ -n "$sci" ]; then
@@ -300,7 +300,7 @@ case $command1 in
         printcol "Cluster"
         printcol "Flavor"
         echo "Image"
-        for r in `find $ROLES_ROOT/ -maxdepth 1 -type d` ; do
+        for r in `find $ROLES_ROOT/roles/ -maxdepth 1 -type d` ; do
           r=${r##*/}
           [[ $r =~ '^\.' ]] && continue
           for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
@@ -323,64 +323,59 @@ case $command1 in
     ;;
   clone)
     [ -z "$param1" -o -z "$param2" ] && echo "Usage: role clone SOURCE TARGET" && exit 1
-    if [ ! -d "$ROLES_ROOT/$param1" ]; then
+    if [ ! -d "$ROLES_ROOT/roles/$param1" ]; then
       if [ ! -d "$param1" ]; then
         echo "Role $param1 not found" && exit 1
       else
         sourcerole="$param1"
       fi
     else
-      sourcerole="$ROLES_ROOT/$param1"
+      sourcerole="$ROLES_ROOT/roles/$param1"
     fi
-    if [ -d "$ROLES_ROOT/$param2" ]; then
-      if [ $(cd -P "$ROLES_ROOT/$param2/../" && pwd) == "$ROLES_ROOT" ]; then
+    if [ -d "$ROLES_ROOT/roles/$param2" ]; then
+      if [ $(cd -P "$ROLES_ROOT/roles/$param2/../" && pwd) == "$ROLES_ROOT/roles" ]; then
         echo "Role $param2 exists, adding files missing in the target role. Use --all to overwrite existing files."
       else
-        echo "Role folder must be a subfolder of ${ROLES_ROOT}. You can change ROLE_ROOT setting in conf/deployment.conf"
+        echo "Role folder must be a subfolder of ${ROLES_ROOT}/roles. You can change ROLES_ROOT setting in conf/deployment.conf"
         exit 1
       fi
     fi
     for dir in `find "$sourcerole/" -type d` ; do
       newdir=`echo "$dir" | sed "s|^$sourcerole/||"`
-      install -d "$ROLES_ROOT/$param2/$newdir"
+      install -d "$ROLES_ROOT/roles/$param2/$newdir"
     done
     for sl in `find "$sourcerole/" -type l` ; do
       nsl=`echo "$sl" | sed "s|$sourcerole/||"`
       f=`readlink $sl`
       if [ "X${f:0:1}" == "X/" ]; then
         if [ "$method" == "link" ]; then
-          if [ ! -e "$ROLES_ROOT/$param2/$nsl" -o -n "$all" ]; then
+          if [ ! -e "$ROLES_ROOT/roles/$param2/$nsl" -o -n "$all" ]; then
             echo "${sl##*/} is a symlink resolving to an absolute path. Copying the file instead."
-            cp -u "$f" "$ROLES_ROOT/$param2/$nsl"
+            cp -u "$f" "$ROLES_ROOT/roles/$param2/$nsl"
           fi
         fi
       else
-        if [ -e "$ROLES_ROOT/$param2/$nsl" -a ! -h "$ROLES_ROOT/$param2/$nsl" ]; then
+        if [ -e "$ROLES_ROOT/roles/$param2/$nsl" -a ! -h "$ROLES_ROOT/roles/$param2/$nsl" ]; then
           echo "Source file $nsl is a symlink, but target exists and is not a symlink. Skipping."
         else
-          if [ ! -e "$ROLES_ROOT/$param2/$nsl" -o -n "$all" ]; then
-            $methodcommand "$sl" "$ROLES_ROOT/$param2/$nsl"
+          if [ ! -e "$ROLES_ROOT/roles/$param2/$nsl" -o -n "$all" ]; then
+            $methodcommand "$sl" "$ROLES_ROOT/roles/$param2/$nsl"
           fi
         fi
       fi
     done
-    for f in `find "$sourcerole/" -type f ! -name role.conf` ; do
+    for f in `find "$sourcerole/" -type f` ; do
       nf=`echo "$f" | sed "s|$sourcerole/||"`
-      if [ ! -e "$ROLES_ROOT/$param2/$nf" -o -n "$all" ]; then
-        $methodcommand "$f" "$ROLES_ROOT/$param2/$nf"
+      if [ ! -e "$ROLES_ROOT/roles/$param2/$nf" -o -n "$all" ]; then
+        $methodcommand "$f" "$ROLES_ROOT/roles/$param2/$nf"
       fi
     done
-    if [ ! -e "$ROLES_ROOT/$param2/role.conf" ]; then
-      for rcl in `cat "$sourcerole/role.conf"` ; do
-        echo "$rcl" | sed 's|=|=  #|' >> "$ROLES_ROOT/$param2/role.conf"
-      done
-    fi
     ;;
   create)
     declare -a flarr
     [ -n "$param2" ] && echo "Usage: role create NAME" && exit 1
     [ -z "$param1" ] && echo "Usage: role create NAME" && exit 1
-    for fl in `find "$ROLES_ROOT/"*/ -maxdepth 1 -type d | sed "s|^$ROLES_ROOT/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
+    for fl in `find "$ROLES_ROOT/roles/"*/ -maxdepth 1 -type d | sed "s|^$ROLES_ROOT/roles/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
       flarr+=( "$fl" )
     done
     echo -e "\nChoose existing system flavors from the list and/or add new ones. Existing flavors can be added by their numbers.\n\nExample: 2,4,5,centos6    - will add existing flavors with numbers 2, 4 and 5 and create a new one named centos6\n\nTo have all listed flavors in the new role just press Enter\n\n"
@@ -391,115 +386,125 @@ case $command1 in
     read -p "Input flavors, separated by comma: " roleslist
     if [ -z "$roleslist" ] ; then
       for fl in ${flarr[*]} ; do
-        install -d "$ROLES_ROOT/$param1/$fl"
+        install -d "$ROLES_ROOT/roles/$param1/$fl"
       done
     else
       for r in `echo -e "$roleslist" | sed 's|,|\n|g'` ; do
         if [[ $r =~ ^[[0-9]]* ]]; then
-          install -d "$ROLES_ROOT/$param1/${flarr[$r-1]}/files"
+          install -d "$ROLES_ROOT/roles/$param1/${flarr[$r-1]}/files"
         else
-          install -d "$ROLES_ROOT/$param1/$r/files"
+          install -d "$ROLES_ROOT/roles/$param1/$r/files"
         fi
-        install -d "$ROLES_ROOT/$param1/common/files"
+        install -d "$ROLES_ROOT/roles/$param1/common/files"
       done
     fi
-    echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/$param1/role.conf"
+    echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.conf"
     ;;
   edit)
-    [ -z "$param1" ] && echo "Usage: role edit meta|script|file NAME" && exit 1
+    [ -z "$param1" ] && echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     [ -n "$VISUAL" ] && ED=$VISUAL
     [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
     [ -z "$ED" ] && echo "Using vim as text editor. Set VISUAL or EDITOR environment variable to another editor if you want" && ED=`which vim 2>/dev/null`
     [ -z "$ED" ] && echo "Editor not found" && exit 1
     case $command2 in
       meta|task)
-        [ ! -e "$ROLES_ROOT/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
-        $ED "$ROLES_ROOT/$role/meta.$param1"
+        [ ! -e "$ROLES_ROOT/roles/$role/${param1}.meta" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
+        $ED "$ROLES_ROOT/roles/$role/${param1}.meta"
         ;;
       script|command)
         prmarr=( `echo "$param1" | tr '/' '\n'` )
         [ ${#prmarr[*]} -gt 3 ] && echo "Path can't have more than 3 parts (role/flavor/script)" && exit 1
         case ${#prmarr[*]} in
-          3) $ED "$ROLES_ROOT/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" ;;
-          2) $ED "$ROLES_ROOT/$role/${prmarr[0]}/${prmarr[1]}" ;;
+          3) $ED "$ROLES_ROOT/roles/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" ;;
+          2) $ED "$ROLES_ROOT/roles/$role/${prmarr[0]}/${prmarr[1]}" ;;
           1)
-          if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
-            if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
-              echo "$param1 doesn't exist in this role. `[[ "$flavor" == "common" ]] && echo "Flavor 'common' has been" || echo "Flavors '$flavor' and 'common' have been"` searched. Use options --role= and --flavor= to search in other roles and flavors. If it is a new script, use full notation (role/flavor/scriptname) or create it directly: $ED \"$ROLES_ROOT/$role/$flavor/$param1\" or $ED \"$ROLES_ROOT/$role/common/$param1\"." && exit 1
+          if [ ! -e "$ROLES_ROOT/roles/$role/$flavor/$param1" ]; then
+            if [ ! -e "$ROLES_ROOT/roles/$role/common/$param1" ]; then
+              echo "$param1 doesn't exist in this role. `[[ "$flavor" == "common" ]] && echo "Flavor 'common' has been" || echo "Flavors '$flavor' and 'common' have been"` searched. Use options --role= and --flavor= to search in other roles and flavors. If it is a new script, use full notation (role/flavor/scriptname) or create it directly: $ED \"$ROLES_ROOT/roles/$role/$flavor/$param1\" or $ED \"$ROLES_ROOT/roles/$role/common/$param1\"." && exit 1
             else
-              $ED "$ROLES_ROOT/$role/common/$param1"
+              $ED "$ROLES_ROOT/roles/$role/common/$param1"
             fi
           else
-            $ED "$ROLES_ROOT/$role/$flavor/$param1"
+            $ED "$ROLES_ROOT/roles/$role/$flavor/$param1"
           fi
           ;;
         esac
         ;;
       file)
-        if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
-          rf=`readlink -f "$ROLES_ROOT/$role/$flavor/files/$param1"`
-        elif [ -h "$ROLES_ROOT/$role/common/files/$param1" ]; then
-          rf=`readlink -f "$ROLES_ROOT/$role/common/files/$param1"`
+        if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/$param1" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/$flavor/files/$param1"`
+        elif [ -h "$ROLES_ROOT/roles/$role/common/files/$param1" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/common/files/$param1"`
         else
-          rf="$ROLES_ROOT/$role/$flavor/files/$param1"
+          rf="$ROLES_ROOT/roles/$role/$flavor/files/$param1"
         fi
-        [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
-        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors. If you intended to create a new file, just create it directly: $ED \"$ROLES_ROOT/$role/$flavor/files/$param1\" or $ED \"$ROLES_ROOT/$role/common/files/$param1\"." && exit 1
+        [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/$param1"
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors. If you intended to create a new file, just create it directly: $ED \"$ROLES_ROOT/roles/$role/$flavor/files/$param1\" or $ED \"$ROLES_ROOT/roles/$role/common/files/$param1\"." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
           $ED "$rf"
         else
           echo "The file seems binary, sorry. Open it directly if you are certain."
         fi
         ;;
+      conf)
+        if [ -n "$param1" ]; then
+          conf="$ROLES_ROOT/conf/${param1##*/}"
+        else
+          conf="$ROLES_ROOT/conf/${role}.conf"
+        fi
+        echo "Editing file $conf"
+        [ -e "$conf" ] || echo "No such file, creating"
+        $ED "$conf"
+        ;;
       *)
-        echo "Usage: role edit meta|script|file NAME"
+        echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
         ;;
     esac
     ;;
   show)
-    [ -z "$param1" ] && echo "Usage: role show meta|script|file NAME" && exit 1
+    [ -z "$param1" ] && echo -e "Usage: role show meta|script|file NAME\n       NAME can be omitted in case of conf" && exit 1
     case $command2 in
       meta|task)
-        [ ! -e "$ROLES_ROOT/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
-        [ -n "$strip" ] && cat "$ROLES_ROOT/$role/meta.$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/meta.$param1"
+        [ ! -e "$ROLES_ROOT/roles/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
+        [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/meta.$param1" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/meta.$param1"
         ;;
       script|command)
         prmarr=( `echo "$param1" | tr '/' '\n'` )
         [ ${#prmarr[*]} -gt 3 ] && echo "Path can't have more than 3 parts (role/flavor/script)" && exit 1
         case ${#prmarr[*]} in
-          3) [ -n "$strip" ] && cat "$ROLES_ROOT/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" ;;
-          2) [ -n "$strip" ] && cat "$ROLES_ROOT/$role/${prmarr[0]}/${prmarr[1]}" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/${prmarr[0]}/${prmarr[1]}" ;;
+          3) [ -n "$strip" ] && cat "$ROLES_ROOT/roles/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/${prmarr[0]}/${prmarr[1]}/${prmarr[2]}" ;;
+          2) [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/${prmarr[0]}/${prmarr[1]}" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/${prmarr[0]}/${prmarr[1]}" ;;
           1)
-          if [ ! -e "$ROLES_ROOT/$role/$flavor/$param1" ]; then
-            if [ ! -e "$ROLES_ROOT/$role/common/$param1" ]; then
+          if [ ! -e "$ROLES_ROOT/roles/$role/$flavor/$param1" ]; then
+            if [ ! -e "$ROLES_ROOT/roles/$role/common/$param1" ]; then
               echo "$param1 doesn't exist in this role. `[[ "$flavor" == "common" ]] && echo "Flavor 'common' has been" || echo "Flavors '$flavor' and 'common' have been"` searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
             else
-              [ -n "$strip" ] && cat "$ROLES_ROOT/$role/common/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/common/$param1"
+              [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/common/$param1" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/common/$param1"
             fi
           else
-            [ -n "$strip" ] && cat "$ROLES_ROOT/$role/$flavor/$param1" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$ROLES_ROOT/$role/$flavor/$param1"
+            [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/$flavor/$param1" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/$flavor/$param1"
           fi
           ;;
         esac
         ;;
       file)
-        if [ -h "$ROLES_ROOT/$role/$flavor/files/$param1" ]; then
-          rf=`readlink -f "$ROLES_ROOT/$role/$flavor/files/$param1"`
-        elif [ -h "$ROLES_ROOT/$role/common/files/$param1" ]; then
-          rf=`readlink -f "$ROLES_ROOT/$role/common/files/$param1"`
+        if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/$param1" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/$flavor/files/$param1"`
+        elif [ -h "$ROLES_ROOT/roles/$role/common/files/$param1" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/common/files/$param1"`
         else
-          rf="$ROLES_ROOT/$role/$flavor/files/$param1"
+          rf="$ROLES_ROOT/roles/$role/$flavor/files/$param1"
         fi
-        [ ! -e "$rf" ] && rf="$ROLES_ROOT/$role/common/files/$param1"
+        [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/$param1"
         [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
-          [ -n "$strip" ] && cat "$rf" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# || cat "$rf"
+          [ -n "$strip" ] && cat "$rf" | grep -vE '^$|^#|^[[:space:]]#' || cat "$rf"
         else
           file "$rf"
         fi
         ;;
       *)
-        echo "Usage: role show meta|script|file NAME"
+        echo -e "Usage: role show meta|script|file NAME\n       NAME can be omitted in case of conf"
         ;;
     esac
     ;;
