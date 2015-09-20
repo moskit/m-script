@@ -17,6 +17,8 @@ else
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
 fi
 
+[ -z "$preloader" ] && preloader=image
+
 print_mongo_server() {
   IFS2=$IFS ; IFS=$IFS1
   local clname="$1"

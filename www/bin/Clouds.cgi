@@ -8,7 +8,7 @@ source "$PWD/../../conf/mon.conf"
 print_cgi_headers
 load_css "clouds.css"
 
-clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^[[:space:]]# | cut -s -d'|' -f12 | grep -v ^$ | grep -v "^${CLOUD}$" | sort | uniq` )
+clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#" | cut -sd'|' -f12 | grep -v ^$ | grep -v "^${CLOUD}$" | sort | uniq` )
 
 open_cluster "Events"
   close_cluster_line

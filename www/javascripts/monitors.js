@@ -18,7 +18,7 @@ initMonitors = function(updater) {
   document.title = title + " - " + updater;
   hideblocked = 1;
   stopUpdater();
-  startUpdater(updater);
+  startUpdater(updater,1);
   var updtab = updater.split('/')[0];
   var updview = updater.split('/')[1];
   setTimeout(function waitforTab() {
@@ -48,8 +48,17 @@ setUpdater = function(updater) {
   window.location.search = '?' + updater;
 }
 
-startUpdater = function(updater) {
+startUpdater = function(updater,preloader) {
   if (updaterstopped == 1) {
+    if (preloader == 1) {
+      new Ajax.Updater('content', '/preloaders/' + updater + '.html', {
+        method: 'get', onFailure: function() {
+          new Ajax.Updater('content', '/preloaders/gif.html', {
+            method: 'get'
+          });
+        }
+      });
+    }
     pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
       method: 'get', frequency: 100, decay: 1.5
     });
@@ -69,14 +78,14 @@ showVars = function(result_div,newvar) {
 //    result_div.appendChild(document.createTextNode(newvar));  
 //    result_div.appendChild(document.createElement('br'));  
 
-    var result_wrap, line_index, line;  
+    var result_wrap, line_index, line;
 
-    result_wrap = document.createElement('div');  
-    line = document.createTextNode(newvar);  
-    result_wrap.appendChild(line);  
+    result_wrap = document.createElement('div');
+    line = document.createTextNode(newvar);
+    result_wrap.appendChild(line);
     result_div.appendChild(result_wrap);
     result_div.appendChild(line);
-    result_div.appendChild(document.createElement('br'));  
+    result_div.appendChild(document.createElement('br'));
 
     //result_div.scrollTop = result_div.scrollHeight;
   }
@@ -240,7 +249,7 @@ hideAll = function(e) {
     targ = targ.parentNode.parentNode;
     $$('div.dhtmlmenu').each(function(value) { if (value.id != targ.id) value.hide(); });
     $$('div.details').each(function(value) { if (value.id != targ.id) value.hide(); });
-  if (updaterstopped == 1) startUpdater(updater);
+  if (updaterstopped == 1) startUpdater(updater,0);
   } else {
     hideblocked = 0;
   }

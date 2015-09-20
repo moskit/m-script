@@ -122,7 +122,7 @@ else
 
     [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
     [ -z "$clust" ] && clust=$M_CLUSTER
-    [ -z "$clust" ] && echo "No clusters found" && continue
+    [ -z "$clust" ] && echo "No clusters found" >&2 && continue
 
     IFSORIG=$IFS
     IFS='

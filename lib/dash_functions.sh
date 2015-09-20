@@ -324,3 +324,25 @@ load_css() {
   echo "</style>"
 }
 
+cgi_begin() {
+  scriptname=${0%.cgi}
+  saname=${scriptname%/*}; saname=${saname##*/}
+  scriptname=${scriptname##*/}
+  if $cache_enabled ; then
+    dFREQ=`expr $FREQ \* 2 / 60`
+    if [ -z "`find "$M_ROOT/www/preloaders/$saname" -type f -name "${scriptname}.html" -mmin -$dFREQ`" ]; then
+      exec 6>&1
+      exec > "$M_ROOT/www/preloaders/$saname/${scriptname}.html"
+      cachingrun=1
+    else
+      print_cgi_headers
+    fi
+  else
+    print_cgi_headers
+  fi
+}
+
+cgi_end() {
+  exec 1>&6 6>&-
+  [ -n "$cachingrun" ] && print_cgi_headers && cat "$M_ROOT/www/preloaders/$saname/${scriptname}.html"
+}

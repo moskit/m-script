@@ -447,6 +447,7 @@ case $command1 in
         fi
         ;;
       conf)
+        [ -d "$ROLES_ROOT/conf" ] || mkdir "$ROLES_ROOT/conf"
         conf="$ROLES_ROOT/conf/${param1##*/}"
         echo -e "\nEditing file $conf\n"
         [ -e "$conf" ] || echo "No such file, creating"
@@ -455,6 +456,7 @@ case $command1 in
         ;;
       *)
         if [ -z "$command2" ] && [ "_$param1" == "_conf" ]; then
+          [ -d "$ROLES_ROOT/conf" ] || mkdir "$ROLES_ROOT/conf"
           conf="$ROLES_ROOT/conf/${role}.conf"
           echo -e "\nEditing file $conf\n"
           [ -e "$conf" ] || echo "No such file, creating"
