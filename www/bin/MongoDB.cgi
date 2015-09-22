@@ -1,6 +1,6 @@
 #!/bin/bash
 
-M_ROOT="$PWD/../../.."
+M_ROOT="$PWD/../.."
 source "$M_ROOT/lib/dash_functions.sh"
 cgi_begin
 
