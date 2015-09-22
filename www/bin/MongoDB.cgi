@@ -1,15 +1,16 @@
 #!/bin/bash
 
-scriptname=${0%.cgi}
-scriptname=${scriptname##*/}
-source "$PWD/../../lib/dash_functions.sh"
+M_ROOT="$PWD/../../.."
+source "$M_ROOT/lib/dash_functions.sh"
+cgi_begin
+
 source "$PWD/../../standalone/$scriptname/mongo_servers.conf"
 if [ "_$DBENGINE" == "_WT" ]; then
   WT=true
 else
   WT=false
 fi
-print_cgi_headers
+
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 if $WT ; then
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Cache used / configured  (MB)"
@@ -167,3 +168,4 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_mongos_servers.list" 2>/dev/n
 fi
 IFS=$IFS1
 
+cgi_end

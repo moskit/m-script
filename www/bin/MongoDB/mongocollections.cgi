@@ -1,12 +1,9 @@
 #!/bin/bash
 
-saname="MongoDB"
-scriptname=${0%.cgi}
-scriptname=${scriptname##*/}
 M_ROOT="$PWD/../../.."
 source "$M_ROOT/lib/dash_functions.sh"
+cgi_begin
 
-print_cgi_headers
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 print_page_title "Collection" "Status" "Type" "Records" "Data Size" "Index Size" "Storage Size"
 
@@ -94,3 +91,4 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
   close_cluster
 done
 
+cgi_end
