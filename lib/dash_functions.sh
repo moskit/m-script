@@ -327,7 +327,7 @@ load_css() {
 cgi_begin() {
   scriptname=${0%.cgi}
   saname=${PWD##*/}
-  [ "_$saname" == "_www" ] && unset saname
+  [ "_$saname" == "_bin" ] && unset saname
   scriptname=${scriptname##*/}
   if $cache_enabled ; then
     dFREQ=`expr $FREQ \* 2 / 60`
@@ -344,7 +344,9 @@ cgi_begin() {
 }
 
 cgi_end() {
-  exec 1>&6 6>&-
-  [ -n "$cachingrun" ] && print_cgi_headers && cat "$M_ROOT/www/preloaders/$saname/${scriptname}.html.new"
-  mv "$M_ROOT/www/preloaders/$saname/${scriptname}.html.new" "$M_ROOT/www/preloaders/$saname/${scriptname}.html"
+  if [ -n "$cachingrun" ]; then
+    exec 1>&6 6>&-
+    print_cgi_headers && cat "$M_ROOT/www/preloaders/$saname/${scriptname}.html.new"
+    mv "$M_ROOT/www/preloaders/$saname/${scriptname}.html.new" "$M_ROOT/www/preloaders/$saname/${scriptname}.html"
+  fi
 }
