@@ -53,7 +53,7 @@ startUpdater = function(updater,preloader) {
     if (preloader == 1) {
       new Ajax.Updater('content', '/preloaders/' + updater + '.html', {
         method: 'get', onFailure: function() {
-          new Ajax.Updater('content', '/preloaders/gif.html', {
+          new Ajax.Updater('content', '/preloaders/default.html', {
             method: 'get'
           });
         }
