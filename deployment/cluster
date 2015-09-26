@@ -23,19 +23,15 @@ possible_commands="help list clone"
 possible_subcommands="list:metas,scripts,files"
 possible_options="cloud"
 
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+[ -z "$*" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 
 printcol() {
   if [ -n "$1" ] ; then
-    l=${#1}
+    l=`expr $col - ${#1}`
     echo -n "$1"
-    for ((i=0; i<$(($col-$l)); i++)) ; do
-      echo -n " "
-    done
+    printf "%${l}s"
   else
-    for ((i=0; i<$col; i++)) ; do
-      echo -n " "
-    done
+    printf "%${col}s"
   fi
 }
 
@@ -151,8 +147,8 @@ case $command1 in
   list)
     col=29
     printcol "Cluster"
-    echo "Servers number"
-    for L in `cat "$rpath/../conf/clusters.conf" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f1` ; do
+    echo -e "Servers number\n"
+    for L in `cat "$rpath/../conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]#" | cut -d'|' -f1` ; do
       N=`cat "$rpath/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f5 | grep "^${L}$" | wc -l`
       printcol "$L"
       echo "$N"

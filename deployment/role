@@ -26,16 +26,21 @@ possible_options="role cluster flavor method all strip"
 
 printcol() {
   if [ -n "$1" ] ; then
-    l=${#1}
-    [[ $(($col-$l)) -le 0 ]] && l=$(($col-1))
+    l=`expr $col - ${#1}`
     echo -n "$1"
-    for ((i=0; i<$(($col-$l)); i++)) ; do
-      echo -n " "
-    done
+    printf "%${l}s"
   else
-    for ((i=0; i<$col; i++)) ; do
-      echo -n " "
-    done
+    printf "%${col}s"
+  fi
+}
+
+role_required() {
+  if [ -n "$role" ]; then
+    if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
+      echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
+    fi
+  else
+    echo "role must be defined for this command (use cr <role> or option --role=<role>)" && exit 1
   fi
 }
 
@@ -146,14 +151,6 @@ do
   done
 done
 
-if [ -n "$role" ]; then
-  if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
-    echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
-  fi
-else
-  [ "_$command1" != "_create" ] && [ "_$command1" != "_clone" ]  && echo "Role is not defined" && exit 1
-fi
-
 if [ "_$command1" == "_clone" ]; then 
   [ -z "$method" ] && echo -e "Using default method: copy\n    (other available methods are: symlink, copywithlinks - see 'role --help' for details)" && method="copy"
   case $method in
@@ -176,6 +173,7 @@ case $command1 in
   list)
     case $command2 in
       metas|tasks)
+        role_required
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -211,6 +209,7 @@ case $command1 in
         done
       ;;
       scripts|commands)
+        role_required
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -262,6 +261,7 @@ case $command1 in
         done
       ;;
       files)
+        role_required
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -401,6 +401,7 @@ case $command1 in
     echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.conf"
     ;;
   edit)
+    role_required
     [ -z "$param1" ] && [ "_$command2" != "_conf" ] && echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     [ -n "$VISUAL" ] && ED=$VISUAL
     [ -z "$ED" -a -n "$EDITOR" ] && ED=$EDITOR
@@ -469,6 +470,7 @@ case $command1 in
     esac
     ;;
   show)
+    role_required
     [ -z "$param1" ] && echo -e "Usage: role show meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     case $command2 in
       meta|task)
