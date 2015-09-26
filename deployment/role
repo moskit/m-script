@@ -300,13 +300,12 @@ case $command1 in
         printcol "Cluster"
         printcol "Flavor"
         echo "Image"
-        for r in `find $ROLES_ROOT/roles/ -maxdepth 1 -type d` ; do
+        for r in `find $ROLES_ROOT/roles/ -maxdepth 1 -mindepth 1 -type d ! -name ".*"` ; do
           r=${r##*/}
-          [[ $r =~ '^\.' ]] && continue
-          for cl in `cat $M_ROOT/conf/clusters.conf | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
+          for cl in `cat $M_ROOT/conf/clusters.conf | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
             printcol "$r"
             printcol "$cl"
-            ln=`cat "$M_ROOT/conf/clusters.conf" | grep "^$cl"`
+            ln=`cat "$M_ROOT/conf/clusters.conf" | grep "^${cl}|"`
             fl=`echo "$ln" | cut -d'|' -f11`
             printcol "$fl"
             im=`echo "$ln" | cut -d'|' -f6`
