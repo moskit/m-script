@@ -51,7 +51,7 @@ setUpdater = function(updater) {
 startUpdater = function(updater,preloader) {
   if (updaterstopped == 1) {
     if (preloader == 1) {
-      new Ajax.Updater('content', '/preloaders/' + updater + '.html', {
+      new Ajax.Updater('content', '/bin/preloader.cgi?updater=' + updater, {
         method: 'get', onFailure: function() {
           new Ajax.Updater('content', '/preloaders/default.html', {
             method: 'get'
