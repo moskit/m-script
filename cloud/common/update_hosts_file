@@ -20,6 +20,7 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
 
 IFS1=$IFS
 IFS='
@@ -32,98 +33,23 @@ do
   ip=`echo $HOST | cut -d'|' -f1`
   hname=`echo $HOST | cut -d'|' -f2`
   [ -z "$hname" ] && error+=("Server $ip has no name") && continue
-  if [ `grep -c "$ip " /etc/hosts` -ge 1 ] ; then
-    sed -i "/$ip /d" /etc/hosts
-  fi
-  if [ `grep -c " $hname " /etc/hosts` -ge 1 ] ; then
-    sed -i "/ $hname /d" /etc/hosts
-  fi
-  if [ `grep -c " $hname$" /etc/hosts` -ge 1 ] ; then
-    sed -i "/ $hname$/d" /etc/hosts
-  fi
+  sed -i "/^$ip \| $ip /d" /etc/hosts
+  sed -i "/ $hname \| $hname$/d" /etc/hosts
   echo "$ip $hname" >> /etc/hosts
-done
-
-
-[ -n "$error" ] && echo "${error[*]}" && exit 1
-if [ -n "$1" ]; then
-  if [ "$1" == "everywhere" ]; then
-    echo "Syncing servers.list to all clusters"
-    for cluster in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | grep -v ^$SUPER_CLUSTER\|` ; do
-      clustername=`echo "$cluster" | cut -sd'|' -f1`
-      mpath=`echo "$cluster" | cut -sd'|' -f8`
-      sudouser=`echo "$cluster" | cut -sd'|' -f13`
-      [ -z "$mpath" ] && mpath=$M_ROOT
-      if [ -n "$sudouser" ]; then
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --cluster=$clustername "$M_ROOT/servers.list" /tmp
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv /tmp/servers.list "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list.tmp" "$M_ROOT/servers.list"
+  if [ -n "$1" ]; then
+    if [ "$1" == "everywhere" ]; then
+      cloudexec --cluster=all --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" >> /etc/hosts\)
+    else
+      if [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1 | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | grep -v "^$" | grep -c "^${1}$"` -eq 1 ]; then
+        cloudexec --cluster="$1" --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" >> /etc/hosts\)
       else
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --cluster=$clustername "$M_ROOT/servers.list" "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --cluster=$clustername mv "\"$M_ROOT\"/servers.list.tmp" "\"$M_ROOT\"/servers.list"
-      fi
-    done
-  else
-    if [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1 | grep -v "^$" | grep -c "^${1}$"` -eq 1 ]; then
-      echo "Syncing servers.list to cluster $1"
-      mpath=`cat "$M_ROOT/conf/clusters.conf" | grep "^${1}|" | cut -sd'|' -f8`
-      sudouser=`cat "$M_ROOT/conf/clusters.conf" | grep "^${1}|" | cut -sd'|' -f13`
-      [ -z "$mpath" ] && mpath=$M_ROOT
-      if [ -n "$sudouser" ]; then
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --cluster=$1 "$M_ROOT/servers.list" /tmp
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 mv /tmp/servers.list "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 mv "\"$M_ROOT\"/servers.list.tmp" "$M_ROOT/servers.list"
-      else
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --cluster=$1 "$M_ROOT/servers.list" "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --cluster=$1 mv "\"$M_ROOT\"/servers.list.tmp" "\"$M_ROOT\"/servers.list"
-      fi
-    elif [ `cat "$M_ROOT/servers.list" | cut -sd'|' -f1 | grep -v "^$" | grep -c "^${1}$"` -eq 1 ]; then
-      echo "Syncing servers.list to server $1"
-      cluster=`cat "$M_ROOT/servers.list" | grep "^${1}|" | cut -sd'|' -f5`
-      mpath=`cat "$M_ROOT/conf/clusters.conf" | grep "^${cluster}|" | cut -sd'|' -f8`
-      sudouser=`cat "$M_ROOT/conf/clusters.conf" | grep "^${cluster}|" | cut -sd'|' -f13`
-      [ -z "$mpath" ] && mpath=$M_ROOT
-      if [ -n "$sudouser" ]; then
-        "$rpath"/cloudexec --nolocalhost --ip=$1 mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --ip=$1 "$M_ROOT/servers.list" /tmp
-        "$rpath"/cloudexec --nolocalhost --ip=$1 mv /tmp/servers.list "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --ip=$1 "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --ip=$1 mv "\"$M_ROOT\"/servers.list.tmp" "$M_ROOT/servers.list"
-      else
-        "$rpath"/cloudexec --nolocalhost --ip=$1 mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --ip=$1 "$M_ROOT/servers.list" "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --ip=$1 "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --ip=$1 mv "\"$M_ROOT\"/servers.list.tmp" "\"$M_ROOT\"/servers.list"
-      fi
-    elif [ `cat "$M_ROOT/servers.list" | cut -sd'|' -f4 | grep -v "^$" | grep -c "^${1}$"` -eq 1 ]; then
-      echo "Syncing servers.list to server $1"
-      cluster=`cat "$M_ROOT/servers.list" | cut -sd'|' -f4,5 | grep "^${1}|" | cut -sd'|' -f2`
-      mpath=`cat "$M_ROOT/conf/clusters.conf" | grep "^${cluster}|" | cut -sd'|' -f8`
-      sudouser=`cat "$M_ROOT/conf/clusters.conf" | grep "^${cluster}|" | cut -sd'|' -f13`
-      ip=`cat "$M_ROOT/servers.list" | cut -sd'|' -f1,4 | grep "|${1}$" | cut -sd'|' -f1`
-      [ -z "$mpath" ] && mpath=$M_ROOT
-      if [ -n "$sudouser" ]; then
-        "$rpath"/cloudexec --nolocalhost --ip=$ip mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --ip=$ip "$M_ROOT/servers.list" /tmp
-        "$rpath"/cloudexec --nolocalhost --ip=$ip mv /tmp/servers.list "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --ip=$ip "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --ip=$ip mv "\"$M_ROOT\"/servers.list.tmp" "$M_ROOT/servers.list"
-      else
-        "$rpath"/cloudexec --nolocalhost --ip=$ip mv "\"$M_ROOT\"/servers.list" "\"$M_ROOT\"/servers.list.tmp"
-        "$rpath"/cloudsync --nolocalhost --ip=$ip "$M_ROOT/servers.list" "\"$mpath\"/servers.list"
-        "$rpath"/cloudexec --nolocalhost --ip=$ip "\"$mpath\"/cloud/common/$rcommand"
-        "$rpath"/cloudexec --nolocalhost --ip=$ip mv "\"$M_ROOT\"/servers.list.tmp" "\"$M_ROOT\"/servers.list"
+        IP=`name_to_ip $1 || echo $1`
+        cloudexec --ip=$IP --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" >> /etc/hosts\)
       fi
     fi
   fi
-fi
+done
+
+[ -n "$error" ] && echo "${error[*]}" && exit 1
 
 IFS=$IFS1
