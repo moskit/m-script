@@ -110,7 +110,7 @@ open_line() {
   dfolnodep="${dfolnode:0:20}"
   [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
   [ -n "$dfolkey" ] && dfolid="$dfolkey|$dfolnode" || dfolid="$dfolnode"
-  echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\">$dfolnodep</div>"
+  echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\" title=\"$dfolnode\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
 }
 
