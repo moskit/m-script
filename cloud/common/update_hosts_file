@@ -28,8 +28,7 @@ IFS='
 # in case the file doesn't end correctly
 [ `cat -E /etc/hosts | tail -1 | grep -c \$$` -eq 0 ] && echo >> /etc/hosts
 while [ `cat /etc/hosts | tail -1 | grep -c ^$` -eq 1 ] ; do sed -i '$d' /etc/hosts ; done
-cat "$M_ROOT/servers.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | cut -d'|' -f1,4 | while read HOST
-do
+for HOST in `cat "$M_ROOT/servers.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | cut -d'|' -f1,4`; do
   ip=`echo $HOST | cut -d'|' -f1`
   hname=`echo $HOST | cut -d'|' -f2`
   [ -z "$hname" ] && error+=("Server $ip has no name") && continue
@@ -38,13 +37,13 @@ do
   echo "$ip $hname" >> /etc/hosts
   if [ -n "$1" ]; then
     if [ "$1" == "everywhere" ]; then
-      cloudexec --cluster=all --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" >> /etc/hosts\)
+      cloudexec --cluster=all --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
     else
       if [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1 | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | grep -v "^$" | grep -c "^${1}$"` -eq 1 ]; then
-        cloudexec --cluster="$1" --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" >> /etc/hosts\)
+        cloudexec --cluster="$1" --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
       else
         IP=`name_to_ip $1 || echo $1`
-        cloudexec --ip=$IP --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" >> /etc/hosts\)
+        cloudexec --ip=$IP --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
       fi
     fi
   fi
