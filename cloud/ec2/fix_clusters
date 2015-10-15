@@ -29,7 +29,7 @@ for LINE in `cat ${rpath}/../3rdparty.compat | grep -v ^$|grep -v ^#|grep -v ^[[
   ctags="${ctags} $ctag"
 done
 
-parse_server() {
+parse_node() {
   if [[ ${1} =~ ^RESERVATION ]] ; then
     printf "SG::`echo ${1} | awk -F'|' '{print $4}'`|"
   fi
@@ -63,7 +63,7 @@ parse_server() {
   fi
 }
 
-fix_server() {
+fix_node() {
   IFS1=$IFS
   IFS='|'
   for s in `echo "${1}"` ; do
@@ -85,7 +85,7 @@ fix_server() {
               if [ "X$provider" == "X$cleft" ] ; then
                 compatstring=`echo "$compat" | awk -F'::' '{print $2}'|sed "s|%${ctag}%|$d|g"`
               else
-                echo "Check this server, looks like it has tags from several service providers messed up:" >> "${rpath}/../../fix_clusters.report"
+                echo "Check this node, looks like it has tags from several service providers messed up:" >> "${rpath}/../../fix_clusters.report"
                 echo "${1}" >> "${rpath}/../../fix_clusters.report"
                 echo "Giving up for now" >> "${rpath}/../../fix_clusters.report"
                 break
@@ -146,13 +146,13 @@ fix_server() {
       fi
     fi
   else
-    # No cluster server found. Checking if it belongs to 3rd party services 
+    # No cluster node found. Checking if it belongs to 3rd party services 
     if [ -n "$provider" ] ; then
       if [ -n "$compatstring" ] ; then
         if [[ "$compatstring" =~ '%' ]] ; then
           echo "Failed to generate a cluster name from compatible tags:" >> "${rpath}/../../fix_clusters.report"
           echo "${provider}::${compatstring}" >> "${rpath}/../../fix_clusters.report"
-          echo "The server was:" >> "${rpath}/../../fix_clusters.report"
+          echo "The node was:" >> "${rpath}/../../fix_clusters.report"
           echo "$1" >> "${rpath}/../../fix_clusters.report"
           return 0
         else
@@ -227,24 +227,24 @@ done
 PATH="${EC2_TOOLS_BIN_PATH}:${PATH}"
 export JAVA_HOME EC2_HOME EC2_PRIVATE_KEY EC2_CERT EC2_REGION PATH
 M_TEMP=/tmp/m_script/cloud/ec2
-[ -f "$M_TEMP/servers.${EC2_REGION}.tmp" ] || (echo "Looks like ${rpath}/../update_servers_list has never run before. Run it first please." && exit 1)
+[ -f "$M_TEMP/nodes.${EC2_REGION}.tmp" ] || (echo "Looks like $rpath/../update_nodes_list has never run before. Run it first please." && exit 1)
 [ -n "$region" ] && EC2_REGION=$region
 
-while read SERVER
+while read NODE
 do
-  if [[ $SERVER =~ ^RESERVATION ]] ; then
-    [ -n "$current_server" ] && fix_server "$current_server" && unset current_server
-    current_server=`parse_server $SERVER` && unset newr
+  if [[ $NODE =~ ^RESERVATION ]] ; then
+    [ -n "$current_node" ] && fix_node "$current_node" && unset current_node
+    current_node=`parse_node $NODE` && unset newr
   else
-    if [[ $SERVER =~ ^INSTANCE ]] && [ $newr ] ; then
-      fix_server "$current_server" && unset current_server
-      current_server=`parse_server $SERVER`
+    if [[ $NODE =~ ^INSTANCE ]] && [ $newr ] ; then
+      fix_node "$current_node" && unset current_node
+      current_node=`parse_node $NODE`
       newr=1
     else
-      current_server="$current_server`parse_server $SERVER`"
+      current_node="$current_node`parse_node $NODE`"
     fi
   fi
-done<$M_TEMP/servers.${EC2_REGION}.tmp
-fix_server "$current_server" && unset current_server
-unset newr current_server
+done<$M_TEMP/nodes.${EC2_REGION}.tmp
+fix_node "$current_node" && unset current_node
+unset newr current_node
 

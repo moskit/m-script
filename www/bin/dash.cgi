@@ -14,7 +14,7 @@ close_cluster
 
 # localhost first; if it belongs to a listed cluster, that cluster will be the first
 for localip in `"$PWD"/../../helpers/localips | grep -v '127.0.0.1'` ; do
-  localserver=`grep ^$localip\| "$PWD/../../servers.list"`
+  localserver=`grep ^$localip\| "$PWD/../../nodes.list"`
   [ -z "$localserver" ] && continue
   localcluster=`echo "$localserver" | cut -d'|' -f5`
   localcloud=`echo "$localserver" | cut -d'|' -f6`

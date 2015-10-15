@@ -1,0 +1,130 @@
+#!/bin/bash
+# Copyright (C) 2008-2014 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+possible_options="cloud name ip return verbose cluster help"
+necessary_options=""
+
+ARGV=`echo $@ | sed 's/^--//' | sed 's/ --/|/g'`
+[ -z "$ARGV" ] && $0 --help
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ $found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+[ -n "$help" ] && cat << "EOF"
+
+Finds and lists node(s) in pseudo-clouds (added to the list manually rather than via cloud API)
+
+Usage: $rcommand <options>
+
+Options:
+ 
+  --ip=[ip]                     - finds a node by its IP
+  
+  --name=[node name]          - finds node(s) by name
+  
+  --cluster=[cluster name]      - finds all nodes in this cluster.
+                                  If either of ip/name is provided, this
+                                  option is ignored, and the search becomes
+                                  non-cluster one
+  
+  --cloud=[cloud name]          - must be provided for any of the searches
+                                  above; can be provided either via command-line
+                                  option or via environment variable CLOUD;
+                                  command-line option has higher priority
+                                 
+EOF
+
+show_details() {
+  node=`cat "$M_ROOT/nodes.list" | grep "^${1}|"`
+  key=`echo "$node" | cut -sd'|' -f2`
+  region=`echo "$node" | cut -sd'|' -f3`
+  name=`echo "$node" | cut -sd'|' -f4`
+  cluster=`echo "$node" | cut -sd'|' -f5`
+  ips=$($M_ROOT/helpers/mssh "$ip" \(IFCFG=`which ifconfig 2>/dev/null` \; if [ -n \"\$IFCFG\" ] \; then \$IFCFG \| sed \'/inet\ /\!d\;s/.*r://\;s/\ .*//\' \| grep -v \'127.0.0.1\' \; else IFCFG=`which ip 2>/dev/null` \; [ -n \"\$IFCFG\" ] \&\& \$IFCFG addr list \| grep \'inet.*scope\ global\' \| while read L \; do expr \"\$L\" : \'inet \(.*\)/\' \; done \; fi\))
+  ips=`echo "$ips" | tr '\n' ' '`
+  [ -n "$ips" ] && status="active" || status="unavailable"
+  echo -e "------------------------------------------------------------------------------\nName: $name    Cluster: $cluster\nIPs: $ips\nStatus: $status"
+}
+
+[ -n "$cloud" ] && CLOUD=$cloud
+export CLOUD
+
+source "$rpath/../../conf/mon.conf"
+[ -n "$CLOUD" ] && source "$rpath/../../conf/clouds/${CLOUD}.conf"
+source "$rpath/../../lib/cloud_functions.sh"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+
+if [ -z "$IAMACHILD" ]; then
+  lock_cloudops || exit 10
+fi
+
+if [ -z "$ip" ]; then
+  if [ -z "$name" ]; then
+    if [ -z "$cluster" ]; then
+      echo "One of ip, name or cluster is required to identify the node"
+      proper_exit 1 93
+    else
+      "$rpath"/show_noncloud_nodes --cloud="$CLOUD" --cluster="$cluster"
+      proper_exit 0 96
+    fi
+  else
+    # ip must be present in nodes.list, so it's simple
+    ip=`cat "$rpath/../../nodes.list" | grep -vE "^#|^[[:space:]]#" | cut -d'|' -f1,4,6 | grep -v ^$ | grep "|${CLOUD}$" | grep "|${name}|" | cut -d'|' -f1`
+    if [ -n "$ip" ]; then
+      show_details $ip
+    else
+      echo "Server not found"
+    fi
+  fi
+else
+  show_details $ip
+fi
+
+proper_exit 0 125
+
+
+
+
+
+

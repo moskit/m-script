@@ -1,0 +1,252 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+DIFF=`which diff 2>/dev/null`
+[ -z "$DIFF" ] && echo "Diff utility not found, exiting..  " && exit 1
+SED=`which sed 2>/dev/null`
+[ -z "$SED" ] && echo "Sed utility not found, exiting..  " && exit 1
+SSH=`which ssh 2>/dev/null`
+SSLEX=`which openssl 2>/dev/null`
+CURL=`which curl 2>/dev/null`
+CURL="$CURL -s"
+[ -z "$SSH" ] && echo "Ssh utility not found, exiting..  " && exit 1
+IFCFG=`which ifconfig 2>/dev/null`
+# Normally needed for localhost only, and not always: depends on system.
+# Hostnames of remote nodes are obtained via ssh which is a login shell;
+# this is why the variable below is not used for remote nodes: you may
+# have different OSes there with different paths to hostname utility.
+HOSTNAME=`which hostname 2>/dev/null`
+[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
+LOG="$M_ROOT/logs/cloud.log"
+
+request() {
+  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
+  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
+  signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
+  $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+}
+
+get_iname() {
+  for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
+    case $ns in
+      host)
+        get_hostname $1
+        ;;
+      metadata)
+        sname=`echo "$node" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+        ;;
+      dnsName)
+        sname=`echo "$node" | grep '/"dnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+        ;;
+      *)
+        # anything else is considered to be a tag as the source
+        NAMETAG="${ns#*:}"
+        nametagind=`echo "$tags" | grep '/"key"/' | grep \|\"$NAMETAG\" | cut -d'/' -f7`
+        sname=`echo "$tags" | grep "$nametagind/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+        ;;
+    esac
+    [ -n "$sname" ] && break
+  done
+  echo "$sname"
+}
+
+list_nodes() {
+  $debug && [ -n "$update_nodes_list" ] && echo -e "\n`date`\n=====================\n" >> $LOG
+  IFS1=$IFS
+  IFS='
+'
+
+  if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
+    [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
+    declare -a nodelist
+    
+#==============================================================================
+    for sn in `cat "$M_TEMP/${rcommand}.resp" | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
+      unset id name istatus extIP intIP IP imageId flavorId icluster
+
+      node=`grep ^$sn\/ "$M_TEMP/${rcommand}.resp"`
+      
+      intIP=`echo "$node" | grep '/"privateIpAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      extIP=`echo "$node" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      id=`echo "$node" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`
+      imageId=`echo "$node" | grep '/"imageId"/0' | cut -d'|' -f2 | tr -d '"'`
+      istatus=`echo "$node" | grep '/"instanceState"/0/"name"/0' | cut -d'|' -f2 | tr -d '"'`
+      flavorId=`echo "$node" | grep '/"instanceType"/0' | cut -d'|' -f2 | tr -d '"'`
+      secgroup=`echo "$node" | grep '/"groupSet"/0/"item"/0/"groupName"' | cut -d'|' -f2 | sort | uniq | tr -d '"' | tr '\n' ','`
+      izone=`echo "$node" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
+      iaki=`echo "$node" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
+      #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
+      if [ "_$NETWORK" == "_external" ] ; then
+        IP=$extIP
+      else
+        IP=$intIP
+      fi
+      iname=`get_iname $IP`
+      
+      tags=`echo "$node" | grep '/"tagSet"/'`
+      iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f11`
+      if [ -n "$iclustertag" ]; then
+        icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+      else
+        [ -z "$all" ] && continue
+      fi
+      
+      ikey=`echo "$node" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
+      
+      bdevs=`echo "$node" | grep '/"blockDeviceMapping"/'`
+      unset ebs
+      for bdev in `echo "$bdevs" | grep '|"attached"' | cut -d'/' -f11 | sort | uniq` ; do
+        bdevname=`echo "$bdevs" | grep "/$bdev/\"deviceName\"" | cut -d'|' -f2 | tr -d '"'`
+        bdevid=`echo "$bdevs" | grep "/$bdev/\"volumeId\"" | cut -d'|' -f2 | tr -d '"'`
+        bdevsince=`echo "$bdevs" | grep "/$bdev/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
+        ebs+=("$bdevid|$bdevname|$bdevsince")
+      done
+
+      if [ -z "$update_nodes_list" ] ; then
+
+        if [ -n "$cluster" ]; then
+          [ "$cluster" != "$icluster" ] && continue
+        fi
+        [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
+        case $view in
+          list)
+            echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
+            echo "${ebs[*]}" | sed 's_^_EBS: _g;s_|_  _g'
+            ;;
+          table)
+            echo "$id|$iname|$istatus|$extIP|$intIP|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
+            echo "${ebs[*]}" | sed 's_^_EBS: _g'
+            ;;
+          column)
+            echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
+            echo "${ebs[*]}" | sed 's_^_EBS: _g;s_|_  _g'
+            ;;
+          none)
+            ;;
+          *)
+            echo -e "------------------------------------------------------------------------------\nNode ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIP    Private IP: $intIP\nNode image: $imageId    AKI: $iaki    ARI: $iari\nNode size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
+            echo "${ebs[*]}" | sed 's_^_  EBS: _g;s_|_  _g'
+            ;;
+        esac
+        icount+=1
+
+      else
+        if [ -n "$icluster" ] ; then
+          if [ `grep -c ^${icluster}\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^${icluster}\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
+            [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)" && key="$ikey"
+            sed -i /^$IP\|/d "$M_ROOT/nodes.list"
+            [ "_$istatus" == "_running" ] && echo "$IP|$key|$region|$iname|$icluster|$CLOUD" >> "$M_ROOT/nodes.list"
+
+          fi
+        fi
+      fi
+      
+    done
+  else
+    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/${rcommand}.resp and run without --noupdate if necessary."
+    exit 1
+  fi
+  for listip in `cat "$M_ROOT/nodes.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+    [ `grep -c \|\"$listip\"$ "$M_TEMP/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`|" "$M_ROOT/conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "$M_ROOT/nodes.list"
+  done
+  IFS=$IFS1
+}
+
+possible_options="cloud help region verbose cluster state status filter short noupdate view update_nodes_list forceupdate all count resolveids id name_source"
+necessary_options=""
+IFS1=$IFS
+IFS='-'
+for s_option in "$@"
+do
+  found=false
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+
+  for option in ${possible_options// /-} ; do
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+  done
+  
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+if [ "_$help" == "_yes" ] ; then
+  echo "Usage: ${0##*/} <options>"
+  echo 
+  echo "Without options all found clusters will be synced"
+  echo
+  echo "Options:"
+  echo
+  echo "  --region=region          - syncs only nodes in this region."
+  exit 0
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
+LOG="$M_ROOT/logs/cloud.log"
+
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+[ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP"
+
+[ -z "$region" ] && region=$EC2_REGION
+
+[ -z "$status" ] && [ -n "$state" ] && status=$state
+[ -z "$status" ] && status="running"
+
+[ -n "$name_source" ] && NAME_SOURCE=$name_source
+[ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
+
+localip=`"$M_ROOT"/helpers/localips`
+
+if [ -z "$noupdate" ]; then
+  changed=0
+  [ -f "$M_TEMP/${rcommand}.resp" ] && mv "$M_TEMP/${rcommand}.resp" "$M_TEMP/${rcommand}.resp.prev" || touch "$M_TEMP/${rcommand}.resp.prev"
+  [ -f "$M_TEMP/nodes.bdevs" ] && mv "$M_TEMP/nodes.bdevs" "$M_TEMP/nodes.bdevs.prev" || touch "$M_TEMP/nodes.bdevs.prev"
+  [ -n "$verbose" ] && log "sending request"
+  request
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+else
+  # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
+  # if no setting, force update is disabled
+  if [ -n "$FORCE_LIST_UPDATE_AFTER" ] ; then
+    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0` || echo 86400)
+    [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
+  fi
+  [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
+  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && exit 1
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+fi
+
+list_nodes
+
+

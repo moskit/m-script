@@ -1,0 +1,90 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+possible_options="cluster state filter region short noupdate view update_nodes_list all status count cloud"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+
+localips=`"$M_ROOT/helpers/"localips | grep -v "^127"`
+
+list_listed_nodes() {
+  IFSORIG=$IFS ; IFS='
+'
+  for node in `cat "$M_ROOT/nodes.list" | grep "|${CLOUD}$" | grep -vE "^#|^$|^[[:space:]]*#"` ; do
+    ip=`echo "$node" | cut -sd'|' -f1`
+    [ -z "$ip" ] && continue
+    key=`echo "$node" | cut -sd'|' -f2`
+    region=`echo "$node" | cut -sd'|' -f3`
+    name=`echo "$node" | cut -sd'|' -f4`
+    cluster=`echo "$node" | cut -sd'|' -f5`
+    M_ROOT_REMOTE=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f11`
+    [ -z "$M_ROOT_REMOTE" ] && M_ROOT_REMOTE="$M_ROOT"
+    if `echo "$localips" | grep -q "^${ip}$"` ; then
+      ips="$localips"
+    else
+      ips=`cloudexec --cluster="$cluster" --ip=$ip \"$M_ROOT/helpers/\"localips \| grep -v "^127"`
+    fi
+    [ -n "$ips" ] && status="active" || status="unavailable"
+    ips=`echo "$ips" | tr '\n' ' '`
+    echo -e "------------------------------------------------------------------------------\nName: $name    Cluster: $cluster\nIPs: $ips\nStatus: $status"
+  done
+  IFS=$IFSORIG
+}
+
+list_listed_nodes
+
+

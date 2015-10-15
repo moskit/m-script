@@ -70,7 +70,7 @@ if [ "_$help" == "_yes" ] ; then
   echo
   echo "Options:"
   echo
-  echo "  --region=region          - syncs only servers in this region."
+  echo "  --region=region          - syncs only nodes in this region."
   exit 0
 fi
 
@@ -120,7 +120,7 @@ else
     
     clust=`echo -e "$cluster" | tr ',' '\n'`
 
-    [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+    [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
     [ -z "$clust" ] && clust=$M_CLUSTER
     [ -z "$clust" ] && echo "No clusters found" >&2 && continue
 
@@ -132,7 +132,7 @@ else
     [ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
     for cl in `echo -e "$clust"` ; do
       $verbose && echo "  Cluster: $cl"
-      IPS=`cat "$M_ROOT/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -sd'|' -f1,5 | grep "|${cl}$" | cut -sd'|' -f1`
+      IPS=`cat "$M_ROOT/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -sd'|' -f1,5 | grep "|${cl}$" | cut -sd'|' -f1`
       [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | sed 's_^_\^_;s_$_\$_' | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
       
       for IP in `echo "$IPS"`; do
@@ -146,7 +146,7 @@ else
         if [ -n "$names" ] ; then
           rname=`find_name $IP`
           if [ -z "$rname" ] ; then
-            KEY=`find_key server $IP`
+            KEY=`find_key node $IP`
             [ -n "$SSH" ] && [ -f "$KEY" ] && rname=`$SSH -i "$KEY" -o ConnectionAttempts=1 -o ConnectTimeout=5 $IP hostname 2>/dev/null`
           fi
           [ -n "$rname" ] && IP=$rname

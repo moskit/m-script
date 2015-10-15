@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/ (this is needed to fix vi syntax highlighting)
+
+CURL=`which curl 2>/dev/null`
+LYNX=`which lynx 2>/dev/null`
+LINKS=`which links 2>/dev/null`
+WGET=`which wget 2>/dev/null`
+
+CURL="$CURL -s -k"
+V="v1.0"
+
+possible_options="cloud id name ip return verbose"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+[ -z "$ARGV" ] && echo "Node details? Which node?" && exit 1
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+find_by_ip() {
+  if [ -f "$M_TEMP/show_nodes.resp" ] ; then
+    sn=`grep addresses "$M_TEMP/show_nodes.resp" | grep "\"${1}\"$" | cut -d'/' -f3`
+    id=`grep "/$sn/\"id\"|" "$M_TEMP/show_nodes.resp" | cut -d'|' -f2`
+  fi
+  if [ -z "$id" ] ; then
+    id=`IAMACHILD=1 $rpath/show_nodes --forceupdate --view=table | grep "|$1|" | cut -d'|' -f1`
+  fi
+}
+
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ $found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+export CLOUD
+
+source "$rpath/../../conf/mon.conf"
+source "$rpath/../../conf/clouds/${CLOUD}.conf"
+source "$rpath/../../lib/cloud_functions.sh"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+if [ -z "$IAMACHILD" ]; then
+  lock_cloudops || exit 10
+fi
+
+if [ -z "$id" ] ; then
+  if [ -z "$ip" ] ; then
+    if [ -z "$name" ] ; then
+      echo "One of id, ip or name is required to identify the node"
+      proper_exit 1 83
+    else
+      ip=`cat "$rpath/../../nodes.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
+      if [ -n "$ip" ] ; then
+        find_by_ip $ip
+      else
+        id=`IAMACHILD=1 $rpath/show_nodes --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
+      fi
+    fi
+  else
+    find_by_ip $ip
+  fi
+fi
+[ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 99
+
+req="/servers/$id"
+
+request() {
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "${URL}$req" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+}
+
+[ -f "$M_TEMP/auth.resp" ] || "$rpath"/auth
+request
+if [ `grep -c \/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
+  "$rpath"/auth
+  request
+fi
+if `grep -q '"id"|' "$M_TEMP/${rcommand}.resp"` ; then
+  cat "$M_TEMP/${rcommand}.resp"
+else
+  proper_exit 1 118
+fi
+
+proper_exit 0 121
+

@@ -172,17 +172,17 @@ run_meta() {
   fi
 }
 
-startserver() {
+createnode() {
   ip=0 
-  ip="$(IAMACHILD=1 "$rpath"/../cloud/$CLOUD_PROVIDER/start_server --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log | tail -1)"
+  ip="$(IAMACHILD=1 "$rpath"/../cloud/$CLOUD_PROVIDER/create_node --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log | tail -1)"
   [ $? -ne 0 ] && ip=$? 
-  log "($CLOUD) start_server returned this: $ip"
+  log "($CLOUD) create_node returned this: $ip"
 }
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newserver list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newnode list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name"
 [ -z "$*" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -290,20 +290,20 @@ Repeat options:
 
 Other options:
 
-  --newserver		this is a shortcut combining start_server command and
-			metascript execution on this new server when it is
+  --newnode		this is a shortcut combining create_node command and
+			metascript execution on this new node when it is
 			ready; includes all necessary automation: getting
-			new server status, repeating the call if it has failed,
+			new node status, repeating the call if it has failed,
 			inserting the IP into the list, ensuring it is up
 			and accessible etc. See documentation for more details
 			
-  --nolock   the default is to lock cloud operations if --newserver option
+  --nolock   the default is to lock cloud operations if --newnode option
       is present; this helps to avoid background API calls caused
-      by absence of the target server in servers.list which may happen
-      due to the lag with which just started server appears in the list
+      by absence of the target node in nodes.list which may happen
+      due to the lag with which just created node appears in the list
       returned by cloud API. But if the task is long enough, you may want
       to avoid locking. This should not cause any problems, but may require
-      some extra time and extra API calls to ensure the target server presence.
+      some extra time and extra API calls to ensure the target node presence.
       
 
 EOF
@@ -349,7 +349,7 @@ log "Starting metaexec with arguments $@"
 localip=`"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'`
 
 if [ -n "$timestamp" ]; then
-  [ -n "$newserver" ] && echo "Repeating existing sequence is disabled for new server. If you want to repeat a meta that has brought up a previous server, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that server and all relevant arguments." && exit 1
+  [ -n "$newnode" ] && echo "Repeating existing sequence is disabled for new node. If you want to repeat a meta that has brought up a previous node, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that node and all relevant arguments." && exit 1
   if [ "_$timestamp" == "_repeat" ]; then
     timestampact=`ls -1tr "$M_DEPL_WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
   else
@@ -358,7 +358,7 @@ if [ -n "$timestamp" ]; then
   if [ -n "$timestampact" ]; then
     argfile=`find "$M_DEPL_WORK_DIR"/*.$timestampact/ -maxdepth 1 -name ARGV`
     if [ -f "$argfile" ]; then
-      sed -i "/^newserver=/d;/^test=/d;/^verbose=/d;/^debug=/d;/^timestamp=/d" "$argfile"
+      sed -i "/^newnode=/d;/^test=/d;/^verbose=/d;/^debug=/d;/^timestamp=/d" "$argfile"
       source "$argfile"
     else
       echo "Process with timestamp $timestampact cannot be repeated, no arguments file found"
@@ -370,15 +370,15 @@ else
 fi
 
 if [ -n "$ip" ]; then
-  [ -n "$newserver" ] && echo "Both newserver and ip are defined. Not sure what to do." && exit 1
+  [ -n "$newnode" ] && echo "Both newnode and ip are defined. Not sure what to do." && exit 1
   if [ `expr "$ip" : "[^[0-9.]]*" 2>/dev/null` -ne 0 ] ; then
     echo "Something's wrong with IP: $ip"
     exit 1
   fi
-  ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
-  [ -z "$ipcluster" ] && [ -n "$CLOUD" ] && "$M_ROOT"/cloud/common/find_server --cloud=$CLOUD --ip=$ip --updatelist
-  ipcluster=`grep "^$ip|" "$M_ROOT/servers.list" | cut -d'|' -f5`
-  [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$ignoreipnotpresent" ] && echo "IP $ip is not present in servers.list or has no cluster defined." && exit 1
+  ipcluster=`grep "^$ip|" "$M_ROOT/nodes.list" | cut -d'|' -f5`
+  [ -z "$ipcluster" ] && [ -n "$CLOUD" ] && "$M_ROOT"/cloud/common/find_node --cloud=$CLOUD --ip=$ip --updatelist
+  ipcluster=`grep "^$ip|" "$M_ROOT/nodes.list" | cut -d'|' -f5`
+  [ -z "$ipcluster" ] && [ -z "$ignoreemptycluster" ] && [ -z "$ignoreipnotpresent" ] && echo "IP $ip is not present in nodes.list or has no cluster defined." && exit 1
   if [ -n "$cluster" ]; then
     [ "$cluster" != "$ipcluster" ] && [ -z "$force" ] && echo "Cluster found for this IP is ${ipcluster}, but cluster provided as an option is $cluster" && exit 1
   else
@@ -406,7 +406,7 @@ else
     if [ -z "$role" ]; then
       role=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10`
       echo "Using role ${role}, default for cluster $cluster"
-      [ -z "$role" ] && echo "Unable to find the role of this cluster/server" && exit 1
+      [ -z "$role" ] && echo "Unable to find the role of this cluster/node" && exit 1
     fi
   fi
 fi
@@ -438,50 +438,50 @@ touch "$CURRTASKDIR/log"
 
 if [ -z "$flavor" ]; then
   flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11`
-  [ -z "$flavor" ] && echo -e "Unable to find the flavor of this cluster/server OS\n\n (hint: option --flavor is available)\n" && exit 1 || echo "Using flavor $flavor, default for cluster $cluster"
+  [ -z "$flavor" ] && echo -e "Unable to find the flavor of this cluster/node OS\n\n (hint: option --flavor is available)\n" && exit 1 || echo "Using flavor $flavor, default for cluster $cluster"
 fi
 
-[ -z "$SERVER_CHECKS_NUMBER" ] && SERVER_CHECKS_NUMBER=20
-[ -z "$SERVER_CHECKS_PERIOD" ] && SERVER_CHECKS_PERIOD=30
+[ -z "$NODE_CHECKS_NUMBER" ] && NODE_CHECKS_NUMBER=20
+[ -z "$NODE_CHECKS_PERIOD" ] && NODE_CHECKS_PERIOD=30
 
 if [ -n "$newserver" ]; then
   
-  [ -z "$NEW_SERVER_START_TRIES" ] && NEW_SERVER_START_TRIES=3
+  [ -z "$NEW_NODE_CREATE_TRIES" ] && NEW_NODE_CREATE_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
-  echo "*** Bringing up new server in cloud $CLOUD"
-  log "bringing up new server in cloud $CLOUD"
+  echo "*** Bringing up new node in cloud $CLOUD"
+  log "bringing up new node in cloud $CLOUD"
   if [ -z "$test" ]; then
 
     if [ -z "$nolock" ]; then
       log "getting cloud operations lock"
       lock_cloudops || exit 10
     fi
-    log "initiating start_server sequence"
+    log "initiating create_node sequence"
     
-    for ((i=0; i<$NEW_SERVER_START_TRIES; i++)); do
+    for ((i=0; i<$NEW_NODE_CREATE_TRIES; i++)); do
       [ $i -eq 0 ] || sleep $WAIT_BETWEEN_TRIES
-      startserver $T
+      createnode $T
       if [[ `expr "$ip" : "[0-9]*\.[0-9.]*$"` -ne 0 ]]; then
         break
       else
         # assuming it's the exit status (see the function)
         res=$ip
       fi
-      [[ $res -eq 2 ]] && log "Timeout waiting for the server ready" && break
-      [[ $res -eq 5 ]] && log "Maximum servers number for cluster $cluster has been reached, unable to add another server" && proper_exit 5 471
+      [[ $res -eq 2 ]] && log "Timeout waiting for the node ready" && break
+      [[ $res -eq 5 ]] && log "Maximum nodes number for cluster $cluster has been reached, unable to add another node" && proper_exit 5 471
       # various weird errors below, exit 1 
-      [[ $res -eq 6 ]] && log "Failed to generate a name for the new server" && proper_exit 1 473
-      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new server, define it in clusters.conf, please" && proper_exit 1 474
-      [[ $res -eq 8 ]] && log "Failed to find out what flavor (server size) to use, define it in clusters.conf, please" && proper_exit 1 475
+      [[ $res -eq 6 ]] && log "Failed to generate a name for the new node" && proper_exit 1 473
+      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new node, define it in clusters.conf, please" && proper_exit 1 474
+      [[ $res -eq 8 ]] && log "Failed to find out what flavor (node size) to use, define it in clusters.conf, please" && proper_exit 1 475
       [[ $res -eq 9 ]] && log "Failed to find out what region (datacenter) to use, define it in clusters.conf, please" && proper_exit 1 476
-      [[ $res -eq 1 ]] && log "Something went wrong, unable to add a server to the cluster $cluster"
+      [[ $res -eq 1 ]] && log "Something went wrong, unable to add a node to the cluster $cluster"
       if [ -z "$ip" ]; then
-        log "Was unable either to start a cloud server in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
+        log "Was unable either to create a cloud node in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
       fi
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
-    [ $i -eq $NEW_SERVER_START_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 483
+    [ $i -eq $NEW_NODE_CREATE_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 483
   else
     echo "*** This is a test"
   fi
@@ -513,28 +513,28 @@ if [ -n "$ip" ]; then
   fi
 fi
 
-KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key server "$ip"` || proper_exit 1 509
+KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key node "$ip"` || proper_exit 1 509
 [ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
 [ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
-# it's here because startserver function re-reads cloud config
+# it's here because createnode function re-reads cloud config
 [ -n "$SSHPORT" ] || SSHPORT=22
 if [ -z "$list" ]; then
-  $debug && log "ensuring the target server $ip is accessible"
+  $debug && log "ensuring the target node $ip is accessible"
   if [ -z "$test" -a -n "$ip" ]; then
-    for ((k=0; k<$SERVER_CHECKS_NUMBER; k++)); do
+    for ((k=0; k<$NODE_CHECKS_NUMBER; k++)); do
       $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
       if [ $? -ne 0 ]; then
-        echo "Unable to login to the server $ip using key ${KEY}, trying again...">>"$LOG"
+        echo "Unable to login to the node $ip using key ${KEY}, trying again...">>"$LOG"
         loggedin=false
-        sleep $SERVER_CHECKS_PERIOD
+        sleep $NODE_CHECKS_PERIOD
       else
         loggedin=true
         break
       fi
     done
-    if ! $loggedin && [ -n "$newserver" ]; then
-      # stop useless server and tell the parent process that something's wrong
-      "$M_ROOT"/cloud/$CLOUD_PROVIDER/stop_server --ip=$ip
+    if ! $loggedin && [ -n "$newnode" ]; then
+      # stop useless node and tell the parent process that something's wrong
+      "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
       proper_exit 13 531
     fi
   fi
@@ -551,7 +551,7 @@ if [ -z "$list" ]; then
     done
     IFS=$IFS2
     echo -e "flavor=$flavor\ncluster=$cluster\nrole=$role\n" >> "$CURRTASKDIR/ARGV"
-    if [ -n "$newserver" ]; then
+    if [ -n "$newnode" ]; then
       echo "ip=\"$ip\"" >> "$CURRTASKDIR/ARGV"
     fi
   else
@@ -622,7 +622,7 @@ if [ -z "$list" ]; then
   find "$M_DEPL_WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
 fi
 echo
-if [ -n "$newserver" ]; then
+if [ -n "$newnode" ]; then
   proper_exit 0 597
 fi
 #echo "Preparing the keys"

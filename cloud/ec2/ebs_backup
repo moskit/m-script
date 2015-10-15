@@ -79,7 +79,7 @@ if [ -n "$help" ] ; then
       echo "  (attached to instances tagged with \"cluster=<cluster name>\")"
     ;;
     id)
-      echo "Usage: --id=<server ID>"
+      echo "Usage: --id=<node ID>"
       echo "  Backups volumes attached to instances with this ID"
     ;;
     state)
@@ -113,7 +113,7 @@ install -d "$M_TEMP"
 [ -n "$cluster" ] && cluster="--cluster=$cluster"
 [ -n "$state" ] && state="--state=$state"
 
-"$rpath"/show_servers "$noupdate" "$region" "$cluster" "$state" --view=table | grep "^EBS: $id" | cut -d'|' -f2 > "$M_TEMP/volumes.list"
+"$rpath"/show_nodes "$noupdate" "$region" "$cluster" "$state" --view=table | grep "^EBS: $id" | cut -d'|' -f2 > "$M_TEMP/volumes.list"
 
 if [ -n "$keep" ] ; then
   outdated=`date -d "$currtime - $keep days" +"%s"`

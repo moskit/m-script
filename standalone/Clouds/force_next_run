@@ -11,7 +11,7 @@ source "$rpath/clouds.conf"
 M_TEMP="$M_TEMP/cloud"
 
 clouds=( $CLOUD `cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | cut -d'|' -f12 | grep -v ^$ | sort | uniq` )
-echo "forcing update" >> "$M_TEMP/servers.list"
+echo "forcing update" >> "$M_TEMP/nodes.list"
 for cloud in ${clouds[*]} ; do
   echo "forcing update" >> "$M_TEMP/$cloud/show_servers.resp.prev"
 done

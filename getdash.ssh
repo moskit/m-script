@@ -47,14 +47,14 @@ fi
 IFS1=$IFS ; IFS='
 '
 
-for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq` ; do
+for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq` ; do
 
   source "$rpath/conf/clouds/${cld}.conf"
   [ -z "$SSHPORT" ] && SSHPORT=22
   [ -z "$CONNECT_TIMEOUT" ] && CONNECT_TIMEOUT=10
   SSH_OPTS="-o StrictHostKeyChecking=yes -o PasswordAuthentication=no -o ConnectTimeout=$CONNECT_TIMEOUT"
 
-  for cluster in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f5 | sort | uniq` ; do
+  for cluster in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f5 | sort | uniq` ; do
     SSH_REMOTE_USER=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -s -d'|' -f13`
     [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
     [ "_$cluster" == "_$SUPER_CLUSTER" ] && continue
@@ -63,7 +63,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
     $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
     mpath=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
     [ -z "$mpath" ] && mpath="/opt/m"
-    for server in `grep "|${cld}$" "$rpath/servers.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
+    for server in `grep "|${cld}$" "$rpath/nodes.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       time0=`date +"%s"`
       ip=${server%%|*}
@@ -103,7 +103,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
       fi
     done
     for server in `find "$rpath/www/$monitor/$cld/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
-      [ `cat "$rpath/servers.list" | grep "|${cld}$" | grep "|$cluster|" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${server##*/}"
+      [ `cat "$rpath/nodes.list" | grep "|${cld}$" | grep "|$cluster|" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${server##*/}"
     done
     unset clustered_as
   done
@@ -124,7 +124,7 @@ for cld in `cat "$rpath/servers.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d
       # Servers terminated or stopped
       for server in `find "$rpath/www/$monitor/$cld/$cluster" -mindepth 1 -maxdepth 1 -type d` ; do
         server=${server##*/}
-        if [ `grep "|${cld}$" "$rpath/servers.list" | grep -E -c "^$server\||\|$server\|" "$rpath/servers.list"` -eq 0 ]; then
+        if [ `grep "|${cld}$" "$rpath/nodes.list" | grep -E -c "^$server\||\|$server\|" "$rpath/nodes.list"` -eq 0 ]; then
           cp -ru "$rpath/www/$monitor/$cld/$cluster/$server" "$rpath/mon.backups/dash/$cld/"
           rm -rf "$rpath/www/$monitor/$cld/$cluster/$server"
         fi

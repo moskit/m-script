@@ -191,26 +191,26 @@ if [ "X$help" == "Xyes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> <source path> <target path>"
 
-Deploys files locally or to remote servers. Substitutes variables marked as follows:
+Deploys files locally or to remote nodes. Substitutes variables marked as follows:
   
   %{VAR1}%
 
-The list of target servers is defined by either command-line arguments or environment variables.
+The list of target nodes is defined by either command-line arguments or environment variables.
 
 Options:
 
   --local                  - deploys file locally.
-  --cluster=clustername    - syncs to all servers from this cluster.
+  --cluster=clustername    - syncs to all nodes from this cluster.
                              Multiple clusters are allowed, separated by comma.
-                             MUST be defined. To sync to all servers, use 
+                             MUST be defined. To sync to all nodes, use 
                              --cluster=all. Accepts also M_CLUSTER environment
                              variable (from msh environment).
   --all                    - shortcut for --cluster=all.
-  --ip=IP                  - ip for a single server operation.
+  --ip=IP                  - ip for a single node operation.
                              If ip is defined, cluster and region are ignored.
-  --region=region          - the command will be run on all servers
+  --region=region          - the command will be run on all nodes
                              from this region.
-  --verbose                - shows each server details before running
+  --verbose                - shows each node details before running
                              the command.
   --debug                  - debug. Implies --verbose.
 
@@ -254,7 +254,7 @@ if [ -z "$cluster" ] ; then
   fi
 fi
 ([ -n "$all" ] || [ "$cluster" == "all" ]) && cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^#|^$|^[[:space:]]*#" | cut -d'|' -f1`
-#[ `cat "${rpath}/../servers.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no servers found in cluster $cluster" && exit 1
+#[ `cat "${rpath}/../nodes.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no nodes found in cluster $cluster" && exit 1
 [ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
 [ -n "$verbose" ] && echo "### Reading configuration from $ROLES_ROOT/conf/$role.conf"
 
@@ -287,8 +287,8 @@ if [ -z "$local" ]; then
         echo "${tmpfile##*/}...  "
         cp -up "$tmpfile" "$to" && echo "Success"
       else
-        REGION=`cat "$rpath/../servers.list" | grep ^$ip\| | cut -d'|' -f3`
-        CLUSTER=`cat "$rpath/../servers.list" | grep ^$ip\| | cut -d'|' -f5`
+        REGION=`cat "$rpath/../nodes.list" | grep ^$ip\| | cut -d'|' -f3`
+        CLUSTER=`cat "$rpath/../nodes.list" | grep ^$ip\| | cut -d'|' -f5`
         if `"$M_ROOT"/helpers/mssh $ip test -d "$to"` ; then
           to=${to%/}/${from##*/}
         fi
@@ -298,19 +298,19 @@ if [ -z "$local" ]; then
     else
     # Multiple destinations
       for cl in `echo -e $cluster | tr ',' '\n'` ; do
-        for server in `cat "$rpath/../servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
-          IP=${server%%|*}
+        for node in `cat "$rpath/../nodes.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+          IP=${node%%|*}
           if [ -n "$region" ] ; then
-            REGION=`echo $server | cut -d'|' -f3`
+            REGION=`echo $node | cut -d'|' -f3`
             [ "_$REGION" == "_$region" ] || continue
           fi
           if [ -n "$cl" ] ; then
-            CLUSTER=`echo $server | cut -d'|' -f5`
+            CLUSTER=`echo $node | cut -d'|' -f5`
             [ "_$CLUSTER" == "_$cl" ] || continue
           fi
           if [ "_$verbose" == "_yes" ] ; then
             echo
-            echo "### Server: $server"
+            echo "### Node: $node"
             echo
           fi
           if [ `echo "$localip$" | grep -c "^$IP$"` -ne 0 ] ; then

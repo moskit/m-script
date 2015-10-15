@@ -54,12 +54,12 @@ cleanup() {
 
 remote_exec() {
   if [ "_$verbose" == "_yes" ] ; then
-    echo -e "\n=  Server: $servername ($IP)  Cluster: $CLUSTER"
+    echo -e "\n=  Node: $nodename ($IP)  Cluster: $CLUSTER"
   fi
   if [ `echo "$localip" | grep -c "^$IP$"` -ne 0 ] ; then
     [ -z "$nolocalhost" ] && eval "$command"
   else
-    KEY=`$M_ROOT/helpers/find_key server $IP`
+    KEY=`$M_ROOT/helpers/find_key node $IP`
     [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
     if [ "_$nosudo" == "_yes" ]; then
       $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; "$command"\)
@@ -111,7 +111,7 @@ if [ "_$help" == "_yes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> command
 
-Executes command on remote servers. The list of servers is defined by either
+Executes command on remote nodes. The list of nodes is defined by either
 command-line arguments or environment variables.
 
 Any option can be passed as environment variable of the same name.
@@ -120,31 +120,31 @@ Options:
 
   --cloud=[cloud name]     - limits operations by this cloud. Multiple clouds
                              are allowed, separated by comma.
-  --cluster=[cluster name] - the command will be executed on all servers
+  --cluster=[cluster name] - the command will be executed on all nodes
                              from this cluster. Multiple clusters are
                              allowed, separated by comma.
                              MUST be defined. To execute the command on all
-                             servers, use --cluster=all. Accepts also M_CLUSTER
+                             nodes, use --cluster=all. Accepts also M_CLUSTER
                              environment variable (used by msh).
   --all                    - shortcut for --cluster=all.
-  --region=[region]        - the command will be executed on all servers from
+  --region=[region]        - the command will be executed on all nodes from
                              this region.
-  --ip=IP                  - executes the command on a single server. This
+  --ip=IP                  - executes the command on a single node. This
                              allows other scripts to include this one the
                              way that makes possible to apply it to a single
-                             server or multiple servers depending on which
+                             node or multiple nodes depending on which
                              variables are defined. With this option non-empty,
                              cluster and region are ignored.
-  --verbose                - shows each server details before running the
+  --verbose                - shows each node details before running the
                              command.
-  --limit=N                - executes the command on first N servers of each
+  --limit=N                - executes the command on first N nodes of each
                              cluster defined by the --cluster option
-  --user=[username]        - connects to remote servers as user [username] and
+  --user=[username]        - connects to remote nodes as user [username] and
                              executes all commands via sudo. Default user is
                              root.
   --nosudo                 - if user is defined, executes commands without sudo.
                              If user is not defined, does nothing.
-  --threaded               - executes commands on multiple servers in parallel.
+  --threaded               - executes commands on multiple nodes in parallel.
 
 EOF
   exit 0
@@ -162,28 +162,28 @@ for cld in $CLOUD ; do
   localip=`"$M_ROOT/helpers"/localips 2>/dev/null`
   if [ -n "$ip" ] ; then
     cluster= ; region=
-    if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
+    if [ `grep "|${cld}$" "$M_ROOT/nodes.list" | grep -c "^$ip|"` -eq 0 ] ; then
       # if name passed as ip
-      if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
-        "$rpath"/find_server --cloud=$cld --ip=$ip --updatelist
-        [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] && "$rpath"/find_server --cloud=$cld --name=$name --updatelist
+      if [ `cat "$M_ROOT/nodes.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+        "$rpath"/find_node --cloud=$cld --ip=$ip --updatelist
+        [ `grep "|${cld}$" "$M_ROOT/nodes.list" | grep -c "^$ip|"` -eq 0 ] && "$rpath"/find_node --cloud=$cld --name=$name --updatelist
       fi
     fi
     # again
-    if [ `grep "|${cld}$" "$M_ROOT/servers.list" | grep -c "^$ip|"` -eq 0 ] ; then
+    if [ `grep "|${cld}$" "$M_ROOT/nodes.list" | grep -c "^$ip|"` -eq 0 ] ; then
       # maybe name passed as ip
-      if [ `cat "$M_ROOT/servers.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
+      if [ `cat "$M_ROOT/nodes.list" | cut -d'|' -f4 | grep -c "$ip"` -ne 1 ] ; then
         echo "Unable to find $ip in cloud $cld"
         exit 1
       else
-        ip=`cat "$M_ROOT/servers.list" | grep -vE "^#|^[[:space:]]#|^$" | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
-        [ -z "$ip" ] && echo "Was unable to find IP by server name." && exit 1
+        ip=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+        [ -z "$ip" ] && echo "Was unable to find IP by node name." && exit 1
       fi
     else
       # cluster is still needed in some cases
-      server=`grep "|${cld}$" "$M_ROOT/servers.list" | grep "^$ip|"`
-      cluster=`echo "$server" | cut -d'|' -f5`
-      region=`echo "$server" | cut -d'|' -f3`
+      node=`grep "|${cld}$" "$M_ROOT/nodes.list" | grep "^$ip|"`
+      cluster=`echo "$node" | cut -d'|' -f5`
+      region=`echo "$node" | cut -d'|' -f3`
     fi
   fi
 
@@ -191,7 +191,7 @@ for cld in $CLOUD ; do
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && echo "No clusters found" && exit 1
 
-  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
   declare -i n
   IFS1=$IFS
@@ -207,16 +207,16 @@ for cld in $CLOUD ; do
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
       M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
       
-      serverlist=`cat "$M_ROOT/servers.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#"`
-      for servername in `echo "$serverlist" | cut -d'|' -f4 | sort | uniq` ; do
-        server=`echo "$serverlist" | grep "|$servername|"`
-        if [ `echo "$server" | wc -l` -gt 1 ]; then
-          echo "more than one server named $servername is found:"
-          for s in `echo "$server"` ; do
+      nodelist=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#"`
+      for nodename in `echo "$nodelist" | cut -d'|' -f4 | sort | uniq` ; do
+        node=`echo "$nodelist" | grep "|$nodename|"`
+        if [ `echo "$node" | wc -l` -gt 1 ]; then
+          echo "more than one node named $nodename is found:"
+          for s in `echo "$node"` ; do
             echo "$s"
           done
         fi
-        for s in `echo "$server"` ; do
+        for s in `echo "$node"` ; do
           [ -n "$limit" ] && [[ $n -ge $limit ]] && break
           IP=${s%%|*}
           if [ -n "$ip" ] ; then
@@ -227,7 +227,7 @@ for cld in $CLOUD ; do
             [ "_$REGION" == "_$region" ] || continue
           fi
           CLUSTER=`echo $s | cut -d'|' -f5`
-          # if server's cluster is not found, it's a bug, but it's a good idea to
+          # if node's cluster is not found, it's a bug, but it's a good idea to
           # still show it in the output when --cluster=all
           if [ -z "$CLUSTER" ]; then
             [ "$cluster" == "all" ] || continue

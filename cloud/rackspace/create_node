@@ -1,0 +1,215 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+CURL=`which curl 2>/dev/null`
+
+CURL="$CURL -s -k"
+V="v1.0"
+
+possible_options="cloud region flavor cluster image name return verbose"
+necessary_options=""
+
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -n "$cloud" ] && CLOUD=$cloud
+export CLOUD
+
+source "$M_ROOT/conf/mon.conf"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+install -d "$M_TEMP"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+lock_cloudops || exit 10
+
+[ -z "$cluster" ] && cluster="$M_CLUSTER"
+
+find_image() {
+  [ -f "$M_TEMP/images.resp" ] && [ -n "$image" ] && [ `grep -c \/id\|${image}$ "$M_TEMP/images.resp"` -gt 0 ] && imageid=$image && log "Image ID for the new node is $imageid (based on command-line option)" && return
+  imageid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f6`
+  log "Image ID for the new node is $imageid (based on the cluster $cluster default)"
+}
+
+find_flavor() {
+  [ -f "$M_TEMP/flavors.resp" ] && [ -n "$flavor" ] && [ `grep -c \/id\|${flavor}$ "$M_TEMP/flavors.resp"` -gt 0 ] && flavorid=$flavor && log "flavor ID for the new node is $flavorid (based on command-line option)" && return
+  flavorid=`grep ^$cluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f5`
+  log "Flavor ID for the new node is $flavorid (based on the cluster $cluster default)"
+}
+
+request() {
+  log "Sending request..."
+  URL=`grep ^0\/\"auth\"\/\"serviceCatalog\"\/\"cloudServers\"\/0\/\"publicURL\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  TOKEN=`grep ^0\/\"auth\"\/\"token\"\/\"id\" "$M_TEMP/auth.resp" | cut -d'|' -f2 | tr -d '"'`
+  $CURL -X POST -T "$M_TEMP/${rcommand}.req" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/servers" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  #[ -n "`find "$M_TEMP" -mtime -60 -name flavors.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/flavors/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/flavors.resp"
+  #[ -n "`find "$M_TEMP" -mtime -60 -name images.resp`" ] || $CURL -X GET -H "Content-Type: application/json; charset=UTF-8" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN" "$URL/images/detail" | "$rpath/../../lib/json2txt" > "$M_TEMP/images.resp"
+}
+
+save_details() {
+  log "Saving details of the new node..."
+  [ -n "$1" ] && echo "Saving details..."
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\n`grep -E "\/\\"id\\"\||\/\\"imageId\\"\||\/\\"flavorId\\"\||\/\\"adminPass\\"\||\/\\"addresses\\"\/\\"public\\"|\/\\"addresses\\"\/\\"private\\"" "$M_TEMP/${rcommand}.resp"`\n" >> "$rpath/../rackspace.log"
+  cat "$M_TEMP/${rcommand}.resp" | grep -vE "/\"progress\"|/\"status\"|/\"adminPass\"" | cut -d'|' -f2 | tr '\n' '|' | sed 's_|$_\n_' >> "$rpath/../${CLOUD}.list"
+  chmod 600 "$rpath/../rackspace.log" "$rpath/../${CLOUD}.list"
+  if [ "X$NETWORK" == "Xexternal" ] ; then
+    slip=`grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
+  else
+    slip=`grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'`
+  fi
+  echo "$slip|$thekey|$region|$name|$cluster|$CLOUD" >> "$rpath/../../nodes.list"
+  return 0
+}
+
+wait_ready() {
+  log "Waiting for the node ready..."
+  [ -n "$1" ] && echo "Waiting..."
+  waittimeout=600
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    IAMACHILD=1 "$rpath"/get_node_details --id=$newid >/dev/null 2>&1
+    if [ -n "$1" ] ; then
+      printf "Progress: `grep \/\"progress\"\| "$M_TEMP/get_node_details.resp" | cut -d'|' -f2`     \r"
+    fi
+    if [ "X`grep \/\\"status\\"\| "$M_TEMP/get_node_details.resp" | cut -d'|' -f2`" == "X\"ACTIVE\"" ] ; then
+      echo
+      return 0
+    fi
+  done
+  return 1
+}
+
+printreturn() {
+  for res in `echo $1 | tr ',' ' '` ; do
+    case $res in
+      ip)
+        if [ "X$NETWORK" == "Xexternal" ] ; then
+          grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        else
+          grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        fi
+        ;;
+      ipext)
+        grep \/\"addresses\"\/\"public\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        ;;
+      ipint)
+        grep \/\"addresses\"\/\"private\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        ;;
+      id)
+        grep \/\"id\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        ;;
+      pass|password)
+        grep \/\"adminPass\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2 | tr -d '"'
+        ;;
+    esac
+  done
+}
+
+log "Checking cluster $cluster limit..."
+check_cluster_limit "$cluster" || proper_exit 5 146
+[ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
+[ -z "$name" ] && proper_exit 6 148
+log "Double-checking name"
+IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 150
+find_image
+[ -z "$imageid" ] && proper_exit 7 152
+find_flavor
+[ -z "$flavorid" ] && proper_exit 8 154
+thekey=`cat "$rpath/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
+[ -f "$rpath/../../keys/${thekey}.pub" ] && pubkey=${thekey}.pub
+[ -f "$rpath/../../keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
+PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_dsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_rsa.pub 2>/dev/null`
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $rpath/../../keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 163
+PUBLIC_KEY=`echo "$PUBLIC_KEY" | openssl enc -base64`
+cat "$rpath/create_node.$V.json.1" | sed "s|NAME|$name|;s|IMAGE_ID|$imageid|;s|FLAVOR_ID|$flavorid|;s|CLUSTER|$cluster|" > "$M_TEMP/${rcommand}.req"
+
+echo -n -e "        \"personality\" : [\n            {\n                \"path\" : \"/root/.ssh/authorized_keys\",\n                \"contents\" : \"$PUBLIC_KEY\"\n            }\n        ]\n    }\n}\n" >> "$M_TEMP/${rcommand}.req"
+log "Request generated"
+
+try_auth() {
+  local -i i
+  i=0
+  while [ ! -e "$M_TEMP/auth.resp" -o `cat "$M_TEMP/auth.resp" 2>/dev/null | wc -l` -eq 0 ] ; do
+    [ $i -gt 10 ] && log "Problem getting authorization from the Rackspace Cloud API" && proper_exit 1 174
+    "$M_ROOT/cloud/$CLOUD_PROVIDER"/auth
+    i+=1
+    sleep 10
+  done
+  i+=-1
+  [ $i -gt 0 ] && log "$i additional auth requests due to no reply from API"
+}
+
+source "$rpath/../../conf/clouds/${CLOUD}.conf"
+exit_status=0
+
+if [ -z "$noupdate" ] ; then
+  try_auth
+fi
+request && log "Request sent"
+declare -i n
+n=0
+while [ `grep -c ^0\/\"cloudServersFault\"\/\"code\"\|401$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; do
+  [ $n -gt 10 ] && log "Problem getting authorization renewal from the Rackspace Cloud API" && proper_exit 1 200
+  [ $n -gt 1 ] && sleep 30
+  rm -f "$M_TEMP/auth.resp"
+  try_auth
+  request && log "Request sent"
+  n+=1
+done
+[ $n -gt 0 ] && log "$n additional auth requests due to authorization expired"
+
+code=`grep \/\"code\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+[ -n "$code" ] && echo -n "${code}: " >&2
+grep \/\"message\"\| "$M_TEMP/${rcommand}.resp" >&2
+newid=`grep \/\"id\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+if [ -n "$newid" ] ; then
+  save_details $verbose || true
+  wait_ready $verbose
+  wait_res=$?
+  [ -n "$return" ] && printreturn $return
+  [ $wait_res -eq 1 ] && exit_status=2
+else
+  proper_exit 1 220
+fi
+
+"$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+proper_exit $exit_status 214
+

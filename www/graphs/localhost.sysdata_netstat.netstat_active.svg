@@ -1,0 +1,24 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="750" height="300">
+<g id="axis">
+<path id="y" style="fill:none;stroke:#000;stroke-width:2" d="M
+ 210,250 210,10" /><path id="x" style="fill:none;stroke:#000;stroke-width:2" d="M 210,250 740,250" /></g>
+<g id="marks" shape-rendering="geometricPrecision" style="fill:none;stroke:#999;stroke-width:1;">
+<line x1="486.5" y1="255" x2="486.5" y2="10" />
+<line x1="205" y1="230.5" x2="740" y2="230.5" /><line x1="205" y1="210.5" x2="740" y2="210.5" /><line x1="205" y1="190.5" x2="740" y2="190.5" /><line x1="205" y1="170.5" x2="740" y2="170.5" /><line x1="205" y1="150.5" x2="740" y2="150.5" /><line x1="205" y1="130.5" x2="740" y2="130.5" /><line x1="205" y1="110.5" x2="740" y2="110.5" /><line x1="205" y1="90.5" x2="740" y2="90.5" /><line x1="205" y1="70.5" x2="740" y2="70.5" /><line x1="205" y1="50.5" x2="740" y2="50.5" /><line x1="205" y1="30.5" x2="740" y2="30.5" /><line x1="205" y1="10.5" x2="740" y2="10.5" />
+</g>
+<g id="marks_text" text-rendering="optimizeSpeed" font-family="Verdana" font-size="10" fill="#666"><text x="486.5" y="269" >22</text>
+<text x="200" y="230" style="text-anchor: end">200</text><text x="200" y="210" style="text-anchor: end">400</text><text x="200" y="190" style="text-anchor: end">600</text><text x="200" y="170" style="text-anchor: end">800</text><text x="200" y="150" style="text-anchor: end">1000</text><text x="200" y="130" style="text-anchor: end">1200</text><text x="200" y="110" style="text-anchor: end">1400</text><text x="200" y="90" style="text-anchor: end">1600</text><text x="200" y="70" style="text-anchor: end">1800</text><text x="200" y="50" style="text-anchor: end">2000</text><text x="200" y="30" style="text-anchor: end">2200</text><text x="200" y="10" style="text-anchor: end"></text>
+<text font-family="Verdana" font-size="10" fill="#666" x="680" y="280">hours</text>
+<text x="10" y="10" font-family="Verdana" font-size="10" fill="#666"></text>
+</g>
+<g id="graph" shape-rendering="geometricPrecision">
+<path id="graph_netstat_active" style="fill:none;stroke:#009900;stroke-width:2" d="M 249,206 269,190 290,243 311,234 332,230 353,158 373,135 394,128 415,127 436,125 456,131 477,124 502,137 540,130 560,129 581,229 602,239 623,243 664,243 685,244 706,242 727,240 748,243" />
+</g>
+<g id="legend" text-rendering="optimizeSpeed">
+<text font-family="Verdana" font-size="10" fill="#009900" x="50" y="250" >netstat_active</text>
+</g>
+</svg>

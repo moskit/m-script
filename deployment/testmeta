@@ -84,18 +84,18 @@ export PATH=$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH
 if [ -z "$role" -o -z "$flavor" ] ; then
   [ -z "$cluster" -a -z "$ip" ] && echo "Either role or flavor not found. In this case either ip or cluster is necessary." && exit 1
 fi
-[ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "$rpath/../servers.list" | cut -d'|' -f5`
+[ -z "$cluster" -a -n "$ip" ] && cluster=`grep ^$ip\| "$rpath/../nodes.list" | cut -d'|' -f5`
 [ -n "$cluster" -a -z "$ip" ] && ip="127.0.0.1"
 declare -i RETVAL
 RETVAL=0
 good=true
 if [ -z "$role" ] ; then
   role=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f10`
-  [ -z "$role" ] && echo "Unable to find the role of this cluster/server. Define one of role, cluster, ip or check if you have a default role defined for this cluster in conf/clusters.conf" && exit 1
+  [ -z "$role" ] && echo "Unable to find the role of this cluster/node. Define one of role, cluster, ip or check if you have a default role defined for this cluster in conf/clusters.conf" && exit 1
 fi
 if [ -z "$flavor" ] ; then
   flavor=`grep ^$cluster\| "$rpath/../conf/clusters.conf" | cut -d'|' -f11`
-  [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/server OS. Define it as a command-line option or check if this cluster has a default flavor set in conf/cluster.conf" && exit 1
+  [ -z "$flavor" ] && echo "Unable to find the flavor of this cluster/node OS. Define it as a command-line option or check if this cluster has a default flavor set in conf/cluster.conf" && exit 1
 fi
 
 IFS1=$IFS

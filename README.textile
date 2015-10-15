@@ -62,10 +62,10 @@ echo "<OK> Weather in London: Cloudy"
 Now, you want to start one additional application server if it becomes rainy, two servers if the rain is heavy, and three servers if it's a thunderstorm. This is done in the actions configuration file conf/actions.conf:
 
 <pre><code class="sh">
-Weather\ in\ London|1|start_server --cluster=application --number=1
-Weather\ in\ London|2|start_server --cluster=application --number=2
-Weather\ in\ London|3|start_server --cluster=application --number=3
-Weather\ in\ London|0|stop_server --cluster=application --last
+Weather\ in\ London|1|create_node --cluster=application --number=1
+Weather\ in\ London|2|create_node --cluster=application --number=2
+Weather\ in\ London|3|create_node --cluster=application --number=3
+Weather\ in\ London|0|destroy_node --cluster=application --last
 </code></pre>
 
 where 'application' is your application servers cluster name defined in conf/cluster.conf

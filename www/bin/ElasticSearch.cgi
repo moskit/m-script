@@ -18,12 +18,12 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
   [ -z "$clusterdat" ] && exit 1
   esip=`cat $clusterdat 2>/dev/null | grep ^ip\| | cut -d'|' -f2 | sort | uniq | grep -v ^$`
   for eshostip in $esip ; do
-    eshostname=`grep ^$eshostip\| "$PWD/../../servers.list" | cut -d'|' -f4`
+    eshostname=`grep ^$eshostip\| "$PWD/../../nodes.list" | cut -d'|' -f4`
     if [ -n "$eshostname" ] ; then
-      servercluster=`grep ^$eshostip\| "$PWD/../../servers.list" | cut -d'|' -f5`
-      if [ -f "$PWD/../../standalone/$scriptname/${servercluster}.es_servers.list" ]; then
-        eshost=`grep "^${eshostname}:" "$PWD/../../standalone/${scriptname}/${servercluster}.es_servers.list"`
-        [ -n "$eshost" ] || eshost=`grep "^${eshostip}:" "$PWD/../../standalone/$scriptname/${servercluster}.es_servers.list"`
+      servercluster=`grep ^$eshostip\| "$PWD/../../nodes.list" | cut -d'|' -f5`
+      if [ -f "$PWD/../../standalone/$scriptname/${servercluster}.es_nodes.list" ]; then
+        eshost=`grep "^${eshostname}:" "$PWD/../../standalone/${scriptname}/${servercluster}.es_nodes.list"`
+        [ -n "$eshost" ] || eshost=`grep "^${eshostip}:" "$PWD/../../standalone/$scriptname/${servercluster}.es_nodes.list"`
       fi
     else
       eshost="${eshostip}:9200"

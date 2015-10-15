@@ -147,7 +147,7 @@ if [ -n "$ips" ] ; then
   for ip in $ips ; do
     ip=`echo "$ip" | tr -d ' '`
     # Never block own IPs! :)
-    [[ `grep -c ^$ip\| "$M_ROOT/servers.list"` -ne 0 ]] && continue
+    [[ `grep -c ^$ip\| "$M_ROOT/nodes.list"` -ne 0 ]] && continue
     "$rpath"/localips | grep -q "^$ip$" && continue
     # If it is not an IP address, consequences are unpredictable
     expr "$ip" : ".*[^[0-9.:/]]*" >/dev/null && continue

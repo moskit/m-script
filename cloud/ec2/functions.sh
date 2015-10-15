@@ -27,8 +27,8 @@ CURL="$CURL -s"
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting..  " && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
 # Normally needed for localhost only, and not always: depends on system.
-# Hostnames of remote servers are obtained via ssh which is a login shell;
-# this is why the variable below is not used for remote servers: you may
+# Hostnames of remote nodes are obtained via ssh which is a login shell;
+# this is why the variable below is not used for remote nodes: you may
 # have different OSes there with different paths to hostname utility.
 HOSTNAME=`which hostname 2>/dev/null`
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"

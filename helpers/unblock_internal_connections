@@ -85,10 +85,10 @@ Options:
   --fromcluster           - allows connections from all servers in this cluster.
   --fromregion            - allows connections from all servers in this region.
   --fromip                - allows connections from this IP. This IP doesn't 
-                            have to be present in servers.list
+                            have to be present in nodes.list
                             
                             If none of "from" options is defined, source IPs
-                            default to all servers from servers.list.
+                            default to all servers from nodes.list.
   
   --verbose               - verbose output.
 
@@ -216,7 +216,7 @@ unblock_ip() {
 
 }
 
-for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+for dserver in `cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
   IP=${dserver%%|*}
   DCLUSTER=`echo "$dserver" | cut -sd'|' -f5`
   # we do not want to mess with super cluster unless it is our explicit target
@@ -242,7 +242,7 @@ for dserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v  ^#|grep -v ^[
     IP2UB=$fromip
     unblock_ip
   else
-    for sserver in `cat "$M_ROOT/servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
+    for sserver in `cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
       if [ -n "$fromregion" ] ; then
       SREGION=`echo $sserver | cut -d'|' -f3`
       [ "_$SREGION" == "_$fromregion" ] || continue

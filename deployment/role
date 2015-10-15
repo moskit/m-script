@@ -295,20 +295,21 @@ case $command1 in
       ;;
       roles|'')
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3-4)) || col=${col-20}
+        [ -n "$COL" ] && col=$((COL/3-4)) || col=20
         printcol "Role"
         printcol "Cluster"
         printcol "Flavor"
         echo "Image"
+        printf "%${COL}s" | tr ' ' '-'
         for r in `find $ROLES_ROOT/roles/ -maxdepth 1 -mindepth 1 -type d ! -name ".*"` ; do
           r=${r##*/}
           for cl in `cat $M_ROOT/conf/clusters.conf | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do
             printcol "$r"
             printcol "$cl"
             ln=`cat "$M_ROOT/conf/clusters.conf" | grep "^${cl}|"`
-            fl=`echo "$ln" | cut -d'|' -f11`
+            fl=`echo "$ln" | cut -d'|' -f11 | cut -b 1-$col`
             printcol "$fl"
-            im=`echo "$ln" | cut -d'|' -f6`
+            im=`echo "$ln" | cut -d'|' -f6 | cut -b 1-$col`
             echo "$im"
             unset r
           done
@@ -533,7 +534,7 @@ Syntax: role command <sub-command> <args> <--option=value>
   list            - lists all existing roles and some info about them:
                       Cluster: the default cluster for this role
                       Flavor: Linux flavor, default for this role
-                      Image: server image ID (if cloud environment is set)
+                      Image: node image ID (if cloud environment is set)
   
     list tasks    - lists all metascripts for the current role or the role set
                     with the --role option and additional info:

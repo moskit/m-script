@@ -27,8 +27,8 @@ SSH=`which ssh 2>/dev/null`
 [ -z "$SSH" ] && echo "Ssh utility not found, exiting..  " && exit 1
 IFCFG=`which ifconfig 2>/dev/null`
 # Normally needed for localhost only, and not always: depends on system.
-# Hostnames of remote servers are obtained via ssh which is a login shell;
-# this is why the variable below is not used for remote servers: you may
+# Hostnames of remote nodes are obtained via ssh which is a login shell;
+# this is why the variable below is not used for remote nodes: you may
 # have different OSes there with different paths to hostname utility.
 HOSTNAME=`which hostname 2>/dev/null`
 
@@ -47,7 +47,7 @@ get_hostname() {
     sname=`$SSH -i "$M_ROOT/keys/${key}" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
   fi
   [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname
-  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the server with IP $intIP|$extIP$message" && unset message && return 1
+  [ "X$sname" == "X" ] && log "Unable to retrieve hostname of the node with IP $intIP|$extIP$message" && unset message && return 1
   return 0
 }
 
@@ -78,7 +78,7 @@ add_server() {
   unset intIP extIP iID ami state keypair isize secgroup started zone aki ari cluster sname altname bID bdev bstarted
 }
 
-list_servers() {
+list_nodes() {
   IFS1=$IFS
   IFS='
 '
@@ -109,16 +109,16 @@ list_servers() {
         IP=$intIP
       fi
       if [ -z "$icluster" ] ; then
-        # servers having no cluster in metadata but added manually to servers.list
-        icluster=`grep ^$IP\| "${rpath}/../../servers.list" | cut -d'|' -f5`
+        # nodes having no cluster in metadata but added manually to nodes.list
+        icluster=`grep ^$IP\| "${rpath}/../../nodes.list" | cut -d'|' -f5`
       else
-        # no icluster means that server will not be shown, but only if there
+        # no icluster means that node will not be shown, but only if there
         # is no option --all. With this option, however, we want to see all
         # clusters assigned via metadata
         [ `grep -c ^$icluster\| "${rpath}/../../conf/clusters.conf"` -eq 0 -a -z "$all" ] && unset icluster
       fi
 
-      if [ -z "$update_servers_list" ] ; then
+      if [ -z "$update_nodes_list" ] ; then
         # icluster existence condition is needed for the case there are multiple
         # projects (cluster groups) in the same cloud.
         # Note that if you use same names for clusters in different cluster
@@ -152,9 +152,9 @@ list_servers() {
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^${icluster}\| "${rpath}/../../conf/clusters.conf"` -ne 0 ] ; then
             key=`grep ^${icluster}\| "${rpath}/../../conf/clusters.conf" | cut -d'|' -f2`
-            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for server $IP (name: $iname) doesn't match the one from server metadata ($ikey)"
-            sed -i /^$IP\|/d "${rpath}/../../servers.list"
-            [ "X$istatus" == "Xrunning" ] && echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../servers.list"
+            [ "X$key" != "X$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)"
+            sed -i /^$IP\|/d "${rpath}/../../nodes.list"
+            [ "X$istatus" == "Xrunning" ] && echo "${IP}|${key}|${region}|${iname}|${icluster}" >> "${rpath}/../../nodes.list"
 
           fi
         fi
@@ -164,14 +164,14 @@ list_servers() {
   else
     echo "No data. Run without --noupdate"
   fi
-  for listip in `cat "${rpath}/../../servers.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
-    [ `grep -c \|${listip}\| "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../servers.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../servers.list"
+  for listip in `cat "${rpath}/../../nodes.list" | grep -v ^# | grep -v ^$ | cut -d'|' -f1` ; do
+    [ `grep -c \|${listip}\| "${M_TEMP}/${rcommand}.resp"` -eq 0 -o $(grep -c "^`grep ^${listip}\| "${rpath}/../../nodes.list" | cut -d'|' -f5`|" "${rpath}/../../conf/clusters.conf") -eq 0 ] && sed -i /^${listip}\|/d "${rpath}/../../nodes.list"
   done
   IFS=$IFS1
 }
 
 
-possible_options="help region verbose cluster state status filter short noupdate view update_servers_list forceupdate all status count resolveids id name_source"
+possible_options="help region verbose cluster state status filter short noupdate view update_nodes_list forceupdate all status count resolveids id name_source"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -201,7 +201,7 @@ if [ "X$help" == "Xyes" ] ; then
   echo
   echo "Options:"
   echo
-  echo "  --region=region          - syncs only servers in this region."
+  echo "  --region=region          - syncs only nodes in this region."
   exit 0
 fi
 
@@ -285,7 +285,7 @@ do
   fi
 done
 add_server
-list_servers
+list_nodes
 
 
 IFS=$IFS1

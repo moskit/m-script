@@ -53,7 +53,7 @@ if [ -n "$ES_SERVERS" ] ; then
       cluster=1
     fi
     # In case some server has the same name as cluster
-    if [ `grep -c "|$name|$name" "$M_ROOT/servers.list"` -gt 0 ] ; then
+    if [ `grep -c "|$name|$name" "$M_ROOT/nodes.list"` -gt 0 ] ; then
       unset cluster
     fi
   done
@@ -66,7 +66,7 @@ if [ -n "$ES_SERVERS" ] ; then
       host=`echo "$server" | cut -d':' -f1`
       port=`echo "$server" | cut -sd':' -f2`
       [ -z "$port" ] && port=$defaultport
-      clustername=`cat "$M_ROOT/servers.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
+      clustername=`cat "$M_ROOT/nodes.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
       if [ -z "$clustername" ]; then
         # no cloud, so it's a single host
         configips="${server}:${port}"
@@ -101,17 +101,17 @@ else
   unlock_exit 1
 fi
 $debug && log "hosts collected"
-rm "$rpath"/*.es_servers.list 2>/dev/null
+rm "$rpath"/*.es_nodes.list 2>/dev/null
 
 # These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
   clustervar=`echo "$cluster" | tr -d '\ -'`
-  touch "$rpath/${cluster}.es_servers.list"
-  [ -n "`eval echo -e \\$${clustervar}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_servers.list"`" ] && eval echo -e \$${clustervar}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_servers.list"
+  touch "$rpath/${cluster}.es_nodes.list"
+  [ -n "`eval echo -e \\$${clustervar}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_nodes.list"`" ] && eval echo -e \$${clustervar}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_nodes.list"
 done
 $debug && log "server lists updated"
 
-for node in `cat "$rpath"/*.es_servers.list 2>/dev/null` ; do
+for node in `cat "$rpath"/*.es_nodes.list 2>/dev/null` ; do
   if $HANDLE_NODES ; then
     allclusters="$allclusters\n$node|`$CURL -m 2 "http://$node/_cluster/state/_"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   else

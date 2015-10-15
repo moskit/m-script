@@ -31,7 +31,7 @@ CURL="$CURL -s"
 
 possible_options="region action id zone name type value items wholezone noupdate comment hostedzoneid dnsname"
 necessary_options="action"
-[ "X$*" == "X" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
+[ -z "$*" ] && echo "Can't run without options. Possible options are: ${possible_options}" && exit 1
 
 IFS1=$IFS
 IFS='--'
@@ -41,10 +41,10 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
 
   for option in ${possible_options// /--} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
   
   if ! $found ; then 
@@ -63,9 +63,9 @@ if $found ; then
   exit 1
 fi
 
-[ "X$action" == "Xlistzone" ] && [ -z "$type" ] && type="SOA"
-[ "X$action" == "Xlistzone" ] && [ -z "$name" ] && name=$zone
-[ "X$action" == "Xlistzone" ] && [ -z "$items" ] && items=1
+[ "_$action" == "_listzone" ] && [ -z "$type" ] && type="SOA"
+[ "_$action" == "_listzone" ] && [ -z "$name" ] && name=$zone
+[ "_$action" == "_listzone" ] && [ -z "$items" ] && items=1
 
 request=$M_TEMP/r53query.$$
 

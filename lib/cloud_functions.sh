@@ -83,11 +83,11 @@ generate_name() {
   cluster="$*"
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "Cluster is not defined, exiting" && return 1
-  nam=$(cat "$M_ROOT/servers.list" | grep -vE "^#|^$|^[[:space:]]#" | grep \|${cluster}\| | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
+  nam=$(cat "$M_ROOT/nodes.list" | grep -vE "^#|^$|^[[:space:]]#" | grep \|${cluster}\| | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
   nam=`sanitize_hostname $nam`
   am=0 ; lm=0
-  num=$(cat "$M_ROOT/servers.list" | grep -vE "^#|^$|^[[:space:]]#" | cut -d'|' -f4 | grep ^$nam[0-9] | while read name ; do a=`expr "X$name" : "X$nam\([0-9]*\)"` ; l=${#a} ; [[ `expr $l \> ${lm}` -gt 0 ]] && lm=$l ; [[ `expr $a \> ${am}` -gt 0 ]] && am=$a ; echo "$am|$lm" ; done | tail -1)
+  num=$(cat "$M_ROOT/nodes.list" | grep -vE "^#|^$|^[[:space:]]#" | cut -d'|' -f4 | grep ^$nam[0-9] | while read name ; do a=`expr "X$name" : "X$nam\([0-9]*\)"` ; l=${#a} ; [[ `expr $l \> ${lm}` -gt 0 ]] && lm=$l ; [[ `expr $a \> ${am}` -gt 0 ]] && am=$a ; echo "$am|$lm" ; done | tail -1)
   am=${num%|*} ; lm=${num#*|}
   if [ -n "$am" ] ; then
     am=`expr $am + 1`
@@ -185,7 +185,7 @@ test_cluster_minimum() {
 }
 
 find_name() {
-  NAME=`grep "^${1}|" "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f4`
+  NAME=`grep "^${1}|" "$M_ROOT/nodes.list" 2>/dev/null | cut -d'|' -f4`
   if [ -n "$NAME" ]; then
     echo "$NAME"
     return 0
@@ -208,7 +208,7 @@ find_name() {
 }
 
 name_to_ip() {
-  IP=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1 | tail -1`
+  IP=`cat "$M_ROOT/nodes.list" 2>/dev/null | cut -d'|' -f1,4 | grep "|${1}$" | cut -d'|' -f1 | tail -1`
   if [ -z "$IP" ]; then
     IP=`grep -E "\ $name\ |\ $name$" /etc/hosts | tail -1`
     IP=`expr "$IP" : ".*\([0-9.]\)\ "`
@@ -218,7 +218,7 @@ name_to_ip() {
 }
 
 ip_to_name() {
-  name=`cat "$M_ROOT/servers.list" 2>/dev/null | cut -d'|' -f1,4 | grep "^${1}|" | cut -d'|' -f2 | tail -1`
+  name=`cat "$M_ROOT/nodes.list" 2>/dev/null | cut -d'|' -f1,4 | grep "^${1}|" | cut -d'|' -f2 | tail -1`
   if [ -z "$name" ]; then
     name=`grep -E "^$IP\ |\ $IP\ " /etc/hosts | tail -1`
     name=`expr "$name" : ".*\s\(.*\)\s*$"`

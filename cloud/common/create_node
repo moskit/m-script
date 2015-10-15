@@ -1,0 +1,39 @@
+#!/bin/bash
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+possible_options="cloud"
+necessary_options=""
+
+IFS1=$IFS
+IFS='-'
+for s_option in "$@"
+do
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "X$s_optarg" == "X$s_optname" ] && unset s_optarg
+
+  for option in ${possible_options// /-} ; do
+    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && break
+  done
+
+done
+IFS=$IFS1
+
+if [ -n "$cloud" ]; then
+  cld=$cloud
+else
+  cld=$CLOUD
+fi
+
+[ -z "$cld" ] && echo "cloud is not defined" && exit 1
+
+source "$M_ROOT/conf/clouds/${cld}.conf"
+export CLOUD=$cld
+"$M_ROOT"/cloud/$CLOUD_PROVIDER/create_node --cloud=$cld $@
+
+

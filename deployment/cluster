@@ -147,9 +147,9 @@ case $command1 in
   list)
     col=29
     printcol "Cluster"
-    echo -e "Servers number\n"
+    echo -e "Nodes number\n"
     for L in `cat "$rpath/../conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]#" | cut -d'|' -f1` ; do
-      N=`cat "$rpath/../servers.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f5 | grep "^${L}$" | wc -l`
+      N=`cat "$rpath/../nodes.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f5 | grep "^${L}$" | wc -l`
       printcol "$L"
       echo "$N"
     done

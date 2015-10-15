@@ -16,9 +16,9 @@
 
 
 
-### Uncomment below and put your servers list to servers.list if you need 
-### to monitor multiple servers.
-### Details and examples can be found in doc/multiple_servers.txt.
+### Uncomment below and put your nodes list to nodes.list if you need 
+### to monitor multiple nodes.
+### Details and examples can be found in doc/multiple_nodes.txt.
 
 rcommand=${0##*/}
 rpath=${0%/*}
@@ -38,12 +38,12 @@ fi
 IFS1=$IFS
 IFS='
 '
-for clserver in `cat ${rpath}/../../servers.list|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
+for clnode in `cat "$rpath/../../nodes.list"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#`
 do
-  serverip=`echo $clserver | awk -F'|' '{print $1}'`
-  if [ -n `$IFCONFIG | grep $serverip` ]; then
-  echo $serverip
-  $IPTABLES -I INPUT -s $serverip -j ACCEPT
+  nodeip=`echo $clnode | awk -F'|' '{print $1}'`
+  if [ -n `$IFCONFIG | grep $nodeip` ]; then
+  echo $nodeip
+  $IPTABLES -I INPUT -s $nodeip -j ACCEPT
   fi
 done
 myip=`echo $SSH_CLIENT | awk '{print $1}'`

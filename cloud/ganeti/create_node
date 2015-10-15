@@ -1,0 +1,466 @@
+#!/usr/bin/env bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+export M_ROOT
+GNTI=`which gnt-instance 2>/dev/null`
+GNTC=`which gnt-cluster 2>/dev/null`
+IPR2=`which ip 2>/dev/null`
+[ -z "$GNTI" ] && echo "gnt-instance utility not found" && exit 1
+[ -z "$IPR2" ] && echo "ip utility not found" && exit 1
+possible_options="cloud region flavor cluster image name return verbose test cdrom makedisk vnc"
+necessary_options=
+
+LOG="$M_ROOT/logs/cloud.log"
+SSHK=`which ssh-keygen 2>/dev/null`
+SSH=`which ssh 2>/dev/null`
+ARGV=`echo $@ | sed 's/^--//' | sed 's/ --/|/g'`
+
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+found=0
+for option in `echo $necessary_options | sed 's/,/ /g'`; do
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
+if [ -n "$help" ]; then
+  echo -e "Usage: $rcommand <options>\n\n  possible options: $possible_options"
+  exit 0
+fi
+
+[ -n "$verbose" ] && debug=1
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -z "$GANETI_NETWORK" ] && echo "Define GANETI_NETWORK in conf/clouds/${CLOUD}.conf, please" && exit 1
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
+if [ -n "$cdrom" ]; then
+  [ "$cdrom" == "yes" ] && echo -e "\nOption --cdrom assumes path to ISO image:\n  --cdrom=/path/to/image" && exit 1
+  makedisk="yes"
+  if [ `echo "$cdrom" | cut -b1` != "/" ]; then
+    log "restoring absolute path required by Ganeti:"
+    if [ -f "$PWD/$cdrom" ]; then
+      cdrom="$PWD/$cdrom" && log "  $PWD/$cdrom"
+    elif [ -f "$M_ROOT/cloud/ganeti/os-images/$cdrom" ]; then
+      cdrom="$M_ROOT/cloud/ganeti/os-images/$cdrom" && log "  $M_ROOT/cloud/ganeti/os-images/$cdrom"
+    fi
+  fi
+  [ ! -f "$cdrom" ] && log "\nFile $cdrom does not exist" && exit 1
+fi
+if [ -n "$vnc" ]; then
+  if [ "$vnc" == "yes" ]; then
+    log "WARNING: setting vnc_bind_address to 0.0.0.0. Use firewall to restrict access. You may also want to use specific IP, e.g.:  --vnc=10.10.10.10"
+    vnc="0.0.0.0"
+  fi
+  [ `expr "$vnc" : ".*[^[0-9.:]]*"` -ne 0 ] && log "Argument for --vnc must be a valid IPv4 or IPv6 address" && exit 1
+  VNC="serial_console=false,vnc_bind_address=$vnc"
+fi
+
+exit_status=0
+
+M_TEMP="$M_TEMP/cloud/ganeti"
+install -d "$M_TEMP"
+[ -z "$GANETI_CONF_FOLDER" ] && GANETI_CONF_FOLDER="/etc/ganeti"
+[ -d "$GANETI_CONF_FOLDER" ] && install -d "$GANETI_CONF_FOLDER"
+
+find_ip() {
+  class=${GANETI_NETWORK%.*}
+  [ -z "$class" ] && class="10.1.1"
+  maxip=`cat "$M_ROOT/nodes.list" | cut -d'|' -f1 | grep "^${class}\." | cut -sd'.' -f4 | sort -n | uniq | tail -1`
+  if [ -n "$maxip" ]; then
+    [ "$maxip" == "254" ] && echo "No more IPs available!" && proper_exit 1 82
+    echo "${class}.$((maxip+1))"
+  else
+    echo "${class}.2"
+  fi
+}
+
+find_gateway() {
+  class=${GANETI_NETWORK%.*}
+  [ -z "$class" ] && class="10.1.1"
+  echo "${class}.1"
+}
+
+find_broadcast() {
+  class=${GANETI_NETWORK%.*}
+  [ -z "$class" ] && class="10.1.1"
+  echo "${class}.254"
+}
+
+save_details() {
+  [ -n "$1" ] && echo "Saving details..."
+  echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "$rpath/../ganeti.log"
+  IAMACHILD=1 "$rpath"/show_nodes --update_nodes_list
+  sed -i "/^${name}|/d" "$M_ROOT/cloud/${CLOUD}.list"
+  grep "^${name}|" "$M_TEMP/show_nodes.resp" >> "$M_ROOT/cloud/${CLOUD}.list"
+  return 0
+}
+
+wait_ready() {
+  [ -n "$1" ] && echo "Waiting..."
+  waittimeout=200
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    [ -n "$1" ] && echo -n '.'
+    IAMACHILD=1 "$rpath"/get_node_details --name=$name >/dev/null 2>&1
+    if [ `cat "$M_TEMP/get_node_details.resp" | grep '"State"' | grep -c 'actual state is up'` -eq 1 ] ; then
+      echo
+      return 0
+    fi
+  done
+  return 1
+}
+
+request() {
+  local -i res
+  res=0
+  node="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f3`"
+  ios="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f5`"
+  iparams="`cat "$M_ROOT/conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f6 | sed 's|--hypervisor-parameters|-H|'` --net 0:ip=$ip"
+  [ -z "$node" -o -z "$ios" -o -z "$iparams" ] && log "error parsing parameters for cluster $cluster" && return 1
+  hvparams=`echo $iparams | awk -F'-H ' '{print $2}' | cut -d' ' -f1`
+  iparams=`echo $iparams | sed "s|-H $hvparams ||"`
+  hvdef=`$GNTC info | grep 'Default hypervisor:' | cut -d':' -f2 | tr -d ' '`
+  if [ -z "$hvparams" ]; then
+    # if no -H provided at all, adding it with the default hypervisor
+    hvname=$hvdef
+    [ -n "$vnc" ] && hvparams="${VNC}"
+  else
+    hvparams1=`echo "$hvparams" | cut -sd':' -f2 | tr -d ' '`
+    # is there anything after colon?
+    if [ -z "$hvparams1" ]; then
+      # so the only param there is hypervisor
+      hvname=$hvparams
+      unset hvparams
+      [ -n "$vnc" ] && hvparams="${VNC}"
+    else
+      [ -n "$vnc" ] && hvparams1="${hvparams1},${VNC}"
+      hvname=`echo "$hvparams" | cut -sd':' -f1 | tr -d ' '`
+      hvparams=$hvparams1
+    fi
+    if [ -z "$hvname" ]; then
+      hvname=$hvdef
+    fi
+  fi
+  if [ -z "${hvparams}" ]; then
+    hvparams="-H ${hvname}"
+  else
+    hvparams="-H ${hvname}:${hvparams}"
+  fi
+
+  sed -i "/^$ip/d" /etc/hosts
+  echo "$ip $name" >> /etc/hosts
+  
+  if [ -n "$makedisk" ]; then
+    log "creating empty disk(s) for $name"
+    log "sending request with command: $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name"
+    $GNTI add -n $node --no-start --no-install -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
+    res+=$?
+    if [ -n "$cdrom" ]; then
+      if [ $res -eq 0 ]; then
+        #[[ "$hvparams" == "-H" ]] && hvparams="-H " || hvparams="${hvparams},"
+        hvparams="-H boot_order=cdrom,cdrom_image_path=$cdrom,cdrom_disk_type=scsi,kernel_path="
+        log "sending request with command: $GNTI startup $hvparams $name"
+        $GNTI startup $hvparams $name >>"$LOG" 2>&1
+        res+=$?
+      fi
+    fi
+  else
+    log "sending request with command: $GNTI add -n $node -o $ios $iparams $hvparams $name"
+    $GNTI add -n $node -o $ios $iparams $hvparams $name >>"$LOG" 2>&1
+    res=$?
+  fi
+  [ $res -ne 0 ] && return $res || return 0
+}
+
+find_idev() {
+  if [ "`cat "$M_TEMP/get_node_details.resp" | grep '/"NICs"/"nic/0"/"mode"' | cut -d'|' -f2 | tr -d '"'`" == "routed" ]; then
+    link=`cat "$M_TEMP/get_node_details.resp" | grep '/"NICs"/"nic/0"/"link"' | cut -d'|' -f2 | tr -d '"'`
+    log "routing table: $link"
+  fi
+  $IPR2 route show table $link | grep "^${1}[[:space:]]" | awk '{print $3}'
+}
+
+prepare_file() {
+IFS1=$IFS
+IFS='
+'
+  rm -f "$2" "${2}.orig"
+
+  cat "$1" | sed 's|}\%|}\%\\\n|g' | \
+    sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
+    sed 's|\\"|\\\\"|g' | \
+    sed 's|"|\\\"|g' | \
+    sed 's|`|\\\`|g' >> "${2}.orig"
+
+  [ -n "$debug" ] && echo -e "\n --- TMP FILE ---\n\n" && cat "${2}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
+
+  for LINE in `cat -E "${2}.orig"` ; do
+    if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
+      KEEP="${KEEP}`echo "$LINE" | sed 's|\\\\$$||'`"
+      continue
+    else
+      LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
+      unset KEEP
+      a=`eval "echo \"$LINE\"" 2>>"$LOG"`
+      if [ $? -eq 0 ] && [ -n "$a" ]; then
+        echo "$a" >> "$2"
+      else
+        echo "$LINE" >> "$2"
+      fi
+      [ -n "$debug" ] && tail -1 "$2" || true
+    fi
+  done
+  IFS=$IFS1
+}
+
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+[ -z "$cluster" ] && echo "Cluster not defined" && exit 1
+
+lock_cloudops || exit 10
+log "checking cluster $cluster limit"
+res=`check_cluster_limit $cluster`
+[[ $res -ne 0 ]] && proper_exit 5 182
+[ -z "$name" ] && name=`generate_name $cluster` && log "name auto-generated: $name"
+[ -z "$name" ] && proper_exit 6 184
+[ -z "$ip" ] && ip=`find_ip` && log "IP that will be used: $ip"
+[ -z "$ip" ] && proper_exit 4 186
+
+thekey=`"$M_ROOT"/helpers/find_key cluster $cluster`
+[ $? -ne 0 ] && echo "Key for cluster $cluster not found" && proper_exit 1 189
+[ -f "${thekey}.pub" ] && PUBLIC_KEY="${thekey}.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "${thekey}.pem.pub" ] && PUBLIC_KEY="${thekey}.pem.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME/.ssh/id_dsa.pub" ] && PUBLIC_KEY="$HOME/.ssh/id_dsa.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME/.ssh/id_rsa.pub" ] && PUBLIC_KEY="$HOME/.ssh/id_rsa.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME_ORIG/.ssh/id_dsa.pub" ] && PUBLIC_KEY="$HOME_ORIG/.ssh/id_dsa.pub"
+[ -z "$PUBLIC_KEY" ] && [ -f "$HOME_ORIG/.ssh/id_rsa.pub" ] && PUBLIC_KEY="$HOME_ORIG/.ssh/id_rsa.pub"
+[ -z "$PUBLIC_KEY" ] && log "No public key found. Tried $M_ROOT/keys/${thekey}.\*, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && exit 1
+log "SSH public key $PUBLIC_KEY is going to be injected"
+
+# Ganeti cluster must be running, and this script can run on master node only
+$GNTC master-ping
+[ $? -ne 0 ] && echo "Error pinging Ganeti cluster. Is it running?" && proper_exit 1 283
+# If it's alive, we can get some info from it
+OSPATH=`$GNTC info | grep 'OS search path'`
+OSPATH="${OSPATH##*: }"
+OSPATH=`echo "$OSPATH" | sed 's|^[[:space:]]*||;s|,[[:space:]]*|,|g'`
+for choice in `echo "$OSPATH" | tr ',' ' '` ; do
+  [ -d "$choice" ] && OSPATH=$choice && break
+done
+[ -z "$OSPATH" ] && OSPATH="$GANETI_FOLDERS_ROOT/os" && log "OSPATH reported by gnt-cluster does not exist"
+log "using OSPATH $OSPATH"
+# OS required for the new node
+OSNAME=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
+[ -z "$OSNAME" ] && log "Unable to find OS in clusters.conf for cluster $cluster" && proper_exit 1 295
+
+if [ -d "$OSPATH/$OSNAME" ]; then
+  cp -ru "$M_ROOT/cloud/ganeti/os-skeleton/"* "$OSPATH/$OSNAME/"
+else
+  cp -r "$M_ROOT/cloud/ganeti/os-skeleton" "$OSPATH/$OSNAME"
+fi
+log "OS building scripts placed in $OSPATH/$OSNAME"
+prepare_file "$M_ROOT/cloud/ganeti/os-skeleton/common.sh" "$OSPATH/$OSNAME/common.sh"
+
+OS_DEFAULT_CONF=`cat "$OSPATH/$OSNAME/common.sh" | grep 'DEFAULT_FILE=' | cut -d'=' -f2 | cut -d'"' -f2`
+
+[ -f "$OS_DEFAULT_CONF" ] && source "$OS_DEFAULT_CONF" && log "OS default configuration $OS_DEFAULT_CONF sourced" || log "OS default configuration $OS_DEFAULT_CONF not found"
+
+CUSTOMIZE_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/hooks"
+VARIANTS_DIR="$GANETI_CONF_FOLDER/instance-$OSNAME/variants"
+
+IMAGE_DIR="$M_ROOT/cloud/ganeti/os-images"
+IMAGE_FILE="$IMAGE_DIR/${OSNAME}.img"
+
+echo -e "CUSTOMIZE_DIR=$CUSTOMIZE_DIR\nVARIANTS_DIR=$VARIANTS_DIR\nCDINSTALL=no\nIMAGE_FILE=$IMAGE_FILE" > "$M_TEMP/vars"
+
+[ -d "$CUSTOMIZE_DIR" ] || install -d "$CUSTOMIZE_DIR"
+[ -d "$VARIANTS_DIR" ] || install -d "$VARIANTS_DIR"
+[ -d "$IMAGE_DIR" ] || install -d "$IMAGE_DIR"
+
+[ -z "$HOOKS_DIR" ] && HOOKS_DIR="$CUSTOMIZE_DIR"
+[ -z "$HOOKS_DIR" ] && HOOKS_DIR="$M_TEMP/hooks"
+[ -d "$HOOKS_DIR" ] || install -d "$HOOKS_DIR"
+log "HOOKS_DIR: $HOOKS_DIR"
+
+[ ! -f "$IMAGE_FILE" ] && [ -z "$makedisk" ] && log "Image file does not exist!" && proper_exit 1 243
+export CUSTOMIZE_DIR VARIANTS_DIR IMAGE_DIR HOOKS_DIR IMAGE_FILE
+[ -z "$GANETI_GATEWAY" ] && GANETI_GATEWAY=`find_gateway`
+
+broadcast=`find_broadcast`
+log "gateway: $GANETI_GATEWAY  broadcast: $broadcast"
+
+flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11 | tail -1`
+flfound=false
+
+if $GUESS_OS ; then
+  for flvar in gentoo debian redhat centos fedora suse mint ubuntu lfs ; do
+    [ `echo "$flavor" | grep -c -i "$flvar"` -ne 0 ] && flfound=true && break
+  done
+fi
+$flfound || flvar=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f5 | cut -d'+' -f2 | tail -1`
+
+case $flvar in
+  debian|ubuntu|mint)
+    prepare_file "$rpath/network_if.debian.tmpl" "$M_TEMP/interfaces"
+    [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
+    prepare_file "$rpath/network_if.debian" "$M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network created based on template for Debian" || log "error preparing $M_TEMP/network"
+    ;;
+  redhat|centos|fedora)
+    prepare_file "$rpath/network_if.redhat.tmpl" "$M_TEMP/interfaces"
+    [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
+    prepare_file "$rpath/network_if.redhat" "$M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network created based on template for Redhat" || log "error preparing $M_TEMP/network"
+    ;;
+  *)
+    prepare_file "$rpath/network_if.${flvar}.tmpl" "$M_TEMP/interfaces"
+    [ $? -eq 0 ] && log "$M_TEMP/interfaces prepared" || log "error preparing $M_TEMP/interfaces"
+    prepare_file "$rpath/network_if.${flvar}" "$M_TEMP/network"
+    [ $? -eq 0 ] && log "$M_TEMP/network created based on template for $flvar" || log "error preparing $M_TEMP/network"
+    ;;
+esac
+export OPERATING_SYSTEM=$flvar
+
+# installing software via chroot proved to be unreliable
+
+cp "$M_TEMP/network" "$HOOKS_DIR/"
+chmod 755 "$HOOKS_DIR/network"
+
+if [ -z "$test" ]; then
+  request $verbose
+  reqexit=$?
+  if [ $reqexit -eq 0 ]; then
+    log "request sent successfully"
+    sleep 20
+  else
+    log "request returned status $reqexit"
+    proper_exit 1 378
+  fi
+  wait_ready $V 
+  if [ $? -eq 0 ]; then
+    idev=`find_idev $ip`
+    if [ -n "$idev" ]; then
+      $IPR2 route add $ip dev $idev
+      [ $? -ne 0 ] && log "Failure adding the route: $IPR2 add $ip dev $idev" && proper_exit 1 385
+    else
+      log "Instance started, but tap device doesn't exist"
+      proper_exit 1 388
+    fi
+  else
+    log "Timeout while waiting for the node is up"
+    proper_exit 1 392
+  fi
+
+  # adding to the list
+  $GNTI add-tags $name "cluster:$cluster"
+  if [ $? -eq 0 ]; then
+    log "Tag cluster:$cluster added"
+    save_details $verbose || true
+  else
+    log "Adding tag cluster:$cluster failed"
+    echo -e "\nWas unable to add the cluster tag, so nodes.list is not updated.\nFix the problem and re-create the instance or try to tag it manually:\n\n$GNTI add-tags $name cluster:$cluster\n\nthen update the list:\n\nupdate_nodes_list\n"
+  fi
+else
+  log "This was a test, not sending request, exiting"
+  proper_exit 0 406
+fi
+
+$SSHK -q -R "$ip" >/dev/null
+
+# if VM booted up from cdrom, no ssh node there
+if [ -z "$cdrom" ]; then
+  if [ -f "$thekey" ]; then
+    $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo 2>/dev/null
+    if [ $? -ne 0 ]; then
+      exit_status=2
+      log "($CLOUD) Unable to login to the node $ip using the key $thekey, trying again..."
+      for ((k=0; k<3; k++)); do
+        $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo >/dev/null
+        [ $? -eq 0 ] && exit_status=0 && break
+        sleep 10
+      done
+    fi
+  else
+    log "($CLOUD) WARNING: key not found, unable to test login!"
+  fi
+else
+  if [ -n "$vnc" ]; then
+    CURL=`which curl 2>/dev/null`
+    if [ -z "$CURL" ]; then
+      echo "curl not found, not testing connection to VNC"
+    else
+      [[ "$vnc" == "0.0.0.0" ]] && vnc="localhost"
+      vncport=`$GNTI info "$name" | grep 'Allocated network port' | cut -d':' -f2 | tr -d ' '`
+      [ -z "$vncport" ] && vncport=11001
+      for ((k=0; k<3; k++)); do
+        $CURL "${vnc}:${vncport}"
+        [ $? -eq 0 ] && exit_status=0 && break
+        sleep 10
+      done
+    fi
+  fi
+fi
+
+if [ -n "$return" ]; then
+  echo
+  for ret in `echo $return | tr ',' ' '`; do
+    case $ret in
+      ip)
+        echo $ip ;;
+      name)
+        echo $name ;;
+      idev)
+        echo $idev ;;
+      iparams)
+        echo $iparams ;;
+      node)
+        echo $node ;;
+      ios)
+        echo $ios ;;
+    esac
+  done
+fi
+
+"$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+
+proper_exit $exit_status 465
+

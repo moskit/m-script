@@ -1,0 +1,129 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+source $M_ROOT/conf/mon.conf
+source $M_ROOT/conf/clouds/${CLOUD}.conf
+source $M_ROOT/lib/functions.sh
+source $M_ROOT/lib/cloud_functions.sh
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+LOG="$M_ROOT"/logs/cloud.log
+
+possible_options="cloud id name ip verbose force last first"
+necessary_options=""
+
+ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+[ -z "$ARGV" ] && echo "Stop node? Which one?" && exit 1
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+   if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -n "$force" ] && force=true || force=false
+removed=false
+
+find_by_ip() {
+  IAMACHILD=1 show_nodes >/dev/null
+  id=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${1}\| | cut -d'|' -f2`
+  [ -z "$id" ] && id=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${1}\| | cut -d'|' -f2`
+}
+
+if [ -n "$first" ] ; then
+  ip=`cat "$M_ROOT/nodes.list" | grep \|${first}$ | head -1 | cut -d'|' -f1`
+fi
+if [ -n "$last" ] ; then
+  ip=`cat "$M_ROOT/nodes.list" | grep \|${last}$ | tail -1 | cut -d'|' -f1`
+fi
+
+if [ -z "$id" ] ; then
+  if [ -z "$ip" ] ; then
+    if [ -z "$name" ] ; then
+      echo "One of id, ip or name is required to identify the node"
+      exit 1
+    else
+      # IP is more reliable
+      ip=`cat "$M_ROOT/nodes.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
+      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
+      if [ -n "$ip" ] ; then
+        find_by_ip $ip
+      else
+        IAMACHILD=1 show_nodes >/dev/null
+        id=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
+      fi
+    fi
+  else
+    find_by_ip $ip
+  fi
+else
+  if [ -f "$M_TEMP/nodes.${EC2_REGION}.ips" ] ; then
+    IAMACHILD=1 show_nodes >/dev/null
+  fi
+  name=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
+  ipint=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`
+  ipext=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${id}\| | cut -d'|' -f1`
+fi
+[ -z "$id" ] && echo "Unable to find ID of this node" && exit 1
+req="/servers/$id"
+
+IPS=( "$ipint" "$ipext" "$ip" )
+
+$EC2_TOOLS_BIN_PATH/ec2-terminate-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $id >> "$M_ROOT"/logs/cloud.log && log "(EC2) node name ${name}, id ${id}, IP ${IPS[*]} terminated successfully" && removed=true 
+
+if [ $removed -o $force ]; then
+  SSHK=`which ssh-keygen 2>/dev/null`
+  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "(EC2) $name removed from known_hosts"
+
+  for ipa in ${IPS[*]} ; do
+    if [ -n "$ipa" ] ; then
+      $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "(EC2) $ipa removed from known_hosts"
+      sed -i "/^$ipa|/d" "$M_ROOT/nodes.list" && log "(EC2) $ipa removed from nodes.list"
+      sed -i "/^$ipa /d" /etc/hosts && log "(EC2) $ipa removed from /etc/hosts"
+    fi
+  done
+  
+  for bcluster in $APP_SERVERS ; do
+    [ "X${bcluster%%|*}" == "X$cluster" ] && needs_balancer=true
+  done
+  if $needs_balancer ; then
+    if [ -n "$BALANCER" ] ; then
+      case "$BALANCER" in
+      nginx)
+        update_nginx_proxy
+        ;;
+      esac
+    fi
+  fi
+
+fi
+
+

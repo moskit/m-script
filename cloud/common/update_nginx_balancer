@@ -120,7 +120,7 @@ for appport in `echo "$BALANCER_PORTS" | tr ',' ' '` ; do
     echo "upstream $app {" > "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
     [ -n "$balance_method" ] && echo "  ${balance_method};" >> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
     for IP in `echo "$ips"` ; do
-      echo "  server ${IP}:${port};" >> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
+      echo "  node ${IP}:${port};" >> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
     done
     echo "}">> "$NGINX_PROXY_CLUSTER_CONF_DIR/${app}.conf"
   fi

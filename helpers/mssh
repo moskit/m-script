@@ -38,15 +38,15 @@ SSH_REMOTE_USER_ARG=`echo "$host" | cut -s -d'@' -f1`
 host=`echo "$host" | cut -d'@' -f2`
 
 # if target is IP
-KEY=`grep ^${host}\| "$M_ROOT/servers.list" | cut -d'|' -f2`
+KEY=`grep ^${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f2`
 # if target is hostname
-[ -z "$KEY" ] && KEY=`cat "$M_ROOT/servers.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
+[ -z "$KEY" ] && KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
 
-cluster=`grep ^${host}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
-[ -z "$cluster" ] && cluster=`grep \|${host}\| "$M_ROOT/servers.list" | cut -d'|' -f5`
+cluster=`grep ^${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
+[ -z "$cluster" ] && cluster=`grep \|${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f13`
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
-M_ROOT_REMOTE=`grep \|${host}\| "$M_ROOT/servers.list" | cut -d'|' -f8`
+M_ROOT_REMOTE=`grep \|${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f8`
 [ -z "$M_ROOT_REMOTE" ] && M_ROOT_REMOTE="$M_ROOT"
 
 if [ -n "$*" ]; then
@@ -64,7 +64,7 @@ if [ -n "$KEY" ]; then
     [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
   fi
 else
-  echo "Server $host not found in servers.list" >&2
+  echo "Server $host not found in nodes.list" >&2
 fi
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then

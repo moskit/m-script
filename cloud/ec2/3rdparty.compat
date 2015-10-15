@@ -1,7 +1,7 @@
 ### 3rd party services that can manage and scale your clusters. This file maps
-### tags they use for servers identification to M-Script "cluster" variable, so
-### that fix_clusters script can find such servers, add clusters they manage to
-### conf/clusters.conf and get those servers listed in servers.list thus making
+### tags they use for nodes identification to M-Script "cluster" variable, so
+### that fix_clusters script can find such nodes, add clusters they manage to
+### conf/clusters.conf and get those nodes listed in nodes.list thus making
 ### them available to M-Script.
 ###
 ### Syntax:

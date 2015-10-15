@@ -102,7 +102,7 @@ With --from but without --to the latter defaults to the current time.
 Options:
 
 --ip=<IP>               IP address of the server to get data from
-                        Server must be present in servers.list
+                        Server must be present in nodes.list
                         If empty, means localhost
                     
 --from=<date/time>      Time of the beginning of the graph in any format
@@ -269,13 +269,13 @@ fi
 ##############################
 
 if [ -z "$localip" ] ; then
-  server=`grep "^${ip}|" "$rpath/servers.list"|tail -1`
+  server=`grep "^${ip}|" "$rpath/nodes.list"|tail -1`
   if [ -z "$server" ] ; then
     # if it's name
-    ipaddr=`cat "$rpath/servers.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
-    server=`grep "^${ipaddr}|" "$rpath/servers.list"|tail -1`
+    ipaddr=`cat "$rpath/nodes.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+    server=`grep "^${ipaddr}|" "$rpath/nodes.list"|tail -1`
     if [ -z "$server" ] ; then
-      log "Server $ip not found in $rpath/servers.list"
+      log "Server $ip not found in $rpath/nodes.list"
       exit 1
     fi
   fi
