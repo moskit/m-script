@@ -22,9 +22,7 @@ dpath=${dpath%/*}
 
 log() {
   if [ -n "$LOG" ]; then
-    ppid=`ps -p $$ -o ppid= | tr -d ' '`
-    echo "`date +"%m.%d %H:%M:%S"` (${ppid}/$$) ${CLOUD}/${0##*/}: ${@}">>$LOG
-#    echo "`date +"%m.%d %H:%M:%S"` ($$) ${CLOUD}/${0##*/}: ${@}">>$LOG
+    echo "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${CLOUD}/${0##*/}: ${@}">>$LOG
   fi
 }
 

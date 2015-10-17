@@ -21,7 +21,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
 SSH=`which ssh 2>/dev/null`
-possible_options="cluster help region delimiter limit names quoted spaces thishost private public local nolocal cloud verbose"
+possible_options="cluster help region delimiter limit names quoted spaces thishost private public local nolocal cloud headers"
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"
@@ -82,7 +82,7 @@ printip() {
       ips="${ips}`printf "${1}${delimiter}"`"
     fi
   else
-    $verbose && echo "    $1" || echo $1
+    $headers && echo "    $1" || echo $1
   fi
 }
 
@@ -92,7 +92,7 @@ source "$M_ROOT/lib/cloud_functions.sh"
 [ -n "$thishost" ] && local="yes"
 
 if [ -n "$local" -o -n "$nolocal" ] ; then
-  localips=`localips`
+  localips=`"$M_ROOT"/helpers/localips`
 fi
 
 if [ -n "$cloud" ]; then
@@ -106,17 +106,16 @@ else
   cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 fi
 
-[ "_$verbose" == "_yes" ] && [ -z "$delimiter" ] && verbose=true || verbose=false
+[ "_$headers" == "_yes" ] && [ -z "$delimiter" ] && headers=true || headers=false
 
 if [ -n "$local" ] ; then
   unset cluster
-  IPS=$localips
-  for IP in `echo "$IPS"`; do
-    printip "$1"
+  for IP in `echo "$localips"`; do
+    printip "$IP"
   done
 else
   for cld in $cloud ; do
-    $verbose && echo "Cloud: $cld"
+    $headers && echo "Cloud: $cld"
     
     clust=`echo -e "$cluster" | tr ',' '\n'`
 
@@ -126,12 +125,12 @@ else
 
     IFSORIG=$IFS
     IFS='
-  '
+'
     declare -i n
     n=1
     [ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
     for cl in `echo -e "$clust"` ; do
-      $verbose && echo "  Cluster: $cl"
+      $headers && echo "  Cluster: $cl"
       IPS=`cat "$M_ROOT/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -sd'|' -f1,5 | grep "|${cl}$" | cut -sd'|' -f1`
       [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | sed 's_^_\^_;s_$_\$_' | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`
       

@@ -174,7 +174,7 @@ touch "$varfile"
 chmod 600 "$varfile"
 # common role's conf is sourced here to allow global variables that can be
 # used in other role.confs, but its vars are not saved yet
-[ -e "$ROLES_ROOT/conf/common.conf" ] && source "$ROLES_ROOT/common/common.conf" 2>>"$LOG"
+[ -e "$ROLES_ROOT/conf/common.conf" ] && source "$ROLES_ROOT/conf/common.conf" 2>>"$LOG"
 # first goes the actual role. Variables assigned are not being overwritten
 # by included roles, thus actual role has higher priority
 if [ -e "$ROLES_ROOT/conf/$role.conf" ]; then
@@ -194,8 +194,8 @@ if [ "_$roleincluded" != "_$role" ]; then
   export ROLEINCL=$roleincluded
 fi
 # last and least, common role
-if [ -e "$ROLES_ROOT/common/common.conf" ]; then
-  store_vars "$ROLES_ROOT/common/common.conf"
+if [ -e "$ROLES_ROOT/conf/common.conf" ]; then
+  store_vars "$ROLES_ROOT/conf/common.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1
 fi
   
@@ -217,7 +217,7 @@ fi
 
 # now prepare the script
 source "$CURRTASKDIR/${file}.var"
-for LINE in `cat "$ROLES_ROOT/$file"` ; do
+for LINE in `cat "$ROLES_ROOT/roles/$file"` ; do
   ELINE=$(echo "$LINE" | \
   sed 's|"|\\\"|g' | \
   sed 's|`|\\\`|g')

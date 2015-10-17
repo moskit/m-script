@@ -191,8 +191,20 @@ print_report_title() {
   echo -e "`date`\n------------------------------\n" > "$1"
 }
 
+printcol() {
+  if [ -n "$1" ] ; then
+    l=`expr $col - 1`
+    str=`echo "$1" | cut -b $l`
+    printf "%${l}s" $str
+  else
+    printf "%${col}s"
+  fi
+}
+
 log() {
-  [ -n "$LOG" ] && echo "`date +"%m.%d %H:%M:%S"` ($$) ${0##*/}: ${@}">>$LOG
+  if [ -n "$LOG" ]; then
+    echo "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${0##*/}: ${@}">>$LOG
+  fi
 }
 
 find_delta() {

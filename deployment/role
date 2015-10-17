@@ -26,9 +26,9 @@ possible_options="role cluster flavor method all strip"
 
 printcol() {
   if [ -n "$1" ] ; then
-    l=`expr $col - ${#1}`
-    echo -n "$1"
-    printf "%${l}s"
+    l=`expr $col - 1`
+    str=`echo "$1" | cut -b $l`
+    printf "%${l}s" $str
   else
     printf "%${col}s"
   fi
@@ -177,10 +177,11 @@ case $command1 in
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
+        [ -n "$COL" ] && col=$((COL/3)) || col=26
         printcol "Meta"
         printcol "Scripts"
         echo "Includes"
+        printf "%${COL}s\n" | tr ' ' '-'
         for m in `ls -1 "$ROLES_ROOT/roles/$param1" | grep ^meta\. | sed 's|^meta.||'` ; do
           ml=`cat "$ROLES_ROOT/roles/$param1/meta.$m" | grep -vE "^$|^#|^[[:space:]]#"`
           sn=`echo "$ml" | wc -l`
@@ -213,10 +214,11 @@ case $command1 in
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
+        [ -n "$COL" ] && col=$((COL/3)) || col=26
         printcol "Script"
         printcol "Meta"
         echo "Role"
+        printf "%${COL}s\n" | tr ' ' '-'
         [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l` )
         allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l` )
         for sc in ${allscripts[*]} ; do
@@ -265,9 +267,10 @@ case $command1 in
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3+4)) || col=${col-30}
+        [ -n "$COL" ] && col=$((COL/3)) || col=26
         printcol "File"
         echo "Script"
+        printf "%${COL}s\n" | tr ' ' '-'
         [ -n "$flavor" ] && allfiles=( `find "$ROLES_ROOT/roles/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` )
         allfiles+=( `find "$ROLES_ROOT/roles/$param1/common/files/" -maxdepth 1 -type f -o -type l` )
         for fl in ${allfiles[*]} ; do
@@ -295,12 +298,12 @@ case $command1 in
       ;;
       roles|'')
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3-4)) || col=20
+        [ -n "$COL" ] && col=$((COL/3)) || col=20
         printcol "Role"
         printcol "Cluster"
         printcol "Flavor"
         echo "Image"
-        printf "%${COL}s" | tr ' ' '-'
+        printf "%${COL}s\n" | tr ' ' '-'
         for r in `find $ROLES_ROOT/roles/ -maxdepth 1 -mindepth 1 -type d ! -name ".*"` ; do
           r=${r##*/}
           for cl in `cat $M_ROOT/conf/clusters.conf | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,10 | grep \|${r}$ | cut -d'|' -f1` ; do

@@ -1,2 +1,3 @@
-# 1435524952
-mv "$M_ROOT/standalone/MongoDB/databases.sql3" "$M_ROOT/standalone/MongoDB/databases.sql3.1435524952"
+# 1444946110
+mv "$M_ROOT/servers.list" "$M_ROOT/nodes.list"
+"$M_ROOT"/monitorload restart
