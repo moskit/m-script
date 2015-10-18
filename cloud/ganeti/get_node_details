@@ -23,7 +23,7 @@ possible_options="cloud id name ip return verbose"
 necessary_options=""
 
 GNTI=`which gnt-instance 2>/dev/null`
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 
 IFS1=$IFS
 IFS='|'

@@ -21,7 +21,7 @@ rpath=${0%/*}
 possible_options="cloud name ip return verbose cluster help"
 necessary_options=""
 
-ARGV=`echo $@ | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && $0 --help
 IFS1=$IFS
 IFS='|'

@@ -24,14 +24,14 @@ printcol() {
   if [ -n "$1" ] ; then
     l=`expr $col - 1`
     str=`echo "$1" | cut -b $l`
-    printf "%${l}s" $str
+    printf "%-${l}s" $str
   else
     printf "%${col}s"
   fi
 }
 
-possible_commands="help list clone create save destroy show"
-possible_subcommands="list:short,long show:short,full"
+possible_commands="help list clone create save destroy show stop start"
+possible_subcommands="list:short,long,name,ip show:short,full"
 possible_options="role cluster flavor cloud"
 
 declare -i ppn
@@ -161,8 +161,8 @@ case $command1 in
       [ -n "$COL" ] && col=$((COL/4)) || col=20
       printcol "Node"
       printcol "IP"
-      printcol "Cloud"
-      echo "Cluster"
+      printcol "Cluster"
+      echo "Cloud"
       printf "%${COL}s\n" | tr ' ' '-'
       
       for cld in $cloud ; do
@@ -182,13 +182,48 @@ case $command1 in
             nodename=`echo "$node" | cut -d'|' -f4`
             printcol "$nodename"
             printcol "$nodeip"
-            printcol "$cld"
-            echo "$cl"
+            printcol "$cl"
+            echo "$cld"
           done
           
         done
         
       done
+    else
+      for cld in $cloud ; do
+        
+        clust=`echo -e "$cluster" | tr ',' '\n'`
+
+        [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+        [ -z "$clust" ] && clust=$M_CLUSTER
+        [ -z "$clust" ] && echo "No clusters found" >&2 && continue
+        
+        for cl in `echo -e "$clust"` ; do
+          nodes=`grep -E "\|$cl\|$cld$|\|$cl\|$cld\|$" "$M_ROOT"/nodes.list`
+          if [ -z "$command2" ] || [ "_$command2" == "_name" ]; then
+            echo "$nodes" | cut -d'|' -f4 | grep -v ^$
+          fi
+          if [ "_$command2" == "_ip" ]; then
+            echo "$nodes" | cut -d'|' -f1 | grep -v ^$
+          fi
+        done
+      done
+    fi
+    ;;
+  show)
+    "$rpath"/get_node_details 
+    ;;
+  create)
+  
+    ;;
+  destroy)
+  
+    ;;
+  save)
+  
+    ;;
+  *)
+  
     ;;
 esac
 

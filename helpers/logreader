@@ -22,7 +22,7 @@ rpath=${rpath%/*}
 
 possible_options="file lines maxlines period interval timeformat help verbose resolution amendformat safetylimit"
 necessary_options="file"
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 
 amend() {
   amendcomm="echo \"$1\" | $amendformat"

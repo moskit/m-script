@@ -17,6 +17,7 @@
 fpath=$(readlink -f "$BASH_SOURCE")
 fcomm=${fpath##*/}
 fpath=${fpath%/*}
+#*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
 [ -f "$M_ROOT/actions.in" ] || exit 0
 [ `cat "$M_ROOT/actions.in" | wc -l` -eq 0 ] && rm "$M_ROOT/actions.in" && exit 0
@@ -26,7 +27,7 @@ source "$M_ROOT/lib/functions.sh"
 
 possible_options="mode limit help"
 
-ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 
 IFS1=$IFS
 IFS='|'

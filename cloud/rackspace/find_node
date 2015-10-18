@@ -25,7 +25,7 @@ V="v1.0"
 possible_options="cloud id name ip return verbose cluster help updatelist quick slow"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && ${0} --help
 IFS1=$IFS
 IFS='|'

@@ -25,7 +25,7 @@ CURL=`which curl 2>/dev/null`
 possible_options="cloud region"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//;s/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 
 IFS1=$IFS
 IFS='|'

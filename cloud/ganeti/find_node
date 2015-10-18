@@ -16,7 +16,7 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 
 CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
@@ -27,7 +27,7 @@ GNTI=`which gnt-instance 2>/dev/null`
 possible_options="cloud id name ip return verbose cluster help updatelist quick slow"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && ${0} --help
 IFS1=$IFS
 IFS='|'
@@ -40,7 +40,7 @@ do
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
     [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
   done
-   if ! $found ; then 
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
@@ -170,13 +170,14 @@ if [ -z "$name" ]; then
       proper_exit 0 169
     fi
   else
-    # ip must be present in nodes.list, so it's simple
-    ip=`cat "$rpath/../../nodes.list" | grep -vE "^#|^[[:space:]]#" | cut -d'|' -f1,4,6 | grep -v ^$ | grep "|${CLOUD}$" | grep "|${name}|" | cut -d'|' -f1`
-    if [ -n "$ip" ]; then
-      find_by_ip $ip
-    fi
+    find_by_ip $ip
   fi
-
+else
+  # ip must be present in nodes.list, so it's simple
+  ip=`cat "$rpath/../../nodes.list" | grep -vE "^#|^[[:space:]]#" | cut -d'|' -f1,4,6 | grep -v ^$ | grep "|${CLOUD}$" | grep "|${name}|" | cut -d'|' -f1`
+  if [ -n "$ip" ]; then
+    find_by_ip $ip
+  fi
 fi
 [ -z "$name" ] && echo "Unable to identify this node" && proper_exit 1 180
 

@@ -30,7 +30,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 possible_options="cloud id name ip verbose cluster"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && echo "Stop node? Which one?" && exit 1
 IFS1=$IFS
 IFS='|'

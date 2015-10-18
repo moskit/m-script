@@ -28,7 +28,7 @@ WGET=`which wget 2>/dev/null`
 possible_options="public private status state noupdate forceupdate short"
 necessary_options=""
 
-ARGV=`echo ${@} | sed 's/^--//' | sed 's/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 
 IFS1=$IFS
 IFS='|'

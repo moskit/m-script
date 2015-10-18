@@ -195,7 +195,7 @@ printcol() {
   if [ -n "$1" ] ; then
     l=`expr $col - 1`
     str=`echo "$1" | cut -b $l`
-    printf "%${l}s" $str
+    printf "%-${l}s" $str
   else
     printf "%${col}s"
   fi

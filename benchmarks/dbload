@@ -3,7 +3,7 @@
 possible_options="db dbname host port concurrency collection number"
 necessary_options=""
 
-ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 IFS1=$IFS
 IFS='|'
 for s_option in $ARGV

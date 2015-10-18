@@ -16,7 +16,7 @@
 
 rcommand=${0##*/}
 rpath=${0%/*}
-#*/ (this is needed to fix vi syntax highlighting)
+#*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$rpath/../conf/mon.conf"
 source "${0%.mon}.conf"
