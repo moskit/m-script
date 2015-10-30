@@ -67,7 +67,7 @@ case $where in
   cluster)
     find_cluster_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
   ;;
-  server)
+  node)
     nextkey=false
     find_node_key "$1" && echo "$M_ROOT/keys/$KEY" && exit 0
     log "no key found in nodes.list for server ${1}, or key does not exist"

@@ -145,7 +145,9 @@ fi
 [ -z "$block_forever_after" ] && block_forever_after=99999
 if [ -n "$ips" ] ; then
   for ip in $ips ; do
-    ip=`echo "$ip" | tr -d ' '`
+    ip=`echo "$ip" | tr -d ' ' | cut -d'|' -f1`
+    block_caller=`echo "$ip" | tr -d ' ' | cut -sd'|' -f2`
+    [ -n "$block_caller" ] && BLOCK_CALLER="$block_caller"
     # Never block own IPs! :)
     [[ `grep -c ^$ip\| "$M_ROOT/nodes.list"` -ne 0 ]] && continue
     "$rpath"/localips | grep -q "^$ip$" && continue

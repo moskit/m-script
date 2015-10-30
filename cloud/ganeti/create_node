@@ -256,6 +256,8 @@ IFS='
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
 
+if ! grep -q "^$cluster|" "$M_ROOT/conf/clusters.conf" ; then echo "Cluster $cluster is not configured"; proper_exit 1 259; fi
+
 lock_cloudops || exit 10
 log "checking cluster $cluster limit"
 res=`check_cluster_limit $cluster`

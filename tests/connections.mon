@@ -126,7 +126,7 @@ if [ -e "$M_ROOT/ports.udp.list" ] ; then
   fi
 fi
 
-### If other protocols are needed (see /etc/net/protocols), they can be added
+### If other protocols are needed (see /proc/net/protocols), they can be added
 ### easily, just follow the pattern
 
 if [ -f "$M_TEMP/ports.tcp.$$" ] ; then

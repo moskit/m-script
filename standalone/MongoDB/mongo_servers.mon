@@ -47,7 +47,7 @@ timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
 [ -n "$timeshift" ] && period=`expr $FREQ + $timeshift` || period=$FREQ
 lastping="ISODate(\"`date -d "-$period sec" +"%Y-%m-%dT%H:%M:%S"`\")"
 
-touch "$rpath/mongo_mongos_nodes.list" "$rpath/mongo_config_nodes.list" "$rpath/mongo_shards.list" "$rpath/mongo_nodes.list"
+touch "$rpath/mongo_mongos_servers.list" "$rpath/mongo_config_servers.list" "$rpath/mongo_shards.list" "$rpath/mongo_servers.list"
 M_TEMP="$M_TEMP/MongoDB"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
@@ -74,15 +74,13 @@ function find_master() {
   im=`(IFS=$IFSORG ; $MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().primary" 2>>"$LOG" | grep -v arning | tail -1)`
   if [ -z "$im" ] ; then
     im=`(IFS=$IFSORG ; $MONGO $AUTH "$1/admin" --quiet --eval "rs.isMaster().ismaster" 2>>"$LOG" |tail -1)`
-    [ "_$im" == "_true" ] && im=$1
+    [ "_$im" == "_true" ] && im=$1 || unset im
   fi
-  [ -n "$im" ] && echo $im || (log "Unable to find master for replica set (asked ${1})" && exit 1)
+  [ -n "$im" ] && echo $im || log "Unable to find master for replica set (asked ${1})"
 }
 
 function find_rsmemberrole() {
   rsmemberrole='|slave'
-  master=`find_master "$1"`
-  members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
   membernum=`echo "$members" | grep "$1" | cut -d'/' -f1`
   arbiter=`echo "$members" | grep "^${membernum}\/" | grep arbiterOnly | grep -c true$`
   priority=`echo "$members" | grep "^${membernum}\/" | grep priority | cut -sd'|' -f2`
@@ -94,9 +92,8 @@ function find_rsmemberrole() {
     rsmemberrole="|arbiter=${priority}=${votes}=${tags}"
   else
     slavedelay=`echo "$members" | grep "^${membernum}\/" | grep slaveDelay | cut -sd'|' -f2`
-    hidden=`echo "$members" | grep "^${membernum}\/" | grep hidden | cut -sd'|' -f2`
-    buildindexes=`echo "$members" | grep "^${membernum}\/" | grep buildIndexes | cut -sd'|' -f2`
     rsmemberrole="|slave=${hidden}=${slavedelay}=${buildindexes}=${priority}=${votes}=${tags}"
+    
   fi
 }
 
@@ -112,7 +109,7 @@ function collect_hosts() {
 function get_serverstatus() {
   serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
   if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
-    sed -i "/$cs/d" "$rpath/mongo_nodes.list"
+    sed -i "/$cs/d" "$rpath/mongo_servers.list"
     rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
   else
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
@@ -128,7 +125,7 @@ function get_serverstatus() {
 function get_mongosstatus() {
   serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.mongos.js" 2>/dev/null`
   if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
-    sed -i "/$cs/d" "$rpath/mongo_mongos_nodes.list"
+    sed -i "/$cs/d" "$rpath/mongo_mongos_servers.list"
     rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
   else
     mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
@@ -243,9 +240,9 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
     collect_hosts $MONGO_CONFIG_SERVERS
   fi
 
-  print_servers $configips > "$M_TEMP/mongo_config_nodes.list"
-  if [ -f "$M_TEMP/mongo_config_nodes.list" ] && [ -f "$rpath/mongo_config_nodes.list" ]; then
-    $DIFF -q "$M_TEMP/mongo_config_nodes.list" "$rpath/mongo_config_nodes.list" || mv "$M_TEMP/mongo_config_nodes.list" "$rpath/mongo_config_nodes.list"
+  print_servers $configips > "$M_TEMP/mongo_config_servers.list"
+  if [ -f "$M_TEMP/mongo_config_servers.list" ] && [ -f "$rpath/mongo_config_servers.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_config_servers.list" "$rpath/mongo_config_servers.list" || mv "$M_TEMP/mongo_config_servers.list" "$rpath/mongo_config_servers.list"
   fi
   
 elif [ -z "$MONGO_SERVERS" ] ; then
@@ -277,7 +274,7 @@ else
   fi
   
   ## Collecting servers list
-  [ -f "$M_TEMP/mongo_nodes.list" ] && rm -f "$M_TEMP/mongo_nodes.list"
+  [ -f "$M_TEMP/mongo_servers.list" ] && rm -f "$M_TEMP/mongo_servers.list"
   # For hosts from mongo_servers.conf
   for mongohost in $configips ; do
     mongoport=`echo "$mongohost" | cut -sd':' -f2`
@@ -290,12 +287,12 @@ else
     else
       unset replicaset rsmemberrole
     fi
-    echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_nodes.list"
+    echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
   done
   
   # Getting hosts list for every replica set found
-  for rs in `cat "$M_TEMP/mongo_nodes.list" | cut -d'|' -f3 | sort | uniq` ; do
-    for rshost in `cat "$M_TEMP/mongo_nodes.list" | grep "|$rs|" | cut -d'|' -f1` ; do
+  for rs in `cat "$M_TEMP/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
+    for rshost in `cat "$M_TEMP/mongo_servers.list" | grep "|$rs|" | cut -d'|' -f1` ; do
       replicahosts=`$MONGO $AUTH "$rshost/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG"`
       res=$?
       replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
@@ -303,17 +300,17 @@ else
     done
     replicalist=()
     for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_nodes.list"` -gt 0 ] && continue
+      [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
       rname=`ip_to_name "$replicahost"`
-      [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_nodes.list"` -gt 0 ] && continue
+      [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
       find_rsmemberrole "$replicahost"
       replicalist+=("${rname}:${replicahost##*:}||${rs}${rsmemberrole}")
     done
-    echo -e ${replicalist[*]} | tr ' ' '\n' >> "$M_TEMP/mongo_nodes.list"
+    echo -e ${replicalist[*]} | tr ' ' '\n' >> "$M_TEMP/mongo_servers.list"
   done
 
-  if [ -f "$M_TEMP/mongo_nodes.list" ] && [ -f "$rpath/mongo_nodes.list" ]; then
-    $DIFF -q "$M_TEMP/mongo_nodes.list" "$rpath/mongo_nodes.list" || mv "$M_TEMP/mongo_nodes.list" "$rpath/mongo_nodes.list"
+  if [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list" || mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
   fi
 fi
 
@@ -325,12 +322,12 @@ for configip in $configips ; do
 done
 
 if [ -n "$mongoses" ] ; then
-  print_servers $mongoses > "$M_TEMP/mongo_mongos_nodes.list"
-  if [ -f "$M_TEMP/mongo_mongos_nodes.list" ] && [ -f "$rpath/mongo_mongos_nodes.list" ]; then
-    $DIFF -q "$M_TEMP/mongo_mongos_nodes.list" "$rpath/mongo_mongos_nodes.list" || mv "$M_TEMP/mongo_mongos_nodes.list" "$rpath/mongo_mongos_nodes.list"
+  print_servers $mongoses > "$M_TEMP/mongo_mongos_servers.list"
+  if [ -f "$M_TEMP/mongo_mongos_servers.list" ] && [ -f "$rpath/mongo_mongos_servers.list" ]; then
+    $DIFF -q "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list" || mv "$M_TEMP/mongo_mongos_servers.list" "$rpath/mongo_mongos_servers.list"
   fi
 else
-  echo -n > "$rpath/mongo_mongos_nodes.list"
+  echo -n > "$rpath/mongo_mongos_servers.list"
 fi
 
 for configip in $configips ; do
@@ -344,37 +341,35 @@ if [ -n "$shardhosts" ] ; then
   [ -f "$M_TEMP/mongo_shards.list" ] && rm -f "$M_TEMP/mongo_shards.list"
   IFS='
 '
-  nmax=`echo "$shardhosts" | tail -1 | cut -d'/' -f1`
   shardlist=()
-  for ((n=0; n<=$nmax; n++)) ; do
-    shard=`echo "$shardhosts" | grep ^$n\/ | grep _id | cut -s -d'|' -f2`
+  for shardid in `echo "$shardhosts" | grep '/_id'` ; do
+    shard=`echo "$shardid" | cut -sd'|' -f2`
+    n=`echo "$shardid" | cut -sd'/' -f1`
     shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | cut -s -d'|' -f2`
     [ -z "$shardhost" ] && continue
-    shard=`eval "echo $shard"` ; shardhost=`eval "echo $shardhost"`
-    #ifreplicaset=${shardhost%%/*}
     shardhost=${shardhost#*/}
-    shardhost1=${shardhost%%,*}
-    shardport1=${shardhost1#*:}
-    shardhost1=${shardhost1%:*}
-    replicaset=`$MONGO $AUTH "${shardhost1}:${shardport1}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
-    if [ $? -eq 0 ] ; then
-      find_rsmemberrole "${shardhost1}:${shardport1}"
-    else
-      shardhost1=`echo "$shardhost" | cut -sd',' -f2`
-      shardport1=${shardhost1#*:}
-      shardhost1=${shardhost1%:*}
-      replicaset=`$MONGO $AUTH "${shardhost1}:${shardport1}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`
-      if [ $? -eq 0 ] ; then
-        find_rsmemberrole "${shardhost1}:${shardport1}"
+    shardhosts=( `echo "$shardhost" | tr ',' ' '` )
+    
+    for ((i=0; i<${#shardhosts[*]}; i++)); do
+      shardhost=${shardhosts[$i]}
+      shardport=${shardhost#*:}
+      shardhost=${shardhost%:*}
+      replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this shard
+      [ -z "$master" ] && master=`find_master "${shardhost}:${shardport}"`
+      [ -z "$master" ] && sharderror+=("RS member ${shardhost}:${shardport} has lost its master\n") && continue
+      # RS members
+      [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
+      if [ -n "$members" ]; then
+        find_rsmemberrole "${shardhost}:${shardport}"
+        rname=`ip_to_name $shardhost`
+        shardhost="$rname"
+        shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
       else
-        unset replicaset rsmemberrole
+        sharderror+=("Replicaset members not found")
+        continue
       fi
-    fi
-    shardhost=$shardhost1
-    shardport=$shardport1
-    rname=`ip_to_name ${shardhost%:*}`
-    shardhost="$rname"
-    shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
+    done
+    
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
 
@@ -408,15 +403,15 @@ fi
 
 # Data processing
 
-if [ -e "$rpath/mongo_config_nodes.list" ] ; then
-  for cs in `cat "$rpath/mongo_config_nodes.list" | cut -s -d'|' -f1` ; do
+if [ -e "$rpath/mongo_config_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_config_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
     get_serverstatus
   done &
 fi
 
-if [ -e "$rpath/mongo_mongos_nodes.list" ] ; then
-  for cs in `cat "$rpath/mongo_mongos_nodes.list" | cut -s -d'|' -f1` ; do
+if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
     get_mongosstatus
   done &
@@ -429,8 +424,8 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   done &
 fi
 
-if [ -e "$rpath/mongo_nodes.list" ] ; then
-  for cs in `cat "$rpath/mongo_nodes.list" | cut -s -d'|' -f1` ; do
+if [ -e "$rpath/mongo_servers.list" ] ; then
+  for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"
     get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"

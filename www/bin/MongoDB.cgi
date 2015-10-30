@@ -29,7 +29,8 @@ print_mongo_server() {
   local roleind=`echo $role | cut -b 1 | sed 's|.|\U&|'`
 
   if [ "_${roleprop[0]}" == "_slave" ]; then
-    if [ ${roleprop[2]} -ne 0 ]; then # it is a delayed secondary
+    if [ -n "${roleprop[2]}" ]; then
+    if [ ${roleprop[2]} -ne 0 ] 2>/dev/null; then # it is a delayed secondary
       if [ "_${roleprop[1]}" == "_true" ]; then # it is hidden
         if [ ${roleprop[4]} -ne 0 ]; then # priority is not 0
           roleerror="\nERROR: priority is not 0 for a delayed secondary\n"
@@ -42,7 +43,13 @@ print_mongo_server() {
       roleind="${roleind}D"
     else
       [ "_${roleprop[1]}" == "_true" ] && roleind="${roleind}H"
+
     fi
+  else
+        roleind="${roleind}`echo ${roleprop[1]} | cut -b 1 | sed 's|.|\U&|'`"
+        roleerror="\n\nSTATUS: ${roleprop[1]}"
+        roleerrorclass=" roleerror"
+      fi    
     local roletitle="`echo -e "slave\n\nHidden: ${roleprop[1]}\nDelay: ${roleprop[2]}\nIndexes: ${roleprop[3]}\nPriority: ${roleprop[4]}\nVotes: ${roleprop[5]}\nTags: ${roleprop[6]}${roleerror}"`"
   else
     local roletitle="`echo -e "${roleprop[0]}\n\nPriority: ${roleprop[1]}\nVotes: ${roleprop[2]}\nTags: ${roleprop[3]}"`"
