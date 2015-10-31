@@ -348,50 +348,31 @@ if [ -n "$shardhosts" ] ; then
     shardhost=`echo "$shardhosts" | grep ^$n\/ | grep host | cut -s -d'|' -f2`
     [ -z "$shardhost" ] && continue
     shardhost=${shardhost#*/}
-    shardhosts=( `echo "$shardhost" | tr ',' ' '` )
-    
-    for ((i=0; i<${#shardhosts[*]}; i++)); do
-      shardhost=${shardhosts[$i]}
-      shardport=${shardhost#*:}
-      shardhost=${shardhost%:*}
+    shardhosts1=( `echo -e "$shardhost" | tr ',' '\n'` )
+    for ((i=0; i<${#shardhosts1[*]}; i++)); do
+      shardhost1=${shardhosts1[$i]}
+      shardport=${shardhost1#*:}
+      shardhost=${shardhost1%%:*}
       replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this shard
       [ -z "$master" ] && master=`find_master "${shardhost}:${shardport}"`
       [ -z "$master" ] && sharderror+=("RS member ${shardhost}:${shardport} has lost its master\n") && continue
       # RS members
       [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
-      if [ -n "$members" ]; then
-        find_rsmemberrole "${shardhost}:${shardport}"
-        rname=`ip_to_name $shardhost`
-        shardhost="$rname"
-        shardlist+=("${shardhost}:${shardport}|$shard|${replicaset}${rsmemberrole}")
-      else
-        sharderror+=("Replicaset members not found")
-        continue
-      fi
     done
-    
+    if [ -n "$members" ]; then
+      for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
+        find_rsmemberrole "$member"
+        memberhost=`ip_to_name ${member%%:*}`
+        memberport=${member#*:}
+        shardlist+=("${memberhost}:${memberport}|$shard|${replicaset}${rsmemberrole}")
+      done
+    else
+      sharderror+=("Replicaset members not found")
+      continue
+    fi
+    unset master members
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
-
-  for rs in `cat "$M_TEMP/mongo_shards.list" | cut -d'|' -f2,3 | sort | uniq` ; do
-  shardlist=()
-    for rshost in `cat "$M_TEMP/mongo_shards.list" | grep "|$rs|" | cut -s -d'|' -f1` ; do
-      [ -z "$rshost" ] && continue
-      replicahosts=`(IFS=$IFSORG ; $MONGO $AUTH "$rshost"/admin --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG")`
-      res=$?
-      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
-      [ $res -eq 0 ] && break
-    done
-
-    for replicahost in $replicahosts ; do
-      [ `grep -c "^$replicahost|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
-      rname=`ip_to_name "$replicahost"`
-      [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_shards.list"` -gt 0 ] && continue
-      find_rsmemberrole "$replicahost"
-      shardlist+=("$replicahost|${rs}${rsmemberrole}")
-    done
-    echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq >> "$M_TEMP/mongo_shards.list"
-  done
   
   if [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ]; then
     $DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list" || mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
