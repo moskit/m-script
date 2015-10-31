@@ -238,7 +238,7 @@ get_hostname() {
   if [ `echo $localip | grep -c "^$1$"` -ne 0 ] ; then
     sname=`$HOSTNAME`
   else
-    KEY=`$M_ROOT/helpers/find_key node $1`
+    KEY=`$M_ROOT/helpers/find_key node $1` || return 1
     [ -f "$KEY" ] && sname=`$SSH -i "$KEY" -o StrictHostKeyChecking=no -o ConnectionAttempts=1 -o ConnectTimeout=10 $1 hostname 2>/dev/null`
   fi
   [ `expr "$sname" : ".*[\"\t\s_,\.\']"` -ne 0 ] && unset sname

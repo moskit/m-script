@@ -112,7 +112,7 @@ case $where in
 
   ;;
   *)
-    echo "No idea how to find the key for $where"
+    echo "No idea how to find a key for $where" >&2
     exit 1
   ;;
 esac  

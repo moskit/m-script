@@ -68,7 +68,7 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
       time0=`date +"%s"`
       ip=${server%%|*}
       "$M_ROOT"/helpers/localips | grep -q "^$ip$" && continue
-      key=`"$M_ROOT"/helpers/find_key node $ip`
+      key=`"$M_ROOT"/helpers/find_key node $ip` || continue
       servername=`echo $server | cut -d'|' -f4`
       [ -d "$rpath/www/$monitor/$cld/$clustered_as/$servername" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$servername"
       (IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > "$M_TEMP/${ip}.${monitor}.remote.dash.list")
