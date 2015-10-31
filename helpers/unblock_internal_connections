@@ -222,7 +222,7 @@ for dserver in `cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:
   # we do not want to mess with super cluster unless it is our explicit target
   [ "_$DCLUSTER" == "_$SUPER_CLUSTER" ] && [ "_$DCLUSTER" != "_$cluster" ] && continue
   [ -n "$ip" ] && [ "_$IP" != "_$ip" ] && continue
-  KEY=`"$rpath"/find_key server $IP` || continue
+  KEY=`"$rpath"/find_key node $IP` || continue
   if [ -n "$region" ] ; then
     DREGION=`echo $dserver | cut -d'|' -f3`
     [ "_$DREGION" == "_$region" ] || continue
