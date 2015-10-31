@@ -92,8 +92,9 @@ function find_rsmemberrole() {
     rsmemberrole="|arbiter=${priority}=${votes}=${tags}"
   else
     slavedelay=`echo "$members" | grep "^${membernum}\/" | grep slaveDelay | cut -sd'|' -f2`
+    hidden=`echo "$members" | grep "^${membernum}\/" | grep hidden | cut -sd'|' -f2`
+    buildindexes=`echo "$members" | grep "^${membernum}\/" | grep buildIndexes | cut -sd'|' -f2`
     rsmemberrole="|slave=${hidden}=${slavedelay}=${buildindexes}=${priority}=${votes}=${tags}"
-    
   fi
 }
 
