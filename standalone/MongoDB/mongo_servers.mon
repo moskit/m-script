@@ -109,8 +109,9 @@ function collect_hosts() {
 
 function get_serverstatus() {
   serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
-  [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed -i 's|=|_prev=|'`
+  [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed 's|=|_prev=|'`
   echo "$serverstatus" > "$rpath/data/${cs}.dat"
+  echo "$serverstatus" | grep -q '^storageEngine=wiredTiger' && WT=true
   $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
   if [ -n "$rsstatusraw" ]; then
     RS=true
@@ -134,14 +135,8 @@ function get_serverstatus() {
 
 function get_mongosstatus() {
   serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.mongos.js" 2>/dev/null`
-  if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
-    sed -i "/$cs/d" "$rpath/mongo_mongos_servers.list"
-    rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
-  else
-    mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
-    [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
-    echo "$serverstatus" > "$rpath/data/${cs}.dat"
-  fi
+  [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed 's|=|_prev=|'`
+  echo "$serverstatus" > "$rpath/data/${cs}.dat"
   statusreport=`parse_data "$cs"`
   echo "$statusreport" > "$rpath/${cs}.report"
   reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
@@ -152,11 +147,10 @@ function parse_data() {
   lasttimeindex=`cat "$M_TEMP/${rcommand}.${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 210`
   echo $timeindexnow > "$M_TEMP/${rcommand}.${1}.lasttimeindex"
   timediff=`expr $timeindexnow - $lasttimeindex`
-  for d in `cat "$rpath/data/${1}.dat" "$rpath/data/${1}.dat.prev" 2>/dev/null` ; do
+  for d in `echo -e "$serverstatus\n$serverstatusprev"` ; do
     eval "`echo "$d"`"
   done
   echo -e "Server $1 ** `date`\n-----------------------------------------\n\n Status\n"
-  echo "Status:   $status" | sed 's|1|OK|;s|0|Error|'
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
   
@@ -222,7 +216,7 @@ function parse_data() {
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
-    dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory, rsstate, rsconfigVersion, rlag, cacheMaxSizeMB, inTheCacheMB) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}', '${rsstate-0}', '${rsconfigVersion-0}', '${rlag-0}', '${cacheMaxSizeMB-0}', '${inTheCacheMB-0}')" 2>>"$LOG"
+    dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory, rsstate, rsconfigVersion, rlag, cacheMaxSizeMB, inTheCacheMB) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}', '${rsstate-0}', '${rsconfigVersion-0}', '${rlag-0}', '${cacheMaxSizeMB-0}', '${inTheCacheMB-0}')" 2>>"$LOG"
   fi
   if [ "_$ENABLE_CHECKS" == "_1" ]; then
     check_results "memRes|Resident memory (MB)|real,memVir|Virtual memory (MB)|real,memMapped|Mapped memory (MB)|real,memMappedWJournal|Mapped memory incl. journal (MB)|real,infoHeapUsage|Heap usage (MB)|real,connCurrent|Connections used|integer,connAvailable|Connections available|integer,bw_in|Bandwidth inbound (MB/sec)|real,bw_out|Bandwidth outbound (MB/sec)|real,net_reqps|Network requests / sec|integer,ops_insertsps|Inserts / sec|integer,ops_queriesps|Queries / sec|integer,ops_updatesps|Updates / sec|integer,ops_deletesps|Deletes / sec|integer,ops_getmoresps|Getmores / sec|integer,ops_commandsps|Commands / sec|integer,ops_totalqps|QPS total / sec|integer,lockTime|Global lock time (%)|real,lockQueueTotal|Lock queue total|integer,lockQueueReaders|Lock queue readers|integer,lockQueueWriters|Lock queue writers|integer,lockClientsTotal|Lock clients total|integer,lockClientsReaders|Lock clients readers|integer,lockClientsWriters|Lock clients writers|integer,recstatsPageFaults|Page faults|integer,recstatsNotInMemory|Records not in memory|integer,rlag|Replication Lag|integer,cacheMaxSizeMB|Cache Size Configured (MB)|integer,inTheCacheMB|Cache Used (MB)|integer"

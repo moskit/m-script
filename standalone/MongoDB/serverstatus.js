@@ -7,7 +7,7 @@ if (objStatus.ok == 1) {
   print('memMapped=' + objStatus.mem.mapped);
   print('memMappedWJournal=' + objStatus.mem.mappedWithJournal);
   print('infoHeapUsage=' + objStatus.extra_info.heap_usage_bytes);
-
+  print('storageEngine=' + objStatus.storageEngine.name);
   print('connCurrent=' + objStatus.connections.current);
   print('connAvailable=' + objStatus.connections.available);
   if (objStatus.network) {
