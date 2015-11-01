@@ -30,21 +30,21 @@ print_mongo_server() {
 
   if [ "_${roleprop[0]}" == "_slave" ]; then
     if [ -n "${roleprop[2]}" ]; then
-    if [ ${roleprop[2]} -ne 0 ] 2>/dev/null; then # it is a delayed secondary
-      if [ "_${roleprop[1]}" == "_true" ]; then # it is hidden
-        if [ ${roleprop[4]} -ne 0 ]; then # priority is not 0
-          roleerror="\nERROR: priority is not 0 for a delayed secondary\n"
+      if [ ${roleprop[2]} -ne 0 ] 2>/dev/null; then # it is a delayed secondary
+        if [ "_${roleprop[1]}" == "_true" ]; then # it is hidden
+          if [ ${roleprop[4]} -ne 0 ]; then # priority is not 0
+            roleerror="\nERROR: priority is not 0 for a delayed secondary\n"
+            roleerrorclass=" roleerror"
+          fi
+        else
+          roleerror="\n\nERROR: delayed secondary must be hidden"
           roleerrorclass=" roleerror"
         fi
+        roleind="${roleind}D"
       else
-        roleerror="\n\nERROR: delayed secondary must be hidden"
-        roleerrorclass=" roleerror"
-      fi
-      roleind="${roleind}D"
-    else
-      [ "_${roleprop[1]}" == "_true" ] && roleind="${roleind}H"
+        [ "_${roleprop[1]}" == "_true" ] && roleind="${roleind}H"
 
-    fi
+      fi
   else
         roleind="${roleind}`echo ${roleprop[1]} | cut -b 1 | sed 's|.|\U&|'`"
         roleerror="\n\nSTATUS: ${roleprop[1]}"

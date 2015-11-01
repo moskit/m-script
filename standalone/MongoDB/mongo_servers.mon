@@ -98,6 +98,10 @@ function find_rsmemberrole() {
   fi
 }
 
+function get_rsstate() {
+  
+}
+
 function collect_hosts() {
   for name in $@ ; do
     port=`echo "$name" | cut -sd':' -f2`
@@ -136,7 +140,6 @@ function get_mongosstatus() {
   statusreport=`parse_data "$cs"`
   echo "$statusreport" > "$rpath/${cs}.report"
   reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
-  echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/${cs}/${cs}_name.html"
 }
 
 function parse_data() {
@@ -389,6 +392,7 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_config_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
     get_serverstatus
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/$cs/${cs}_name.html"
   done &
 fi
 
@@ -396,6 +400,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
     get_mongosstatus
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/$cs/${cs}_name.html"
   done &
 fi
 
@@ -403,14 +408,15 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
     get_serverstatus
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
   done &
 fi
 
 if [ -e "$rpath/mongo_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
-    [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"
+    [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Servers/$cs"
     get_serverstatus
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
+    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Servers/$cs/${cs}_name.html"
   done &
 fi
 
