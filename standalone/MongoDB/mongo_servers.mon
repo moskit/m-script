@@ -98,10 +98,6 @@ function find_rsmemberrole() {
   fi
 }
 
-function get_rsstate() {
-  
-}
-
 function collect_hosts() {
   for name in $@ ; do
     port=`echo "$name" | cut -sd':' -f2`
@@ -113,14 +109,23 @@ function collect_hosts() {
 
 function get_serverstatus() {
   serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
-  if [ $? -ne 0 ] || [ -z "$serverstatus" ]; then
-    sed -i "/$cs/d" "$rpath/mongo_servers.list"
-    rm "$rpath/data/${cs}.dat.prev" 2>/dev/null
+  [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed -i 's|=|_prev=|'`
+  echo "$serverstatus" > "$rpath/data/${cs}.dat"
+  $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
+  if [ -n "$rsstatusraw" ]; then
+    RS=true
+    membern=`echo "$rsstatusraw" | grep name\"\|\"$cs\"$ | cut -d'/' -f1`
+    rshealth=`echo "$rsstatusraw" | grep ^$n\/ | grep \"health\"\| | cut -sd'|' -f2`
+    rsstate=`echo "$rsstatusraw" | grep ^$n\/ | grep \"state\"\| | cut -sd'|' -f2`
+    rsstateStr=`echo "$rsstatusraw" | grep ^$n\/ | grep \"stateStr\"\| | cut -sd'|' -f2`
+    rsoptime=`echo "$rsstatusraw" | grep ^$n\/ | grep \"optime\"\| | cut -sd'|' -f2`
+    rsoptime=`expr $rsoptime : ".*(\([0-9]*\)"`
+    $master && masteroptime=$rsoptime && rlag=0 || rlag=`expr $rsoptime - $masteroptime 2>/dev/null || unset rlag`
+    rspingMs=`echo "$rsstatusraw" | grep ^$n\/ | grep \"pingMs\"\| | cut -sd'|' -f2`
+    rsconfigVersion=`echo "$rsstatusraw" | grep ^$n\/ | grep \"configVersion\"\| | cut -sd'|' -f2`
+    echo -e "rshealth=$rshealth\nrsstate=$rsstate\nrsstateStr=$rsstateStr\nrlag=$rlag\nrspingMs=$rspingMs\nrsconfigVersion=$rsconfigVersion" >> "$rpath/data/${cs}.dat"
   else
-    mv "$rpath/data/${cs}.dat" "$rpath/data/${cs}.dat.prev" 2>/dev/null
-    [ -e "$rpath/data/${cs}.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.dat.prev"
-    echo "$serverstatus" > "$rpath/data/${cs}.dat"
-    $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
+    RS=false
   fi
   statusreport=`parse_data "$cs"`
   echo "$statusreport" > "$rpath/${cs}.report"
@@ -212,11 +217,22 @@ function parse_data() {
   
   echo -e "Query               $ops_queriesps\nInsert              $ops_insertsps\nUpdate              $ops_updatesps\nDelete              $ops_deletesps\nGetmore              $ops_getmoresps\nCommand              $ops_commandsps\nTotal                $ops_totalqps"
   
-  if [ "_$SQLITE3" == "_1" ] ; then
-    dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}')" 2>>"$LOG"
-  fi
-  if [ "_$ENABLE_CHECKS" == "_1" ]; then
-    check_results "memRes|Resident memory (MB)|real,memVir|Virtual memory (MB)|real,memMapped|Mapped memory (MB)|real,memMappedWJournal|Mapped memory incl. journal (MB)|real,infoHeapUsage|Heap usage (MB)|real,connCurrent|Connections used|integer,connAvailable|Connections available|integer,bw_in|Bandwidth inbound (MB/sec)|real,bw_out|Bandwidth outbound (MB/sec)|real,net_reqps|Network requests / sec|integer,ops_insertsps|Inserts / sec|integer,ops_queriesps|Queries / sec|integer,ops_updatesps|Updates / sec|integer,ops_deletesps|Deletes / sec|integer,ops_getmoresps|Getmores / sec|integer,ops_commandsps|Commands / sec|integer,ops_totalqps|QPS total / sec|integer,lockTime|Global lock time (%)|real,lockQueueTotal|Lock queue total|integer,lockQueueReaders|Lock queue readers|integer,lockQueueWriters|Lock queue writers|integer,lockClientsTotal|Lock clients total|integer,lockClientsReaders|Lock clients readers|integer,lockClientsWriters|Lock clients writers|integer,recstatsPageFaults|Page faults|integer,recstatsNotInMemory|Records not in memory|integer"
+  if $RS ; then
+    echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateString\nReplication Lag               $rlag"
+    
+    if [ "_$SQLITE3" == "_1" ] ; then
+      dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory, rsstate, rsconfigVersion, rlag) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}', '${rsstate-0}', '${rsconfigVersion-0}', '${rlag-0}')" 2>>"$LOG"
+    fi
+    if [ "_$ENABLE_CHECKS" == "_1" ]; then
+      check_results "memRes|Resident memory (MB)|real,memVir|Virtual memory (MB)|real,memMapped|Mapped memory (MB)|real,memMappedWJournal|Mapped memory incl. journal (MB)|real,infoHeapUsage|Heap usage (MB)|real,connCurrent|Connections used|integer,connAvailable|Connections available|integer,bw_in|Bandwidth inbound (MB/sec)|real,bw_out|Bandwidth outbound (MB/sec)|real,net_reqps|Network requests / sec|integer,ops_insertsps|Inserts / sec|integer,ops_queriesps|Queries / sec|integer,ops_updatesps|Updates / sec|integer,ops_deletesps|Deletes / sec|integer,ops_getmoresps|Getmores / sec|integer,ops_commandsps|Commands / sec|integer,ops_totalqps|QPS total / sec|integer,lockTime|Global lock time (%)|real,lockQueueTotal|Lock queue total|integer,lockQueueReaders|Lock queue readers|integer,lockQueueWriters|Lock queue writers|integer,lockClientsTotal|Lock clients total|integer,lockClientsReaders|Lock clients readers|integer,lockClientsWriters|Lock clients writers|integer,recstatsPageFaults|Page faults|integer,recstatsNotInMemory|Records not in memory|integer,rlag|Replication Lag|integer"
+    fi
+  else
+    if [ "_$SQLITE3" == "_1" ] ; then
+      dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, status, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '${status}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}')" 2>>"$LOG"
+    fi
+    if [ "_$ENABLE_CHECKS" == "_1" ]; then
+      check_results "memRes|Resident memory (MB)|real,memVir|Virtual memory (MB)|real,memMapped|Mapped memory (MB)|real,memMappedWJournal|Mapped memory incl. journal (MB)|real,infoHeapUsage|Heap usage (MB)|real,connCurrent|Connections used|integer,connAvailable|Connections available|integer,bw_in|Bandwidth inbound (MB/sec)|real,bw_out|Bandwidth outbound (MB/sec)|real,net_reqps|Network requests / sec|integer,ops_insertsps|Inserts / sec|integer,ops_queriesps|Queries / sec|integer,ops_updatesps|Updates / sec|integer,ops_deletesps|Deletes / sec|integer,ops_getmoresps|Getmores / sec|integer,ops_commandsps|Commands / sec|integer,ops_totalqps|QPS total / sec|integer,lockTime|Global lock time (%)|real,lockQueueTotal|Lock queue total|integer,lockQueueReaders|Lock queue readers|integer,lockQueueWriters|Lock queue writers|integer,lockClientsTotal|Lock clients total|integer,lockClientsReaders|Lock clients readers|integer,lockClientsWriters|Lock clients writers|integer,recstatsPageFaults|Page faults|integer,recstatsNotInMemory|Records not in memory|integer"
+    fi
   fi
   unset status version uptime memRes memVir memMapped memMappedWJournal infoHeapUsage connCurrent connAvailable bw_in bw_out net_reqps ops_insertsps ops_queriesps ops_updatesps ops_deletesps ops_getmoresps ops_commandsps ops_totalqps lockRatio lockTime lockTime_prev lockQueueTotal lockQueueReaders lockQueueWriters lockClientsTotal lockClientsReaders lockClientsWriters recstatsPageFaults recstatsNotInMemory
 }
@@ -389,7 +405,7 @@ fi
 # Data processing
 
 if [ -e "$rpath/mongo_config_servers.list" ] ; then
-  for cs in `cat "$rpath/mongo_config_servers.list" | cut -s -d'|' -f1` ; do
+  for cs in `cat "$rpath/mongo_config_servers.list" | cut -sd'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
     get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/$cs/${cs}_name.html"
@@ -397,7 +413,7 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
 fi
 
 if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
-  for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -s -d'|' -f1` ; do
+  for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -sd'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
     get_mongosstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/$cs/${cs}_name.html"
@@ -405,19 +421,59 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
 fi
 
 if [ -e "$rpath/mongo_shards.list" ] ; then
-  for cs in `cat "$rpath/mongo_shards.list" | cut -s -d'|' -f1` ; do
-    [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
-    get_serverstatus
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
-  done &
+  ismaster=false
+  masters=`cat "$rpath/mongo_shards.list" | grep \|master= | cut -sd'|' -f1,3`
+  if [ -n "$masters" ]; then
+    for csm in $masters ; do
+      cs=${csm%|*}
+      csrs=${csm#*|}
+      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | lib/json2txt)`
+      master=true
+      if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
+      get_serverstatus
+      echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
+      master=false
+      for cs in `cat "$rpath/mongo_shards.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$`; do
+        if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
+        get_serverstatus
+        echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
+      done
+    done &
+  else
+    for cs in `cat "$rpath/mongo_shards.list" | cut -sd'|' -f1`; do
+      if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
+      get_serverstatus
+      echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
+    done &
+  fi
 fi
 
 if [ -e "$rpath/mongo_servers.list" ] ; then
-  for cs in `cat "$rpath/mongo_servers.list" | cut -s -d'|' -f1` ; do
-    [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Servers/$cs"
-    get_serverstatus
-    echo "$reporthtml" > "$M_ROOT/www/MongoDB/Servers/$cs/${cs}_name.html"
-  done &
+  ismaster=false
+  masters=`cat "$rpath/mongo_servers.list" | grep \|master= | cut -sd'|' -f1,3`
+  if [ -n "$masters" ]; then
+    for csm in $masters ; do
+      cs=${csm%|*}
+      csrs=${csm#*|}
+      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | lib/json2txt)`
+      master=true
+      if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
+      get_serverstatus
+      echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
+      master=false
+      for cs in `cat "$rpath/mongo_servers.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$`; do
+        if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
+        get_serverstatus
+        echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
+      done
+    done &
+  else
+    for cs in `cat "$rpath/mongo_servers.list" | cut -sd'|' -f1`; do
+      if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
+      get_serverstatus
+      echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
+    done &
+  fi
 fi
 
 ### Cleanup. Note that it removes all old files from data folder, including
