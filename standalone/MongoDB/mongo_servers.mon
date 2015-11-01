@@ -433,7 +433,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
       get_serverstatus
       echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
       master=false
-      for cs in `cat "$rpath/mongo_shards.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$`; do
+      for cs in `cat "$rpath/mongo_shards.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$ | cut -sd'|' -f1`; do
         if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
         get_serverstatus
         echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
