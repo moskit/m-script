@@ -118,7 +118,7 @@ function get_serverstatus() {
     n=`echo "$rsstatusraw" | grep name\"\|\"$cs\"$ | cut -d'/' -f1`
     rshealth=`echo "$rsstatusraw" | grep ^$n\/ | grep \"health\"\| | cut -sd'|' -f2`
     rsstate=`echo "$rsstatusraw" | grep ^$n\/ | grep \"state\"\| | cut -sd'|' -f2`
-    rsstateStr=`echo "$rsstatusraw" | grep ^$n\/ | grep \"stateStr\"\| | cut -sd'|' -f2 | tr '(' '"' | tr ')' '"'`
+    rsstateStr=`echo "$rsstatusraw" | grep ^$n\/ | grep \"stateStr\"\| | cut -sd'|' -f2 | tr -d '()'`
     rsoptime=`echo "$rsstatusraw" | grep ^$n\/ | grep \"optime\"\| | cut -sd'|' -f2`
     rsoptime=`expr $rsoptime : ".*(\([0-9]*\)"`
     $master && masteroptime=$rsoptime && rlag=0 || rlag=`expr $masteroptime - $rsoptime 2>/dev/null || unset rlag`
@@ -147,9 +147,12 @@ function parse_data() {
   lasttimeindex=`cat "$M_TEMP/${rcommand}.${1}.lasttimeindex" 2>/dev/null | grep -v warning` || lasttimeindex=`expr $timeindexnow - $FREQ` || lasttimeindex=`expr $timeindexnow - 210`
   echo $timeindexnow > "$M_TEMP/${rcommand}.${1}.lasttimeindex"
   timediff=`expr $timeindexnow - $lasttimeindex`
+  IFS='
+'
   for d in `echo -e "$serverstatus\n$serverstatusprev"` ; do
     eval "`echo "$d"`"
   done
+  IFS=$IFSORG
   echo -e "Server $1 ** `date`\n-----------------------------------------\n\n Status\n"
   echo "Uptime:   since `date -d "-$uptime sec"`" | sed 's|  | |g'
   echo -e "\n Memory\n\nResident (MB):   ${memRes-0}\nVirtual (MB):   ${memVir-0}\nMapped (MB):   ${memMapped-0}\nMapped with journal (MB):   ${memMappedWJournal-0}\nHeap usage (MB):   `expr ${infoHeapUsage-0} / 1048576`\n\n Network\n\nCurrent connections:   ${connCurrent-0}\nAvailable connections:   ${connAvailable-0}"
