@@ -114,7 +114,6 @@ function get_serverstatus() {
   echo "$serverstatus" | grep -q '^storageEngine=wiredTiger' && WT=true
   $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
   if [ -n "$rsstatusraw" ]; then
-    RS=true
     n=`echo "$rsstatusraw" | grep name\"\|\"$cs\"$ | cut -d'/' -f1`
     rshealth=`echo "$rsstatusraw" | grep ^$n\/ | grep \"health\"\| | cut -sd'|' -f2`
     rsstate=`echo "$rsstatusraw" | grep ^$n\/ | grep \"state\"\| | cut -sd'|' -f2`
@@ -125,12 +124,11 @@ function get_serverstatus() {
     rspingMs=`echo "$rsstatusraw" | grep ^$n\/ | grep \"pingMs\"\| | cut -sd'|' -f2`
     rsconfigVersion=`echo "$rsstatusraw" | grep ^$n\/ | grep \"configVersion\"\| | cut -sd'|' -f2`
     echo -e "rshealth=$rshealth\nrsstate=$rsstate\nrsstateStr=$rsstateStr\nrlag=$rlag\nrspingMs=$rspingMs\nrsconfigVersion=$rsconfigVersion" >> "$rpath/data/${cs}.dat"
-  else
-    RS=false
   fi
   statusreport=`parse_data "$cs"`
   echo "$statusreport" > "$rpath/${cs}.report"
   reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
+  unset rsstatusraw rshealth rsstate rsstateStr rsoptime master rspingMs rsconfigVersion
 }
 
 function get_mongosstatus() {
@@ -217,7 +215,8 @@ function parse_data() {
   if $RS ; then
     echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
     [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member status changed: was $rsstate_prev"
-    [ "_$rshealth" != "_1" ] && echo -e "<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n"
+    [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
+    [ "_$rshealth" != "_1" ] && echo -e "\n<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n\n"
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
@@ -397,6 +396,8 @@ fi
 
 # Data processing
 
+RS=false
+
 if [ -e "$rpath/mongo_config_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_config_servers.list" | cut -sd'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
@@ -417,6 +418,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
   ismaster=false
   masters=`cat "$rpath/mongo_shards.list" | grep \|master= | cut -sd'|' -f1,3`
   if [ -n "$masters" ]; then
+    RS=true
     for csm in $masters ; do
       cs=${csm%|*}
       csrs=${csm#*|}
@@ -432,7 +434,9 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
         echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
       done
     done &
+    RS=false
   else
+    RS=false
     for cs in `cat "$rpath/mongo_shards.list" | cut -sd'|' -f1`; do
       if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
       get_serverstatus
@@ -445,6 +449,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
   ismaster=false
   masters=`cat "$rpath/mongo_servers.list" | grep \|master= | cut -sd'|' -f1,3`
   if [ -n "$masters" ]; then
+    RS=true
     for csm in $masters ; do
       cs=${csm%|*}
       csrs=${csm#*|}
@@ -460,7 +465,9 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
         echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
       done
     done &
+    RS=false
   else
+    RS=false
     for cs in `cat "$rpath/mongo_servers.list" | cut -sd'|' -f1`; do
       if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
       get_serverstatus
