@@ -70,7 +70,7 @@ start)
       if [ -f "$rpath/mongoose" ]; then
         MG="$rpath/mongoose"
       else
-        echo -e "Error\nMongoose is enabled in $rpath/conf/mon.conf but not found"
+        echo -e "Error\nHTTP is enabled in $rpath/conf/mon.conf but not found"
         exit 1
       fi
     fi
@@ -82,7 +82,7 @@ start)
     echo $! > $mgpidfile
     if [[ $succ -eq 0 ]]; then
       echo "done"
-      echo "Mongoose server started" >> "$rpath/monitoring.log"
+      echo "HTTP server started" >> "$rpath/monitoring.log"
     else
       echo "error"
     fi
@@ -196,9 +196,9 @@ stop)
       [ $? -ne 0 ] && echo "ERROR" && exit 1
       sleep 3
       for ((i=0; i<5; i++)); do
-        [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "Mongoose server stopped" >> "$rpath/monitoring.log" && break || sleep 3
+        [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "HTTP server stopped" >> "$rpath/monitoring.log" && break || sleep 3
       done
-      [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "Mongoose server has been killed the hard way" >> "$rpath/monitoring.log"
+      [ -d /proc/$pid ] && kill -6 $pid && rm -f $mgpidfile && echo "done" && echo "HTTP server has been killed the hard way" >> "$rpath/monitoring.log"
     else
       echo "$mgpidfile not found!"
     fi

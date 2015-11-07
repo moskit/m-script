@@ -128,7 +128,7 @@ function get_serverstatus() {
   statusreport=`parse_data "$cs"`
   echo "$statusreport" > "$rpath/${cs}.report"
   reporthtml=`"$M_ROOT/lib"/txt2html "$rpath/${cs}.report"`
-  unset rsstatusraw rshealth rsstate rsstateStr rsoptime master rspingMs rsconfigVersion
+  unset rshealth rsstate rsstateStr rsoptime master rspingMs rsconfigVersion
 }
 
 function get_mongosstatus() {
@@ -214,9 +214,9 @@ function parse_data() {
   
   if $RS ; then
     echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
-    [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member status changed: was $rsstate_prev"
-    [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
-    [ "_$rshealth" != "_1" ] && echo -e "\n<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n\n"
+    [ -n "$rsstate_prev" ] && [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member state changed: was $rsstate_prev now $rsstate"
+    [ -n "$rsconfigVersion" ] && [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
+    [ -n "$rshealth" ] && [ "_$rshealth" != "_1" ] && echo -e "\n<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n\n"
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
@@ -422,7 +422,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     for csm in $masters ; do
       cs=${csm%|*}
       csrs=${csm#*|}
-      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | lib/json2txt)`
+      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT"/lib/json2txt)`
       master=true
       if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
       get_serverstatus
