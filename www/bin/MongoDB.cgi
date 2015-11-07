@@ -43,13 +43,8 @@ print_mongo_server() {
         roleind="${roleind}D"
       else
         [ "_${roleprop[1]}" == "_true" ] && roleind="${roleind}H"
-
       fi
-  else
-        roleind="${roleind}`echo ${roleprop[1]} | cut -b 1 | sed 's|.|\U&|'`"
-        roleerror="\n\nSTATUS: ${roleprop[1]}"
-        roleerrorclass=" roleerror"
-      fi    
+    fi
     local roletitle="`echo -e "slave\n\nHidden: ${roleprop[1]}\nDelay: ${roleprop[2]}\nIndexes: ${roleprop[3]}\nPriority: ${roleprop[4]}\nVotes: ${roleprop[5]}\nTags: ${roleprop[6]}${roleerror}"`"
   else
     local roletitle="`echo -e "${roleprop[0]}\n\nPriority: ${roleprop[1]}\nVotes: ${roleprop[2]}\nTags: ${roleprop[3]}"`"

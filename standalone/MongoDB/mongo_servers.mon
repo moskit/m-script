@@ -215,7 +215,9 @@ function parse_data() {
   echo -e "Query               $ops_queriesps\nInsert              $ops_insertsps\nUpdate              $ops_updatesps\nDelete              $ops_deletesps\nGetmore              $ops_getmoresps\nCommand              $ops_commandsps\nTotal                $ops_totalqps"
   
   if $RS ; then
-    echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateString\nReplication Lag               $rlag"
+    echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
+    [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member status changed: was $rsstate_prev"
+    [ "_$rshealth" != "_1" ] && echo "<***> Member failure detected! Health status is $rshealth (should be 1)"
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
@@ -286,44 +288,43 @@ else
   
   ## Collecting servers list
   [ -f "$M_TEMP/mongo_servers.list" ] && rm -f "$M_TEMP/mongo_servers.list"
-  # For hosts from mongo_servers.conf
+  IFS='
+'
   for mongohost in $configips ; do
     mongoport=`echo "$mongohost" | cut -sd':' -f2`
     [ -z "$mongoport" ] && mongoport=$defaultport
     mongohost="${mongohost%:*}"
-    # Is it a part of a replica set?
-    replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id"`
-    if [ $? -eq 0 ] ; then
-      find_rsmemberrole "${mongohost}:${mongoport}"
+    mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf().members.forEach(function(m){ print(m.host) })"` )
+    
+    for ((i=0; i<${#mongohosts1[*]}; i++)); do
+      mongohost1=${mongohosts1[$i]}
+      mongoport=${mongohost1#*:}
+      mongohost=${mongohost1%%:*}
+      replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this mongo
+      [ -z "$master" ] && master=`find_master "${mongohost}:${mongoport}"`
+      [ -z "$master" ] && mongoerror+=("RS member ${mongohost}:${mongoport} has lost its master\n") && continue
+      # RS members
+      [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
+    done
+    if [ -n "$members" ]; then
+      for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
+        find_rsmemberrole "$member"
+        memberhost=`ip_to_name ${member%%:*}`
+        memberport=${member#*:}
+        mongolist+=("${memberhost}:${memberport}|$mongo|${replicaset}${rsmemberrole}")
+      done
     else
-      unset replicaset rsmemberrole
+      mongoerror+=("Replicaset members not found")
+      continue
     fi
-    echo "${mongohost}:${mongoport}||${replicaset}${rsmemberrole}" >> "$M_TEMP/mongo_servers.list"
+    unset master members
   done
+  echo -e ${mongolist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_servers.list"
   
-  # Getting hosts list for every replica set found
-  for rs in `cat "$M_TEMP/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
-    for rshost in `cat "$M_TEMP/mongo_servers.list" | grep "|$rs|" | cut -d'|' -f1` ; do
-      replicahosts=`$MONGO $AUTH "$rshost/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG"`
-      res=$?
-      replicahosts=`echo "$replicahosts" | "$M_ROOT/lib/json2txt" | grep ^[0-9]*\/\"host\" | cut -d'|' -f2 | tr -d '"'`
-      [ $res -eq 0 ] && break || unset replicahosts
-    done
-    replicalist=()
-    for replicahost in $replicahosts ; do
-      [ `grep -c "^${replicahost}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
-      rname=`ip_to_name "$replicahost"`
-      [ `grep -c "^${rname}:${replicahost##*:}|" "$M_TEMP/mongo_servers.list"` -gt 0 ] && continue
-      find_rsmemberrole "$replicahost"
-      replicalist+=("${rname}:${replicahost##*:}||${rs}${rsmemberrole}")
-    done
-    echo -e ${replicalist[*]} | tr ' ' '\n' >> "$M_TEMP/mongo_servers.list"
-  done
-
   if [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ]; then
     $DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list" || mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
   fi
-fi
+  IFS=$IFSORG
 
 for configip in $configips ; do
   mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({\"ping\" : { \\$gt : "$lastping" }}, {_id : 1}).forEach(printjson)"`
