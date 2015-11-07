@@ -217,7 +217,7 @@ function parse_data() {
   if $RS ; then
     echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
     [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member status changed: was $rsstate_prev"
-    [ "_$rshealth" != "_1" ] && echo "<***> Member failure detected! Health status is $rshealth (should be 1)"
+    [ "_$rshealth" != "_1" ] && echo -e "<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n"
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
@@ -325,6 +325,7 @@ else
     $DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list" || mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
   fi
   IFS=$IFSORG
+fi
 
 for configip in $configips ; do
   mongoses=`$MONGO $AUTH "$configip/admin" --quiet --eval "db = db.getSiblingDB(\"config\"); db.mongos.find({\"ping\" : { \\$gt : "$lastping" }}, {_id : 1}).forEach(printjson)"`
