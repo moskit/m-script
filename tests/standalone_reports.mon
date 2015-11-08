@@ -24,20 +24,22 @@ source "${0%.mon}.conf"
 maxrepage=`expr $FREQ \* 2 || echo 400`
 
 for sa in `echo "$SATESTS" | tr ',' ' '` ; do
-  safolder=`echo "$sa" | cut -sd'|' -f1`
-  sareplist=`find "$M_ROOT/standalone/$sa" -name "*.report" -mmin -$maxrepage -prune`
+  safolder=`echo "$sa" | cut -d'|' -f1`
+  sareplist=`find "$M_ROOT/standalone/$safolder" -name "*.report" -mmin -$maxrepage -prune`
   [ `echo "$sareplist" | wc -l` -eq 0 ] && continue
   indflag=`echo "$sa" | cut -sd'|' -f2`
   # make the standalone monitor print at least one line with indicator
   # (<OK>,<*>,<**>,<***>) to make this monitor print the whole output to its
   # report (see comment in conf file if you need indicator lines only)
   if [ -n "$indflag" ]; then
-    echo -e "\n$sa\n---------------\n\n"
+    echo -e "\n$safolder\n---------------\n\n"
     for sarep in $sareplist ; do
       sareport=`cat $sarep 2>/dev/null`
       if echo "$sareport" | grep -qE '<\*|<OK>' ; then
-        echo "  ${sarep##*/}"
-        echo "$sareport" | grep -E '<\*|<OK>|^Server|^\-\-\-'
+        echo -e "  ${sarep##*/}\n"
+        echo "$sareport" | grep -E '^Server|^\-\-\-'
+        echo
+        echo "$sareport" | grep -E '<\*|<OK>'
       fi
     done
   else
