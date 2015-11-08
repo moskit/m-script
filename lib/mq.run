@@ -36,9 +36,9 @@ do
   s_optname=${s_option%%=*}
   s_optname=`echo $s_optname | tr -d '-'`
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && s_optarg="yes"
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=1
   done
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
@@ -74,6 +74,7 @@ job_allowed() {
 
 [ -z "$mode" ] && mode="distinct"
 [ -z "$limit" ] && limit=5
+
 newfile=false
 [ -f "$M_ROOT/actions.q" ] || newfile=true
 

@@ -88,17 +88,31 @@ for ns in $sharded ; do
     [ -z "$shardhost" ] && echo "Host not found for shard $shard" && continue
 
     $MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.chunks.find({\"shard\" : \"$shard\", \"ns\" : \"$ns\"}).forEach(function(c) {print('min : ' + tojson(c.min) + ', max : ' + tojson(c.max))})" | while read MINMAX ; do
-      # echo "$MINMAX" >&2
+      #echo "$MINMAX" >&2
       MIN=`expr "$MINMAX" : "^min\ :\ \(\{.*\}\),"`
       MAX=`expr "$MINMAX" : ".*max\ :\ \(\{.*\}\)"`
+      #MIN=`echo "$MIN" | sed 's|"|\\\"|g'`
+      #MAX=`echo "$MAX" | sed 's|"|\\\"|g'`
       SIZE=`$MONGO $AUTH "$shardhost/admin" --quiet --eval "printjson(db.runCommand({ dataSize: \"${ns}\", keyPattern: ${keypattern}, $MINMAX }))" | "$M_ROOT"/lib/json2txt | grep '"size"|' | cut -sd'|' -f2`
       echo "$ns|$MIN|$MAX|$SIZE" >> "$rpath/${shard}.${ns}.chunks"
       if $MERGE_EMPTY_CHUNKS ; then
         if [ -n "$mongos" ]; then
           if [ "_$MIN" == "_$max" ] && ([ $size -eq 0 ] || [ $SIZE -eq 0 ]); then
             log "merging chunks ($shard/$ns): << $min , $max >> + << $MIN , $MAX >> using mongos: $mongos"
-            mergeres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { mergeChunks : \"$ns\" , bounds : [ $min , $MAX ] } ))"`
-            log "$mergeres"
+            for ((i=0; i<10; i++)); do
+              mergeres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { mergeChunks : \"$ns\" , bounds : [ $min , $MAX ] } ))"`
+              log "$mergeres"
+              if `echo "$mergeres" | grep -q \"errmsg\"` ; then
+                if `echo "$mergeres" | grep -q ' lock '` ; then
+                  log "waiting for lock"
+                  sleep 10
+                else
+                  break
+                fi
+              else
+                break
+              fi
+            done
             size=`expr $size + $SIZE`
           else
             min=$MIN
@@ -112,8 +126,20 @@ for ns in $sharded ; do
         if [ `echo "$sizepercent > $LARGE_CHUNK_DEF" | bc` -eq 1 ]; then
           if [ -n "$mongos" ]; then
             log "splitting chunk ($shard/$ns): << $MIN , $MAX >> (size: ${SIZE}, ${sizepercent}% of max) using mongos: $mongos"
-            splitres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { split : \"$ns\" , bounds : [ $MIN , $MAX ] } ))"`
-            log "$splitres"
+            for ((i=0; i<10; i++)); do
+              splitres=`$MONGO $AUTH "$mongos"/admin --quiet --eval "printjson(db.runCommand( { split : \"$ns\" , bounds : [ $MIN , $MAX ] } ))"`
+              log "$splitres"
+              if `echo "$splitres" | grep -q \"errmsg\"` ; then
+                if `echo "$splitres" | grep -q ' lock '` ; then
+                  log "waiting for lock"
+                  sleep 10
+                else
+                  break
+                fi
+              else
+                break
+              fi
+            done
           fi
         fi
       fi
