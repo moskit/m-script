@@ -120,7 +120,7 @@ function get_serverstatus() {
     rsstateStr=`echo "$rsstatusraw" | grep ^$n\/ | grep \"stateStr\"\| | cut -sd'|' -f2 | tr -d '()'`
     rsoptime=`echo "$rsstatusraw" | grep ^$n\/ | grep \"optime\"\| | cut -sd'|' -f2`
     rsoptime=`expr $rsoptime : ".*(\([0-9]*\)"`
-    $master && masteroptime=$rsoptime && rlag=0 || rlag=`expr $masteroptime - $rsoptime 2>/dev/null || unset rlag`
+    $ismaster && masteroptime=$rsoptime && rlag=0 || rlag=`expr $masteroptime - $rsoptime 2>/dev/null || unset rlag`
     rspingMs=`echo "$rsstatusraw" | grep ^$n\/ | grep \"pingMs\"\| | cut -sd'|' -f2`
     rsconfigVersion=`echo "$rsstatusraw" | grep ^$n\/ | grep \"configVersion\"\| | cut -sd'|' -f2`
     echo -e "rshealth=$rshealth\nrsstate=$rsstate\nrsstateStr=$rsstateStr\nrlag=$rlag\nrspingMs=$rspingMs\nrsconfigVersion=$rsconfigVersion" >> "$rpath/data/${cs}.dat"
@@ -215,8 +215,8 @@ function parse_data() {
   if $RS ; then
     echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
     [ -n "$rsstate_prev" ] && [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member state changed: was $rsstate_prev now $rsstate\n"
-    [ -n "$rsconfigVersion" ] && [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
-    [ -n "$rshealth" ] && [ "_$rshealth" != "_1" ] && echo -e "\n<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n\n"
+    [ -n "$rsconfigVersion_prev" ] && [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
+    [ -n "$rshealth_prev" ] && [ "_$rshealth" != "_1" ] && echo -e "\n<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n\n"
   fi
   
   if [ "_$SQLITE3" == "_1" ] ; then
@@ -423,11 +423,11 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
       cs=${csm%|*}
       csrs=${csm#*|}
       rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT"/lib/json2txt)`
-      master=true
+      ismaster=true
       if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
       get_serverstatus
       echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
-      master=false
+      ismaster=false
       for cs in `cat "$rpath/mongo_shards.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$ | cut -sd'|' -f1`; do
         if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
         get_serverstatus
@@ -454,11 +454,11 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
       cs=${csm%|*}
       csrs=${csm#*|}
       rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | lib/json2txt)`
-      master=true
+      ismaster=true
       if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
       get_serverstatus
       echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
-      master=false
+      ismaster=false
       for cs in `cat "$rpath/mongo_servers.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$`; do
         if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
         get_serverstatus
