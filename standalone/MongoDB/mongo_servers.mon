@@ -214,6 +214,8 @@ function parse_data() {
   
   if $RS ; then
     echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
+    rdelay=`cat "$rpath/mongo_shards.list" "$rpath/mongo_servers.list" | grep "^$1|" | cut -sd'|' -f4 | cut -sd'=' -f3`
+    [ -n "$rlag" ] && rlag=`expr $rlag - $rdelay 2>/dev/null`
     [ -n "$rsstate_prev" ] && [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member state changed: was $rsstate_prev now $rsstate\n"
     [ -n "$rsconfigVersion_prev" ] && [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
     [ -n "$rshealth_prev" ] && [ "_$rshealth" != "_1" ] && echo -e "\n<***> Member failure detected! Health status is $rshealth (should be 1)\n<***> Status string: $rsstateStr\n\n"
