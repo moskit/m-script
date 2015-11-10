@@ -91,35 +91,35 @@ check_results() {
     case $vartype in
       real)
         if [ `echo "scale=2; $thr3 <= 0" | bc` -eq 1 ]; then
-          [ `echo "scale=2; -$val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `echo "scale=2; -$val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `echo "scale=2; -$val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `echo "scale=2; -$val >= $thr3" | bc 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=2; -$val >= $thr2" | bc 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=2; -$val >= $thr1" | bc 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
         else
-          [ `echo "scale=2; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `echo "scale=2; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `echo "scale=2; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val >= $thr3" | bc 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val >= $thr2" | bc 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=2; $val >= $thr1" | bc 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
         fi
         ;;
       real4)
         if [ `echo "scale=4; $thr3 <= 0" | bc` -eq 1 ]; then
-          [ `echo "scale=4; -$val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `echo "scale=4; -$val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `echo "scale=4; -$val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `echo "scale=4; -$val >= $thr3" | bc 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=4; -$val >= $thr2" | bc 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=4; -$val >= $thr1" | bc 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
         else
-          [ `echo "scale=4; $val >= $thr3" | bc` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `echo "scale=4; $val >= $thr2" | bc` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `echo "scale=4; $val >= $thr1" | bc` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val >= $thr3" | bc 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val >= $thr2" | bc 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `echo "scale=4; $val >= $thr1" | bc 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
         fi
         ;;
       integer)
         if [ `expr $thr3 \<= 0` -eq 1 ]; then
-          [ `expr -$val \>= $thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `expr -$val \>= $thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `expr -$val \>= $thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `expr -$val \>= $thr3 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `expr -$val \>= $thr2 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `expr -$val \>= $thr1 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
         else
-          [ `expr $val \>= $thr3` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `expr $val \>= $thr2` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `expr $val \>= $thr1` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr3 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr2 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr1 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
         fi
         ;;
     esac
