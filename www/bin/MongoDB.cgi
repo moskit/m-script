@@ -61,7 +61,8 @@ print_mongo_server() {
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
     echo "<div class=\"servername clickable\" id=\"${nodeid}_name\" onClick=\"showData('${nodeid}_name','/${scriptname}')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}${roleerrorclass}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
-    echo "<div class=\"status status_short clickable\" id=\"${nodeid}_http\" onclick=\"showURL('${nodeid}_http','http://${name}:${wport}','${scriptname}')\">HTTP<div id=\"data_${nodeid}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
+    
+    echo "<div class=\"status status_short clickable\" id=\"${nodeid}_rlag\" onclick=\"showDetails('${nodeid}_rlag','MongoDB/replicalag')\">${rlag}<div id=\"data_${nodeid}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
     if [ `echo "$report" | grep -c '\<***\>'` -eq 0 ] ; then
       echo "<div class=\"status status_short statusok clickable\" id=\"${nodeid}_status\" onclick=\"showDetails('${nodeid}_status','MongoDB/mongostatus')\">OK</div>"
@@ -115,6 +116,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/n
 elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
   clustername="MongoDB Servers"
   open_cluster "$clustername"
+  print_cluster_inline "Lag"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
@@ -138,6 +140,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc
 
   clustername="Shard Servers"
   open_cluster "$clustername"
+  print_cluster_inline "Lag"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"

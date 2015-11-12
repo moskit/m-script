@@ -15,7 +15,7 @@ for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type 
   [ -f "$M_ROOT/standalone/$saname/data/${db}.dat" ] || continue
   db_dat=`cat "$M_ROOT/standalone/$saname/data/${db}.dat"`
   total_ok=`echo "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
-  total_status=$([ "X$total_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
+  total_status=$([ "_$total_ok" == "_1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
   total_count=`echo "$db_dat" | grep ^0\/\"objects\"\| | cut -d'|' -f2`
   total_datasize=`echo "$db_dat" | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`
   total_storsize=`echo "$db_dat" | grep ^0\/\"storageSize\"\| | cut -d'|' -f2`
