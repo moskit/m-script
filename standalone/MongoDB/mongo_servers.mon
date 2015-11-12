@@ -488,7 +488,8 @@ timeshift=`cat "$M_TEMP/../timeshift" || echo 0`
 ccl=`expr $FREQ + $timeshift || echo 200`
 mmin=`expr $ccl \* 3 / 60 + 1`
 find "$rpath/data/" -mmin +$mmin -exec rm {} \;
-exit 0
+
+exit 10
 
 
 ### mongo localhost:27018/admin --quiet --eval "db.currentOp().inprog.forEach(function(d){ if(d.waitingForLock) print(d.op)})" | sort | uniq -c

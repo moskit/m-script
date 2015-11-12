@@ -195,7 +195,7 @@ stop)
       pid=`cat $mgpidfile|tail -1`
       printf "Stopping web interface (PID $pid)...       "
       kill -15 $pid
-      [ $? -ne 0 ] && echo "ERROR" && exit 1
+      [ $? -ne 0 ] && echo "ERROR"  # no need to exit here, we need restart to work
       sleep 3
       for ((i=0; i<5; i++)); do
         [ ! -d /proc/$pid ] && rm -f $mgpidfile && echo "done" && echo "HTTP server stopped" >> "$rpath/monitoring.log" && break || sleep 3

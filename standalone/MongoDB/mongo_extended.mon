@@ -185,3 +185,4 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
   done &
 fi
 
+exit 10

@@ -19,7 +19,7 @@ close_cluster
 
 for cloud in ${clouds[*]} ; do
   open_cluster "Cloud: $cloud" ; close_cluster_line
-  cat "$M_TEMP/cloud/$cloud/full.servers.list.html" 2>/dev/null
+  cat "$M_TEMP/cloud/$cloud/full.nodes.list.html" 2>/dev/null
   close_cluster
 done
 
