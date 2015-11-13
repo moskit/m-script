@@ -57,6 +57,7 @@ print_mongo_server() {
   [ -n "$port" ] && wport=`expr $port + 1000`
   report=`cat "$PWD/../../standalone/$scriptname/${name}:${port}.report" 2>/dev/null`
   rawdata=`cat "$PWD/../../standalone/$scriptname/data/${name}:${port}.dat" 2>/dev/null`
+  rlag=`echo "$rawdata" | grep ^rlag= | cut -sd'=' -f2`
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
