@@ -101,6 +101,7 @@ print_mongo_server() {
 IFS1=$IFS
 IFS='
 '
+Lag="Lag"
 if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
 
   clustername="Configuration Servers"
