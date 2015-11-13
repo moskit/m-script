@@ -45,8 +45,8 @@ print_page_title() {
   shift
   while [ -n "$1" ] ; do
     dfpptarg="$1"
-    dfpptid=$(echo "$1" | tr -d '<>/' | tr ' ' '_')
     dfppttitle=`echo "$dfpptarg" | cut -d'|' -f1`
+    dfpptid=$(echo "$dfppttitle" | tr ' ' '_')
     dfpptclass=`echo "$dfpptarg" | cut -sd'|' -f2`
     [ -z "$dfpptclass" ] && dfpptclass="status"
     if [ "_$dfppttitle" == "_-" ]; then
