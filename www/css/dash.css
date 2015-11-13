@@ -497,7 +497,7 @@ span.indent {
   display: inline-block;
 }
 
-.servername .status_short {
+.server .status_short {
   width: 46px;
   border-right: none;
   height: 100%;
