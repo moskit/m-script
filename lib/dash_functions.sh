@@ -40,11 +40,22 @@ EOF
 }
 
 print_page_title() {
+  # print_page_title "main title" "title1<|cssclass1>" "title2<|cssclass2>"...
   echo -e "<div class=\"dashtitle\">\n  <div class=\"server\">\n    <div class=\"servername\" id=\"title1\">${1}</div>"
   shift
   while [ -n "$1" ] ; do
+    dfpptarg="$1"
     dfpptid=$(echo "$1" | tr -d '<>/' | tr ' ' '_')
-    echo "<div class=\"status\" id=\"$dfpptid\"><b>${1}</b></div>"
+    dfppttitle=`echo "$dfpptarg" | cut -d'|' -f1`
+    dfpptclass=`echo "$dfpptarg" | cut -sd'|' -f2`
+    [ -z "$dfpptclass" ] && dfpptclass="status"
+    if [ "_$dfppttitle" == "_-" ]; then
+      echo "<div class=\"$dfpptclass\" id=\"$dfpptid\">&dash;</div>"
+      shift
+      continue
+    fi
+    dfpptcont=`eval echo \\$$dfppttitle`
+    echo "<div id=\"$dfpptid\" class=\"$dfpptclass\">${dfpptcont}</div>"
     shift
   done
   echo -e "  </div>\n</div>"

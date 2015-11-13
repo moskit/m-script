@@ -13,7 +13,7 @@ fi
 
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 if $WT ; then
-  print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Cache used / configured  (MB)"
+  print_page_title "host:port" "-|status_short" "Status|status_short" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Cache used / configured  (MB)"
 else
   print_page_title "host:port" "Status" "Memory Res/Virt (Mbytes)" "Connections Current/Available" "Operations (N/sec)" "Locks Current/Overall  (%)" "Not In RAM / Page Faults  (N/sec)"
 fi
@@ -118,7 +118,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/n
 elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null | wc -l` -gt 0 ] ; then
   clustername="MongoDB Servers"
   open_cluster "$clustername"
-  print_cluster_inline "Lag"
+  print_cluster_inline "Lag||status_short"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
@@ -142,7 +142,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc
 
   clustername="Shard Servers"
   open_cluster "$clustername"
-  print_cluster_inline "Lag"
+  print_cluster_inline "Lag||status_short"
   close_cluster_line
     for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
