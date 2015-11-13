@@ -61,7 +61,7 @@ open_cluster() {
 }
 
 print_cluster_inline() {
-  # print_cluster_inline "metric<|onclick><|style>" "metric2<|onclick2><|style2>" ...
+  # print_cluster_inline "metric<|onclick><|cssclass>" "metric2<|onclick2><|cssclass2>" ...
   while [ -n "$1" ] ; do
     dfpcistatusarg="$1"
     if [ "_$dfpcistatusarg" == "_-" ]; then
@@ -70,18 +70,18 @@ print_cluster_inline() {
       continue
     fi
     dfpcistatus=`echo "$dfpcistatusarg" | cut -d'|' -f1`
-    dfpcionclick=`echo "$dfpcistatusarg" | cut -s -d'|' -f2`
-    dfpcistyle=`echo "$dfpcistatusarg" | cut -s -d'|' -f3`
+    dfpcionclick=`echo "$dfpcistatusarg" | cut -sd'|' -f2`
+    dfpciclass=`echo "$dfpcistatusarg" | cut -sd'|' -f3`
     if [ -n "$dfpcionclick" ]; then
       classadded="clickable"
       onclick="onclick=\"showDetails('${dfolid}_$dfpcistatus','$dfpcionclick')\""
     else
       unset onclick classadded dfpcionclick
     fi
-    [ -n "$dfpistyle"] && style="style=\"$dfpistyle\"" || unset style
+    [ -z "$dfpciclass"] && dfpciclass="status" || unset style
     dfpcicont=`eval echo \\$$dfpcistatus`
     [ ${#dfpcicont} -gt 12 ] && dfpcicontalt=`echo -n "$dfpcicont" | cut -d'=' -f2 | tr -d '<>'` || unset dfpcicontalt
-    echo "<div id=\"${dfocid}_status\" class=\"status $classadded\" $onclick $style title=\"$dfpcicontalt\">${dfpcicont}</div>"
+    echo "<div id=\"${dfocid}_status\" class=\"$dfpciclass $classadded\" $onclick title=\"$dfpcicontalt\">${dfpcicont}</div>"
     shift
   done
 }
