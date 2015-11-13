@@ -78,7 +78,7 @@ print_cluster_inline() {
     else
       unset onclick classadded dfpcionclick
     fi
-    [ -z "$dfpciclass"] && dfpciclass="status" || unset style
+    [ -z "$dfpciclass" ] && dfpciclass="status"
     dfpcicont=`eval echo \\$$dfpcistatus`
     [ ${#dfpcicont} -gt 12 ] && dfpcicontalt=`echo -n "$dfpcicont" | cut -d'=' -f2 | tr -d '<>'` || unset dfpcicontalt
     echo "<div id=\"${dfocid}_status\" class=\"$dfpciclass $classadded\" $onclick title=\"$dfpcicontalt\">${dfpcicont}</div>"
