@@ -102,6 +102,7 @@ print_mongo_server() {
 
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
+  unset roleerror roleerrorclass
   IFS=$IFS2
 }
 
