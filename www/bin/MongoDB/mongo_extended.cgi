@@ -25,11 +25,24 @@ print_mongo_server() {
   local role=`echo "$2" | cut -d'|' -f4`
   local roleprop=( `echo "$role" | tr '=' ' '` )
   local roleind=`echo $role | cut -b 1 | sed 's|.|\U&|'`
-  if [ "_${roleprop[1]}" == "_true" ]; then
-    [ ${roleprop[2]} -ne 0 ] && roleind="${roleind}D" || roleind="${roleind}H"
-  fi
   if [ "_${roleprop[0]}" == "_slave" ]; then
-    local roletitle="`echo -e "slave\n\nHidden: ${roleprop[1]}\nDelay: ${roleprop[2]}\nIndexes: ${roleprop[3]}\nPriority: ${roleprop[4]}\nVotes: ${roleprop[5]}\nTags: ${roleprop[6]}"`"
+    if [ -n "${roleprop[2]}" ]; then # it is a functioning RS member 
+      if [ ${roleprop[2]} -ne 0 ] 2>/dev/null; then # it is a delayed secondary
+        if [ "_${roleprop[1]}" == "_true" ]; then # it is hidden
+          if [ ${roleprop[4]} -ne 0 ]; then # priority is not 0
+            roleerror="\nERROR: priority is not 0 for a delayed secondary\n"
+            roleerrorclass=" roleerror"
+          fi
+        else
+          roleerror="\n\nERROR: delayed secondary must be hidden"
+          roleerrorclass=" roleerror"
+        fi
+        roleind="${roleind}D"
+      else
+        [ "_${roleprop[1]}" == "_true" ] && roleind="${roleind}H"
+      fi
+    fi
+    local roletitle="`echo -e "slave\n\nHidden: ${roleprop[1]}\nDelay: ${roleprop[2]}\nIndexes: ${roleprop[3]}\nPriority: ${roleprop[4]}\nVotes: ${roleprop[5]}\nTags: ${roleprop[6]}${roleerror}"`"
   else
     local roletitle="`echo -e "${roleprop[0]}\n\nPriority: ${roleprop[1]}\nVotes: ${roleprop[2]}\nTags: ${roleprop[3]}"`"
   fi
@@ -43,7 +56,7 @@ print_mongo_server() {
   
   echo "<div class=\"server\" id=\"${nodeid}\">"
   
-    echo "<div class=\"servername clickable\" id=\"${nodeid}_name_ext\" onClick=\"showData('${nodeid}_name_ext','/MongoDB')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name_ext\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
+    echo "<div class=\"servername clickable\" id=\"${nodeid}_name_ext\" onClick=\"showData('${nodeid}_name_ext','/MongoDB')\" title=\"${name}:${port}\">${namep}:${port}<span class=\"${roleprop[0]}${roleind}${roleerrorclass}\" title=\"${roletitle}\">${roleind}</span><div id=\"data_${nodeid}_name_ext\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" 2>/dev/null
     
     scanned=`echo "$report" | grep '^Records scanned'`
     scanned=`expr "$scanned" : ".*:\ *\(.*[^ ]\)\ *$"`

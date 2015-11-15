@@ -65,10 +65,10 @@ print_mongo_server() {
     
     echo "<div class=\"status status_short clickable\" id=\"${nodeid}_rlag\" onclick=\"showDetails('${nodeid}_rlag','MongoDB/replicalag')\">${rlag}<div id=\"data_${nodeid}_http\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>"
     
-    if [ `echo "$report" | grep -c '\<***\>'` -eq 0 ] ; then
+    if [ `echo "$report" | grep -c '<\*\*\*>'` -eq 0 ] ; then
       echo "<div class=\"status status_short statusok clickable\" id=\"${nodeid}_status\" onclick=\"showDetails('${nodeid}_status','MongoDB/mongostatus')\">OK</div>"
     else
-      echo "<div class=\"status status_short statuserr clickable\" title=\"`echo "$report" | grep '\<***\>' | tr -d '"'`\" id=\"${nodeid}_status\" onclick=\"showDetails('${nodeid}_status','MongoDB/mongostatus')\">Error</div>"
+      echo "<div class=\"status status_short statuserr clickable\" title=\"`echo "$report" | grep '<\*\*\*>' | tr -d '"'`\" id=\"${nodeid}_status\" onclick=\"showDetails('${nodeid}_status','MongoDB/mongostatus')\">Error</div>"
     fi
     
     echo "<div class=\"status\" id=\"${nodeid}_mem\">`echo "$rawdata" | grep ^memRes= | cut -d'=' -f2` / `echo "$rawdata" | grep ^memVir= | cut -d'=' -f2`</div>"
