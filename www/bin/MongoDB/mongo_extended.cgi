@@ -13,7 +13,7 @@ fi
 print_cgi_headers 
 print_nav_bar "MongoDB|Servers" "MongoDB/mongo_extended|Extended" "MongoDB/mongosharding|Sharding" "MongoDB/mongocollections|Collections" "MongoDB/mongologger|Log Monitor"
 if $WT ; then
-  print_page_title "host:port" "Records scanned (N/sec)" "Disk reads / writes (MB/sec)" "Files open" "Open cursors" "Fastmod / Idhack / Scan-and-order (N/sec)" "Replication ops (N/sec)"
+  print_page_title "host:port" "Records scanned (N/sec)" "Disk reads / writes (MB/sec)" "Files open" "Open cursors" "Fastmod / Idhack / Scan-and-order (N/sec)" "Replication ops (N/sec) / bandwidth (bytes/sec)"
 else
   print_page_title "host:port" "Records scanned (N/sec)" "Data in RAM, size (MB) / over seconds" "Index hit / access (N/sec)" "Open cursors" "Fastmod / Idhack / Scan-and-order (N/sec)" "Replication ops (N/sec) / bandwidth (bytes/sec)"
 fi
@@ -97,8 +97,8 @@ print_mongo_server() {
     echo "<div class=\"status\" id=\"${nodeid}_oper\">${fastmod} / ${idhack} / ${scanorder}</div>"
 
     replstats=`echo "$report" | grep '^Network usage'`
-    replops=`expr "$replstats" : ".*operations.*:\ *\(.*[^ ]\)\ *$"`
-    replbw=`expr "$replstats" : ".*bytes.*:\ *\(.*[^ ]\)\ *$"`
+    replops=`expr "`echo "$replstats" | grep operations`" : ".*:\ *\(.*[^ ]\)\ *$"`
+    replbw=`expr "`echo "$replstats" | grep bytes`" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_repl\">${replops} / ${replbw}</div>"
 
   echo "</div>"
