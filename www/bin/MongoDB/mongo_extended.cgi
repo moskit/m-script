@@ -97,8 +97,10 @@ print_mongo_server() {
     echo "<div class=\"status\" id=\"${nodeid}_oper\">${fastmod} / ${idhack} / ${scanorder}</div>"
 
     replstats=`echo "$report" | grep '^Network usage'`
-    replops=`expr "`echo "$replstats" | grep operations`" : ".*:\ *\(.*[^ ]\)\ *$"`
-    replbw=`expr "`echo "$replstats" | grep bytes`" : ".*:\ *\(.*[^ ]\)\ *$"`
+    replops=`echo "$replstats" | grep operations`
+    replops=`expr "$replops" : ".*:\ *\(.*[^ ]\)\ *$"`
+    replbw=`echo "$replstats" | grep bytes`
+    replbw=`expr "$replbw" : ".*:\ *\(.*[^ ]\)\ *$"`
     echo "<div class=\"status\" id=\"${nodeid}_repl\">${replops} / ${replbw}</div>"
 
   echo "</div>"
