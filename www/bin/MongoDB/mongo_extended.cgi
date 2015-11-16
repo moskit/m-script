@@ -102,7 +102,7 @@ print_mongo_server() {
     replbw=`echo "$replstats" | grep bytes`
     replbw=`expr "$replbw" : ".*:\ *\(.*[^ ]\)\ *$"`
     replbw=`echo "scale=2; $replbw / 1024" | bc`
-    echo "<div class=\"status clickable\" id=\"${nodeid}_repl\" onclick=\"showDetails('${nodeid}_repl','MongoDB/mongo_repl_ops_graph')>${replops} / ${replbw}</div>"
+    echo "<div class=\"status clickable\" id=\"${nodeid}_repl\" onclick=\"showDetails('${nodeid}_repl','MongoDB/mongo_repl_ops_graph')\">${replops} / ${replbw}</div>"
 
   echo "</div>"
   echo "<div class=\"details\" id=\"${nodeid}_details\"></div>"
