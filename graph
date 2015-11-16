@@ -347,8 +347,7 @@ else
       select="${select}${smetric[i]} AS ${sas[$i]},"
       metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i]},"
     done
-    nonempty=`echo ${nonempty%,} | sed "s|,|\<\>'' and |g"`
-    nonempty="${nonempty}<>''"
+    nonempty=`echo ${nonempty%,} | sed "s|,| and |g"`
     select="${select%,}"
   else
     for smetric in `echo $metric | tr ',' ' '`; do
@@ -445,6 +444,33 @@ $debug && log "mp: $mp"
 metricmax=`solve 2 "$areaV / $mp"`
 metricmax=${metricmax%%.*}
 $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
+
+if ! $perpixel ; then
+  metricQ="timeindex,"
+fi
+
+if [ `expr $metric : .*,` -eq 0 ] ; then
+  if [ -n "$as" ]; then
+    metricQ="${metricQ}${metric}*${mp} AS $as"
+  else
+    metricQ="${metricQ}${metric}*${mp}"
+  fi
+else
+  if [ -n "$as" ]; then
+    smetric=( `echo $metric | tr ',' ' '` )
+    sas=( `echo $as | tr ',' ' '` )
+    for ((i=0; i<${#smetric[*]}; i++)); do
+      [ -z "${sas[$i]}" ] && sas[$i]=${smetric[i]}
+      metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i]},"
+    done
+  else
+    for smetric in `echo $metric | tr ',' ' '`; do
+      metricQ="${metricQ}${smetric}*${mp}"
+    done
+  fi
+  metricQ="${metricQ%,}"
+fi
+selectQ="SELECT $metricQ"
 
 if [ -n "$where" ] ; then
   QUERY="$selectQ FROM $table WHERE $field='$value'${pptail}"
