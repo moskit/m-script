@@ -340,12 +340,12 @@ else
     sas=( `echo $as | tr ',' ' '` )
     select="SELECT "
     for ((i=0; i<${#smetric[*]}; i++)); do
-      [ -z "${sas[$i]" ] && sas[$i]=${smetric[i]}
-      $minauto && minQ="${minQ}min(${sas[$i],"
-      maxQ="${maxQ}max(${sas[$i]),"
-      nonempty="${nonempty}${sas[$i]<>'',"
-      select="${select}${smetric[i]} AS ${sas[$i],"
-      metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i],"
+      [ -z "${sas[$i]}" ] && sas[$i]=${smetric[i]}
+      $minauto && minQ="${minQ}min(${sas[$i]}),"
+      maxQ="${maxQ}max(${sas[$i]}),"
+      nonempty="${nonempty}${sas[$i]}<>'',"
+      select="${select}${smetric[i]} AS ${sas[$i]},"
+      metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i]},"
     done
     nonempty=`echo ${nonempty%,} | sed "s|,|\<\>'' and |g"`
     nonempty="${nonempty}<>''"
@@ -376,6 +376,7 @@ else
   maxQ="SELECT $maxQ FROM ($select FROM $table WHERE ${nonempty}${pptail})"
 fi
 $debug && log "$maxQ"
+
 if [ "$sIP" == "localhost" ]; then
   $minauto && minres=`$SQL3 "$rpath/$database" "$minQ"`
   maxres=`$SQL3 "$rpath/$database" "$maxQ"`
