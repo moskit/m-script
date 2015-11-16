@@ -131,7 +131,7 @@ Options:
                         
 --as=<name>             New name for metric. Especially useful if metric is an
                         ariphmetic expression like:
-                        --metric=\"\(metric1+metric2\)\" --as=MyMetric
+                        --metric="\"\(metric1+metric2\)\"" --as=MyMetric
                         With multiple metrics multiple --as can be used, just
                         list them in the same order, separated by comma.
                         
@@ -317,29 +317,63 @@ else
   perpixel=false
   pptail=" AND timeindex BETWEEN $from AND $to"
 fi
+if ! $perpixel ; then
+  metricQ="timeindex,"
+fi
 
 ###### Getting min and max values from database
 if [ `expr $metric : .*,` -eq 0 ] ; then
-  $minauto && minQ="min($metric)"
-  maxQ="max($metric)"
+  if [ -n "$as" ]; then
+    $minauto && minQ="min($as)"
+    maxQ="max($as)"
+    select="SELECT $metric AS $as"
+    metricQ="${metricQ}${metric}*${mp} AS $as"
+  else
+    $minauto && minQ="min($metric)"
+    maxQ="max($metric)"
+    select="SELECT $metric"
+    metricQ="${metricQ}${metric}*${mp}"
+  fi
 else
-  for smetric in `echo $metric | tr ',' ' '` ; do
-    $minauto && minQ="${minQ}min($smetric),"
-    maxQ="${maxQ}max($smetric),"
-  done
+  if [ -n "$as" ]; then
+    smetric=( `echo $metric | tr ',' ' '` )
+    sas=( `echo $as | tr ',' ' '` )
+    select="SELECT "
+    for ((i=0; i<${#smetric[*]}; i++)); do
+      [ -z "${sas[$i]" ] && sas[$i]=${smetric[i]}
+      $minauto && minQ="${minQ}min(${sas[$i],"
+      maxQ="${maxQ}max(${sas[$i]),"
+      nonempty="${nonempty}${sas[$i]<>'',"
+      select="${select}${smetric[i]} AS ${sas[$i],"
+      metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i],"
+    done
+    nonempty=`echo ${nonempty%,} | sed "s|,|\<\>'' and |g"`
+    nonempty="${nonempty}<>''"
+    select="${select%,}"
+  else
+    for smetric in `echo $metric | tr ',' ' '`; do
+      $minauto && minQ="${minQ}min($smetric),"
+      maxQ="${maxQ}max($smetric),"
+      metricQ="${metricQ}${smetric}*${mp}"
+    done
+    nonempty=`echo $metric | sed "s|,|\<\>'' and |g"`
+    nonempty="${nonempty}<>''"
+    select="SELECT $metric"
+  fi
   $minauto && minQ="${minQ%,}"
   maxQ="${maxQ%,}"
+  metricQ="${metricQ%,}"
 fi
-nonempty=`echo $metric | sed "s|,|\<\>'' and |g"`
-nonempty="${nonempty}<>''"
+selectQ="SELECT $metricQ"
+
 if [ -n "$where" ] ; then
   field=${where%%:*}
   value=${where#*:}
-  $minauto && minQ="SELECT $minQ FROM (SELECT $metric FROM $table WHERE $nonempty AND  $field='$value'$pptail)"
-  maxQ="SELECT $maxQ FROM (SELECT $metric FROM $table WHERE $nonempty AND $field='$value'$pptail)"
+  $minauto && minQ="SELECT $minQ FROM ($select FROM $table WHERE $nonempty AND  $field='$value'$pptail)"
+  maxQ="SELECT $maxQ FROM ($select FROM $table WHERE $nonempty AND $field='$value'$pptail)"
 else
-  $minauto && minQ="SELECT $minQ FROM (SELECT $metric FROM $table WHERE ${nonempty}${pptail})"
-  maxQ="SELECT $maxQ FROM (SELECT $metric FROM $table WHERE ${nonempty}${pptail})"
+  $minauto && minQ="SELECT $minQ FROM ($select FROM $table WHERE ${nonempty}${pptail})"
+  maxQ="SELECT $maxQ FROM ($select FROM $table WHERE ${nonempty}${pptail})"
 fi
 $debug && log "$maxQ"
 if [ "$sIP" == "localhost" ]; then
@@ -410,20 +444,9 @@ $debug && log "mp: $mp"
 metricmax=`solve 2 "$areaV / $mp"`
 metricmax=${metricmax%%.*}
 $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
-if ! $perpixel ; then
-  metricQ="timeindex,"
-fi
-if [ `expr $metric : .*,` -eq 0 ] ; then
-  metricQ="${metricQ}${metric}*${mp}"
-else
-  for smetric in `echo $metric | tr ',' ' '` ; do
-    metricQ="${metricQ}${smetric}*${mp},"
-  done
-  metricQ="${metricQ%,}"
-fi
 
 if [ -n "$where" ] ; then
-  QUERY="SELECT $metricQ FROM $table WHERE $field='$value'${pptail}"
+  QUERY="$selectQ FROM $table WHERE $field='$value'${pptail}"
   $perpixel && QUERYFROM="SELECT timeindex FROM $table WHERE $field='$value'${pptail}"
 else
   if ! $perpixel; then
@@ -431,7 +454,7 @@ else
   else
     QUERYFROM="SELECT timeindex FROM ${table}${pptail}"
   fi
-  QUERY="SELECT $metricQ FROM ${table}${pptail}"
+  QUERY="$selectQ FROM ${table}${pptail}"
 fi
 $debug && log "$QUERY"
 if [ "$sIP" == "localhost" ]; then
