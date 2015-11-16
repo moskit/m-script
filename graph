@@ -317,9 +317,6 @@ else
   perpixel=false
   pptail=" AND timeindex BETWEEN $from AND $to"
 fi
-if ! $perpixel ; then
-  metricQ="timeindex,"
-fi
 
 ###### Getting min and max values from database
 if [ `expr $metric : .*,` -eq 0 ] ; then
@@ -327,12 +324,10 @@ if [ `expr $metric : .*,` -eq 0 ] ; then
     $minauto && minQ="min($as)"
     maxQ="max($as)"
     select="SELECT $metric AS $as"
-    metricQ="${metricQ}${metric}*${mp} AS $as"
   else
     $minauto && minQ="min($metric)"
     maxQ="max($metric)"
     select="SELECT $metric"
-    metricQ="${metricQ}${metric}*${mp}"
   fi
 else
   if [ -n "$as" ]; then
@@ -345,7 +340,6 @@ else
       maxQ="${maxQ}max(${sas[$i]}),"
       nonempty="${nonempty}${sas[$i]}<>'',"
       select="${select}${smetric[i]} AS ${sas[$i]},"
-      metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i]},"
     done
     nonempty=`echo ${nonempty%,} | sed "s|,| and |g"`
     select="${select%,}"
@@ -353,7 +347,6 @@ else
     for smetric in `echo $metric | tr ',' ' '`; do
       $minauto && minQ="${minQ}min($smetric),"
       maxQ="${maxQ}max($smetric),"
-      metricQ="${metricQ}${smetric}*${mp}"
     done
     nonempty=`echo $metric | sed "s|,|\<\>'' and |g"`
     nonempty="${nonempty}<>''"
@@ -361,9 +354,7 @@ else
   fi
   $minauto && minQ="${minQ%,}"
   maxQ="${maxQ%,}"
-  metricQ="${metricQ%,}"
 fi
-selectQ="SELECT $metricQ"
 
 if [ -n "$where" ] ; then
   field=${where%%:*}
