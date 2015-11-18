@@ -66,10 +66,11 @@ store_results() {
 
 check_results() {
   # syntax:
-  # check_results "var1<|description|datatype1>,var2<|description|datatype2>,.."
+  # check_results "var1<|description|datatype1|ao>,var2<|description|datatype2>,.."
   # where datatype can be real (default, slower but more universal) or integer
   # if description is omitted, variable name will be used in report
   # Do not use commas in description! They are used as separators.
+  # The 4th field, if present, indicates that only alerts will be reported.
   [ -z "$1" ] && return 1
   callerconf="${caller%.mon}.conf"
   [ "$callerconf" == "${caller}.conf" ] && log "Monitor script must have extension .mon" && return 1
@@ -85,6 +86,7 @@ check_results() {
     val=`eval "echo \"\\$${varname}\""`
     vardescr=`echo "$var2ck" | cut -s -d'|' -f2`
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
+    [ -n "`echo "$var2ck" | cut -s -d'|' -f3`" ] && ao=true || ao=false
     [ -z "$vardescr" ] && vardescr=$varname
     [ -z "$vartype" ] && vartype=real
     
@@ -123,7 +125,7 @@ check_results() {
         fi
         ;;
     esac
-    echo "<OK>  ${vardescr}: $val"
+    $ao && echo "<OK>  ${vardescr}: $val"
   done
   IFS=$IFSORIG
 }
