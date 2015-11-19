@@ -227,7 +227,7 @@ function parse_data() {
     dbquery "$rpath/mongodb.sql3" "INSERT INTO servers (timeindex, day, hostport, version, uptime, memRes, memVir, memMapped, memMappedWJournal, infoHeapUsage, connCurrent, connAvailable, netIn, netOut, netReqn, opcountersInsert, opcountersQuery, opcountersUpdate, opcountersDelete, opcountersGetmore, opcountersCommand, opsTotalQPS, lockRatio, lockTime, lockQueueTotal, lockQueueReaders, lockQueueWriters, lockClientsTotal, lockClientsReaders, lockClientsWriters, recstatsPageFaults, recstatsNotInMemory, rsstate, rsconfigVersion, rlag, cacheMaxSizeMB, inTheCacheMB) values ($timeindexnow, '`date +"%Y%m%d"`', '${cs}', '$version', '${uptime-0}', '${memRes-0}', '${memVir-0}', '${memMapped-0}', '${memMappedWJournal-0}', '${infoHeapUsage-0}', '${connCurrent-0}', '${connAvailable-0}', '${bw_in-0}', '${bw_out-0}', '${net_reqps-0}', '${ops_insertsps-0}', '${ops_queriesps-0}', '${ops_updatesps-0}', '${ops_deletesps-0}', '${ops_getmoresps-0}', '${ops_commandsps-0}', '${ops_totalqps-0}', '${lockRatio-0}', '${lockTime-0}', '${lockQueueTotal-0}', '${lockQueueReaders-0}', '${lockQueueWriters-0}', '${lockClientsTotal-0}', '${lockClientsReaders-0}', '${lockClientsWriters-0}', '${recstatsPageFaults-0}', '${recstatsNotInMemory-0}', '${rsstate-0}', '${rsconfigVersion-0}', '${rlag-0}', '${cacheMaxSizeMB-0}', '${inTheCacheMB-0}')" 2>>"$LOG"
   fi
   if [ "_$ENABLE_CHECKS" == "_1" ] && [ -n "$dataserver" ] ; then
-    source "$rpath/mongo_servers_var.conf"
+    [ -e "$rpath/mongo_servers_var.conf" ] && source "$rpath/mongo_servers_var.conf"
     check_results "memRes|$1 Resident memory (MB)|real|ao,memVir|$1 Virtual memory (MB)|real|ao,memMapped|$1 Mapped memory (MB)|real|ao,memMappedWJournal|$1 Mapped memory incl. journal (MB)|real|ao,infoHeapUsage|$1 Heap usage (MB)|real|ao,connCurrent|$1 Connections used|integer|ao,connAvailable|$1 Connections available|integer|ao,bw_in|$1 Bandwidth inbound (MB/sec)|real|ao,bw_out|$1 Bandwidth outbound (MB/sec)|real|ao,net_reqps|$1 Network requests / sec|integer|ao,ops_insertsps|$1 Inserts / sec|integer|ao,ops_queriesps|$1 Queries / sec|integer|ao,ops_updatesps|$1 Updates / sec|integer|ao,ops_deletesps|$1 Deletes / sec|integer|ao,ops_getmoresps|$1 Getmores / sec|integer|ao,ops_commandsps|$1 Commands / sec|integer|ao,ops_totalqps|$1 QPS total / sec|integer|ao,lockTime|$1 Global lock time (%)|real|ao,lockQueueTotal|$1 Lock queue total|integer|ao,lockQueueReaders|$1 Lock queue readers|integer|ao,lockQueueWriters|$1 Lock queue writers|integer|ao,lockClientsTotal|$1 Lock clients total|integer|ao,lockClientsReaders|$1 Lock clients readers|integer|ao,lockClientsWriters|$1 Lock clients writers|integer|ao,recstatsPageFaults|$1 Page faults|integer|ao,recstatsNotInMemory|$1 Records not in memory|integer|ao,rlag|$1 Replication Lag|integer|ao,cacheMaxSizeMB|$1 Cache Size Configured (MB)|integer|ao,inTheCacheMB|$1 Cache Used (MB)|integer|ao"
   fi
 
@@ -298,7 +298,7 @@ else
     mongoport=`echo "$mongohost" | cut -sd':' -f2`
     [ -z "$mongoport" ] && mongoport=$defaultport
     mongohost="${mongohost%:*}"
-    mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf().members.forEach(function(m){ print(m.host) })"` )
+    mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "if (rs.conf()) { rs.conf().members.forEach(function(m){ print(m.host) }) }"` )
     
     for ((i=0; i<${#mongohosts1[*]}; i++)); do
       mongohost1=${mongohosts1[$i]}
@@ -319,6 +319,7 @@ else
       done
     else
       mongoerror+=("Replicaset members not found")
+      mongolist+=("${mongohost}:${mongoport}|$mongo|${replicaset}${rsmemberrole}")
       continue
     fi
     unset master members
