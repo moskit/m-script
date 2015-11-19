@@ -125,7 +125,7 @@ check_results() {
         fi
         ;;
     esac
-    $ao && echo "<OK>  ${vardescr}: $val"
+    $ao || echo "<OK>  ${vardescr}: $val"
   done
   IFS=$IFSORIG
 }
