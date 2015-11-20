@@ -329,6 +329,7 @@ if [ `expr $metric : .*,` -eq 0 ] ; then
     maxQ="max($metric)"
     select="SELECT $metric"
   fi
+  nonempty="${metric}<>''"
 else
   if [ -n "$as" ]; then
     smetric=( `echo $metric | tr ',' ' '` )

@@ -340,6 +340,9 @@ cgi_begin() {
   [ "_$saname" == "_bin" ] && unset saname
   scriptname=${scriptname##*/}
   if $cache_enabled ; then
+    if [ ! -d "$M_ROOT/www/preloaders/$saname" ]; then
+      install -d "$M_ROOT/www/preloaders/$saname"
+    fi
     dFREQ=`expr $FREQ \* 2 / 60`
     if [ -z "`find "$M_ROOT/www/preloaders/$saname" -type f -name "${scriptname}.html" -mmin -$dFREQ`" ]; then
       exec 6>&1
