@@ -245,6 +245,7 @@ save_details() {
   else
     slip=$intIP
   fi
+  echo "$slip|$thekey|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
   echo "$slip|$thekey|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
   return 0
 }
