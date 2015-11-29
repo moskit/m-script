@@ -127,9 +127,9 @@ find_broadcast() {
 save_details() {
   [ -n "$1" ] && echo "Saving details..."
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "$rpath/../ganeti.log"
-  IAMACHILD=1 "$rpath"/show_nodes --update_nodes_list
   sed -i "/^${name}|/d" "$M_ROOT/cloud/${CLOUD}.list"
   grep "^${name}|" "$M_TEMP/show_nodes.resp" >> "$M_ROOT/cloud/${CLOUD}.list"
+  echo "$ip|$thekey|$node|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
   return 0
 }
 
@@ -464,5 +464,5 @@ fi
 
 "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
 
-proper_exit $exit_status 465
+proper_exit $exit_status 467
 

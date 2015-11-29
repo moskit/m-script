@@ -123,7 +123,7 @@ list_nodes() {
         # groups, you'll get them mixed here.
         if [ -n "$icluster" -o -n "$all" ] ; then
           [ -n "$cluster" -a "$cluster" != "$icluster" ] && continue
-          [ "X$state" != "X$status" ] && [ "X$state" != "Xall" ] && continue
+          [ "_$state" != "_$status" ] && [ "_$state" != "_all" ] && continue
           case $view in
             list)
               echo "Name: $name  State: $status  IPs: $nic_ips  Size: $be_vcpus/$be_memory/$disk_sizes  OS: $os  Nodes: ${pnode}+${snodes}  Started: $ctime"
@@ -152,6 +152,7 @@ list_nodes() {
       else
         if [ -n "$icluster" ] ; then
           if [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
+            check_super_cluster $nic_ip_0 "$icluster" && continue
             key=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
             echo "$nic_ip_0|$key|$pnode|$name|$icluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
           fi
@@ -171,5 +172,5 @@ list_nodes
 
 [ -n "$count" ] && echo $icount
 
-proper_exit 0 174
+proper_exit 0 175
 

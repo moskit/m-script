@@ -308,17 +308,17 @@ boot_request() {
 }
 
 log "Checking cluster $cluster limit..."
-check_cluster_limit "$cluster" || proper_exit 5 258
+check_cluster_limit "$cluster" || proper_exit 5 311
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 260
+[ -z "$name" ] && proper_exit 6 313
 log "Double-checking name"
-IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 150
-find_image || proper_exit 7 152
-[ -z "$imageid" ] && proper_exit 7 264
-find_flavor || proper_exit 8 154
-[ -z "$flavorid" ] && proper_exit 8 266
-find_region || proper_exit 9 197
-[ -z "$regionid" ] && proper_exit 9 268
+IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 315
+find_image || proper_exit 7 316
+[ -z "$imageid" ] && proper_exit 7 317
+find_flavor || proper_exit 8 318
+[ -z "$flavorid" ] && proper_exit 8 319
+find_region || proper_exit 9 320
+[ -z "$regionid" ] && proper_exit 9 321
 thekey=`cat "$rpath/../../conf/clusters.conf" | grep ^$cluster\| | cut -d'|' -f2`
 [ -f "$M_ROOT/keys/${thekey}.pub" ] && pubkey=${thekey}.pub
 [ -f "$M_ROOT/keys/${thekey}.pem.pub" ] && pubkey=${thekey}.pem.pub
@@ -334,12 +334,12 @@ ROOTPASS=`head /dev/urandom -c200 | tr -dc 'a-zA-Z0-9' | cut -b -20`
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 exit_status=0
 
-request && log "Request sent" || proper_exit 1 252
+request && log "Request sent" || proper_exit 1 337
 
 errors=`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$errors" ]; then
   echo -n "${errors}" >&2
-  proper_exit 1 257
+  proper_exit 1 342
 else
   newid=`grep \/\"LinodeID\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
   $dry && newid=666
@@ -350,7 +350,7 @@ else
     extIP=`get_assigned_ip`
     create_config
     $dry || save_details
-    boot_request || proper_exit 10 335
+    boot_request || proper_exit 10 353
     if ! $dry ; then
       set_hostname || log "Was unable to set hostname"
     fi
@@ -358,9 +358,9 @@ else
     [ -n "$return" ] && printreturn $return
 
   else
-    proper_exit 1 268
+    proper_exit 1 361
   fi
 fi
 
 "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
-proper_exit $exit_status 273
+proper_exit $exit_status 366
