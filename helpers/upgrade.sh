@@ -25,13 +25,16 @@ rm -rf "$M_TEMP"/.update/
 timeindex=`date -u +"%s"`
 GIT=`which git 2>/dev/null`
 WGET=`which wget 2>/dev/null`
-if [ "X$GIT" == "X" ]; then
+if [ -z "$GIT" ]; then
   echo "Git not found! Fetching tarball..."
   install -d "$M_TEMP"/.update "$M_TEMP".$$
   "$M_ROOT"/helpers/fetch http://igorsimonov.com/m_script.latest.tar.gz "$M_TEMP"/
-  `which tar` -xzf "$M_TEMP"/m_script.latest.tar.gz -C "$M_TEMP".$$
-  rm -f "$M_TEMP"/m_script.latest.tar.gz
-  mv "$M_TEMP".$$/m/* "$M_TEMP"/.update
+  # if fetch fails, it is still possible to download it manually to /tmp
+  if [ -f "$M_TEMP/m_script.latest.tar.gz" ]; then
+    `which tar` -xzf "$M_TEMP"/m_script.latest.tar.gz -C "$M_TEMP".$$
+    rm -f "$M_TEMP"/m_script.latest.tar.gz
+    mv "$M_TEMP".$$/m/* "$M_TEMP"/.update
+  fi
 else
   $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update || exit 1
   gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
