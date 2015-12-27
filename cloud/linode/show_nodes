@@ -277,7 +277,7 @@ list_nodes() {
         fi
       fi
     done
-    if [ -z "$noupdate" ]; then
+    if [ -n "$update_nodes_list" ]; then
       if [ ${#nodelist[*]} -eq 0 ]; then
         log "ERROR: generated list is empty, not saving it"
       else
