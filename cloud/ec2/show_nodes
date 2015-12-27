@@ -21,6 +21,8 @@ rpath=${0%/*}
 
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
+SSLEX=`which openssl 2>/dev/null`
+[ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
