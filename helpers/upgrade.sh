@@ -29,15 +29,25 @@ if [ -z "$GIT" ]; then
   echo "Git not found! Fetching tarball..."
   install -d "$M_TEMP"/.update "$M_TEMP".$$
   "$M_ROOT"/helpers/fetch http://igorsimonov.com/m_script.latest.tar.gz "$M_TEMP"/
-  # if fetch fails, it is still possible to download it manually to /tmp
+  res=$?
+else
+  $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update
+  res=$?
+  [ $res -eq 0 ] && gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
+fi
+
+if [ $res -ne 0 ]; then
+  # if both git and fetch fails, it is still possible to download it manually to $TEMP
   if [ -f "$M_TEMP/m_script.latest.tar.gz" ]; then
+    echo "Tarball found!"
+    install -d "$M_TEMP"/.update "$M_TEMP".$$
     `which tar` -xzf "$M_TEMP"/m_script.latest.tar.gz -C "$M_TEMP".$$
     rm -f "$M_TEMP"/m_script.latest.tar.gz
     mv "$M_TEMP".$$/m/* "$M_TEMP"/.update
+  else
+    echo "Both git and tarball upgrade methods failed, exiting :( "
+    exit 1
   fi
-else
-  $GIT clone --depth 1 git://igorsimonov.com/m_script "$M_TEMP"/.update || exit 1
-  gitts=$(cd "$M_TEMP"/.update && $GIT log -n1 --format=%at | tail -1)
 fi
 
 [ "X$1" == "Xhelp" ] && echo -e "Usage:\n\n    $rcommand\n\nor:\n\n    $rcommand full  (to update all non-executables - may overwrite your configs!)\n" && exit 0

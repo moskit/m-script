@@ -94,7 +94,11 @@ start)
   while true
   do
     nextrunlockfile=`find "$rpath" -maxdepth 1 -name next.run.lock`
-    [ -n "$nextrunlockfile" ] && rm "$nextrunlockfile" && sleep $FREQm && continue
+    if [ -n "$nextrunlockfile" ]; then
+      rm "$nextrunlockfile"
+      unset nextrunlockfile
+      sleep $FREQm
+    fi
     # Checking how much load average has changed
     [ -n "$rload" ] && rloadprev=$rload || rloadprev=0
     rload="$(cat /proc/loadavg | cut -d' ' -f2)"

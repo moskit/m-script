@@ -5,8 +5,8 @@ rcomm=${rpath##*/}
 rpath=${rpath%/*}
 source "$rpath/../../lib/functions.sh"
 [ -f "$rpath/${rcomm%mon}conf" ] && source "$rpath/${rcomm%mon}conf"
-[ -z "$MONGOLOGFILE" ] && echo "Create $rpath/${rcomm%mon}conf and assign path to the log file to watch to variable MONGOLOGFILE there" && exit 1
-[ -f "$MONGOLOGFILE" ] && echo "Log file $MONGOLOGFILE does not exist" && exit 1
+[ -z "$MONGOLOGFILE" ] && log "Create $rpath/${rcomm%mon}conf and assign path to the log file to variable MONGOLOGFILE there" && exit 1
+[ -f "$MONGOLOGFILE" ] && log "Log file $MONGOLOGFILE does not exist" && exit 1
 
 timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null`
 [ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=200
