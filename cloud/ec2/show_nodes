@@ -233,7 +233,7 @@ if [ -z "$noupdate" ]; then
   [ -f "$M_TEMP/nodes.bdevs" ] && mv "$M_TEMP/nodes.bdevs" "$M_TEMP/nodes.bdevs.prev" || touch "$M_TEMP/nodes.bdevs.prev"
   [ -n "$verbose" ] && log "sending request"
   request
-  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 236
 else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
   # if no setting, force update is disabled
@@ -242,10 +242,11 @@ else
     [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
   fi
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
-  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && exit 1
-  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && exit 1
+  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && proper_exit 1 245
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
 fi
 
 list_nodes
 
-
+[ -n "$count" ] && echo $icount
+proper_exit 0 252
