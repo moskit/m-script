@@ -22,10 +22,7 @@ rpath=${0%/*}
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 
-#debug=1
-
-[ -n "$debug" ] && debug=true || debug=false
-$debug && LOG="$M_ROOT/logs/show_nodes.log"
+debug=false
 
 possible_options="cluster state filter region short noupdate view update_nodes_list forceupdate all status count resolveids cloud"
 necessary_options=""
@@ -67,7 +64,6 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-[ -n "$update_nodes_list" -a -n "$filter" ] && echo "Impossible options combination" && exit 1
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 export IAMACHILD M_TEMP CLOUD
@@ -150,13 +146,13 @@ request() {
 }
 
 list_nodes() {
-  $debug && [ -n "$update_nodes_list" ] && echo -e "\n`date`\n=====================\n" >> $LOG
   IFS1=$IFS
   IFS='
 '
   if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
     [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
     declare -a nodelist
+    # full IP data as returned by api_action=linode.ip.list
     allips=`cat "$M_TEMP/ips.list"`
     for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
@@ -192,8 +188,12 @@ list_nodes() {
             ;;
         esac
       done
+      # full IP data correspondent to the ID of the node under serial
+      # number $sn
       IPsn=`echo "$allips" | grep "\"LINODEID\"|$id" | cut -d'/' -f3`
+      # node may have multiple IPs
       for ipsn in $IPsn ; do
+        # full IP data for a single IP number $ipsn of the node number $sn
         ipdata=`echo "$allips" | grep \/$ipsn\/`
         if `echo "$ipdata" | grep -q '"ISPUBLIC"|1'` ; then
           extIP="$extIP`echo "$ipdata" | grep '"IPADDRESS"|' | cut -sd'|' -f2 | tr -d '"'`\n"
@@ -206,6 +206,7 @@ list_nodes() {
       else
         IP="$intIP"
       fi
+      # variable $IP may contain multiple IPs
       IPsanitized=`echo -e "$IP" | grep -v ^$`
       if [ -n "$IPsanitized" ]; then
         for ip in $IPsanitized ; do
@@ -213,18 +214,23 @@ list_nodes() {
           if [ -z "$icluster" ] ; then
             # nodes having no cluster in metadata but added manually to nodes.list
             icluster=`grep ^$ip\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
-            $debug && [ -n "$update_nodes_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed `[ -n "$icluster" ] && echo "$icluster" || echo "none"`"
-            break
+            if [ -n "$icluster" ]; then
+              $debug && [ -n "$update_nodes_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed $icluster"
+              # this IP is found in nodes.list, end of search
+              break
+            fi
           else
             # no icluster means that node will not be shown, but only if there
             # is no option --all. With this option, however, we want to see all
             # clusters assigned via metadata
-            [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
+            [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
             $debug && [ -n "$update_nodes_list" ] && unset ecf
+            # in case of multiple IPs the first one is enough
+            break
           fi
         done
       else
-        # if no IP, it shouldn't make way to nodes.list
+        # if no IP, it shouldn't make its way to nodes.list
         [ -n "$update_nodes_list" ] && continue
       fi
       if [ -z "$update_nodes_list" ] ; then
@@ -235,33 +241,25 @@ list_nodes() {
         if [ -n "$icluster" ] || [ -n "$all" ] ; then
           [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
-          if [ -n "$extIP" ]; then
-            extIP=`echo -e "$extIP" | tr -d ' ' | tr '\n' ' '`
-            extIP="${extIP%% *}"
-            check_super_cluster $extIP "$icluster" && continue
-          fi
-          if [ -n "$intIP" ]; then
-            intIP=`echo -e "$intIP" | tr -d ' ' | tr '\n' ' '`
-            intIP="${intIP%% *}"
-            check_super_cluster $intIP "$icluster" && continue
-          fi
+          extIPprint=`echo "$extIP" | sed 's|\n|,|'`
+          intIPprint=`echo "$intIP" | sed 's|\n|,|'`
           case $view in
             list)
-              echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: $extIP  intIP: $intIP  Cluster: $icluster  Image: $imageId  Size: $flavorId"
+              echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: $extIPprint  intIP: $intIPprint  Cluster: $icluster  Image: $imageId  Size: $flavorId"
               ;;
             table)
-              echo "$id|$name|$istatus|$region|$extIP|$intIP|$icluster|$imageId|$flavorId"
+              echo "$id|$name|$istatus|$region|$extIPprint|$intIPprint|$icluster|$imageId|$flavorId"
               ;;
             column)
-              echo -e "ID: $id\nName: $name\nStatus: $istatus\nRegion: $region\next IP: $extIP\nintIP: $intIP\nImage: $imageId\nSize: $flavorId\n"
+              echo -e "ID: $id\nName: $name\nStatus: $istatus\nRegion: $region\next IP: $extIPprint\nintIP: $intIPprint\nImage: $imageId\nSize: $flavorId\n"
               ;;
             none)
               ;;
             *)
               echo "------------------------------------------------------------------------------"
               echo "Node ID: $id    Name: $name    Cluster: $icluster"
-              echo "Public IP: $extIP"
-              echo "Private IP: $intIP"
+              echo "Public IP: $extIPprint"
+              echo "Private IP: $intIPprint"
               echo "Node image: $imageId"
               echo "Node size: $flavorId    Status: $istatus    Region: $region"
               ;;
@@ -270,26 +268,14 @@ list_nodes() {
         fi
       else
         if [ -n "$icluster" ] ; then
-          if [ `grep -c ^$icluster\| "$rpath/../../conf/clusters.conf"` -ne 0 ] ; then
-            
-            key=`grep ^$icluster\| "$rpath/../../conf/clusters.conf" | cut -d'|' -f2`
-            for ip in $IP ; do
-              ip=`echo $ip | tr -d ' '`
-              check_super_cluster $ip "$icluster" && continue
-              nodelist+=("$ip|$key|$region|$name|$icluster|$CLOUD")
-              $debug && [ -n "$ecf" ] && log "$ip ($name) added"
-            done
-          fi
-        elif [ -n "$all" ]; then
-          for ip in $IP ; do
-            ip=`echo $ip | tr -d ' '`
+          if [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
+            key=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
             check_super_cluster $ip "$icluster" && continue
             nodelist+=("$ip|$key|$region|$name|$icluster|$CLOUD")
             $debug && [ -n "$ecf" ] && log "$ip ($name) added"
-          done
+          fi
         fi
       fi
-      
     done
     if [ -z "$noupdate" ]; then
       if [ ${#nodelist[*]} -eq 0 ]; then
@@ -300,7 +286,7 @@ list_nodes() {
       fi
     fi
   else
-    echo "No local data found. Run without --noupdate"
+    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/${rcommand}.resp and run without --noupdate if necessary."
     proper_exit 1 304
   fi
   IFS=$IFS1
