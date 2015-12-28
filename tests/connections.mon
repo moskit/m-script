@@ -33,7 +33,7 @@ NETCONNSUDP="$NETSTATCMD -uapn"
 SOCKCONNS="$NETSTATCMD -xlpn"
 
 [ -x /bin/ping ] && PING='/bin/ping'
-[ -z "$PING" ] && PING=`which ping`
+[ -z "$PING" ] && PING=`which ping 2>/dev/null`
 
 ROUTE="$NETSTATCMD -rn"
 
@@ -291,15 +291,13 @@ echo -e "\nConnections per protocol:\n-------------------------\n\n  Protocol   
 cat /proc/net/protocols | tail -n +2 | awk '{printf "%-24s %s\n", $1, $3}'
 
 # Connectivity test
-if [ -n "$CONNTEST_IP" ]; then
+if [ -z "$CONNTEST_IP" ]; then
   if [ -n "$ROUTE" ]; then
-    $ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' | grep -v ^127.0.0.1$ > "$M_TEMP/ping.tmp"
+    pinglist+=(`$ROUTE | grep 'G' | grep -v 'Flags' | awk '{print $2}' | grep -v ^127.0.0.1$`)
   fi
-  [ -f /etc/resolv.conf ] && grep '^nameserver' /etc/resolv.conf | awk '{print $2}' >> "$M_TEMP/ping.tmp"
-  [ -f "$M_TEMP/ping.tmp" ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
-  failedip=""
-  pingedip=""
-  while read LINE
+  [ -f /etc/resolv.conf ] && pinglist+=(`grep '^nameserver' /etc/resolv.conf | awk '{print $2}'`)
+  [ -n "$pinglist" ] || echo "<***> Unable to get any IP from system network settings to ping (tried: gateway, nameserver). Please provide IP address for the ping test in conf/mon.conf file"
+  for LINE in `echo "${pinglist[*]}"`
   do
    [ -z "$LINE" ] || $PING -c1 $LINE >/dev/null
    if [ "$?" != "0" ] ; then
@@ -307,7 +305,7 @@ if [ -n "$CONNTEST_IP" ]; then
    else
     pingedip="$pingedip $LINE"
    fi
-  done < "$M_TEMP/ping.tmp"
+  done
 else
   for connip in $CONNTEST_IP
   do
@@ -319,7 +317,7 @@ else
     fi
   done
 fi
-rm -f "$M_TEMP/ping.tmp"
+
 if [ "_$CONNTEST_IP" == "_127.0.0.1" ] || [ "_$CONNTEST_IP" == "_localhost" ]; then
   if [ -n "$pingedip" ]; then
    echo -e "\nLocalhost pinged successfully"
