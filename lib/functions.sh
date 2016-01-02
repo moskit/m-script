@@ -340,12 +340,13 @@ EOF
 
 check_interval() {
   [ -z "$rpath" ] && rpath="$M_TEMP"
-  interval=`date -d "1970/01/01 +$1" +"%s" 2>>/dev/null`
+  interval=`date -d "1970/01/01 +$1" +"%s" 2>/dev/null`
   [ -z "$interval" ] && return 1
   local currinterval=`cat "$rpath/${callername}.interval.tmp" 2>/dev/null || echo 0`
   timeshift=`cat "$M_TEMP/timeshift" || echo 0`
   if [ $currinterval -ge $interval ]; then
-    (expr $FREQ + $timeshift || echo 0) > "$rpath/${callername}.interval.tmp"
+    overflow=`expr $currinterval - $interval`
+    (expr $FREQ + $timeshift + $overflow || echo 0) > "$rpath/${callername}.interval.tmp"
     return 0
   else
     (expr $currinterval + $FREQ + $timeshift || echo 0) > "$rpath/${callername}.interval.tmp"

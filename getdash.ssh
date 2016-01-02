@@ -34,7 +34,7 @@ timeindexnow=`date +"%s"`
 
 monitor="$1"
 if [ -z "$monitor" ]; then
-  monitor="servers"
+  monitor="nodes"
 else
   shift
   if [ -n "$1" ]; then
@@ -63,47 +63,47 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
     $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
     mpath=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
     [ -z "$mpath" ] && mpath="/opt/m"
-    for server in `grep "|${cld}$" "$rpath/nodes.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
+    for node in `grep "|${cld}$" "$rpath/nodes.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       time0=`date +"%s"`
-      ip=${server%%|*}
+      ip=${node%%|*}
       "$M_ROOT"/helpers/localips | grep -q "^$ip$" && continue
       key=`"$M_ROOT"/helpers/find_key node $ip` || continue
-      servername=`echo $server | cut -d'|' -f4`
-      [ -d "$rpath/www/$monitor/$cld/$clustered_as/$servername" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$servername"
+      nodename=`echo $node | cut -d'|' -f4`
+      [ -d "$rpath/www/$monitor/$cld/$clustered_as/$nodename" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$nodename"
       (IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > "$M_TEMP/${ip}.${monitor}.remote.dash.list")
-      find "$rpath/www/$monitor/$cld/$clustered_as/$servername" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"
+      find "$rpath/www/$monitor/$cld/$clustered_as/$nodename" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"
       nd=(`diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\< | sed 's|^< ||'`)
       if [ -n "$nd" ] ; then
         nd+=( "dash.html" "report.html" )
         scplist="{`echo -n "${nd[*]}" | tr '\n' ','`}"
-        (IFS=$IFS1 ; $SCP -i "$key" -P $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip":"$mpath/www/$monitor/localhost/$scplist" "$rpath/www/$monitor/$cld/$clustered_as/$servername/" > /dev/null 2>&1 </dev/null &)
+        (IFS=$IFS1 ; $SCP -i "$key" -P $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip":"$mpath/www/$monitor/localhost/$scplist" "$rpath/www/$monitor/$cld/$clustered_as/$nodename/" > /dev/null 2>&1 </dev/null &)
         unset nd
-        [ -e "$rpath/www/$monitor/$cld/$clustered_as/$servername/notfound" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$servername/notfound"
-        [ -e "$rpath/www/$monitor/$cld/$clustered_as/$servername/stopped" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$servername/stopped"
+        [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
+        [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped"
       else
-        log "No data received from server ${servername}, cluster ${cluster}, monitor ${monitor}"
-        if [ -e "$rpath/www/$monitor/$cld/$clustered_as/$servername/notfound" ] ; then
-          rm -f "$rpath/www/$monitor/$cld/$clustered_as/$servername/notfound"
-          touch "$rpath/www/$monitor/$cld/$clustered_as/$servername/stopped"
+        log "No data received from node ${nodename}, cluster ${cluster}, monitor ${monitor}"
+        if [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound" ] ; then
+          rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
+          touch "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped"
         else
-          touch "$rpath/www/$monitor/$cld/$clustered_as/$servername/notfound"
+          touch "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
         fi
       fi
       for dashfile in `diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\> | sed 's|^> ||'` ; do
-        [ -n "$dashfile" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$servername/$dashfile"
+        [ -n "$dashfile" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/$dashfile"
       done
       time1=`date +"%s"`
       timediff=`expr $time1 - $time0`
       if [ "_$SQLITE3" == "_1" ] ; then
         daynow=$(date +"%Y%m%d")
-        $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$clustered_as/$servername', '$timediff')"
+        $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$clustered_as/$nodename', '$timediff')"
       else
-        log "$clustered_as/${servername}: $timediff sec"
+        log "$clustered_as/${nodename}: $timediff sec"
       fi
     done
-    for server in `find "$rpath/www/$monitor/$cld/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
-      [ `cat "$rpath/nodes.list" | grep "|${cld}$" | grep "|$cluster|" | grep -c "|${server##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${server##*/}"
+    for node in `find "$rpath/www/$monitor/$cld/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
+      [ `cat "$rpath/nodes.list" | grep "|${cld}$" | grep "|$cluster|" | grep -c "|${node##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${node##*/}"
     done
     unset clustered_as
   done
@@ -112,7 +112,7 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
   for cluster in `find "$rpath/www/$monitor/$cld" -mindepth 1 -maxdepth 1 -type d` ; do
     cluster=${cluster##*/}
     [ -z "$cluster" ] && continue
-    if [ "_$monitor" == "_servers" ] ; then
+    if [ "_$monitor" == "_nodes" ] ; then
       # Clusters not present in clusters.conf are backuped to M_ROOT/mon.backups/dash
       if [ -n "$cluster" -a "$cluster" != "localhost" ]; then
         if [ `grep -c "^$cluster|" "$rpath/conf/clusters.conf"` -eq 0 ]; then
@@ -122,11 +122,11 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
         fi
       fi
       # Servers terminated or stopped
-      for server in `find "$rpath/www/$monitor/$cld/$cluster" -mindepth 1 -maxdepth 1 -type d` ; do
-        server=${server##*/}
-        if [ `grep "|${cld}$" "$rpath/nodes.list" | grep -E -c "^$server\||\|$server\|" "$rpath/nodes.list"` -eq 0 ]; then
-          cp -ru "$rpath/www/$monitor/$cld/$cluster/$server" "$rpath/mon.backups/dash/$cld/"
-          rm -rf "$rpath/www/$monitor/$cld/$cluster/$server"
+      for node in `find "$rpath/www/$monitor/$cld/$cluster" -mindepth 1 -maxdepth 1 -type d` ; do
+        node=${node##*/}
+        if [ `grep "|${cld}$" "$rpath/nodes.list" | grep -E -c "^$node\||\|$node\|" "$rpath/nodes.list"` -eq 0 ]; then
+          cp -ru "$rpath/www/$monitor/$cld/$cluster/$node" "$rpath/mon.backups/dash/$cld/"
+          rm -rf "$rpath/www/$monitor/$cld/$cluster/$node"
         fi
       done
     fi
