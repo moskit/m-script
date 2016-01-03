@@ -24,13 +24,13 @@ done
 
 if [ -z "$localcluster" ]; then
   echo -e "<div class=\"clustername\"><span class=\"indent\">localhost</span></div>\n<div class=\"cluster\" id=\"localhost\">\n<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"localhost_status\" onclick=\"showDetails('localhost_status','serverdetails')\">localhost</span>"
-  cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
+  cat "../nodes/localhost/dash.html" 2>/dev/null || echo "No data"
   echo -e "</div>\n<div class=\"details\" id=\"localhost_details\"></div>\n</div>\n</div>"
 else
-  [ -d "../servers/$localcloud/$localcluster/$localserver" ] || install -d "../servers/$localcloud/$localcluster/$localserver"
+  [ -d "../nodes/$localcloud/$localcluster/$localserver" ] || install -d "../nodes/$localcloud/$localcluster/$localserver"
 fi
 
-for cluster in `find ../servers/*/* -maxdepth 0 -type d 2>/dev/null`
+for cluster in `find ../nodes/*/* -maxdepth 0 -type d 2>/dev/null`
 do
   cld=`echo "$cluster" | cut -d'/' -f3`
   cls=`echo "$cluster" | cut -d'/' -f4`
@@ -52,9 +52,9 @@ do
   if [ "_$cls" == "_$localcluster" ] && [ "_$cld" == "_$localcloud" ]; then
     node="${cld}/${cls}|${localserver}"
     echo -e "<div class=\"server\" id=\"localhost\">\n<span class=\"servername clickable\" id=\"${node}_status\" onclick=\"showDetails('${node}_status','serverdetails')\" title=\"$localserver\">${localserver:0:20}</span>"
-    cat "../servers/localhost/dash.html" 2>/dev/null || echo "No data"
-    [ -e "../servers/localhost/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
-    [ -e "../servers/localhost/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
+    cat "../nodes/localhost/dash.html" 2>/dev/null || echo "No data"
+    [ -e "../nodes/localhost/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
+    [ -e "../nodes/localhost/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
     echo -e "</div>\n<div class=\"details\" id=\"${node}_details\"></div>"
   fi
 
@@ -63,9 +63,9 @@ do
     node="${cld}/${cls}|${server##*/}"
     serverh="${server##*/}"
     echo -e "<div class=\"server\" id=\"$node\">\n<span class=\"servername clickable\" id=\"${node}_status\" onclick=\"showDetails('${node}_status','serverdetails')\" title=\"$serverh\">${serverh:0:20}</span>"
-      cat "../servers/$server/dash.html" 2>/dev/null || echo "No data"
-      [ -e "../servers/$server/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
-      [ -e "../servers/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
+      cat "../nodes/$server/dash.html" 2>/dev/null || echo "No data"
+      [ -e "../nodes/$server/notfound" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: orange;\">&nbsp;</div></div>"
+      [ -e "../nodes/$server/stopped" ] && echo "<div class=\"chunk\"><div style=\"width:4px;height:4px;margin: 8px 3px 8px 3px;background-color: red;\">&nbsp;</div></div>"
     echo -e "</div>\n<div class=\"details\" id=\"${node}_details\"></div>"
   done
   close_cluster

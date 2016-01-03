@@ -73,7 +73,7 @@ log() {
   echo "`date +"%m.%d %H:%M:%S"` ($$) ${0##*/}: ${@}">>"$LOG"
 }
 
-[ -z "$folder" ] && folder="servers/localhost"
+[ -z "$folder" ] && folder="nodes/localhost"
 [ -d "$M_ROOT/www/$folder" ] || install -d "$M_ROOT/www/$folder"
 source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
