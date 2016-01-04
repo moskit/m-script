@@ -71,35 +71,47 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
       key=`"$M_ROOT"/helpers/find_key node $ip` || continue
       nodename=`echo $node | cut -d'|' -f4`
       [ -d "$rpath/www/$monitor/$cld/$clustered_as/$nodename" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$nodename"
-      (IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" | sort > "$M_TEMP/${ip}.${monitor}.remote.dash.list")
-      find "$rpath/www/$monitor/$cld/$clustered_as/$nodename" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"
-      nd=(`diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\< | sed 's|^< ||'`)
-      if [ -n "$nd" ] ; then
-        nd+=( "dash.html" "report.html" )
-        scplist="{`echo -n "${nd[*]}" | tr '\n' ','`}"
-        (IFS=$IFS1 ; $SCP -i "$key" -P $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip":"$mpath/www/$monitor/localhost/$scplist" "$rpath/www/$monitor/$cld/$clustered_as/$nodename/" > /dev/null 2>&1 </dev/null &)
-        unset nd
-        [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
-        [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped"
+      rdl=$(IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" || echo $? | sort)
+      if [ "_$rdl" == "_255" ]; then
+        timeid=`date +"%m.%d_%H:%M:%S"`
+        echo "<h3>`date`</h3>\n\n<div class=\"info info_w3\">Unable to get monitoring data! This node is either down or not accessible by SSH.</div>\n" > "$rpath/www/$monitor/$cld/$clustered_as/$nodename/${timeid}_${nodename}.html"
+        echo "<div id=\"${timeid}_${nodename}\" title=\"${timeid}\" class=\"chunk w3\" onclick=\"showData('${timeid}_${nodename}','/nodes')\">&nbsp;<div id=\"data_${timeid}_${nodename}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.list"
+        sed -i '1d' "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.list"
+      elif [ "_$rdl" == "_1" ]; then
+        echo "<div class=\"chunk empty\">&nbsp;</div>\n" >> "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.list"
       else
-        log "No data received from node ${nodename}, cluster ${cluster}, monitor ${monitor}"
-        if [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound" ] ; then
-          rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
-          touch "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped"
+        echo "$rdl" > "$M_TEMP/${ip}.${monitor}.remote.dash.list"
+        find "$rpath/www/$monitor/$cld/$clustered_as/$nodename" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"
+        nd=(`diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\< | sed 's|^< ||'`)
+        if [ -n "$nd" ] ; then
+          nd+=( "dash.html" "report.html" )
+          scplist="{`echo -n "${nd[*]}" | tr '\n' ','`}"
+          (IFS=$IFS1 ; $SCP -i "$key" -P $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip":"$mpath/www/$monitor/localhost/$scplist" "$rpath/www/$monitor/$cld/$clustered_as/$nodename/" > /dev/null 2>&1 </dev/null &)
+          unset nd
+          [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
+          [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped"
         else
-          touch "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
+          log "No data received from node ${nodename}, cluster ${cluster}, monitor ${monitor}"
+          if [ -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound" ] ; then
+            rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
+            touch "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped"
+          else
+            if [ ! -e "$rpath/www/$monitor/$cld/$clustered_as/$nodename/stopped" ] ; then
+              touch "$rpath/www/$monitor/$cld/$clustered_as/$nodename/notfound"
+            fi
+          fi
         fi
-      fi
-      for dashfile in `diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\> | sed 's|^> ||'` ; do
-        [ -n "$dashfile" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/$dashfile"
-      done
-      time1=`date +"%s"`
-      timediff=`expr $time1 - $time0`
-      if [ "_$SQLITE3" == "_1" ] ; then
-        daynow=$(date +"%Y%m%d")
-        $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$clustered_as/$nodename', '$timediff')"
-      else
-        log "$clustered_as/${nodename}: $timediff sec"
+        for dashfile in `diff "$M_TEMP/${ip}.${monitor}.remote.dash.list" "$M_TEMP/${ip}.${monitor}.local.dash.list" | grep ^\> | sed 's|^> ||'` ; do
+          [ -n "$dashfile" ] && rm -f "$rpath/www/$monitor/$cld/$clustered_as/$nodename/$dashfile"
+        done
+        time1=`date +"%s"`
+        timediff=`expr $time1 - $time0`
+        if [ "_$SQLITE3" == "_1" ] ; then
+          daynow=$(date +"%Y%m%d")
+          $SQLITE "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$clustered_as/$nodename', '$timediff')"
+        else
+          log "$clustered_as/${nodename}: $timediff sec"
+        fi
       fi
     done
     for node in `find "$rpath/www/$monitor/$cld/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
