@@ -129,8 +129,8 @@ save_details() {
   echo -e "\n`date`\n\nCluster|$cluster\nName|$name\nIP|$ip\n" >> "$rpath/../ganeti.log"
   sed -i "/^${name}|/d" "$M_ROOT/cloud/${CLOUD}.list"
   grep "^${name}|" "$M_TEMP/show_nodes.resp" >> "$M_ROOT/cloud/${CLOUD}.list"
-  echo "$ip|$thekey|$node|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
-  echo "$ip|$thekey|$node|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
+  echo "$ip|${thekey##*/}|$node|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  echo "$ip|${thekey##*/}|$node|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
   return 0
 }
 
