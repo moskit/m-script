@@ -105,20 +105,20 @@ request() {
     updateimages=false
     updateregions=false
   fi
-  if [ -n "$resolveids" ] && [ -z "$update_nodes_list" ]; then
-    if [ ! -e "$M_TEMP/flavors.list" ]; then
-      updateflavors=true
-    fi
-    if [ ! -e "$M_TEMP/images.list" ]; then
-      [ `cat "$M_TEMP/images.list" | wc -l` -gt 1 ] || updateimages=true
-    fi
-    if [ ! -e "$M_TEMP/regions.list" ]; then
-      [ `cat "$M_TEMP/regions.list" | wc -l` -gt 1 ] || updateregions=true
-    fi
-    if [ ! -e "$M_TEMP/kernels.list" ]; then
-      [ `cat "$M_TEMP/kernels.list" | wc -l` -gt 1 ] || updatekernels=true
-    fi
+
+  if [ `cat "$M_TEMP/flavors.list" 2>/dev/null | wc -l` -lt 2 ]; then
+    updateflavors=true
   fi
+  if [ `cat "$M_TEMP/images.list" 2>/dev/null | wc -l` -lt 2 ]; then
+    updateimages=true
+  fi
+  if [ `cat "$M_TEMP/regions.list" 2>/dev/null | wc -l` -lt 2 ]; then
+    updateregions=true
+  fi
+  if [ `cat "$M_TEMP/kernels.list" 2>/dev/null | wc -l` -lt 2 ]; then
+    updatekernels=true
+  fi
+
   # IPs of all nodes
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" > "$M_TEMP/ips.list"
   

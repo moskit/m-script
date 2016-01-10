@@ -201,6 +201,7 @@ disk_request() {
 
 create_config() {
   log "Creating config..."
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1\""
   $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.create_config.resp"
 }
 
@@ -220,7 +221,7 @@ ip_request() {
 }
 
 get_assigned_ip() {
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}" | grep '"IPADDRESS"|' | cut -sd'|' -f2 | tr -d '"'
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" | grep '"IPADDRESS"|' | cut -sd'|' -f2 | tr -d '"'
 }
 
 metadata_request() {
@@ -258,7 +259,7 @@ wait_ready() {
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}\""
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
-    jobstatus=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}" | "$M_ROOT/lib/json2txt"`
+    jobstatus=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}&LinodeID=${newid}" | "$M_ROOT/lib/json2txt"`
     if [ "_`echo "$jobstatus" | grep \/\"HOST_SUCCESS\" | cut -sd'|' -f2`" == "_1" ]; then
       log "Job $1 finished"
       return 0
@@ -346,8 +347,8 @@ else
   $dry && newid=666
   if [ -n "$newid" ] ; then
     disk_request && log "Disks created" || exit_status=2
-    ip_request && log "IPs added" || exit_status=1
-    metadata_request && log "Metadata updated" || exit_status=1
+    ip_request && log "IPs added" || exit_status=3
+    metadata_request && log "Metadata updated" || exit_status=4
     extIP=`get_assigned_ip`
     create_config
     $dry || save_details
