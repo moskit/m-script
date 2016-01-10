@@ -24,7 +24,7 @@ CURL=`which curl 2>/dev/null`
 
 debug=false
 
-possible_options="cluster state filter region short noupdate view update_nodes_list forceupdate all status count resolveids cloud"
+possible_options="cluster state filter region short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -59,6 +59,7 @@ fi
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+[ -n "$update_node_list" ] && update_nodes_list=1
 
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
@@ -94,24 +95,29 @@ kernelid() {
 }
 
 request() {
-  local updateflavors updateimages
-  updateflavors=false
-  updateimages=false
-  updateregions=false
-  
+  local updateflavors updateimages updateregions
+
   log "calling API"
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
-  if [ ! -n "`find "$M_TEMP" -mtime -1 -name flavors.resp`" ]; then
-    updateflavors=true
+  
+  if [ -z "$update_all_lists" ]; then
+    updateflavors=false
+    updateimages=false
+    updateregions=false
   fi
-  if [ ! -n "`find "$M_TEMP" -mtime -1 -name images.resp`" ]; then
-    updateimages=true
-  fi
-  if [ ! -n "`find "$M_TEMP" -mtime -1 -name regions.resp`" ]; then
-    updateregions=true
-  fi
-  if [ ! -n "`find "$M_TEMP" -mtime -1 -name kernels.resp`" ]; then
-    updatekernels=true
+  if [ -n "$resolveids" ] && [ -z "$update_nodes_list" ]; then
+    if [ ! -e "$M_TEMP/flavors.list" ]; then
+      updateflavors=true
+    fi
+    if [ ! -e "$M_TEMP/images.list" ]; then
+      [ `cat "$M_TEMP/images.list" | wc -l` -gt 1 ] || updateimages=true
+    fi
+    if [ ! -e "$M_TEMP/regions.list" ]; then
+      [ `cat "$M_TEMP/regions.list" | wc -l` -gt 1 ] || updateregions=true
+    fi
+    if [ ! -e "$M_TEMP/kernels.list" ]; then
+      [ `cat "$M_TEMP/kernels.list" | wc -l` -gt 1 ] || updatekernels=true
+    fi
   fi
   # IPs of all nodes
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" > "$M_TEMP/ips.list"
@@ -241,8 +247,8 @@ list_nodes() {
         if [ -n "$icluster" ] || [ -n "$all" ] ; then
           [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
-          extIPprint=`echo "$extIP" | sed 's|\\n|,|g'`
-          intIPprint=`echo "$intIP" | sed 's|\\n|,|g'`
+          extIPprint=`echo "$extIP" | sed 's|\\\n|,|g'`
+          intIPprint=`echo "$intIP" | sed 's|\\\n|,|g'`
           case $view in
             list)
               echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: ${extIPprint%,}  intIP: ${intIPprint%,}  Cluster: $icluster  Image: $imageId  Size: $flavorId"
