@@ -220,13 +220,25 @@ fi
 
 ([ -z "$from" ] || [ -z "$to" ]) && echo "Usage: ${0##*/} <options> <local path> <remote path>" && exit 1
 
-source "$rpath/../conf/mon.conf"
-source "$rpath/../conf/deployment.conf"
-source "$rpath/../conf/clouds/${CLOUD}.conf"
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/deployment.conf"
+
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$cloud" ] || cloud=$CLOUD
-[ -n "$cloud" ] || cloud=common
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+[ -z "$cluster" ] && cluster=$M_CLUSTER
+
+if [ -z "$cloud" ]; then
+  if [ -n "$ip" ]; then
+    cloud=`grep "^$ip|" "$M_ROOT/nodes.list" | cut -sd'|' -f6`
+  elif [ -n "$cluster" ]; then
+    cloud=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f12`
+  fi
+fi
+[ -z "$cloud" ] && echo "No cloud found, check your configuration!" && exit 1
+
+source "$M_ROOT/conf/clouds/${cloud}.conf"
+
 export PATH="$M_ROOT/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
 [ -n "$SSHPORT" ] || SSHPORT=22
 
@@ -268,7 +280,7 @@ rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 ## role
 ## realrole - same as ROLEINCL, but when file to deploy is found in that role,
 ## not just script containing deploy_file
-[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/$roleINCL.conf" ] && store_vars "$ROLES_ROOT/conf/$roleINCL.conf"
+[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/${ROLEINCL}.conf" ] && store_vars "$ROLES_ROOT/conf/${ROLEINCL}.conf"
 
 if [ -z "$local" ]; then
 

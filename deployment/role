@@ -27,7 +27,7 @@ possible_options="role cluster flavor method all strip"
 printcol() {
   if [ -n "$1" ] ; then
     l=`expr $col - 1`
-    str=`echo "$1" | cut -b $l`
+    str=`echo "$1" | cut -b 1-$l`
     printf "%-${l}s" $str
   else
     printf "%${col}s"
@@ -214,8 +214,9 @@ case $command1 in
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3)) || col=26
+        [ -n "$COL" ] && col=$((COL/2)) || col=40
         printcol "Script"
+        [ -n "$COL" ] && col=$((COL/4)) || col=20
         printcol "Meta"
         echo "Role"
         printf "%${COL}s\n" | tr ' ' '-'
