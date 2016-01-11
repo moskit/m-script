@@ -18,7 +18,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
-possible_options="cloud name ip return verbose cluster help"
+possible_options="cloud name ip return verbose cluster help updatelist"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`

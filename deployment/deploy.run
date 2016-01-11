@@ -184,11 +184,11 @@ fi
 # if some other role's script is included in meta script, source its variables
 # too. Same for scripts symlinked from other roles.
 [ -h "$ROLES_ROOT/roles/$file" ] && realfile=`readlink -f "$ROLES_ROOT/roles/$file"` || realfile="$ROLES_ROOT/roles/$file"
-realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/roles||"`
+realfile=`echo "$realfile" | sed "s|$ROLES_ROOT/roles/||"`
 roleincluded=${realfile%%/*} #*/
 if [ "_$roleincluded" != "_$role" ]; then
-  if [ -e "$ROLES_ROOT/conf/$roleincluded.conf" ]; then
-    store_vars "$ROLES_ROOT/conf/$roleincluded.conf"
+  if [ -e "$ROLES_ROOT/conf/${roleincluded}.conf" ]; then
+    store_vars "$ROLES_ROOT/conf/${roleincluded}.conf"
     [ $? -ne 0 ] && echo "ERROR substituting variables for role $roleincluded" && exit 1
   fi
   export ROLEINCL=$roleincluded
