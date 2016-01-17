@@ -30,7 +30,9 @@ if [ -z "$CURL" ]; then
   LINKS=`which links 2>/dev/null`
   WGET=`which wget 2>/dev/null`
 fi
-[ -z "$TIMEOUT" ] && TIMEOUT=5
+
+# TODO find a place for this
+TIMEOUT=300
 
 getwarn() {
   [ -z "$probetime3" ] && return
@@ -48,6 +50,9 @@ do
   probetime1=`echo $mserver|cut -sd'|' -f4`
   probetime2=`echo $mserver|cut -sd'|' -f5`
   probetime3=`echo $mserver|cut -sd'|' -f6`
+  if [ -z "$TIMEOUT" ]; then
+    [ -n "$probetime3" ] && TIMEOUT=`expr $probetime3 + 1 2>/dev/null || echo 5` || TIMEOUT=5
+  fi
   testres=true
   [ -z "$servername" ] && servername=$serverip
   if [ -z "$serverport" ] ; then
@@ -85,7 +90,7 @@ do
         echo "<***> Curl test connect to $servername failed!"
         ;;
         28)
-        echo "<***> Curl test connect to $servername timeout!"
+        echo "<***> Curl test connect to $servername timeout! (timeout set to $TIMEOUT seconds)"
         ;;
         3)
         echo "<**> Curl test: bad URL ${serverip}:$serverport"

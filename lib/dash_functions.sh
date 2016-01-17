@@ -163,7 +163,7 @@ print_dashline() {
     case $dfpdsource in
     folder)
       [ -d "$dpath/../www/$@" ] || install -d "$dpath/../www/$@"
-      cat "$dpath/../www/$@/dash.html" 2>/dev/null
+      tail -n $slotline_length "$dpath/../www/$@/dash.html" 2>/dev/null
       ;;
     database)
       dfpddbpath=$1

@@ -122,6 +122,8 @@ Options:
                         
 --size=<small|thumbnail>
                         If not defined, it's the default big graph
+
+--min=<number|auto>     Minimal value for Y axis. 0 by default.
                         
 --scale                 Used to create combined graphs with multiple metrics.
                         Makes exact values useless. Good only to see relative
@@ -155,7 +157,7 @@ found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
   [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
-if [[ found -eq 1 ]]; then
+if [[ $found -eq 1 ]]; then
   missing_options=${missing_options#*,}
   log "Necessary options: $missing_options not found"
   exit 1
@@ -403,7 +405,7 @@ $debug && log "mp: $mp"
 if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
 # 1 mln is a reasonable limit (scale 2 x 3); change to i<=3 to make it billion
   for ((i=1; i<=$orderm; i++)); do
-    [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / $metricmax" | bc`
+    [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / ($metricmax - $metricmin)" | bc`
     $debug && log "mp: $mp"
   done
 fi
@@ -807,7 +809,9 @@ log "slegendY=$slegendY"
     if [ "_$scale" == "_yes" ] ; then cat "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" ; else cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} ; fi | while read LINE
     do
       X=`echo $LINE | cut -d'|' -f1`
-      shiftYY=`expr $areaV + $padding + $metricmin - $shiftY`
+      # shiftY is Y value of X axis
+      # shiftYY is the shift of SVG coordinates due to shift of X axis
+      shiftYY=`expr $areaV + $padding - $metricmin + $shiftY`
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
       if [ -z "$X" ] ; then continue ; fi
       X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
@@ -820,7 +824,7 @@ log "slegendY=$slegendY"
   else
     declare -i X
     X=`expr $padding + $legendH + $axis`
-    shiftYY=`expr $areaV + $padding + $metricmin - $shiftY`
+    shiftYY=`expr $areaV + $padding - $metricmin + $shiftY`
     tac "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | while read LINE
     do
       Y=${LINE%.*}
