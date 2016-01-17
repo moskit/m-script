@@ -398,7 +398,7 @@ if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
 fi
 [ -z "$metricmin" ] && metricmin=0
 [ -z "$metricmax" ] && metricmax=$areaV
-mp=`solve 2 "$areaV / $metricmax"`
+mp=`solve 2 "$areaV / ($metricmax - $metricmin)"`
 
 $debug && log "mp: $mp"
 
@@ -737,7 +737,7 @@ fi
 ires=`echo "$mp * $res" | bc`
 ires=${ires%.*}
 log "ires: $mp * $res = $ires"
-# if ires is not integer, it will be a catastrophe below
+# if ires is not integer, it will cause a catastrophe below
 expr $ires : ".*[^0-9]" >/dev/null && log "ERROR: ires value is not integer! Exiting.." && exit 1
 i=`expr $legendV + $padding + $axis`
 log "i: $legendV + $padding + $axis = $i"

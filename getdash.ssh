@@ -62,7 +62,7 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
     [ -z "$clustered_as" ] && clustered_as="$cluster"
     $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
     mpath=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
-    [ -z "$mpath" ] && mpath="/opt/m"
+    [ -z "$mpath" ] && mpath="$M_ROOT"
     for node in `grep "|${cld}$" "$rpath/nodes.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       time0=`date +"%s"`
@@ -71,7 +71,8 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
       key=`"$M_ROOT"/helpers/find_key node $ip` || continue
       nodename=`echo $node | cut -d'|' -f4`
       [ -d "$rpath/www/$monitor/$cld/$clustered_as/$nodename" ] || install -d "$rpath/www/$monitor/$cld/$clustered_as/$nodename"
-      rdl=$(IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" || echo $? | sort)
+      rdl=$(IFS=$IFS1 ; $SSH -i "$key" -p $SSHPORT $SSH_OPTS "$SSH_REMOTE_USER"@"$ip" find "$mpath/www/$monitor/localhost" -type f -printf \"%f\\n\" || echo $?)
+      rdl=`echo "$rdl" | sort`
       if [ "_$rdl" == "_255" ]; then
         timeid=`date +"%m.%d_%H:%M:%S"`
         echo "<h3>`date`</h3>\n\n<div class=\"info info_w3\">Unable to get monitoring data! This node is either down or not accessible by SSH.</div>\n" > "$rpath/www/$monitor/$cld/$clustered_as/$nodename/${timeid}_${nodename}.html"
