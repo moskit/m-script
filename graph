@@ -719,9 +719,13 @@ declare -i i
 declare -i imark
 # where the Y axis zero is
 if $minauto ; then
-  imark=`expr $metricmin / $res \* $res`
+  if [ $metricmin -lt 0 ]; then
+    imark=`expr $metricmin / $res \* $res - $res`
+  else
+    imark=`expr $metricmin / $res \* $res`
+  fi
 log "imark=$imark"
-  # how much above the axis zero the minimum value is
+  # how much above the axis zero the minimum value is in SVG coordinates
   shiftY=`echo "($metricmin - $imark) * $mp" | bc 2>/dev/null`
   shiftY=${shiftY%.*}
   [ -z "$shiftY" ] && shiftY=0
