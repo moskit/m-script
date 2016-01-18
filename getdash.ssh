@@ -24,6 +24,7 @@ rpath=${xcommand%/*}
 [ -z "$SSH" ] && SSH=`which ssh 2>/dev/null`
 
 source "$rpath/conf/mon.conf"
+source "$rpath/conf/dash.conf"
 source "$rpath/lib/functions.sh"
 
 SQLITE=dbquery
