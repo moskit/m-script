@@ -80,6 +80,11 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
         sed -i '1d' "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.html"
       elif [ "_$rdl" == "_1" ]; then
         echo "<div class=\"chunk empty\">&nbsp;</div>" >> "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.html"
+        exc=`cat "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.html" | wc -l`
+        exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
+        if [[ $exc -gt 0 ]] ; then
+          sed -i "1,${exc}d" "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
+        fi
       else
         echo "$rdl" > "$M_TEMP/${ip}.${monitor}.remote.dash.list"
         find "$rpath/www/$monitor/$cld/$clustered_as/$nodename" -type f -printf "%f\n" | sort > "$M_TEMP/${ip}.${monitor}.local.dash.list"

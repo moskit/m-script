@@ -98,12 +98,10 @@ case $type in
       log "Generating HTML from report $textfile (does not exist) type: $type id: $id folder: $folder css: $css"
       echo "<p>No data</p>" >> "$M_ROOT/www/$folder/${id}_${serverid}.html"
     fi
-    exc=`cat "$M_ROOT/www/$folder/dash.html" | wc -l` 2>>"$M_ROOT/logs/dashboard.log"
+    exc=`cat "$M_ROOT/www/$folder/dash.html" | wc -l`
     exc=`expr $exc - $slotline_length` || exc=`expr $exc - 50`
     if [[ $exc -gt 0 ]] ; then
-      for ((i=1; i<=${exc}; i++)) ; do
-        sed -i '1d' "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
-      done
+      sed -i "1,${exc}d" "$M_ROOT/www/$folder/dash.html" 2>>"$M_ROOT/logs/dashboard.log"
     fi
     if [[ $exc -lt 0 ]] ; then
       for ((i=$exc; i<=0; i++)) ; do
