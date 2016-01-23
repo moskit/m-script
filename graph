@@ -380,18 +380,18 @@ else
 fi
 [ -z "$maxres" ] && log "Was unable to find the maximum, exiting" && exit 1
 
-Nmax=0
-Nmin=0
 if $minauto ; then
   # required for the case of multiple metrics
-  metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ `solve 2 "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+  metricminfp=$(echo $minres | tr '|' '\n' | while read N ; do [ -z "$Nmin" ] && Nmin=$N ; [ `solve 2 "$N < $Nmin"` -eq 1 ] && Nmin=$N ; echo $Nmin; done | tail -1) ; metricmin=${metricminfp%.*}
+  log "metricmin: $metricmin"
 else
   metricminfp=0
   metricmin=0
 fi
-metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ `solve 2 "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
+metricmaxfp=$(echo $maxres | tr '|' '\n' | while read N ; do [ -z "$Nmax" ] && Nmax=$N ; [ `solve 2 "$N > $Nmax"` -eq 1 ] && Nmax=$N ; echo $Nmax; done | tail -1) ; metricmax=${metricmaxfp%.*} ; metricmax=`expr $metricmax + 1`
 $debug && log "metricmaxfp: $metricmaxfp  metricmax: $metricmax"
 orderm=`expr ${#metricmax} / 3`
+unset Nmin Nmax
 if [ -z "$metricminfp" -o -z "$metricmaxfp" ] ; then
   log "Error getting minimum and maximum values for $metric"
   exit 1
@@ -724,12 +724,12 @@ if $minauto ; then
   else
     imark=`expr $metricmin / $res \* $res`
   fi
-log "imark=$imark"
+  log "imark=$imark"
   # how much above the axis zero the minimum value is in SVG coordinates
-  shiftY=`echo "($metricmin - $imark) * $mp" | bc 2>/dev/null`
+  shiftY=`echo "- $imark * $mp" | bc 2>/dev/null`
   shiftY=${shiftY%.*}
   [ -z "$shiftY" ] && shiftY=0
-log "shiftY=$shiftY"
+  log "shiftY=$shiftY"
 else
   imark=0
   shiftY=0

@@ -5,9 +5,9 @@ source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/dash_functions.sh"
 
-ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo "$2" | tr ':' '_'`.opcountersQuery.svg)
+ex=$(find "$M_ROOT/www/graphs" -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo "$2" | tr ':' '_'`.opcountersQuery.svg)
 if [ -z "$ex" ] ; then
-"$PWD"/../../graph --database=standalone/MongoDB/mongodb.sql3 --table=servers --metric=opsTotalQPS,opsShardedTotalQPS,opsNotShardedTotalQPS --where="hostport:${2}" --perpixel --width=750 --height=300 --padding=10 --legend=160
+"$M_ROOT"/graph --database=standalone/MongoDB/mongodb.sql3 --table=servers --metric=opsTotalQPS,opsShardedTotalQPS,opsNotShardedTotalQPS --where="hostport:${2}" --perpixel --width=750 --height=300 --padding=10 --legend=160
 fi
 echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/localhost.standalone_MongoDB_mongodb.sql3_servers_hostport_`echo "$2" | tr ':' '_'`.opsTotalQPS_opsShardedTotalQPS_opsNotShardedTotalQPS.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 

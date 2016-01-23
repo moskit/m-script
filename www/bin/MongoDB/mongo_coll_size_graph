@@ -5,7 +5,7 @@ source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/dash_functions.sh"
 
-ex=$(find "$M_ROOT/graphs" -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.coll_size.svg)
+ex=$(find "$M_ROOT/www/graphs" -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.coll_size.svg)
 if [ -z "$ex" ] ; then
 "$M_ROOT"/graph --database=standalone/MongoDB/databases.sql3 --table=collections --metric=coll_size --where="ns:${1}.${2}" --perpixel --width=750 --height=300 --padding=10 --legend=160
 fi
