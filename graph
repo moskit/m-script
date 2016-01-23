@@ -403,10 +403,9 @@ mp=`solve 2 "$areaV / ($metricmax - $metricmin)"`
 $debug && log "mp: $mp"
 
 if [ `solve 2 "$mp > 0"` -eq 0 ] ; then
-# 1 mln is a reasonable limit (scale 2 x 3); change to i<=3 to make it billion
   for ((i=1; i<=$orderm; i++)); do
     [ `solve 2 "$mp > 0"` -eq 0 ] && mp=`echo "scale=($i * 3); $areaV / ($metricmax - $metricmin)" | bc`
-    $debug && log "mp: $mp"
+    $debug && log "$i : mp=$mp"
   done
 fi
 
@@ -437,6 +436,7 @@ mp=`echo "$mpr * $d" | bc`
 $debug && log "mp: $mp"
 metricmax=`solve 2 "$areaV / $mp"`
 metricmax=${metricmax%%.*}
+metricmax=`expr $metricmin + $metricmax`
 $debug && log "min value: $metricmin  max value: $metricmax  vertical size: $areaV  coeff: $mp"
 
 if ! $perpixel ; then
