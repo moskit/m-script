@@ -7,7 +7,7 @@ source "$M_ROOT/lib/dash_functions.sh"
 
 ex=$(find "$M_ROOT/www/graphs" -mmin -$(expr 2 \* $freqdef / 60 ) -name localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.coll_indexsize.svg)
 if [ -z "$ex" ] ; then
-"$M_ROOT"/graph --database=standalone/MongoDB/databases.sql3 --table=collections --metric=coll_indexsize --where="ns:${1}.${2}" --perpixel --width=750 --height=300 --padding=10 --legend=160
+"$M_ROOT"/graph --database=standalone/MongoDB/databases.sql3 --table=collections --metric=coll_indexsize --where="ns:${1}.${2}" --perpixel --min=auto --width=750 --height=300 --padding=10 --legend=160
 fi
 echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/localhost.standalone_MongoDB_databases.sql3_collections_ns_${1}.${2}.coll_indexsize.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 
