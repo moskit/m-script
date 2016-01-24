@@ -445,9 +445,9 @@ fi
 
 if [ `expr $metric : .*,` -eq 0 ] ; then
   if [ -n "$as" ]; then
-    metricQ="${metricQ}${metric}*${mp} AS $as"
+    metricQ="${metricQ}(${metric}-($metricmin))*${mp} AS $as"
   else
-    metricQ="${metricQ}${metric}*${mp}"
+    metricQ="${metricQ}(${metric}-($metricmin))*${mp}"
   fi
 else
   if [ -n "$as" ]; then
@@ -455,11 +455,11 @@ else
     sas=( `echo $as | tr ',' ' '` )
     for ((i=0; i<${#smetric[*]}; i++)); do
       [ -z "${sas[$i]}" ] && sas[$i]=${smetric[i]}
-      metricQ="${metricQ}${smetric[i]}*${mp} AS ${sas[$i]},"
+      metricQ="${metricQ}(${smetric[i]}-($metricmin))*${mp} AS ${sas[$i]},"
     done
   else
     for smetric in `echo $metric | tr ',' ' '`; do
-      metricQ="${metricQ}${smetric}*${mp}"
+      metricQ="${metricQ}(${smetric}-($metricmin))*${mp}"
     done
   fi
   metricQ="${metricQ%,}"
@@ -726,7 +726,7 @@ if $minauto ; then
   fi
   log "imark=$imark"
   # how much above the axis zero the minimum value is in SVG coordinates
-  shiftY=`echo "- $imark * $mp" | bc 2>/dev/null`
+  shiftY=`echo "($metricmin - ($imark)) * $mp" | bc 2>/dev/null`
   shiftY=${shiftY%.*}
   [ -z "$shiftY" ] && shiftY=0
   log "shiftY=$shiftY"
@@ -817,7 +817,7 @@ log "slegendY=$slegendY"
       X=`echo $LINE | cut -d'|' -f1`
       # shiftY is Y value of X axis
       # shiftYY is the shift of SVG coordinates due to shift of X axis
-      shiftYY=`expr $areaV + $padding + $shiftY`
+      shiftYY=`expr $areaV + $padding - $shiftY`
       Y=`echo $LINE | cut -d'|' -f2` ; Y=${Y%.*}
       if [ -z "$X" ] ; then continue ; fi
       X=`expr \( $X - $from \) / $perdotX + $padding + $legendH + $axis`
@@ -830,7 +830,7 @@ log "slegendY=$slegendY"
   else
     declare -i X
     X=`expr $padding + $legendH + $axis`
-    shiftYY=`expr $areaV + $padding + $shiftY`
+    shiftYY=`expr $areaV + $padding - $shiftY`
     tac "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f${n} | while read LINE
     do
       Y=${LINE%.*}
