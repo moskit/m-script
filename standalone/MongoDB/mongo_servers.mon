@@ -298,31 +298,34 @@ else
     mongoport=`echo "$mongohost" | cut -sd':' -f2`
     [ -z "$mongoport" ] && mongoport=$defaultport
     mongohost="${mongohost%:*}"
-    mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "if (rs.conf()) { rs.conf().members.forEach(function(m){ print(m.host) }) }"` )
-    
-    for ((i=0; i<${#mongohosts1[*]}; i++)); do
-      mongohost1=${mongohosts1[$i]}
-      mongoport=${mongohost1#*:}
-      mongohost=${mongohost1%%:*}
-      replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this mongo
-      [ -z "$master" ] && master=`find_master "${mongohost}:${mongoport}"`
-      [ -z "$master" ] && mongoerror+=("RS member ${mongohost}:${mongoport} has lost its master\n") && continue
-      # RS members
-      [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
-    done
-    if [ -n "$members" ]; then
-      for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
-        find_rsmemberrole "$member"
-        memberhost=`ip_to_name ${member%%:*}`
-        memberport=${member#*:}
-        mongolist+=("${memberhost}:${memberport}|$mongo|${replicaset}${rsmemberrole}")
+    isrs=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.status().ok"`
+    if [ "_$isrs" == "_1" ]; then
+      mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "if (rs.conf()) { rs.conf().members.forEach(function(m){ print(m.host) }) }"` )
+      
+      for ((i=0; i<${#mongohosts1[*]}; i++)); do
+        mongohost1=${mongohosts1[$i]}
+        mongoport=${mongohost1#*:}
+        mongohost=${mongohost1%%:*}
+        replicaset=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this mongo
+        [ -z "$master" ] && master=`find_master "${mongohost}:${mongoport}"`
+        [ -z "$master" ] && mongoerror+=("RS member ${mongohost}:${mongoport} has lost its master\n") && continue
+        # RS members
+        [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
       done
-    else
-      mongoerror+=("Replicaset members not found")
-      mongolist+=("${mongohost}:${mongoport}|$mongo|${replicaset}${rsmemberrole}")
-      continue
+      if [ -n "$members" ]; then
+        for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
+          find_rsmemberrole "$member"
+          memberhost=`ip_to_name ${member%%:*}`
+          memberport=${member#*:}
+          mongolist+=("${memberhost}:${memberport}|$mongo|${replicaset}${rsmemberrole}")
+        done
+      else
+        mongoerror+=("Replicaset members not found")
+        mongolist+=("${mongohost}:${mongoport}|$mongo|${replicaset}${rsmemberrole}")
+        continue
+      fi
     fi
-    unset master members
+    unset master members isrs
   done
   echo -e ${mongolist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_servers.list"
   
@@ -367,28 +370,31 @@ if [ -n "$shardhosts" ] ; then
     [ -z "$shardhost" ] && continue
     shardhost=${shardhost#*/}
     shardhosts1=( `echo -e "$shardhost" | tr ',' '\n'` )
-    for ((i=0; i<${#shardhosts1[*]}; i++)); do
-      shardhost1=${shardhosts1[$i]}
-      shardport=${shardhost1#*:}
-      shardhost=${shardhost1%%:*}
-      replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this shard
-      [ -z "$master" ] && master=`find_master "${shardhost}:${shardport}"`
-      [ -z "$master" ] && sharderror+=("RS member ${shardhost}:${shardport} has lost its master\n") && continue
-      # RS members
-      [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
-    done
-    if [ -n "$members" ]; then
-      for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
-        find_rsmemberrole "$member"
-        memberhost=`ip_to_name ${member%%:*}`
-        memberport=${member#*:}
-        shardlist+=("${memberhost}:${memberport}|$shard|${replicaset}${rsmemberrole}")
+    isrs=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.status().ok"`
+    if [ "_$isrs" == "_1" ]; then
+      for ((i=0; i<${#shardhosts1[*]}; i++)); do
+        shardhost1=${shardhosts1[$i]}
+        shardport=${shardhost1#*:}
+        shardhost=${shardhost1%%:*}
+        replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this shard
+        [ -z "$master" ] && master=`find_master "${shardhost}:${shardport}"`
+        [ -z "$master" ] && sharderror+=("RS member ${shardhost}:${shardport} has lost its master\n") && continue
+        # RS members
+        [ -z "$members" ] && members=`(IFS=$IFSORG ; $MONGO $AUTH "$master/admin" --quiet --eval "rs.conf().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT/lib/json2txt")`
       done
-    else
-      sharderror+=("Replicaset members not found")
-      continue
+      if [ -n "$members" ]; then
+        for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
+          find_rsmemberrole "$member"
+          memberhost=`ip_to_name ${member%%:*}`
+          memberport=${member#*:}
+          shardlist+=("${memberhost}:${memberport}|$shard|${replicaset}${rsmemberrole}")
+        done
+      else
+        sharderror+=("Replicaset members not found")
+        continue
+      fi
+      unset master members
     fi
-    unset master members
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
   
