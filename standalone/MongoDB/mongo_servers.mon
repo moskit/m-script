@@ -300,7 +300,7 @@ else
     mongohost="${mongohost%:*}"
     isrs=`$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.status().ok"`
     if [ "_$isrs" == "_1" ]; then
-      mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "if (rs.conf()) { rs.conf().members.forEach(function(m){ print(m.host) }) }"` )
+      mongohosts1=( `$MONGO $AUTH "${mongohost}:${mongoport}/admin" --quiet --eval "rs.conf().members.forEach(function(m){ print(m.host) })"` )
       
       for ((i=0; i<${#mongohosts1[*]}; i++)); do
         mongohost1=${mongohosts1[$i]}
@@ -317,13 +317,15 @@ else
           find_rsmemberrole "$member"
           memberhost=`ip_to_name ${member%%:*}`
           memberport=${member#*:}
-          mongolist+=("${memberhost}:${memberport}|$mongo|${replicaset}${rsmemberrole}")
+          mongolist+=("${memberhost}:${memberport}||${replicaset}${rsmemberrole}")
         done
       else
         mongoerror+=("Replicaset members not found")
-        mongolist+=("${mongohost}:${mongoport}|$mongo|${replicaset}${rsmemberrole}")
+        mongolist+=("${mongohost}:${mongoport}||${replicaset}${rsmemberrole}")
         continue
       fi
+    else
+      mongolist+=("${mongohost}:${mongoport}")
     fi
     unset master members isrs
   done
@@ -394,6 +396,8 @@ if [ -n "$shardhosts" ] ; then
         continue
       fi
       unset master members
+    else
+      shardlist+=("${memberhost}:${memberport}|$shard")
     fi
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
