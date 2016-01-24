@@ -120,7 +120,7 @@ elif [ `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" 2>/dev/null |
   open_cluster "$clustername"
   print_cluster_inline "Lag||status_short"
   close_cluster_line
-    for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -d'|' -f3 | sort | uniq` ; do
+    for rs in `cat "$PWD/../../standalone/$scriptname/mongo_servers.list" | cut -sd'|' -f3 | sort | uniq` ; do
       echo "<div class=\"server hilited\" id=\"$rs\">"
       echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
       echo "</div>"

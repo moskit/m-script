@@ -292,8 +292,7 @@ else
   
   ## Collecting servers list
   [ -f "$M_TEMP/mongo_servers.list" ] && rm -f "$M_TEMP/mongo_servers.list"
-  IFS='
-'
+
   for mongohost in $configips ; do
     mongoport=`echo "$mongohost" | cut -sd':' -f2`
     [ -z "$mongoport" ] && mongoport=$defaultport
@@ -325,7 +324,7 @@ else
         continue
       fi
     else
-      mongolist+=("${mongohost}:${mongoport}")
+      mongolist+=("${mongohost}:${mongoport}|")
     fi
     unset master members isrs
   done
@@ -334,7 +333,7 @@ else
   if [ -f "$M_TEMP/mongo_servers.list" ] && [ -f "$rpath/mongo_servers.list" ]; then
     $DIFF -q "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list" || mv "$M_TEMP/mongo_servers.list" "$rpath/mongo_servers.list"
   fi
-  IFS=$IFSORG
+
 fi
 
 for configip in $configips ; do
@@ -362,8 +361,7 @@ done
 
 if [ -n "$shardhosts" ] ; then
   [ -f "$M_TEMP/mongo_shards.list" ] && rm -f "$M_TEMP/mongo_shards.list"
-  IFS='
-'
+
   shardlist=()
   for shardid in `echo "$shardhosts" | grep '/_id'` ; do
     shard=`echo "$shardid" | cut -sd'|' -f2`
@@ -405,7 +403,7 @@ if [ -n "$shardhosts" ] ; then
   if [ -f "$M_TEMP/mongo_shards.list" ] && [ -f "$rpath/mongo_shards.list" ]; then
     $DIFF -q "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list" || mv "$M_TEMP/mongo_shards.list" "$rpath/mongo_shards.list"
   fi
-IFS=$IFSORG
+
 else
   echo -n > "$M_TEMP/mongo_shards.list"
 fi

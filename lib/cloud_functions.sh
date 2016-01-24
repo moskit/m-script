@@ -218,7 +218,7 @@ name_to_ip() {
 ip_to_name() {
   name=`cat "$M_ROOT/nodes.list" 2>/dev/null | cut -d'|' -f1,4 | grep "^${1}|" | cut -d'|' -f2 | tail -1`
   if [ -z "$name" ]; then
-    name=`grep -E "^$IP\ |\ $IP\ " /etc/hosts | tail -1`
+    name=`grep -E "^$1\ |\ $1\ " /etc/hosts | tail -1`
     name=`expr "$name" : ".*\s\(.*\)\s*$"`
   fi
   [ -z "$name" ] && return 1
