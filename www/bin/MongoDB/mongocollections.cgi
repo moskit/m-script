@@ -17,12 +17,11 @@ for dbname in `cat "$M_ROOT/standalone/$saname/data/databases.dat" | cut -d'|' -
   
   [ -f "$M_ROOT/standalone/$saname/data/${dbname}.dat" ] || continue
   db_dat=`cat "$M_ROOT/standalone/$saname/data/${dbname}.dat"`
+  total_count=`echo "$db_dat" | grep ^0\/\"objects\"\| | cut -d'|' -f2`
+  [ "_$total_count" == "_0" ] && continue
   total_datasize=`echo "$db_dat" | grep ^0\/\"dataSize\"\| | cut -d'|' -f2`
-  [ "_$total_datasize" == "_0" ] && continue
   total_ok=`echo "$db_dat" | grep ^0\/\"ok\"\| | cut -d'|' -f2`
   total_status=$([ "_$total_ok" == "_1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$total_ok</font>")
-  total_count=`echo "$db_dat" | grep ^0\/\"objects\"\| | cut -d'|' -f2`
-  
   total_storsize=`echo "$db_dat" | grep ^0\/\"storageSize\"\| | cut -d'|' -f2`
   total_indexsize=`echo "$db_dat" | grep ^0\/\"indexSize\"\| | cut -d'|' -f2`
   total_datasize=`expr $total_datasize / 1048576`

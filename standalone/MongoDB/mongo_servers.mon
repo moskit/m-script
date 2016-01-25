@@ -370,7 +370,7 @@ if [ -n "$shardhosts" ] ; then
     [ -z "$shardhost" ] && continue
     shardhost=${shardhost#*/}
     shardhosts1=( `echo -e "$shardhost" | tr ',' '\n'` )
-    isrs=`$MONGO $AUTH "${shardhost[0]}/admin" --quiet --eval "rs.status().ok"`
+    isrs=`$MONGO $AUTH "${shardhost1[0]}/admin" --quiet --eval "rs.status().ok"`
     if [ "_$isrs" == "_1" ]; then
       for ((i=0; i<${#shardhosts1[*]}; i++)); do
         shardhost1=${shardhosts1[$i]}
