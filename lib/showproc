@@ -1,0 +1,70 @@
+#!/bin/bash
+
+RL=`which readlink 2>/dev/null`
+proc="/proc/$1"
+[ -d $proc ] || exit 1
+
+stat=`cat $proc/stat`
+
+show_open_files() {
+  for entry in $proc/fd/* ; do
+    list+=( `readlink $entry` )
+  done
+  list=`echo "${list[*]}" | tr ' ' '\n' | grep -vE '/pts/|socket:|pipe:|/dev/null|anon_inode:|^$'`
+  if [ -n "$list" ]; then
+    echo -e "  Files opened:\n\n$list"
+  else
+    echo "  No opened files\n"
+  fi
+}
+
+show_cmdline() {
+  echo -e "  Command:\n\n`cat $proc/cmdline | tr '\0' ' '`"
+}
+
+show_workdir() {
+  if [ -n "$RL" ]; then
+    echo -e "  Working directory:\n\n`$RL $proc/cwd`"
+  fi
+}
+
+show_time() {
+  local a=`echo "$stat"| cut -d' ' -f22`
+  local b=`expr $a : "^\([0-9]*\)[0-9][0-9]$"`
+  local u=`cat /proc/uptime | cut -d' ' -f1 | cut -d'.' -f1`
+  p_running=`expr $u - $b`
+  p_started=`date -d "-$p_running sec"`
+  echo -e "  Process age:\n\nStarted $p_running seconds ago at $p_started"
+}
+
+echo -e "Process $1\n-------------\n"
+case $2 in
+  all)
+    show_cmdline
+    show_workdir
+    show_time
+    show_open_files
+    ;;
+  cmdline)
+    show_cmdline
+    ;;
+  workdir
+    show_workdir
+    ;;
+  time
+    show_time
+    ;;
+  files
+    show_open_files
+    ;;
+  *)
+    show_cmdline
+    show_workdir
+    show_time
+    show_open_files
+    ;;
+esac
+
+exit 0
+
+
