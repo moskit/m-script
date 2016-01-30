@@ -48,7 +48,7 @@ do
   open_cluster "${cld}|${cls}"
   print_cluster_inline "sizeh" "imgh" "cld" "region" "role"
   close_cluster_line
-  unset sizeh imgh cld region role
+  unset sizeh imgh region role
 
   if [ "_$cls" == "_$localcluster" ] && [ "_$cld" == "_$localcloud" ]; then
     node="${cld}/${cls}|${localserver}"
