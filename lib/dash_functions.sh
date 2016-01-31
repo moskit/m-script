@@ -187,9 +187,7 @@ print_dashline() {
       local conf=`echo "$target" | cut -sd'|' -f4`
       source "$conf"
       ;;
-    esac
-  fi
-  unset dfpdsource dfpddbpath dfpddbtable
+  esac
 }
 
 print_dashlines() {
