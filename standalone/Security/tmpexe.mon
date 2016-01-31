@@ -1,0 +1,18 @@
+#!/bin/bash
+
+for cmd in /proc/*/cmdline; do
+  a=`cat $cmd | tr '\0' ' ' | grep ' /tmp'`
+  if [ -n "$a" ]; then
+    echo "<***> $cmd  $a"
+    proc=`echo "$cmd" | cut -sd'/' -f3`
+    kill $proc
+  fi
+done
+for pwd in /proc/*/cwd; do
+  a=`readlink -f $pwd | grep '/tmp'`
+  if [ -n "$a" ]; then
+    echo "<***> $pwd  $a"
+    proc=`echo "$pwd" | cut -sd'/' -f3`
+    kill $proc
+  fi
+done
