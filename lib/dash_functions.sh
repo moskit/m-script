@@ -20,8 +20,8 @@ dpath=${dpath%/*}
 
 M_ROOT=$(readlink -f "$dpath/..")
 
-source "$dpath/../conf/mon.conf"
-source "$dpath/../conf/dash.conf"
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/dash.conf"
 [ -n "$timeshift" ] || timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` || timeshift=10
 freqdef=`expr $FREQ + $timeshift`
 
@@ -117,7 +117,7 @@ open_line() {
   fi
   dfolkey=`echo "$dfoltitle" | cut -s -d'|' -f3`
   dfolnode="${dfoltitle%%|*}"
-  dfolstyle=" `echo "$dfoltitle" | cut -s -d'|' -f2`"
+  dfolstyle=" `echo "$dfoltitle" | cut -sd'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
   [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
   [ -n "$dfolkey" ] && dfolid="$dfolkey|$dfolnode" || dfolid="$dfolnode"
@@ -157,14 +157,18 @@ close_line() {
 }
 
 print_dashline() {
+  # if source is a folder:
+  # print_dashline "onclick" folder path/to/folder (single node/test folder, relative to M_ROOT/www)
+  # if source is a database:
+  # print_dashline "onclick" database "/path/to/db/file" "table name" "server field name" "metric1|L1|L2|L3,metric2|L1|L2|L3,..."
   dfpdonclick=$1
   dfpdsource=$2
   shift 2
   if [ -n "$dfpdsource" ]; then
     case $dfpdsource in
     folder)
-      [ -d "$dpath/../www/$@" ] || install -d "$dpath/../www/$@"
-      tail -n $slotline_length "$dpath/../www/$@/dash.html" 2>/dev/null
+      [ -d "$M_ROOT/www/$@" ] || install -d "$M_ROOT/www/$@"
+      tail -n $slotline_length "$M_ROOT/www/$@/dash.html" 2>/dev/null
       ;;
     database)
       dfpddbpath=$1
@@ -178,7 +182,7 @@ print_dashline() {
 
 print_dashlines() {
   # if source is a folder:
-  # print_dashlines "onclick" folder /path/to/folder
+  # print_dashlines "onclick" folder path/to/folder (test or node cluster folder, relative to M_ROOT/www; contains single test or node folders)
   # if source is a database:
   # print_dashlines "onclick" database "/path/to/db/file" "table name" "server field name" "metric1|L1|L2|L3,metric2|L1|L2|L3,..."
   dfpdsonclick=$1
@@ -187,12 +191,12 @@ print_dashlines() {
   if [ -n "$dfpdssource" ]; then
     case $dfpdssource in
     folder)
-      [ -d "$dpath/../www/$@" ] || install -d "$dpath/../www/$@"
+      [ -d "$M_ROOT/www/$@" ] || install -d "$M_ROOT/www/$@"
 IFS1=$IFS; IFS='
 '
-      for server in `find "$dpath/../www/$@/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
-        open_line "${server##*/}" "$dfpdsonclick" "${@##*/}"
-        cat "$dpath/../www/$@/${server##*/}/dash.html" 2>/dev/null
+      for server in `find "$M_ROOT/www/$@/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
+        open_line "${server##*/}" "$dfpdsonclick"
+        tail -n $slotline_length "$M_ROOT/www/$@/${server##*/}/dash.html" 2>/dev/null
         close_line "${server##*/}"
       done
 IFS=$IFS1

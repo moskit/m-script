@@ -48,14 +48,17 @@ case $2 in
   cmdline)
     show_cmdline
     ;;
-  workdir
+  workdir)
     show_workdir
     ;;
-  time
+  time)
     show_time
     ;;
-  files
+  files)
     show_open_files
+    ;;
+  name|exe)
+    echo "$stat" | cut -d' ' -f2
     ;;
   *)
     show_cmdline
