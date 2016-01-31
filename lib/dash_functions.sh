@@ -233,10 +233,9 @@ IFS1=$IFS; IFS='
         fi
       fi
       for cld in $CLOUDS ; do
-        # clusters may be not real clusters but "clustered as" names (see getdash)
-        for cls in `find "$M_ROOT/www/$target/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
-          # nodes are real
-          for node in `list_node_names "$cld" "$cls"` ; do
+        for cls in `find "$M_ROOT/www/$target/$cld/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+          cls="${cls##*/}"
+          for node in `find "$M_ROOT/www/$target/$cld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
             open_line "$node||${cld}_${cls}" "$onclick"
             tail -n $slotline_length "$M_ROOT/www/$target/$cld/$cls/$node/dash.html" 2>/dev/null
             close_line
