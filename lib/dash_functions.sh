@@ -27,7 +27,7 @@ freqdef=`expr $FREQ + $timeshift`
 
 SQL=`which sqlite3 2>/dev/null`
 
-source "$M_ROOT/lib/clcoud_functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
 export CLOUD CLOUDS freqdef
 
 print_cgi_headers() {
@@ -254,8 +254,7 @@ IFS=$IFS1
       local conf=`echo "$target" | cut -sd'|' -f4`
       source "$conf"
       ;;
-    esac
-  fi
+  esac
 }
 
 print_timeline() {
