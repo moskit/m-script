@@ -169,7 +169,7 @@ print_dashline() {
   shift
   local source="$1"
   if [ -z "$source" ]; then
-    if [ -d "$target" ]; then
+    if [ -d "$M_ROOT/www/$target" ]; then
       source=folder
     else
       source=sqlite
@@ -202,7 +202,7 @@ print_dashlines() {
   shift
   local source="$1"
   if [ -z "$source" ]; then
-    if [ -d "$target" ]; then
+    if [ -d "$M_ROOT/www/$target" ]; then
       source=folder
     else
       source=sqlite
@@ -250,7 +250,7 @@ IFS=$IFS1
       local dbtable=`echo "$target" | cut -sd'|' -f2`
       local nodefield=`echo "$target" | cut -sd'|' -f3`
       local conf=`echo "$target" | cut -sd'|' -f4`
-      source "$conf"
+      source "$conf" 2>/dev/null
       ;;
   esac
 }
