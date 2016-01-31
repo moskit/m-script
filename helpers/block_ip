@@ -175,7 +175,7 @@ if [ -n "$ips" ] ; then
         $IPT -A M_IPBLOCK_TMP -s $ip $rmethod
       fi
     else
-      log "*** Jailbird IP $ip has been detected (was blocked before). This means either a problem with firewall settings or that firewall rules have been reset recently. In the latter case execute this to block all jailbirds back: $rpath/$rcommand $M_TEMP/ip_block.const --method=$method --block_forever_after=0"
+      echo "<**> Jailbird IP $ip has been detected (was blocked before). This indicates either a problem with firewall settings or that firewall rules have been reset recently. In the latter case execute this to block all jailbirds back: $rpath/$rcommand $M_TEMP/ip_block.const --method=$method --block_forever_after=0"
       $IPT -A M_IPBLOCK_CONST -s $ip $rmethod
     fi
   done

@@ -26,8 +26,9 @@ source "$M_ROOT/conf/dash.conf"
 freqdef=`expr $FREQ + $timeshift`
 
 SQL=`which sqlite3 2>/dev/null`
-CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
-export CLOUDS freqdef
+
+source "$M_ROOT/lib/clcoud_functions.sh"
+export CLOUD CLOUDS freqdef
 
 print_cgi_headers() {
 cat << "EOF"
@@ -125,6 +126,12 @@ open_line() {
   unset dfolparent dfolnode dfolonclick dfolnodep
 }
 
+close_line() {
+  echo "</div>"
+  echo "<div class=\"details\" id=\"${dfolid}_details\"></div>"
+  unset dfolid
+}
+
 print_inline() {
   # print_inline "metric<|onclick><|style>" "metric2<|onclick2><|style2>" ...
   while [ -n "$1" ] ; do
@@ -150,30 +157,35 @@ print_inline() {
   unset dfpistatus dfpionclick dfpistyle
 }
 
-close_line() {
-  echo "</div>"
-  echo "<div class=\"details\" id=\"${dfolid}_details\"></div>"
-  unset dfolid
-}
-
 print_dashline() {
   # if source is a folder:
-  # print_dashline "onclick" folder path/to/folder (single node/test folder, relative to M_ROOT/www)
-  # if source is a database:
-  # print_dashline "onclick" database "/path/to/db/file" "table name" "server field name" "metric1|L1|L2|L3,metric2|L1|L2|L3,..."
-  dfpdonclick=$1
-  dfpdsource=$2
-  shift 2
-  if [ -n "$dfpdsource" ]; then
-    case $dfpdsource in
+  # print_dashlines path/to/folder <"onclick">
+  # where folder is the one where dash.html is located, path relative to M_ROOT/www
+  # if source is an Sqlite database:
+  # print_dashlines "/path/to/db/file|table name|node field name|/path/to/test/conf" <"onclick">
+  local target="$1"
+  shift
+  local onclick="$1"
+  shift
+  local source="$1"
+  if [ -z "$source" ]; then
+    if [ -d "$target" ]; then
+      source=folder
+    else
+      source=sqlite
+    fi
+  fi
+  case $source in
     folder)
-      [ -d "$M_ROOT/www/$@" ] || install -d "$M_ROOT/www/$@"
-      tail -n $slotline_length "$M_ROOT/www/$@/dash.html" 2>/dev/null
+      [ -d "$M_ROOT/www/$target" ] || install -d "$M_ROOT/www/$target"
+      tail -n $slotline_length "$M_ROOT/www/$target/dash.html" 2>/dev/null
       ;;
-    database)
-      dfpddbpath=$1
-      shift
-      dfpddbtable=$1
+    sqlite)
+      local dbfile=`echo "$target" | cut -sd'|' -f1`
+      local dbtable=`echo "$target" | cut -sd'|' -f2`
+      local nodefield=`echo "$target" | cut -sd'|' -f3`
+      local conf=`echo "$target" | cut -sd'|' -f4`
+      source "$conf"
       ;;
     esac
   fi
@@ -182,39 +194,68 @@ print_dashline() {
 
 print_dashlines() {
   # if source is a folder:
-  # print_dashlines "onclick" folder path/to/folder (test or node cluster folder, relative to M_ROOT/www; contains single test or node folders)
-  # if source is a database:
-  # print_dashlines "onclick" database "/path/to/db/file" "table name" "server field name" "metric1|L1|L2|L3,metric2|L1|L2|L3,..."
-  dfpdsonclick=$1
-  dfpdssource=$2
-  shift 2
-  if [ -n "$dfpdssource" ]; then
-    case $dfpdssource in
+  # print_dashlines path/to/folder <"onclick">
+  # where folder is the one named after the test binary in M_ROOT/www
+  # if source is an Sqlite database:
+  # print_dashlines "/path/to/db/file|table name|node field name|/path/to/test/conf" <"onclick">
+  local target="$1"
+  shift
+  local onclick="$1"
+  shift
+  local source="$1"
+  if [ -z "$source" ]; then
+    if [ -d "$target" ]; then
+      source=folder
+    else
+      source=sqlite
+    fi
+  fi
+  case $source in
     folder)
-      [ -d "$M_ROOT/www/$@" ] || install -d "$M_ROOT/www/$@"
+      [ -d "$M_ROOT/www/$target" ] || install -d "$M_ROOT/www/$target"
 IFS1=$IFS; IFS='
 '
-      for server in `find "$M_ROOT/www/$@/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
-        open_line "${server##*/}" "$dfpdsonclick"
-        tail -n $slotline_length "$M_ROOT/www/$@/${server##*/}/dash.html" 2>/dev/null
-        close_line "${server##*/}"
+      if [ -d "$M_ROOT/www/$target/localhost" ]; then
+        for lip in `"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'` ; do
+          noderecord=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,4,5,6 | grep "^$lip|"`
+          [ -n "$noderecord" ] && break
+        done
+        if [ -n "$noderecord" ]; then
+          cld=`echo "$noderecord" | cut -sd'|' -f4`
+          [ -z "$cld" ] && [ -n "$CLOUD" ] && cld=$CLOUD
+          cls=`echo "$noderecord" | cut -sd'|' -f3`
+          node=`echo "$noderecord" | cut -sd'|' -f2`
+          open_line "$node||${cld}_${cls}" "$onclick"
+          tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
+          close_line
+        else
+          open_line "localhost" "$onclick"
+          tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
+          close_line
+        fi
+      fi
+      for cld in $CLOUDS ; do
+        # clusters may be not real clusters but "clustered as" names (see getdash)
+        for cls in `find "$M_ROOT/www/$target/" -maxdepth 1 -mindepth 1 -type d | sort` ; do
+          # nodes are real
+          for node in `list_node_names "$cld" "$cls"` ; do
+            open_line "$node||${cld}_${cls}" "$onclick"
+            tail -n $slotline_length "$M_ROOT/www/$target/$cld/$cls/$node/dash.html" 2>/dev/null
+            close_line
+          done
+        done
       done
 IFS=$IFS1
       ;;
-    database)
-      shift
-      dfpdsdbpath=$1
-      shift
-      dfpdsdbtable=$1
-      shift
-      dfpdsservernamefield=$1
-      shift
-      dfpdsmetrics=$1
-      
+    sqlite)
+      local dbfile=`echo "$target" | cut -sd'|' -f1`
+      local dbtable=`echo "$target" | cut -sd'|' -f2`
+      local nodefield=`echo "$target" | cut -sd'|' -f3`
+      local conf=`echo "$target" | cut -sd'|' -f4`
+      source "$conf"
       ;;
     esac
   fi
-  unset dfpdsonclick dfpdssource dfpdsdbpath dfpdsdbtable
 }
 
 print_timeline() {

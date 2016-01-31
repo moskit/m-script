@@ -8,31 +8,11 @@ print_timeline Server
 
 open_cluster "SSH Logins"
 close_cluster_line
-for cld in ../auth/* ; do
-if [ "_${cld##*/}" == "_localhost" ]; then
-  open_line "localhost"
-  print_dashline "" folder "auth/localhost"
-  close_line
-else
-  for cls in ../auth/$cld/* ; do
-    print_dashlines "" folder "$cls"
-  done
-fi
-done
+print_dashlines auth
 close_cluster
 
 open_cluster "TMP Monitor"
 close_cluster_line
-for cld in ../tmpexe/* ; do
-if [ "_${cld##*/}" == "_localhost" ]; then
-  open_line "localhost"
-  print_dashline "" folder "tmpexe/localhost"
-  close_line
-else
-  for cls in ../auth/$cld/* ; do
-    print_dashlines "" folder "$cls"
-  done
-fi
-done
+print_dashlines tmpexe
 close_cluster
 

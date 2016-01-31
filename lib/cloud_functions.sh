@@ -26,17 +26,33 @@ log() {
   fi
 }
 
+CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+export CLOUDS
+
+# current cloud passed as an environment variable
 if [ -n "$CLOUD" ]; then
   source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 else
-  CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
-  if [ `echo "$CLOUD" | wc -l` -eq 1 ]; then
-    export CLOUD
-  else
-    unset CLOUD
+# if there is only one cloud, it is passed as an environment variable by default
+  if [ `echo "$CLOUDS" | wc -l` -eq 1 ]; then
+    export CLOUD=$CLOUDS
   fi
-  [ -z "$CLOUD" ] && log "Not sourcing cloud_functions, CLOUD is not defined" && exit 1
 fi
+
+list_clusters() {
+  # list_clusters <cloud name>
+  cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,12 | grep "|$1$" | cut -sd'|' -f1 | sort | uniq
+}
+
+list_node_names() {
+  # list_node_names <cloud name> <cluster name>
+  cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f4,5,6 | grep "|$2|$1$" | cut -sd'|' -f1 | sort | uniq
+}
+
+list_node_ips() {
+  # list_node_ips <cloud name> <cluster name>
+  cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,5,6 | grep "|$2|$1$" | cut -sd'|' -f1 | sort | uniq
+}
 
 lock_cloudops() {
   local LOG="$M_ROOT/logs/cloud.log"

@@ -75,6 +75,6 @@ echo "<br/>"
 print_timeline "Sharding Events"
 open_cluster "localhost"
   close_cluster_line
-  print_dashlines "" folder "mongo_shards"
+  print_dashlines "mongo_shards/localhost"
 close_cluster
 
