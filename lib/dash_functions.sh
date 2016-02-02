@@ -218,6 +218,7 @@ IFS1=$IFS; IFS='
           noderecord=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,4,5,6 | grep "^$lip|"`
           [ -n "$noderecord" ] && break
         done
+        # if localhost found as a cloud server (a part of configured cluster)
         if [ -n "$noderecord" ]; then
           cld=`echo "$noderecord" | cut -sd'|' -f4`
           [ -z "$cld" ] && [ -n "$CLOUD" ] && cld=$CLOUD
@@ -226,6 +227,9 @@ IFS1=$IFS; IFS='
           open_line "$node||${cld}_${cls}" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
           close_line
+          # symlink is needed to make downstream scripts work (like onclick scripts)
+          [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
+          [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
         else
           open_line "localhost" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
@@ -236,6 +240,7 @@ IFS1=$IFS; IFS='
         for cls in `find "$M_ROOT/www/$target/$cld/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
           cls="${cls##*/}"
           for node in `find "$M_ROOT/www/$target/$cld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+            node="${node##*/}"
             open_line "$node||${cld}_${cls}" "$onclick"
             tail -n $slotline_length "$M_ROOT/www/$target/$cld/$cls/$node/dash.html" 2>/dev/null
             close_line
