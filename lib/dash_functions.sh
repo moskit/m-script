@@ -210,6 +210,12 @@ print_dashlines() {
   fi
   case $source in
     folder)
+      if [ -z "$dfocid" ]; then
+        echo "<p color=\"red\">print_dashlines function must be inside the open_cluster/close_cluster block</p>"
+        return 1
+      fi
+      cld=${dfocid%|*}
+      cls=${dfocid#*|}
       [ -d "$M_ROOT/www/$target" ] || install -d "$M_ROOT/www/$target"
 IFS1=$IFS; IFS='
 '
@@ -220,9 +226,6 @@ IFS1=$IFS; IFS='
         done
         # if localhost found as a cloud server (a part of configured cluster)
         if [ -n "$noderecord" ]; then
-          cld=`echo "$noderecord" | cut -sd'|' -f4`
-          [ -z "$cld" ] && [ -n "$CLOUD" ] && cld=$CLOUD
-          cls=`echo "$noderecord" | cut -sd'|' -f3`
           node=`echo "$noderecord" | cut -sd'|' -f2`
           open_line "$node||${cld}_${cls}" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
@@ -236,16 +239,11 @@ IFS1=$IFS; IFS='
           close_line
         fi
       fi
-      for cld in $CLOUDS ; do
-        for cls in `find "$M_ROOT/www/$target/$cld/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
-          cls="${cls##*/}"
-          for node in `find "$M_ROOT/www/$target/$cld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
-            node="${node##*/}"
-            open_line "$node||${cld}_${cls}" "$onclick"
-            tail -n $slotline_length "$M_ROOT/www/$target/$cld/$cls/$node/dash.html" 2>/dev/null
-            close_line
-          done
-        done
+      for node in `find "$M_ROOT/www/$target/$cld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+        node="${node##*/}"
+        open_line "$node||${cld}_${cls}" "$onclick"
+        tail -n $slotline_length "$M_ROOT/www/$target/$cld/$cls/$node/dash.html" 2>/dev/null
+        close_line
       done
 IFS=$IFS1
       ;;
