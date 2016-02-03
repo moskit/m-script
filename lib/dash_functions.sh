@@ -227,12 +227,16 @@ IFS1=$IFS; IFS='
         # if localhost found as a cloud server (a part of configured cluster)
         if [ -n "$noderecord" ]; then
           node=`echo "$noderecord" | cut -sd'|' -f2`
+          lcls=`echo "$noderecord" | cut -sd'|' -f3`
+          lcld==`echo "$noderecord" | cut -sd'|' -f4`
           open_line "$node||${cld}_${cls}" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
           close_line
           # symlink is needed to make downstream scripts work (like onclick scripts)
-          [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
-          [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
+          if [ "_$lcls" == "_$cls" ] && [ "_$lcld" == "_$cld" ]; then
+            [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
+            [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
+          fi
         else
           open_line "localhost" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
