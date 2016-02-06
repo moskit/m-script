@@ -97,9 +97,9 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
   printf "$used%%\n"
   
 ## Discovering what this disk really is
-  disk=${disk##*/}
+  disk=`echo $disk | cut -d'/' -f3-`
   if `grep -q $disk$ /proc/partitions` ; then
-    echo $disk >> "$M_TEMP/disk.tmp.ext"
+    echo ${disk#*/} >> "$M_TEMP/disk.tmp.ext"
   else
     if [ -h /dev/$disk ]; then
       realdisk=`readlink /dev/$disk`
@@ -117,6 +117,7 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
       fi
     fi
     check_slaves $disk
+    check_slaves ${realdisk##*/}
     [ -z "$realdisk" ] && echo "Unable to resolve $disk" >> $M_TEMP/disk.tmp.discovered && continue
     disk=${realdisk##*/}
     echo "/dev/$disk" >> "$M_TEMP/disk.tmp.ext"
