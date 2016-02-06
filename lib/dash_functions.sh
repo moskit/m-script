@@ -229,12 +229,12 @@ IFS1=$IFS; IFS='
           node=`echo "$noderecord" | cut -sd'|' -f2`
           # lcls=`echo "$noderecord" | cut -sd'|' -f3`  # not needed for now
           lcld=`echo "$noderecord" | cut -sd'|' -f4`
-          open_line "$node" "$onclick"
-          tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
-          close_line
-          # symlink is needed to make downstream scripts work (like onclick scripts)
           if [ "_$lcld" == "_$cld" ]; then
+            open_line "$node||$cld" "$onclick"
+            tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
+            close_line
             [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
+            # symlink is needed to make downstream scripts work (like onclick scripts)
             [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
           fi
         else
