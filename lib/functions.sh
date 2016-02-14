@@ -115,13 +115,13 @@ check_results() {
         ;;
       integer)
         if [ `expr $thr3 \<= 0` -eq 1 ]; then
-          [ `expr -$val \>= $thr3 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `expr -$val \>= $thr2 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `expr -$val \>= $thr1 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `expr -$val \>= $thr3 2>/dev/null` -eq 1 ] 2>/dev/null && echo "<***> ${vardescr}: $val" && continue
+          [ `expr -$val \>= $thr2 2>/dev/null` -eq 1 ] 2>/dev/null && echo "<**>  ${vardescr}: $val" && continue
+          [ `expr -$val \>= $thr1 2>/dev/null` -eq 1 ] 2>/dev/null && echo "<*>   ${vardescr}: $val" && continue
         else
-          [ `expr $val \>= $thr3 2>/dev/null` -eq 1 ] && echo "<***> ${vardescr}: $val" && continue
-          [ `expr $val \>= $thr2 2>/dev/null` -eq 1 ] && echo "<**>  ${vardescr}: $val" && continue
-          [ `expr $val \>= $thr1 2>/dev/null` -eq 1 ] && echo "<*>   ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr3 2>/dev/null` -eq 1 ] 2>/dev/null && echo "<***> ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr2 2>/dev/null` -eq 1 ] 2>/dev/null && echo "<**>  ${vardescr}: $val" && continue
+          [ `expr $val \>= $thr1 2>/dev/null` -eq 1 ] 2>/dev/null && echo "<*>   ${vardescr}: $val" && continue
         fi
         ;;
     esac
