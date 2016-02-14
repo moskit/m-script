@@ -34,7 +34,11 @@ for HOST in `cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|
   [ -z "$hname" ] && error+=("Server $ip has no name") && continue
   sed -i "/^$ip \| $ip /d" /etc/hosts
   sed -i "/ $hname \| $hname$/d" /etc/hosts
-  echo "$ip $hname" >> /etc/hosts
+  if [ -n "$DOMAIN" ]; then
+    echo "$ip ${hname}.${DOMAIN} $hname" >> /etc/hosts
+  else
+    echo "$ip $hname" >> /etc/hosts
+  fi
   if [ -n "$1" ]; then
     if [ "$1" == "everywhere" ]; then
       cloudexec --cluster=all --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
