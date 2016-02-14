@@ -108,12 +108,7 @@ function collect_hosts() {
 }
 
 function get_serverstatus() {
-  if [ -n "$DOMAIN" ]; then
-    # you could use FQDN to list nodes in nodes.list, theoretically
-    if [ `grep -c "|$cs|" "$M_ROOT/nodes.list"` -eq 0 ]; then
-      cs=${cs%%.*}
-    fi
-  fi
+  # cs is a non-FQDN hostname plus port (hostname:port)
   serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
   [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed 's|=|_prev=|'`
   echo "$serverstatus" > "$rpath/data/${cs}.dat"
@@ -121,6 +116,12 @@ function get_serverstatus() {
   $WT && wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
   if [ -n "$rsstatusraw" ]; then
     n=`echo "$rsstatusraw" | grep name\"\|\"$cs\"$ | cut -d'/' -f1`
+    # this works well unless FQDN host names creep into shard names
+    if [ -z "$n" ]; then
+      if [ -n "$DOMAIN" ]; then
+        n=`echo "$rsstatusraw" | grep name\"\|\"${cs%:*}.${DOMAIN}.${cs#*:}\"$ | cut -d'/' -f1`
+      fi
+    fi
     rshealth=`echo "$rsstatusraw" | grep ^$n\/ | grep \"health\"\| | cut -sd'|' -f2`
     rsstate=`echo "$rsstatusraw" | grep ^$n\/ | grep \"state\"\| | cut -sd'|' -f2`
     rsstateStr=`echo "$rsstatusraw" | grep ^$n\/ | grep \"stateStr\"\| | cut -sd'|' -f2 | tr -d '()'`
@@ -391,9 +392,9 @@ if [ -n "$shardhosts" ] ; then
         shardhost=${shardhost1%%:*}
         # if you use FQDN host names, set DOMAIN in conf/mon.conf
         if [ -n "$DOMAIN" ]; then
-          # you could use FQDN to list nodes in nodes.list, theoretically
+          # if it's a non-FQDN in nodes.list (which is strongly recommended)
           if [ `grep -c "|$shardhost|" "$M_ROOT/nodes.list"` -eq 0 ]; then
-            shardhost=${shardhost1%%.*}
+            shardhost=`echo "$shardhost" | cut -sd'.' -f-2`
           fi
         fi
         replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this shard
@@ -456,13 +457,8 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     for csm in $masters ; do
       cs=${csm%|*}
       csrs=${csm#*|}
-      cshost=$cs
-      if [ -n "$DOMAIN" ]; then
-        if [ `grep -c "|$cs|" "$M_ROOT/nodes.list"` -eq 0 ]; then
-          cshost=${cs%%.*}
-        fi
-      fi
-      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cshost/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT"/lib/json2txt)`
+      # cs is always non-FQDN, so it's reliably resolveable via hosts file
+      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT"/lib/json2txt)`
       ismaster=true
       if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
       get_serverstatus
