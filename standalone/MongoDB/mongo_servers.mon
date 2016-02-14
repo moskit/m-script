@@ -108,6 +108,12 @@ function collect_hosts() {
 }
 
 function get_serverstatus() {
+  if [ -n "$DOMAIN" ]; then
+    # you could use FQDN to list nodes in nodes.list, theoretically
+    if [ `grep -c "|$cs|" "$M_ROOT/nodes.list"` -eq 0 ]; then
+      cs=${cs%%.*}
+    fi
+  fi
   serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.js" 2>/dev/null)
   [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed 's|=|_prev=|'`
   echo "$serverstatus" > "$rpath/data/${cs}.dat"
@@ -450,7 +456,13 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     for csm in $masters ; do
       cs=${csm%|*}
       csrs=${csm#*|}
-      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT"/lib/json2txt)`
+      cshost=$cs
+      if [ -n "$DOMAIN" ]; then
+        if [ `grep -c "|$cs|" "$M_ROOT/nodes.list"` -eq 0 ]; then
+          cshost=${cs%%.*}
+        fi
+      fi
+      rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cshost/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | "$M_ROOT"/lib/json2txt)`
       ismaster=true
       if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
       get_serverstatus
@@ -481,6 +493,12 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
     for csm in $masters ; do
       cs=${csm%|*}
       csrs=${csm#*|}
+      cshost=$cs
+      if [ -n "$DOMAIN" ]; then
+        if [ `grep -c "|$cs|" "$M_ROOT/nodes.list"` -eq 0 ]; then
+          cshost=${cs%%.*}
+        fi
+      fi
       rsstatusraw=`(IFS=$IFSORG ; $MONGO $AUTH "$cs/admin" --quiet --eval "rs.status().members.forEach(printjson)" 2>>"$LOG" | lib/json2txt)`
       ismaster=true
       if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
