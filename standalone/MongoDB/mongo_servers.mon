@@ -119,7 +119,7 @@ function get_serverstatus() {
     # this works well unless FQDN host names creep into shard names
     if [ -z "$n" ]; then
       if [ -n "$DOMAIN" ]; then
-        n=`echo "$rsstatusraw" | grep name\"\|\"${cs%:*}.${DOMAIN}.${cs#*:}\"$ | cut -d'/' -f1`
+        n=`echo "$rsstatusraw" | grep name\"\|\"${cs%:*}.${DOMAIN}:${cs#*:}\"$ | cut -d'/' -f1`
       fi
     fi
     rshealth=`echo "$rsstatusraw" | grep ^$n\/ | grep \"health\"\| | cut -sd'|' -f2`
@@ -394,7 +394,7 @@ if [ -n "$shardhosts" ] ; then
         if [ -n "$DOMAIN" ]; then
           # if it's a non-FQDN in nodes.list (which is strongly recommended)
           if [ `grep -c "|$shardhost|" "$M_ROOT/nodes.list"` -eq 0 ]; then
-            shardhost=`echo "$shardhost" | cut -sd'.' -f-2`
+            shardhost=${shardhost%%.*}
           fi
         fi
         replicaset=`$MONGO $AUTH "${shardhost}:${shardport}/admin" --quiet --eval "rs.conf()._id" 2>>"$LOG"`  # replicaset name for this shard
