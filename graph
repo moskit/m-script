@@ -459,7 +459,7 @@ else
     done
   else
     for smetric in `echo $metric | tr ',' ' '`; do
-      metricQ="${metricQ}(${smetric}-($metricmin))*${mp}"
+      metricQ="${metricQ}(${smetric}-($metricmin))*${mp},"
     done
   fi
   metricQ="${metricQ%,}"
