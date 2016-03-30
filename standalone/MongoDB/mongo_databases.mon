@@ -35,6 +35,8 @@ fi
 source "$rpath/mongo_databases.conf" 2>/dev/null
 source "$M_ROOT/lib/functions.sh"
 
+get_lock
+
 [ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
 [ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`cat "$rpath/mongo_servers.list" | grep -vE "slave$|arbiter$" | cut -d'|' -f1 | tr '\n' ' '`
 [ -z "$hostport" ] && echo "No servers found" && exit 1
@@ -81,6 +83,8 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     echo "$collections" > "$rpath/data/${db}.collections"
   fi
 done
+
+release_lock
 
 # we don't need a report from this monitor
 exit 10

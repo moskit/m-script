@@ -21,6 +21,9 @@ rpath=${rpath%/*}
 #*/
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
+
+get_lock
+
 IFSORG=$IFS
 
 DIFF=`which diff 2>/dev/null`
@@ -525,6 +528,8 @@ timeshift=`cat "$M_TEMP/../timeshift" || echo 0`
 ccl=`expr $FREQ + $timeshift || echo 200`
 mmin=`expr $ccl \* 3 / 60 + 1`
 find "$rpath/data/" -mmin +$mmin -exec rm {} \;
+
+release_lock
 
 exit 10
 

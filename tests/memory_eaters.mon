@@ -29,7 +29,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
   ### +3 to start from the user field (see sequence below: rsz,vsz,user,cmd)
   CMD_ARGS_TOT=`expr $CMD_ARGS + 4`
   
-  ps axo rsz,vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | tail -n +2 > "$M_TEMP/ps.list"
+  pslist=`ps axo rsz,vsz,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | tail -n +2`
   fields=$(for ((i=3; i<=$CMD_ARGS_TOT; i++)); do echo -n "${i}," ; done)
   fields=${fields%,} 
 
@@ -49,10 +49,10 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
   [ -z "$TOTALS_MEM_VIR_DELTA_2" ] && TOTALS_MEM_VIR_DELTA_2=$MEM_VIR_DELTA_2
   [ -z "$TOTALS_MEM_VIR_DELTA_3" ] && TOTALS_MEM_VIR_DELTA_3=$MEM_VIR_DELTA_3
 
-  for proc in `cat "$M_TEMP/ps.list" | grep -v '^0 0' | cut -d' ' -f$fields | sort | uniq` ; do
+  for proc in `echo "$pslist" | grep -v '^0 0' | cut -d' ' -f$fields | sort | uniq` ; do
     virtual=0
     resident=0
-    for thisproc in `cat "$M_TEMP/ps.list" | grep " $proc " 2>/dev/null` ; do
+    for thisproc in `echo "$pslist" | grep " $proc " 2>/dev/null` ; do
       [ -z "$thisproc" ] && continue 2
       VSZ=`echo $thisproc | cut -d' ' -f2`
       [[ $VSZ -eq 0 ]] && continue 2
@@ -61,13 +61,13 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
       virtual=`expr $virtual + $VSZ`
       resident=`expr $resident + $RSS`
     done
-    echo "$resident $proc" >> $M_TEMP/ps.list.totals.res
-    echo "$virtual $proc" >> $M_TEMP/ps.list.totals.vir
+    pslisttotalsres="$pslisttotalsres\n$resident $proc"
+    pslisttotalsvir="$pslisttotalsvir\n$virtual $proc"
   done
-  sort -g -r "$M_TEMP/ps.list.totals.res" | head -n $TOTALS_MEM_TOP_NUM > "$M_TEMP/ps.list.totals.res.sorted"
-  sort -g -r "$M_TEMP/ps.list.totals.vir" | head -n $TOTALS_MEM_TOP_NUM > "$M_TEMP/ps.list.totals.vir.sorted"
+  pslisttotalsressorted=`echo -e "$pslisttotalsres" | grep -v ^$ | sort -g -r | head -n $TOTALS_MEM_TOP_NUM`
+  pslisttotalsvirsorted=`echo -e "$pslisttotalsvir" | grep -v ^$ | sort -g -r | head -n $TOTALS_MEM_TOP_NUM`
 
-  for proc in `cat "$M_TEMP/ps.list.totals.res.sorted"` ; do
+  for proc in `echo "$pslisttotalsressorted"` ; do
     unset usageprev warnind
     procname=${proc#* }
     usage=${proc%% *}
@@ -106,7 +106,7 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
     fi
   done
 
-  for proc in `cat "$M_TEMP/ps.list.totals.vir.sorted"` ; do
+  for proc in `echo "$pslisttotalsressorted"` ; do
     unset usageprev warnind
     procname=${proc#* }
     usage=${proc%% *}
@@ -145,8 +145,8 @@ if [ -n "$CALCULATE_TOTALS" ] ; then
     fi
   done
   
-  mv "$M_TEMP/ps.list.totals.res.sorted" "$M_TEMP/ps.prev.totals.res"
-  mv "$M_TEMP/ps.list.totals.vir.sorted" "$M_TEMP/ps.prev.totals.vir"
+  echo "$pslisttotalsressorted" > "$M_TEMP/ps.prev.totals.res"
+  echo "$pslisttotalsvirsorted" > "$M_TEMP/ps.prev.totals.vir"
 fi
 ###### --> if [ -n "$CALCULATE_TOTALS" ]   ######
 
@@ -157,9 +157,9 @@ CMD_ARGS_NORM=`expr $CMD_ARGS + 3`
 fields=$(for ((i=2; i<=$CMD_ARGS_NORM; i++)); do echo -n "${i}," ; done)
 fields=${fields%,}
   
-ps axo rsz,pid,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > "$M_TEMP/ps.list.res"
+pslistres=`ps axo rsz,pid,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM`
 
-for proc in `cat "$M_TEMP/ps.list.res"` ; do
+for proc in `echo "$pslistres"` ; do
   unset usageprev warnind
   usage=${proc%% *}
   procid=`echo $proc | cut -d' ' -f2`
@@ -180,7 +180,7 @@ for proc in `cat "$M_TEMP/ps.list.res"` ; do
     echo "${warnind} Process ID $procid owner $owner CMD \"${prochumanname}\" is using ${usagemb}MB of RAM"
     unset y1 y2 y3 warnind
   fi
-  [ -f "${M_TEMP}/ps.prev.res" ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
+  [ -f "$M_TEMP/ps.prev.res" ] && usageprev=`grep "$procid\ $owner\ $prochumanname" ${M_TEMP}/ps.prev.res | cut -d' ' -f1 | tail -1` || continue
   [ -n "$usageprev" ] && usageprevperc=`solve 2 "$usageprev / $totalram * 100"` || continue
   if [ -n "$usageprevperc" ] ; then
     if [[ `echo "$usageperc >= $usageprevperc" | bc` -eq 1 ]] ; then

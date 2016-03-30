@@ -111,7 +111,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list" 2>/dev/n
   for s in `cat "$PWD/../../standalone/$scriptname/mongo_config_servers.list"` ; do
     print_mongo_server "$clustername" "$s"
   done
-    
+
   close_cluster
   
 # Standalone servers

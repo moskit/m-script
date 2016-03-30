@@ -30,6 +30,15 @@ printcol() {
   fi
 }
 
+find_clust() {
+  clust=`echo -e "$cluster" | tr ',' '\n'`
+  [ -z "$clust" ] && clust=$M_CLUSTER
+  if [ -z "$clust" ] || [ "_$cluster" == "_all" ]; then
+    clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
+  fi
+  [ -z "$clust" ] && echo "No clusters found" >&2 && return 1
+}
+
 possible_commands="help list clone create save destroy show stop start"
 possible_subcommands="list:short,long,name,ip show:short,full"
 possible_options="role cluster flavor cloud"
@@ -167,12 +176,8 @@ case $command1 in
       
       for cld in $cloud ; do
         
-        clust=`echo -e "$cluster" | tr ',' '\n'`
+        find_clust || continue
 
-        [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
-        [ -z "$clust" ] && clust=$M_CLUSTER
-        [ -z "$clust" ] && echo "No clusters found" >&2 && continue
-        
         for cl in `echo -e "$clust"` ; do
         
           nodes=`grep -E "\|$cl\|$cld$|\|$cl\|$cld\|$" "$M_ROOT"/nodes.list`
@@ -192,11 +197,7 @@ case $command1 in
     else
       for cld in $cloud ; do
         
-        clust=`echo -e "$cluster" | tr ',' '\n'`
-
-        [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
-        [ -z "$clust" ] && clust=$M_CLUSTER
-        [ -z "$clust" ] && echo "No clusters found" >&2 && continue
+        find_clust || continue
         
         for cl in `echo -e "$clust"` ; do
           nodes=`grep -E "\|$cl\|$cld$|\|$cl\|$cld\|$" "$M_ROOT"/nodes.list`

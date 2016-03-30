@@ -36,6 +36,7 @@ printcol() {
   fi
 }
 
+
 declare -i ppn
 ppn=1
 
@@ -150,7 +151,7 @@ case $command1 in
     printcol "Cluster"
     echo -e "Nodes number\n"
     for L in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]#" | cut -d'|' -f1` ; do
-      N=`cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]# | cut -d'|' -f5 | grep "^${L}$" | wc -l`
+      N=`cat "$M_ROOT/nodes.list" | grep -vE "^$|^#|^[[:space:]]#" | cut -d'|' -f5 | grep "^${L}$" | wc -l`
       printcol "$L"
       echo "$N"
     done

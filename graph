@@ -101,33 +101,33 @@ With --from but without --to the latter defaults to the current time.
 
 Options:
 
---ip=<IP>               IP address of the server to get data from
-                        Server must be present in nodes.list
-                        If empty, means localhost
+--ip=<IP>               IP address of the server to get data from.
+                        Server must be present in nodes.list.
+                        If empty, means localhost.
                     
 --from=<date/time>      Time of the beginning of the graph in any format
-                        acceptable by the 'date' utility
+                        acceptable by the 'date' utility.
 
 --to=<date/time>        Graph end time in any format acceptable by the 'date'
-                        utility
+                        utility.
 
---metric=<metric>       Metric = database field name
+--metric=<metric>       Metric = database field name.
                         Multiple metrics accepted, separated by comma, no spaces
                   
 --database=<path/to/database>
                         path to database file, relative to M-Script root folder
-                        The default is sysdata
+                        The default is sysdata.
                     
---table=<table name>    The default is sysdata
+--table=<table name>    The default is sysdata.
+
+--fromfile={path/to/file}
+                        Takes data from prepared file. Useful when complex
+                        queries are required.
                         
 --size=<small|thumbnail>
-                        If not defined, it's the default big graph
+                        If not defined, it's the default big graph.
 
 --min=<number|auto>     Minimal value for Y axis. 0 by default.
-                        
---scale                 Used to create combined graphs with multiple metrics.
-                        Makes exact values useless. Good only to see relative
-                        changes of various metrics.
                         
 --where=<field:value>   Additional WHERE clause for SQL query.
                         
@@ -138,7 +138,7 @@ Options:
                         list them in the same order, separated by comma.
                         
 --perpixel              Renders one value per pixel along X-Axis, saves CPU
-                        cycles
+                        cycles.
                         
 --legendpos=<left|below>
 
@@ -234,12 +234,11 @@ areaV=`expr $graphV - 2 \* $padding - $legendV - $axis`
 
 # perpixel option makes time period obsolete
 if [ -z "$perpixel" ] ; then
-  # the idea is to work entirely in UTC (timestamps in the db is UTC as well)
-  # only X axis marks are converted to server local time
+  # the idea is to work entirely in UTC (timestamps in the db are UTC as well)
+  # and only convert X axis marks to server local time
   if [ -n "$from" ] ; then
   # whatever you provide as --from, it is supposed to be UTC unless you provided
-  # the time zone. In this latter case it will be converted to UTC, not just
-  # considered to be UTC
+  # the time zone. In this latter case it will be converted to UTC.
     tfrom=`date -u -d "$from"`
     from=`date -u -d "$from" +"%s"`
     if [ -n "$to" ] ; then
@@ -285,7 +284,7 @@ if [ -z "$localip" ] ; then
   skey=`echo $server | cut -d'|' -f2`
   scluster=`echo $server | cut -d'|' -f5`
   mpath=`cat "$rpath/conf/clusters.conf"|grep "^${scluster}|"|tail -1|cut -d'|' -f8`
-  [ -z "$mpath" ] && log "M-Script path for server $server not found" && exit 1
+  [ -z "$mpath" ] && mpath=$M_ROOT
   [ -f "$rpath/keys/$skey" ] && thekey="-i $rpath/keys/$skey"
   [ -z "$thekey" -a -f "$rpath/keys/${skey}.pem" ] && thekey="-i $rpath/keys/${skey}.pem"
   [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$rpath/conf/clusters.conf"|grep "^${scluster}|"|tail -1|cut -s -d'|' -f13`
@@ -492,8 +491,6 @@ if [ `cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | wc -l` -le 5 ] ; then
   exit 1
 fi
 sn=`echo $metric | tr ',' ' ' | wc -w`
-
-
 
 #####################################
 #### Graph geometry calculations ####
@@ -812,7 +809,7 @@ log "slegendY=$slegendY"
 
   echo -n "<path id=\"graph_${smetric}\" style=\"fill:none;stroke:${colors[$i]};stroke-width:${strokewidth}\" d=\"M" >> "$rpath/www/graphs/${ip}.${dbname}.${name}.svg"
   if ! $perpixel; then  
-    if [ "_$scale" == "_yes" ] ; then cat "$M_TEMP/graph.${sIP}.${dbname}.${smetric}.scaled" ; else cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} ; fi | while read LINE
+    cat "$M_TEMP/graph.${sIP}.${dbname}.${name}" | cut -d'|' -f1,${n} | while read LINE
     do
       X=`echo $LINE | cut -d'|' -f1`
       # shiftY is Y value of X axis

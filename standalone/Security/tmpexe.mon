@@ -1,7 +1,7 @@
 #!/bin/bash
 
 for cmd in /proc/*/cmdline; do
-  a=`cat $cmd | tr '\0' ' ' | grep ' /tmp'`
+  a=`cat $cmd 2>/dev/null | tr '\0' ' ' | grep ' /tmp'`
   if [ -n "$a" ]; then
     echo "<***> $cmd  $a"
     proc=`echo "$cmd" | cut -sd'/' -f3`
@@ -9,7 +9,7 @@ for cmd in /proc/*/cmdline; do
   fi
 done
 for pwd in /proc/*/cwd; do
-  a=`readlink -f $pwd | grep '/tmp'`
+  a=`readlink -f $pwd 2>/dev/null | grep '/tmp'`
   if [ -n "$a" ]; then
     echo "<***> $pwd  $a"
     proc=`echo "$pwd" | cut -sd'/' -f3`

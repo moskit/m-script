@@ -22,6 +22,8 @@ rpath=${rpath%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
 
+get_lock
+
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
 
@@ -92,5 +94,7 @@ done
 
 unset masters
 
-exit 0
+release_lock
+
+exit 10
 

@@ -8,6 +8,8 @@ rpath=${rpath%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
 
+get_lock
+
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`
@@ -184,5 +186,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name_ext.html"
   done &
 fi
+
+release_lock
 
 exit 10

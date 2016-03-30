@@ -76,7 +76,7 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
       rdl=`echo "$rdl" | sort`
       if [ "_$rdl" == "_255" ]; then
         timeid=`date +"%m.%d_%H:%M:%S"`
-        echo "<h3>`date`</h3>\n\n<div class=\"info info_w3\">Unable to get monitoring data! This node is either down or not accessible by SSH.</div>\n" > "$rpath/www/$monitor/$cld/$clustered_as/$nodename/${timeid}_${nodename}.html"
+        echo -e "<h3>`date`</h3>\n\n<div class=\"info info_w3\">Unable to get monitoring data! This node is either down or not accessible by SSH.</div>\n" > "$rpath/www/$monitor/$cld/$clustered_as/$nodename/${timeid}_${nodename}.html"
         echo "<div id=\"${timeid}_${nodename}\" title=\"${timeid}\" class=\"chunk w3\" onclick=\"showData('${timeid}_${nodename}','/nodes')\">&nbsp;<div id=\"data_${timeid}_${nodename}\" class=\"dhtmlmenu\" style=\"display: none\"></div></div>" >> "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.html"
         sed -i '1d' "$rpath/www/$monitor/$cld/$clustered_as/$nodename/dash.html"
       elif [ "_$rdl" == "_1" ]; then
