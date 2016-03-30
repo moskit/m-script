@@ -23,7 +23,7 @@ rpath="${rpath%/*}"
 printcol() {
   if [ -n "$1" ] ; then
     l=`expr $col - 1`
-    str=`echo "$1" | cut -b $l`
+    str=`echo "$1" | cut -b 1-${l}`
     printf "%-${l}s" $str
   else
     printf "%${col}s"
@@ -37,6 +37,7 @@ find_clust() {
     clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
   fi
   [ -z "$clust" ] && echo "No clusters found" >&2 && return 1
+  return 0
 }
 
 possible_commands="help list clone create save destroy show stop start"

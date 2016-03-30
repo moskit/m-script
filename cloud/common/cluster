@@ -29,7 +29,7 @@ possible_options="cloud"
 printcol() {
   if [ -n "$1" ] ; then
     l=`expr $col - 1`
-    str=`echo "$1" | cut -b $l`
+    str=`echo "$1" | cut -b 1-${l}`
     printf "%-${l}s" $str
   else
     printf "%${col}s"
