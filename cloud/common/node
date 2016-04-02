@@ -213,16 +213,16 @@ case $command1 in
     fi
     ;;
   show)
-    "$rpath"/get_node_details 
+    "$rpath"/get_node_details $@
     ;;
   create)
-  
+    "$rpath"/create_node $@
     ;;
   destroy)
-  
+    "$rpath"/destroy_node $@
     ;;
   save)
-  
+    "$rpath"/save_node $@
     ;;
   *)
   
