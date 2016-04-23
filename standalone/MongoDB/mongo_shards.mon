@@ -22,11 +22,6 @@ rpath=${rpath%/*}
 source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/sa.log"
 
-exit() {
-  release_lock
-  exit $1
-}
-
 get_lock
 
 MONGO=`which mongo 2>/dev/null`
