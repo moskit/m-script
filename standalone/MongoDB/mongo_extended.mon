@@ -16,9 +16,11 @@ MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
 source "$rpath/mongo_servers.conf"
 [ -e "$rpath/${rcommand%.mon}.conf" ] && source "$rpath/${rcommand%.mon}.conf"
-[ -z "$INTERVAL" ] && INTERVAL=600
 
-check_interval $INTERVAL
+# in case you don't want to run it every time
+if [ -n "$INTERVAL" ]; then
+  check_interval $INTERVAL || exit 1
+fi
 
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
@@ -176,7 +178,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
     [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"
     get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name_ext.html"
-  done &
+  done
 fi
 
 if [ -e "$rpath/mongo_servers.list" ] ; then
@@ -184,7 +186,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
     [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"
     get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name_ext.html"
-  done &
+  done
 fi
 
 release_lock

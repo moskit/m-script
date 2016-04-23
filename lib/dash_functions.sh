@@ -214,7 +214,7 @@ print_dashlines() {
         echo "<p color=\"red\">print_dashlines function must be inside the open_cluster/close_cluster block</p>"
         return 1
       fi
-      cld=${dfocid%|*}
+      cld=`echo $dfocid | cut -sd'|' -f1`
       cls=${dfocid#*|}
       [ -d "$M_ROOT/www/$target" ] || install -d "$M_ROOT/www/$target"
 IFS1=$IFS; IFS='
@@ -229,6 +229,8 @@ IFS1=$IFS; IFS='
           node=`echo "$noderecord" | cut -sd'|' -f2`
           # lcls=`echo "$noderecord" | cut -sd'|' -f3`  # not needed for now
           lcld=`echo "$noderecord" | cut -sd'|' -f4`
+          # defaulting to the found cloud in case cld is not defined
+          [ -z "$cld" ] && cld=$lcld
           if [ "_$lcld" == "_$cld" ]; then
             open_line "$node||$cld" "$onclick"
             tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null

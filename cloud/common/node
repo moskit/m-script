@@ -167,7 +167,7 @@ IFS='
 case $command1 in
   list)
     if [ "_$command2" == "_long" ]; then
-      COL=`tput cols 2>/dev/null`
+      COL=`tput cols`
       [ -n "$COL" ] && col=$((COL/4)) || col=20
       printcol "Node"
       printcol "IP"

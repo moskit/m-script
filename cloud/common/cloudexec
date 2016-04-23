@@ -189,9 +189,9 @@ for cld in $CLOUD ; do
 
   [ -n "$all" ] && cluster=all
   [ -z "$cluster" ] && cluster=$M_CLUSTER
-  [ -z "$cluster" ] && echo "No clusters found" && exit 1
+  [ -z "$cluster" ] && echo -e "No clusters found.\n$rcommand uses environment variable M_CLUSTER, use command-line option --cluster to override it.\nUse --cluster=all to address all clusters in the cloud (or in all clouds if cloud is not set)." && exit 1
 
-  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*# | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
   declare -i n
   IFS1=$IFS
@@ -200,6 +200,7 @@ for cld in $CLOUD ; do
   [ -n "$verbose" ] && echo -e "### Cloud $cld\n    Command: $command"
   if [ -n "$command" ] ; then
     for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
+      [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1,12 | grep "|${cld}$" | cut -d'|' -f1 | grep -c "^${icluster}$"` -eq 0 ] && echo "Cluster $icluster not found" && continue
       [ -n "$user" ] && SSH_REMOTE_USER="$user"
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$icluster|" | cut -s -d'|' -f13`
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"

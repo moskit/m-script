@@ -19,7 +19,7 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 echo_usage() {
-  echo -e "\n  Usage: $rcommand <database.collection> <shard name>\n\n         With shard omitted all shards will be analyzed\n         With database.collection omitted all sharded collections will be amalyzed\n\n"
+  echo -e "\n  Usage: $rcommand <database.collection> <shard name>\n\n         With shard omitted all shards will be analyzed\n         With database.collection omitted all sharded collections will be amalyzed\n\n  Reports are written to file(s) in $rpath with names <shard>.<ns>.chunks\n\n  Environment variables for advanced usage:\n    MERGE_EMPTY_CHUNKS (true|false)\n    SPLIT_LARGE_CHUNKS (true|false)\n    LARGE_CHUNK_DEF (% of max chunk size)\n    SLEEP (seconds between chunk size calculations - to avoid locking of the collection for the full time of this analysis)\n"
 }
 if [ -n "$1" ]; then
   if [ "$1" == "--help" ]; then
@@ -29,13 +29,14 @@ if [ -n "$1" ]; then
   fi
 fi
 source "$M_ROOT/lib/functions.sh"
+[ -e "$rpath/mongo_servers.conf" ] && source "$rpath/mongo_servers.conf"
+[ -e "$rpath/${rcommand}.conf" ] && source "$rpath/${rcommand}.conf"
 LOG="$M_ROOT/logs/sa.log"
 [ -z "$SLEEP" ] && SLEEP=20
 DIFF=`which diff 2>/dev/null`
 [ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
 MONGO=`which mongo 2>/dev/null`
 [ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
-[ -e "$rpath/${rcommand%.mon}.conf" ] && source "$rpath/${rcommand%.mon}.conf"
 
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
@@ -44,10 +45,6 @@ if [ -n "$AUTH_LOGIN" ]; then
     echo "Password is not set for user $AUTH_LOGIN"
   fi
 fi
-source "$M_ROOT/conf/mon.conf"
-M_TEMP="$M_TEMP/MongoDB"
-install -d "$M_TEMP"
-timeindexnow=`date +"%s"`
 
 # put these vars to analyze_chunks.conf or export them if needed
 if [ -n "$MERGE_EMPTY_CHUNKS" ]; then

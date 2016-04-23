@@ -61,8 +61,9 @@ if [ -n "$rootfails" ]; then
   echo "$rootfails" | sed "s/$/|${BLOCK_CALLER}/" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
+    score=$(($invalid * 100 / $maxfailroot))
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && iptoblock+=( $ipaddr )
+    $blockip && iptoblock+=( ${ipaddr}/${score} )
   done
 fi
 
@@ -72,8 +73,9 @@ if [ -n "$invalidusers" ]; then
   echo "$invalidusers" | sed "s/$/|${BLOCK_CALLER}/" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
     invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
+    score=$(($invalid * 100 / $maxinvalid))
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && iptoblock+=( $ipaddr )
+    $blockip && iptoblock+=( ${ipaddr}/${score} )
   done
 fi
 
@@ -83,8 +85,9 @@ if [ -n "$userfails" ]; then
   echo "$userfails" | sed "s/$/|${BLOCK_CALLER}/" >> "$M_TEMP/ip_block.tmp"
   for ipaddr in `echo "$userfails" | sort | uniq` ; do
     invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
+    score=$(($invalid * 100 / $maxfail))
     echo "<**> ${ipaddr}: $invalid attempts"
-    $blockip && iptoblock+=( $ipaddr )
+    $blockip && iptoblock+=( ${ipaddr}/${score} )
   done
 fi
 

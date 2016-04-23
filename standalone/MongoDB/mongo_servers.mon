@@ -441,7 +441,7 @@ if [ -e "$rpath/mongo_config_servers.list" ] ; then
     [ -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Configuration Servers/$cs"
     get_serverstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Configuration Servers/$cs/${cs}_name.html"
-  done &
+  done
 fi
 
 if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
@@ -449,7 +449,7 @@ if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
     get_mongosstatus
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/$cs/${cs}_name.html"
-  done &
+  done
 fi
 
 if [ -e "$rpath/mongo_shards.list" ] ; then
@@ -472,7 +472,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
         get_serverstatus
         echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
       done
-    done &
+    done
     RS=false
   else
     RS=false
@@ -480,7 +480,7 @@ if [ -e "$rpath/mongo_shards.list" ] ; then
       if [ -d "$M_ROOT/www/MongoDB/Shard Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/Shard Servers/$cs"; fi
       get_serverstatus
       echo "$reporthtml" > "$M_ROOT/www/MongoDB/Shard Servers/$cs/${cs}_name.html"
-    done &
+    done
   fi
 fi
 
@@ -509,7 +509,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
         get_serverstatus
         echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
       done
-    done &
+    done
     RS=false
   else
     RS=false
@@ -517,7 +517,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
       if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
       get_serverstatus
       echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
-    done &
+    done
   fi
 fi
 

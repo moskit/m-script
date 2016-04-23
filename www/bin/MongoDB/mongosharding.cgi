@@ -57,7 +57,7 @@ for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type 
         coll_indexsize="`expr $coll_indexsize / 1048576` $csunits"
       fi
       coll_size="$coll_size $csunits"
-      coll_status=$([ "X$coll_ok" == "X1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
+      coll_status=$([ "_$coll_ok" == "_1" ] && echo "<font color=\"green\">OK</font>" || echo "<font color=\"red\">$coll_ok</font>")
     else
       coll_status="-"
       coll_count="-"
@@ -73,8 +73,8 @@ for db in `find "$M_ROOT/standalone/$saname/data" -mindepth 1 -maxdepth 1 -type 
 done
 echo "<br/>"
 print_timeline "Sharding Events"
-open_cluster "localhost"
+open_cluster "All Shards"
   close_cluster_line
-  print_dashlines "mongo_shards/localhost"
+  print_dashlines "mongo_shards"
 close_cluster
 
