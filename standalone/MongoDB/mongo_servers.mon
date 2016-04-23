@@ -27,9 +27,9 @@ get_lock
 IFSORG=$IFS
 
 DIFF=`which diff 2>/dev/null`
-[ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && exit 1
+[ -z "$DIFF" ] && log "Diff utility not found, exiting..  " && unlock_exit 1
 MONGO=`which mongo 2>/dev/null`
-[ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && exit 1
+[ -z "$MONGO" ] && log "Mongo client not found, exiting..  " && unlock_exit 1
 source "$rpath/${rcommand%.mon}.conf"
 if [ -n "$AUTH_LOGIN" ]; then
   if [ -n "$AUTH_PASSWD" ]; then
@@ -256,7 +256,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
       cluster=1
     fi
   done
-  [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_CONFIG_SERVERS or both cluster and server names are present which is not supported" && unlock_exit 1
   if [ "_$cluster" == "_1" ] ; then
     for name in $MONGO_CONFIG_SERVERS ; do
       port=${name#*:}
@@ -274,7 +274,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   
 elif [ -z "$MONGO_SERVERS" ] ; then
   log "Neither of MONGO_CONFIG_SERVERS and MONGO_SERVERS is defined, exiting"
-  exit 1
+  unlock_exit 1
 else
 
 ## Config servers are not defined
@@ -288,7 +288,7 @@ else
       cluster=1
     fi
   done
-  [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && exit 1
+  [ "_$cluster" == "_1" ] && [ "_$noncluster" == "_1" ] && log "Wrong cluster name in MONGO_SERVERS or both cluster and server names are present which is not supported" && unlock_exit 1
   if [ "_$cluster" == "_1" ] ; then
     for name in $MONGO_SERVERS ; do
       port=`echo "$name" | cut -sd':' -f2`

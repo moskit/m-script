@@ -39,7 +39,7 @@ get_lock
 
 [ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
 [ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`cat "$rpath/mongo_servers.list" | grep -vE "slave$|arbiter$" | cut -d'|' -f1 | tr '\n' ' '`
-[ -z "$hostport" ] && echo "No servers found" && exit 1
+[ -z "$hostport" ] && echo "No servers found" && unlock_exit 1
 
 [ -f "$rpath/data/databases.dat" ] && rm -f "$rpath/data/databases.dat"
 

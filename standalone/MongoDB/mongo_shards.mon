@@ -25,7 +25,7 @@ LOG="$M_ROOT/logs/sa.log"
 get_lock
 
 MONGO=`which mongo 2>/dev/null`
-[ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && exit 1
+[ -z "$MONGO" ] && echo "Mongo client not found, exiting..  " && unlock_exit 1
 
 source "$rpath/mongo_servers.conf"
 if [ -n "$AUTH_LOGIN" ]; then
@@ -51,11 +51,11 @@ IFS='
 '
 
 a=`cat "$rpath/mongo_config_servers.list" 2>/dev/null | wc -l`
-[[ $a -eq 0 ]] && log "No configuration servers found" && exit 1
+[[ $a -eq 0 ]] && log "No configuration servers found" && unlock_exit 1
 
 confserver=`head -n $((RANDOM%$a+1)) "$rpath/mongo_config_servers.list" 2>/dev/null | tail -1 | cut -sd'|' -f1`
 [ -z "$confserver" ] && confserver=`head -1 "$rpath/mongo_config_servers.list" 2>/dev/null | cut -sd'|' -f1`
-[ -z "$confserver" ] && log "No configuration servers found" && exit 1
+[ -z "$confserver" ] && log "No configuration servers found" && unlock_exit 1
 
 sharded=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.collections.find( {}, { _id : 1 } ).forEach(printjson)" 2>>$LOG | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 | tr -d '"'`
 
