@@ -90,21 +90,22 @@ fi
 
 if $blockip ; then
   for ip in `echo "${iptoblock[*]}" | tr ' ' '\n' | sort | uniq`; do
-    invalidtotal=`echo "${iptoblock[*]}" | tr ' ' '\n' | grep "^${ip}/"`
+    ipaddr=${ip%%/*}
+    invalidtotal=`echo "${iptoblock[*]}" | tr ' ' '\n' | grep "^${ipaddr}/"`
     scoresum=`echo -n "$invalidtotal" | cut -sd'/' -f2 | grep -v ^$ | tr '\n' '+'`
     currentscore=`expr "$scoresum"`
-    previousscore=`grep "${ip}/" "$rpath/ip_block.tmp" | cut -sd'/' -f2 | grep -v ^$ | tail -1`
+    previousscore=`grep "${ipaddr}/" "$rpath/ip_block.tmp" | cut -sd'/' -f2 | grep -v ^$ | tail -1`
     [ -z "$previousscore" ] && previousscore=0
     totalscore=`expr $currentscore + $previousscore`
-    log "IP: $ip  Sum: $scoresum  Current Score: $currentscore  Previous Score: $previousscore  Total Score: $totalscore"
-    sed -i "_${ip}/_d" "$rpath/ip_block.tmp"
-    echo "${ip}/$totalscore" >> "$rpath/ip_block.tmp"
+    log "IP: $ipaddr  Sum: $scoresum  Current Score: $currentscore  Previous Score: $previousscore  Total Score: $totalscore"
+    sed -i "/${ipaddr}\//d" "$rpath/ip_block.tmp"
+    echo "${ipaddr}/$totalscore" >> "$rpath/ip_block.tmp"
     if [ $totalscore -ge 100 ] 2>/dev/null; then
       echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=0
     else
       if [ -n "$tmpblock" ]; then
         if [ $totalscore -ge $tmpblock ] 2>/dev/null; then
-          echo "$ip" | "$M_ROOT"/helpers/block_ip - --method="$method"
+          echo "$ipaddr" | "$M_ROOT"/helpers/block_ip - --method="$method"
         fi
       fi
     fi
