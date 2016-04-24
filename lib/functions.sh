@@ -379,8 +379,12 @@ get_lock() {
     fi
   done
   if [ -f "$callerfolder/${callername}.lock" ] ; then
-    log "given up acquiring the lock..."
-    exit 1
+    lockedproc=`cat "$callerfolder/${callername}.lock"`
+    if [ -d /proc/$lockedproc ]; then
+      log "given up acquiring the lock..."
+      exit 1
+    fi
+    log "process that created the lock doesn't exist, allowing $callername to acquire it"
   fi
   echo $$ > "$callerfolder/${callername}.lock"
 }
