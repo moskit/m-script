@@ -34,7 +34,7 @@ interval="$interval sec"
 [ -z "$maxfailroot" ] && maxfailroot=3
 [ -z "$timeformat" ] && timeformat="%b %_d %H:%M:%S"
 [ -z "$method" ] && method="REJECT"
-export BLOCK_CALLER="$rcommand"
+LOG="$M_ROOT/logs/sa.log"
 
 "$M_ROOT"/helpers/unblock_ip tmp
 
@@ -93,8 +93,10 @@ if $blockip ; then
     ipaddr=${ip%%/*}
     invalidtotal=`echo "${iptoblock[*]}" | tr ' ' '\n' | grep "^${ipaddr}/"`
     scoresum=`echo -n "$invalidtotal" | cut -sd'/' -f2 | grep -v ^$ | tr '\n' '+'`
+    scoresum=${scoresum%+}
+    [ -z "$scoresum" ] && scoresum=0
     currentscore=`expr "$scoresum"`
-    previousscore=`grep "${ipaddr}/" "$rpath/ip_block.tmp" | cut -sd'/' -f2 | grep -v ^$ | tail -1`
+    previousscore=`grep "${ipaddr}/" "$rpath/ip_block.tmp" 2>/dev/null | cut -sd'/' -f2 | grep -v ^$ | tail -1`
     [ -z "$previousscore" ] && previousscore=0
     totalscore=`expr $currentscore + $previousscore`
     log "IP: $ipaddr  Sum: $scoresum  Current Score: $currentscore  Previous Score: $previousscore  Total Score: $totalscore"
