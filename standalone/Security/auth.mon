@@ -34,6 +34,7 @@ interval="$interval sec"
 [ -z "$maxfailroot" ] && maxfailroot=3
 [ -z "$timeformat" ] && timeformat="%b %_d %H:%M:%S"
 [ -z "$method" ] && method="REJECT"
+export BLOCK_CALLER="$rcommand"
 LOG="$M_ROOT/logs/sa.log"
 
 "$M_ROOT"/helpers/unblock_ip tmp
