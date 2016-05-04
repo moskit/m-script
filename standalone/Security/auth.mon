@@ -41,6 +41,8 @@ LOG="$M_ROOT/logs/sa.log"
 
 logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --interval="$interval"`
 
+[ -n "$logged" ] && date_header
+
 invalidusers=`echo "$logged" | grep "Invalid\\ user"`
 rootfails=`echo "$logged" | grep "Failed\\ password\\ for\\ root"`
 userfails=`echo "$logged" | grep "Failed\\ password\\ for\\ " | grep -v "Failed\\ password\\ for\\ root" | grep -v "Failed\\ password\\ for\\ invalid"`
