@@ -7,5 +7,6 @@ print_cgi_headers
 print_nav_bar "Postfix|Activity" "Postfix/postfix_queue|Queue"
 
 print_timeline "Server"
+open_cluster "Activity"
 print_dashlines "postfix_activity" "Postfix/postfix_activity"
-
+close_cluster
