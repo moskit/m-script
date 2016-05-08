@@ -202,9 +202,9 @@ for proc in `echo "$pslistres"` ; do
   fi
 done
 
-ps axo vsz,pid,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM > ${M_TEMP}/ps.list.vir
+pslistvir=`ps axo vsz,pid,user,cmd:$CMD_LENGTH | sed 's|^[[:space:]]*||g;s|[[:space:]][[:space:]]*| |g' | grep -v '^0 ' | sort -g | tail -n $MEM_TOP_NUM`
 
-for proc in `cat ${M_TEMP}/ps.list.vir` ; do
+for proc in `echo "$pslistvir"` ; do
   unset usageprev warnind
   usage=${proc%% *}
   procid=`echo $proc | cut -d' ' -f2`
@@ -247,9 +247,8 @@ for proc in `cat ${M_TEMP}/ps.list.vir` ; do
   fi
 done
 
-mv ${M_TEMP}/ps.list.res ${M_TEMP}/ps.prev.res
-mv ${M_TEMP}/ps.list.vir ${M_TEMP}/ps.prev.vir
-rm -f ${M_TEMP}/ps.list*
+echo "$pslistres" > ${M_TEMP}/ps.prev.res
+echo "$pslistvir" > ${M_TEMP}/ps.prev.vir
 IFS=$IFS1
 
 
