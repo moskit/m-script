@@ -1,18 +1,33 @@
 #!/bin/bash
 
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+
+source "$M_ROOT/lib/functions.sh" # includes mon.conf
+
+KILLCMD=false
+KILLWD=false
+
+source "$rpath/${rcommand%.mon}.conf"
+
 for cmd in /proc/*/cmdline; do
   a=`cat $cmd 2>/dev/null | tr '\0' ' ' | grep ' /tmp'`
   if [ -n "$a" ]; then
-    echo "<***> $cmd  $a"
     proc=`echo "$cmd" | cut -sd'/' -f3`
-    kill $proc
+    echo "<***> Process with executable in /tmp: $proc, command $a"
+    $KILLCMD && kill $proc
   fi
 done
-for pwd in /proc/*/cwd; do
-  a=`readlink -f $pwd 2>/dev/null | grep '/tmp'`
+
+for cwd in /proc/*/cwd; do
+  a=`readlink -f $cwd 2>/dev/null | grep '/tmp'`
   if [ -n "$a" ]; then
-    echo "<***> $pwd  $a"
-    proc=`echo "$pwd" | cut -sd'/' -f3`
-    kill $proc
+    proc=`echo "$cwd" | cut -sd'/' -f3`
+    cmd=`cat /proc/$proc/cmdline | tr '\0' ' '`
+    echo "<**> Process with working directory in /tmp: $proc, command $cmd"
+    $KILLWD && kill $proc
   fi
 done

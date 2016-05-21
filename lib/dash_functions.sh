@@ -63,7 +63,7 @@ print_page_title() {
 }
 
 open_cluster() {
-  # open_cluster "CLuster (folder name)" "Onclick script" "Title (pop-up on hover)"
+  # open_cluster "Cluster (folder name)" "Onclick script" "Title (pop-up on hover)"
   dfocid="$1"
   shift
   [ -n "$1" ] && dfoconclick="$1"

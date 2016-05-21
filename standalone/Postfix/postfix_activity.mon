@@ -110,14 +110,14 @@ done
 store_results "deferred|integer,bounced|integer,sent|integer"
 
 if $LOG_ERRORS && $ANALYZE_ERRORS ; then
-  echo "--------------------------------------------------------"
+  echo -e "\n"
   "$rpath"/analyze_error_log
 fi
 
 if $SASL_AUTH_FAILURES ; then
   saslflooders=`echo "$log" | grep 'SASL LOGIN authentication failed' | cut -d':' -f5 | cut -sd '[' -f2 | cut -sd ']' -f1 | grep -v '^$' | sort | uniq`
   if [ -n "$saslflooders" ]; then
-    echo -e "SASL auth failures detected from IPs:\n${saslflooders}" | sed 's|^|<***> |'
+    echo -e "\nSASL auth failures detected from IPs:\n${saslflooders}" | sed 's|^|<***> |'
     if [ -n "$SASL_AUTH_BLOCK" ]; then
       export BLOCK_CALLER=$rcommand
       echo "$saslflooders" | "$M_ROOT"/helpers/block_ip - --block_forever_after=$SASL_AUTH_BLOCK --method=DROP

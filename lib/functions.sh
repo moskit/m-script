@@ -30,7 +30,7 @@ timeshift=`cat "$M_TEMP/timeshift" 2>/dev/null` || timeshift=10
 
 store_results() {
   # syntax:
-  # store_results fieldname1|datatype1,fieldname2|datatype2,... <filename|tablename>
+  # store_results fieldname1|datatype1<,fieldname2|datatype2,>... <filename|tablename>
   [ -z "$1" ] && echo "store_results: fields are not defined" && exit 1
   [ -n "$SQLITE3" -a "$SQLITE3" == "1" ] || exit 0
   if [ -z "$2" ]; then

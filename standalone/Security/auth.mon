@@ -95,10 +95,10 @@ if $blockip ; then
   for ip in `echo "${iptoblock[*]}" | tr ' ' '\n' | sort | uniq`; do
     ipaddr=${ip%%/*}
     invalidtotal=`echo "${iptoblock[*]}" | tr ' ' '\n' | grep "^${ipaddr}/"`
-    scoresum=`echo -n "$invalidtotal" | cut -sd'/' -f2 | grep -v ^$ | tr '\n' '+'`
+    scoresum=`echo -n "$invalidtotal" | cut -sd'/' -f2 | grep -v ^$ | while read inv ; do echo "$inv + " ; done`
     scoresum=${scoresum%+}
     [ -z "$scoresum" ] && scoresum=0
-    currentscore=`expr "$scoresum"`
+    currentscore=`echo $scoresum | bc`
     previousscore=`grep "${ipaddr}/" "$rpath/ip_block.tmp" 2>/dev/null | cut -sd'/' -f2 | grep -v ^$ | tail -1`
     [ -z "$previousscore" ] && previousscore=0
     totalscore=`expr $currentscore + $previousscore`

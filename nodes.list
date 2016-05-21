@@ -1,4 +1,4 @@
-### Servers.list
+### nodes.list
 ##
 ## Format:
 ## IP|key|region|name|cluster|cloud
