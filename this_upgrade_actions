@@ -1,3 +1,2 @@
-# 1451263825
-mv "$M_ROOT/www/servers" "$M_ROOT/www/nodes"
-"$M_ROOT"/monitorload.run restart
+# 1464117610
+mv "$M_ROOT/standalone/MongoDB/databases.sql3" "$M_ROOT/standalone/MongoDB/databases.sql3.1464117610"
