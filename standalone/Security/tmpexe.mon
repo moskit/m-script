@@ -15,10 +15,13 @@ source "$rpath/${rcommand%.mon}.conf"
 
 for cmd in /proc/*/cmdline; do
   a=`cat $cmd 2>/dev/null | tr '\0' ' ' | grep ' /tmp'`
+  if [ -n "$CMDEXCL" ]; then
+    [[ $a =~ $CMDEXCL ]] && continue
+  fi
   if [ -n "$a" ]; then
     proc=`echo "$cmd" | cut -sd'/' -f3`
     echo "<***> Process with executable in /tmp: $proc, command $a"
-    $KILLCMD && kill $proc
+    $KILLCMD && kill $proc && echo "<***> Sent SIGTERM to $proc"
   fi
 done
 
@@ -27,7 +30,10 @@ for cwd in /proc/*/cwd; do
   if [ -n "$a" ]; then
     proc=`echo "$cwd" | cut -sd'/' -f3`
     cmd=`cat /proc/$proc/cmdline | tr '\0' ' '`
+    if [ -n "$CMDEXCL" ]; then
+      [[ $cmd =~ $CMDEXCL ]] && continue
+    fi
     echo "<**> Process with working directory in /tmp: $proc, command $cmd"
-    $KILLWD && kill $proc
+    $KILLWD && kill $proc && echo "<***> Sent SIGTERM to $proc"
   fi
 done
