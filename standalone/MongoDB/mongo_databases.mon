@@ -67,12 +67,15 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
     eval "`echo "$colldata" | grep coll_count`"
     eval "`echo "$colldata" | grep coll_size`"
     eval "`echo "$colldata" | grep coll_indexsize`"
+    eval "`echo "$colldata" | grep coll_storsize`"
+    eval "`echo "$colldata" | grep coll_chunks`"
     ns="${db}.${coll}"
     if [ "_$SHARDING" == "_manual" ]; then
-      store_results "hp|text,ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer" "standalone/MongoDB/databases.sql3|collections"
+      store_results "hp|text,ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer,coll_storsize|integer,coll_chunks|integer" "standalone/MongoDB/databases.sql3|collections"
     else
-      store_results "ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer" "standalone/MongoDB/databases.sql3|collections"
+      store_results "ns|text,coll_count|integer,coll_size|integer,coll_indexsize|integer,coll_storsize|integer,coll_chunks|integer" "standalone/MongoDB/databases.sql3|collections"
     fi
+    echo "$colldata" > "$rpath/data/${ns}.dat"
   done
   if [ "_$SHARDING" == "_manual" ]; then
     echo "$dbdat" > "$rpath/data/${db}.${hp}.dat"

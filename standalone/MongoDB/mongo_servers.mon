@@ -130,6 +130,8 @@ function get_serverstatus() {
     rsstateStr=`echo "$rsstatusraw" | grep ^$n\/ | grep \"stateStr\"\| | cut -sd'|' -f2 | tr -d '()'`
     rsoptime=`echo "$rsstatusraw" | grep ^$n\/ | grep \"optime\"\| | cut -sd'|' -f2`
     [ -n "$rsoptime" ] && rsoptime=`expr $rsoptime : ".*(\([0-9]*\)"`
+    # to avoid huge rlag values e.g. during/after slave restart
+    [ $rsoptime -eq 0 ] 2>/dev/null && [ -n "$masteroptime" ] && rsoptime=$masteroptime
     $ismaster && masteroptime=$rsoptime && rlag=0 || rlag=`expr $masteroptime - $rsoptime 2>/dev/null || unset rlag`
     rspingMs=`echo "$rsstatusraw" | grep ^$n\/ | grep \"pingMs\"\| | cut -sd'|' -f2`
     rsconfigVersion=`echo "$rsstatusraw" | grep ^$n\/ | grep \"configVersion\"\| | cut -sd'|' -f2`
@@ -225,8 +227,13 @@ function parse_data() {
   dataserver=`cat "$rpath/mongo_shards.list" "$rpath/mongo_servers.list" | grep "^$1|"`
   
   if $RS ; then
-    echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
+    
     rdelay=`echo "$dataserver" | cut -sd'|' -f4 | cut -sd'=' -f3`
+    if [ $rdelay -gt 0 ] 2>/dev/null ; then
+      echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag + Delay       $rlag"
+    else
+      echo -e "\n Replica Set\n\nHealth               $rshealth\nPing (ms)               $rspingMs\nConfig Version               $rsconfigVersion\nState               $rsstate\nState String               $rsstateStr\nReplication Lag               $rlag"
+    fi
     [ -n "$rlag" ] && rlag=`expr $rlag - $rdelay 2>/dev/null`
     [ -n "$rsstate_prev" ] && [ "_$rsstate" != "_$rsstate_prev" ] && echo -e "\n<***> Member state changed: was $rsstate_prev now $rsstate\n"
     [ -n "$rsconfigVersion_prev" ] && [ "_$rsconfigVersion" != "_$rsconfigVersion_prev" ] && echo -e "\n<***> Config version changed: was $rsconfigVersion_prev now $rsconfigVersion\n"
