@@ -58,13 +58,13 @@ full_coll_backup() {
 
 [ -n $debugflag ] && stdinto="$M_ROOT/m_backup.log" || stdinto=/dev/null
 
-if [ "X$compression" == "Xgzip" ] && [ -n "$GZIP" ] ; then
+if [ "_$compression" == "_gzip" ] && [ -n "$GZIP" ] ; then
   compress=$GZIP
   ext="gz"
   TAR="$TAR czf"
 fi
 
-if [ "X$compression" == "Xbzip2" ] && [ -n "$BZIP2" ] ; then
+if [ "_$compression" == "_bzip2" ] && [ -n "$BZIP2" ] ; then
   compress=$BZIP2
   ext="bz2"
   TAR="$TAR cjf"
@@ -72,19 +72,19 @@ fi
 
 [ -z "$compression" ] && TAR="$TAR cf"
 
-[ "X$mongohosts" == "X" ] && echo "Error: database host not defined" >> "$M_ROOT/m_backup.error" && exit 1
+[ -z "$mongohosts" ] && echo "Error: database host not defined" >> "$M_ROOT/m_backup.error" && exit 1
 [ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST=$M_ROOT
 
 MBD="$DEST/backup.tmp/mongo"
 
 [ ! -d $MBD ] && install -d $MBD
-if [ "X$mongopass" == "X" ]; then
+if [ -z "$mongopass" ]; then
   PASS=""
 else
   PASS="--password=$mongopass"
 fi
 
-if [ "X$mongouser" == "X" ]; then
+if [ -z "$mongouser" ]; then
   USER=""
 else
   USER="--username=$mongouser"
@@ -99,7 +99,7 @@ done
 [ $res -ne 0 ] && echo -e "\n*** unable to find a MongoDB host, exiting\n" >> "$M_ROOT/m_backup.error" && exit 1
  
 echo "Host $DBHOST selected." >>"$M_ROOT/m_backup.log"
-if [ "X${2}" == "X" ]; then
+if [ -z "${2}" ]; then
   archname="$DBHOST.$(date +"%Y.%m.%d_%H.%M")"
 else
   archname="${2}"
@@ -176,16 +176,14 @@ if [ -n "$mongodbpertableconf" ] ; then
   IFS=$IFS1
 else
   [ -n "$debugflag" ] && echo "Per table backup configuration disabled" >> "$M_ROOT/m_backup.error"
-  if [ "X$mongodblist" == "X" ]; then
+  if [ -z "$mongodblist" ]; then
     mongodblist="$($MONGO $DBHOST/admin $USER $PASS --eval "db.runCommand( { listDatabases : 1 } ).databases.forEach ( function(d) { print( '=' + d.name ) } )" | grep ^= | sed 's|^=||g')" 2>>"$M_ROOT/m_backup.error"
   fi
 
-  for db in $mongodblist
-  do
+  for db in `echo "$mongodblist" | tr ',' ' '`; do
     skipdb=-1
-    if [ "$mongodbexclude" != "" ]; then
-    	for i in $mongodbexclude
-    	do
+    if [ -n "$mongodbexclude" ]; then
+    	for i in $mongodbexclude ; do
     	  [ "$db" == "$i" ] && skipdb=1 || :
     	done
     fi

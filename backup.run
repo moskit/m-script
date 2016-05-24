@@ -213,9 +213,9 @@ if [ -n "$fgflag" ]; then
 fi
 export stdinto stderrto
 
-###################################################################
-# Main loop. Runs as many times as many config files used  #
-###################################################################
+##############################################################
+# Main loop. Runs as many times as many config files found.  #
+##############################################################
 
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/backups"
@@ -405,7 +405,7 @@ do
 # Backuping databases (see the correspondent database backup scripts for details
     for DB in $databases
     do
-      [ -x "$rpath"/${DB}.backup.sh ] && "$rpath"/${DB}.backup.sh "$backupconf" "$archname" 1>>$stdinto 2>>$stderrto
+      [ -x "$rpath"/backups/${DB}.backup.sh ] && "$rpath"/backups/${DB}.backup.sh "$backupconf" "$archname" 1>>$stdinto 2>>$stderrto
     done
   else
     archname="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
