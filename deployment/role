@@ -215,8 +215,10 @@ case $command1 in
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
         [ -n "$COL" ] && col=$((COL/2)) || col=40
+        col1=$col
         printcol "Script"
         [ -n "$COL" ] && col=$((COL/4)) || col=20
+        col2=$col
         printcol "Meta"
         echo "Role"
         printf "%${COL}s\n" | tr ' ' '-'
@@ -233,6 +235,7 @@ case $command1 in
             if [ "$mis" == "unused" ] ; then
               if [ -n "$all" ]; then
                 [ -n "$M_COLOR" ] && echo -n -e "$CONTR_SEQ$FG_MAGENTA"
+                col=$col1
                 printcol "$scr"
                 echo "not found in any meta"
                 [ -n "$M_COLOR" ] && echo -n -e "$UNSET_COLOR"
@@ -241,7 +244,9 @@ case $command1 in
             else
               for r in `grep "${sc##*/}" "$ROLES_ROOT/roles/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
                 r=`eval "echo \"$r\""`
+                col=$col1
                 printcol "$scr"
+                col=$col2
                 printcol "$mis"
                 echo "$r"
                 unset scr mis
@@ -253,7 +258,9 @@ case $command1 in
               [ `cat "$or/"*.meta 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
             done
             for oris in ${ori[*]} ; do
+              col=$col1
               printcol "$scr"
+              col=$col2
               printcol "$oris"
               echo
               unset scr oris
@@ -290,16 +297,18 @@ case $command1 in
               unset fl
             done
           elif [ -n "$all" ]; then
+            [ -n "$M_COLOR" ] && echo -n -e "$CONTR_SEQ$FG_MAGENTA"
             printcol "${fl##*/}"
-            echo "not found in any script"
+            echo "not used"
             unset fl
+            [ -n "$M_COLOR" ] && echo -n -e "$UNSET_COLOR"
           fi
           unset sci
         done
       ;;
       roles|'')
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3)) || col=20
+        [ -n "$COL" ] && col=$((COL/4)) || col=20
         printcol "Role"
         printcol "Cluster"
         printcol "Flavor"
