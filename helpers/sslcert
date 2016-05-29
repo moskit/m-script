@@ -56,16 +56,18 @@ if $found ; then
   exit 1
 fi
 
+[ -n "$config" ] && CONFIG="-config $config"
+
 generate_htpasswd() {
   $OSSL passwd -crypt $1
 }
 
 generate_selfsigned() {
-  $OSSL req -x509 -newkey rsa:${length} -keyout ${filename%.*}.key -out $filename -days $days -nodes
+  $OSSL req -x509 -newkey rsa:${length} -keyout ${filename%.*}.key -out $filename -days $days -nodes $CONFIG
 }
 
 generate_csr() {
-  $OSSL req -out ${filename%.*}.csr -new -newkey rsa:${length} -nodes -keyout ${filename%.*}.key
+  $OSSL req -out ${filename%.*}.csr -new -newkey rsa:${length} -nodes -keyout ${filename%.*}.key $CONFIG
 }
 
 read_csr() {

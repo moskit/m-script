@@ -67,7 +67,7 @@ list_the_cluster() {
   # 1. compile full list
   # 2. if 'slow' is set, verify each node by querying its personal details
   ips1=`cat "$M_ROOT/nodes.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${cluster}$ | cut -d'|' -f1`
-  if [ "X$NETWORK" == "Xexternal" ]; then
+  if [ "_$NETWORK" == "_external" ]; then
     ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f6 | tr -d '"'`
   else
     ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f7 | tr -d '"'`
@@ -78,7 +78,7 @@ list_the_cluster() {
     for ip in `echo "$ips"` ; do
       if [ -n "$ip" ]; then
         nodedetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_node_details --cloud=$CLOUD --ip=$ip 2>/dev/null`
-        name="`echo "$nodedetails" | grep 'name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+        name="`echo "$nodedetails" | grep '^"Instance\ name"|' | cut -s -d'|' -f2 | tr -d '"'`"
         if [ $? -eq 0 ]; then
           if [ -z "`echo "$nodedetails" | grep -i '"UUID"|'`" ]; then
             sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/nodes.list"
@@ -100,7 +100,7 @@ list_the_cluster() {
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ $found -eq 1 ]]; then
   missing_options=${missing_options#*,}

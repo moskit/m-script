@@ -396,7 +396,7 @@ case $command1 in
       echo "$((i+1)). ${flarr[$i]}"
     done
     echo
-    read -p "Input flavors, separated by comma: " roleslist
+    read -p "Otherwise input flavor numbers, separated by comma: " roleslist
     if [ -z "$roleslist" ] ; then
       for fl in ${flarr[*]} ; do
         install -d "$ROLES_ROOT/roles/$param1/$fl"

@@ -96,8 +96,7 @@ if $blockip ; then
     ipaddr=${ip%%/*}
     invalidtotal=`echo "${iptoblock[*]}" | tr ' ' '\n' | grep "^${ipaddr}/"`
     scoresum=`echo -n "$invalidtotal" | cut -sd'/' -f2 | grep -v ^$ | while read inv ; do echo "$inv + " ; done`
-    scoresum=${scoresum%+}
-    [ -z "$scoresum" ] && scoresum=0
+    scoresum="${scoresum}0"
     currentscore=`echo $scoresum | bc`
     previousscore=`grep "${ipaddr}/" "$rpath/ip_block.tmp" 2>/dev/null | cut -sd'/' -f2 | grep -v ^$ | tail -1`
     [ -z "$previousscore" ] && previousscore=0

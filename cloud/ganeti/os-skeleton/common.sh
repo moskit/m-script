@@ -53,7 +53,7 @@ log_error() {
 }
 
 debug() {
-    [ "$IMAGE_DEBUG" == "1" -o "$IMAGE_DEBUG" == "yes" ] &&  $@ || :
+  [ "$IMAGE_DEBUG" == "1" -o "$IMAGE_DEBUG" == "yes" ] &&  $@ || :
 }
 
 get_api10_arguments() {
@@ -164,7 +164,7 @@ setup_console() {
             echo "s0:12345:respawn:/sbin/agetty 115200 ttyS0 vt100" >> \
                 "$target/etc/inittab"
             ;;
-        debian|ubuntu)
+        debian)
             sed -i -e 's/.*T0.*/T0:23:respawn:\/sbin\/getty -L ttyS0 115200 vt100/' \
                 "$target/etc/inittab"
             ;;

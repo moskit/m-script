@@ -11,7 +11,7 @@ source "$M_ROOT/lib/functions.sh" # includes mon.conf
 KILLCMD=false
 KILLWD=false
 
-source "$rpath/${rcommand%.mon}.conf"
+source "$rpath/${rcommand%.mon}.conf" 2>/dev/null
 
 for cmd in /proc/*/cmdline; do
   a=`cat $cmd 2>/dev/null | tr '\0' ' ' | grep ' /tmp'`
