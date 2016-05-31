@@ -177,14 +177,14 @@ if [ "_$SQLITE3" == "_1" ]; then
       echo "$alltables" | grep -q ^$disk$ && tablefound=true
       if ! $tablefound ; then
         log "creating table $disktable"
-        dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disk} on $disktable (timeindex);"
+        dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disktable} on $disktable (timeindex);"
       fi
     fi
     # reading stats
     dr=$(cat /proc/diskstats | grep " $disk " | awk '{ print $6 }')
     [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
     drtime=$(cat /proc/diskstats | grep " $disk " | awk '{ print $7 }')
-    lastdrtime=`dbquery "$rpath/../sysdata" "select drtime from $disk where timeindex='$lasttimeindex'"`
+    lastdrtime=`dbquery "$rpath/../sysdata" "select drtime from $disktable where timeindex='$lasttimeindex'"`
     [ -z "$lastdrtime" ] && lastdrtime=$drtime
     
     drratio=`solve 2 "($drtime - $lastdrtime) / ($diffsec * 1000)"`
@@ -195,7 +195,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     # writing stats
     dw=$(cat /proc/diskstats | grep " $disk " | awk '{ print $10 }')
     dwtime=$(cat /proc/diskstats | grep " $disk " | awk '{ print $11 }')
-    lastdwtime=`dbquery "$rpath/../sysdata" "select dwtime from $disk where timeindex='$lasttimeindex'"`
+    lastdwtime=`dbquery "$rpath/../sysdata" "select dwtime from $disktable where timeindex='$lasttimeindex'"`
     [ -z "$lastdwtime" ] && lastdwtime=$dwtime
     
     dwratio=`solve 2 "($dwtime - $lastdwtime) / ($diffsec * 1000)"`
@@ -205,7 +205,7 @@ if [ "_$SQLITE3" == "_1" ]; then
 
     [ -n "$dr" ] || dr=0
     diskreads=`solve 2 "($dr / 2048)"`
-    diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from '$disk' where timeindex='$lasttimeindex'"`
+    diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from $disktable where timeindex='$lasttimeindex'"`
     [ -n "$diskreadslast" ] || diskreadslast=$diskreads
     drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
     testres=0
@@ -221,7 +221,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     
     [ -n "$dw" ] || dw=0
     diskwrites=`solve 2 "($dw / 2048)"`
-    diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from '$disk' where timeindex='$lasttimeindex'"`
+    diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from $disktable where timeindex='$lasttimeindex'"`
     [ -n "$diskwriteslast" ] || diskwriteslast=$diskwrites
     dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
     testres=0
