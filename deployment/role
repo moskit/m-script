@@ -182,8 +182,8 @@ case $command1 in
         printcol "Scripts"
         echo "Includes"
         printf "%${COL}s\n" | tr ' ' '-'
-        for m in `ls -1 "$ROLES_ROOT/roles/$param1" | grep ^meta\. | sed 's|^meta.||'` ; do
-          ml=`cat "$ROLES_ROOT/roles/$param1/meta.$m" | grep -vE "^$|^#|^[[:space:]]#"`
+        for m in `find "$ROLES_ROOT/roles/$param1" -mindepth 1 -maxdepth 1 -name "*\.meta" | sed 's|.meta$||'` ; do
+          ml=`cat "$ROLES_ROOT/roles/$param1/${m}.meta" | grep -vE "^$|^#|^[[:space:]]#"`
           sn=`echo "$ml" | wc -l`
           for sc in $ml ; do
             scf="${sc#* }" ; scf="${scf% *}" ; scf=`eval "echo \"$scf\""`
