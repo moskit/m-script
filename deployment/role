@@ -226,8 +226,8 @@ case $command1 in
         allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l` )
         for sc in ${allscripts[*]} ; do
           scr="${sc/$ROLES_ROOT\/roles\//}" && scr="${scr/$param1\//}"
-          for m in `ls -1 "$ROLES_ROOT/roles/$param1" | grep ^meta\.` ; do
-            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/roles/$param1/$m"` -gt 0 ] && mi+=( "${m#meta.}" )
+          for m in `find "$ROLES_ROOT/roles/$param1" -mindepth 1 -maxdepth 1 -name "*\.meta"` ; do
+            [ `grep -c "${sc##*/}$" "$ROLES_ROOT/roles/$param1/$m"` -gt 0 ] && mi+=( "${m%.meta}" )
           done
           
           [ -z "$mi" ] && mi="unused"
@@ -242,7 +242,7 @@ case $command1 in
                 unset scr
               fi
             else
-              for r in `grep "${sc##*/}" "$ROLES_ROOT/roles/$param1/meta.$mis" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
+              for r in `grep "${sc##*/}" "$ROLES_ROOT/roles/$param1/${mis}.meta" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
                 r=`eval "echo \"$r\""`
                 col=$col1
                 printcol "$scr"
@@ -487,8 +487,8 @@ case $command1 in
     [ -z "$param1" ] && echo -e "Usage: role show meta|script|file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
     case $command2 in
       meta|task)
-        [ ! -e "$ROLES_ROOT/roles/$role/meta.$param1" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
-        [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/meta.$param1" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/meta.$param1"
+        [ ! -e "$ROLES_ROOT/roles/$role/${param1}.meta" ] && "Meta $param1 doesn't exist in this role (${role})." && exit 1
+        [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/${param1}.meta" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/${param1}.meta"
         ;;
       script|command)
         prmarr=( `echo "$param1" | tr '/' '\n'` )
