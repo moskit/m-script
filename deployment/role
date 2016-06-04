@@ -21,7 +21,7 @@ rpath="${rpath%/*}"
 #*/
 
 possible_commands="help list clone create edit show"
-possible_subcommands="list:metas,scripts,files,roles edit:meta,script,file show:meta,script,file"
+possible_subcommands="list:meta,metas,tasks,scripts,files,roles edit:meta,task,script,file show:meta,task,script,file"
 possible_options="role cluster flavor method all strip"
 
 printcol() {
@@ -172,9 +172,9 @@ IFS='
 case $command1 in
   list)
     case $command2 in
-      metas|tasks)
+      meta|metas|tasks)
         role_required
-        [ -z "$param1" ] && param1="$role"
+        [ -z "$param1" ] && param1="$roles"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
         [ -n "$COL" ] && col=$((COL/3)) || col=26
@@ -188,6 +188,7 @@ case $command1 in
           sn=`echo "$ml" | wc -l`
           for sc in $ml ; do
             scf="${sc#* }" ; scf="${scf% *}" ; scf=`eval "echo \"$scf\""`
+            [ -e "$ROLES_ROOT/roles/$scf" ] || scf=$role/$scf
             [ -e "$ROLES_ROOT/roles/$scf" ] || scerr+=(" *** Script \"$ROLES_ROOT/roles/$scf\" not found")
           done
           in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
