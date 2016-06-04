@@ -191,7 +191,7 @@ case $command1 in
             [ -e "$ROLES_ROOT/roles/$scf" ] || scf=$role/$scf
             [ -e "$ROLES_ROOT/roles/$scf" ] || scerr+=(" *** Script \"$ROLES_ROOT/roles/$scf\" not found")
           done
-          in=`echo "$ml" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq | grep -v '^${role}$' | grep -v '^$role$' | grep -v "^$param1$"`
+          in=`echo "$ml" | awk '{print $2}' | awk -F'/' '{ if ($3 != "") print $1 }' | grep -vE "^\\\$role$|^\\\${role}$|^$param1$" | sort | uniq`
           if [ -z "$in" ] ; then
             printcol "$m"
             echo "$sn"
