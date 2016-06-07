@@ -24,7 +24,7 @@ CURL=`which curl 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
-possible_options="name log_request"
+possible_options="name log_request cloud action"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -70,7 +70,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 
 CURL="$CURL -s -k"
 
-request() {
+request_generate() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=CreateKeyPair&KeyName=${name}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
@@ -85,13 +85,20 @@ request() {
   fi
 }
 
-request
-reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+case $action in
+  generate)
+    request_generate
+    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    key=`echo "$reqparsed" | grep keyMaterial | cut -sd'|' -f2 | tr -d'"'`
+    echo "$key" > "$M_ROOT/keys/${name}.pem"
+    chmod 600 "$M_ROOT/keys/${name}.pem"
+    ;;
+  *)
+    echo "Action $action is not supported yet"
+    proper_exit 1 100
+    ;;
+esac
 
-key=`echo "$reqparsed" | grep keyMaterial | cut -sd'|' -f2 | tr -d'"'`
-
-echo "$key" > "$M_ROOT/keys/${name}.pem"
-chmod 600 "$M_ROOT/keys/${name}.pem"
 
