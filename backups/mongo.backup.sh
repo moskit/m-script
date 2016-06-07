@@ -43,7 +43,9 @@ log() {
 }
 
 full_coll_backup() {
-  # storing the latest ID before dumping for the ID-based incremental backups.
+  # storing the latest ID before dumping for the ID-based incremental backups
+  # (updates of existing records are not backuped! for specific non-updateable
+  # collections only!)
   # Use --objcheck while restoring such backups if you care about duplicates.
   if [ "$3" == "_id" ]; then
     $MONGO "$DBHOST/$1" --quiet --eval "db.$2.find({},{$3:1}).sort({$3:-1}).limit(1).forEach(printjson)" 2>/dev/null | "$M_ROOT"/lib/json2txt | cut -d'|' -f2 > "$M_ROOT/var/mongodb/${1}.${2}.${bktype}.lastid"
@@ -129,6 +131,7 @@ if [ -n "$mongodbpertableconf" ] ; then
         full_coll_backup "$db" "$coll" "$idfield"
         ;;
       periodic)
+        # ID-based incremental 
         [ -n "$debugflag" ] && log "db: $db table: $coll per-table periodic backup"
         [ -d "$M_ROOT/var/mongodb" ] || install -d "$M_ROOT/var/mongodb"
         if [ -f "$M_ROOT/var/mongodb/${db}.${coll}.${bktype}.lastid" ] ; then
@@ -191,17 +194,17 @@ else
     if [ "$skipdb" == "-1" ]; then
       if $compress_onthefly ; then
 ### Works if version >= 1.7, avoids intermediate space usage by uncompressed dumps
-### Note that it doesn't dump indexes
+### Note that it doesn't dump metadata
         install -d "$MBD/${db}.${archname}"
         if [ -n "$compress" ] ; then
           for collection in `$MONGO $DBHOST/$db $USER $PASS --quiet --eval "db.getCollectionNames()" | tail -1 | sed 's|,| |g'` ; do
-            ($MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: ${db}.${collection} dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: ${db}.${collection} dump failed" >>"$M_ROOT/m_backup.log") | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
+            ($MONGODUMP $USER $PASS --host $DBHOST --db $db --collection $collection --out - 2>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: ${db}.${collection} dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: ${db}.${collection} dump failed" >>"$M_ROOT/m_backup.log") | $compress > "$MBD/${db}.${archname}/${collection}.bson.${ext}" 2>>"$M_ROOT/m_backup.error"
           done
         fi
     # --------------------
     # 
       else
-        $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log"
+        $MONGODUMP --host $DBHOST --db $db $USER $PASS --out "$MBD/${db}.${archname}" 1>>"$stdinto" 2>"$M_ROOT/logs/mongo.backup.tmp" && echo "mongo: $db dumped successfully" >>"$M_ROOT/m_backup.log" || echo "mongo: $db dump failed" >>"$M_ROOT/m_backup.log"
         [ -n "$TAR" ] && pushd "$MBD" && $TAR "${db}.${archname}.tar.${ext}" "${db}.${archname}" 1>>"$stdinto" 2>>"$M_ROOT/logs/mongo.backup.tmp"
         [ -n "$TAR" ] && popd
         cat "$M_ROOT/logs/mongo.backup.tmp" | grep -v ^connected | grep -v 'Removing leading' >>"$M_ROOT/m_backup.error" && rm -f "$M_ROOT/logs/mongo.backup.tmp"

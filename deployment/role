@@ -224,8 +224,8 @@ case $command1 in
         printcol "Meta"
         echo "Role"
         printf "%${COL}s\n" | tr ' ' '-'
-        [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l` )
-        allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l` )
+        [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
+        allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
         for sc in ${allscripts[*]} ; do
           scr="${sc/$ROLES_ROOT\/roles\//}" && scr="${scr/$param1\//}"
           for m in `find "$ROLES_ROOT/roles/$param1" -mindepth 1 -maxdepth 1 -name "*\.meta"` ; do
@@ -243,7 +243,7 @@ case $command1 in
                 unset scr
               fi
             else
-              for r in `grep "${sc##*/}" "$ROLES_ROOT/roles/$param1/${mis}.meta" | awk '{print $2}' | cut -d'/' -f1 | sort | uniq` ; do
+              for r in `grep "${sc##*/}" "$ROLES_ROOT/roles/$param1/${mis}.meta" | awk '{print $2}' | awk -F'/' '{ if ($3 != "") {print $1} else {print "$role"} }' | sort | uniq` ; do
                 r=`eval "echo \"$r\""`
                 col=$col1
                 printcol "$scr"
@@ -280,19 +280,19 @@ case $command1 in
         printcol "File"
         echo "Script"
         printf "%${COL}s\n" | tr ' ' '-'
-        [ -n "$flavor" ] && allfiles=( `find "$ROLES_ROOT/roles/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l` )
-        allfiles+=( `find "$ROLES_ROOT/roles/$param1/common/files/" -maxdepth 1 -type f -o -type l` )
+        [ -n "$flavor" ] && allfiles=( `find "$ROLES_ROOT/roles/$param1/$flavor/files/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
+        allfiles+=( `find "$ROLES_ROOT/roles/$param1/common/files/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
         for fl in ${allfiles[*]} ; do
           if [ -n "$flavor" ]; then
-            for sc in `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l` ; do
-              [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci $flavor/${sc##*/}"
+            for sc in `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l ! -name "\.*"` ; do
+              [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci+=("$flavor/${sc##*/}")
             done
           fi
-          for sc in `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l` ; do
-            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci="$sci common/${sc##*/}"
+          for sc in `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l ! -name "\.*"` ; do
+            [ -n "`grep -E "deploy_file|cloudsync|cp|scp|rsync" "$sc" | grep "${fl##*/}"`" ] && sci+=("common/${sc##*/}")
           done
           if [ -n "$sci" ]; then
-            for scis in $sci ; do
+            for scis in ${sci[*]} ; do
               printcol "${fl##*/}"
               echo "$scis"
               unset fl

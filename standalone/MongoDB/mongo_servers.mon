@@ -396,6 +396,7 @@ if [ -n "$shardhosts" ] ; then
     shardhosts1=( `echo -e "$shardhost" | tr ',' '\n'` )
     isrs=`$MONGO $AUTH "${shardhosts1[0]}/admin" --quiet --eval "rs.status().ok"`
     if [ "_$isrs" == "_1" ]; then
+      # if this shard is a replica set
       for ((i=0; i<${#shardhosts1[*]}; i++)); do
         shardhost1=${shardhosts1[$i]}
         shardport=${shardhost1#*:}
