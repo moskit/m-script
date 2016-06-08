@@ -24,7 +24,7 @@ CURL=`which curl 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
-possible_options="id name log_request cloud action"
+possible_options="id name log_request cloud action protocol fromport toport source_group source_owner source_cidr"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -76,8 +76,8 @@ SignatureVersion=2
 Version="2013-07-15"
 
 qparams="SignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
-[ -n "$name" ] && qparams="${qparams}\nGroupName.1=${name}"
-[ -n "$id" ] && qparams="${qparams}\nGroupId.1=${id}"
+[ -n "$name" ] && qparams="${qparams}\nGroupName=${name}"
+[ -n "$id" ] && qparams="${qparams}\nGroupId=${id}"
 
 request_show() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
@@ -96,6 +96,23 @@ request_show() {
   fi
 }
 
+request_authin() {
+  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
+  qparams="${qparams}\nTimestamp=${timestamp}"
+  qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=AuthorizeSecurityGroupIngress&${qparams%&}"`
+  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
+  signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
+  if [ "_$log_request" == "_yes" ]; then
+    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=AuthorizeSecurityGroupIngress&${qparams}Signature=$signature\""
+    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=AuthorizeSecurityGroupIngress&${qparams}Signature=$signature"`
+    log "$reqres"
+    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  else
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=AuthorizeSecurityGroupIngress&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  fi
+}
+
 case $action in
   show)
     request_show
@@ -104,6 +121,16 @@ case $action in
     [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
     echo "$reqparsed"
     ;;
+  authorize_in|input|in)
+    qparams="${qparams}\nIpProtocol=${protocol}\nFromPort=${fromport}\nToPort=${toport}"
+    [ -n "$source_group" ] && qparams="${qparams}\nSourceSecurityGroupName=${source_group}"
+    [ -n "$source_owner" ] && qparams="${qparams}\nSourceSecurityGroupOwnerId=${source_owner}"
+    [ -n "$source_cidr" ] && qparams="${qparams}\nCidrIp=${source_cidr}"
+    request_authin
+    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    echo "$reqparsed"
   *)
     echo "Action $action is not supported yet"
     proper_exit 1 100
