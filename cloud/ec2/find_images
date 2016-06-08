@@ -111,12 +111,12 @@ request() {
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature"`
+    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature\""
+    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature"`
     log "$reqres"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   fi
 }
 
