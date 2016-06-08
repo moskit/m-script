@@ -115,24 +115,32 @@ InstanceType=`echo "$clusterconf" | cut -sd'|' -f5`
 secgroup=`echo "$clusterconf" | cut -sd'|' -f4`
 keypair=`echo "$clusterconf" | cut -sd'|' -f2`
 zone=`echo "$clusterconf" | cut -sd'|' -f3`
+
 qparams="ImageId=${ami}\nInstanceType=${InstanceType}\nMinCount=${number}\nMaxCount=${number}\nKeyName=${keypair}"
 [ -n "$secgroup" ] && qparams="${qparams}\nPlacement.SecurityGroup.1=${secgroup}"
 [ -n "$subnet" ] && qparams="${qparams}\nSubnetId=${subnet}"
 [ -n "$zone" ] && qparams="${qparams}\nPlacement.AvailabilityZone=${zone}"
+
+# TODO: add this to cloud config
+SignatureMethod=HmacSHA256
+SignatureVersion=2
+Version="2013-07-15"
+
+qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
 qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances${qparams}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances${qparams}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances${qparams}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature"`
+    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams}Signature=$signature\""
+    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams}Signature=$signature"`
     log "$reqres"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances${qparams}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   fi
 }
 
