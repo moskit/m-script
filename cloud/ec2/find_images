@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 filter_options="architecture block-device-mapping.delete-on-termination block-device-mapping.device-name block-device-mapping.snapshot-id block-device-mapping.volume-size block-device-mapping.volume-type description hypervisor image-id image-type is-public kernel-id manifest-location name owner-alias owner-id platform product-code product-code.type ramdisk-id root-device-name root-device-type state state-reason-code state-reason-message tag tag-key tag-value virtualization-type"
-possible_options="cloud region flavor cluster image ami aki kernel name return verbose help $filter_options"
+possible_options="cloud region flavor cluster image ami aki kernel name return verbose help $filter_options log_request"
 
 necessary_options=""
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -107,7 +107,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   if [ "_$log_request" == "_yes" ]; then

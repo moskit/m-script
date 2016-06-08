@@ -23,7 +23,7 @@ CURL="$CURL -s -k"
 
 SSH=`which ssh 2>/dev/null`
 
-possible_options="cloud region flavor cluster image name return verbose debug dry"
+possible_options="cloud region cluster image name return verbose debug dry"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -46,13 +46,14 @@ done
 IFS=$IFS1
 
 [ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "CLOUD not defined" && exit 1
 export CLOUD
 [ -n "$debug" ] && debug=true || debug=false
 [ -n "$dry" ] && dry=true || dry=false
 
 source "$M_ROOT/conf/mon.conf"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
-install -d "$M_TEMP"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
@@ -333,7 +334,6 @@ PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | "$M_ROOT"/lib/urlencode`
 ROOTPASS=`head /dev/urandom -c200 | tr -dc 'a-zA-Z0-9' | cut -b -20`
 
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 exit_status=0
 
 request && log "Request sent" || proper_exit 1 337

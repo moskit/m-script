@@ -96,9 +96,9 @@ request() {
     log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature\""
     reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature"`
     log "$reqres"
-    echo "$reqres" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | awk -F'"reservationSet"/' '{print $2}' | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   fi
 }
 
@@ -136,10 +136,10 @@ list_nodes() {
     declare -a nodelist
     
 #==============================================================================
-    for sn in `cat "$M_TEMP/${rcommand}.resp" | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
+    for sn in `cat "$M_TEMP/${rcommand}.resp" | awk -F'"reservationSet"/' '{print $2}' | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
 
-      node=`grep ^$sn\/ "$M_TEMP/${rcommand}.resp"`
+      node=`grep \"reservationSet\"\/$sn\/ "$M_TEMP/${rcommand}.resp"`
       
       intIP=`echo "$node" | grep '/"privateIpAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
       extIP=`echo "$node" | grep '/"ipAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
@@ -240,7 +240,9 @@ if [ -z "$noupdate" ]; then
   [ -f "$M_TEMP/nodes.bdevs" ] && mv "$M_TEMP/nodes.bdevs" "$M_TEMP/nodes.bdevs.prev" || touch "$M_TEMP/nodes.bdevs.prev"
   [ -n "$verbose" ] && log "sending request"
   request
-  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 236
+  reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+  [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 244
+  [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
 else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
   # if no setting, force update is disabled

@@ -91,7 +91,7 @@ case $action in
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
     [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
-    key=`echo "$reqparsed" | grep keyMaterial | cut -sd'|' -f2 | tr -d'"'`
+    key=`echo "$reqparsed" | grep keyMaterial | cut -sd'|' -f2 | tr -d '"'`
     echo "$key" > "$M_ROOT/keys/${name}.pem"
     chmod 600 "$M_ROOT/keys/${name}.pem"
     ;;
