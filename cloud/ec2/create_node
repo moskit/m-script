@@ -115,10 +115,11 @@ InstanceType=`echo "$clusterconf" | cut -sd'|' -f5`
 secgroup=`echo "$clusterconf" | cut -sd'|' -f4`
 keypair=`echo "$clusterconf" | cut -sd'|' -f2`
 zone=`echo "$clusterconf" | cut -sd'|' -f3`
-qparams="&ImageId=${ami}&InstanceType=${InstanceType}&MinCount=${number}&MaxCount=${number}"
-[ -n "$secgroup" ] && qparams="${qparams}&Placement.SecurityGroup.1=${secgroup}"
-[ -n "$subnet" ] && qparams="${qparams}&SubnetId=${subnet}"
-[ -n "$zone" ] && qparams="${qparams}&Placement.AvailabilityZone=${zone}"
+qparams="ImageId=${ami}\nInstanceType=${InstanceType}\nMinCount=${number}\nMaxCount=${number}\nKeyName=${keypair}"
+[ -n "$secgroup" ] && qparams="${qparams}\nPlacement.SecurityGroup.1=${secgroup}"
+[ -n "$subnet" ] && qparams="${qparams}\nSubnetId=${subnet}"
+[ -n "$zone" ] && qparams="${qparams}\nPlacement.AvailabilityZone=${zone}"
+qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
