@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 
-possible_options="cloud region cluster image ami aki kernel name return verbose subnet number $additional_params"
+possible_options="cloud region cluster image ami aki kernel name return verbose subnet number additional_params log_request"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -113,10 +113,12 @@ InstanceType=`echo "$clusterconf" | cut -sd'|' -f5`
 [ -z "$InstanceType" ] && echo "InstanceType not found" && proper_exit 1 113
 [ -z "$number" ] && number=1
 secgroup=`echo "$clusterconf" | cut -sd'|' -f4`
-[ -z "$secgroup" ] && secgroup=default
+keypair=`echo "$clusterconf" | cut -sd'|' -f2`
+zone=`echo "$clusterconf" | cut -sd'|' -f3`
 qparams="&ImageId=${ami}&InstanceType=${InstanceType}&MinCount=${number}&MaxCount=${number}"
 [ -n "$secgroup" ] && qparams="${qparams}&Placement.SecurityGroup.1=${secgroup}"
 [ -n "$subnet" ] && qparams="${qparams}&SubnetId=${subnet}"
+[ -n "$zone" ] && qparams="${qparams}&Placement.AvailabilityZone=${zone}"
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
