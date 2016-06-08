@@ -127,10 +127,11 @@ SignatureVersion=2
 Version="2013-07-15"
 
 qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
-qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
+  qparams="${qparams}\nTimestamp=${timestamp}"
+  qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
