@@ -141,7 +141,7 @@ list_nodes() {
 
       node=`grep \"reservationSet\"\/$sn\/ "$M_TEMP/${rcommand}.resp"`
       
-      intIP=`echo "$node" | grep '/"privateIpAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
+      intIP=`echo "$node" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'` # may be multiple
       extIP=`echo "$node" | grep '/"ipAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
       
       id=`echo "$node" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`

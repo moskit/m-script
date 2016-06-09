@@ -151,6 +151,12 @@ printreturn() {
       ip)
         echo "$ip"
         ;;
+      ipext)
+        echo "$extIP"
+        ;;
+      ipint)
+        echo "$intIP"
+        ;;
       id)
         echo "$nodeid"
         ;;
@@ -173,7 +179,13 @@ set_hostname() {
 save_details() {
   echo "$details" | cut -sd'|' -f2 | tr '\n' '|' >> "$M_ROOT/cloud/${CLOUD}.list"
   echo -e "`date`\n$details" >> "$M_ROOT/cloud/ec2.log"
-  ip=`echo "$details" | grep privateIpAddress | cut -sd'|' -f2`
+  intIP=`echo "$details" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
+  extIP=`echo "$1" | grep '/"ipAddress"/' | cut -sd'|' -f2`
+  if [ "_$NETWORK" == "_external" ] ; then
+    ip=$extIP
+  else
+    ip=$intIP
+  fi
   key=`echo "$details" | grep keyName | cut -sd'|' -f2`
   region=`echo "$details" | grep availabilityZone | cut -sd'|' -f2`
   echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"

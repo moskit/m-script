@@ -113,7 +113,8 @@ printreturn() {
   tenancy=`echo "$1" | grep '"tenancy"/' | cut -sd'|' -f2`
   subnetId=`echo "$1" | grep '"subnetId"/' | cut -sd'|' -f2`
   vpcId=`echo "$1" | grep '"vpcId"/' | cut -sd'|' -f2`
-  privateIpAddress=`echo "$1" | grep '"privateIpAddress"/' | cut -sd'|' -f2`
+  privateIpAddress=`echo "$1" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
+  publicIpAddress=`echo "$1" | grep '/"ipAddress"/' | cut -sd'|' -f2`
   groupId=`echo "$1" | grep '"groupId"/' | cut -sd'|' -f2`
   groupName=`echo "$1" | grep '"groupName"/' | cut -sd'|' -f2`
   stateReason=`echo "$1" | grep '"stateReason"/0/"message"/' | cut -sd'|' -f2`
@@ -122,7 +123,7 @@ printreturn() {
   virtualizationType=`echo "$1" | grep '"virtualizationType"/' | cut -sd'|' -f2`
   hypervisor=`echo "$1" | grep '"hypervisor"/' | cut -sd'|' -f2`
   ebsOptimized=`echo "$1" | grep '"ebsOptimized"/' | cut -sd'|' -f2`
-  echo -e "reservationId|$reservationId\ninstanceId|$instanceId\nimageId|$imageId\nstatus|$status\nprivateDnsName|$privateDnsName\nkeyName|$keyName\ninstanceType|$instanceType\nlaunchTime|$launchTime\navailabilityZone|$availabilityZone\ntenancy|$tenancy\nsubnetId|$subnetId\nvpcId|$vpcId\nprivateIpAddress|$privateIpAddress\ngroupId|$groupId\ngroupName|$groupName\nstateReason|$stateReason\narchitecture|$architecture\nrootDeviceType|$rootDeviceType\nvirtualizationType|$virtualizationType\nhypervisor|$hypervisor\nebsOptimized|$ebsOptimized"
+  echo -e "reservationId|$reservationId\ninstanceId|$instanceId\nimageId|$imageId\nstatus|$status\nprivateDnsName|$privateDnsName\nkeyName|$keyName\ninstanceType|$instanceType\nlaunchTime|$launchTime\navailabilityZone|$availabilityZone\ntenancy|$tenancy\nsubnetId|$subnetId\nvpcId|$vpcId\nprivateIpAddress|$privateIpAddress\npublicIpAddress|$publicIpAddress\ngroupId|$groupId\ngroupName|$groupName\nstateReason|$stateReason\narchitecture|$architecture\nrootDeviceType|$rootDeviceType\nvirtualizationType|$virtualizationType\nhypervisor|$hypervisor\nebsOptimized|$ebsOptimized"
 }
 
 set_hostname() {
