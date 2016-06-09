@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 
-possible_options="cloud id name ip return verbose"
+possible_options="cloud id name ip return verbose log_request"
 necessary_options=""
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && echo "Node details? Which node?" && exit 1
@@ -88,11 +88,9 @@ find_by_ip() {
   fi
 }
 
-qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
-
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  qparams="${qparams}\nTimestamp=${timestamp}"
+  qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nTimestamp=${timestamp}"
   qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
