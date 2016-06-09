@@ -71,15 +71,22 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-[ -z "$cluster" ] && cluster="$M_CLUSTER"
-[ -z "$cluster" ] && echo "Cluster not defined" && exit 1
-clusterconf=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | tail -1`
-[ -z "$clusterconf" ] && echo "Cluster $cluster is not configured" && exit 1
-
 # TODO: add this to cloud config
 SignatureMethod=HmacSHA256
 SignatureVersion=2
 Version="2013-07-15"
+
+find_by_id() {
+  qparams="Filter.1.name=instance-id\nFilter.1.Value=${1}"
+}
+
+find_by_ip() {
+  if [ "_$NETWORK" == "_external" ]; then
+    qparams="Filter.1.name=ip-address\nFilter.1.Value=${1}"
+  else
+    qparams="Filter.1.name=private-ip-address\nFilter.1.Value=${1}"
+  fi
+}
 
 qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
 
@@ -87,16 +94,16 @@ request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
   qparams="${qparams}\nTimestamp=${timestamp}"
   qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams%&}"`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
   if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams}Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams}Signature=$signature"`
+    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams}Signature=$signature\""
+    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams}Signature=$signature"`
     log "$reqres"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=RunInstances&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   fi
 }
 
@@ -126,18 +133,6 @@ printreturn() {
   echo -e "reservationId|$reservationId\ninstanceId|$instanceId\nimageId|$imageId\nstatus|$status\nprivateDnsName|$privateDnsName\nkeyName|$keyName\ninstanceType|$instanceType\nlaunchTime|$launchTime\navailabilityZone|$availabilityZone\ntenancy|$tenancy\nsubnetId|$subnetId\nvpcId|$vpcId\nprivateIpAddress|$privateIpAddress\npublicIpAddress|$publicIpAddress\ngroupId|$groupId\ngroupName|$groupName\nstateReason|$stateReason\narchitecture|$architecture\nrootDeviceType|$rootDeviceType\nvirtualizationType|$virtualizationType\nhypervisor|$hypervisor\nebsOptimized|$ebsOptimized"
 }
 
-set_hostname() {
-  if [ -n "$extIP" ]; then
-    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
-    sshres=$?
-  fi
-  if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
-    [ $? -ne 0 ] && $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
-    sshres=$?
-  fi
-  return $sshres
-}
-
 if [ -z "$IAMACHILD" ]; then
   lock_cloudops || exit 10
 fi
@@ -151,22 +146,14 @@ if [ -z "$id" ] ; then
       ip=`cat "$rpath/../../nodes.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       if [ -n "$ip" ] ; then
         find_by_ip $ip
-      else
-        id=`IAMACHILD=1 $rpath/show_nodes --forceupdate --view=table | cut -d'|' -f1,2 | grep \|${name}$ | cut -d'|' -f1`
       fi
     fi
   else
     find_by_ip $ip
   fi
+else
+  find_by_id $id
 fi
-[ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 159
-
-log "Checking cluster $cluster limit..."
-check_cluster_limit "$cluster" || proper_exit 5 162
-[ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 139
-log "Double-checking name"
-IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 166
 
 request && log "Request sent" || proper_exit 1 168
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
