@@ -131,6 +131,7 @@ case $action in
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
     [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
     echo "$reqparsed"
+    ;;
   *)
     echo "Action $action is not supported yet"
     proper_exit 1 100

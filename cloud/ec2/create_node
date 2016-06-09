@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 
-possible_options="cloud region cluster image ami aki kernel name return verbose subnet number additional_params log_request"
+possible_options="cloud region cluster image ami aki kernel name return verbose subnet number additional_params log_request dry"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -145,17 +145,74 @@ request() {
   fi
 }
 
+printreturn() {
+  for res in `echo $1 | tr ',' ' '` ; do
+    case $res in
+      ip)
+        echo "$ip"
+        ;;
+      id)
+        echo "$nodeid"
+        ;;
+    esac
+  done
+}
+
+set_hostname() {
+  if [ -n "$extIP" ]; then
+    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
+    sshres=$?
+  fi
+  if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
+    [ $? -ne 0 ] && $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
+    sshres=$?
+  fi
+  return $sshres
+}
+
+save_details() {
+  echo "$details" | cut -sd'|' -f2 | tr '\n' '|' >> "$M_ROOT/cloud/${CLOUD}.list"
+  echo -e "`date`\n$details" >> "$M_ROOT/cloud/ec2.log"
+  ip=`echo "$details" | grep privateIpAddress | cut -sd'|' -f2`
+  key=`echo "$details" | grep keyName | cut -sd'|' -f2`
+  region=`echo "$details" | grep availabilityZone | cut -sd'|' -f2`
+  echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
+}
+
 log "Checking cluster $cluster limit..."
-check_cluster_limit "$cluster" || proper_exit 5 137
+check_cluster_limit "$cluster" || proper_exit 5 194
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 139
+[ -z "$name" ] && proper_exit 6 196
 log "Double-checking name"
-IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 141
+IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 198
 
-request && log "Request sent" || proper_exit 1 143
+request && log "Request sent" || proper_exit 1 200
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 146
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 202
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 203
+nodeid=`grep instanceId $M_TEMP/${rcommand}.resp | cut -sd'|' -f2`
 
-"$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
-proper_exit $exit_status 149
+if ! $dry ; then
+  log "Waiting for node $name ready..."
+  waittimeout=1200
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    details=`$rpath/get_node_details --id=$nodeid`
+    status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
+    log "status is $status"
+    [ "_$status" == "_running" ] && break
+  done
+  if [ "_$status" == "_running" ]; then
+    save_details
+    set_hostname || log "Was unable to set hostname"
+    "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+    [ -n "$return" ] && printreturn $return
+  else
+    exit_status=1
+  fi
+fi
+
+proper_exit $exit_status 229
