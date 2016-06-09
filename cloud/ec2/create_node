@@ -212,13 +212,14 @@ if ! $dry ; then
   checks=`expr $waittimeout / $waitperiod`
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
-    details=`"$rpath"/get_node_details --id=$nodeid`
+    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid`
     status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
     log "status is $status"
     [ "_$status" == "_running" ] && break
   done
   if [ "_$status" == "_running" ]; then
     "$rpath"/tag_node --id=$nodeid --tag="cluster:$cluster"
+    "$rpath"/tag_node --id=$nodeid --tag="name:$name"
     save_details
     set_hostname || log "Was unable to set hostname"
     "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
