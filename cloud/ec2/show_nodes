@@ -24,7 +24,6 @@ CURL=`which curl 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
-[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
@@ -78,6 +77,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -z "$status" ] && status="running"
 [ -n "$name_source" ] && NAME_SOURCE=$name_source
 [ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
+[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
@@ -117,8 +117,9 @@ get_iname() {
       *)
         # anything else is considered to be a tag as the source (see config)
         NAMETAG="${ns#*:}"
-        nametagind=`echo "$tags" | grep '/"key"/' | grep \|\"$NAMETAG\" | cut -d'/' -f11`
-        sname=`echo "$tags" | grep "$nametagind/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+        [ -z "$NAMETAG" ] && NAMETAG=name
+        nametagind=`echo "$tags" | grep '/"key"/' | grep \|\"$NAMETAG\" | cut -d'/' -f16`
+        sname=`echo "$tags" | grep "\"item\"/$nametagind/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
         ;;
     esac
     [ -n "$sname" ] && break
@@ -160,9 +161,9 @@ list_nodes() {
 
       tags=`echo "$node" | grep '/"tagSet"/'`
       iname=`get_iname $IP`
-      iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f11`
+      iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f16`
       if [ -n "$iclustertag" ]; then
-        icluster=`echo "$tags" | grep "$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+        icluster=`echo "$tags" | grep "\"item\"/$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       else
         [ -z "$all" ] && continue
       fi
@@ -171,7 +172,7 @@ list_nodes() {
       
       bdevs=`echo "$node" | grep '/"blockDeviceMapping"/'`
       unset ebs
-      for bdev in `echo "$bdevs" | grep '|"attached"' | cut -d'/' -f11 | sort | uniq` ; do
+      for bdev in `echo "$bdevs" | grep '|"attached"' | cut -d'/' -f16 | sort | uniq` ; do
         bdevname=`echo "$bdevs" | grep "/$bdev/\"deviceName\"" | cut -d'|' -f2 | tr -d '"'`
         bdevid=`echo "$bdevs" | grep "/$bdev/\"volumeId\"" | cut -d'|' -f2 | tr -d '"'`
         bdevsince=`echo "$bdevs" | grep "/$bdev/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
