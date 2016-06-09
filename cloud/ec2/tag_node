@@ -82,6 +82,8 @@ qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${Sign
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
+  qparams="${qparams}\nTimestamp=${timestamp}"
+  qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=CreateTags&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
