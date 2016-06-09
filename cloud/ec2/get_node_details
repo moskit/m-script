@@ -77,14 +77,14 @@ SignatureVersion=2
 Version="2013-07-15"
 
 find_by_id() {
-  qparams="Filter.1.name=instance-id\nFilter.1.Value=${1}"
+  qparams="Filter.1.Name=instance-id\nFilter.1.Value=${1}"
 }
 
 find_by_ip() {
   if [ "_$NETWORK" == "_external" ]; then
-    qparams="Filter.1.name=ip-address\nFilter.1.Value=${1}"
+    qparams="Filter.1.Name=ip-address\nFilter.1.Value=${1}"
   else
-    qparams="Filter.1.name=private-ip-address\nFilter.1.Value=${1}"
+    qparams="Filter.1.Name=private-ip-address\nFilter.1.Value=${1}"
   fi
 }
 
@@ -110,17 +110,17 @@ printreturn() {
   instanceId=`echo "$1" | grep '"instanceId"/' | cut -sd'|' -f2`
   imageId=`echo "$1" | grep '"imageId"/' | cut -sd'|' -f2`
   status=`echo "$1" | grep '"instanceState"/0/"name"/' | cut -sd'|' -f2`
-  privateDnsName=`echo "$1" | grep '"privateDnsName"/' | cut -sd'|' -f2`
+  privateDnsName=`echo "$1" | grep '"privateDnsName"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
   keyName=`echo "$1" | grep '"keyName"/' | cut -sd'|' -f2`
   instanceType=`echo "$1" | grep '"instanceType"/' | cut -sd'|' -f2`
   launchTime=`echo "$1" | grep '"launchTime"/' | cut -sd'|' -f2`
   availabilityZone=`echo "$1" | grep '"availabilityZone"/' | cut -sd'|' -f2`
   tenancy=`echo "$1" | grep '"tenancy"/' | cut -sd'|' -f2`
-  subnetId=`echo "$1" | grep '"subnetId"/' | cut -sd'|' -f2`
-  vpcId=`echo "$1" | grep '"vpcId"/' | cut -sd'|' -f2`
+  subnetId=`echo "$1" | grep '"subnetId"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
+  vpcId=`echo "$1" | grep '"vpcId"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
   privateIpAddress=`echo "$1" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
   publicIpAddress=`echo "$1" | grep '/"ipAddress"/' | cut -sd'|' -f2`
-  groupId=`echo "$1" | grep '"groupId"/' | cut -sd'|' -f2`
+  groupId=`echo "$1" | grep '"groupId"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
   groupName=`echo "$1" | grep '"groupName"/' | cut -sd'|' -f2`
   stateReason=`echo "$1" | grep '"stateReason"/0/"message"/' | cut -sd'|' -f2`
   architecture=`echo "$1" | grep '"architecture"/' | cut -sd'|' -f2`
