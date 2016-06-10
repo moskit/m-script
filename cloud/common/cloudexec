@@ -103,9 +103,17 @@ do
     fi
     ;;
   esac
-  for option in `echo $possible_options`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg"
+  for option in $possible_options; do 
+    [ "_$s_optname" == "_$option" ] && eval "$option=$s_optarg"
   done
+  found=false
+  for option in $possible_options; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
 done
 if [ "_$help" == "_yes" ] ; then
   cat <<"EOF"
