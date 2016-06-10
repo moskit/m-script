@@ -72,8 +72,6 @@ CURL="$CURL -s -k"
 
 [ -z "$size" ] && [ -z "$snapshot" ] && echo "If EBS volume is not created from a snapshot, its size is mandatory" && exit 1
 
-zone type size snapshot iops kmskey encrypted
-
 qparams="AvailabilityZone=${zone}"
 [ -n "$size" ] && qparams="${qparams}\nSize=${size}"
 [ -n "$type" ] && qparams="${qparams}\nVolumeType=${type}"
@@ -119,8 +117,14 @@ case $action in
     ;;
   attach)
     [ -z "$to"] && echo "Instance ID to attach this volume to not provided, use option --to" && proper_exit 1 121
-    [ -z "$to"] && echo "Volume ID not provided, use option --id" && proper_exit 1 121
+    [ -z "$id"] && echo "Volume ID not provided, use option --id" && proper_exit 1 121
     request AttachVolume
+    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    ;;
+  show|list)
+    request DescribeVolumes
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
     [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
