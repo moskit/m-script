@@ -100,6 +100,8 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
+exit_status=0
+
 lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
@@ -170,7 +172,7 @@ set_hostname() {
     sshres=$?
   fi
   if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
-    [ $? -ne 0 ] && $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
+    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
     sshres=$?
   fi
   return $sshres
@@ -179,8 +181,8 @@ set_hostname() {
 save_details() {
   echo "$details" | cut -sd'|' -f2 | tr '\n' '|' >> "$M_ROOT/cloud/${CLOUD}.list"
   echo -e "`date`\n$details" >> "$M_ROOT/cloud/ec2.log"
-  intIP=`echo "$details" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -sd'|' -f2`
-  extIP=`echo "$1" | grep '/"ipAddress"/' | cut -sd'|' -f2`
+  intIP=`echo "$details" | grep privateIpAddress | cut -sd'|' -f2`
+  extIP=`echo "$1" | grep publicIpAddress | cut -sd'|' -f2`
   if [ "_$NETWORK" == "_external" ] ; then
     ip=$extIP
   else

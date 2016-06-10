@@ -108,11 +108,11 @@ get_iname() {
       host)
         get_hostname $1
         ;;
-      privateDnsName)
-        sname=`echo "$node" | grep '/"privateDnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+      privateDnsName|metadata)
+        sname=`echo "$node" | grep '/"privateDnsName"/0' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'`
         ;;
       dnsName)
-        sname=`echo "$node" | grep '/"dnsName"/0' | cut -d'|' -f2 | tr -d '"'`
+        sname=`echo "$node" | grep '/"dnsName"/0' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'`
         ;;
       *)
         # anything else is considered to be a tag as the source (see config)
@@ -215,7 +215,7 @@ list_nodes() {
             key=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
             [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)" && key="$ikey"
             check_super_cluster $ip "$icluster" && continue
-            nodelist+=("$IP|$key|$region|$iname|$icluster|$CLOUD")
+            nodelist+=("$IP|$key|$izone|$iname|$icluster|$CLOUD")
           fi
         fi
       fi
