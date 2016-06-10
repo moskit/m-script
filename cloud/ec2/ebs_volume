@@ -70,9 +70,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 
 CURL="$CURL -s -k"
 
-[ -z "$size" ] && [ -z "$snapshot" ] && echo "If EBS volume is not created from a snapshot, its size is mandatory" && exit 1
-
-qparams="AvailabilityZone=${zone}"
+[ -n "$zone" ] && qparams="AvailabilityZone=${zone}"
 [ -n "$size" ] && qparams="${qparams}\nSize=${size}"
 [ -n "$type" ] && qparams="${qparams}\nVolumeType=${type}"
 [ -n "$snapshot" ] && qparams="${qparams}\nSnapshotId=${snapshot}"
@@ -93,7 +91,7 @@ qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${Sign
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
   qparams="${qparams}\nTimestamp=${timestamp}"
-  qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
+  qparams=`echo -e -n "$qparams" | sort | grep -v ^$ | tr '\n' '&'`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
   signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
@@ -110,6 +108,7 @@ request() {
 case $action in
   create)
     [ -z "$zone" ] && echo "Availability zone is mandatory, use option --zone" && proper_exit 1 114
+    [ -z "$size" ] && [ -z "$snapshot" ] && echo "If EBS volume is not created from a snapshot, its size is mandatory" && exit 1
     request CreateVolume
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
