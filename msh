@@ -1,6 +1,7 @@
 #!/bin/bash
 ba=`which bash 2>/dev/null`
 [ $? -ne 0 ] && echo -e "\nBash is required" && exit 1
+[ $USER != "root" ] && echo -e "\nYou must be root" && exit 1
 rpath=$(readlink -f "$BASH_SOURCE")
 rpath=${rpath%/*}
 M_ROOT="$rpath"

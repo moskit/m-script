@@ -41,7 +41,7 @@ do
   for option in `echo $possible_options | sed 's/ /|/g'`; do 
     [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
   done
-   if ! $found ; then 
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi

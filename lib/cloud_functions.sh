@@ -272,4 +272,8 @@ check_super_cluster() {
   [ "_$2" == "_$SUPER_CLUSTER" ] && return 0
 }
 
-  
+check_node_up() {
+  "$M_ROOT"/helpers/mssh "$1" true
+}
+
+

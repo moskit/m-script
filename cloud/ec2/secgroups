@@ -76,7 +76,7 @@ SignatureVersion=2
 Version="2013-07-15"
 
 qparams="SignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
-[ -n "$name" ] && qparams="${qparams}\nGroupName=${name}"
+[ -n "$name" ] && name=`echo "$name" | "$M_ROOT"/lib/urlencode` && qparams="${qparams}\nGroupName=${name}"
 [ -n "$id" ] && qparams="${qparams}\nGroupId=${id}"
 
 request_show() {
@@ -125,7 +125,7 @@ case $action in
     qparams="${qparams}\nIpProtocol=${protocol}\nFromPort=${fromport}\nToPort=${toport}"
     [ -n "$source_group" ] && qparams="${qparams}\nSourceSecurityGroupName=${source_group}"
     [ -n "$source_owner" ] && qparams="${qparams}\nSourceSecurityGroupOwnerId=${source_owner}"
-    [ -n "$source_cidr" ] && qparams="${qparams}\nCidrIp=${source_cidr}"
+    [ -n "$source_cidr" ] && source_cidr=`echo "$source_cidr" | "$M_ROOT"/lib/urlencode` && qparams="${qparams}\nCidrIp=${source_cidr}"
     request_authin
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90

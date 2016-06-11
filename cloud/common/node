@@ -40,9 +40,9 @@ find_clust() {
   return 0
 }
 
-possible_commands="help list clone create save destroy show stop start"
+possible_commands="help list clone create save destroy show stop shutdown start boot reboot restart"
 possible_subcommands="list:short,long,name,ip show:short,full"
-possible_options="role cluster flavor cloud"
+possible_options="ip name role cluster flavor cloud"
 
 declare -i ppn
 ppn=1
@@ -224,8 +224,80 @@ case $command1 in
   save)
     "$rpath"/save_node $@
     ;;
+  stop|shutdown)
+    if [ -n "$ip" ]; then
+      "$M_ROOT"/helpers/mssh $ip poweroff
+      stopres=$?
+    elif [ -n "$name" ]; then
+      "$M_ROOT"/helpers/mssh $name poweroff
+      stopres=$?
+    else
+      stopres=1
+    fi
+    if [ $stopres -eq 1 ]; then
+      if [ -n "$id" ]; then
+        "$M_ROOT"/cloud/common/stop_node --id=$id && exit 0
+      elif [ -n "$ip" ]; then
+        "$M_ROOT"/cloud/common/stop_node --id=$ip && exit 0
+      elif [ -n "$name" ]; then
+        "$M_ROOT"/cloud/common/stop_node --id=$name && exit 0
+      fi
+    fi
+    ;;
+  start+boot)
+    if [ -n "$id" ]; then
+      "$M_ROOT"/cloud/common/start_node --id=$id && exit 0
+    elif [ -n "$ip" ]; then
+      "$M_ROOT"/cloud/common/start_node --id=$ip && exit 0
+    elif [ -n "$name" ]; then
+      "$M_ROOT"/cloud/common/start_node --id=$name && exit 0
+    fi
+    # TODO find_by_id
+    if [ -n "$ip" ] || [ -n "$name" ]; then
+      sleep 10
+      log "Waiting for node ${ip}${name} up..."
+      waittimeout=1200
+      waitperiod=10
+      checks=`expr $waittimeout / $waitperiod`
+      for ((i=1; i<$checks; i++)) ; do
+        sleep $waitperiod
+        "$M_ROOT"/helpers/mssh ${ip}${name} && break
+      done
+    fi
+    ;;
+  restart|reboot)
+    if [ -n "$ip" ]; then
+      "$M_ROOT"/helpers/mssh $ip reboot
+      restartres=$?
+    elif [ -n "$name" ]; then
+      "$M_ROOT"/helpers/mssh $name reboot
+      restartres=$?
+    else
+      restartres=1
+    fi
+    if [ $restartres -eq 1 ]; then
+      if [ -n "$id" ]; then
+        "$M_ROOT"/cloud/common/restart_node --id=$id && exit 0
+      elif [ -n "$ip" ]; then
+        "$M_ROOT"/cloud/common/restart_node --id=$ip && exit 0
+      elif [ -n "$name" ]; then
+        "$M_ROOT"/cloud/common/restart_node --id=$name && exit 0
+      fi
+    fi
+    if [ -n "$ip" ] || [ -n "$name" ]; then
+      sleep 10
+      log "Waiting for node ${ip}${name} up..."
+      waittimeout=1200
+      waitperiod=10
+      checks=`expr $waittimeout / $waitperiod`
+      for ((i=1; i<$checks; i++)) ; do
+        sleep $waitperiod
+        "$M_ROOT"/helpers/mssh ${ip}${name} && break
+      done
+    fi
+    ;;
   *)
-  
+    echo "Command $command1 is not supported"
     ;;
 esac
 

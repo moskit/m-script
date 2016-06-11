@@ -115,8 +115,9 @@ case $action in
     [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
     ;;
   attach)
-    [ -z "$to"] && echo "Instance ID to attach this volume to not provided, use option --to" && proper_exit 1 121
-    [ -z "$id"] && echo "Volume ID not provided, use option --id" && proper_exit 1 121
+    [ -z "$to" ] && echo "Instance ID to attach this volume to not provided, use option --to" && proper_exit 1 118
+    [ -z "$id" ] && echo "Volume ID not provided, use option --id" && proper_exit 1 119
+    [ -z "$as" ] && echo "Volume device name not provided, use option --as" && proper_exit 1 120
     request AttachVolume
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
