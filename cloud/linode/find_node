@@ -128,7 +128,7 @@ fi
 
 [ -n "$help" ] && cat << "EOF"
 
-Finds and lists node(s) in Rackspace-based clouds
+Finds and lists node(s) in clouds
 
 Usage: $rcommand <options>
 

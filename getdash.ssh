@@ -64,7 +64,7 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
     $debug && log "Getting dash files from cluster $cluster monitor $monitor clustered as $clustered_as"
     mpath=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
     [ -z "$mpath" ] && mpath="$M_ROOT"
-    for node in `grep "|${cld}$" "$rpath/nodes.list" | grep "|$cluster|" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
+    for node in `grep "|${cld}$" "$rpath/nodes.list" | cut -d'|' -f1,2,3,4,5 | grep "|$cluster$" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY
       time0=`date +"%s"`
       ip=${node%%|*}

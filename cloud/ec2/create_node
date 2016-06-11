@@ -179,7 +179,8 @@ set_hostname() {
 }
 
 save_details() {
-  echo "$details" | cut -sd'|' -f2 | tr '\n' '|' >> "$M_ROOT/cloud/${CLOUD}.list"
+  listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
+  echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
   echo -e "`date`\n$details" >> "$M_ROOT/cloud/ec2.log"
   intIP=`echo "$details" | grep privateIpAddress | cut -sd'|' -f2`
   extIP=`echo "$1" | grep publicIpAddress | cut -sd'|' -f2`

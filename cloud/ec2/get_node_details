@@ -162,5 +162,4 @@ reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 
 printreturn "$reqparsed"
 
-"$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
 proper_exit $exit_status 149
