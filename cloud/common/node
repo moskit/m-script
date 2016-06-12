@@ -244,7 +244,7 @@ case $command1 in
       fi
     fi
     ;;
-  start+boot)
+  start|boot)
     if [ -n "$id" ]; then
       "$M_ROOT"/cloud/common/start_node --id=$id && exit 0
     elif [ -n "$ip" ]; then
@@ -286,7 +286,6 @@ case $command1 in
     fi
     if [ -n "$ip" ] || [ -n "$name" ]; then
       sleep 10
-      log "Waiting for node ${ip}${name} up..."
       waittimeout=1200
       waitperiod=10
       checks=`expr $waittimeout / $waitperiod`
