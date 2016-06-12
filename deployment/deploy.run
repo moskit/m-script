@@ -131,6 +131,7 @@ echo -e "\n\n-------------------\n${0} $*\n" >> "$rpath/../logs/deploy.log"
 [ -n "$cloud" ] || cloud=$CLOUD
 source "$M_ROOT/conf/deployment.conf" || exit 99
 source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
+[ -z "$LOG" ] && LOG="$M_ROOT/logs/deploy.log"
 [ -n "$SSHPORT" ] || SSHPORT=22
 # in case it is not created by metaexec
 if [ -z "$CURRTASKDIR" ]; then
