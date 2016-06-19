@@ -124,7 +124,11 @@ showData = function(theid,base) {
   server = $(theid).parentNode.id
   serverA = server.split("|");
   if (serverA[1]) {
-    server = serverA[1];
+    if (serverA[2]) {
+      server = serverA[2] + "/" + serverA[1];
+    } else {
+      server = serverA[1];
+    }
   }
   theidA = theid.split("|");
   if (theidA[1]) {

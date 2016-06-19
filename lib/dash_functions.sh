@@ -121,8 +121,13 @@ open_line() {
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -sd'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
-  [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
-  [ -n "$dfolkey" ] && dfolid="$dfolkey|$dfolnode" || dfolid="$dfolnode"
+  if [ -n "$dfolkey" ]; then
+    dfolnode="${dfolnode}|${dfolkey}"
+    [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
+    dfolid="$dfolkey|$dfolnode"
+  else
+    dfolid="$dfolnode"
+  fi
   echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\" title=\"$dfolnode\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
 }
@@ -225,7 +230,7 @@ IFS1=$IFS; IFS='
           noderecord=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,4,5,6 | grep "^$lip|"`
           [ -n "$noderecord" ] && break
         done
-        # if localhost found as a cloud server (a part of configured cluster)
+        # if localhost found as a cloud server (a part of a configured cluster)
         if [ -n "$noderecord" ]; then
           node=`echo "$noderecord" | cut -sd'|' -f2`
           # lcls=`echo "$noderecord" | cut -sd'|' -f3`  # not needed for now
