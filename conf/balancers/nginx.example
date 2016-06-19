@@ -20,6 +20,5 @@ BALANCER_PORTS=
 BALANCE_METHOD=
 
 NGINX_PROXY_CLUSTER_CONF_DIR=/etc/nginx/balancers/
-NGINX_RC_SCRIPT=/etc/init.d/nginx
-NGINX_RELOAD_COMMAND=reload
+NGINX_RELOAD_COMMAND="/etc/init.d/nginx reload"
 

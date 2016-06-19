@@ -122,7 +122,7 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
       fi
     done
     for node in `find "$rpath/www/$monitor/$cld/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
-      [ `cat "$rpath/nodes.list" | grep "|${cld}$" | grep "|$cluster|" | grep -c "|${node##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${node##*/}"
+      [ `cat "$rpath/nodes.list" | grep "|${cld}$" | cut -d'|' -f4,5 | grep "|$cluster$" | grep -c "^${node##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${node##*/}"
     done
     unset clustered_as
   done

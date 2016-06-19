@@ -21,7 +21,7 @@ rpath="${rpath%/*}"
 #*/
 
 possible_commands="help list clone create edit show"
-possible_subcommands="list:meta,metas,tasks,scripts,files,roles edit:meta,task,script,file show:meta,task,script,file"
+possible_subcommands="list:meta,metas,tasks,scripts,commands,files,roles edit:meta,task,script,command,file show:meta,task,script,command,file"
 possible_options="role cluster flavor method all strip"
 
 printcol() {
@@ -259,9 +259,13 @@ case $command1 in
               [ `cat "$or/"*.meta 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
             done
             for oris in ${ori[*]} ; do
-              col=$col1
-              printcol "$scr"
-              col=$col2
+              if [ -n "$scr" ]; then
+                col=$col1
+                printcol "$scr"
+                col=$col2
+              else
+                col=$((col1+col2))
+              fi
               printcol "$oris"
               echo
               unset scr oris
@@ -361,7 +365,7 @@ case $command1 in
     for sl in `find "$sourcerole/" -type l` ; do
       nsl=`echo "$sl" | sed "s|$sourcerole/||"`
       f=`readlink $sl`
-      if [ "X${f:0:1}" == "X/" ]; then
+      if [ "_${f:0:1}" == "_/" ]; then
         if [ "$method" == "link" ]; then
           if [ ! -e "$ROLES_ROOT/roles/$param2/$nsl" -o -n "$all" ]; then
             echo "${sl##*/} is a symlink resolving to an absolute path. Copying the file instead."

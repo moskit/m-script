@@ -48,15 +48,15 @@ do
     ;;
   esac
   for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=${s_optarg}" && found=1
+    [ "_$s_optname" == "_$option" ] && eval "$option=${s_optarg}" && found=1
   done
-  [ "X$s_option" == "X$s_param" ] && found=1
+  [ "_$s_option" == "_$s_param" ] && found=1
   if [[ $found -ne 1 ]]; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
 done
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   cat << "EOF"
 Usage: ${0##*/} <options>
 
@@ -79,7 +79,7 @@ fi
 found=0
 
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
@@ -91,7 +91,7 @@ source "$M_ROOT/conf/balancers/${cluster}.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-for var in BALANCER_PORTS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RC_SCRIPT NGINX_RELOAD_COMMAND ; do
+for var in BALANCER_PORTS NGINX_PROXY_CLUSTER_CONF_DIR NGINX_RELOAD_COMMAND ; do
   [ -z "`eval echo \\$\$var`" ] && echo "$var is not defined! Define it in conf/balancers/[clustername].conf please." && exit 1
 done
 
@@ -127,10 +127,10 @@ for appport in `echo "$BALANCER_PORTS" | tr ',' ' '` ; do
 
 done
 
-# Comes as a shock, but sometimes distro builders don't respect POSIX
-output=`$NGINX_RC_SCRIPT $NGINX_RELOAD_COMMAND`
+# Doing my best to get correct exit status
+output=`$NGINX_RELOAD_COMMAND`
 res=$?
-echo "$output" | grep -qiE "fail|error" && res=1
+[ $res -eq 0 ] && echo "$output" | grep -qiE "fail|error" && res=1
 
 exit $res
 
