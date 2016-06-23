@@ -264,7 +264,10 @@ case $command1 in
                 printcol "$scr"
                 col=$col2
               else
-                col=$((col1+col2))
+                col=$col1
+                printcol ""
+                col=$col2
+                printcol ""
               fi
               printcol "$oris"
               echo

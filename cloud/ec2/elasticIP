@@ -25,7 +25,7 @@ SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
 possible_options="name log_request cloud action domain allocationid networkid instanceid netinterfaceid privateip publicip reassociation"
-necessary_options="domain"
+necessary_options=""
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"
@@ -96,6 +96,7 @@ request() {
 
 case $action in
   create|allocate)
+    [ -z "$domain" ] && echo "Option --domain=vpc|standard is mandatory for this action" && exit 1
     request AllocateAddress
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
