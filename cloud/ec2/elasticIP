@@ -96,8 +96,6 @@ request() {
 
 case $action in
   create|allocate)
-    [ -z "$zone" ] && echo "Availability zone is mandatory, use option --zone" && proper_exit 1 114
-    [ -z "$size" ] && [ -z "$snapshot" ] && echo "If EBS volume is not created from a snapshot, its size is mandatory" && exit 1
     request AllocateAddress
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
