@@ -4,11 +4,19 @@ M_ROOT="$PWD/../.."
 source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/dash_functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/standalone/Postfix/postfix_queue.conf"
 
-[ "_$2" == "_localhost" ] || ip="$2"
-ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name "$2.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg")
+[ "X$2" == "Xlocalhost" ] || ip="$2"
+if "$M_ROOT"/helpers/localips | grep -q "^`name_to_ip "$2"`$" ; then
+  unset ip
+  target=localhost
+else
+  target=$ip
+fi
+ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name "$target.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg")
 if [ -z "$ex" ] ; then
 "$PWD"/../../graph --database=standalone/Postfix/postfix_activity.db --table=postfix_activity --metric=sent,bounced,deferred --ip=$ip --perpixel --width=750 --height=300 --padding=10 --legend=160
 fi
-echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/$2.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
+echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/$target.standalone_Postfix_postfix_activity.db_postfix_activity.sent_bounced_deferred.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
 
