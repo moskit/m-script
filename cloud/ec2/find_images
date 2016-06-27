@@ -26,14 +26,13 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 filter_options="architecture block-device-mapping.delete-on-termination block-device-mapping.device-name block-device-mapping.snapshot-id block-device-mapping.volume-size block-device-mapping.volume-type description hypervisor image-id image-type is-public kernel-id manifest-location name owner-alias owner-id platform product-code product-code.type ramdisk-id root-device-name root-device-type state state-reason-code state-reason-message tag tag-key tag-value virtualization-type"
-possible_options="cloud region flavor cluster image ami aki kernel name return verbose help $filter_options log_request"
+possible_options="cloud region flavor cluster image ami aki kernel name return verbose help $filter log_request"
 
 necessary_options=""
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 IFS1=$IFS
 IFS='|'
-for s_option in $ARGV
-do
+for s_option in $ARGV ; do
   s_optname=${s_option%%=*}
   s_optname=${s_optname/-/_}
   s_optarg=${s_option##*=}
@@ -42,7 +41,7 @@ do
   for option in `echo $possible_options | sed 's/ /|/g;s/-/_/g;s/\./__/g'`; do
     [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
   done
-   if ! $found ; then 
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
@@ -59,8 +58,12 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
-if [ "_$help" == "_filters" ]; then
+if [[ "$help" =~ "filter" ]]; then
 cat << EOF
+Syntax: --filter="option1:value1,option2:value2,..."
+
+Available filter options:
+
 architecture - The image architecture (i386 | x86_64).
 block-device-mapping.delete-on-termination - A Boolean value that indicates whether the Amazon EBS volume is deleted on instance termination.
 block-device-mapping.device-name - The device name for the EBS volume (for example, /dev/sdh).
@@ -105,30 +108,47 @@ LOG="$M_ROOT/logs/cloud.log"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-request() {
-  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
-  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
-  signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature"`
-    log "$reqres"
-    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeImages${FC}&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  fi
-}
+# TODO: add this to cloud config
+SignatureMethod=HmacSHA256
+SignatureVersion=2
+Version="2013-07-15"
+
+[ -n "$image" ] && ami=$image
+
+qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
+[ -n "$ami" ] && qparams="${qparams}\nImageId.1=$image"
 
 # FC = Filter Chain
 
-for fo in $filter_options ; do
+for fo in `echo $filter | tr ',' ' ' | tr ':' '='` ; do
   fosh=`echo "$fo" | sed 's/-/_/g;s/\./__/g'`
   foval=`eval echo \\$$fosh`
-  [ -n "$foval" ] && FC="$FC&$fo=$foval"
+  [ -n "$foval" ] && FC="$FC&${fo%:*}.1=$foval"
 done
 
-request
+[ -n "$FC" ] && qparams="${qparams}\n${FC}"
+
+
+request() {
+  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
+  qparams="${qparams}\nTimestamp=${timestamp}"
+  qparams=`echo -e -n "$qparams" | sort | grep -v ^$ | tr '\n' '&'`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams%&}"`
+  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
+  signature=`echo -n "$Q" | $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
+  if [ "_$log_request" == "_yes" ]; then
+    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature\""
+    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature"`
+    log "$reqres"
+    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  else
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  fi
+}
+
+
+
+request DescribeImages
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
 [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
