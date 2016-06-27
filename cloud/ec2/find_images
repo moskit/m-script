@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 filter_options="architecture block-device-mapping.delete-on-termination block-device-mapping.device-name block-device-mapping.snapshot-id block-device-mapping.volume-size block-device-mapping.volume-type description hypervisor image-id image-type is-public kernel-id manifest-location name owner-alias owner-id platform product-code product-code.type ramdisk-id root-device-name root-device-type state state-reason-code state-reason-message tag tag-key tag-value virtualization-type"
-possible_options="cloud region flavor cluster image ami aki kernel name return verbose help $filter log_request"
+possible_options="cloud region flavor cluster image ami aki kernel name return verbose help filter log_request"
 
 necessary_options=""
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -122,7 +122,8 @@ qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${Sign
 
 for fo in `echo $filter | tr ',' ' ' | tr ':' '='` ; do
   fosh=`echo "$fo" | sed 's/-/_/g;s/\./__/g'`
-  foval=`eval echo \\$$fosh`
+  eval "$fosh"
+  foval=`eval "echo \\$${fosh%=*}"`
   [ -n "$foval" ] && FC="$FC&${fo%:*}.1=$foval"
 done
 
@@ -146,11 +147,10 @@ request() {
   fi
 }
 
-
-
 request DescribeImages
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
 [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
 
+echo "$reqparsed"
 
