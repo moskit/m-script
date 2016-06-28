@@ -106,11 +106,11 @@ request() {
 }
 
 printlist() {
-  for n in `echo "$reqparsed" | cut -sd'/' -f8 | sort -n | uniq` ; do
+  for n in `echo "$reqparsed" | cut -sd'/' -f8 | grep -v ^$ | sort -n | uniq` ; do
     vol=`echo "$reqparsed" | grep \/$n\/`
-    volid=`echo "$vol" | grep volumeId | cut -sd'|' -f2 | tr -d '"'`
+    volid=`echo "$vol" | grep \/$n\/\"volumeId\" | cut -sd'|' -f2 | tr -d '"'`
     volsize=`echo "$vol" | grep '"size"' | cut -sd'|' -f2 | tr -d '"'`
-    volstatus=`echo "$vol" | grep '"status"' | cut -sd'|' -f2 | tr -d '"'`
+    volstatus=`echo "$vol" | grep \/$n\/\"status\" | cut -sd'|' -f2 | tr -d '"'`
     volattachedto=`echo "$vol" | grep '"attachmentSet"' | grep '"instanceId"' | cut -sd'|' -f2 | tr -d '"'`
     if [ -n "$view" ]; then
       volcreatetime=`echo "$vol" | grep '"createTime"' | cut -sd'|' -f2 | tr -d '"'`
