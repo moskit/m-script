@@ -112,6 +112,7 @@ printlist() {
     volsize=`echo "$vol" | grep '"size"' | cut -sd'|' -f2 | tr -d '"'`
     volstatus=`echo "$vol" | grep \"volumeSet\"\/0\/\"item\"\/$n\/\"status\" | cut -sd'|' -f2 | tr -d '"'`
     volattachedto=`echo "$vol" | grep '"attachmentSet"' | grep '"instanceId"' | cut -sd'|' -f2 | tr -d '"'`
+    [ -z "$volattachedto" ] && volattachedto=None
     if [ -n "$view" ]; then
       volcreatetime=`echo "$vol" | grep '"createTime"' | cut -sd'|' -f2 | tr -d '"'`
       volzone=`echo "$vol" | grep '"availabilityZone"' | cut -sd'|' -f2 | tr -d '"'`
@@ -123,26 +124,22 @@ printlist() {
       voliops=`echo "$vol" | grep '"iops"' | cut -sd'|' -f2 | tr -d '"'`
       case $view in
         list)
-          echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIPprint  intIP: $intIPprint  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
-          echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
+          echo "Volume: $volid  Size: ${volsize}GB  Status: $volstatus  Attached To: $volattachedto  Attached As: $volattachedas  Attachment Status: $volattachstatus  Attached At: $volattachtime  Created At: $volcreatetime  Availability Zone: $volzone  Delete On Termination: $voldeleteonterm  Volume Type: $voltype  IOPS: $voliops"
           ;;
         table)
-          echo "$id|$iname|$istatus|$extIPprint|$intIPprint|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$izone|$ikey"
-          echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g'
+          echo "$volid|$volsize|$volstatus|$volattachedto|$volattachedas|$volattachstatus|$volattachtime|$volcreatetime|$volzone|$voldeleteonterm|$voltype|$voliops"
           ;;
         column)
-          echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIPprint\nintIP: $intIPprint\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
-          echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
+          echo -e "Volume: $volid\nSize: ${volsize}GB\nStatus: $volstatus\nAttached To: $volattachedto\nAttached As: $volattachedas\nAttachment Status: $volattachstatus\nAttached At: $volattachtime\nCreated At: $volcreatetime\nAvailability Zone: $volzone\nDelete On Termination: $voldeleteonterm\nVolume Type: $voltype\nIOPS: $voliops"
           ;;
         none)
           ;;
         *)
-          echo -e "------------------------------------------------------------------------------\nNode ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIPprint    Private IP: $intIPprint\nNode image: $imageId    AKI: $iaki    ARI: $iari\nNode size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
-          [ ${#ebs[*]} -ne 0 ] && echo "${ebs[*]}" | grep -v ^$ | sed 's_^_  EBS: _g;s_|_  _g'
+          echo -e "------------------------------------------------------------------------------\nVolume: $volid  Size: ${volsize}GB  Status: $volstatus\nAttached To: $volattachedto  Attached As: $volattachedas  Attachment Status: $volattachstatus  Attached At: $volattachtime\nCreated At: $volcreatetime  Availability Zone: $volzone  Delete On Termination: $voldeleteonterm\nVolume Type: $voltype  IOPS: $voliops"
           ;;
       esac
     else
-      echo "Volume: $volid  Size: ${volsize}GB  Status: $volstatus  Attached To: ${volattachedto-None}"
+      echo "Volume: $volid  Size: ${volsize}GB  Status: $volstatus  Attached To: ${volattachedto}"
     fi
     
   done
