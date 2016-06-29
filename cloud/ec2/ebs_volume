@@ -106,8 +106,8 @@ request() {
 }
 
 printlist() {
-  for n in `echo "$reqparsed" | cut -sd'/' -f8 | grep -v ^$ | sort -n | uniq` ; do
-    vol=`echo "$reqparsed" | grep \/$n\/`
+  for n in `echo "$reqparsed" | grep -v 'xmlns=' | cut -sd'/' -f8 | grep -v ^$ | sort -n | uniq` ; do
+    vol=`echo "$reqparsed" | grep \"volumeSet\"\/0\/\"item\"\/$n\/`
     volid=`echo "$vol" | grep \/$n\/\"volumeId\" | cut -sd'|' -f2 | tr -d '"'`
     volsize=`echo "$vol" | grep '"size"' | cut -sd'|' -f2 | tr -d '"'`
     volstatus=`echo "$vol" | grep \/$n\/\"status\" | cut -sd'|' -f2 | tr -d '"'`
