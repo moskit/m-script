@@ -121,10 +121,10 @@ if [ -z "$id" ]; then
     if [ -z "$name" ]; then
       if [ -z "$cluster" ]; then
         echo "One of id, ip, name or cluster is required to identify the node"
-        proper_exit 1 202
+        proper_exit 1 124
       else
         list_the_cluster
-        proper_exit 0 205
+        proper_exit 0 127
       fi
     else
       # ip must be present in nodes.list, so it's simple
@@ -137,10 +137,14 @@ if [ -z "$id" ]; then
     find_by_ip $ip
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 131
-echo "ID found: $id"
+[ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 140
 
-"$rpath"/get_node_details --id=$id || proper_exit 1 134
+if [ -n "$onlyid" ]; then
+  echo "$id"
+else
+  echo "ID found: $id"
+  "$rpath"/get_node_details --id=$id || proper_exit 1 146
+fi
 
-proper_exit 0 228
+proper_exit 0 149
 
