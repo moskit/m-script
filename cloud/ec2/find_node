@@ -21,7 +21,7 @@ rpath=${0%/*}
 CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 
-possible_options="cloud id name ip return verbose cluster help updatelist quick slow"
+possible_options="cloud id name ip return verbose cluster help updatelist quick slow onlyid"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -45,7 +45,14 @@ done
 IFS=$IFS1
 
 list_the_cluster() {
-  "$rpath"/show_nodes --all --view=table | grep -v ^EBS | cut -sd'|' -f1,2,3,4,5,6 | grep "|$cluster$"
+  IAMACHILD=1 "$rpath"/show_nodes --all --view=table | grep -v ^EBS | cut -sd'|' -f1,2,3,4,5,6 | grep "|$cluster$"
+}
+
+find_by_ip() {
+  id=`grep "|$1|" "$M_ROOT"/cloud/${CLOUD}.list | cut -d'|' -f2`
+  if [ -z "$id" ]; then
+    id=`IAMACHILD=1 "$rpath"/get_node_details --ip="$1" | grep instanceId | cut -d'|' -f2`
+  fi
 }
 
 found=0
@@ -82,14 +89,17 @@ Options:
                                   option or via environment variable CLOUD;
                                   command-line option has higher priority
                                   
-  --quick                       - for cluster search, checks only provider-
-                                  specific list (cloud/ec2.list)
+  --quick                       - for cluster search, checks only cloud list,
+                                  no API calls
                                   
   --slow                        - for cluster search, gets details for each
                                   node in this cloud listed in nodes.list
                                   and cloud/rackspace.list from the cloud API
                                   and does its best to fix any inconsistencies
                                   found
+                                  
+  --onlyid                      - doesn't output details of the node, only its
+                                  ID
                                   
 EOF
 
@@ -120,7 +130,7 @@ if [ -z "$id" ]; then
       # ip must be present in nodes.list, so it's simple
       ip=`cat "$rpath/../../nodes.list" | grep -vE "^#|^[[:space:]]#" | cut -d'|' -f1,4,6 | grep -v ^$ | grep "|${CLOUD}$" | grep "|${name}|" | cut -d'|' -f1`
       if [ -n "$ip" ]; then
-        "$rpath"/get_node_details --ip=$ip || proper_exit 1 124
+        find_by_ip $ip
       fi
     fi
   else

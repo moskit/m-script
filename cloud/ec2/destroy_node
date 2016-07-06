@@ -19,111 +19,107 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 
-source $M_ROOT/conf/mon.conf
-source $M_ROOT/conf/clouds/${CLOUD}.conf
-source $M_ROOT/lib/functions.sh
-source $M_ROOT/lib/cloud_functions.sh
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-LOG="$M_ROOT"/logs/cloud.log
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+SSLEX=`which openssl 2>/dev/null`
+[ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
-possible_options="cloud id name ip verbose force last first"
-necessary_options=""
-
-ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
-[ -z "$ARGV" ] && echo "Stop node? Which one?" && exit 1
+possible_options="name log_request cloud nodeid description noreboot help wait"
+necessary_options="name nodeid"
 IFS1=$IFS
-IFS='|'
-for s_option in $ARGV
+IFS='-'
+for s_option in "$@"
 do
+  found=false
+  s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
   [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
-  found=false
-  for option in `echo $possible_options | sed 's/ /|/g'`; do 
-    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+
+  for option in ${possible_options// /-} ; do
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
   done
-   if ! $found ; then 
+  
+  if ! $found ; then 
     echo "Unknown option: $s_optname"
     exit 1
   fi
 done
 IFS=$IFS1
 
-[ -n "$force" ] && force=true || force=false
-removed=false
+[ -z "$*" ] && help=yes
 
-find_by_ip() {
-  IAMACHILD=1 show_nodes >/dev/null
-  id=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${1}\| | cut -d'|' -f2`
-  [ -z "$id" ] && id=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${1}\| | cut -d'|' -f2`
-}
-
-if [ -n "$first" ] ; then
-  ip=`cat "$M_ROOT/nodes.list" | grep \|${first}$ | head -1 | cut -d'|' -f1`
-fi
-if [ -n "$last" ] ; then
-  ip=`cat "$M_ROOT/nodes.list" | grep \|${last}$ | tail -1 | cut -d'|' -f1`
-fi
-
-if [ -z "$id" ] ; then
-  if [ -z "$ip" ] ; then
-    if [ -z "$name" ] ; then
-      echo "One of id, ip or name is required to identify the node"
-      exit 1
-    else
-      # IP is more reliable
-      ip=`cat "$M_ROOT/nodes.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
-      [ `echo $ip | wc -w` -gt 1 ] && echo "Found more than 1 IP for this name! Exiting." && exit 1
-      if [ -n "$ip" ] ; then
-        find_by_ip $ip
-      else
-        IAMACHILD=1 show_nodes >/dev/null
-        id=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep \|${name}$ | cut -d'|' -f1`
-      fi
-    fi
-  else
-    find_by_ip $ip
+if [ -z "$help" ]; then
+  found=0
+  for option in `echo $necessary_options | sed 's/,//g'`; do
+    [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
+  done
+  if [[ found -eq 1 ]]; then
+    missing_options=${missing_options#*,}
+    echo "Necessary options: $missing_options not found"
+    exit 1
   fi
 else
-  if [ -f "$M_TEMP/nodes.${EC2_REGION}.ips" ] ; then
-    IAMACHILD=1 show_nodes >/dev/null
-  fi
-  name=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f3,13 | grep ^${id}\| | cut -d'|' -f2`
-  ipint=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f1,3 | grep ^${id}\| | cut -d'|' -f1`
-  ipext=`cat "$M_TEMP/nodes.${EC2_REGION}.ips" | cut -d'|' -f2,3 | grep ^${id}\| | cut -d'|' -f1`
-fi
-[ -z "$id" ] && echo "Unable to find ID of this node" && exit 1
-req="/servers/$id"
+  cat << "EOF"
+Usage: node destroy {options}
 
-IPS=( "$ipint" "$ipext" "$ip" )
+where options are:
 
-$EC2_TOOLS_BIN_PATH/ec2-terminate-instances -K "$EC2_PRIVATE_KEY" -C "$EC2_CERT" --region $EC2_REGION $id >> "$M_ROOT"/logs/cloud.log && log "(EC2) node name ${name}, id ${id}, IP ${IPS[*]} terminated successfully" && removed=true 
+nodeid={instance id}   - EC2 instance ID
+nodename={node name)   - M-Script node name
+nodeip={ip}            - node IP address (the one from nodes.list)
 
-if [ $removed -o $force ]; then
-  SSHK=`which ssh-keygen 2>/dev/null`
-  [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "(EC2) $name removed from known_hosts"
+  One of nodeid, nodename, nodeip is mandatory
 
-  for ipa in ${IPS[*]} ; do
-    if [ -n "$ipa" ] ; then
-      $SSHK -q -R "$ipa" >/dev/null 2>&1 && log "(EC2) $ipa removed from known_hosts"
-      sed -i "/^$ipa|/d" "$M_ROOT/nodes.list" && log "(EC2) $ipa removed from nodes.list"
-      sed -i "/^$ipa /d" /etc/hosts && log "(EC2) $ipa removed from /etc/hosts"
-    fi
-  done
-  
-  for bcluster in $APP_SERVERS ; do
-    [ "X${bcluster%%|*}" == "X$cluster" ] && needs_balancer=true
-  done
-  if $needs_balancer ; then
-    if [ -n "$BALANCER" ] ; then
-      case "$BALANCER" in
-      nginx)
-        update_nginx_proxy
-        ;;
-      esac
-    fi
-  fi
+cloud={cloud name}     - must be provided, only this cloud will be searched for
+                         the node to destroy. In most cases it is not mandatory
+                         to provide it via command-line option though since
+                         it is provided via environment variable CLOUD
+                         
+EOF
 
 fi
 
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
 
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+LOG="$M_ROOT/logs/cloud.log"
+
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+
+CURL="$CURL -s -k"
+
+# TODO: add this to cloud config
+SignatureMethod=HmacSHA256
+SignatureVersion=2
+Version="2013-07-15"
+
+qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nInstanceId.1=${nodeid}"
+
+request() {
+  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
+  qparams="${qparams}\nTimestamp=${timestamp}"
+  qparams=`echo -e -n "$qparams" | sort | grep -v ^$ | tr '\n' '&'`
+  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams%&}"`
+  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
+  signature=`echo -n "$Q" | $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
+  if [ "_$log_request" == "_yes" ]; then
+    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature\""
+    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature"`
+    log "$reqres"
+    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  else
+    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  fi
+}
+
+request TerminateInstances
+reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+
+echo "$reqparsed"

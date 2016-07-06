@@ -25,7 +25,7 @@ SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
 possible_options="name log_request cloud nodeid description noreboot help wait"
-necessary_options="name instanceid"
+necessary_options="name nodeid"
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"
@@ -47,7 +47,7 @@ do
 done
 IFS=$IFS1
 
-[ -z "$@" ] && help=yes
+[ -z "$*" ] && help=yes
 
 if [ -z "$help" ]; then
   found=0
