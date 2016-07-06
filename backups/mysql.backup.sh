@@ -32,9 +32,12 @@ CHOWN=`which chown 2>/dev/null`
 CHMOD=`which chmod 2>/dev/null`
 GZIP=`which gzip 2>/dev/null`
 
-[ -z "$mysqluser" ] && echo "Error: database user not defined" >> "$rpath/m_backup.error" && exit 1
-[ -z "$mysqlhost" ] && echo "Error: database host not defined" >> "$rpath/m_backup.error" && exit 1
+[ -z "$MYSQL" ] && echo "ERROR: mysql CLI not found" >> "$rpath/m_backup.error" && exit 1
+[ -z "$MYSQLDUMP" ] && echo "ERROR: mysqldump utility not found" >> "$rpath/m_backup.error" && exit 1
+[ -z "$mysqluser" ] && echo "ERROR: database user not defined" >> "$rpath/m_backup.error" && exit 1
+[ -z "$mysqlhost" ] && echo "ERROR: database host not defined" >> "$rpath/m_backup.error" && exit 1
 [ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$rpath"
+OPTIONS="$mysqldumpoptions"
 
 MBD="$DEST/backup.tmp/mysql"
 
@@ -67,7 +70,7 @@ for db in $mysqldblist ; do
     
   if $dumpdb ; then
     FILE="$MBD/$db.$archname.gz"
-    $MYSQLDUMP "-u$mysqluser" -h$mysqlhost "$PASS" $VERB "$db" 2>>"$rpath/m_backup.error" | $GZIP > $FILE 2>>"$rpath/m_backup.error" && echo "mysql: $db dumped OK" >>"$rpath/m_backup.log"
+    $MYSQLDUMP "-u$mysqluser" -h$mysqlhost "$PASS" $VERB $OPTIONS "$db" 2>>"$rpath/m_backup.error" | $GZIP > $FILE 2>>"$rpath/m_backup.error" && echo "mysql: $db dumped OK" >>"$rpath/m_backup.log"
   fi
 done
 
