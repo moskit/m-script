@@ -98,8 +98,6 @@ SignatureMethod=HmacSHA256
 SignatureVersion=2
 Version="2013-07-15"
 
-qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nInstanceId.1=${id}"
-
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
   qparams="${qparams}\nTimestamp=${timestamp}"
@@ -130,6 +128,8 @@ if [ -z "$id" ]; then
   fi
 fi
 [ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 131
+
+qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nInstanceId.1=${id}"
 
 request TerminateInstances
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
