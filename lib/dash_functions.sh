@@ -250,6 +250,10 @@ IFS1=$IFS; IFS='
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
           close_line
         fi
+      else
+        if [ -n "$cls" ] && [ -z "$cld" ]; then
+          cld=`grep "^$cls|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f12`
+        fi
       fi
       for node in `find "$M_ROOT/www/$target/$cld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
         node="${node##*/}"
