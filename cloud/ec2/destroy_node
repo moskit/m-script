@@ -19,11 +19,6 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 
-CURL=`which curl 2>/dev/null`
-[ -z "$CURL" ] && echo "Curl not found" && exit 1
-SSLEX=`which openssl 2>/dev/null`
-[ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
-
 possible_options="name log_request cloud id ip help"
 necessary_options=""
 IFS1=$IFS
@@ -61,17 +56,17 @@ if [ -z "$help" ]; then
   fi
 else
   cat << "EOF"
-Usage: node destroy {options}
+Usage: destroy_node {options}
 
 where options are:
 
-id={instance id}   - EC2 instance ID
-name={node name)   - M-Script node name
-ip={ip}            - node IP address
+id={instance id}       - EC2 instance ID
+name={node name)       - M-Script node name
+ip={ip}                - node IP address
 
   One of nodeid, nodename, nodeip is mandatory
 
-cloud={cloud name}     - must be provided, only this cloud will be searched for
+cloud={cloud name}     - must be provided. Only this cloud will be searched for
                          the node to destroy. In most cases it is not mandatory
                          to provide it via command-line option though since
                          it is provided via environment variable CLOUD
@@ -81,45 +76,20 @@ EOF
 fi
 
 [ -n "$cloud" ] && CLOUD=$cloud
-[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
 
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
-LOG="$M_ROOT/logs/cloud.log"
 
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+source "$rpath/functions.sh"
 
-CURL="$CURL -s -k"
-
-# TODO: add this to cloud config
-SignatureMethod=HmacSHA256
-SignatureVersion=2
-Version="2013-07-15"
-
-request() {
-  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  qparams="${qparams}\nTimestamp=${timestamp}"
-  qparams=`echo -e -n "$qparams" | sort | grep -v ^$ | tr '\n' '&'`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams%&}"`
-  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
-  signature=`echo -n "$Q" | $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature"`
-    log "$reqres"
-    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  fi
-}
+lock_cloudops || exit 10
 
 if [ -z "$id" ]; then
   if [ -z "$ip" ]; then
     if [ -z "$name" ]; then
       echo "One of id, ip or name is required to identify the node"
-      proper_exit 1 202
+      proper_exit 1 92
     else
       id=`IAMACHILD=1 "$rpath"/find_node --name=$name --onlyid`
     fi
@@ -127,13 +97,14 @@ if [ -z "$id" ]; then
     id=`IAMACHILD=1 "$rpath"/find_node --ip=$ip --onlyid`
   fi
 fi
-[ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 131
+[ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 98
 
-qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nInstanceId.1=${id}"
+ec2_api_request TerminateInstances "InstanceId.1=${id}"
+check_request_result instanceId,previousState,currentState || proper_exit 1 101
 
-request TerminateInstances
-reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+if [ -n "$ip" ]; then
+  sed -i "/^${ip}|/d" "$M_ROOT/nodes.list" "$M_ROOT/cloud/nodes.list.${CLOUD}"
+fi
+sed -i "/|$id|/d" "$M_ROOT/cloud/${CLOUD}.list"
 
-echo "$reqparsed"
+proper_exit 0 105
