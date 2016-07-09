@@ -32,8 +32,13 @@ SQLITE=dbquery
 LOG="$rpath/logs/dashboard.log"
 [ -n "$debug" ] && debug=true || debug=false
 timeindexnow=`date +"%s"`
-
-monitor="$1"
+if [ -n "$1" ]; then
+  if [ "$1" == "--help" ]; then
+    echo -e "\nUsage: getdash.ssh {monitor to fetch} {target cluster} {name to show as}\n"
+  else
+    monitor="$1"
+  fi
+fi
 if [ -z "$monitor" ]; then
   monitor="nodes"
 else
@@ -126,18 +131,19 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
     done
     unset clustered_as
   done
+done
 
-  [ -d "$rpath/mon.backups/dash/" ] || install -d "$rpath/mon.backups/dash/"
+for cld in `find "$rpath/www/$monitor" -mindepth 1 -maxdepth 1 -type d` ; do
+  cld=${cld##*/}
   for cluster in `find "$rpath/www/$monitor/$cld" -mindepth 1 -maxdepth 1 -type d` ; do
     cluster=${cluster##*/}
     [ -z "$cluster" ] && continue
     if [ "_$monitor" == "_nodes" ] ; then
       # Clusters not present in clusters.conf are backuped to M_ROOT/mon.backups/dash
-      if [ -n "$cluster" -a "$cluster" != "localhost" ]; then
+      if [ "$cluster" != "localhost" ]; then
         if [ `grep -c "^$cluster|" "$rpath/conf/clusters.conf"` -eq 0 ]; then
           [ -d "$rpath/mon.backups/dash/$cld/" ] || install -d "$rpath/mon.backups/dash/$cld/"
-          cp -ru "$rpath/www/$monitor/$cld/$cluster" "$rpath/mon.backups/dash/$cld/"
-          rm -rf "$rpath/www/$monitor/$cld/$cluster"
+          mv "$rpath/www/$monitor/$cld/$cluster" "$rpath/mon.backups/dash/$cld/"
         fi
       fi
       # Servers terminated or stopped

@@ -174,8 +174,8 @@ list_nodes() {
       unset ebs
       for bdev in `echo "$bdevs" | grep '|"attached"' | cut -d'/' -f16 | sort | uniq` ; do
         bdevname=`echo "$bdevs" | grep "/$bdev/\"deviceName\"" | cut -d'|' -f2 | tr -d '"'`
-        bdevid=`echo "$bdevs" | grep "/$bdev/\"volumeId\"" | cut -d'|' -f2 | tr -d '"'`
-        bdevsince=`echo "$bdevs" | grep "/$bdev/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
+        bdevid=`echo "$bdevs" | grep "/$bdev/\"ebs\"/0/\"volumeId\"" | cut -d'|' -f2 | tr -d '"'`
+        bdevsince=`echo "$bdevs" | grep "/$bdev/\"ebs\"/0/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
         ebs+=("$bdevid|$bdevname|$bdevsince")
       done
 

@@ -57,10 +57,10 @@ remove_ip_from() {
 
 case $1 in
   tmp|temporary|temp)
-    $IPT -F M_IPBLOCK_TMP
+    $IPT -F M_IPBLOCK_TMP 2>/dev/null
     ;;
   const|constant)
-    $IPT -F M_IPBLOCK_CONST
+    $IPT -F M_IPBLOCK_CONST 2>/dev/null
     ;;
   *)
     expr "$1" : ".*[^[0-9.:/]]*" >/dev/null && usage

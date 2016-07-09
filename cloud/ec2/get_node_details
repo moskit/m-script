@@ -109,6 +109,7 @@ request() {
 
 printreturn() {
   reservationId=`echo "$1" | grep '"reservationId"/' | cut -sd'|' -f2 | tr -d '"'`
+  [ -z "$reservationId" ] && return 1
   instanceId=`echo "$1" | grep '"instanceId"/' | cut -sd'|' -f2 | tr -d '"'`
   imageId=`echo "$1" | grep '"imageId"/' | cut -sd'|' -f2 | tr -d '"'`
   status=`echo "$1" | grep '"instanceState"/0/"name"/' | cut -sd'|' -f2 | tr -d '"'`
@@ -160,6 +161,6 @@ reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
 [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 171
 
-printreturn "$reqparsed"
+printreturn "$reqparsed" || exit_status=2
 
 proper_exit $exit_status 149

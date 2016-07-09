@@ -49,7 +49,8 @@ ec2_api_request() {
   # -----------
   # ParamString would be "AllocationId.1=${your-var-from-caller-script}"
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  qparams="${2}\nTimestamp=${timestamp}"
+  Params=`echo "$2" | tr '&' '\n'`
+  qparams="$Params\n$AuthParams\nTimestamp=${timestamp}"
   qparams=`echo -e -n "$qparams" | sort | grep -v ^$ | tr '\n' '&'`
   query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams%&}"`
   Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`

@@ -143,8 +143,15 @@ if [ -n "$onlyid" ]; then
   echo "$id"
 else
   echo "ID found: $id"
-  "$rpath"/get_node_details --id=$id || proper_exit 1 146
+  "$rpath"/get_node_details --id=$id
+  res=$?
+  if [ $res -eq 2 ]; then
+    sed -i "/|$id|/d" "$M_ROOT/cloud/${CLOUD}.list"
+    exit_status=1
+  else
+    exit_status=$res
+  fi
 fi
 
-proper_exit 0 149
+proper_exit $exit_status 153
 
