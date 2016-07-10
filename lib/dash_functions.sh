@@ -73,6 +73,8 @@ open_cluster() {
   unset dfoconclick
 }
 
+#"
+
 print_cluster_inline() {
   # print_cluster_inline "metric<|onclick><|cssclass>" "metric2<|onclick2><|cssclass2>" ...
   while [ -n "$1" ] ; do
@@ -251,15 +253,18 @@ IFS1=$IFS; IFS='
           close_line
         fi
       else
-        if [ -n "$cls" ] && [ -z "$cld" ]; then
-          cld=`grep "^$cls|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f12`
+        if [ -z "$cld" ]; then
+          cld=( `find "$M_ROOT/www/$target/" -type d -mindepth1 -maxdepth 1` )
         fi
       fi
-      for node in `find "$M_ROOT/www/$target/$cld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+      for scld in $cld ; do
+      scld=${scld##*/}
+      for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
         node="${node##*/}"
-        open_line "$node||${cld}_${cls}" "$onclick"
-        tail -n $slotline_length "$M_ROOT/www/$target/$cld/$cls/$node/dash.html" 2>/dev/null
+        open_line "$node||${scld}_${cls}" "$onclick"
+        tail -n $slotline_length "$M_ROOT/www/$target/$scld/$cls/$node/dash.html" 2>/dev/null
         close_line
+      done
       done
 IFS=$IFS1
       ;;
