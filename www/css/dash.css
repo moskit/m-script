@@ -321,19 +321,19 @@ span.indent {
 }
 
 .tablerow_ok {
-  color: green;
+  background-color: #EFE;
 }
 
 .tablerow_w1 {
-  color: #A80;
+  background-color: #FEC;
 }
 
 .tablerow_w2 {
-  color: #F70;
+  background-color: #FED;
 }
 
 .tablerow_w3 {
-  color: red;
+  background-color: #FEE;
 }
 
 .chunk {

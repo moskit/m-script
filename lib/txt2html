@@ -28,7 +28,7 @@ format() {
     echo "<tr class=\"$2\"><td>${1}</td></tr>" | sed 's|[[:space:]][[:space:]]\+|</td><td>|g'
     ;;
   tablerow_*)
-    tdstyle=${2#*_}
+    tdstyle=$2
     echo "<tr class=\"tablerow $tdstyle\"><td>${1}</td></tr>" | sed 's|[[:space:]][[:space:]]\+|</td><td>|g'
     ;;
   info)
