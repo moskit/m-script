@@ -72,7 +72,7 @@ chk_portexclusions() {
   done
 }
 
-echo -e "\nListening ports and sockets:\n----------------------------\n\n  Name              Listening on                            Connections\n"
+echo -e "\nListening ports and sockets:\n----------------------------\n\n    Name              Listening on                            Connections\n"
 
 ### Two modes are available: with per socket monitor enabled or disabled.
 ### By default it is enabled. But on loaded servers with a lot of waiting and/or
@@ -237,7 +237,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
   fi
 fi
 
-echo -e "\n  Name              Socket file\n"
+echo -e "\n    Name              Socket file\n"
 
 $SOCKCONNS | grep STREAM > "$M_TEMP/sockets.$$"
 
@@ -286,7 +286,7 @@ fi
 rm -f "$M_TEMP"/ports.*.$$ "$M_TEMP"/sockets.$$
 # End of netstat test
 
-echo -e "\nConnections per protocol:\n-------------------------\n\n  Protocol               Connections\n"
+echo -e "\nConnections per protocol:\n-------------------------\n\n    Protocol               Connections\n"
 
 cat /proc/net/protocols | tail -n +2 | awk '{printf "%-24s %s\n", $1, $3}'
 
