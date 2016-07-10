@@ -165,11 +165,20 @@ cat -E $1 | while read LINE ; do
         unset datatype[2] datastyle[2]
         ;;
       "info empty")
-        format ${data[1]} ${datastyle[1]}
-        format ${data[2]} ${datastyle[2]}
+        if $tableflag ; then
+          format ${data[1]} tablerow_${datastyle[1]}
+          format ${data[2]} tablerow_${datastyle[2]}
+        else
+          format ${data[1]} ${datastyle[1]}
+          format ${data[2]} ${datastyle[2]}
+        fi
         cursor=0
         unset datatype[1] datastyle[1]
         unset datatype[2] datastyle[2]
+        if $tableflag ; then
+          tableflag=false
+          echo "</table>"
+        fi
         ;;
       "empty info")
         data[1]="${data[2]}"
