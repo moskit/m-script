@@ -80,7 +80,7 @@ check_request_result() {
   fi
   if [ -n "$@" ]; then
     for respelem in `echo $* | tr ',' ' '`; do
-      echo "${respelem}: `echo "$reqparsed" | grep \/\"$respelem\"\/ | cut -sd'|' -f2`"
+      echo "${respelem}: `echo "$reqparsed" | grep \"$respelem\" | cut -sd'|' -f2`"
     done
   fi
   return 0
