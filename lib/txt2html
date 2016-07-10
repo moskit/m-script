@@ -13,23 +13,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 declare -i cursor
 declare -a data
 declare -a datatype
 declare -a datastyle
 cursor=0
+tableflag=false
+tabletitle=false
+
 format() {
   case $2 in
   tabletitle)
     echo "<tr class=\"$2\"><td>${1}</td></tr>" | sed 's|[[:space:]][[:space:]]\+|</td><td>|g'
     ;;
   tablerow_*)
-    tdstyle=$2
-    if [[ $1 =~ [[:space:]][[:space:]] ]] ; then
-      echo "<tr class=\"tablerow $tdstyle\"><td>${1}</td></tr>" | sed "s|[[:space:]][[:space:]]\+|</td><td>|g"
-    else
-      echo "<tr class=\"tablerow $tdstyle\"><td colspan=\"3\">${1}</td></tr>"
-    fi
+    tdstyle=${2#*_}
+    echo "<tr class=\"tablerow $tdstyle\"><td>${1}</td></tr>" | sed 's|[[:space:]][[:space:]]\+|</td><td>|g'
     ;;
   info)
     echo "<div class=\"info info_$2\">"
@@ -41,6 +41,7 @@ format() {
     ;;
   esac
 }
+
 IFS1=$IFS
 IFS='
 '
@@ -48,43 +49,78 @@ IFS='
 cat -E $1 | while read LINE ; do
   LINE=${LINE%$}
   cursor+=1
-  
-  #echo -e "|||${LINE}\n"
+#echo "   ==== $LINE" ; 
   if [ -z "$LINE" ] ; then
     data[$cursor]=""
     datatype[$cursor]="empty"
     datastyle[$cursor]="empty"
   else
     case "$LINE" in
+      # empty line
       [[:space:]])
       data[$cursor]=""
       datatype[$cursor]="empty"
       datastyle[$cursor]="empty"
       ;;
+      #<OK> string
       \<OK\>*)
       data[$cursor]="${LINE#* }"
       datatype[$cursor]="info"
       datastyle[$cursor]="ok"
       ;;
+      #<*> string
       \<\*\>*|[[:space:]]\<\*\>*)
       data[$cursor]="${LINE#*> }"
       datatype[$cursor]="info"
       datastyle[$cursor]="w1"
       ;;
-      \<\*\*\>*)
+      #<**> string
+      \<\*\*\>*|[[:space:]]\<\*\*\>*)
       data[$cursor]="${LINE#* }"
       datatype[$cursor]="info"
       datastyle[$cursor]="w2"
       ;;
+      #<***> string
       \<\*\*\*\>*)
       data[$cursor]="${LINE#* }"
       datatype[$cursor]="info"
       datastyle[$cursor]="w3"
       ;;
-      [[:space:]]*[[:print:]]*)
+      #  string
+      [[:space:]][[:space:]][^[:space:]]*)
       data[$cursor]="`echo "$LINE" | sed 's|^[[:space:]]*||'`"
       datatype[$cursor]="table"
-      datastyle[$cursor]="table"
+      datastyle[$cursor]="info"
+      case "$LINE" in
+        #  <*> string
+        [[:space:]][[:space:]]\<\*\>*)
+        datastyle[$cursor]="w1"
+        ;;
+        #  <**> string
+        [[:space:]][[:space:]]\<\*\*\>*)
+        datastyle[$cursor]="w2"
+        ;;
+        #  <***> string
+        [[:space:]][[:space:]]\<\*\*\*\>*)
+        datastyle[$cursor]="w3"
+        ;;
+        #  <OK> string
+        [[:space:]][[:space:]]\<OK\>*)
+        datastyle[$cursor]="ok"
+        ;;
+      esac
+      if ! $tableflag ; then echo "<table>" ; fi
+      tableflag=true
+      format "${data[$cursor]}" "tablerow_${datastyle[$cursor]}"
+      ;;
+      [[:space:]][[:space:]][[:space:]][[:space:]][^[:space:]]*)
+      data[$cursor]="`echo "$LINE" | sed 's|^[[:space:]]*||'`"
+      datatype[$cursor]="table"
+      datastyle[$cursor]="tabletitle"
+      if ! $tableflag ; then echo "<table>" ; fi
+      tableflag=true
+      tabletitle=true
+      format "${data[$cursor]}" "tabletitle"
       ;;
       ---*)
       data[$cursor]=""
@@ -98,12 +134,18 @@ cat -E $1 | while read LINE ; do
       ;;
     esac
   fi
+  
   data[$cursor]=`echo "${data[$cursor]}" | tr -d '<>'`
-#echo "== $LINE" ; echo "-- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
+  
+#echo "     -- $cursor :: ${datatype[$cursor]}/${datastyle[$cursor]} :: ${datatype[1]}|${datatype[2]}|${datatype[3]} :: table:$tableflag title:$titleflag"
+
   if [ $cursor -eq 3 ] ; then
     case ${datatype[*]} in
       "info dashline empty")
       echo "<h3>${data[1]}</h3>"
+      ;;
+      "table empty info")
+      format ${data[3]} tablerow_${datastyle[3]}
       ;;
     esac
     cursor=0
@@ -112,7 +154,7 @@ cat -E $1 | while read LINE ; do
   if [ $cursor -eq 2 ] ; then
     case ${datatype[*]} in
       "info info")
-        if [ -n "$tableflag" ] ; then
+        if $tableflag ; then
           format ${data[1]} tablerow_${datastyle[1]}
           format ${data[2]} tablerow_${datastyle[2]}
         else
@@ -123,19 +165,8 @@ cat -E $1 | while read LINE ; do
         unset datatype[2] datastyle[2]
         ;;
       "info empty")
-        if [ -n "$tableflag" ] ; then
-          if [ -n "$titleflag" ] ; then
-            format ${data[1]} tablerow_${datastyle[1]}
-            unset tableflag titleflag
-            echo "</table>"
-          else
-            format ${data[1]} tabletitle
-            unset titleflag
-          fi
-        else
-          format ${data[1]} ${datastyle[1]}
-          format ${data[2]} ${datastyle[2]}
-        fi
+        format ${data[1]} ${datastyle[1]}
+        format ${data[2]} ${datastyle[2]}
         cursor=0
         unset datatype[1] datastyle[1]
         unset datatype[2] datastyle[2]
@@ -144,20 +175,22 @@ cat -E $1 | while read LINE ; do
         data[1]="${data[2]}"
         datatype[1]="${datatype[2]}"
         cursor=1
-        if [ -n "$tableflag" ] ; then
-          echo "</table>"
-          unset tableflag
+        if $tableflag ; then
+          format ${data[1]} tablerow_${datastyle[1]}
+        else
+          format ${data[1]} ${datastyle[2]}
         fi
-        format ${data[1]} ${datastyle[2]}
         cursor=0
         ;;
       "table empty")
-        echo "<table>"
-        format ${data[1]} tabletitle
-        tableflag=1
-        titleflag=1
-        cursor=0
-        unset datatype[2] datastyle[2]
+        if $tabletitle ; then
+          tabletitle=false
+        else
+          if $tableflag ; then
+            tableflag=false
+            echo "</table>"
+          fi
+        fi
         ;;
       "empty empty")
         cursor=0
@@ -175,7 +208,7 @@ cat -E $1 | while read LINE ; do
         data[1]=${data[2]}
         datatype[1]="info"
         unset data[2] datatype[2]
-        cursor+=-1
+        cursor=1
         ;;
     esac
   fi
@@ -183,10 +216,11 @@ cat -E $1 | while read LINE ; do
     case ${datatype[*]} in
       "empty")
         cursor=0
-        [ -n "$tableflag" ] && echo "</table>" && unset tableflag
+        [ -n "$tableflag" ] && echo "</table>" && tableflag=false
         ;;
     esac
   fi
 done
+[ -n "$tableflag" ] && echo "</table>" && tableflag=false
 
 IFS=$IFS1
