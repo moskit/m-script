@@ -136,7 +136,6 @@ showData = function(theid,base) {
     if (server == 'localhost') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(report) + '.html';
     } else {
-
       var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(report) + '.html';
     }
     new Ajax.Request(the_url, {

@@ -86,7 +86,7 @@ check_results() {
     val=`eval "echo \"\\$${varname}\""`
     vardescr=`echo "$var2ck" | cut -s -d'|' -f2`
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
-    [ -n "`echo "$var2ck" | cut -s -d'|' -f3`" ] && ao=true || ao=false
+    [ -n "`echo "$var2ck" | cut -s -d'|' -f4`" ] && ao=true || ao=false
     [ -z "$vardescr" ] && vardescr=$varname
     [ -z "$vartype" ] && vartype=real
     

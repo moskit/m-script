@@ -63,12 +63,13 @@ print_page_title() {
 }
 
 open_cluster() {
-  # open_cluster "Cluster (folder name)" "Onclick script" "Title (pop-up on hover)"
+  # open_cluster "<Cloud|>Cluster (folder name)" "Onclick script" "Title (pop-up on hover)"
+  # Cloud can be defined here explicitely or found later automatically (see print_dashlines etc)
   dfocid="$1"
   shift
   [ -n "$1" ] && dfoconclick="$1"
   shift
-  echo -e "<div class=\"cluster\" id=\"${dfocid}\" title=\"$@\">\n<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid##*|}</span></div>"
+  echo -e "<div class=\"cluster\" id=\"${dfocid}\" title=\"$@\">\n<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid##*|}</span>"
   unset dfoconclick
 }
 
@@ -112,16 +113,27 @@ close_cluster() {
 
 open_line() {
   # open_line "title<|style><|uniqkey>" "onclick"
+  # uniqkey often is a cloud name
   dfoltitle="$1"
   shift
   if [ -n "$1" ]; then
     dfolonclick=$1
     classadded="clickable"
   fi
-  dfolkey=`echo "$dfoltitle" | cut -s -d'|' -f3`
+  dfolkey=`echo "$dfoltitle" | cut -sd'|' -f3`
   dfolnode="${dfoltitle%%|*}"
   dfolstyle=" `echo "$dfoltitle" | cut -sd'|' -f2`"
   dfolnodep="${dfolnode:0:20}"
+  # Workflow 1:
+  # Cloud provided as a parameter to open_cluster (left part of dfocid).
+  # In this case showData function in monitors.js extracts it from the cluster
+  # id and replaces cluster with cloud/cluster (see clusterA variable).
+  # Workflow 2:
+  # Cloud is not provided as a parameter to open_cluster, but found later for
+  # each node involved. In this case both cloud and cluster must be provided
+  # by the caller function as uniqkey in form cloud/cluster.
+  # -  [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
+  # -  [ -n "$dfolkey" ] && dfolid="$dfolkey|$dfolnode" || dfolid="$dfolnode"  
   if [ -n "$dfolkey" ]; then
     dfolnode="${dfolnode}|${dfolkey}"
     [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
@@ -233,19 +245,16 @@ IFS1=$IFS; IFS='
         done
         # if localhost found as a cloud server (a part of a configured cluster)
         if [ -n "$noderecord" ]; then
-          node=`echo "$noderecord" | cut -sd'|' -f2`
-          # lcls=`echo "$noderecord" | cut -sd'|' -f3`  # not needed for now
-          lcld=`echo "$noderecord" | cut -sd'|' -f4`
-          # defaulting to the found cloud in case cld is not defined
-          [ -z "$cld" ] && cld=$lcld
-          if [ "_$lcld" == "_$cld" ]; then
-            open_line "$node||$cld" "$onclick"
-            tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
-            close_line
-            [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
-            # symlink is needed to make downstream scripts work (like onclick scripts)
-            [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
+          if [ -z "$cld" ]; then
+            node=`echo "$noderecord" | cut -sd'|' -f2`
+            cld=`echo "$noderecord" | cut -sd'|' -f4`
           fi
+          open_line "$node||$cld" "$onclick"
+          tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
+          close_line
+          [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
+          # symlink is needed to make downstream scripts work (like onclick scripts)
+          [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
         else
           open_line "localhost" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
@@ -257,13 +266,13 @@ IFS1=$IFS; IFS='
         fi
       fi
       for scld in $cld ; do
-      scld=${scld##*/}
-      for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
-        node="${node##*/}"
-        open_line "$node||${scld}/${cls}" "$onclick"
-        tail -n $slotline_length "$M_ROOT/www/$target/$scld/$cls/$node/dash.html" 2>/dev/null
-        close_line
-      done
+        scld=${scld##*/}
+        for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+          node="${node##*/}"
+          open_line "$node||${scld}/${cls}" "$onclick"
+          tail -n $slotline_length "$M_ROOT/www/$target/$scld/$cls/$node/dash.html" 2>/dev/null
+          close_line
+        done
       done
 IFS=$IFS1
       ;;

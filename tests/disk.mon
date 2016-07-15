@@ -55,7 +55,7 @@ if [ "_$SQLITE3" == "_1" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
 fi
 
-echo -e "\nDisks usage:\n------------\n\n\tDisk\t\t\t\tMountpoint\t\t\tUsage\n"
+echo -e "\nDisks usage:\n------------\n    Disk\t\t\t\tMountpoint\t\t\tUsage\n"
 df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
   #if [ -n "$LONGLINE" ]; then
   #  LINE="$LONGLINE $LINE"
