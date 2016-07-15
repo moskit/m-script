@@ -68,8 +68,7 @@ open_cluster() {
   shift
   [ -n "$1" ] && dfoconclick="$1"
   shift
-  echo "<div class=\"cluster\" id=\"${dfocid}\" title=\"$@\">"
-  echo -e "<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid##*|}</span>"
+  echo -e "<div class=\"cluster\" id=\"${dfocid}\" title=\"$@\">\n<div class=\"clustername\"><span id=\"${dfocid}_name\" `[ -n "$dfoconclick" ] && echo -n "class=\\"indent clickable\\" onclick=\\"showDetails('${dfocid}_name','${dfoconclick}')\\"" || echo -n "class=\\"indent\\""`>${dfocid##*|}</span></div>"
   unset dfoconclick
 }
 
@@ -254,7 +253,7 @@ IFS1=$IFS; IFS='
         fi
       else
         if [ -z "$cld" ]; then
-          cld=( `find "$M_ROOT/www/$target/" -type d -mindepth 1 -maxdepth 1` )
+          cld=( `find "$M_ROOT/www/$target/" -mindepth 1 -maxdepth 1 -type d` )
         fi
       fi
       for scld in $cld ; do
