@@ -158,11 +158,6 @@ showData = function(theid,base) {
 }
 
 showDetails = function(theid,script) {
-  cluster = $(theid).parentNode.parentNode.id;
-  clusterA = cluster.split("|");
-  if (clusterA[1]) {
-    cluster = clusterA[0] + "/" + clusterA[1];
-  }
   server = $(theid).parentNode.id;
   details = server + '_details';
   serverA = server.split("|");
@@ -172,6 +167,13 @@ showDetails = function(theid,script) {
   serverB = server.split("/");
   if (serverB[2]) {
     server = serverB[2];
+    cluster = serverB[0] + '/' + serverB[1];
+  } else {
+    cluster = $(theid).parentNode.parentNode.id;
+    clusterA = cluster.split("|");
+    if (clusterA[1]) {
+      cluster = clusterA[0] + "/" + clusterA[1];
+    }
   }
   if (server == '') { server = cluster };
   if (($(details).style.display == "none") || ($(details).style.display == "")) {
