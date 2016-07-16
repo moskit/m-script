@@ -141,8 +141,9 @@ open_line() {
   # Only cloud name is passed via uniqkey, cluster name is found from dfocid
   if [ -n "$dfolkey" ]; then
     if [ `expr "$dfolkey" : "^.*\/.*$"` -eq 0 ]; then
-      [ -n "$dfocid" ] && dfolkey="${dfolkey}/${dfocid#*|}"
-      dfolid="$dfolkey/$dfolnode"
+      [ -n "$dfocid" ] && dfolkey="${dfolkey}/`echo "$dfocid" | cut -sd'|' -f1`"
+    fi
+    dfolid="$dfolkey/$dfolnode"
   else
     dfolid="`echo "$dfocid" | tr '|' '/'`/$dfolnode"
   fi
