@@ -116,14 +116,20 @@ showURL = function(theid,url,scriptname) {
 }
 
 showData = function(theid,base) {
-  cluster = $(theid).parentNode.parentNode.id;
-  clusterA = cluster.split("|");
-  if (clusterA[1]) {
-    cluster = clusterA[0] + "/" + clusterA[1];
-  }
   server = $(theid).parentNode.id
   serverA = server.split("|");
   server = serverA[1];
+  serverB = server.split("/");
+  if (serverB[2]) {
+    path = server;
+  } else {
+    cluster = $(theid).parentNode.parentNode.id;
+    clusterA = cluster.split("|");
+    if (clusterA[1]) {
+      cluster = clusterA[0] + "/" + clusterA[1];
+    }
+    path = cluster + '/' + server;
+  }
   theidA = theid.split("|");
   if (theidA[1]) {
     report = theidA[1];
@@ -136,7 +142,7 @@ showData = function(theid,base) {
     if (server == 'localhost') {
       var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(report) + '.html';
     } else {
-      var the_url = '/bin/getdata.cgi?path=' + base + '/' + cluster + '/' + server + '/' + escape(report) + '.html';
+      var the_url = '/bin/getdata.cgi?path=' + base + '/' + path + '/' + escape(report) + '.html';
     }
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
