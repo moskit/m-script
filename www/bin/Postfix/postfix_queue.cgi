@@ -10,5 +10,6 @@ source "$M_ROOT/standalone/Postfix/postfix.conf"
 
 print_timeline "Server"
 open_cluster "Queue"
+close_cluster_line
 print_dashlines "postfix_queue" "Postfix/postfix_queue"
 close_cluster
