@@ -255,7 +255,7 @@ IFS1=$IFS; IFS='
             node=`echo "$noderecord" | cut -sd'|' -f2`
             cld=`echo "$noderecord" | cut -sd'|' -f4`
           fi
-          open_line "$node||$cld" "$onclick"
+          open_line "$node||$cld/${cls}" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
           close_line
           [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
@@ -270,16 +270,17 @@ IFS1=$IFS; IFS='
         if [ -z "$cld" ]; then
           cld=( `find "$M_ROOT/www/$target/" -mindepth 1 -maxdepth 1 -type d` )
         fi
-      fi
-      for scld in $cld ; do
-        scld=${scld##*/}
-        for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
-          node="${node##*/}"
-          open_line "$node||${scld}/${cls}" "$onclick"
-          tail -n $slotline_length "$M_ROOT/www/$target/$scld/$cls/$node/dash.html" 2>/dev/null
-          close_line
+        for scld in $cld ; do
+          scld=${scld##*/}
+          for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+            node="${node##*/}"
+            open_line "$node||${scld}/${cls}" "$onclick"
+            tail -n $slotline_length "$M_ROOT/www/$target/$scld/$cls/$node/dash.html" 2>/dev/null
+            close_line
+          done
         done
-      done
+      fi
+      
 IFS=$IFS1
       ;;
     sqlite)
