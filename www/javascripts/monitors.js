@@ -118,7 +118,9 @@ showURL = function(theid,url,scriptname) {
 showData = function(theid,base) {
   server = $(theid).parentNode.id
   serverA = server.split("|");
-  server = serverA[1];
+  if (serverA[1]) {
+    server = serverA[1];
+  }
   serverB = server.split("/");
   if (serverB[2]) {
     path = server;
