@@ -120,26 +120,31 @@ open_line() {
     dfolonclick=$1
     classadded="clickable"
   fi
+  # Unique key (cloud/cluster)
   dfolkey=`echo "$dfoltitle" | cut -sd'|' -f3`
+  # Node name (to use as a title tag)
   dfolnode="${dfoltitle%%|*}"
+  # CSS style to add to node name
   dfolstyle=" `echo "$dfoltitle" | cut -sd'|' -f2`"
+  # Shortened node name (full name is seen when hover)
   dfolnodep="${dfolnode:0:20}"
-  # Workflow 1:
+  ### How cloud name is passed to CGI scripts
+  # Variant 1:
   # Cloud provided as a parameter to open_cluster (left part of dfocid).
   # In this case showData function in monitors.js extracts it from the cluster
   # id and replaces cluster with cloud/cluster (see clusterA variable).
-  # Workflow 2:
+  # Variant 2:
   # Cloud is not provided as a parameter to open_cluster, but found later for
   # each node involved. In this case both cloud and cluster must be provided
   # by the caller function as uniqkey in form cloud/cluster.
-  # -  [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
-  # -  [ -n "$dfolkey" ] && dfolid="$dfolkey|$dfolnode" || dfolid="$dfolnode"  
+  # Variant 3:
+  # Only cloud name is passed via uniqkey, cluster name is found from dfocid
   if [ -n "$dfolkey" ]; then
-    dfolnode="${dfolnode}|${dfolkey}"
-    [ -n "$dfocid" ] && dfolkey="${dfocid#*|}${dfolkey}"
-    dfolid="$dfolkey|$dfolnode"
+    if [ `expr "$dfolkey" : "^.*\/.*$"` -eq 0 ]; then
+      [ -n "$dfocid" ] && dfolkey="${dfolkey}/${dfocid#*|}"
+      dfolid="$dfolkey/$dfolnode"
   else
-    dfolid="$dfolnode"
+    dfolid="`echo "$dfocid" | tr '|' '/'`/$dfolnode"
   fi
   echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\" title=\"$dfolnode\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
