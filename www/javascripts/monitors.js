@@ -170,8 +170,8 @@ showDetails = function(theid,script) {
     server = serverA[1];
   }
   serverB = server.split("/");
-  if (serverA[2]) {
-    server = serverA[2];
+  if (serverB[2]) {
+    server = serverB[2];
   }
   if (server == '') { server = cluster };
   if (($(details).style.display == "none") || ($(details).style.display == "")) {
