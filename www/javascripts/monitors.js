@@ -169,6 +169,10 @@ showDetails = function(theid,script) {
   if (serverA[1]) {
     server = serverA[1];
   }
+  serverB = server.split("/");
+  if (serverA[2]) {
+    server = serverA[2];
+  }
   if (server == '') { server = cluster };
   if (($(details).style.display == "none") || ($(details).style.display == "")) {
     hideblocked = 1;
