@@ -37,13 +37,20 @@ SSH_REMOTE_USER_ARG=`echo "$host" | cut -s -d'@' -f1`
 [ -n "$SSH_REMOTE_USER_ARG" ] && SSH_REMOTE_USER="$SSH_REMOTE_USER_ARG"
 host=`echo "$host" | cut -d'@' -f2`
 
-# if target is IP
-KEY=`grep ^${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f2`
-# if target is hostname
-[ -z "$KEY" ] && KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
-
-cluster=`grep ^${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
-[ -z "$cluster" ] && cluster=`grep \|${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
+# if host is actually a cluster
+if [ `grep -c "^$host|" "$M_ROOT/conf/clusters.conf"` -eq 1 ]; then
+  cluster=$host
+  # always selecting the first in the list
+  host=`get_ips --cluster=$cluster --names | sort -n | head -1`
+  KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
+else
+  # if target is IP
+  KEY=`grep ^${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f2`
+  # if target is hostname
+  [ -z "$KEY" ] && KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
+  cluster=`grep ^${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
+  [ -z "$cluster" ] && cluster=`grep \|${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
+fi
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`grep "^${cluster}|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f13`
 [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
 M_ROOT_REMOTE=`grep \|${host}\| "$M_ROOT/nodes.list" | cut -d'|' -f8`
