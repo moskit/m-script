@@ -48,6 +48,11 @@ CONNECT_TIMEOUT=5
 # will be 1000 :)
 NAME_INDEX_LENGTH=3
 
+# Index separator. For example, for cluster named webapp2, node names would be:
+# 1. With separator empty - webapp2001, webapp2003 and so on
+# 2. With separator "-" - webapp2-001, webapp2-003 and so on
+NAME_INDEX_SEPARATOR="-"
+
 # What is to be used as server name for servers list. Also available as command
 # line option --name_source
 # host - real hostname (default, slower)

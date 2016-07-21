@@ -117,9 +117,14 @@ generate_name() {
 
 sanitize_hostname() {
   [ -z "$1" ] && echo "ERROR: empty hostname has been passed to sanitizer" && return
+  if [ -n "$NAME_INDEX_SEPARATOR" ]; then
+    hn="${1}${NAME_INDEX_SEPARATOR}"
+  else
+    hn=$1
+  fi
   # M-Script allows any symbols in cluster names, but only underscore and dots
   # are converted to hyphen in the resulting hostnames, anything else is deleted
-  echo "$1" | sed 's|[^a-zA-Z0-9._-]||g;s|[._]|-|g;s|^-*||'
+  echo "$hn" | sed 's|[^a-zA-Z0-9._-]||g;s|[._]|-|g;s|^-*||'
 }
 
 check_cluster_limit() {
