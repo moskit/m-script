@@ -145,7 +145,11 @@ open_line() {
     fi
     dfolid="$dfolkey/$dfolnode"
   else
-    dfolid="`echo "$dfocid" | tr '|' '/'`/$dfolnode"
+    if [ "$dfolnode" == "localhost" ]; then
+      dfolid="$dfolnode"
+    else
+      dfolid="`echo "$dfocid" | tr '|' '/'`/$dfolnode"
+    fi
   fi
   echo -e "<div class=\"server${dfolstyle}\" id=\"${dfolid}\">\n<div class=\"servername $classadded\" id=\"${dfolid}_name\" onclick=\"showDetails('${dfolid}_name','${dfolonclick}')\" title=\"$dfolnode\">$dfolnodep</div>"
   unset dfolparent dfolnode dfolonclick dfolnodep
