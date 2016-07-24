@@ -21,7 +21,8 @@ rpath=${0%/*}
 LOG="$M_ROOT/logs/deploy.log"
 
 genline() {
-  metatype=$1
+  metatype=${1%/*}
+  metacond=${1#*/}
   shift
   metascript=$@
   case $metatype in
@@ -37,7 +38,7 @@ genline() {
     metascript=`eval "echo $metascript"`
     if [ -e "$ROLES_ROOT/roles/$metascript" ]; then
       irole=${metascript%%/*}
-      cat "$ROLES_ROOT/roles/$metascript" | grep -v '^#' | grep -v ^$ | grep -v '^[[:space:]]*#' | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+      cat "$ROLES_ROOT/roles/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     else
       log "$ROLES_ROOT/roles/$metascript not found"
     fi
@@ -47,8 +48,8 @@ genline() {
     ipr=`head -1 "$metascript" 2>/dev/null || log "$metascript not found" | grep ^#! | cut -b 3- | awk '{print $1}'`
     if [ -n "$ipr" ] ; then
       case $ipr in
-        runlocal) ipr="local" ;;
-        runremote) ipr="remote" ;;
+        runlocal|local) ipr="local" ;;
+        runremote|remote) ipr="remote" ;;
         *) unset ipr ;;
       esac
     fi
@@ -444,7 +445,7 @@ fi
 [ -z "$NODE_CHECKS_NUMBER" ] && NODE_CHECKS_NUMBER=20
 [ -z "$NODE_CHECKS_PERIOD" ] && NODE_CHECKS_PERIOD=30
 
-if [ -n "$newserver" ]; then
+if [ -n "$newnode" ]; then
   
   [ -z "$NEW_NODE_CREATE_TRIES" ] && NEW_NODE_CREATE_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
@@ -534,7 +535,7 @@ if [ -z "$list" ]; then
     done
     if ! $loggedin && [ -n "$newnode" ]; then
       # stop useless node and tell the parent process that something's wrong
-      "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
+      IAMACHILD=1 "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
       proper_exit 13 531
     fi
   fi
@@ -567,7 +568,7 @@ else
   rm "$CURRTASKDIR"/meta 2>/dev/null
   IFS='
 '
-  cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*# | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+  cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
   
   declare -i metan
   metan=1
