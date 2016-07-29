@@ -37,14 +37,24 @@ genline() {
 '
     metascript=`eval "echo $metascript"`
     if [ -e "$ROLES_ROOT/roles/$metascript" ]; then
-      irole=${metascript%%/*}
+      metascript="$ROLES_ROOT/roles/$metascript"
+    elif [ -e "$ROLES_ROOT/roles/${metascript}.meta" ]; then
+      metascript="$ROLES_ROOT/roles/${metascript}.meta"
+    elif [ -e "$ROLES_ROOT/roles/$role/$metascript" ]; then
+      metascript="$ROLES_ROOT/roles/$role/$metascript"
+    elif [ -e "$ROLES_ROOT/roles/$role/${metascript}.meta" ]; then
+      metascript="$ROLES_ROOT/roles/$role/${metascript}.meta"
+    else
+      log "metascript $metascript not found"
+      unset metascript
+    fi
+    if [ -n "$metascript" ]; then
+      irole=`echo $metascript | cut -sd'/' -f1`
+    fi
+    if [ -n "$irole" ]; then
       cat "$ROLES_ROOT/roles/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     else
-      if [ -e "$ROLES_ROOT/roles/$role/$metascript" ]; then
-        cat "$ROLES_ROOT/roles/$role/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
-      else
-        log "$ROLES_ROOT/roles/$metascript not found"
-      fi
+      cat "$ROLES_ROOT/roles/$role/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     fi
     ;;
   *)
