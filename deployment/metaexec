@@ -618,6 +618,9 @@ fi
 
 if [ -z "$list" ]; then
   echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
+  if [ -e "$CURRTASKDIR/messages" ]; then
+    cat "$CURRTASKDIR/messages"
+  fi
   # the best place for this seems to be here
   [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30
   find "$M_DEPL_WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
