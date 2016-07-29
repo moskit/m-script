@@ -40,7 +40,11 @@ genline() {
       irole=${metascript%%/*}
       cat "$ROLES_ROOT/roles/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     else
-      log "$ROLES_ROOT/roles/$metascript not found"
+      if [ -e "$ROLES_ROOT/roles/$role/$metascript" ]; then
+        cat "$ROLES_ROOT/roles/$role/$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+      else
+        log "$ROLES_ROOT/roles/$metascript not found"
+      fi
     fi
     ;;
   *)
