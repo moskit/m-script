@@ -635,7 +635,7 @@ else
 
       if ! $skipthis ; then
         (IFS=$IFSORIG ; run_meta $meta)
-        [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && meta_exit 1 579
+        [ $? -ne 0 ] && meta_exit 1 579
       fi
     fi
     metan+=1
@@ -645,9 +645,8 @@ fi
 
 
 echo
-if [ -n "$newnode" ]; then
-  meta_exit 0 597
-fi
+meta_exit 0 597
+
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then
 #  echo "Using existing key"
