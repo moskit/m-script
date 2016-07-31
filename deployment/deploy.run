@@ -262,7 +262,7 @@ if [ "$type" == "remote" ]; then
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/$file" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/$file" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
         # copy config to remote node
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/${file}.var" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/${file}.var" >> "$M_ROOT/logs/deploy.log" 2>&1
-        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e "ip=$IP\\nnodename=$NAME" \>\> "$CURRTASKDIR/${file}.var"
+        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nnodename=\\\"$NAME\\\"\" \>\> \"$CURRTASKDIR/${file}.var\"
         if [ -n "$dry" ]; then
         [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
           $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "(source \"$CURRTASKDIR/${file}.var\" && cat \"$CURRTASKDIR/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
