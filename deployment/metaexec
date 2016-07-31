@@ -183,8 +183,21 @@ run_meta() {
       echo "Looks like type is not defined"
     fi
     [ -n "$use_color" ] && printf "\033[0m"
-    [ -z "$dry" ] && proper_exit 1 171
+    [ -z "$dry" ] && meta_exit 1 171
   fi
+}
+
+meta_exit() {
+  if [ -z "$list" ]; then
+    echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
+  if [ -e "$CURRTASKDIR/messages" ]; then
+    cat "$CURRTASKDIR/messages"
+  fi
+  # the best place for this seems to be here
+  [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30
+  find "$M_DEPL_WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
+  fi
+  proper_exit $1 $2
 }
 
 createnode() {
@@ -483,12 +496,12 @@ if [ -n "$newnode" ]; then
         res=$ip
       fi
       [[ $res -eq 2 ]] && log "Timeout waiting for the node ready" && break
-      [[ $res -eq 5 ]] && log "Maximum nodes number for cluster $cluster has been reached, unable to add another node" && proper_exit 5 471
+      [[ $res -eq 5 ]] && log "Maximum nodes number for cluster $cluster has been reached, unable to add another node" && meta_exit 5 471
       # various weird errors below, exit 1 
-      [[ $res -eq 6 ]] && log "Failed to generate a name for the new node" && proper_exit 1 473
-      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new node, define it in clusters.conf, please" && proper_exit 1 474
-      [[ $res -eq 8 ]] && log "Failed to find out what flavor (node size) to use, define it in clusters.conf, please" && proper_exit 1 475
-      [[ $res -eq 9 ]] && log "Failed to find out what region (datacenter) to use, define it in clusters.conf, please" && proper_exit 1 476
+      [[ $res -eq 6 ]] && log "Failed to generate a name for the new node" && meta_exit 1 473
+      [[ $res -eq 7 ]] && log "Failed to find out what image to use to create the new node, define it in clusters.conf, please" && meta_exit 1 474
+      [[ $res -eq 8 ]] && log "Failed to find out what flavor (node size) to use, define it in clusters.conf, please" && meta_exit 1 475
+      [[ $res -eq 9 ]] && log "Failed to find out what region (datacenter) to use, define it in clusters.conf, please" && meta_exit 1 476
       [[ $res -eq 1 ]] && log "Something went wrong, unable to add a node to the cluster $cluster"
       if [ -z "$ip" ]; then
         log "Was unable either to create a cloud node in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
@@ -496,7 +509,7 @@ if [ -n "$newnode" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
-    [ $i -eq $NEW_NODE_CREATE_TRIES ] && log "Maximal number of tries reached, exiting" && proper_exit 1 483
+    [ $i -eq $NEW_NODE_CREATE_TRIES ] && log "Maximal number of tries reached, exiting" && meta_exit 1 483
   else
     echo "*** This is a test"
   fi
@@ -524,13 +537,13 @@ fi
 if [ -n "$ip" ]; then
   if [ `"$M_ROOT"/helpers/localips | grep -c "^$ip$"` -ne 0 ]; then
     log "IP $ip is local. Setting up self is not supported."
-    proper_exit 1 512
+    meta_exit 1 512
   fi
 fi
 
-KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key node "$ip"` || proper_exit 1 509
-[ -z "$KEY" ] && echo "Access key not found!" && proper_exit 1 510
-[ -z "$SSH" ] && echo "SSH client not found!" && proper_exit 1 511
+KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key node "$ip"` || meta_exit 1 509
+[ -z "$KEY" ] && echo "Access key not found!" && meta_exit 1 510
+[ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
 # it's here because createnode function re-reads cloud config
 [ -n "$SSHPORT" ] || SSHPORT=22
 if [ -z "$list" ]; then
@@ -550,7 +563,7 @@ if [ -z "$list" ]; then
     if ! $loggedin && [ -n "$newnode" ]; then
       # stop useless node and tell the parent process that something's wrong
       IAMACHILD=1 "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
-      proper_exit 13 531
+      meta_exit 13 531
     fi
   fi
   #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
@@ -622,7 +635,7 @@ else
 
       if ! $skipthis ; then
         (IFS=$IFSORIG ; run_meta $meta)
-        [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && proper_exit 1 579
+        [ $? -ne 0 ] && echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n" && meta_exit 1 579
       fi
     fi
     metan+=1
@@ -630,18 +643,10 @@ else
   IFS=$IFSORIG
 fi
 
-if [ -z "$list" ]; then
-  echo -e "Timestamp: $timestampact\nWork directory: $CURRTASKDIR\n"
-  if [ -e "$CURRTASKDIR/messages" ]; then
-    cat "$CURRTASKDIR/messages"
-  fi
-  # the best place for this seems to be here
-  [ -z "$KEEP_DEPLOYTMP" ] && KEEP_DEPLOYTMP=30
-  find "$M_DEPL_WORK_DIR" -maxdepth 1 -mindepth 1 -type d -mtime +$KEEP_DEPLOYTMP -exec rm -rf {} \;
-fi
+
 echo
 if [ -n "$newnode" ]; then
-  proper_exit 0 597
+  meta_exit 0 597
 fi
 #echo "Preparing the keys"
 #if [ -f /root/.ssh/id_rsa.pub ] ; then
