@@ -37,11 +37,24 @@ SSH_REMOTE_USER_ARG=`echo "$host" | cut -s -d'@' -f1`
 [ -n "$SSH_REMOTE_USER_ARG" ] && SSH_REMOTE_USER="$SSH_REMOTE_USER_ARG"
 host=`echo "$host" | cut -d'@' -f2`
 
-# if host is actually a cluster
+# if host is empty, it's a login to a node in the default cluster
+if [ -z "$host" ]; then
+  if [ -n "$M_CLUSTER" ]; then
+    host=`get_ips --cluster=$M_CLUSTER --names | sort -n | head -1`
+    [ -z "$host" ] && echo "Host not found for cluster $M_CLUSTER" && exit 1
+    KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
+  else
+    echo "No default cluster and host not defined"
+    exit 1
+  fi
+fi
+
+# if argument is a cluster
 if [ `grep -c "^$host|" "$M_ROOT/conf/clusters.conf"` -eq 1 ]; then
   cluster=$host
   # always selecting the first in the list
   host=`get_ips --cluster=$cluster --names | sort -n | head -1`
+  [ -z "$host" ] && echo "Host not found for cluster $M_CLUSTER" && exit 1
   KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
 else
   # if target is IP
