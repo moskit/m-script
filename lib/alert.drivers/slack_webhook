@@ -1,0 +1,43 @@
+#!/bin/bash
+# Copyright (C) 2016 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
+
+### Address means channel (without hashtag).
+### So a line in mail.alert.list may look like this:
+### Alerts 3 slack_webhook
+### Check slack_webhook.conf for the rest of it
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+CURL="$CURL -s -k"
+
+aladdress="$1"
+shift
+alheader="$1"
+shift
+alfile="$1"   # full path
+
+[ -z "$hookurl" ] && echo "ERROR: hook url is not defined, check ${rcommand}.conf" && exit 1
+
+postbody=`cat "$alfile" | sed 's_$_\\n_g' | tr -d '\n'`
+postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"${alheader}\", \"text\": \"${postbody}\" }"
+
+$CURL -X POST -H 'Content-type: application/json' --data "$postdata" "$hookurl"
+

@@ -82,15 +82,21 @@ function mailalert() {
     echo "================ sending alert =================" >> "$rpath/monitoring.log"
     cat "$rpath/alert" >> "$rpath/monitoring.log"
     echo "================================================" >> "$rpath/monitoring.log"
-    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#" | awk '{print $1}'`
+    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`
     do
-      recipn=`grep "^$MLINE" "$rpath/conf/mail.alert.list" | awk '{print $2}'`
+      aladdress=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f1`
+      recipn=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f2`
+      aldriver==`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f3`
       if ([ -z "$recipn" ] || [ $recipn -le $aln ]) ; then
-        cat "$rpath/alert" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE" >> "$rpath/monitoring.log" 2>&1
+        if ([ -z "$aldriver" ] || [ "$aldriver" == "mail" ]); then
+          cat "$rpath/alert" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE" >> "$rpath/monitoring.log" 2>&1
+        else
+          "$rpath"/lib/alert.drivers/$aldriver $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$rpath/alert" >> "$rpath/monitoring.log" 2>&1
+        fi
       fi
     done
   fi
-  unset al aln
+  unset al aln aldriver
 }
 
 function cleanup() {
@@ -341,7 +347,7 @@ log "action: matching $act"
 }
 
 source "$rpath/conf/mon.conf"
-[ -z "$MAILX" ] && MAILX=`which mail 2>/dev/null`
+MAILX=`which mail 2>/dev/null`
 source "$rpath/lib/functions.sh"
 SQLITE=dbquery
 declare -i delay ; delay=0
