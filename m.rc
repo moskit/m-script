@@ -32,13 +32,22 @@ setup_env() {
   if [ `echo "$CLOUD" | wc -l` -eq 1 ]; then
     export CLOUD
   else
-    unset CLOUD
+    # DEFAULT_CLOUD is not present in any config because it seems more reasonable
+    # to have it in some environment settings file like .bash_profile, .bashrc or
+    # .msh.env. But you can put it into any config sourced above, that is
+    # mon.conf or deployment.conf
+    if [ -n "$DEFAULT_CLOUD" ]; then
+      CLOUD="$DEFAULT_CLOUD"
+      export CLOUD
+    else
+      unset CLOUD
+    fi
   fi
   export ROLES_ROOT M_ROOT HOME HOME_ORIG M_TEMP
   $ALWAYS_LOGIN_SHELL && source /etc/profile
   [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
   [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
-  export PATH="$M_ROOT/deployment:${M_ROOT}/cloud/common:$M_ROOT/helpers:${PATH}"
+  export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:${PATH}"
 }
 
 cr() {
@@ -64,7 +73,7 @@ cr() {
     export CLOUD
   fi
   set_default_ps
-  [ -f role.conf ] && source role.conf
+  [ -f "$ROLES_ROOT/conf/${role}.conf" ] && source "$ROLES_ROOT/conf/${role}.conf"
 }
 
 exitrole() {
