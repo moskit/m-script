@@ -86,7 +86,7 @@ function mailalert() {
     do
       aladdress=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f1`
       recipn=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f2`
-      aldriver==`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f3`
+      aldriver=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f3`
       if ([ -z "$recipn" ] || [ $recipn -le $aln ]) ; then
         if ([ -z "$aldriver" ] || [ "$aldriver" == "mail" ]); then
           cat "$rpath/alert" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE" >> "$rpath/monitoring.log" 2>&1
@@ -94,9 +94,10 @@ function mailalert() {
           "$rpath"/lib/alert.drivers/$aldriver $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$rpath/alert" >> "$rpath/monitoring.log" 2>&1
         fi
       fi
+      unset aldriver
     done
   fi
-  unset al aln aldriver
+  unset al aln
 }
 
 function cleanup() {
