@@ -66,6 +66,8 @@ function mailreport() {
 }
 
 function mailalert() {
+  IFS1=$IFS; IFS='
+'
   if [ -f "$rpath/alert1" ] && [ `cat "$rpath/alert1" | wc -l` -ne 0 ]; then
     al='*' ; aln=1
     cat "$rpath/conf/header.alert1" "$rpath/alert1" >> "$rpath/alert"
@@ -98,6 +100,7 @@ function mailalert() {
     done
   fi
   unset al aln
+  IFS=$IFS1
 }
 
 function cleanup() {
