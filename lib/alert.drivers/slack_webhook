@@ -28,6 +28,8 @@ CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 CURL="$CURL -s -k"
 
+source "${0}.conf"
+
 aladdress="$1"
 shift
 alheader="$1"
