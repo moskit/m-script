@@ -85,7 +85,7 @@ function mailalert() {
       aldriver=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f3`
       [ -z "$aldriver" ] && aldriver="mail"
       for level in 1 2 3 ; do
-        if [ $minlevel -le $aln ]) ; then
+        if [ $minlevel -le $aln ]; then
           albody="$albody\n$(echo "`eval echo "\\$al\$level"`")\n"
         fi
         if [ "$aldriver" == "mail" ]; then
