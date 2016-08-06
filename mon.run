@@ -68,34 +68,32 @@ function mailreport() {
 function mailalert() {
   IFS1=$IFS; IFS='
 '
-  if [ -f "$rpath/alert1" ] && [ `cat "$rpath/alert1" | wc -l` -ne 0 ]; then
+  if [ -n "$al1" ]; then
     al='*' ; aln=1
-    cat "$rpath/conf/header.alert1" "$rpath/alert1" >> "$rpath/alert"
   fi
-  if [ -f "$rpath/alert2" ] && [ `cat "$rpath/alert2" | wc -l` -ne 0 ]; then
+  if [ -n "$al2" ]; then
     al='**' ; aln=2
-    cat "$rpath/conf/header.alert2" "$rpath/alert2" >> "$rpath/alert"
   fi
-  if [ -f "$rpath/alert3" ] && [ `cat "$rpath/alert3" | wc -l` -ne 0 ]; then
+  if [ -n "$al3" ]; then
     al='***' ; aln=3
-    cat "$rpath/conf/header.alert3" "$rpath/alert3" >> "$rpath/alert"
   fi
   if [ -n "$al" ] ; then
-    echo "================ sending alert =================" >> "$rpath/monitoring.log"
-    cat "$rpath/alert" >> "$rpath/monitoring.log"
-    echo "================================================" >> "$rpath/monitoring.log"
-    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`
-    do
+    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
       aladdress=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f1`
-      recipn=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f2`
+      minlevel=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f2`
+      [ -z "$recipn" ] && recipn=1
       aldriver=`echo "$MLINE" "$rpath/conf/mail.alert.list" | cut -sd' ' -f3`
-      if ([ -z "$recipn" ] || [ $recipn -le $aln ]) ; then
-        if ([ -z "$aldriver" ] || [ "$aldriver" == "mail" ]); then
-          cat "$rpath/alert" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE" >> "$rpath/monitoring.log" 2>&1
-        else
-          "$rpath"/lib/alert.drivers/$aldriver $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$rpath/alert" >> "$rpath/monitoring.log" 2>&1
+      [ -z "$aldriver" ] && aldriver="mail"
+      for level in 1 2 3 ; do
+        if [ $minlevel -le $aln ]) ; then
+          albody="$albody\n$(echo "`eval echo "\\$al\$level"`")\n"
         fi
-      fi
+        if [ "$aldriver" == "mail" ]; then
+          echo -e "$etitle\n$albody" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE" >> "$rpath/monitoring.log" 2>&1
+        else
+          echo -e "$etitle\n$albody" | "$rpath"/lib/alert.drivers/$aldriver $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$rpath/monitoring.log" 2>&1
+        fi
+      done
       unset aldriver
     done
   fi
@@ -144,7 +142,7 @@ function runscript() {
     done
 
   elif [ -n "$1" ]; then
-    for mon in `echo $1 | sed 's|,| |g'` ; do
+    for mon in `echo $1 | tr ',' ' '` ; do
       [ -n "$RUNDELAY" ] && sleep $RUNDELAY && delay+=$RUNDELAY
       if [ -x "$rpath/tests/$mon" ]; then
         log "$mon"
@@ -160,26 +158,20 @@ function runscript() {
     done
   fi
   echo >> "$rpath/report"
-  al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'` > "$rpath/alert3"
-  al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'` > "$rpath/alert2"
-  al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'` > "$rpath/alert1"
-  al0=`grep '<OK>' "$rpath/report" | sed 's|<OK>||g'` > "$rpath/alert0"
-  [ -n "$al3" -o -n "$al2" -o -n "$al1" -o -n "$alok" ] && echo -e "$etitle" > "$rpath/alert"
-  [ -n "$al3" ] && echo -e "$al3\n" > "$rpath/alert3"
-  [ -n "$al2" ] && echo -e "$al2\n" > "$rpath/alert2"
-  [ -n "$al1" ] && echo -e "$al1\n" > "$rpath/alert1"
-  [ -n "$al0" ] && echo -e "$al0\n" > "$rpath/alert0"
+  al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'`
+  al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'`
+  al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'`
+  al0=`grep '<OK>' "$rpath/report" | sed 's|<OK>||g'`
 }
 
 function runactions() {
   local LOG="$M_ROOT/logs/actions.log"
   if [ -f "$rpath/report.blocked" ]; then
     log "blocked alerts found"
-    
-    grep '<\*\*\*>' "$rpath/report.blocked" | sed 's|<\*\*\*>||g' >> "$rpath/alert3"
-    grep '<\*\*>' "$rpath/report.blocked" | sed 's|<\*\*>||g' >> "$rpath/alert2"
-    grep '<\*>' "$rpath/report.blocked" | sed 's|<\*>||g' >> "$rpath/alert1"
-    grep '<OK>' "$rpath/report.blocked" | sed 's|<OK>||g' >> "$rpath/alert0"
+    al3="$al3`grep '<\*\*\*>' "$rpath/report.blocked" | sed 's|<\*\*\*>||g'`"
+    al2="$al2`grep '<\*\*>' "$rpath/report.blocked" | sed 's|<\*\*>||g'`"
+    al1="$al1`grep '<\*>' "$rpath/report.blocked" | sed 's|<\*>||g'`"
+    al0="$al0`grep '<OK>' "$rpath/report.blocked" | sed 's|<OK>||g'`"
   fi
   rm -f "$rpath/report.blocked"
   IFS1=$IFS; IFS='
@@ -189,12 +181,12 @@ function runactions() {
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
     for confline in `grep -E "\|${actiongrep}\||\|${actiongrep}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
-      pattern=`echo $confline | cut -d'|' -f1`
-      level=`echo $confline | cut -s -d'|' -f2`
-      nalerts=`echo $confline | cut -s -d'|' -f4`
-      blockccl=`echo $confline | cut -s -d'|' -f5`
-      BLOCK_ERR13=`echo $confline | cut -s -d'|' -f6`
-      BLOCK_ERR5=`echo $confline | cut -s -d'|' -f7`
+      pattern=`echo "$confline" | cut -d'|' -f1`
+      level=`echo "$confline" | cut -s -d'|' -f2`
+      nalerts=`echo "$confline" | cut -s -d'|' -f4`
+      blockccl=`echo "$confline" | cut -s -d'|' -f5`
+      BLOCK_ERR13=`echo "$confline" | cut -s -d'|' -f6`
+      BLOCK_ERR5=`echo "$confline" | cut -s -d'|' -f7`
       export BLOCK_ERR13 BLOCK_ERR5
       if [ -n "$nalerts" ] ; then
         [ -e "$M_TEMP/consequent_alerts.tmp" ] && calerts=`cat "$M_TEMP/consequent_alerts.tmp" | grep ^"$commline"\|"$pattern"\|$level\| | tail -1`
@@ -228,7 +220,7 @@ function runactions() {
 
       for ((i=$level; i<=$levelmax; i++)) ; do
 
-        while read line ; do
+        for line in $(echo "`eval echo "\\$al\$i"`") ; do
           [ -z "$line" ] && continue
           if [ -z "$nalerts" ]; then
             if [[ $line =~ $pattern_match ]]; then
@@ -264,7 +256,7 @@ function runactions() {
             fi
           fi
           export XVAR
-        done <"$rpath/alert$i"
+        done
       done   ## <-- finished reading alerts
       
       if $alert_match ; then
@@ -308,9 +300,9 @@ for confline in `cat "$rpath/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v 
   pattern=`echo $confline | cut -d'|' -f1`
   level=`echo $confline | cut -d'|' -f2`
   action=`echo $confline | cut -d'|' -f3`
-  while read line ; do
-    [[ $line =~ $pattern ]] && echo && echo "The alert message: \'$line\' would trigger the action: \'$action\'" && echo
-  done<"$rpath/alert$level"
+  for line in $(echo "`eval echo "\\${al}\$i"`") ; do
+    [[ $line =~ $pattern ]] && echo -e "\nThe alert message: \'$line\' would trigger the action: \'$action\'\n"
+  done
 done
 IFS=$IFS1
 }
@@ -335,7 +327,7 @@ function timeshift() {
   echo $timeshift > "$M_TEMP"/timeshift
   for l in 1 2 3 ; do
     MAINSEQ_EXECTIME=`eval "echo \\$MAINSEQ_EXECTIME_$l"`
-    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && echo "${BASH_SOURCE##*/} execution time is longer than $MAINSEQ_EXECTIME" >> "$rpath/alert$l" && return
+    [ `expr $timeshift \> $MAINSEQ_EXECTIME` -eq 1 ] && eval "al$l=\"`eval "echo \\$al\$i"`\n${BASH_SOURCE##*/} execution time is longer than $MAINSEQ_EXECTIME\""
   done
 }
 
