@@ -30,15 +30,15 @@ CURL="$CURL -s -k"
 
 source "${0}.conf"
 
+postbody=`cat "$1" | sed 's_$_\\n_g' | tr -d '\n'`
+shift
 aladdress="$1"
 shift
 alheader="$1"
-shift
-alfile="$1"   # full path
 
 [ -z "$hookurl" ] && echo "ERROR: hook url is not defined, check ${rcommand}.conf" && exit 1
 
-postbody=`cat "$alfile" | sed 's_$_\\n_g' | tr -d '\n'`
+
 postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"${alheader}\", \"text\": \"${postbody}\" }"
 
 $CURL -X POST -H 'Content-type: application/json' --data "$postdata" "$hookurl"
