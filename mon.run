@@ -310,8 +310,9 @@ IFS=$IFS1
 function newtimeindex() {
   timeindexnow=`date +"%s"`
   echo $timeindexnow > "$M_TEMP/timeindex.$commlinehash"
-  lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash" 2>/dev/null || echo 0`
-  export timeindexnow lasttimeindex
+  lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash" 2>/dev/null`
+  interval=`expr $timeindexnow - $lasttimeindex || echo $FREQ`
+  export timeindexnow lasttimeindex interval
 }
 
 function deltimeindex() {
