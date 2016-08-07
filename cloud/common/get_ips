@@ -123,6 +123,9 @@ else
     [ -z "$clust" ] && clust=$M_CLUSTER
     [ -z "$clust" ] && echo "No clusters found" >&2 && continue
 
+    # if cluster doesn't exist in cld
+    cat "$M_ROOT/nodes.list" | cut -sd'|' -f5,6 | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | grep -q $clust\| || continue
+    
     IFSORIG=$IFS
     IFS='
 '
