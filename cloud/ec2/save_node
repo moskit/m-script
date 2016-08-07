@@ -24,8 +24,8 @@ CURL=`which curl 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
-possible_options="name log_request cloud nodeid description noreboot help wait"
-necessary_options="name nodeid"
+possible_options="name log_request cloud nodeid nodename nodeip description noreboot help wait"
+necessary_options="name"
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"

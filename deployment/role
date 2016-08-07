@@ -20,6 +20,9 @@ rpath="${rpath%/*}"
 [ -n "$M_ROOT" ] || M_ROOT="${rpath%/*}"
 #*/
 
+# no need to use this script outside msh
+[ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT not defined" && exit 1
+
 possible_commands="help list clone create edit show"
 possible_subcommands="list:meta,metas,tasks,scripts,commands,files,roles edit:meta,task,script,command,file show:meta,task,script,command,file"
 possible_options="role cluster flavor method all strip"
@@ -473,7 +476,7 @@ case $command1 in
         conf="$ROLES_ROOT/conf/${param1##*/}"
         echo -e "\nEditing file $conf\n"
         [ -e "$conf" ] || echo "No such file, creating"
-        sleep 3
+        sleep 1
         $ED "$conf"
         ;;
       *)

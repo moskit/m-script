@@ -203,13 +203,13 @@ fi
 # command-line options (variables from this script) must be saved too
 IFS2=$IFS ; IFS=$' \t\n'
 for option in `echo $possible_options | sed 's/,/ /g'`; do
-  echo "${option}=\"`eval "echo \\$${option}"`\"" >> "$CURRTASKDIR/${file}.var"
+  echo "${option}=\"`eval "echo \\$${option}"`\"" >> "$varfile"
 done
 IFS=$IFS2
 # and some other variables
 M_ROOT_REMOTE=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
 [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
-echo "M_ROOT_REMOTE=\"$M_ROOT_REMOTE\"" >> $CURRTASKDIR/${file}.var
+echo "M_ROOT_REMOTE=\"$M_ROOT_REMOTE\"" >> $varfile
 # variables propagated from scripts via propvar
 if [ -f "$CURRTASKDIR/prop.var" ]; then
   $debug && echo -e "propagated variables found:\n`cat "$CURRTASKDIR/prop.var"`"
@@ -217,7 +217,7 @@ if [ -f "$CURRTASKDIR/prop.var" ]; then
 fi
 
 # now prepare the script
-source "$CURRTASKDIR/${file}.var"
+source "$varfile"
 for LINE in `cat "$ROLES_ROOT/roles/$file"` ; do
   ELINE=$(echo "$LINE" | \
   sed 's|"|\\\"|g' | \
@@ -261,17 +261,17 @@ if [ "$type" == "remote" ]; then
         # copy the script to remote node
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/$file" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/$file" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
         # copy config to remote node
-        $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/${file}.var" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/${file}.var" >> "$M_ROOT/logs/deploy.log" 2>&1
-        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nnodename=\\\"$NAME\\\"\" \>\> \"$CURRTASKDIR/${file}.var\"
+        $SCP -P $SSHPORT -i "$key" "$varfile" "${SSH_REMOTE_USER}@${IP}:$varfile" >> "$M_ROOT/logs/deploy.log" 2>&1
+        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nnodename=\\\"$NAME\\\"\" \>\> \"$varfile\"
         if [ -n "$dry" ]; then
         [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-          $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "(source \"$CURRTASKDIR/${file}.var\" && cat \"$CURRTASKDIR/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+          $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "(source \"$varfile\" && cat \"$CURRTASKDIR/$file\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
           res=$?
           [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
           [ $res -ne 0 ] && exit 1
         else
           [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-          $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "(source \"$CURRTASKDIR/${file}.var\" && bash \"$CURRTASKDIR/$file\" 2>&1 || echo \"${timestamp}_ERROR\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+          $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" "(source \"$varfile\" && bash \"$CURRTASKDIR/$file\" 2>&1 || echo \"${timestamp}_ERROR\")" | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
           res=$?
           [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
           [ $res -ne 0 ] && exit 1
@@ -282,10 +282,10 @@ if [ "$type" == "remote" ]; then
         # copy the script to remote node
         $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/$file" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/$file" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
         # copy config to remote node
-        $SCP -P $SSHPORT -i "$key" "$CURRTASKDIR/${file}.var" "${SSH_REMOTE_USER}@${IP}:$CURRTASKDIR/${file}.var" >> "$M_ROOT/logs/deploy.log" 2>&1
-        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nnodename=\\\"$NAME\\\"\" \>\> \"$CURRTASKDIR/${file}.var\"
+        $SCP -P $SSHPORT -i "$key" "$varfile" "${SSH_REMOTE_USER}@${IP}:$varfile" >> "$M_ROOT/logs/deploy.log" 2>&1
+        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" echo -e \"ip=\\\"$IP\\\"\\\nnodename=\\\"$NAME\\\"\" \>\> \"$varfile\"
         # profile, config and script need to be concatenated for sudo
-        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat .bash_profile \"$CURRTASKDIR/${file}.var\" \"$CURRTASKDIR/$file\" \>\> \"$CURRTASKDIR/${file}.sudo\"
+        $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat .bash_profile \"$varfile\" \"$CURRTASKDIR/$file\" \>\> \"$CURRTASKDIR/${file}.sudo\"
         if [ -n "$dry" ]; then
           [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
           $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" cat \"$CURRTASKDIR/$file\" | while read output ; do [ -n "$verbose" ] && echo "$output" ; sudo echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
@@ -305,7 +305,7 @@ if [ "$type" == "remote" ]; then
     if [ -n "$dry" ]; then
       echo "Remote nodes not found, testing locally" | tee -a "$rpath/../logs/deploy.log"
       [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-      (source "$CURRTASKDIR/${file}.var" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+      (source "$varfile" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
       res=$?
       [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
       [ $res -ne 0 ] && exit 1
@@ -318,14 +318,14 @@ elif [ "$type" == "local" ]; then
   echo "`date +"%H:%M:%S"` LOCAL $file" >> "$M_ROOT/logs/deploy.log"
   if [ -n "$dry" ]; then
     [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
-    (source "$CURRTASKDIR/${file}.var" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+    (source "$varfile" && cat "$CURRTASKDIR/$file" && cat "$CURRTASKDIR/$file" | grep -E "^[[:space:]]deploy_file|^deploy_file" | sed 's|deploy_file|deploy_file --test|' | bash 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
     res=$?
     [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
     [ $res -ne 0 ] && exit 1
   else
     [ -n "$verbose" ] && echo -e "\n--------------------------------------------------------------------------------"
     # running the script
-    (source "$CURRTASKDIR/${file}.var" && bash "$CURRTASKDIR/$file" 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
+    (source "$varfile" && bash "$CURRTASKDIR/$file" 2>&1 || echo "${timestamp}_ERROR") | while read output ; do [ -n "$verbose" ] && echo "$output" ; echo "$output" >> "$M_ROOT/logs/deploy.log" ; if [ `echo "$output" | grep -c "${timestamp}_ERROR"` -gt 0 ]; then exit 1 ; fi ; done
     res=$?
     [ -n "$verbose" ] && echo "--------------------------------------------------------------------------------"
     [ $res -ne 0 ] && exit 1
