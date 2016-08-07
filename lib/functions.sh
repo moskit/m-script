@@ -399,3 +399,12 @@ unlock_exit() {
   exit $1
 }
 
+function get_interval() {
+  commline="$0 $*"
+  commlinehash=`echo "$commline" | md5sum | cut -b 1,2,3,4,5,6,7,8`
+  timeindexnow=`date +"%s"`
+  echo $timeindexnow > "$M_TEMP/timeindex.$commlinehash"
+  lasttimeindex=`cat "$M_TEMP/lasttimeindex.$commlinehash" 2>/dev/null`
+  interval=`expr $timeindexnow - $lasttimeindex || echo $FREQ`
+  export timeindexnow lasttimeindex interval
+}
