@@ -248,6 +248,7 @@ print_dashlines() {
       [ -d "$M_ROOT/www/$target" ] || install -d "$M_ROOT/www/$target"
 IFS1=$IFS; IFS='
 '
+      cldfound=( `find "$M_ROOT/www/$target/" -mindepth 1 -maxdepth 1 -type d ! -name "localhost"` )
       if [ -d "$M_ROOT/www/$target/localhost" ]; then
         for lip in `"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'` ; do
           noderecord=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,4,5,6 | grep "^$lip|"`
@@ -259,24 +260,22 @@ IFS1=$IFS; IFS='
             node=`echo "$noderecord" | cut -sd'|' -f2`
             cld=`echo "$noderecord" | cut -sd'|' -f4`
           fi
-          open_line "$node||$cld/${cls}" "$onclick"
-          tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
-          close_line
           [ -d "$M_ROOT/www/$target/$cld/$cls" ] || install -d "$M_ROOT/www/$target/$cld/$cls"
           # symlink is needed to make downstream scripts work (like onclick scripts)
-          [ -h "$M_ROOT/www/$target/$cld/$cls/$node" ] || ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
+          if [ ! -h "$M_ROOT/www/$target/$cld/$cls/$node" ]; then
+            ln -s "$M_ROOT/www/$target/localhost" "$M_ROOT/www/$target/$cld/$cls/$node"
+          fi
         else
           open_line "localhost" "$onclick"
           tail -n $slotline_length "$M_ROOT/www/$target/localhost/dash.html" 2>/dev/null
           close_line
         fi
-      else
-        if [ -z "$cld" ]; then
-          cld=( `find "$M_ROOT/www/$target/" -mindepth 1 -maxdepth 1 -type d` )
-        fi
-        for scld in $cld ; do
+      fi
+      if [ -n "$cldfound" ]; then
+        for scld in ${cldfound[*]} ; do
           scld=${scld##*/}
-          for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort` ; do
+          for node in `find "$M_ROOT/www/$target/$scld/$cls/" -maxdepth 1 -mindepth 1 -type d -o -type l 2>/dev/null | sort` ; do
+            [ -d "$node" ] || continue
             node="${node##*/}"
             open_line "$node||${scld}/${cls}" "$onclick"
             tail -n $slotline_length "$M_ROOT/www/$target/$scld/$cls/$node/dash.html" 2>/dev/null

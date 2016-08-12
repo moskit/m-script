@@ -21,7 +21,7 @@ rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 RECIPIENT_STATS=false
 LOG_ERRORS=false
-source "$rpath/../../lib/functions.sh"
+source "$M_ROOT/lib/functions.sh"
 source "$rpath/postfix.conf"
 [ ! -e "$MAILLOG" ] && echo "log file $MAILLOG does not exist!" && exit 1
 [ -z "$MAXLINES" ] && MAXLINES=1000
@@ -32,8 +32,7 @@ declare -i bounced
 declare -i sent
 deferred=0 ; bounced=0 ; sent=0
 
-timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
-[ -n "$FREQ" -a -n "$timeshift" ] && period=$(($FREQ + $timeshift)) || period=210
+get_interval
 
 log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=$MAXLINES | grep ' postfix/'`
 

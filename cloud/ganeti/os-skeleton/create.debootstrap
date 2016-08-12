@@ -90,7 +90,7 @@ else
 
   # remove the persistent-net rules, otherwise it will remember the node's
   # interfaces as eth0, eth1, ...
-  rm -f "$TMPDIR/etc/udev/rules.d/z25_persistent-net.rules"
+  rm -f "$TMPDIR/etc/udev/rules.d/"*persistent-net.rules
 
   if [ "$GENERATE_CACHE" = "yes" ]; then
     TMP_CACHE=`mktemp "${CACHE_FILE}.XXXXXX"`

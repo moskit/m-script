@@ -50,10 +50,12 @@ if [ -z "$host" ]; then
 fi
 
 # if argument is a cluster
-if [ `grep -c "^$host|" "$M_ROOT/conf/clusters.conf"` -eq 1 ]; then
+clline=`grep "^$host|" "$M_ROOT/conf/clusters.conf"`
+if [ -n "$clline" ]; then
   cluster=$host
+  cloud=`echo "$clline" | cut -sd'|' -f12`
   # always selecting the first in the list
-  host=`get_ips --cluster=$cluster --names | sort -n | head -1`
+  host=`get_ips --cloud=$cloud --cluster=$cluster --names | sort -n | head -1`
   [ -z "$host" ] && echo "Host not found for cluster $M_CLUSTER" && exit 1
   KEY=`cat "$M_ROOT/nodes.list" | cut -d'|' -f2,4 | grep \|${host}$ | cut -d'|' -f1`
 else
@@ -84,7 +86,7 @@ if [ -n "$KEY" ]; then
     [ -f "$M_ROOT/keys/$KEY1" ] && KEY=$KEY1
   fi
 else
-  echo "Server $host not found in nodes.list" >&2
+  echo "Node $host not found in nodes.list" >&2
 fi
 
 if [ ! -f "$M_ROOT/keys/$KEY" ]; then

@@ -50,7 +50,7 @@ filesystem_dev=$(map_disk0 $blockdev)
 CLEANUP+=("unmap_disk0 $blockdev")
 
 #mke2fs -Fjq $filesystem_dev
-#root_uuid=$($VOL_ID $filesystem_dev )
+root_uuid=$($VOL_ID $filesystem_dev )
 
 TARGET=`mktemp -d` || exit 1
 CLEANUP+=("rmdir $TARGET")
@@ -69,6 +69,8 @@ cat > $TARGET/etc/fstab <<EOF
 UUID=$root_uuid   /               ext3    defaults        0       1
 proc              /proc           proc    defaults        0       0
 EOF
+
+rm -f "$TARGET/etc/udev/rules.d/"*persistent-net.rules
 
 if [ "$INSTANCE_HV_serial_console" = "True" ] ; then
   setup_console $TARGET
