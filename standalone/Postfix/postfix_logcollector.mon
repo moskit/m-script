@@ -23,6 +23,6 @@ rpath=${rpath%/*}
 source "$rpath/postfix.conf"
 
 for pfcluster in `echo "$POSTFIX_CLUSTERS" | tr ',' ' '`; do
-  /opt/m/getdash.ssh postfix_activity "$pfcluster" "Activity Monitor"
-  /opt/m/getdash.ssh postfix_queue "$pfcluster" "Queue Monitor"
+  /opt/m/getdash.ssh postfix_activity "$pfcluster" "Activity"
+  /opt/m/getdash.ssh postfix_queue "$pfcluster" "Queue"
 done

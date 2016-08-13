@@ -30,7 +30,7 @@ CURL="$CURL -s -k"
 
 source "${0}.conf"
 
-postbody=`cat "$1" | sed 's_$_\\n_g' | tr -d '\n'`
+postbody=`cat $1 | sed 's_$_\\n_g' | tr -d '\n'`
 shift
 aladdress="$1"
 shift

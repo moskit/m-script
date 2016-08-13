@@ -4,8 +4,6 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
-LOG_ERRORS=false
-ANALYZE_ERRORS=false
 
 source "$rpath/../../lib/functions.sh"
 source "$rpath/postfix.conf"
