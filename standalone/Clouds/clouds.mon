@@ -34,9 +34,9 @@ IFS1=$IFS
 IFS='
 '
 echo -n "<table><tr style=\"font-weight: bold\"><td class=\"srvtbl_id\">ID</td><td class=\"srvtbl_name\">Name</td><td class=\"srvtbl_status\">Status</td><td class=\"srvtbl_pubIP\">Public IP</td><td class=\"srvtbl_privIP\">Private IP</td><td class=\"srvtbl_cluster\">Cluster</td><td class=\"srvtbl_image\">Image</td><td class=\"srvtbl_size\">Size</td></tr>"
-for CL in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -d'|' -f6 | sort | uniq`; do
+for CL in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -sd'|' -f7 | grep -v ^$ | sort | uniq`; do
 
-  for SN in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -d'|' -f1,2,6 | grep \|$CL$ | sort` ; do
+  for SN in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -d'|' -f1,2,7 | grep \|$CL$ | sort` ; do
     ID="${SN%%|*}"
     LN=`grep ^$ID\| "$M_TEMP/$cloud/full.nodes.list"`
     name="`echo $LN | cut -d'|' -f2`"
@@ -51,23 +51,23 @@ for CL in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -d'|' -f6 | sort | uniq`; 
     echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
   done
 done
-
-  for SN in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -d'|' -f1,2,6 | grep \|$ | sort` ; do
-    ID="${SN%%|*}"
-    LN=`grep ^$ID\| "$M_TEMP/$cloud/full.nodes.list"`
-    name="`echo $LN | cut -d'|' -f2`"
-    status="`echo $LN | cut -d'|' -f3`"
-    region="`echo $LN | cut -d'|' -f4`"
-    pubIP="`echo $LN | cut -d'|' -f5`"
-    privIP="`echo $LN | cut -d'|' -f6`"
-    cluster="`grep ^$privIP\| "$M_ROOT/nodes.list" | cut -d'|' -f5`"
-    [ -z "$cluster" ] && cluster="`grep ^$pubIP\| "$M_ROOT/nodes.list" | cut -d'|' -f5`"
-    [ -z "$cluster" ] && trclass="nocluster" || trclass="mancluster"
-    image="`echo $LN | cut -d'|' -f8`"
-    size="`echo $LN | cut -d'|' -f9`"
-    echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
-    
-  done
+# if empty cluster
+for SN in `cat "$M_TEMP/$cloud/full.nodes.list" | cut -d'|' -f1,2,7 | grep \|$ | sort` ; do
+  ID="${SN%%|*}"
+  LN=`grep ^$ID\| "$M_TEMP/$cloud/full.nodes.list"`
+  name="`echo $LN | cut -d'|' -f2`"
+  status="`echo $LN | cut -d'|' -f3`"
+  region="`echo $LN | cut -d'|' -f4`"
+  pubIP="`echo $LN | cut -d'|' -f5`"
+  privIP="`echo $LN | cut -d'|' -f6`"
+  cluster="`grep ^$privIP\| "$M_ROOT/nodes.list" | cut -d'|' -f5`"
+  [ -z "$cluster" ] && cluster="`grep ^$pubIP\| "$M_ROOT/nodes.list" | cut -d'|' -f5`"
+  [ -z "$cluster" ] && trclass="nocluster" || trclass="mancluster"
+  image="`echo $LN | cut -d'|' -f8`"
+  size="`echo $LN | cut -d'|' -f9`"
+  echo "<tr class=\"$trclass\" id=\"$ID\"><td class=\"srvtbl_id\" id=\"${ID}_id\">$ID</td><td class=\"srvtbl_name\" id=\"${ID}_name\">$name</td><td class=\"srvtbl_status\" id=\"${ID}_status\">$status</td><td class=\"srvtbl_pubIP\" id=\"${ID}_pubIP\">$pubIP</td><td class=\"srvtbl_privIP\" id=\"${ID}_privIP\">$privIP</td><td class=\"srvtbl_cluster\" id=\"${ID}_cluster\">$cluster</td><td class=\"srvtbl_image\" id=\"${ID}_image\">$image</td><td class=\"srvtbl_size\" id=\"${ID}_size\">$size</td></tr>"
+done
+  
 echo "</table>"
 IFS=$IFS1
 }
@@ -111,11 +111,11 @@ for cloud in ${clouds[*]} ; do
     update_server_list
   fi
 
-  [ `cat "$M_TEMP/$cloud/full.nodes.list" 2>/dev/null | wc -l` -eq 0 ] && log "server list is empty for this cloud, update forced" && echo -n > "$M_TEMP/$cloud/show_nodes.resp.prev"
   if [ -f "$M_TEMP/$cloud/show_nodes.resp" ]; then
+    [ -f "$M_TEMP/$cloud/full.nodes.list.prev" ] || touch "$M_TEMP/$cloud/full.nodes.list.prev"
+    diff=`$DIFF "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev" 2>/dev/null`
     mv "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev" || echo "<***> No existing server list found, can not show the difference."
     "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.nodes.list"
-    diff=`$DIFF -q "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev" 2>/dev/null`
     if [ -z "$diff" ]; then
       log "no changes found"
       continue
