@@ -75,11 +75,11 @@ IFS=$IFS1
 update_server_list() {
   if $UPDATE_WORKING_LIST ; then
     log "updating nodes.list"
-    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud="$cloud" --update_servers_list
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud="$cloud" --update_nodes_list
     res=$?
     [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
     [ $res -eq 0 ] && log "list updated successfully"
-    [ $res -eq 1 ] && log "update_servers_list error" && exit 1
+    [ $res -eq 1 ] && log "update_nodes_list error" && exit 1
   else
     log "not updating nodes.list (not configured)"
     "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud="$cloud" --view=raw >/dev/null
@@ -113,14 +113,15 @@ for cloud in ${clouds[*]} ; do
 
   [ `cat "$M_TEMP/$cloud/full.nodes.list" 2>/dev/null | wc -l` -eq 0 ] && log "server list is empty for this cloud, update forced" && echo -n > "$M_TEMP/$cloud/show_nodes.resp.prev"
   if [ -f "$M_TEMP/$cloud/show_nodes.resp" ]; then
-    [ -f "$M_TEMP/$cloud/show_nodes.resp.prev" ] || echo -n > "$M_TEMP/$cloud/show_nodes.resp.prev"
-    if $DIFF -q "$M_TEMP/$cloud/show_nodes.resp" "$M_TEMP/$cloud/show_nodes.resp.prev" >/dev/null 2>&1 ; then
+    mv "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev" || echo "<***> No existing server list found, can not show the difference."
+    "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.nodes.list"
+    diff=`$DIFF -q "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev" 2>/dev/null`
+    if [ -z "$diff" ]; then
       log "no changes found"
       continue
     else
       log "getting full list"
-      mv "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev" || echo "<***> No existing server list found, can not show the difference."
-      "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --noupdate --view=table --all --resolveids > "$M_TEMP/$cloud/full.nodes.list"
+      
       if [ `cat "$M_TEMP/$cloud/full.nodes.list" | wc -l` -eq 0 ]; then
         log "no hosts in the response file, querying API"
         "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --view=table --all --resolveids > "$M_TEMP/$cloud/full.nodes.list"
@@ -129,8 +130,7 @@ for cloud in ${clouds[*]} ; do
         [ $res -eq 0 ] && log "list received"
         [ $res -eq 1 ] && log "API query error" && exit 1
       fi
-      cp "$M_TEMP/$cloud/show_nodes.resp" "$M_TEMP/$cloud/show_nodes.resp.prev"
-      echo -e "Cloud $cloud configuration has changed:\n\n`$DIFF "$M_TEMP/$cloud/full.nodes.list" "$M_TEMP/$cloud/full.nodes.list.prev"`" | sed 's|^|<***> |'
+      echo -e "Cloud $cloud configuration has changed:\n\n$diff" | sed 's|^|<***> |'
     fi
   else
     log "no response found, querying"

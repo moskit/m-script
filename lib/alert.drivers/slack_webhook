@@ -37,9 +37,13 @@ shift
 alheader="$1"
 
 [ -z "$hookurl" ] && echo "ERROR: hook url is not defined, check ${rcommand}.conf" && exit 1
+[ -z "$alertbody" ] && alertbody=text
 
-
-postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"${alheader}\", \"text\": \"${postbody}\" }"
+if [ $alertbody == "text" ]; then
+  postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"${alheader}\", \"text\": \"${postbody}\" }"
+else
+  
+fi
 
 $CURL -X POST -H 'Content-type: application/json' --data "$postdata" "$hookurl"
 

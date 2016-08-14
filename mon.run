@@ -62,7 +62,7 @@ function mailreport() {
     if [ -n "$RLINE" ]; then
       cat "$rpath/conf/rep.header" "$rpath/report" | $MAILX -s "Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` report" "$RLINE"
     fi
-  done < ${rpath}/conf/mail.admin.list
+  done < "$rpath/conf/mail.admin.list"
 }
 
 function mailalert() {
@@ -87,15 +87,15 @@ function mailalert() {
       [ -z "$aldriver" ] && aldriver="mail"
       for level in 1 2 3 ; do
         if [ $minlevel -le $level ]; then
-          albody="$albody$(echo "`eval "echo \"\\$al\$level\""`")\n"
+          albody="$albody$(echo -e "`cat "$rpath/conf/header.alert.$level"`\n`eval -e "echo \"\\$al\$level\""`")\n"
         fi
       done
       echo -e "=== Sending alert ===\nSubject: $al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"
       if [ "$aldriver" == "mail" ]; then
-        echo -e "$etitle\n$albody" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$aladdress" >> "$rpath/monitoring.log" 2>&1
+        echo -e "--------------------------------\n$etitle\n--------------------------------\n$albody" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$aladdress" >> "$rpath/monitoring.log" 2>&1
       else
         albody=`echo -e "$albody" | sed 's/$/\n/'`
-        echo "$etitle\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$rpath/monitoring.log" 2>&1
+        echo "*$etitle*\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$rpath/monitoring.log" 2>&1
       fi
       unset aldriver minlevel aladdress albody
     done
@@ -354,7 +354,8 @@ declare -i delay ; delay=0
 export M_TEMP FREQ M_ROOT THRESHOLD SQLITE3 IPTABLES
 [ "_$2" == "_SQL" ] && SQL=SQL
 [ -d $M_TEMP ] || install -d $M_TEMP
-etitle="------------------------------\n`date`\n------------------------------"
+
+etitle="`date`"
 
 case $1 in
   --alert-only | -ao | -alert | --only-alert)

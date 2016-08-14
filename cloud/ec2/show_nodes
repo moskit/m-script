@@ -236,9 +236,6 @@ list_nodes() {
 }
 
 if [ -z "$noupdate" ]; then
-  changed=0
-  [ -f "$M_TEMP/${rcommand}.resp" ] && mv "$M_TEMP/${rcommand}.resp" "$M_TEMP/${rcommand}.resp.prev" || touch "$M_TEMP/${rcommand}.resp.prev"
-  [ -f "$M_TEMP/nodes.bdevs" ] && mv "$M_TEMP/nodes.bdevs" "$M_TEMP/nodes.bdevs.prev" || touch "$M_TEMP/nodes.bdevs.prev"
   [ -n "$verbose" ] && log "sending request"
   request
   reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
@@ -248,7 +245,7 @@ else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
   # if no setting, force update is disabled
   if [ -n "$FORCE_LIST_UPDATE_AFTER" ]; then
-    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0` || echo 86400)
+    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0`)
     [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
   fi
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"

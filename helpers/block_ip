@@ -161,7 +161,7 @@ if [ -n "$ips" ] ; then
       [ $whitelisted -ne 0 ] && log "IP $ip is in white list" && continue
     fi
 
-    if [[ `grep -c "^$ip|${BLOCK_CALLER}$" "$M_TEMP/ip_block.const"` -eq 0 ]]; then
+    if [[ `head -n -1 "$M_TEMP/ip_block.const" | grep -c "^$ip|${BLOCK_CALLER}$"` -eq 0 ]]; then
       echo "$ip|$BLOCK_CALLER" >> "$M_TEMP/ip_block.tmp"
       ipincl=`grep -c "^$ip|${BLOCK_CALLER}$" "$M_TEMP/ip_block.tmp"` || ipincl=0
       log "$ip :: logged: $ipincl times, forever after: $block_forever_after times"
