@@ -79,7 +79,7 @@ function mailalert() {
   fi
   if [ -n "$al" ] ; then
     for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
-      aladdress=`echo "$MLINE" | cut -sd' ' -f1`
+      aladdress=`echo "$MLINE" | cut -d' ' -f1`
       minlevel=`echo "$MLINE" | cut -sd' ' -f2`
       [ -z "$minlevel" ] && minlevel=1
       [ $minlevel -gt $aln ] && continue
@@ -97,7 +97,7 @@ function mailalert() {
         albody=`echo -e "$albody" | sed 's/$/\n/'`
         echo "$etitle\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$rpath/monitoring.log" 2>&1
       fi
-      unset aldriver minlevel aladdress
+      unset aldriver minlevel aladdress albody
     done
   fi
   unset al aln
