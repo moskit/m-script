@@ -75,14 +75,14 @@ IFS=$IFS1
 update_server_list() {
   if $UPDATE_WORKING_LIST ; then
     log "updating nodes.list"
-    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud="$cloud" --update_nodes_list
+    "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --update_nodes_list
     res=$?
     [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
     [ $res -eq 0 ] && log "list updated successfully"
     [ $res -eq 1 ] && log "update_nodes_list error" && exit 1
   else
     log "not updating nodes.list (not configured)"
-    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud="$cloud" --view=raw >/dev/null
+    "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --view=raw >/dev/null
   fi
 }
 
@@ -145,7 +145,7 @@ for cloud in ${clouds[*]} ; do
     test_cluster_limit "$cl" || echo "<***> Cluster $cl has more servers than maximum number defined in conf/clusters.conf"
     test_cluster_minimum "$cl" || echo "<***> Cluster $cl has less servers than minimal number defined in conf/clusters.conf"
   done
-  
+  unset CLOUD_PROVIDER
 done
 
 log "concatenating cloud lists: ${catline[*]}"
