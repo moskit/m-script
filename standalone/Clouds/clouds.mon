@@ -95,7 +95,7 @@ for cloud in ${clouds[*]} ; do
   export CLOUD=$cloud
   [ -d "$M_TEMP/$CLOUD" ] || install -d "$M_TEMP/$CLOUD"
   catline+=("$M_ROOT/cloud/nodes.list.${cloud}")
-  source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  #source "$M_ROOT/conf/clouds/${CLOUD}.conf"  # sourced in functions
   source "$M_ROOT/lib/cloud_functions.sh"
   [ -z "$API_CALLS_FREQ" ] && API_CALLS_FREQ=1
   if [[ $API_CALLS_FREQ -gt 1 ]]; then
@@ -105,7 +105,7 @@ for cloud in ${clouds[*]} ; do
       update_server_list
     else
       echo `expr $cyclescount + 1 2>/dev/null || echo 0` > "$rpath/${cloud}.cycles.count"
-      exit 10
+      continue
     fi
   else
     update_server_list
@@ -126,9 +126,9 @@ for cloud in ${clouds[*]} ; do
         log "no hosts in the response file, querying API"
         "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --view=table --all --resolveids > "$M_TEMP/$cloud/full.nodes.list"
         res=$?
-        [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+        [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && continue
         [ $res -eq 0 ] && log "list received"
-        [ $res -eq 1 ] && log "API query error" && exit 1
+        [ $res -eq 1 ] && log "API query error" && continue
       fi
       echo -e "Cloud $cloud configuration has changed:\n\n$diff" | sed 's|^|<***> |'
     fi
@@ -136,9 +136,9 @@ for cloud in ${clouds[*]} ; do
     log "no response found, querying"
     "$M_ROOT"/cloud/common/show_nodes --cloud="$cloud" --view=table --all --resolveids > "$M_TEMP/$cloud/full.nodes.list"
     res=$?
-    [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && exit 0
+    [ $res -eq 10 ] && log "failed to acquire cloud operations lock" && continue
     [ $res -eq 0 ] && log "list received"
-    [ $res -eq 1 ] && log "API query error" && exit 1
+    [ $res -eq 1 ] && log "API query error" && continue
   fi
   gen_html_table > "$M_TEMP/$cloud/full.nodes.list.html"
   for cl in `cat "$M_ROOT/conf/clusters.conf" | grep -vE '^#|[[:space:]]*#' | cut -d'|' -f1,7,12 | grep \|${cloud}$ | grep -v ^$ | grep -v \|\| | cut -d'|' -f1` ; do
@@ -147,9 +147,6 @@ for cloud in ${clouds[*]} ; do
   done
   unset CLOUD_PROVIDER
 done
-
-log "concatenating cloud lists: ${catline[*]}"
-[ -n "${catline[*]}" ] && cat "${catline[*]}" > "$M_ROOT/nodes.list" 2>/dev/null
 
 exit 0
 
