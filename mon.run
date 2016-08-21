@@ -87,14 +87,17 @@ function mailalert() {
       [ -z "$aldriver" ] && aldriver="mail"
       for level in 1 2 3 ; do
         if [ $minlevel -le $level ]; then
-          albody="$albody$(echo -e "`cat "$rpath/conf/header.alert.$level"``eval "echo \"\\$al\$level\""`")"
+          almessage=`eval echo "\\$al\$level"`
+          if [ -n "$almessage" ]; then
+            albody="$albody$(echo -e "`cat "$rpath/conf/header.alert${level}"`\n$almessage")\n\n"
+          fi
         fi
       done
       echo -e "=== Sending alert ===\nSubject: $al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"
       if [ "$aldriver" == "mail" ]; then
         echo -e "--------------------------------\n$etitle\n--------------------------------\n$albody" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$aladdress" >> "$rpath/monitoring.log" 2>&1
       else
-        albody=`echo -e "$albody" | sed 's/$/\n/'`
+        albody=`echo -e "$albody"`
         echo "*$etitle*\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$rpath/monitoring.log" 2>&1
       fi
       unset aldriver minlevel aladdress albody
@@ -161,10 +164,10 @@ function runscript() {
     done
   fi
   echo >> "$rpath/report"
-  al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||g'`
-  al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||g'`
-  al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||g'`
-  al0=`grep '<OK>' "$rpath/report" | sed 's|<OK>||g'`
+  al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||;s|^[[:space:]]*||'`
+  al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||;s|^[[:space:]]*||'`
+  al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||;s|^[[:space:]]*||'`
+  al0=`grep '<OK>' "$rpath/report" | sed 's|<OK>||;s|^[[:space:]]*||'`
 }
 
 function runactions() {
