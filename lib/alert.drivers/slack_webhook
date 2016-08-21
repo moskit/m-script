@@ -40,9 +40,33 @@ alheader="$1"
 [ -z "$alertbody" ] && alertbody=text
 
 if [ $alertbody == "text" ]; then
-  postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"${alheader}\", \"text\": \"${postbody}\" }"
+  postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"$alheader\", \"text\": \"$postbody\" }"
 else
-  
+  altime=`echo "$postbody" | head -1`
+  postbody=`echo "$postbody" | tail -n +2`
+  allevel=`echo "$alheader" | cut -d' ' -f1`
+  case $allevel in
+    '***') alcolor='#F00' ;;
+    '**') alcolor='#F70' ;;
+    '*') alcolor='#A80' ;;
+    *) alcolor='green' ;;
+  esac
+  postdata="{ \"attachments\": [ 
+    {
+      \"fallback\": \"$postbody\",
+      \"color\": \"$alcolor\",
+      \"pretext\": \"$altime\",
+      \"title\": \"$alheader\",
+      \"title_link\": \"$myaddress\",
+      \"text\": \"$postbody\",
+      \"image_url\": \"http://m-script.org/images/m-script.png\",
+      \"footer\": \"Slack API\",
+      \"footer_icon\": \"https://platform.slack-edge.com/img/default_application_icon.png\",
+      \"ts\": `date +%s`
+    }
+  ]
+}"
+
 fi
 
 $CURL -X POST -H 'Content-type: application/json' --data "$postdata" "$hookurl"
