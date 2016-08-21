@@ -87,7 +87,7 @@ function mailalert() {
       [ -z "$aldriver" ] && aldriver="mail"
       for level in 1 2 3 ; do
         if [ $minlevel -le $level ]; then
-          albody="$albody$(echo -e "`cat "$rpath/conf/header.alert.$level"`\n`eval -e "echo \"\\$al\$level\""`")\n"
+          albody="$albody$(echo -e "`cat "$rpath/conf/header.alert.$level"``eval "echo \"\\$al\$level\""`")"
         fi
       done
       echo -e "=== Sending alert ===\nSubject: $al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"

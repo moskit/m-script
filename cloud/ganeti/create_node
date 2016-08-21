@@ -429,7 +429,7 @@ if [ -z "$cdrom" ]; then
     $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo 2>/dev/null
     if [ $? -ne 0 ]; then
       exit_status=2
-      log "($CLOUD) Unable to login to the node $ip using the key $thekey, trying again..."
+      log "($CLOUD) Unable to login to the node $ip using key $thekey, trying again..."
       for ((k=0; k<3; k++)); do
         $SSH -i "$thekey" -o StrictHostKeyChecking=no $ip echo >/dev/null
         [ $? -eq 0 ] && exit_status=0 && break

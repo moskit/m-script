@@ -39,7 +39,7 @@ LOG="$M_ROOT/logs/sa.log"
 
 "$M_ROOT"/helpers/unblock_ip tmp
 
-logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --interval="$interval"`
+logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --interval="$interval" | grep sshd`
 
 [ -n "$logged" ] && date_header
 

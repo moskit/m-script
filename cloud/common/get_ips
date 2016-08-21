@@ -123,9 +123,6 @@ else
     [ -z "$clust" ] && clust=$M_CLUSTER
     [ -z "$clust" ] && echo "No clusters found" >&2 && continue
 
-    # if cluster doesn't exist in cld
-    cat "$M_ROOT/nodes.list" | cut -sd'|' -f5,6 | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | grep -q $clust\| || continue
-    
     IFSORIG=$IFS
     IFS='
 '
@@ -133,6 +130,8 @@ else
     n=1
     [ -n "$delimiter" ] && [ -n "$spaces" ] && delimiter="$delimiter "
     for cl in `echo -e "$clust"` ; do
+      # if cluster doesn't exist in cld
+      cat "$M_ROOT/nodes.list" | cut -sd'|' -f5,6 | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | grep -q $clust\| || continue
       $headers && echo "  Cluster: $cl"
       IPS=`cat "$M_ROOT/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -sd'|' -f1,5 | grep "|${cl}$" | cut -sd'|' -f1`
       [ -n "$nolocal" ] && localgrep=`echo -n "$localips" | sed 's_^_\^_;s_$_\$_' | tr '\n' '|'` && IPS=`echo "$IPS" | grep -vE "$localgrep"`

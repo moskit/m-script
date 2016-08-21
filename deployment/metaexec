@@ -476,8 +476,8 @@ if [ -n "$newnode" ]; then
   
   [ -z "$NEW_NODE_CREATE_TRIES" ] && NEW_NODE_CREATE_TRIES=3
   [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
-  echo "*** Bringing up new node in cloud $CLOUD"
-  log "bringing up new node in cloud $CLOUD"
+  echo "*** Creating new node in cloud $CLOUD"
+  log "creating new node in cloud $CLOUD"
   if [ -z "$test" ]; then
 
     if [ -z "$nolock" ]; then

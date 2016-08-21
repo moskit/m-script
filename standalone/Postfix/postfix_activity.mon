@@ -34,7 +34,7 @@ deferred=0 ; bounced=0 ; sent=0
 
 get_interval
 
-log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$period sec" --maxlines=$MAXLINES | grep ' postfix/'`
+log=`$M_ROOT/helpers/logreader --file="$MAILLOG" --period="$interval sec" --maxlines=$MAXLINES | grep ' postfix/'`
 
 LOG="$M_ROOT/logs/sa.log"
 
