@@ -221,10 +221,11 @@ source "$varfile"
 echo "source \"$varfile\"" >> "$CURRTASKDIR/$file"
 for LINE in `cat "$ROLES_ROOT/roles/$file"` ; do
   ELINE=$(echo "$LINE" | \
-  sed 's|"|\\\"|g' | \
-  sed 's|`|\\\`|g')
+  sed 's|"|\\\"|g;s|`|\\\`|g;s_|_\|_g')
   a=`eval "echo \"$ELINE\"" 2>/dev/null`
-  [ $? -eq 0 ] && [ -n "$a" ] && echo "$a" >> "$CURRTASKDIR/$file" || echo "$LINE" >> "$CURRTASKDIR/$file"
+  evalres=$?
+  $debug && echo -e "*** $ELINE\n    eval exit status: $evalres\n   $a"
+  [ $evalres -eq 0 ] && [ -n "$a" ] && echo "$a" >> "$CURRTASKDIR/$file" || echo "$LINE" >> "$CURRTASKDIR/$file"
 done
  
 if [ "$type" == "remote" ]; then
