@@ -303,7 +303,7 @@ fi
 [ -z "$database" ] && database="sysdata"
 dbname=`echo "$database" | tr '/' '_'`
 [ -z "$table" ] && table="sysdata" || dbname="${dbname}_${table}"
-[ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_'`"
+[ -n "$where" ] && dbname="${dbname}_`echo "$where" | tr -d \\ | tr -d \' | tr ':' '_' | tr ' ' '_' | tr '/' '_'`"
 if [ -n "$as" ] ; then
   name=`echo "$as" | tr ',' '_' | tr ' ' '_'`
 else 
