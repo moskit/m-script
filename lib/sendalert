@@ -8,6 +8,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 #*/
+MAILX=`which mail 2>/dev/null`
 
 sendalert() {
   IFS1=$IFS; IFS='
@@ -21,21 +22,21 @@ sendalert() {
   if [ -n "$al3" ]; then
     al='***'
   fi
-  if [ -n "$al" ] ; then
-    for MLINE in `cat "$M_ROOT/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
-      aladdress=`echo "$MLINE" | cut -d' ' -f1`
-      aldriver=`echo "$MLINE" | cut -sd' ' -f3`
-      [ -z "$aldriver" ] && aldriver="mail"
-      echo -e "=== Sending alert ===\nSubject: $al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$message\n=====================" >> "$M_ROOT/monitoring.log"
-      if [ "$aldriver" == "mail" ]; then
-        echo -e "$message" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$aladdress" >> "$M_ROOT/monitoring.log" 2>&1
-      else
-        message=`echo -e "$message"`
-        echo "$message" | "$M_ROOT"/lib/alert.drivers/$aldriver - $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$M_ROOT/monitoring.log" 2>&1
-      fi
-      unset aldriver aladdress
-    done
-  fi
+
+  for MLINE in `cat "$M_ROOT/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
+    aladdress=`echo "$MLINE" | cut -d' ' -f1`
+    aldriver=`echo "$MLINE" | cut -sd' ' -f3`
+    [ -z "$aldriver" ] && aldriver="mail"
+    echo -e "=== Sending alert ===\nSubject: $al Server $HOSTNAME alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$message\n=====================" >> "$M_ROOT/monitoring.log"
+    if [ "$aldriver" == "mail" ]; then
+      echo -e "$message" | $MAILX -s "$al Server $HOSTNAME alert" "$aladdress" >> "$M_ROOT/monitoring.log" 2>&1
+    else
+      message=`echo -e "$message"`
+      echo "$message" | "$M_ROOT"/lib/alert.drivers/$aldriver - $aladdress "$al Server $HOSTNAME alert" >> "$M_ROOT/monitoring.log" 2>&1
+    fi
+    unset aldriver aladdress
+  done
+
 }
 
 message=`cat $1`

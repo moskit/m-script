@@ -17,7 +17,6 @@
 currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 
-HOSTNAME=`which hostname 2>/dev/null`
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
@@ -60,7 +59,7 @@ function mailreport() {
   while read RLINE
   do
     if [ -n "$RLINE" ]; then
-      cat "$rpath/conf/rep.header" "$rpath/report" | $MAILX -s "Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` report" "$RLINE"
+      cat "$rpath/conf/rep.header" "$rpath/report" | $MAILX -s "Server $HOSTNAME report" "$RLINE"
     fi
   done < "$rpath/conf/mail.admin.list"
 }
@@ -93,12 +92,12 @@ function mailalert() {
           fi
         fi
       done
-      echo -e "=== Sending alert ===\nSubject: $al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"
+      echo -e "=== Sending alert ===\nSubject: $al Server $HOSTNAME alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"
       if [ "$aldriver" == "mail" ]; then
-        echo -e "--------------------------------\n$etitle\n--------------------------------\n$albody" | $MAILX -s "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$aladdress" >> "$rpath/monitoring.log" 2>&1
+        echo -e "--------------------------------\n$etitle\n--------------------------------\n$albody" | $MAILX -s "$al Server $HOSTNAME alert" "$aladdress" >> "$rpath/monitoring.log" 2>&1
       else
         albody=`echo -e "$albody"`
-        echo "*$etitle*\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" >> "$rpath/monitoring.log" 2>&1
+        echo "*$etitle*\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Server $HOSTNAME alert" >> "$rpath/monitoring.log" 2>&1
       fi
       unset aldriver minlevel aladdress albody
     done
@@ -288,7 +287,7 @@ function runactions() {
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: ${action}${XVARTXT}\n" >> "$rpath/monitoring.log" | tee -a $LOG
       for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#" | awk '{print $1}'`
       do
-        echo "`date +"%m.%d %H:%M:%S"` alert pattern $pattern_match initiated action: ${action}${XVARTXT}" | $MAILX -s "Action triggered! Server `$HOSTNAME -f 2>/dev/null || $HOSTNAME` alert" "$MLINE"
+        echo "`date +"%m.%d %H:%M:%S"` alert pattern $pattern_match initiated action: ${action}${XVARTXT}" | $MAILX -s "Action triggered! Server $HOSTNAME alert" "$MLINE"
       done
       action_or=`expr "$action" : "^%.*%\ \(.*\)"`
       [ -z "$action_or" ] && action $action || action $action_or
