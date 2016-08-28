@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Unlike similar function in mon.run, this one sends full message, ignoring the
+# minimal level value from mail.alert.list. Useful for sending seldom-running
+# monitors, e.g. ones running as cronjobs
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
+MAILX=`which mail 2>/dev/null`
+
+sendreport() {
+  IFS1=$IFS; IFS='
+'
+  for MLINE in `cat "$M_ROOT/conf/mail.admin.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
+    aladdress=`echo "$MLINE" | cut -d' ' -f1`
+    aldriver=`echo "$MLINE" | cut -sd' ' -f2`
+    [ -z "$aldriver" ] && aldriver="mail"
+    if [ "$aldriver" == "mail" ]; then
+      echo -e "$message" | $MAILX -s "Server $HOSTNAME report" "$aladdress" >> "$M_ROOT/monitoring.log" 2>&1
+    else
+      echo -e "$message" | "$M_ROOT"/lib/alert.drivers/$aldriver - $aladdress "Server $HOSTNAME report" >> "$M_ROOT/monitoring.log" 2>&1
+    fi
+    unset aldriver aladdress
+  done
+}
+
+message=`cat $1`
+
+sendreport
+
+exit 0
+
