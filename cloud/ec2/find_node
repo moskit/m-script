@@ -45,7 +45,11 @@ done
 IFS=$IFS1
 
 list_the_cluster() {
-  IAMACHILD=1 "$rpath"/show_nodes --all --view=table | grep -v ^EBS | cut -sd'|' -f1,2,3,4,5,6 | grep "|$cluster$"
+  if [ -n "$quick" ]; then
+    IAMACHILD=1 "$rpath"/show_nodes --all --view=table --noupdate | grep -v ^EBS | cut -sd'|' -f2,3,5,6,7 | grep '|running|' | grep "|${cluster}$"
+  else
+    IAMACHILD=1 "$rpath"/show_nodes --all --view=table | grep -v ^EBS | cut -sd'|' -f2,3,5,6,7 | grep '|running|' | grep "|${cluster}$"
+  fi
 }
 
 find_by_ip() {
@@ -89,8 +93,7 @@ Options:
                                   option or via environment variable CLOUD;
                                   command-line option has higher priority
                                   
-  --quick                       - for cluster search, checks only cloud list,
-                                  no API calls
+  --quick                       - search in the existing data, no API call
                                   
   --slow                        - for cluster search, gets details for each
                                   node in this cloud listed in nodes.list

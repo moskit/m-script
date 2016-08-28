@@ -77,7 +77,7 @@ for script in `find "$M_TEMP/.update" -type f`; do
   elif [ ! -e "$M_ROOT/$sc" ]; then
     [ "${sc##*/}" == "setup.done" ] && continue
     echo -n "new file. Copying ... "
-    cp "$script" "$M_ROOT/$sc" && chown `id -un`:`id -gn` "$oldscript" && echo "OK"
+    cp "$script" "$M_ROOT/$sc" && chown `id -un`:`id -gn` "$M_ROOT/$sc" && echo "OK"
   elif [ "$script" -nt "$M_ROOT/$sc" ]; then
     echo -n "this file is newer than the local one; saving as ${sc}.new, please check the differences manually ... "
     cp "$script" "$M_ROOT/${sc}.new" && chown `id -un`:`id -gn` "$M_ROOT/${sc}.new" && echo "OK"
