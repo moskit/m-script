@@ -18,16 +18,17 @@ sendreport() {
     aldriver=`echo "$MLINE" | cut -sd' ' -f2`
     [ -z "$aldriver" ] && aldriver="mail"
     if [ "$aldriver" == "mail" ]; then
-      echo -e "$message" | $MAILX -s "Server $HOSTNAME report" "$aladdress" >> "$M_ROOT/monitoring.log" 2>&1
+      echo -e "$message" | $MAILX -s "Node $HOSTNAME report" "$aladdress" >> "$M_ROOT/monitoring.log" 2>&1
     else
-      echo -e "$message" | "$M_ROOT"/lib/alert.drivers/$aldriver - $aladdress "Server $HOSTNAME report" >> "$M_ROOT/monitoring.log" 2>&1
+      echo -e "$message" | "$M_ROOT"/lib/alert.drivers/$aldriver - $aladdress "$al Node $HOSTNAME report" >> "$M_ROOT/monitoring.log" 2>&1
     fi
     unset aldriver aladdress
   done
 }
 
 message=`cat $1`
-
+al=`echo "$message" | grep -o '<\**>' | sort | tail -1 | tr -d '<>'`
+[ -z "$al" ] && al='<OK>'
 sendreport
 
 exit 0
