@@ -79,7 +79,7 @@ CURL="$CURL -s -k"
 [ -n "$encrypted" ] && qparams="${qparams}\nEncrypted=${encrypted}"
 [ -n "$to" ] && qparams="${qparams}\nInstanceId=${to}"
 [ -n "$id" ] && qparams="${qparams}\nVolumeId=${id}"
-[ -n "$as" ] && qparams="${qparams}\nDevice=${as}"
+[ -n "$as" ] && qparams="${qparams}\nDevice=${as##*/}"
 
 # TODO: add this to cloud config
 SignatureMethod=HmacSHA256
@@ -102,6 +102,21 @@ request() {
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
   else
     $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=${1}&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+  fi
+}
+
+reqfailed() {
+  if [ `echo "$reqparsed" | wc -l` -eq 0 ]; then
+    log "file $M_TEMP/${rcommand}.resp is empty"
+    echo "Empty response"
+  else
+    errmsg=`echo "$reqparsed" | grep Error | cut -d'|' -f2`
+    if [ -n "$errmsg" ]; then
+      log "request failed with error $errmsg"
+      echo "$errmsg"
+    else
+      return 1
+    fi
   fi
 }
 
@@ -147,40 +162,42 @@ printlist() {
 
 case $action in
   create)
-    [ -z "$zone" ] && echo "Availability zone is mandatory, use option --zone" && proper_exit 1 114
-    [ -z "$size" ] && [ -z "$snapshot" ] && echo "If EBS volume is not created from a snapshot, its size is mandatory" && exit 1
+    [ -z "$zone" ] && echo "Availability zone is mandatory, use option --zone" && proper_exit 1 165
+    [ -z "$size" ] && [ -z "$snapshot" ] && echo "If EBS volume is not created from a snapshot, its size is mandatory" && proper_exit 1 166
     request CreateVolume
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    reqfailed && proper_exit 1 169
     ;;
   attach)
-    [ -z "$to" ] && echo "Instance ID to attach this volume to not provided, use option --to" && proper_exit 1 118
-    [ -z "$id" ] && echo "Volume ID not provided, use option --id" && proper_exit 1 119
-    [ -z "$as" ] && echo "Volume device name not provided, use option --as" && proper_exit 1 120
+    [ -z "$to" ] && echo "Instance ID to attach this volume to not provided, use option --to" && proper_exit 1 172
+    [ -z "$id" ] && echo "Volume ID not provided, use option --id" && proper_exit 1 173
+    [ -z "$as" ] && echo "Volume device name not provided, use option --as" && proper_exit 1 174
     request AttachVolume
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    reqfailed && proper_exit 1 177
     ;;
   detach)
-    [ -z "$from" ] && echo "Instance ID to detach this volume from not provided, use option --from" && proper_exit 1 127
-    [ -z "$id" ] && echo "Volume ID not provided, use option --id" && proper_exit 1 119
+    [ -z "$from" ] && echo "Instance ID to detach this volume from not provided, use option --from" && proper_exit 1 180
+    [ -z "$id" ] && echo "Volume ID not provided, use option --id" && proper_exit 1 181
     request DetachVolume
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 132
+    reqfailed && proper_exit 1 184
+    ;;
+  delete|destroy)
+    [ -z "$id" ] && echo "Volume ID not provided, use option --id" && proper_exit 1 187
+    request DeleteVolume
+    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+    reqfailed && proper_exit 1 190
     ;;
   show|list)
     request DescribeVolumes
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    reqfailed && proper_exit 1 195
     reqparsed=`printlist`
     ;;
   *)
     echo "Action $action is not supported yet"
-    proper_exit 1 100
+    proper_exit 1 200
     ;;
 esac
 
