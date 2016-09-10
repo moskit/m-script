@@ -146,7 +146,7 @@ if [ -n "$onlyid" ]; then
   echo "$id"
 else
   echo "ID found: $id"
-  "$rpath"/get_node_details --id=$id
+  IAMACHILD=1 "$rpath"/get_node_details --id=$id
   res=$?
   if [ $res -eq 2 ]; then
     sed -i "/|$id|/d" "$M_ROOT/cloud/${CLOUD}.list"
