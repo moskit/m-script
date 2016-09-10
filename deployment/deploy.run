@@ -116,7 +116,7 @@ done
 IFS=$IFS1
 
 if [ "_$help" == "_yes" ] ; then
-  echo -e -n "Usage: ${0##*/}"" <options> <positional parameters>\n\n"
+  echo -e -n "Usage: ${0##*/} <options> <positional parameters>\n\n"
   if [ -n "$possible_options" ] ; then
     echo -e " <options> <positional parameters>\n\n  Possible options: $possible_options"
     [ -n "$necessary_options" ] && echo "  Necessary options: $necessary_options"
