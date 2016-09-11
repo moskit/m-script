@@ -241,7 +241,7 @@ case $command1 in
                 [ -n "$M_COLOR" ] && echo -n -e "$CONTR_SEQ$FG_MAGENTA"
                 col=$col1
                 printcol "$scr"
-                echo "not found in any meta"
+                echo "not used"
                 [ -n "$M_COLOR" ] && echo -n -e "$UNSET_COLOR"
                 unset scr
               fi

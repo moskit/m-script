@@ -32,7 +32,7 @@ store_vars() {
     fi
     
     $debug && echo "  == $LINE"
-    ELINE=`echo "$LINE" | sed 's|\\"|\\\\"|g;s|"|\\\"|g;s|`|\\\`|g;s_|_\|_g'`
+    ELINE=$(echo "$LINE" | sed 's|\\"|\\\\"|g;s|"|\\\"|g;s|`|\\\`|g;s_|_\|_g')
     $debug && echo "  << $ELINE"
     # This conditional evaluation below is a workaround for hard nuts like pipes
     # inside sub-shells. More complex constructs involving both sub-shell and 
