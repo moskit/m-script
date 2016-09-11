@@ -109,18 +109,21 @@ source "$M_ROOT/cloud/$CLOUD_PROVIDER/functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
+[ -z "$name" ] && [ -n "$id" ] && name="$id"
+[ -z "$name" ] && [ -n "$ip" ] && name=`find_name $ip`
+[ -z "$name" ] && log "unable to determine source" && exit 1
+
 if [ -z "$imagename" ]; then
+  if [ -z "$cluster" ]; then
+    cluster=`cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*#|^[[:space:]]*$" | cut -sd'|' -f4,5 | grep "^$name|" | cut -sd'|' -f2`
+  fi
   if [ -n "$cluster" ]; then
     imagename=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f5 | cut -d'+' -f1`
   else
     [ -z "$imagename" ] && imagename="$params"
   fi
 fi
-[ -z "$imagename" ] && log "Unable to determine image name. By default it is a name from cluster configuration, if cluster is defined. If it is not, or non-default name is wanted, provide it as a (non-dash) positional parameter to the command." && exit 1
-
-[ -z "$name" ] && [ -n "$id" ] && name="$id"
-[ -z "$name" ] && [ -n "$ip" ] && name=`find_name $ip`
-[ -z "$name" ] && log "unable to determine source" && exit 1
+[ -z "$imagename" ] && log "Unable to determine image name. By default it is a name from cluster configuration, if cluster can be defined. If it is not, or non-default name is wanted, provide it as a (non-dash) positional parameter to the command." && exit 1
 
 vm="$name"
 vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm" 2>/dev/null`
