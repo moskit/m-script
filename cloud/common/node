@@ -143,6 +143,7 @@ do
     if [ "_$s_optname" == "_$option" ]; then
       if [ -n "$s_optarg" ]; then
         eval "$s_optname=\"$s_optarg\""
+        dashoptions="$dashoptions --$s_optname=\"$s_optarg\""
       else
         [ -z "$(eval echo \$$option)" ] && eval "$option="
       fi
@@ -215,16 +216,16 @@ case $command1 in
     fi
     ;;
   show)
-    "$rpath"/get_node_details $@
+    "$rpath"/get_node_details $dashoptions $@
     ;;
   create)
-    "$rpath"/create_node $@
+    "$rpath"/create_node $dashoptions $@
     ;;
   destroy)
-    "$rpath"/destroy_node $@
+    "$rpath"/destroy_node $dashoptions $@
     ;;
   save)
-    "$rpath"/save_node $@
+    "$rpath"/save_node $dashoptions $@
     ;;
   stop|shutdown)
     if [ -n "$ip" ]; then
@@ -237,23 +238,11 @@ case $command1 in
       stopres=1
     fi
     if [ $stopres -eq 1 ]; then
-      if [ -n "$id" ]; then
-        "$M_ROOT"/cloud/common/stop_node --id=$id && exit 0
-      elif [ -n "$ip" ]; then
-        "$M_ROOT"/cloud/common/stop_node --id=$ip && exit 0
-      elif [ -n "$name" ]; then
-        "$M_ROOT"/cloud/common/stop_node --id=$name && exit 0
-      fi
+      "$M_ROOT"/cloud/common/stop_node $dashoptions && exit 0
     fi
     ;;
   start|boot)
-    if [ -n "$id" ]; then
-      "$M_ROOT"/cloud/common/start_node --id=$id && exit 0
-    elif [ -n "$ip" ]; then
-      "$M_ROOT"/cloud/common/start_node --id=$ip && exit 0
-    elif [ -n "$name" ]; then
-      "$M_ROOT"/cloud/common/start_node --id=$name && exit 0
-    fi
+    "$M_ROOT"/cloud/common/start_node $dashoptions && exit 0
     # TODO find_by_id
     if [ -n "$ip" ] || [ -n "$name" ]; then
       sleep 10
@@ -263,7 +252,7 @@ case $command1 in
       checks=`expr $waittimeout / $waitperiod`
       for ((i=1; i<$checks; i++)) ; do
         sleep $waitperiod
-        "$M_ROOT"/helpers/mssh ${ip}${name} && break
+        "$M_ROOT"/helpers/mssh ${ip}${name} true && break
       done
     fi
     ;;

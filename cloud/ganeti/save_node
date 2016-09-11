@@ -116,7 +116,7 @@ if [ -z "$imagename" ]; then
     [ -z "$imagename" ] && imagename="$params"
   fi
 fi
-[ -z "$imagename" ] && log "unable to determine image name, and it is not provided. It is mandatory, not saving" && exit 1
+[ -z "$imagename" ] && log "Unable to determine image name. By default it is a name from cluster configuration, if cluster is defined. If it is not, or non-default name is wanted, provide it as a (non-dash) positional parameter to the command." && exit 1
 
 [ -z "$name" ] && [ -n "$id" ] && name="$id"
 [ -z "$name" ] && [ -n "$ip" ] && name=`find_name $ip`

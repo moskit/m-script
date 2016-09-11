@@ -15,10 +15,10 @@ do
   s_option=${s_option/--/}
   s_optname=${s_option%%=*}
   s_optarg=${s_option##*=}
-  [ "X$s_optarg" == "X$s_optname" ] && unset s_optarg
+  [ "_$s_optarg" == "_$s_optname" ] && unset s_optarg
 
   for option in ${possible_options// /-} ; do
-    [ "X$s_optname" == "X$option" ] && eval "$s_optname=\"$s_optarg\"" && break
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && break
   done
 
 done
@@ -33,6 +33,13 @@ fi
 [ -z "$cld" ] && echo "cloud is not defined" && exit 1
 export CLOUD=$cld
 source "$M_ROOT/conf/clouds/${cld}.conf"
-"$M_ROOT"/cloud/$CLOUD_PROVIDER/save_node --cloud=$cld $@
+if [ -x "$M_ROOT/cloud/$CLOUD_PROVIDER/save_node" ]; then
+  "$M_ROOT"/cloud/$CLOUD_PROVIDER/save_node --cloud=$cld $@
+else
+  exit 2
+fi
+
+exit 0
+
 
 
