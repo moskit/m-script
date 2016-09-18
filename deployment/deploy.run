@@ -182,6 +182,11 @@ if [ -e "$ROLES_ROOT/conf/$role.conf" ]; then
   store_vars "$ROLES_ROOT/conf/$role.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
 fi
+# if meta is included from another meta, the included meta's vars go next
+if [ -e "$ROLES_ROOT/conf/$metarole.conf" ]; then
+  store_vars "$ROLES_ROOT/conf/$metarole.conf"
+  [ $? -ne 0 ] && echo "ERROR substituting variables for role $metarole" && exit 1
+fi
 # if some other role's script is included in meta script, source its variables
 # too. Same for scripts symlinked from other roles.
 [ -h "$ROLES_ROOT/roles/$file" ] && realfile=`readlink -f "$ROLES_ROOT/roles/$file"` || realfile="$ROLES_ROOT/roles/$file"

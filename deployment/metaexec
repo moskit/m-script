@@ -53,12 +53,12 @@ genline() {
       fi
     fi
     if [ -n "$irole" ]; then
-      cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+      cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; ml=`genline $metaline` ; echo "$ml|$irole" >> "$CURRTASKDIR"/meta) ; done
+      export metarole=$irole
     else
       cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+      unset metarole
     fi
-    # used in deploy.run to pass the variables
-    export metarole=$role
     ;;
   *)
     # finding out from shebang
@@ -88,6 +88,8 @@ run_meta() {
   metatype=$1
   shift
   metascript="$*"
+  metascript="${metascript%%|*}"
+  metarole=`echo "$metascript" | cut -sd'|' -f2`
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m${metatype} $metascript\033[0m" || printf "META: $metatype $metascript"
   [ -z "$verbose" ] && echo -n " .. "
   
