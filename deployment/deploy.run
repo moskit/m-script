@@ -21,7 +21,7 @@ rpath=${0%/*}
 
 store_vars() {
   [ -n "$verbose" ] && echo "Sourcing $1"
-  for LINE in `cat "$1" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+  for LINE in `cat "$1" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
     # to respect environment variables and variables passed from command line
     pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
     if [ -n "$pvar" ]; then
@@ -78,7 +78,7 @@ IFS='-'
 for s_option in "$@"
 do
   found=0
-  case ${s_option} in
+  case $s_option in
   --*=*)
     s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
     s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
@@ -181,11 +181,6 @@ chmod 600 "$varfile"
 if [ -e "$ROLES_ROOT/conf/$role.conf" ]; then
   store_vars "$ROLES_ROOT/conf/$role.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role $role" && exit 1
-fi
-# if meta is included from another meta, the included meta's vars go next
-if [ -e "$ROLES_ROOT/conf/$metarole.conf" ]; then
-  store_vars "$ROLES_ROOT/conf/$metarole.conf"
-  [ $? -ne 0 ] && echo "ERROR substituting variables for role $metarole" && exit 1
 fi
 # if some other role's script is included in meta script, source its variables
 # too. Same for scripts symlinked from other roles.

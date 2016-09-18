@@ -53,11 +53,9 @@ genline() {
       fi
     fi
     if [ -n "$irole" ]; then
-      cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; ml=`genline $metaline` ; echo "$ml|$irole" >> "$CURRTASKDIR"/meta) ; done
-      export metarole=$irole
+      cat "$metascript" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; ml=`genline $metaline` ; [ -n "$ml" ] && echo "$ml|$irole" >> "$CURRTASKDIR"/meta) ; done
     else
-      cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
-      unset metarole
+      cat "$metascript" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; ml=`genline $metaline` ; [ -n "$ml" ] && echo "$ml" >> "$CURRTASKDIR"/meta) ; done
     fi
     ;;
   *)
@@ -89,7 +87,8 @@ run_meta() {
   shift
   metascript="$*"
   metascript="${metascript%%|*}"
-  metarole=`echo "$metascript" | cut -sd'|' -f2`
+  metarole=`echo "$*" | cut -sd'|' -f2`
+  export metarole
   [ -n "$use_color" ] && printf "\033[01;36mMETA: \033[00;36m${metatype} $metascript\033[0m" || printf "META: $metatype $metascript"
   [ -z "$verbose" ] && echo -n " .. "
   
@@ -426,7 +425,7 @@ else
         cluster=$M_CLUSTER
       fi
     else
-      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??
@@ -600,14 +599,14 @@ else
   rm "$CURRTASKDIR"/meta 2>/dev/null
   IFS='
 '
-  cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
+  cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
   
   declare -i metan
   metan=1
   if [ -n "$command" ]; then
     for commandn in `echo -e $command | tr ',' '\n'` ; do
       for meta in `cat "$CURRTASKDIR"/meta` ; do
-        meta=`eval "echo $meta"`
+        meta=`eval "echo \"$meta\""`
         if [[ $commandn -eq $metan ]]; then
           if [ $metan -eq 1 ]; then
             newmeta="$meta"
@@ -622,7 +621,7 @@ else
     echo -e "$newmeta" > "$CURRTASKDIR/meta"
   fi
   for meta in `cat "$CURRTASKDIR"/meta` ; do
-    meta=`eval "echo $meta"`
+    meta=`eval "echo \"$meta\""`
     skipthis=false
     if [ -n "$list" ]; then
       echo "$metan $meta"
