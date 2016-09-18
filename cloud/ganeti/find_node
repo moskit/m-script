@@ -184,7 +184,7 @@ fi
 req="/$V/instances/$name"
 
 request() {
-  $CURL -X GET "https://${GANETI_APIURL}$req" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  $CURL -X GET "https://${GANETI_APIURL}$req" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
 }
 
 request

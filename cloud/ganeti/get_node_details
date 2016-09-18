@@ -25,6 +25,12 @@ necessary_options=""
 GNTI=`which gnt-instance 2>/dev/null`
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 
+# API version
+V=2
+
+CURL=`which curl 2>/dev/null`
+CURL="$CURL -s -k"
+
 IFS1=$IFS
 IFS='|'
 for s_option in $ARGV
@@ -45,7 +51,7 @@ IFS=$IFS1
 
 found=0
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
@@ -60,7 +66,7 @@ install -d "$M_TEMP"
 
 source "$M_ROOT/lib/cloud_functions.sh"
 
-request() {
+request_gnti() {
 rm -f "$M_TEMP/${rcommand}.resp"
 IFS1=$IFS
 IFS='
@@ -98,6 +104,11 @@ done  > "$M_TEMP/${rcommand}.resp"
 IFS=$IFS1
 
 }
+
+request() {
+  $CURL -X GET "https://${GANETI_APIURL}$req" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+}
+
 lock_cloudops || exit 10
 if [ -z "$name" ]; then
   if [ -n "$id" ]; then
@@ -110,31 +121,34 @@ if [ -z "$name" ]; then
   fi
 fi
 
+req="/$V/instances/$name"
+
 request
+
 if [ -z "$return" ]; then
   cat "$M_TEMP/${rcommand}.resp" || proper_exit 1 101
 else
   case $return in
   os)
-    pattern="State/Operating system|"
+    pattern="\"os\"\|"
     ;;
   cpu|cpus)
-    pattern="State/Hardware/VCPUs|"
+    pattern="\"oper_vcpus\"\|"
     ;;
   memory)
-    pattern="State/Hardware/memory|"
+    pattern="\"memory\"|\"minmem\"|\"maxmem\""
     ;;
   nic|nics)
-    pattern="State/Hardware/NICs/nic/"
+    pattern="nic"
     ;;
   disk|disks)
-    pattern="State/Disks/disk/"
+    pattern="disk"
     ;;
   *)
-    pattern="$return|"
+    pattern="$return"
     ;;
   esac
-  cat "$M_TEMP/${rcommand}.resp" | grep "^${pattern}" | sed "s_^${pattern}__g" || proper_exit 1 123
+  cat "$M_TEMP/${rcommand}.resp" | grep -E "$pattern" || proper_exit 1 123
 fi
 
 proper_exit 0 126

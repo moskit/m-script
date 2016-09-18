@@ -194,7 +194,12 @@ if [ "_$roleincluded" != "_$role" ]; then
   fi
   export ROLEINCL=$roleincluded
 fi
-# last and least, common role
+# if metascript was called from another metascript (see metaexec)
+if [ -e "$ROLES_ROOT/conf/${metarole}.conf" ]; then
+  store_vars "$ROLES_ROOT/conf/${metarole}.conf"
+  [ $? -ne 0 ] && echo "ERROR substituting variables for role $metarole" && exit 1
+fi
+# the last and the least, common role
 if [ -e "$ROLES_ROOT/conf/common.conf" ]; then
   store_vars "$ROLES_ROOT/conf/common.conf"
   [ $? -ne 0 ] && echo "ERROR substituting variables for role common" && exit 1

@@ -36,26 +36,29 @@ genline() {
     IFS='
 '
     metascript=`eval "echo $metascript"`
-    if [ -e "$ROLES_ROOT/roles/$metascript" ]; then
-      metascript="$ROLES_ROOT/roles/$metascript"
-    elif [ -e "$ROLES_ROOT/roles/${metascript}.meta" ]; then
-      metascript="$ROLES_ROOT/roles/${metascript}.meta"
-    elif [ -e "$ROLES_ROOT/roles/$role/$metascript" ]; then
-      metascript="$ROLES_ROOT/roles/$role/$metascript"
-    elif [ -e "$ROLES_ROOT/roles/$role/${metascript}.meta" ]; then
-      metascript="$ROLES_ROOT/roles/$role/${metascript}.meta"
-    else
-      log "metascript $metascript not found"
-      unset metascript
-    fi
     if [ -n "$metascript" ]; then
       irole=`echo $metascript | cut -sd'/' -f1`
+      if [ -e "$ROLES_ROOT/roles/$metascript" ]; then
+        metascript="$ROLES_ROOT/roles/$metascript"
+      elif [ -e "$ROLES_ROOT/roles/${metascript}.meta" ]; then
+        metascript="$ROLES_ROOT/roles/${metascript}.meta"
+      # current role is the default
+      elif [ -e "$ROLES_ROOT/roles/$role/$metascript" ]; then
+        metascript="$ROLES_ROOT/roles/$role/$metascript"
+      elif [ -e "$ROLES_ROOT/roles/$role/${metascript}.meta" ]; then
+        metascript="$ROLES_ROOT/roles/$role/${metascript}.meta"
+      else
+        log "metascript $metascript not found"
+        unset metascript
+      fi
     fi
     if [ -n "$irole" ]; then
       cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | sed "s|\$role|$irole|;s|\${role}|$irole|" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     else
       cat "$metascript" | grep -vE "^#|^$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
     fi
+    # used in deploy.run to pass the variables
+    export metarole=$role
     ;;
   *)
     # finding out from shebang
@@ -377,7 +380,7 @@ log "Starting metaexec with arguments $@"
 localip=`"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'`
 
 if [ -n "$timestamp" ]; then
-  [ -n "$newnode" ] && echo "Repeating existing sequence is disabled for new node. If you want to repeat a meta that has brought up a previous node, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that node and all relevant arguments." && exit 1
+  [ -n "$newnode" ] && echo "Repeating existing sequence is not available for new node. If you want to repeat a meta that has brought up a previous node, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that node and all relevant arguments." && exit 1
   if [ "_$timestamp" == "_repeat" ]; then
     timestampact=`ls -1tr "$M_DEPL_WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
   else

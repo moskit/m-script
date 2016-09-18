@@ -153,6 +153,11 @@ else
 fi
 
 $QEMU_IMG convert $blockdev -O qcow2 "$M_ROOT/cloud/ganeti/os-images/${imagename}.img"
+if [ $? -eq 0 ]; then
+  log "Node $name is saved successfully to $M_ROOT/cloud/ganeti/os-images/${imagename}.img"
+else
+  log "Error saving node $name"
+fi
 
 cleanup
 trap - EXIT
