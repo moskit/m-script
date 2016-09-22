@@ -143,7 +143,7 @@ wait_ready() {
     sleep $waitperiod
     [ -n "$1" ] && echo -n '.'
     IAMACHILD=1 "$rpath"/get_node_details --name=$name >/dev/null 2>&1
-    if [ `cat "$M_TEMP/get_node_details.resp" | grep '"State"' | grep -c 'actual state is up'` -eq 1 ] ; then
+    if [ `cat "$M_TEMP/get_node_details.resp" | grep -c '"status"|"running"'` -eq 1 ] ; then
       echo
       return 0
     fi
