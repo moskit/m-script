@@ -77,7 +77,7 @@ function mailalert() {
     al='***' ; aln=3
   fi
   if [ -n "$al" ] ; then
-    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
+    for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"`; do
       aladdress=`echo "$MLINE" | cut -d' ' -f1`
       minlevel=`echo "$MLINE" | cut -sd' ' -f2`
       [ -z "$minlevel" ] && minlevel=1
@@ -102,7 +102,7 @@ function mailalert() {
       unset aldriver minlevel aladdress albody
     done
   fi
-  unset al aln
+  unset al aln al1 al2 al3
   IFS=$IFS1
 }
 
@@ -181,11 +181,11 @@ function runactions() {
   rm -f "$rpath/report.blocked"
   IFS1=$IFS; IFS='
 '
-  for action in `cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
+  for action in `cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
     actiongrep=`echo "$action" | sed 's_\\$_\\\\$_'`
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
-    for confline in `grep -E "\|${actiongrep}\||\|${actiongrep}$" "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]*#"` ; do
+    for confline in `grep -E "\|${actiongrep}\||\|${actiongrep}$" "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
       pattern=`echo "$confline" | cut -d'|' -f1`
       level=`echo "$confline" | cut -s -d'|' -f2`
       nalerts=`echo "$confline" | cut -s -d'|' -f4`
@@ -285,10 +285,8 @@ function runactions() {
       log "all alerts found for action: $action ; block enabled, cycles: $blockccl"
       [ -n "$blockccl" ] && block_action $blockccl "$action"
       echo -e "\n`date +"%m.%d %H:%M:%S"` action initiated: ${action}${XVARTXT}\n" >> "$rpath/monitoring.log" | tee -a $LOG
-      for MLINE in `cat "$rpath/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#" | awk '{print $1}'`
-      do
-        echo "`date +"%m.%d %H:%M:%S"` alert pattern $pattern_match initiated action: ${action}${XVARTXT}" | $MAILX -s "Action triggered! Server $HOSTNAME alert" "$MLINE"
-      done
+      al3="`date +"%m.%d %H:%M:%S"` alert pattern $pattern_match initiated action: ${action}${XVARTXT}"
+      mailalert
       action_or=`expr "$action" : "^%.*%\ \(.*\)"`
       [ -z "$action_or" ] && action $action || action $action_or
       [ -n "$nalerts" ] && sed -i "s%^$commline|$pattern|$level|.*%$commline|$pattern|$level|0%" "$M_TEMP/consequent_alerts.tmp"
@@ -301,7 +299,7 @@ IFS=$IFS1
 function runactionstest() {
 IFS1=$IFS; IFS='
 '
-for confline in `cat "$rpath/conf/actions.conf" | grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+for confline in `cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
   pattern=`echo $confline | cut -d'|' -f1`
   level=`echo $confline | cut -d'|' -f2`
   action=`echo $confline | cut -d'|' -f3`
@@ -343,7 +341,7 @@ function action() {
 log "action: matching $act"
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
-  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^$|^#|^[[:space:]]#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
+  echo "`cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
   "$rpath"/lib/mq.run &
 }

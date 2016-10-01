@@ -77,7 +77,8 @@ cr() {
 }
 
 exitrole() {
-  unset M_ROLE M_CLUSTER role flavor
+  unset M_ROLE M_CLUSTER CLOUD role flavor
+  setup_env
   set_default_ps
 }
 

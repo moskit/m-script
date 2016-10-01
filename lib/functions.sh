@@ -48,6 +48,7 @@ store_results() {
     dbtable="${2##*|}"
     [ `echo "$dbfile" | cut -b1` == "/" ] || dbfile="$M_ROOT/$dbfile"
   fi
+  dbtable="${dbtable/-/_}"
   timeindex=`date +"%s"`
   day=`date +"%Y%m%d"`
   [ -z "$dbtable" ] && echo "Unable to find out what table to store the data into" && exit 1
@@ -127,6 +128,7 @@ check_results() {
     esac
     $ao || echo "<OK>  ${vardescr}:  $val"
   done
+  echo
   IFS=$IFSORIG
 }
     
