@@ -113,6 +113,9 @@ start)
     # Running actions from the queue first
     "$rpath"/lib/mq.run &
     
+    # Unblocking IPs that might have been temporarily blocked by monitors
+    "$rpath"/helpers/unblock_ip tmp
+    
 ### Tests that run if load has changed - we are interested in more metrics here
     if [ "_$x" == "_1" ]; then
       if [[ $rloadabs -lt $LOAD_CRIT ]]; then
@@ -125,7 +128,7 @@ start)
     
     sleep $FREQm
 
-## Normal flow
+## Normal workflow
     if [[ $rloadabs -lt $LOAD_CRIT ]]; then
       "$rpath"/mon.run "$BASIC_SEQUENCE" SQL </dev/null &
       if [ -n "$DASHBOARD_TRANSPORT" ]; then

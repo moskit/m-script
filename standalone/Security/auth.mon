@@ -37,7 +37,9 @@ interval="$interval sec"
 export BLOCK_CALLER="$rcommand"
 LOG="$M_ROOT/logs/sa.log"
 
-"$M_ROOT"/helpers/unblock_ip tmp
+### IPs blocked temporarily get unblocked by the daemon to avoid unblocking
+### those blocked by other monitors. No monitors should contain this line.
+#"$M_ROOT"/helpers/unblock_ip tmp
 
 logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --interval="$interval" | grep sshd`
 
