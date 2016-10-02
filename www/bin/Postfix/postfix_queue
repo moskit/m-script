@@ -1,7 +1,6 @@
 #!/bin/bash
 
 M_ROOT="$PWD/../.."
-source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/dash_functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
@@ -19,9 +18,5 @@ else
   fi
 fi
 for qtype in $GRAPHS_FOR ; do
-  ex=$(find "$PWD"/../graphs -mmin -$(expr 2 \* $freqdef / 60 ) -name "$target.standalone_Postfix_postfix_queue.db_postfix_queue_qtype_$qtype.$qtype.svg")
-  if [ -z "$ex" ] ; then
-    "$PWD"/../../graph --database=standalone/Postfix/postfix_queue.db --table=postfix_queue --metric=qlength --as=$qtype --where="qtype:$qtype" --ip=$ip --perpixel --width=750 --height=300 --padding=10 --legend=160
-  fi
-  echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/$target.standalone_Postfix_postfix_queue.db_postfix_queue_qtype_$qtype.$qtype.svg\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
+  publish_graph `"$M_ROOT"/graph --database=standalone/Postfix/postfix_queue.db --table=postfix_queue --metric=qlength --as=$qtype --where="qtype:$qtype" --ip=$ip --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`
 done
