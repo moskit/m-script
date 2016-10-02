@@ -15,12 +15,8 @@ conf="$rpath/${rcommand%.mon}.conf"
 ### or take longer than FREQ
 # get_lock
 
-### time since the last run, if needed (timeshift is the average time needed
-### for main process execution, it depends on the system speed and RUNDELAY
-### setting
-# timeshift=`cat /tmp/m_script/timeshift 2>/dev/null`
-# [ -n "$FREQ" ] && [ -n "$timeshift" ] && interval=$(($FREQ + $timeshift))
-# [ -z $interval ] && [ -n "$FREQ" ] && interval=$FREQ
+### time since the last run, if needed. It will be assigned to variable 'interval'
+# get_interval
 
 ### in case check_interval function is used (see below):
 # interval=`cat "$rpath/${rcommand%.mon}.interval.tmp"`

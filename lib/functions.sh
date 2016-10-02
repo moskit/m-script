@@ -81,11 +81,11 @@ check_results() {
   for var2ck in $1 ; do
     varname=`echo "$var2ck" | cut -s -d'|' -f1`
     thr1=`eval "echo \"\\$${varname}_1\""`
-    [ -z "$thr1" ] && continue
     thr2=`eval "echo \"\\$${varname}_2\""`
     thr3=`eval "echo \"\\$${varname}_3\""`
     val=`eval "echo \"\\$${varname}\""`
     vardescr=`echo "$var2ck" | cut -s -d'|' -f2`
+    [ -z "$thr1" ] && echo "      ${vardescr}:  $val" && continue
     vartype=`echo "$var2ck" | cut -s -d'|' -f3`
     [ -n "`echo "$var2ck" | cut -s -d'|' -f4`" ] && ao=true || ao=false
     [ -z "$vardescr" ] && vardescr=$varname

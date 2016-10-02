@@ -23,7 +23,7 @@ for mon in "$rpath/../standalone/$1"/*.mon ; do
   fi
 done
 
-[ -d "$rpath/../standalone/$1/wwwbin" ] && cp "$rpath/../standalone/$1/wwwbin/"* "$rpath/../www/bin/" || true
+[ -d "$rpath/../standalone/$1/wwwbin" ] && cp -r "$rpath/../standalone/$1/wwwbin/"* "$rpath/../www/bin/" || true
 
 [ -x "$rpath/../standalone/$1"/setup.run ] && "$rpath/../standalone/$1"/setup.run && mv "$rpath/../standalone/$1/setup.run" "$rpath/../standalone/$1/setup.run.done" || true
 
