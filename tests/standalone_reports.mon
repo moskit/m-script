@@ -45,8 +45,18 @@ for sa in `echo "$SATESTS" | tr ',' ' '` ; do
   else
     echo -e "\n$sa\n---------------\n\n"
     for sarep in $sareplist ; do
-      echo "  ${sarep##*/}"
-      cat $sarep 2>/dev/null
+      sarepbody=`cat "$sarep"`
+      if echo "$sarepbody" | grep -q '<\*\*\*>' ; then
+        al="<***>"
+      elif echo "$sarepbody" | grep -q '<\*\*>' ; then
+        al="<**>"
+      elif echo "$sarepbody" | grep -q '<\*>' ; then
+        al="<*>"
+      else
+        al="<OK>"
+      fi
+      echo -e "$al  ${sarep##*/}\n"
+      echo "$sarepbody"
     done
   fi
 done
