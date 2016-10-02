@@ -27,7 +27,7 @@ else
 fi
 
 [ -n "$dbuser" ] && A="-u $dbuser"
-[ -n "$dbpassword" ] && A="$A -p $dbpassword"
+[ -n "$dbpassword" ] && A="$A -p$dbpassword"
 [ -n "$dbport" ] && P="-P $dbport"
 
 for dbhost in $dbhosts ; do
@@ -47,14 +47,16 @@ for dbhost in $dbhosts ; do
   qps=`expr \( $Queries - $Queries_prev \) / $interval`
   connps=`solve 2 "($Connections - $Connections_prev)/$interval"`
   qcachehits=`expr \( $Qcache_hits - $Qcache_hits_prev \) / $interval`
+  qcachehitsratio=`solve 2 "$qcachehits / $qps * 100"`
   threadsps=`solve 2 "($Threads_created - $Threads_created_prev)/$interval"`
   waitedlocks=`solve 2 "($Table_locks_waited - $Table_locks_waited_prev)/$interval"`
   immediatelocks=`solve 2 "($Table_locks_immediate - $Table_locks_immediate_prev)/$interval"`
   locksratio=`solve 2 "$waitedlocks / $immediatelocks * 100"`
 
   store_results "dbhost|text,qps|integer,connps|real,qcachehits|integer,threadsps|real,waitedlocks|real,immediatelocks|real,Threads_connected|integer"
-  check_results "qps|Queries / sec|integer,connps|Connections / sec|real,threadsps|Threads created / sec|real,Threads_connected|Threads connected|integer,qcachehits|Query cache hits / sec|integer,locksratio|Total locks to waited locks ratio (%)|real"
+  check_results "qps|Queries / sec|integer,connps|Connections / sec|real,threadsps|Threads created / sec|real,Threads_connected|Threads connected|integer,qcachehitsratio|Cache hits to total queries ratio|real,locksratio|Waited locks to total locks ratio (%)|real"
 
+  echo -e "qps=$qps\nconnps=$connps\nqcachehits=$qcachehits\nThreads_connected=$Threads_connected\nthreadsps=$threadsps\nqcachehitsratio=$qcachehitsratio\nlocksratio=$locksratio" > "$rpath/${dbhost}.dat"
 done
 
 release_lock
