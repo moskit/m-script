@@ -37,7 +37,7 @@ for dbhost in $dbhosts ; do
 
   mysqlbin="$mysqlbin -NB $H $P $A"
   
-  [ -e "$MyTEMP/status.dat" ] && sed 's/=/_prev=/' "$MyTEMP/${dbhost}.status.dat" > "$MyTEMP/${dbhost}.status.dat.prev"
+  [ -e "$MyTEMP/${dbhost}.status.dat" ] && sed 's/=/_prev=/' "$MyTEMP/${dbhost}.status.dat" > "$MyTEMP/${dbhost}.status.dat.prev"
 
   echo "show status" | $mysqlbin | tr '\t' '=' > "$MyTEMP/${dbhost}.status.dat"
 
