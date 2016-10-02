@@ -328,7 +328,7 @@ fi
 
 gfilename="${ip}.${dbname}.${name}.svg"
 ex=$(find "$M_ROOT/www/graphs" -mmin -$(expr $FREQ / 60 ) -name "${ip}.${dbname}.${name}.svg")
-echo "$M_ROOT/www/graphs/${ip}.${dbname}.${name}.svg" >&2
+echo "${ip}.${dbname}.${name}.svg" >&2
 
 if [ -n "$ex" ] && [ -z "$force" ]; then
   exit 0

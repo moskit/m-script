@@ -222,7 +222,7 @@ print_dashline() {
 print_dashlines() {
   # if source is a folder:
   # print_dashlines path/to/folder <"onclick">
-  # where folder is the one named after the test binary in M_ROOT/www
+  # where folder is the one named after the monitor binary in M_ROOT/www
   # if source is an Sqlite database:
   # print_dashlines "/path/to/db/file|table name|node field name|/path/to/test/conf" <"onclick">
   local target="$1"

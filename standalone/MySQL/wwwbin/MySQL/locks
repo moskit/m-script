@@ -4,4 +4,4 @@ M_ROOT="$PWD/../.."
 source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/lib/dash_functions.sh"
 
-publish_graph `"$M_ROOT"/graph --database=standalone/MySQL/status.db --table=status --metric=waitedlocks --where="dbhost:${2##*/}" --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`
+publish_graph `"$M_ROOT"/graph --database=standalone/MySQL/mysqlstatus.db --table=mysqlstatus --metric=waitedlocks --where="dbhost:${2##*/}" --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`

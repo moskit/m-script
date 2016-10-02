@@ -28,3 +28,12 @@ for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
   close_cluster
   
 done
+
+for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
+
+  open_cluster "$dbcl"
+  close_cluster_line
+  print_dashlines "mysqlstatus"
+  close_cluster
+  
+done

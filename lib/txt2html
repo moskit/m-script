@@ -107,6 +107,7 @@ cat -E $1 | while read LINE ; do
       tableflag=true
       format "${data[$cursor]}" "tablerow_${datastyle[$cursor]}"
       ;;
+      #    string
       [[:space:]][[:space:]][[:space:]][[:space:]][^[:space:]]*)
       data[$cursor]="`echo "$LINE" | sed 's|^[[:space:]]*||'`"
       datatype[$cursor]="table"
