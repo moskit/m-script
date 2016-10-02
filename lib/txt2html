@@ -56,12 +56,6 @@ cat -E $1 | while read LINE ; do
     datastyle[$cursor]="empty"
   else
     case "$LINE" in
-      # empty line
-      [[:space:]])
-      data[$cursor]=""
-      datatype[$cursor]="empty"
-      datastyle[$cursor]="empty"
-      ;;
       #<OK> string
       \<OK\>*)
       data[$cursor]="${LINE#* }"
@@ -212,7 +206,6 @@ cat -E $1 | while read LINE ; do
         ;;
       "dashline info")
         # draw a line and pass the info to the next resolver
-        # remember that HTML5 treats HR semantically only
         echo "<HR size=\"1\" width=\"90%\">"
         data[1]=${data[2]}
         datatype[1]="info"
@@ -225,11 +218,11 @@ cat -E $1 | while read LINE ; do
     case ${datatype[*]} in
       "empty")
         cursor=0
-        [ -n "$tableflag" ] && echo "</table>" && tableflag=false
+        $tableflag && echo "</table>" && tableflag=false
         ;;
     esac
   fi
 done
-[ -n "$tableflag" ] && echo "</table>" && tableflag=false
+$tableflag && echo "</table>" && tableflag=false
 
 IFS=$IFS1
