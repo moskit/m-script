@@ -272,7 +272,7 @@ fi
 if [ -z "$localip" ] ; then
   server=`grep "^${ip}|" "$rpath/nodes.list"|tail -1`
   if [ -z "$server" ] ; then
-    # if it's name
+    # if it is name
     ipaddr=`cat "$rpath/nodes.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
     server=`grep "^${ipaddr}|" "$rpath/nodes.list"|tail -1`
     if [ -z "$server" ] ; then
@@ -308,6 +308,25 @@ if [ -n "$as" ] ; then
   name=`echo "$as" | tr ',' '_' | tr ' ' '_'`
 else 
   name=`echo $metric | tr ',' '_' | tr ' ' '_'`
+fi
+if [ -n "$perpixel" ]; then
+  name="${name}_perpx"
+else
+  name=`echo "${name}_${from}_${to}" | tr '/' '_'`
+fi
+
+# Now when we have the filename, we can check if a fresh file exists so a new
+# graph is not required (unless --force is given). This feature makes graphs
+# sort of cached for about one monitoring cycle interval. Useful in web
+# interface, so that if you have closed a graph accidentally, you can open it
+# again and not have to wait while it is being generated again.
+
+gfilename="${ip}.${dbname}.${name}.svg"
+ex=$(find "$M_ROOT/www/graphs" -mmin -$(expr $FREQ / 60 ) -name "${ip}.${dbname}.${name}.svg")
+echo "$M_ROOT/www/graphs/${ip}.${dbname}.${name}.svg"
+
+if [ -n "$ex" ] && [ -z "$force" ]; then
+  exit 0
 fi
 
 if [ -n "$perpixel" ]; then
