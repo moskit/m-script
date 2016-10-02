@@ -8,21 +8,20 @@ rpath=${rpath%/*}
 mysqlbin=`which mysql 2>/dev/null`
 [ -z "$mysqlbin" ] && echo "MySQL CLI not found" && exit 1
 
-get_lock
-
 source "$M_ROOT/lib/functions.sh"
 source "$rpath/mysql.conf"
 
+get_lock
+
 MyTEMP="$M_TEMP/mysql"
 [ -d "$MyTEMP" ] || install -d "$MyTEMP"
-[ -e "$MyTEMP/status.dat" ] && sed 's/=/_prev=/' "$MyTEMP/status.dat" > "$MyTEMP/status.dat.prev"
 
 get_interval || unlock_exit 0
 
 date_header
 
 if [ -n "$dbcluster" ]; then
-  dbhosts=`"$M_ROOT"/cloud/common/get_ips --cluster="$dbcluster"`
+  dbhosts=`"$M_ROOT"/cloud/common/get_ips --names --cluster="$dbcluster"`
 else
   dbhosts=localhost
 fi
@@ -37,11 +36,13 @@ for dbhost in $dbhosts ; do
   H="-h $dbhost"
 
   mysqlbin="$mysqlbin -NB $H $P $A"
+  
+  [ -e "$MyTEMP/status.dat" ] && sed 's/=/_prev=/' "$MyTEMP/${dbhost}.status.dat" > "$MyTEMP/${dbhost}.status.dat.prev"
 
-  echo "show status" | $mysqlbin | tr '\t' '=' > "$MyTEMP/status.dat"
+  echo "show status" | $mysqlbin | tr '\t' '=' > "$MyTEMP/${dbhost}.status.dat"
 
-  source "$MyTEMP/status.dat.prev" 2>/dev/null || unlock_exit 0
-  source "$MyTEMP/status.dat"
+  source "$MyTEMP/${dbhost}.status.dat.prev" 2>/dev/null || unlock_exit 0
+  source "$MyTEMP/${dbhost}.status.dat"
 
   qps=`expr \( $Queries - $Queries_prev \) / $interval`
   connps=`solve 2 "($Connections - $Connections_prev)/$interval"`
