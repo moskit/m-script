@@ -447,3 +447,8 @@ cgi_end() {
     mv "$M_ROOT/www/preloaders/$saname/${scriptname}.html.new" "$M_ROOT/www/preloaders/$saname/${scriptname}.html"
   fi
 }
+
+publish_graph() {
+  echo -e "<div class=\"combinedgraph\">\n<object data=\"/graphs/$1\" type=\"image/svg+xml\" width=\"750\" height=\"300\" style=\"float:left\"></object>\n</div>"
+}
+

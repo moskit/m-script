@@ -39,7 +39,7 @@ debug=true
 [ -n "$CLOUD" ] && source "$rpath/conf/clouds/${CLOUD}.conf"
 [ -n "$SSHPORT" ] || SSHPORT=22
 
-possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min fromfile"
+possible_options="metric help from to ip database table size width height scale padding legend fontsize strokewidth pointsize where as legendpos perpixel debug min fromfile force"
 necessary_options=""
 source "$rpath/conf/mon.conf"
 source "$rpath/conf/dash.conf"
@@ -139,6 +139,11 @@ Options:
                         
 --perpixel              Renders one value per pixel along X-Axis, saves CPU
                         cycles.
+                        
+--force                 By default graphs are "cached" for one monitoring
+                        interval. No new graph will be generated if there is
+                        such graph file already that contains the latest
+                        data. Use this option to generate the graph anyway.
                         
 --legendpos=<left|below>
 
@@ -323,7 +328,7 @@ fi
 
 gfilename="${ip}.${dbname}.${name}.svg"
 ex=$(find "$M_ROOT/www/graphs" -mmin -$(expr $FREQ / 60 ) -name "${ip}.${dbname}.${name}.svg")
-echo "$M_ROOT/www/graphs/${ip}.${dbname}.${name}.svg"
+echo "$M_ROOT/www/graphs/${ip}.${dbname}.${name}.svg" >&2
 
 if [ -n "$ex" ] && [ -z "$force" ]; then
   exit 0

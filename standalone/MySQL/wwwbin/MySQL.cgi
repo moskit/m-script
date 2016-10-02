@@ -3,6 +3,7 @@
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
+source "$PWD/../../lib/cloud_functions.sh"
 source "$PWD/../../standalone/MySQL/mysql.conf"
 
 print_cgi_headers
@@ -15,10 +16,10 @@ for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
   open_cluster "$dbcl"
   close_cluster_line
   
-  for dbh in `"$PWD"/../../cloud/common/get_ips --cluster=$dbcl` ; do
+  for dbh in `"$PWD"/../../cloud/common/get_ips --names --cluster=$dbcl` ; do
 
     source "$PWD/../../standalone/MySQL/${dbh}.dat"
-    open_line "`ip_to_name $dbh`"
+    open_line "$dbh"
     print_inline "qps|MySQL/qps" "connps|MySQL/connps" "qcachehitsratio|MySQL/cache" "locksratio|MySQL/locks" "Threads_connected|MySQL/threads" "threadsps|MySQL/threadsps"
     close_line
     
