@@ -11,12 +11,23 @@ print_nav_bar "MySQL|Performance" "MySQL/resources|Resources" "MySQL/databases|D
 
 print_page_title "Node" "Queries / sec" "Connections / sec" "Cache hits ratio, %" "Table locks waited, %" "Threads active" "Threads created / sec"
 
+if [ -z "$dbcluster" ]; then
+  dbcluster="localhost"
+  dbhs="localhost"
+fi
+
 for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
 
   open_cluster "$dbcl"
   close_cluster_line
   
-  for dbh in `"$PWD"/../../cloud/common/get_ips --names --cluster=$dbcl` ; do
+  if [ -z "$dbcluster" ]; then
+    dbhs="localhost"
+  else
+    dbhs=`"$PWD"/../../cloud/common/get_ips --names --cluster=$dbcl`
+  fi
+  
+  for dbh in $dbhs ; do
 
     source "$PWD/../../standalone/MySQL/${dbh}.dat"
     open_line "$dbh"

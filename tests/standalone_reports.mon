@@ -56,7 +56,7 @@ for sa in `echo "$SATESTS" | tr ',' ' '` ; do
         al="<OK>"
       fi
       echo -e "$al  ${sarep##*/}\n"
-      echo "$sarepbody"
+      echo -e "$sarepbody\n\n"
     done
   fi
 done
