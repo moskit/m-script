@@ -118,7 +118,9 @@ generate_name() {
 sanitize_hostname() {
   [ -z "$1" ] && echo "ERROR: empty hostname has been passed to sanitizer" && return
   if [ -n "$NAME_INDEX_SEPARATOR" ]; then
-    hn="${1}${NAME_INDEX_SEPARATOR}"
+    # the name passed here may contain a separator at the end already
+    hn=`expr $1 : "\(.*\)$NAME_INDEX_SEPARATOR"`
+    hn="${hn}${NAME_INDEX_SEPARATOR}"
   else
     hn=$1
   fi
