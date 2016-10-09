@@ -181,7 +181,15 @@ if [ -n "$ip" ] ; then
   if [ `echo "$localip" | grep -c "^$ip$"` -ne 0 ] ; then
     localip="yes"
   else
-    unset localip
+    # if it is a name
+    ipaddr=`cat "$rpath/nodes.list" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+    if [ -n "$ipaddr" ] ; then
+      if [ `echo "$localip" | grep -c "^$ipaddr$"` -ne 0 ] ; then
+        localip="yes"
+      else
+        unset localip
+      fi
+    fi
   fi
 else
   localip="yes"
