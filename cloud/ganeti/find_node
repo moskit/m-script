@@ -78,8 +78,8 @@ list_the_cluster() {
     for ip in `echo "$ips"` ; do
       if [ -n "$ip" ]; then
         nodedetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_node_details --cloud=$CLOUD --ip=$ip 2>/dev/null`
-        name="`echo "$nodedetails" | grep '^"Instance\ name"|' | cut -s -d'|' -f2 | tr -d '"'`"
-        if [ $? -eq 0 ]; then
+        name="`echo "$nodedetails" | grep '^0/"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+        if [ -n "$name" ]; then
           if [ -z "`echo "$nodedetails" | grep -i '"UUID"|'`" ]; then
             sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/nodes.list"
             sed -i "/|${ip}|/d" "$M_ROOT/cloud/${CLOUD}.list"
@@ -189,7 +189,7 @@ request() {
 
 request
 
-if [ `grep -c ^0\/\/\"code\"\|404$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
+if [ `grep -c ^0\/\"code\"\|404$ "$M_TEMP/${rcommand}.resp"` -eq 1 ] ; then
   echo "Node $name does not exist" && proper_exit 1 191
 fi
 

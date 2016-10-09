@@ -21,7 +21,7 @@ for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
   open_cluster "$dbcl"
   close_cluster_line
   
-  if [ -z "$dbcluster" ]; then
+  if [ "$dbcluster" == "localhost" ]; then
     dbhs="localhost"
   else
     dbhs=`"$PWD"/../../cloud/common/get_ips --names --cluster=$dbcl`

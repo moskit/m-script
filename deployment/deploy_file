@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@ store_vars() {
     source "${tmpfile}.var"
   fi
   [ -n "$verbose" ] && echo "Sourcing $1"
-  for LINE in `cat "$1" | grep -v ^# | grep -v ^$ | grep -v ^[[:space:]]*#` ; do
+  for LINE in `cat "$1" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
     # to respect environment variables and variables passed from command line
     pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
     if [ -n "$pvar" ]; then
@@ -260,13 +260,13 @@ if [ -z "$cluster" ] ; then
       exit 1
     fi
   else
-    cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^#|^$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+    cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
     [ -z "$cluster" ] && echo "${rcommand}: cluster not defined for role $role" && exit 1
   fi
 fi
-([ -n "$all" ] || [ "$cluster" == "all" ]) && cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^#|^$|^[[:space:]]*#" | cut -d'|' -f1`
+([ -n "$all" ] || [ "$cluster" == "all" ]) && cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1`
 #[ `cat "${rpath}/../nodes.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no nodes found in cluster $cluster" && exit 1
-[ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
+[ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
 [ -n "$verbose" ] && echo "### Reading configuration from $ROLES_ROOT/conf/$role.conf"
 
 find_source
@@ -275,6 +275,8 @@ tmpfile="$M_TEMP/deployment/`echo $fullfrom | tr '/' '_'`"
 rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 
 [ -f "$ROLES_ROOT/conf/$role.conf" ] && store_vars "$ROLES_ROOT/conf/$role.conf"
+# file prepared by deploy.run (useful if deploy_file is called from there)
+[ -n "$VARFILE" ] && store_vars "$VARFILE"
 ## ROLEINCL - role of symlinked script or script defined in meta  from another
 ## role
 ## realrole - same as ROLEINCL, but when file to deploy is found in that role,
@@ -309,7 +311,7 @@ if [ -z "$local" ]; then
     else
     # Multiple destinations
       for cl in `echo -e $cluster | tr ',' '\n'` ; do
-        for node in `cat "$rpath/../nodes.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
+        for node in `cat "$rpath/../nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
           IP=${node%%|*}
           if [ -n "$region" ] ; then
             REGION=`echo $node | cut -d'|' -f3`

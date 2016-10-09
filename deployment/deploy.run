@@ -173,6 +173,7 @@ fi
 touch "$varfile"
 # should not be readable by others, sensitive things may be there
 chmod 600 "$varfile"
+export VARFILE=$varfile
 # common role's conf is sourced here to allow global variables that can be
 # used in other role.confs, but its vars are not saved yet
 [ -e "$ROLES_ROOT/conf/common.conf" ] && source "$ROLES_ROOT/conf/common.conf" 2>>"$LOG"

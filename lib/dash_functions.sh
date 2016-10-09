@@ -251,7 +251,7 @@ IFS1=$IFS; IFS='
       cldfound=( `find "$M_ROOT/www/$target/" -mindepth 1 -maxdepth 1 -type d ! -name "localhost"` )
       if [ -d "$M_ROOT/www/$target/localhost" ]; then
         for lip in `"$M_ROOT"/helpers/localips | grep -v '127.0.0.1'` ; do
-          noderecord=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,4,5,6 | grep "^$lip|"`
+          noderecord=`cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,4,5,6 | grep "^$lip|"`
           [ -n "$noderecord" ] && break
         done
         # if localhost found as a cloud server (a part of a configured cluster)

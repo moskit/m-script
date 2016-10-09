@@ -10,7 +10,7 @@ sendalert() {
   IFS1=$IFS; IFS='
 '
   if [ -n "$al" ]; then
-    for MLINE in `cat "$M_ROOT/conf/mail.alert.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
+    for MLINE in `cat "$M_ROOT/conf/mail.alert.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"`; do
       aladdress=`echo "$MLINE" | cut -d' ' -f1`
       aldriver=`echo "$MLINE" | cut -sd' ' -f3`
       [ -z "$aldriver" ] && aldriver="mail"

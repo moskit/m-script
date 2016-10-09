@@ -28,7 +28,7 @@ setup_env() {
   HOME_ORIG=$HOME
   HOME=$M_ROOT
   # with a single cloud we can speed up things a bit (see scripts in cloud/common)
-  CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+  CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
   if [ `echo "$CLOUD" | wc -l` -eq 1 ]; then
     export CLOUD
   else
@@ -52,8 +52,8 @@ setup_env() {
 
 cr() {
   [ -z "$1" ] && cd "$ROLES_ROOT/roles" && return
-  [ "X$1" == "X--list" ] && ls "$ROLES_ROOT/roles" && return
-  [ "X$1" == "X--reload" ] && cr "$role" && return
+  [ "_$1" == "_--list" ] && ls "$ROLES_ROOT/roles" && return
+  [ "_$1" == "_--reload" ] && cr "$role" && return
   if [ ! -d "$ROLES_ROOT/roles/$1" ] ; then
     echo "Role $1 doesn't exist. Use cr --list to get the list of roles available."
     return
@@ -61,7 +61,7 @@ cr() {
   cd "$ROLES_ROOT/roles/$1"
   export M_ROLE="${1%/}"
   export role="${1%/}"
-  M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
+  M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
   [ `echo -e "$M_CLUSTER" | wc -l` -gt 1 ] && echo "More than one cluster found for this role. Selecting the first one." && M_CLUSTER=`echo -e "$M_CLUSTER" | head -1`
   if [ -z "$M_CLUSTER" ]; then
     echo "Cluster not found for this role. It is not a critical error, but default cluster and flavor cannot be determined. It is recommended to create a record in conf/clusters.conf."

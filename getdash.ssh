@@ -53,14 +53,14 @@ fi
 IFS1=$IFS ; IFS='
 '
 
-for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq` ; do
+for cld in `cat "$rpath/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq` ; do
 
   source "$rpath/conf/clouds/${cld}.conf"
   [ -z "$SSHPORT" ] && SSHPORT=22
   [ -z "$CONNECT_TIMEOUT" ] && CONNECT_TIMEOUT=10
   SSH_OPTS="-o StrictHostKeyChecking=yes -o PasswordAuthentication=no -o ConnectTimeout=$CONNECT_TIMEOUT"
 
-  for cluster in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f5 | sort | uniq` ; do
+  for cluster in `cat "$rpath/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f5 | sort | uniq` ; do
     SSH_REMOTE_USER=`grep ^$cluster\| "$rpath/conf/clusters.conf" | cut -s -d'|' -f13`
     [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root"
     [ "_$cluster" == "_$SUPER_CLUSTER" ] && continue
@@ -125,9 +125,6 @@ for cld in `cat "$rpath/nodes.list" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|
           log "$clustered_as/${nodename}: $timediff sec"
         fi
       fi
-    done
-    for node in `find "$rpath/www/$monitor/$cld/$clustered_as/"* -maxdepth 0 -type d 2>/dev/null` ; do
-      [ `cat "$rpath/nodes.list" | grep "|${cld}$" | cut -d'|' -f4,5 | grep "|$cluster$" | grep -c "^${node##*/}|"` -eq 0 ] && rm -rf "$rpath/www/$monitor/$cld/$clustered_as/${node##*/}"
     done
     unset clustered_as
   done

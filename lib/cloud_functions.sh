@@ -26,7 +26,7 @@ log() {
   fi
 }
 
-CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 export CLOUDS
 
 # current cloud passed as an environment variable
@@ -41,17 +41,17 @@ fi
 
 list_clusters() {
   # list_clusters <cloud name>
-  cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,12 | grep "|$1$" | cut -sd'|' -f1 | sort | uniq
+  cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,12 | grep "|$1$" | cut -sd'|' -f1 | sort | uniq
 }
 
 list_node_names() {
   # list_node_names <cloud name> <cluster name>
-  cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f4,5,6 | grep "|$2|$1$" | cut -sd'|' -f1 | sort | uniq
+  cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f4,5,6 | grep "|$2|$1$" | cut -sd'|' -f1 | sort | uniq
 }
 
 list_node_ips() {
   # list_node_ips <cloud name> <cluster name>
-  cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f1,5,6 | grep "|$2|$1$" | cut -sd'|' -f1 | sort | uniq
+  cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,5,6 | grep "|$2|$1$" | cut -sd'|' -f1 | sort | uniq
 }
 
 lock_cloudops() {
@@ -97,11 +97,11 @@ generate_name() {
   cluster="$*"
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "Cluster is not defined, exiting" && return 1
-  nam=$(cat "$M_ROOT/nodes.list" | grep -vE "^#|^$|^[[:space:]]#" | grep \|${cluster}\| | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
+  nam=$(cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep \|${cluster}\| | cut -d'|' -f4 | while read name ; do expr "X$name" : 'X\(.*[^0-9]\)[0-9]*' ; expr "X$name" : "X\($cluster\)[0-9]*" ; done | sort | uniq -c | sort | tail -1) ; nam=${nam##* }
   [ -n "$nam" ] || nam=$cluster
   nam=`sanitize_hostname $nam`
   am=0 ; lm=0
-  num=$(cat "$M_ROOT/nodes.list" | grep -vE "^#|^$|^[[:space:]]#" | cut -d'|' -f4 | grep ^$nam[0-9] | while read name ; do a=`expr "X$name" : "X$nam\([0-9]*\)"` ; l=${#a} ; [[ `expr $l \> ${lm}` -gt 0 ]] && lm=$l ; [[ `expr $a \> ${am}` -gt 0 ]] && am=$a ; echo "$am|$lm" ; done | tail -1)
+  num=$(cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f4 | grep ^$nam[0-9] | while read name ; do a=`expr "X$name" : "X$nam\([0-9]*\)"` ; l=${#a} ; [[ `expr $l \> ${lm}` -gt 0 ]] && lm=$l ; [[ `expr $a \> ${am}` -gt 0 ]] && am=$a ; echo "$am|$lm" ; done | tail -1)
   am=${num%|*} ; lm=${num#*|}
   if [ -n "$am" ] ; then
     am=`expr $am + 1`
@@ -119,7 +119,7 @@ sanitize_hostname() {
   [ -z "$1" ] && echo "ERROR: empty hostname has been passed to sanitizer" && return
   if [ -n "$NAME_INDEX_SEPARATOR" ]; then
     # the name passed here may contain a separator at the end already
-    hn=`expr $1 : "\(.*\)$NAME_INDEX_SEPARATOR"`
+    hn=`expr $1 : "\(.*\)$NAME_INDEX_SEPARATOR$"`
     hn="${hn}${NAME_INDEX_SEPARATOR}"
   else
     hn=$1
@@ -134,7 +134,7 @@ check_cluster_limit() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 1
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud
+  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud
   source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 1
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0
@@ -172,7 +172,7 @@ test_cluster_limit() {
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && log "cluster is not defined, not checking limit" && return 0
   clcloud=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f12`
-  [ -n "$clcloud" ] && [ "X$clcloud" != "X$CLOUD" ] && CLOUD=$clcloud
+  [ -n "$clcloud" ] && [ "_$clcloud" != "_$CLOUD" ] && CLOUD=$clcloud
   source "$M_ROOT/conf/clouds/${CLOUD}.conf" || return 0
   limit=`cat "$M_ROOT/conf/clusters.conf" | grep ^${cluster}\| | cut -d'|' -f7`
   [ -z "$limit" ] && return 0

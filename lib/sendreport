@@ -13,7 +13,7 @@ MAILX=`which mail 2>/dev/null`
 sendreport() {
   IFS1=$IFS; IFS='
 '
-  for MLINE in `cat "$M_ROOT/conf/mail.admin.list" | grep -vE "^$|^#|^[[:space:]]*#"`; do
+  for MLINE in `cat "$M_ROOT/conf/mail.admin.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"`; do
     aladdress=`echo "$MLINE" | cut -d' ' -f1`
     aldriver=`echo "$MLINE" | cut -sd' ' -f2`
     [ -z "$aldriver" ] && aldriver="mail"

@@ -161,7 +161,7 @@ fi
 trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
-[ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+[ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 declare -i result
 result=0
 
@@ -184,7 +184,7 @@ for cld in $CLOUD ; do
         echo "Unable to find $ip in cloud $cld"
         exit 1
       else
-        ip=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#|^$" | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
+        ip=`cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "|${cld}$" | cut -d'|' -f1,4 | grep "|${ip}$" | cut -d'|' -f1`
         [ -z "$ip" ] && echo "Was unable to find IP by node name." && exit 1
       fi
     else
@@ -199,7 +199,7 @@ for cld in $CLOUD ; do
   [ -z "$cluster" ] && cluster=$M_CLUSTER
   [ -z "$cluster" ] && echo -e "No clusters found.\n$rcommand uses environment variable M_CLUSTER, use command-line option --cluster to override it.\nUse --cluster=all to address all clusters in the cloud (or in all clouds if cloud is not set)." && exit 1
 
-  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
+  [ "$cluster" == "all" ] && clusters=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"` || clusters=$cluster
 
   declare -i n
   IFS1=$IFS
@@ -211,13 +211,13 @@ for cld in $CLOUD ; do
       [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1,12 | grep "|${cld}$" | cut -d'|' -f1 | grep -c "^${icluster}$"` -eq 0 ] && echo "Cluster $icluster not found" && continue
       unset SSH_REMOTE_USER nosudo
       [ -n "$user" ] && SSH_REMOTE_USER="$user"
-      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | grep "^$icluster|" | cut -s -d'|' -f13`
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "^$icluster|" | cut -s -d'|' -f13`
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
       n=0
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
       M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
       
-      nodelist=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE "^$|^#|^[[:space:]]*#"`
+      nodelist=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"`
       for nodename in `echo "$nodelist" | cut -d'|' -f4 | sort | uniq` ; do
         node=`echo "$nodelist" | grep "|$nodename|"`
         if [ `echo "$node" | wc -l` -gt 1 ]; then

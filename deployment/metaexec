@@ -20,6 +20,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
+
 genline() {
   metatype=${1%/*}
   metacond=${1#*/}
@@ -210,6 +211,8 @@ createnode() {
   [ $? -ne 0 ] && ip=$? 
   log "($CLOUD) create_node returned this: $ip"
 }
+
+trap meta_exit 3 6 15
 
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
