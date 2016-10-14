@@ -21,11 +21,8 @@ rpath=${0%/*}
 
 GNTI=`which gnt-instance 2>/dev/null`
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 LOG="$M_ROOT/logs/cloud.log"
 source "$M_ROOT/lib/cloud_functions.sh"
-
-M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 
 possible_options="cloud id name ip verbose cluster"
 necessary_options=""
@@ -57,6 +54,10 @@ find_by_ip() {
 find_by_id() {
   name=`$GNTI list --no-headers -o name,uuid | grep " $id$" | cut -d' ' -f1`
 }
+
+[ -n "$cloud" ] && CLOUD=$cloud
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+M_TEMP="$M_TEMP/cloud/$CLOUD_PROVIDER"
 
 if [ -z "$name" ] ; then
   if [ -z "$ip" ] ; then
@@ -104,21 +105,9 @@ if [[ $reqres -eq 0 ]] ; then
       sed -i "/^$ipa /d" /etc/hosts && log "$ipa removed from /etc/hosts"
     fi
   done
-  needs_balancer=false
-  for bcluster in $APP_SERVERS ; do
-    [ "_${bcluster%%|*}" == "_$tscluster" ] && needs_balancer=true
-  done
-  if $needs_balancer ; then
-    if [ -n "$BALANCER" ] ; then
-      case "$BALANCER" in
-      nginx)
-        update_nginx_proxy
-        ;;
-      esac
-    fi
-  fi
+  sed -i "/^$name\|/d" "$M_ROOT/cloud/${CLOUD}.list"
 else
-  echo "Error stopping node" >&2
+  echo "Error destroying node" >&2
 fi
 
 proper_exit 0 119
