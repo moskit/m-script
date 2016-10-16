@@ -105,7 +105,7 @@ if [[ $reqres -eq 0 ]] ; then
       sed -i "/^$ipa /d" /etc/hosts && log "$ipa removed from /etc/hosts"
     fi
   done
-  sed -i "/^$name\|/d" "$M_ROOT/cloud/${CLOUD}.list"
+  sed -i "/^$name\|/d" "$M_ROOT/cloud/${CLOUD}.list" && log "$name removed from cloud/${CLOUD}.list"
 else
   echo "Error destroying node" >&2
 fi
