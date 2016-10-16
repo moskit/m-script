@@ -592,7 +592,7 @@ if [ -z "$list" ]; then
   ##
 fi
 echo
-rm "$CURRTASKDIR"/meta 2>/dev/null
+rm "$CURRTASKDIR"/meta "$CURRTASKDIR"/meta.pre 2>/dev/null
 for pre in "$ROLES_ROOT/roles/$role"/*.meta.pre ; do
   [ -e "$pre" ] || continue
   prename=${pre%%.*}
@@ -600,16 +600,37 @@ for pre in "$ROLES_ROOT/roles/$role"/*.meta.pre ; do
   preflavor=`echo "$prename" | cut -sd'_' -f2`
   if [ -z "$pretask" ] || [ "_$pretask" == "_$task" ]; then
     if [ -z "$preflavor" ] || [ "_$preflavor" == "_$flavor" ]; then
-      cat "$pre" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (genline $metaline >> "$CURRTASKDIR"/meta) ; done
+      cat "$pre" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (genline $metaline >> "$CURRTASKDIR"/meta.pre) ; done
     fi
   fi
 done
+IFS='
+'
+if [ -e "$CURRTASKDIR/meta.pre" ]; then
+  declare -i metan
+  metan=1
+  for meta in `cat "$CURRTASKDIR/meta.pre"` ; do
+    meta=`eval "echo \"$meta\""`
+
+    if [ -n "$list" ]; then
+      echo "$metan $meta"
+      if [ "$list" == "unfold" ]; then
+        echo '--------------------------------------------------------------------------------'
+        role show script "${meta#* }" | sed 's|\\\$|$|g'
+        echo '--------------------------------------------------------------------------------'
+      fi
+    else
+      (IFS=$IFSORIG ; run_meta $meta)
+      [ $? -ne 0 ] && meta_exit 1 579
+    fi
+    metan+=1
+  done
+fi
+
 if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
   echo "$command" >> "$CURRTASKDIR"/meta
 else
   
-  IFS='
-'
   cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
   
   declare -i metan
