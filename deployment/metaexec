@@ -628,7 +628,7 @@ if [ -e "$CURRTASKDIR/meta.pre" ]; then
 fi
 
 if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
-  echo "$command" >> "$CURRTASKDIR"/meta
+  genline "$command" >> "$CURRTASKDIR"/meta
 else
   
   cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
@@ -650,7 +650,7 @@ else
       done
       metan=1
     done
-    echo -e "$newmeta" >> "$CURRTASKDIR/meta"
+    echo -e "$newmeta" > "$CURRTASKDIR/meta"
   fi
   for meta in `cat "$CURRTASKDIR"/meta` ; do
     meta=`eval "echo \"$meta\""`
