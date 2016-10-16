@@ -120,6 +120,7 @@ sanitize_hostname() {
   if [ -n "$NAME_INDEX_SEPARATOR" ]; then
     # the name passed here may contain a separator at the end already
     hn=`expr $1 : "\(.*\)$NAME_INDEX_SEPARATOR$"`
+    [ $? -eq 0 ] || hn=$1
     hn="${hn}${NAME_INDEX_SEPARATOR}"
   else
     hn=$1
