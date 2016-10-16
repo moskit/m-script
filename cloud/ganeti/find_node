@@ -67,11 +67,7 @@ list_the_cluster() {
   # 1. compile full list
   # 2. if 'slow' is set, verify each node by querying its personal details
   ips1=`cat "$M_ROOT/nodes.list" | grep \|${CLOUD}$ | cut -d'|' -f1,5 | grep \|${cluster}$ | cut -d'|' -f1`
-  if [ "_$NETWORK" == "_external" ]; then
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f6 | tr -d '"'`
-  else
-    ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep -E "\|\"${cluster}\"\||\|\"${cluster}\"$" | cut -d'|' -f7 | tr -d '"'`
-  fi
+  ips2=`cat "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null | grep "|${CLUSTER_TAG}:${cluster}|" | cut -d'|' -f3`
   ips=`echo -e "$ips1\n$ips2" | grep -v ^$ | sort | uniq`
 
   if [ -z "$quick" ]; then
@@ -86,8 +82,8 @@ list_the_cluster() {
           else
             grep -q "|${ip}|" "$M_ROOT/cloud/${CLOUD}.list" || $GNTI list --separator='|' --no-headers -o "name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,tags,uuid,os,ctime" "$name" >> "$M_ROOT/cloud/${CLOUD}.list"
             if ! `grep -q "^${ip}|" "$M_ROOT/nodes.list"` ; then
-              cluster="`echo "$nodedetails" | grep "\"tags\"/" | grep "\"${CLUSTER_TAG}:" | cut -s -d'|' -f2 | tr -d '"' | cut -s -d':' -f2`"
-              key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -s -d'|' -f2 | tr -d '"'`"
+              cluster="`echo "$nodedetails" | grep "\"tags\"/" | grep "|\"${CLUSTER_TAG}:" | cut -sd'|' -f2 | tr -d '"' | cut -sd':' -f2`"
+              key="`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f2`"
               echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
             fi
           fi
