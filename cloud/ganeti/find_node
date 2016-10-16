@@ -74,7 +74,7 @@ list_the_cluster() {
     for ip in `echo "$ips"` ; do
       if [ -n "$ip" ]; then
         nodedetails=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_node_details --cloud=$CLOUD --ip=$ip 2>/dev/null`
-        name="`echo "$nodedetails" | grep '^0/"name"|' | cut -s -d'|' -f2 | tr -d '"'`"
+        name="`echo "$nodedetails" | grep '^0/"name"|' | cut -sd'|' -f2 | tr -d '"'`"
         if [ -n "$name" ]; then
           if [ -z "`echo "$nodedetails" | grep -i '"UUID"|'`" ]; then
             sed -i "/^${ip}.*${CLOUD}$/d" "$M_ROOT/nodes.list"
@@ -157,6 +157,7 @@ export CLOUD
 
 source "$rpath/../../conf/mon.conf"
 [ -n "$CLOUD" ] && source "$rpath/../../conf/clouds/${CLOUD}.conf"
+[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 source "$rpath/../../lib/cloud_functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 
