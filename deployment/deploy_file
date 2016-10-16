@@ -115,7 +115,7 @@ prepare_file() {
   cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
     sed 's|\\"|\\\\"|g' | \
-    sed 's|"|\\\\"|g' | \
+    sed 's|"|\\\"|g' | \
     sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
   $debug && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
