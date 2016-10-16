@@ -94,6 +94,15 @@ list_the_cluster() {
         fi
       fi
     done
+  else
+    if [ -z "$ips2" ]; then
+      if [ -n "$ips1" ]; then
+        for ip in $ips1 ; do
+          log "IP $ip is present in the nodes list but not in the cloud list, adding to the cloud list"
+          $GNTI list --separator='|' --no-headers -o "name,status,nic.ip/0,nic.ips,disk.sizes,be/memory,be/vcpus,pnode,snodes,tags,uuid,os,ctime" `IAMACHILD=1 "$M_ROOT"/cloud/common/get_node_details --cloud=$CLOUD --ip=$ip 2>/dev/null | grep '^0/"name"|' | cut -s -d'|' -f2 | tr -d '"'` >> "$M_ROOT/cloud/${CLOUD}.list"
+        done
+      fi
+    fi
   fi
   cat "$M_ROOT/cloud/${CLOUD}.list" | grep -E "\|cluster:${cluster}\||\|cluster:${cluster}$"
 }
