@@ -20,7 +20,6 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
-
 genline() {
   metatype=${1%/*}
   metacond=${1#*/}
@@ -526,8 +525,8 @@ fi
 [ -z "$output" ] && output=console
 use_color=false
 if [ "$output" == "console" ]; then
-   if [ -z "$M_COLOR" ]; then
-    # Thanks to Gentoo guys for this part, I couldn't do better
+  if [ -z "$M_COLOR" ]; then
+    # Thanks to Gentoo guys for this part, I couldn't have done better
     safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
     match_lhs=""
     [ -f ~/.dir_colors   ] && match_lhs="${match_lhs}$(<~/.dir_colors)"
@@ -570,7 +569,7 @@ if [ -z "$list" ]; then
     if ! $loggedin && [ -n "$newnode" ]; then
       # stop useless node and tell the parent process that something's wrong
       IAMACHILD=1 "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
-      meta_exit 13 531
+      meta_exit 13 573
     fi
   fi
   #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
@@ -589,17 +588,25 @@ if [ -z "$list" ]; then
     if [ -n "$newnode" ]; then
       echo "ip=\"$ip\"" >> "$CURRTASKDIR/ARGV"
     fi
-  else
-    rm "$CURRTASKDIR"/meta 2>/dev/null
   fi
   ##
 fi
 echo
+rm "$CURRTASKDIR"/meta 2>/dev/null
+for pre in "$ROLES_ROOT/roles/$role"/*.meta.pre ; do
+  prename=${pre%%.*}
+  pretask=`echo "$prename" | cut -sd'_' -f1`
+  preflavor=`echo "$prename" | cut -sd'_' -f2`
+  if [ -z "$pretask" ] || [ "_$pretask" == "_$task" ]; then
+    if [ -z "$preflavor" ] || [ "_$preflavor" == "_$flavor" ]; then
+      cat "$pre" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (genline $metaline >> "$CURRTASKDIR"/meta) ; done
+    fi
+  fi
+done
 if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
-  meta="$command"
-  run_meta $meta
+  echo "$command" >> "$CURRTASKDIR"/meta
 else
-  rm "$CURRTASKDIR"/meta 2>/dev/null
+  
   IFS='
 '
   cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
@@ -621,7 +628,7 @@ else
       done
       metan=1
     done
-    echo -e "$newmeta" > "$CURRTASKDIR/meta"
+    echo -e "$newmeta" >> "$CURRTASKDIR/meta"
   fi
   for meta in `cat "$CURRTASKDIR"/meta` ; do
     meta=`eval "echo \"$meta\""`
