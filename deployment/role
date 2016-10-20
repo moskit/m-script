@@ -394,6 +394,9 @@ case $command1 in
         $methodcommand "$f" "$ROLES_ROOT/roles/$param2/$nf"
       fi
     done
+    if [ -e "$ROLES_ROOT/conf/${sourcerole##*/}.conf" ]; then
+      cp "$ROLES_ROOT/conf/${sourcerole##*/}.conf" "$ROLES_ROOT/conf/${param2}.conf"
+    fi
     ;;
   create)
     declare -a flarr
@@ -515,7 +518,7 @@ case $command1 in
               [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/common/$param1" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/common/$param1"
             fi
           else
-            [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/$flavor/$param1" | grep -vE '^$|^#|^[[:space:]]#' || cat "$ROLES_ROOT/roles/$role/$flavor/$param1"
+            [ -n "$strip" ] && cat "$ROLES_ROOT/roles/$role/$flavor/$param1" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" || cat "$ROLES_ROOT/roles/$role/$flavor/$param1"
           fi
           ;;
         esac
@@ -531,7 +534,7 @@ case $command1 in
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/$param1"
         [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
         if [ `file "$rf" | cut -d':' -f2 | grep -c text` -eq 1 ]; then
-          [ -n "$strip" ] && cat "$rf" | grep -vE '^$|^#|^[[:space:]]#' || cat "$rf"
+          [ -n "$strip" ] && cat "$rf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" || cat "$rf"
         else
           file "$rf"
         fi
@@ -547,6 +550,56 @@ case $command1 in
         else
           echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
         fi
+        ;;
+    esac
+    ;;
+  encrypt)
+    role_required
+    [ -z "$param1" ] && [ "_$command2" != "_conf" ] && echo -e "Usage: role encrypt file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
+    [ -z "$ENCRYPT_METHOD" ] && ENCRYPT_METHOD="aes-128-cbc"
+    case $command2 in
+      conf)
+        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$ROLES_ROOT/conf/${role}.conf"
+        ;;
+      file)
+        if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/$param1" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/$flavor/files/$param1"`
+        elif [ -h "$ROLES_ROOT/roles/$role/common/files/$param1" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/common/files/$param1"`
+        else
+          rf="$ROLES_ROOT/roles/$role/$flavor/files/$param1"
+        fi
+        [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/$param1"
+        [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$rf"
+        ;;
+      *)
+        echo -e "Usage: role encrypt file|conf NAME\n       NAME can be omitted in case of conf" && exit 0
+        ;;
+    esac
+    ;;
+  decrypt)
+    role_required
+    [ -z "$param1" ] && [ "_$command2" != "_conf" ] && echo -e "Usage: role decrypt file|conf NAME\n       NAME can be omitted in case of conf" && exit 1
+    [ -z "$ENCRYPT_METHOD" ] && ENCRYPT_METHOD="aes-128-cbc"
+    case $command2 in
+      conf)
+        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$ROLES_ROOT/conf/${role}.conf"
+        ;;
+      file)
+        if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/${param1}.enc" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/$flavor/files/${param1}.enc"`
+        elif [ -h "$ROLES_ROOT/roles/$role/common/files/${param1}.enc" ]; then
+          rf=`readlink -f "$ROLES_ROOT/roles/$role/common/files/${param1}.enc"`
+        else
+          rf="$ROLES_ROOT/roles/$role/$flavor/files/${param1}.enc"
+        fi
+        [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/${param1}.enc"
+        [ ! -e "$rf" ] && echo "File ${param1}.enc doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
+        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$rf"
+        ;;
+      *)
+        echo -e "Usage: role decrypt file|conf NAME\n       NAME can be omitted in case of conf" && exit 0
         ;;
     esac
     ;;
@@ -578,4 +631,4 @@ EOF
     ;;
 esac
 
-IFS=$IFS1
+exit 0
