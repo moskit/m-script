@@ -595,7 +595,8 @@ echo
 rm "$CURRTASKDIR"/meta "$CURRTASKDIR"/meta.pre 2>/dev/null
 for pre in "$ROLES_ROOT/roles/$role"/*.meta.pre ; do
   [ -e "$pre" ] || continue
-  prename=${pre%%.*}
+  prename=`echo "$pre" | cut -sd'.' -f1`
+  prename=${prename##*/}
   pretask=`echo "$prename" | cut -sd'_' -f1`
   preflavor=`echo "$prename" | cut -sd'_' -f2`
   if [ -z "$pretask" ] || [ "_$pretask" == "_$task" ]; then
