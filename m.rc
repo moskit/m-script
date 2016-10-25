@@ -46,7 +46,11 @@ setup_env() {
   export ROLES_ROOT M_ROOT HOME HOME_ORIG M_TEMP
   $ALWAYS_LOGIN_SHELL && source /etc/profile
   [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
-  [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
+  if [ -n "$customenv" ]; then
+    [ -f "$HOME/.msh.env.$customenv" ] && source "$HOME/.msh.env.$customenv"
+  else
+    [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
+  fi
   export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:${PATH}"
 }
 
@@ -143,6 +147,7 @@ if [ -n "$M_COLOR" ] ; then
   export CONTR_SEQ UNSET_COLOR FG_BLACK FG_RED FG_GREEN FG_YELLOW FG_BLUE FG_MAGENTA FG_CYAN FG_WHITE BG_BLACK BG_RED BG_GREEN BG_YELLOW BG_BLUE BG_MAGENTA BG_CYAN BG_WHITE ATTR_NONE ATTR_BOLD ATTR_UNDERSCORE ATTR_BLINK ATTR_REVERSE ATTR_CONCEALED
 fi
 
+[ -n "$1" ] && customenv="$1"
 setup_env
 set_default_ps
 cd
