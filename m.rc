@@ -46,11 +46,7 @@ setup_env() {
   export ROLES_ROOT M_ROOT HOME HOME_ORIG M_TEMP
   $ALWAYS_LOGIN_SHELL && source /etc/profile
   [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
-  if [ -n "$customenv" ]; then
-    [ -f "$HOME/.msh.env.$customenv" ] && source "$HOME/.msh.env.$customenv"
-  else
-    [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
-  fi
+  [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
   export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:${PATH}"
 }
 
@@ -98,6 +94,10 @@ set_default_ps() {
     PS1="[${HOSTNAME%%.*}:${M_ROLE}]# "
   fi
   export PS1
+}
+
+ce() {
+  [ -f "$M_ROOT/.msh.env.${1}" ] && source "$M_ROOT/.msh.env.${1}"
 }
 
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM

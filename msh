@@ -7,9 +7,5 @@ rpath=${rpath%/*}
 M_ROOT="$rpath"
 export M_ROOT
 #*/
-if [ -n "$1" ]; then
-  $ba --rcfile "$rpath"/m.rc "$1"
-else
-  $ba --rcfile "$rpath"/m.rc
-fi
+$ba --rcfile "$rpath"/m.rc
 
