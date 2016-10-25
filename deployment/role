@@ -257,27 +257,6 @@ case $command1 in
               done
             fi
           done
-          if [ -n "$all" ]; then
-            for or in `find "$ROLES_ROOT/roles" -mindepth 1 -maxdepth 1 -type d ! -name "$param1"` ; do
-              [ `cat "$or/"*.meta 2>/dev/null | grep -c "${sc##*/}$"` -gt 0 ] && ori+=( "found in role ${or##*/}" )
-            done
-            for oris in ${ori[*]} ; do
-              if [ -n "$scr" ]; then
-                col=$col1
-                printcol "$scr"
-                col=$col2
-              else
-                col=$col1
-                printcol ""
-                col=$col2
-                printcol ""
-              fi
-              printcol "$oris"
-              echo
-              unset scr oris
-            done
-            unset ori
-          fi
           unset mi
         done
       ;;
@@ -479,7 +458,6 @@ case $command1 in
         conf="$ROLES_ROOT/conf/${param1##*/}"
         echo -e "\nEditing file $conf\n"
         [ -e "$conf" ] || echo "No such file, creating"
-        sleep 1
         $ED "$conf"
         ;;
       *)
@@ -488,7 +466,6 @@ case $command1 in
           conf="$ROLES_ROOT/conf/${role}.conf"
           echo -e "\nEditing file $conf\n"
           [ -e "$conf" ] || echo "No such file, creating"
-          sleep 3
           $ED "$conf"
         else
           echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
