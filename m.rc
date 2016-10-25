@@ -61,10 +61,15 @@ cr() {
   cd "$ROLES_ROOT/roles/$1"
   export M_ROLE="${1%/}"
   export role="${1%/}"
-  M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
+  [ -e role.rc ] && source role.rc
+  if [ -n "$cluster" ]; then
+    M_CLUSTER="$cluster"
+  else
+    M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
   [ `echo -e "$M_CLUSTER" | wc -l` -gt 1 ] && echo "More than one cluster found for this role. Selecting the first one." && M_CLUSTER=`echo -e "$M_CLUSTER" | head -1`
+  fi
   if [ -z "$M_CLUSTER" ]; then
-    echo "Cluster not found for this role. It is not a critical error, but default cluster and flavor cannot be determined. It is recommended to create a record in conf/clusters.conf."
+    echo "Cluster not found for this role, default cluster and flavor cannot be determined."
   else
     export M_CLUSTER
     flavor=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f11`
@@ -77,7 +82,7 @@ cr() {
 }
 
 exitrole() {
-  unset M_ROLE M_CLUSTER CLOUD role flavor
+  unset M_ROLE M_CLUSTER CLOUD role flavor cluster
   setup_env
   set_default_ps
 }
