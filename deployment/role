@@ -39,8 +39,13 @@ printcol() {
 
 role_required() {
   if [ -n "$role" ]; then
-    if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
-      echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
+    if [ -e "$ROLES_ROOT/$role/role.rc" ]; then
+      source "$ROLES_ROOT/$role/role.rc"
+    fi
+    if [ -z "$cluster" ]; then
+      if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
+        echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
+      fi
     fi
   else
     echo "role must be defined for this command (use cr <role> or option --role=<role>)" && exit 1
