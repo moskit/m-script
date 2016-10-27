@@ -427,6 +427,8 @@ else
         cluster=$M_CLUSTER
       fi
     else
+      # cluster can be defined in role.rc
+      cluster=$M_CLUSTER
       [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
