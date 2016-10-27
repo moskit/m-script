@@ -39,8 +39,8 @@ printcol() {
 
 role_required() {
   if [ -n "$role" ]; then
-    if [ -e "$ROLES_ROOT/$role/role.rc" ]; then
-      source "$ROLES_ROOT/$role/role.rc"
+    if [ -e "$ROLES_ROOT/roles/$role/role.rc" ]; then
+      source "$ROLES_ROOT/roles/$role/role.rc"
     fi
     if [ -z "$cluster" ]; then
       if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
