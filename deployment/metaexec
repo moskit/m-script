@@ -667,33 +667,33 @@ else
     done
     echo -e "$newmeta" > "$CURRTASKDIR/meta"
   fi
-  for meta in `cat "$CURRTASKDIR"/meta` ; do
-    meta=`eval "echo \"$meta\""`
-    skipthis=false
-    if [ -n "$list" ]; then
-      echo "$metan $meta"
-      if [ "$list" == "unfold" ]; then
-        echo '--------------------------------------------------------------------------------'
-        role show script "${meta#* }" | sed 's|\\\$|$|g'
-        echo '--------------------------------------------------------------------------------'
-      fi
-    else
-      if [ -n "$skip" ]; then
-        for skipn in `echo -e $skip | tr ',' '\n'` ; do
-          [[ $skipn -eq $metan ]] && skipthis=true
-        done
-      fi
-
-      if ! $skipthis ; then
-        (IFS=$IFSORIG ; run_meta $meta)
-        [ $? -ne 0 ] && meta_exit 1 579
-      fi
-    fi
-    metan+=1
-  done
-  IFS=$IFSORIG
 fi
 
+for meta in `cat "$CURRTASKDIR"/meta` ; do
+  meta=`eval "echo \"$meta\""`
+  skipthis=false
+  if [ -n "$list" ]; then
+    echo "$metan $meta"
+    if [ "$list" == "unfold" ]; then
+      echo '--------------------------------------------------------------------------------'
+      role show script "${meta#* }" | sed 's|\\\$|$|g'
+      echo '--------------------------------------------------------------------------------'
+    fi
+  else
+    if [ -n "$skip" ]; then
+      for skipn in `echo -e $skip | tr ',' '\n'` ; do
+        [[ $skipn -eq $metan ]] && skipthis=true
+      done
+    fi
+
+    if ! $skipthis ; then
+      (IFS=$IFSORIG ; run_meta $meta)
+      [ $? -ne 0 ] && meta_exit 1 579
+    fi
+  fi
+  metan+=1
+done
+IFS=$IFSORIG
 
 echo
 meta_exit 0 597
