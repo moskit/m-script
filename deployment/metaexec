@@ -72,6 +72,8 @@ genline() {
       echo "$ipr \"$1 $metascript\""
     else
       echo -e "# ERROR generating full line:\n# $metatype $metascript\n# either meta type is unknown or it is empty and no shebang in the script"
+      log "ERROR generating full line from $@ (metatype not defined)"
+      log "result is: ipr=$ipr metatype=$metatype metascript=$metascript"
     fi
     ;;
   esac
@@ -111,13 +113,23 @@ run_meta() {
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       thescript=${metascript##*/}
-      therest=${metascript%/*}
+      therest=`echo "$metascript" | cut -sd'/' -f1`
       [ `expr "$therest" : "\.*/"` -gt 0 ] && therest=`expr "$therest" : "\.*/\(.*\)"`
       if [ -z "$therest" ]; then
         if [ -e "$ROLES_ROOT/roles/$role/$flavor/$thescript" ]; then
           metascript="$role/$flavor/$thescript"
         else
-          metascript=`find "$ROLES_ROOT/roles" -name "$thescript"`
+          # if role is known, flavor may be bound to it via cluster configuration
+          if [ -n "$role" ]; then
+            roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$role|" | cut -sd'|' -f2`
+            if [ -e "$ROLES_ROOT/roles/$role/$roleflavor/$thescript" ]; then
+              metascript="$role/$roleflavor/$thescript"
+            fi
+          fi
+          if [ -z "$metascript" ]; then
+            # last resort
+            metascript=`find "$ROLES_ROOT/roles" -name "$thescript"`
+          fi
           if [ -z "$metascript" ]; then
             echo "$metascript not found"
             res=1
@@ -135,8 +147,8 @@ run_meta() {
           fi
         fi
       else
-        therole=`echo "$therest" | cut -d'/' -s -f1`
-        theflavor=`echo "$therest" | cut -d'/' -s -f2`
+        therole=`echo "$therest" | cut -sd'/' -f1`
+        theflavor=`echo "$therest" | cut -sd'/' -f2`
         [ -z "$therole" -a -z "$theflavor" ] && theflavor="$therest"
         if [ -n "$therole" ]; then
           msfoundinrole=`find "$ROLES_ROOT/roles/$therole" -name "$thescript"`
@@ -631,7 +643,7 @@ if [ -e "$CURRTASKDIR/meta.pre" ]; then
 fi
 
 if [ -n "$command" ] && [[ `echo $command | grep -c "^[0-9,]*$"` -eq 0 ]]; then
-  genline "$command" >> "$CURRTASKDIR"/meta
+  (IFS=$IFSORIG ; genline $command >> "$CURRTASKDIR"/meta)
 else
   
   cat "$ROLES_ROOT/roles/$role/${task}.meta" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | while read metaline ; do (IFS=$IFSORIG ; genline $metaline >> "$CURRTASKDIR"/meta) ; done
