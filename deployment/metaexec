@@ -116,6 +116,7 @@ run_meta() {
       therest=`echo "$metascript" | cut -sd'/' -f1`
       [ `expr "$therest" : "\.*/"` -gt 0 ] && therest=`expr "$therest" : "\.*/\(.*\)"`
       if [ -z "$therest" ]; then
+        # if both role and flavor are defined
         if [ -e "$ROLES_ROOT/roles/$role/$flavor/$thescript" ]; then
           metascript="$role/$flavor/$thescript"
         else
@@ -124,6 +125,10 @@ run_meta() {
             roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$role|" | cut -sd'|' -f2`
             if [ -e "$ROLES_ROOT/roles/$role/$roleflavor/$thescript" ]; then
               metascript="$role/$roleflavor/$thescript"
+            fi
+            # if not in the configured flavor, then it is in 'common'
+            if [ -e "$ROLES_ROOT/roles/$role/common/$thescript" ]; then
+              metascript="$role/common/$thescript"
             fi
           fi
           if [ -z "$metascript" ]; then
@@ -134,7 +139,7 @@ run_meta() {
             echo "$metascript not found"
             res=1
           else
-            echo -e "\n$ROLES_ROOT/roles/$role/$flavor/$thescript not found"
+            echo -e "\n$thescript not found"
             if [ `echo "$metascript" | wc -l` -gt 1 ]; then
               echo "Found more than one scripts with the name ${thescript}:"
               echo "$metascript"
