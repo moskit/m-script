@@ -139,14 +139,10 @@ run_meta() {
             echo "$metascript not found"
             res=1
           else
-            echo -e "\n$thescript not found"
             if [ `echo "$metascript" | wc -l` -gt 1 ]; then
               echo "Found more than one scripts with the name ${thescript}:"
               echo "$metascript"
               echo "Please narrow the search conditions"
-              res=1
-            else
-              echo "Found: $metascript"
               res=1
             fi
           fi
@@ -441,11 +437,13 @@ else
     if [ -z "$role" ]; then
       if [ -n "$M_ROLE" ]; then
         role=$M_ROLE
-        cluster=$M_CLUSTER
+        # cluster could be defined in role.rc, this has a higher priority
+        source "$ROLES_ROOT/roles/$role/role.rc"
+        [ -z "$cluster" ] && cluster=$M_CLUSTER
       fi
     else
-      # cluster can be defined in role.rc
-      cluster=$M_CLUSTER
+      source "$ROLES_ROOT/roles/$role/role.rc"
+      [ -z "$cluster" ] && cluster=$M_CLUSTER
       [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
