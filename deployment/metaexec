@@ -438,7 +438,7 @@ else
       if [ -n "$M_ROLE" ]; then
         role=$M_ROLE
         # cluster could be defined in role.rc, this has a higher priority
-        source "$ROLES_ROOT/roles/$role/role.rc"
+        [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
         [ -z "$cluster" ] && cluster=$M_CLUSTER
       fi
     else

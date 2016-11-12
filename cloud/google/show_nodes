@@ -59,7 +59,7 @@ declare -i icount
 
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -z "$status" -a -n "$state" ] && status=$state
-[ -z "$status" ] && status="1"
+[ -z "$status" ] && status="RUNNING"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
@@ -82,7 +82,7 @@ list_nodes() {
       imageId=`echo "$node" | grep '"licenses"/0|' | cut -sd'|' -f2 | tr -d '"'`
       flavorId=`echo "$node" | grep '"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
       istatus=`echo "$node" | grep '"status"|' | cut -sd'|' -f2 | tr -d '"'`
-      icluster=`echo "$node" | grep "\"tags\"/\"items\"|\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | cut -sd'-' -f4`
+      icluster=`echo "$node" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | cut -sd'-' -f4`
       region=`echo "$node" | grep '"zone"|' | cut -sd'|' -f2 | tr -d '"'`
       intIP=`echo "$node" | grep '"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`
       extIP=`echo "$node" | grep '"networkInterfaces"/0/"accessConfigs"/0/"natIP"|' | cut -sd'|' -f2 | tr -d '"'`
@@ -123,13 +123,13 @@ list_nodes() {
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
           case $view in
             list)
-              echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: ${extIP}  intIP: ${intIP}  Cluster: $icluster  Image: $imageId  Size: $flavorId"
+              echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: ${extIP}  intIP: ${intIP}  Cluster: $icluster  Image: ${imageId%%*/}  Size: $flavorId"
               ;;
             table)
-              echo "$id|$name|$istatus|$region|${extIP}|${intIP}|$icluster|$imageId|$flavorId"
+              echo "$id|$name|$istatus|$region|${extIP}|${intIP}|$icluster|${imageId%%*/}|$flavorId"
               ;;
             column)
-              echo -e "ID: $id\nName: $name\nStatus: $istatus\nRegion: $region\next IP: ${extIP}\nintIP: ${intIP}\nImage: $imageId\nSize: $flavorId\n"
+              echo -e "ID: $id\nName: $name\nStatus: $istatus\nRegion: $region\next IP: ${extIP}\nintIP: ${intIP}\nImage: ${imageId%%*/}\nSize: $flavorId\n"
               ;;
             none)
               ;;
@@ -138,7 +138,7 @@ list_nodes() {
               echo "Node ID: $id    Name: $name    Cluster: $icluster"
               echo "Public IP: ${extIP}"
               echo "Private IP: ${intIP}"
-              echo "Node image: $imageId"
+              echo "Node image: $${imageId%%*/}"
               echo "Node size: $flavorId    Status: $istatus    Region: $region"
               ;;
           esac

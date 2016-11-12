@@ -1,5 +1,5 @@
 #####################################
-##  Rackspace cloud configuration  ##
+##  Linode cloud configuration  ##
 #####################################
 
 CLOUD_PROVIDER=linode
@@ -72,5 +72,4 @@ NAME_INDEX_SEPARATOR="-"
 # in seconds. If this file is too old, it will be updated forcefully.
 # There is no default, so if this is unset or empty, the feature is disabled.
 FORCE_LIST_UPDATE_AFTER=1800
-
 

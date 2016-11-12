@@ -20,7 +20,7 @@ fpath=${fpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
 
 caller=$(readlink -f "$0")
-callername=${callername##*/}
+callername=${caller##*/}
 
 SSLEX=`which openssl 2>/dev/null`
 CURL=`which curl 2>/dev/null`
