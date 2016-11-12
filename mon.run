@@ -92,12 +92,12 @@ function mailalert() {
           fi
         fi
       done
-      echo -e "=== Sending alert ===\nSubject: $al Node $HOSTNAME alert\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"
+      echo -e "=== Sending alert ===\nSubject: $al Alert from node $HOSTNAME\nTo: $aladdress\nVia: $aldriver\n\n$etitle\n$albody\n=====================" >> "$rpath/monitoring.log"
       if [ "$aldriver" == "mail" ]; then
-        echo -e "--------------------------------\n$etitle\n--------------------------------\n$albody" | $MAILX -s "$al Node $HOSTNAME alert" "$aladdress" >> "$rpath/monitoring.log" 2>&1
+        echo -e "--------------------------------\n$etitle\n--------------------------------\n$albody" | $MAILX -s "$al Alert from node $HOSTNAME" "$aladdress" >> "$rpath/monitoring.log" 2>&1
       else
         albody=`echo -e "$albody"`
-        echo "*$etitle*\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Node $HOSTNAME alert" >> "$rpath/monitoring.log" 2>&1
+        echo "*$etitle*\n$albody" | "$rpath"/lib/alert.drivers/$aldriver - $aladdress "$al Alert from node $HOSTNAME" >> "$rpath/monitoring.log" 2>&1
       fi
       unset aldriver minlevel aladdress albody
     done
