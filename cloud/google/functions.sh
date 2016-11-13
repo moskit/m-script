@@ -23,12 +23,15 @@ caller=$(readlink -f "$0")
 callername=${caller##*/}
 
 CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "curl not found" >&2 && exit 1
 CURL="$CURL -s -k"
+STAT=`which stat 2>/dev/null`
+[ -z "$STAT" ] && echo "stat not found" >&2 && exit 1
 
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
 
-[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+[ -z "$CLOUD" ] && echo "No cloud defined" >&2 && exit 1
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
@@ -42,7 +45,17 @@ install_sdk() {
 }
 
 get_oath2_token() {
-  reply=`$CURL "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" -H "Metadata-Flavor: Google"`
+  reply_prev=`cat "$M_ROOT/keys/gcetoken"`
+  expires_in=`echo "$reply_prev" | grep expires_in | cut -sd'|' -f2 | tr -d '"'`
+  time_prev=`$STAT -c "%Z" "$M_ROOT/keys/gcetoken"`
+  time_now=`date +"%s"`
+  since_prev=`expr $time_now - $time_prev + 60`
+  if [ $since_prev -lt $expires_in ]; then
+    reply=$reply_prev
+  else
+    reply=`$CURL "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" -H "Metadata-Flavor: Google" | "$M_ROOT"/lib/json2txt`
+    echo "$reply" > "$M_ROOT/keys/gcetoken"
+  fi
   access_token=`echo "$reply" | grep access_token | cut -sd'|' -f2 | tr -d '"'`
   token_type=`echo "$reply" | grep token_type | cut -sd'|' -f2 | tr -d '"'`
   echo "$token_type $access_token"

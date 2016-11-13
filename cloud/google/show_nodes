@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2008-2014 Igor Simonov (me@igorsimonov.com)
+# Copyright (C) 2008-2016 Igor Simonov (me@igorsimonov.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ V="1"
 
 GCLOUD="$M_ROOT/lib/google-cloud-sdk/bin/gcloud"
 
-possible_options="cluster state filter region short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists"
+possible_options="cluster state filter region zone short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -54,6 +54,7 @@ IFS=$IFS1
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh" || exit 1
 
 declare -i icount
 
@@ -61,13 +62,14 @@ declare -i icount
 [ -z "$status" -a -n "$state" ] && status=$state
 [ -z "$status" ] && status="RUNNING"
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
+[ -n "$zone" ] && region=$zone  # no point in distinguishing them here
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
-list_nodes() {
+list_nodes_gcloud() {
   IFS1=$IFS
   IFS='
 '
@@ -106,8 +108,6 @@ list_nodes() {
           # clusters assigned via metadata
           [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
           $debug && [ -n "$update_nodes_list" ] && unset ecf
-          # in case of multiple IPs the first one is enough
-          break
         fi
       else
         # if no IP, it shouldn't make its way to nodes.list
@@ -123,13 +123,13 @@ list_nodes() {
           [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
           case $view in
             list)
-              echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: ${extIP}  intIP: ${intIP}  Cluster: $icluster  Image: ${imageId%%*/}  Size: $flavorId"
+              echo "ID: $id  Name: $name  Status: $istatus  Region: $region  ext IP: ${extIP}  intIP: ${intIP}  Cluster: $icluster  Image: ${imageId##*/}  Size: $flavorId"
               ;;
             table)
-              echo "$id|$name|$istatus|$region|${extIP}|${intIP}|$icluster|${imageId%%*/}|$flavorId"
+              echo "$id|$name|$istatus|$region|${extIP}|${intIP}|$icluster|${imageId##*/}|$flavorId"
               ;;
             column)
-              echo -e "ID: $id\nName: $name\nStatus: $istatus\nRegion: $region\next IP: ${extIP}\nintIP: ${intIP}\nImage: ${imageId%%*/}\nSize: $flavorId\n"
+              echo -e "ID: $id\nName: $name\nStatus: $istatus\nRegion: $region\next IP: ${extIP}\nintIP: ${intIP}\nImage: ${imageId##*/}\nSize: $flavorId\n"
               ;;
             none)
               ;;
@@ -138,7 +138,7 @@ list_nodes() {
               echo "Node ID: $id    Name: $name    Cluster: $icluster"
               echo "Public IP: ${extIP}"
               echo "Private IP: ${intIP}"
-              echo "Node image: $${imageId%%*/}"
+              echo "Node image: ${imageId##*/}"
               echo "Node size: $flavorId    Status: $istatus    Region: $region"
               ;;
           esac
@@ -177,7 +177,27 @@ if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
   [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] 2>/dev/null && log "$M_TEMP/${rcommand}.resp is older than $FORCE_LIST_UPDATE_AFTER sec, update forced" && unset noupdate
 fi
 if [ -z "$noupdate" ] ; then
-  $GCLOUD compute instances list --format=json | /opt/m/lib/json2txt > "$M_TEMP"/${rcommand}.resp
+  token=`get_oath2_token`
+  if [ -z "$region" ]; then
+    if [ -n "$cluster" ]; then
+      region=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3`
+      if [ -z "$region" ]; then
+        log "Region is not defined for cluster ${cluster}, can't continue"
+        proper_exit 1 184
+      else
+        $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
+      fi
+    else
+      # if no region and no cluster, we cycle all regions found in clusters.conf
+      rm "$M_TEMP"/${rcommand}.resp
+      for region in `grep -vE "^#|^[[:space:]]#" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3 | sort | uniq` ; do
+        $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP"/${rcommand}.resp
+      done
+    fi
+  else
+    $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
+  fi
+  #$GCLOUD compute instances list --format=json | /opt/m/lib/json2txt > "$M_TEMP"/${rcommand}.resp
 fi
 list_nodes
 
