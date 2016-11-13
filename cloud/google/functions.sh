@@ -45,12 +45,14 @@ install_sdk() {
 }
 
 get_oath2_token() {
-  reply_prev=`cat "$M_ROOT/keys/gcetoken"`
+  reply_prev=`cat "$M_ROOT/keys/gcetoken" 2>/dev/null`
   expires_in=`echo "$reply_prev" | grep expires_in | cut -sd'|' -f2 | tr -d '"'`
-  time_prev=`$STAT -c "%Z" "$M_ROOT/keys/gcetoken"`
-  time_now=`date +"%s"`
-  since_prev=`expr $time_now - $time_prev + 60`
-  if [ $since_prev -lt $expires_in ]; then
+  if [ -n "$expires_in" ]; then
+    time_prev=`$STAT -c "%Z" "$M_ROOT/keys/gcetoken"`
+    time_now=`date +"%s"`
+    since_prev=`expr $time_now - $time_prev + 60`
+  fi
+  if [ $since_prev -lt $expires_in ] 2>/dev/null; then
     reply=$reply_prev
   else
     reply=`$CURL "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" -H "Metadata-Flavor: Google" | "$M_ROOT"/lib/json2txt`

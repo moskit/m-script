@@ -69,7 +69,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
-list_nodes_gcloud() {
+list_nodes() {
   IFS1=$IFS
   IFS='
 '
@@ -185,17 +185,17 @@ if [ -z "$noupdate" ] ; then
         log "Region is not defined for cluster ${cluster}, can't continue"
         proper_exit 1 184
       else
-        $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
+        $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
       fi
     else
       # if no region and no cluster, we cycle all regions found in clusters.conf
       rm "$M_TEMP"/${rcommand}.resp
       for region in `grep -vE "^#|^[[:space:]]#" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3 | sort | uniq` ; do
-        $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP"/${rcommand}.resp
+        $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP"/${rcommand}.resp
       done
     fi
   else
-    $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
+    $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
   fi
   #$GCLOUD compute instances list --format=json | /opt/m/lib/json2txt > "$M_TEMP"/${rcommand}.resp
 fi
