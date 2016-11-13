@@ -22,13 +22,15 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="1"
 
-possible_options="cloud project view verbose debug dry"
+possible_options="cloud project view verbose debug dry all showdeprecated"
 necessary_options=""
 
 list_images() {
   data=`cat "$M_TEMP/${rcommand}.resp"`
   for sn in `echo "$data" | cut -sd'/' -f3 | sort | uniq`; do
     image=`echo "$data" | grep "\"items\"/$sn/"`
+    ideprecation=`echo "$image" | grep '"deprecated"/"state"|' | cut -sd'|' -f2 | tr -d '"'`
+    [ -z "$all" ] && [ "_$ideprecation" == "_DEPRECATED" ] && continue
     case $view in
       long)
         iname=`echo "$image" | grep '"name"|' | cut -sd'|' -f2 | tr -d '"'`
@@ -36,7 +38,6 @@ list_images() {
         idescription=`echo "$image" | grep '"description"|' | cut -sd'|' -f2 | tr -d '"'`
         istatus=`echo "$image" | grep '"status"|' | cut -sd'|' -f2 | tr -d '"'`
         idisksize=`echo "$image" | grep '"diskSizeGb"|' | cut -sd'|' -f2 | tr -d '"'`
-        ideprecation=`echo "$image" | grep '"deprecated"/"state"|' | cut -sd'|' -f2 | tr -d '"'`
         echo -e "Name: $iname   Created at: $icreated\nDescription: $idescription\nDisk size: $idisksize   Status: $istatus   $ideprecation\n--------------------------------------------------------------"
         ;;
       *)
@@ -73,6 +74,7 @@ source "$rpath/functions.sh"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 
 [ -z "$project" ] && project=$PROJECT_ID
+[ -n "$showdeprecated" ] && all=yes
 
 token=`get_oath2_token`
 $CURL https://www.googleapis.com/compute/v1/projects/$project/global/images -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
