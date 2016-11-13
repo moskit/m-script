@@ -62,7 +62,7 @@ lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
-if ! grep -q "^$cluster|" "$M_ROOT/conf/clusters.conf" ; then echo "Cluster $cluster is not configured"; proper_exit 1 259; fi
+if ! grep -q "^$cluster|" "$M_ROOT/conf/clusters.conf" ; then echo "Cluster $cluster is not configured"; proper_exit 1 65; fi
 
 flavorid() {
   grep ^$1\| "$M_TEMP/flavors.list" | cut -sd'|' -f2

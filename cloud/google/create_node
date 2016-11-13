@@ -1,0 +1,87 @@
+#!/bin/bash
+# Copyright (C) 2008-2016 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+CURL=`which curl 2>/dev/null`
+CURL="$CURL -s -k"
+V="1"
+
+GCLOUD="$M_ROOT/lib/google-cloud-sdk/bin/gcloud"
+
+SSH=`which ssh 2>/dev/null`
+
+possible_options="cloud region cluster image name return verbose debug dry"
+necessary_options=""
+
+request() {
+  
+}
+
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
+[ -z "$ARGV" ] && ${0} --help
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+lock_cloudops || exit 10
+
+[ -z "$cluster" ] && cluster="$M_CLUSTER"
+[ -z "$cluster" ] && echo "Cluster not defined" && exit 1
+if ! grep -q "^$cluster|" "$M_ROOT/conf/clusters.conf" ; then echo "Cluster $cluster is not configured"; proper_exit 1 65; fi
+
+
+
+#    gcloud compute instances create NAMES [NAMES ...]
+#        [--no-boot-disk-auto-delete]
+#        [--boot-disk-device-name=BOOT_DISK_DEVICE_NAME]
+#        [--boot-disk-size=BOOT_DISK_SIZE] [--boot-disk-type=BOOT_DISK_TYPE]
+#        [--can-ip-forward] [--csek-key-file=FILE] [--custom-cpu=CUSTOM_CPU]
+#        [--custom-memory=CUSTOM_MEMORY] [--description=DESCRIPTION]
+#        [--disk=[auto-delete=AUTO-DELETE],[boot=BOOT],[device-name=DEVICE-NAME],
+#[mode=MODE],[name=NAME]]
+#        [--image-project=IMAGE_PROJECT]
+#        [--local-ssd=[device-name=DEVICE-NAME],[interface=INTERFACE]]
+#        [--machine-type=MACHINE_TYPE] [--maintenance-policy=MAINTENANCE_POLICY]
+#        [--metadata=KEY=VALUE,[KEY=VALUE,...]]
+#        [--metadata-from-file=KEY=LOCAL_FILE_PATH,[KEY=LOCAL_FILE_PATH,...]]
+#        [--network=NETWORK] [--preemptible]
+#        [--private-network-ip=PRIVATE_NETWORK_IP]
+#        [--no-require-csek-key-create] [--no-restart-on-failure]
+#        [--subnet=SUBNET] [--tags=TAG,[TAG,...]] [--zone=ZONE]
+#        [--address=ADDRESS | --no-address]
+#        [--image=IMAGE | --image-family=IMAGE_FAMILY]
+#        [--no-scopes | --scopes=[ACCOUNT=]SCOPE,[[ACCOUNT=]SCOPE,...]]
+        
+        
