@@ -22,11 +22,28 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="1"
 
-possible_options="cloud project verbose debug dry"
+possible_options="cloud project view verbose debug dry"
 necessary_options=""
 
 list_images() {
-  cat "$M_TEMP/${rcommand}.resp"
+  data=`cat "$M_TEMP/${rcommand}.resp"`
+  for sn in `echo "$data" | cut -sd'/' -f3 | sort | uniq`; do
+    image=`echo "$data" | grep "\"items\"/$sn/"`
+    case $view in
+      long)
+        iname=`echo "$image" | grep '"name"|' | cut -sd'|' -f2 | tr -d '"'`
+        icreated=`echo "$image" | grep '"creationTimestamp"|' | cut -sd'|' -f2 | tr -d '"'`
+        idescription=`echo "$image" | grep '"description"|' | cut -sd'|' -f2 | tr -d '"'`
+        istatus=`echo "$image" | grep '"status"|' | cut -sd'|' -f2 | tr -d '"'`
+        idisksize=`echo "$image" | grep '"diskSizeGb"|' | cut -sd'|' -f2 | tr -d '"'`
+        ideprecation=`echo "$image" | grep '"deprecated"/"state"|' | cut -sd'|' -f2 | tr -d '"'`
+        echo -e "Name: $iname   Created at: $icreated\nDescription: $idescription\nDisk size: $idisksize   Status: $istatus   $ideprecation\n--------------------------------------------------------------"
+        ;;
+      *)
+        echo "$image" | grep '"name"|' | cut -sd'|' -f2 | tr -d '"'
+        ;;
+    esac
+  done
 }
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
