@@ -1,0 +1,60 @@
+#!/bin/bash
+# Copyright (C) 2008-2016 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+
+CURL=`which curl 2>/dev/null`
+CURL="$CURL -s -k"
+V="1"
+
+possible_options="cloud region cluster verbose debug dry"
+necessary_options=""
+
+list_images() {
+  cat "$M_TEMP/${rcommand}.resp"
+}
+
+ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
+[ -z "$ARGV" ] && ${0} --help
+IFS1=$IFS
+IFS='|'
+for s_option in $ARGV
+do
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+  found=false
+  for option in `echo $possible_options | sed 's/ /|/g'`; do 
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true
+  done
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$rpath/functions.sh"
+
+token=`get_oath2_token`
+$CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/images | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+list_images
+
