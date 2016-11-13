@@ -41,7 +41,11 @@ install_sdk() {
   $CURL "https://sdk.cloud.google.com" | /bin/bash
 }
 
-get_nodes_list() {
-  $GCLOUD compute instances list --format=json | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${callername}.resp
+get_oath2_token() {
+  reply=`$CURL "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" -H "Metadata-Flavor: Google"`
+  access_token=`echo "$reply" | grep access_token | cut -sd'|' -f2 | tr -d '"'`
+  token_type=`echo "$reply" | grep token_type | cut -sd'|' -f2 | tr -d '"'`
+  echo "$token_type $access_token"
 }
+
 
