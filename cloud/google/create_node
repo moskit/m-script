@@ -26,11 +26,14 @@ GCLOUD="$M_ROOT/lib/google-cloud-sdk/bin/gcloud"
 
 SSH=`which ssh 2>/dev/null`
 
-possible_options="cloud region cluster image name return verbose debug dry"
+possible_options="cloud region cluster image name type return verbose debug dry"
 necessary_options=""
 
 request() {
-  
+  url="https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$zone/instances"
+  body="{ \"name\": \"$name\", \"machineType\": \"zones/$zone/machineTypes/$type\", \"networkInterfaces\": $networkInterfaces, \"disks\": $disks }"
+  resp=`$CURL -X POST $url -d "$body" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
+  echo "$resp" > "$M_TEMP/${rcommand}.resp"
 }
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -59,29 +62,34 @@ lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
-if ! grep -q "^$cluster|" "$M_ROOT/conf/clusters.conf" ; then echo "Cluster $cluster is not configured"; proper_exit 1 65; fi
+clusterObject=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | tail -1`
+if [ -z "$clusterObject" ] ; then echo "Cluster $cluster is not configured"; proper_exit 1 65; fi
 
+if [ -n "$region" ]; then
+  zone="$region"
+else
+  zone=`echo "$clusterObject" | cut -sd'|' -f3`
+  [ -z "$zone" ] && echo "ERROR: zone not defined for cluster $cluster!" && proper_exit 1 65
+fi
+if [ -z "$type" ]; then
+  type=`echo "$clusterObject" | cut -sd'|' -f5`
+  [ -z "$type" ] && echo "ERROR: type not defined for cluster $cluster!" && proper_exit 1 65
+fi
+if [ -n "$image" ]; then
+  imageObject="$image"
+else
+  imageObject=`echo "$clusterObject" | cut -sd'|' -f6`
+  imageFamily=`echo "$imageObject" | cut -sd':' -f1`
+  [ -z "$imageFamily" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
+  image=`echo "$imageObject" | cut -sd':' -f2`
+  [ -z "$image" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
+fi
 
+networkInterfaces="[{ \"accessConfigs\": [{ \"type\": \"ONE_TO_ONE_NAT\", \"name\": \"External NAT\" }], \"network\": \"global/networks/default\" }]"
+disks="[{ \"autoDelete\": \"$diskAutoDelete\", \"boot\": \"true\", \"type\": \"PERSISTENT\", \"initializeParams\": { \"sourceImage\": \"projects/$imageProject/global/images/$image\" } }]"
 
-#    gcloud compute instances create NAMES [NAMES ...]
-#        [--no-boot-disk-auto-delete]
-#        [--boot-disk-device-name=BOOT_DISK_DEVICE_NAME]
-#        [--boot-disk-size=BOOT_DISK_SIZE] [--boot-disk-type=BOOT_DISK_TYPE]
-#        [--can-ip-forward] [--csek-key-file=FILE] [--custom-cpu=CUSTOM_CPU]
-#        [--custom-memory=CUSTOM_MEMORY] [--description=DESCRIPTION]
-#        [--disk=[auto-delete=AUTO-DELETE],[boot=BOOT],[device-name=DEVICE-NAME],
-#[mode=MODE],[name=NAME]]
-#        [--image-project=IMAGE_PROJECT]
-#        [--local-ssd=[device-name=DEVICE-NAME],[interface=INTERFACE]]
-#        [--machine-type=MACHINE_TYPE] [--maintenance-policy=MAINTENANCE_POLICY]
-#        [--metadata=KEY=VALUE,[KEY=VALUE,...]]
-#        [--metadata-from-file=KEY=LOCAL_FILE_PATH,[KEY=LOCAL_FILE_PATH,...]]
-#        [--network=NETWORK] [--preemptible]
-#        [--private-network-ip=PRIVATE_NETWORK_IP]
-#        [--no-require-csek-key-create] [--no-restart-on-failure]
-#        [--subnet=SUBNET] [--tags=TAG,[TAG,...]] [--zone=ZONE]
-#        [--address=ADDRESS | --no-address]
-#        [--image=IMAGE | --image-family=IMAGE_FAMILY]
-#        [--no-scopes | --scopes=[ACCOUNT=]SCOPE,[[ACCOUNT=]SCOPE,...]]
-        
-        
+token=`get_oath2_token`
+request
+
+echo "$resp"
+
