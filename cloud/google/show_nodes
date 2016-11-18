@@ -64,8 +64,6 @@ declare -i icount
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 [ -n "$zone" ] && region=$zone  # no point in distinguishing them here
 
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 

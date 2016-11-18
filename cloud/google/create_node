@@ -56,8 +56,12 @@ do
 done
 IFS=$IFS1
 
-[ -n "$cloud" ] && CLOUD=$cloud
-[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh" || exit 1
+export IAMACHILD M_TEMP CLOUD
+
 lock_cloudops || exit 10
 
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
