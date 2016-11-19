@@ -202,10 +202,10 @@ check_cluster_limit "$cluster" || proper_exit 5 194
 log "Double-checking name"
 IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 198
 
-request && log "Request sent" || proper_exit 1 200
+request && log "Request sent" || proper_exit 1 205
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 202
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 203
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 207
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 208
 nodeid=`grep instanceId $M_TEMP/${rcommand}.resp | cut -sd'|' -f2`
 
 if ! $dry ; then
@@ -232,4 +232,4 @@ if ! $dry ; then
   fi
 fi
 
-proper_exit $exit_status 229
+proper_exit $exit_status 235

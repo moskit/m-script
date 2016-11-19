@@ -56,6 +56,7 @@ find_zone() {
   else
     region=`grep "|$name|" "$M_ROOT/cloud/${CLOUD}.list" | cut -sd'|' -f9`
   fi
+  echo "$region"
 }
 
 possible_options="cloud id name ip return verbose log_request"
@@ -106,6 +107,7 @@ if [ -z "$name" ] ; then
 fi
 
 [ -z "$region" ] && region=`find_zone $name`
+[ -z "$region" ] && echo "Unable to determine zone" && proper_exit 1 110
 
 token=`get_oath2_token`
 request && log "Request sent" || proper_exit 1 159

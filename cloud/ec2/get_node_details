@@ -134,15 +134,13 @@ printreturn() {
   echo -e "reservationId|$reservationId\ninstanceId|$instanceId\nimageId|$imageId\nstatus|$status\nprivateDnsName|$privateDnsName\nkeyName|$keyName\ninstanceType|$instanceType\nlaunchTime|$launchTime\navailabilityZone|$availabilityZone\ntenancy|$tenancy\nsubnetId|$subnetId\nvpcId|$vpcId\nprivateIpAddress|$privateIpAddress\npublicIpAddress|$publicIpAddress\ngroupId|$groupId\ngroupName|$groupName\nstateReason|$stateReason\narchitecture|$architecture\nrootDeviceType|$rootDeviceType\nvirtualizationType|$virtualizationType\nhypervisor|$hypervisor\nebsOptimized|$ebsOptimized"
 }
 
-if [ -z "$IAMACHILD" ]; then
-  lock_cloudops || exit 10
-fi
+lock_cloudops || exit 10
 
 if [ -z "$id" ] ; then
   if [ -z "$ip" ] ; then
     if [ -z "$name" ] ; then
       echo "One of id, ip or name is required to identify the node"
-      proper_exit 1 146
+      proper_exit 1 145
     else
       ip=`cat "$rpath/../../nodes.list" | cut -d'|' -f1,4 | grep \|$name$ | cut -d'|' -f1`
       if [ -n "$ip" ] ; then
@@ -156,11 +154,11 @@ else
   find_by_id $id
 fi
 
-request && log "Request sent" || proper_exit 1 168
+request && log "Request sent" || proper_exit 1 159
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 171
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 161
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 162
 
 printreturn "$reqparsed" || exit_status=2
 
-proper_exit $exit_status 149
+proper_exit $exit_status 166
