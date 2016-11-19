@@ -22,17 +22,16 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="1"
 
-GCLOUD="$M_ROOT/lib/google-cloud-sdk/bin/gcloud"
-
 SSH=`which ssh 2>/dev/null`
 
-possible_options="cloud region cluster image name type return verbose debug dry"
+possible_options="cloud region cluster image name type return verbose debug dry log_request"
 necessary_options=""
 
 request() {
   url="https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$zone/instances"
   body="{ \"name\": \"$name\", \"machineType\": \"zones/$zone/machineTypes/$type\", \"networkInterfaces\": $networkInterfaces, \"disks\": $disks }"
-  resp=`$CURL -X POST $url -d "$body" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
+  [ -n "$log_request" ] && echo "$CURL -X POST $url -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\"" >> $LOG
+  resp=`$CURL -X POST $url -d "$body" -H "Content-Type: application/json" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
   echo "$resp" > "$M_TEMP/${rcommand}.resp"
 }
 
@@ -83,17 +82,57 @@ if [ -n "$image" ]; then
   imageObject="$image"
 else
   imageObject=`echo "$clusterObject" | cut -sd'|' -f6`
-  imageFamily=`echo "$imageObject" | cut -sd':' -f1`
-  [ -z "$imageFamily" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
+  imageProject=`echo "$imageObject" | cut -sd':' -f1`
+  [ -z "$imageProject" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
   image=`echo "$imageObject" | cut -sd':' -f2`
   [ -z "$image" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
 fi
+
+log "Checking cluster $cluster limit..."
+check_cluster_limit "$cluster" || proper_exit 5 194
+[ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
+[ -z "$name" ] && proper_exit 6 94
+log "Double-checking name"
+IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 96
 
 networkInterfaces="[{ \"accessConfigs\": [{ \"type\": \"ONE_TO_ONE_NAT\", \"name\": \"External NAT\" }], \"network\": \"global/networks/default\" }]"
 disks="[{ \"autoDelete\": \"$diskAutoDelete\", \"boot\": \"true\", \"type\": \"PERSISTENT\", \"initializeParams\": { \"sourceImage\": \"projects/$imageProject/global/images/$image\" } }]"
 
 token=`get_oath2_token`
-request
+request && log "Request sent" || proper_exit 1 205
+reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 207
+[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
 
-echo "$resp"
+nodeid=`grep instanceId $M_TEMP/${rcommand}.resp | cut -sd'|' -f2`
+
+if ! $dry ; then
+  log "Waiting for node $name ready..."
+  waittimeout=1200
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    
+    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid`
+    
+    status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
+    log "status is $status"
+    [ "_$status" == "_running" ] && break
+  done
+  if [ "_$status" == "_running" ]; then
+  
+    "$rpath"/tag_node --id=$nodeid --tag="cluster:$cluster"
+    "$rpath"/tag_node --id=$nodeid --tag="name:$name"
+    
+    save_details
+    set_hostname || log "Was unable to set hostname"
+    "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+    [ -n "$return" ] && printreturn $return
+  else
+    exit_status=1
+  fi
+fi
+
+proper_exit $exit_status 235
 
