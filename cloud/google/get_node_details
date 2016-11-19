@@ -35,7 +35,27 @@ find_name_by_ip() {
 }
 
 printreturn() {
-  cat "$M_TEMP/get_node_details.resp"
+  if [ "_`echo "$1" | grep ^0/\"name\"\| | cut -sd'|' -f2 | tr -d '"'`" == "_$name" ]; then
+    id=`echo "$node" | grep '^0/"id"|' | cut -sd'|' -f2 | tr -d '"'`
+    imageId=`echo "$node" | grep '"licenses"/0|' | cut -sd'|' -f2 | tr -d '"'`
+    machineType=`echo "$node" | grep '^0/"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
+    istatus=`echo "$node" | grep '^0/"status"|' | cut -sd'|' -f2 | tr -d '"'`
+    icluster=`echo "$node" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | cut -sd'-' -f4`
+    region=`echo "$node" | grep '^0/"zone"|' | cut -sd'|' -f2 | tr -d '"'`
+    intIP=`echo "$node" | grep '^0/"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`
+    extIP=`echo "$node" | grep '^0/"networkInterfaces"/0/"accessConfigs"/0/"natIP"|' | cut -sd'|' -f2 | tr -d '"'`
+    tagsFingerprint=`echo "$node" | grep '^0/"tags"/"fingerprint"|' | cut -sd'|' -f2 | tr -d '"'`
+    echo -e "id|$id\nimageId|$imageId\nmachineType|$machineType\nstatus|$istatus\ncluster|$icluster\nregion|$region\nintIP|$intIP\nextIP|$extIP\ntagsFingerprint|$tagsFingerprint"
+    for disksn in `echo "$1" | grep '^0/"disks"/' | cut -sd'/' -f3 | sort | uniq`; do
+      disk=`echo "$1" | grep "^0/\"disks\"/$disksn/"`
+      disktype=`echo "$disk" | grep '/"type"|' | cut -sd'|' -f2 | tr -d '"'`
+      diskmode=`echo "$disk" | grep '/"mode"|' | cut -sd'|' -f2 | tr -d '"'`
+      diskname=`echo "$disk" | grep '/"deviceName"|' | cut -sd'|' -f2 | tr -d '"'`
+      diskboot=`echo "$disk" | grep '/"boot"|' | cut -sd'|' -f2 | tr -d '"'`
+      diskautoDelete=`echo "$disk" | grep '/"autoDelete"|' | cut -sd'|' -f2 | tr -d '"'`
+      echo -e "disk${disksn}:type|$disktype\ndisk${disksn}:mode|$diskmode\ndisk${disksn}:name|$diskname\ndisk${disksn}:boot|$diskboot\ndisk${disksn}:autoDelete|$autoDelete"
+    done
+  fi
 }
 
 request() {

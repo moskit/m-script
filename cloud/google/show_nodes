@@ -74,11 +74,11 @@ list_nodes() {
   if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
     [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
     declare -a nodelist
-    for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f2 | sort | uniq` ; do
+    for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
       node=`grep "^0/\"items\"/$sn/" "$M_TEMP/${rcommand}.resp"`
       id=`echo "$node" | grep '"id"|' | cut -sd'|' -f2 | tr -d '"'`
-      name=`echo "$node" | grep '^0/\"items\"/$sn/"name"|' | cut -sd'|' -f2 | tr -d '"'`
+      name=`echo "$node" | grep "^0/\"items\"/$sn/\"name\"|" | cut -sd'|' -f2 | tr -d '"'`
       imageId=`echo "$node" | grep '"licenses"/0|' | cut -sd'|' -f2 | tr -d '"'`
       flavorId=`echo "$node" | grep '"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
       istatus=`echo "$node" | grep '"status"|' | cut -sd'|' -f2 | tr -d '"'`

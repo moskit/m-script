@@ -35,6 +35,52 @@ request() {
   echo "$resp" > "$M_TEMP/${rcommand}.resp"
 }
 
+printreturn() {
+  for res in `echo $1 | tr ',' ' '` ; do
+    case $res in
+      ip)
+        echo "$ip"
+        ;;
+      ipext)
+        echo "$extIP"
+        ;;
+      ipint)
+        echo "$intIP"
+        ;;
+      id)
+        echo "$nodeid"
+        ;;
+    esac
+  done
+}
+
+set_hostname() {
+  if [ -n "$extIP" ]; then
+    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
+    sshres=$?
+  fi
+  if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
+    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
+    sshres=$?
+  fi
+  return $sshres
+}
+
+save_details() {
+  listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
+  echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
+  echo -e "`date`\n$details" >> "$M_ROOT/cloud/google.log"
+  intIP=`echo "$details" | grep intIP | cut -sd'|' -f2`
+  extIP=`echo "$1" | grep extIP | cut -sd'|' -f2`
+  if [ "_$NETWORK" == "_external" ] ; then
+    ip=$extIP
+  else
+    ip=$intIP
+  fi
+  echo "$ip|$key|$zone|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  echo "$ip|$key|$zone|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
+}
+
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && ${0} --help
 IFS1=$IFS
@@ -83,10 +129,11 @@ if [ -n "$image" ]; then
 else
   imageObject=`echo "$clusterObject" | cut -sd'|' -f6`
   imageProject=`echo "$imageObject" | cut -sd':' -f1`
-  [ -z "$imageProject" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
+  [ -z "$imageProject" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 65
   image=`echo "$imageObject" | cut -sd':' -f2`
-  [ -z "$image" ] && echo "ERROR: image not defined or malformed for cluster $cluster!" && proper_exit 1 65
+  [ -z "$image" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 65
 fi
+key=`echo "$clusterObject" | cut -sd'|' -f2`
 
 log "Checking cluster $cluster limit..."
 check_cluster_limit "$cluster" || proper_exit 5 194
@@ -100,11 +147,11 @@ disks="[{ \"autoDelete\": \"$diskAutoDelete\", \"boot\": \"true\", \"type\": \"P
 
 token=`get_oath2_token`
 request && log "Request sent" || proper_exit 1 205
-reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 207
-[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
+[ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 207
+[ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
 
-nodeid=`grep instanceId $M_TEMP/${rcommand}.resp | cut -sd'|' -f2`
+nodeid=`grep '"name"' $M_TEMP/${rcommand}.resp | cut -sd'|' -f2`
+exit_status=0
 
 if ! $dry ; then
   log "Waiting for node $name ready..."
@@ -118,12 +165,12 @@ if ! $dry ; then
     
     status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
     log "status is $status"
-    [ "_$status" == "_running" ] && break
+    [ "_$status" == "_RUNNING" ] && break
   done
-  if [ "_$status" == "_running" ]; then
+  if [ "_$status" == "_RUNNING" ]; then
   
-    "$rpath"/tag_node --id=$nodeid --tag="cluster:$cluster"
-    "$rpath"/tag_node --id=$nodeid --tag="name:$name"
+    "$rpath"/add_tag --id=$nodeid --tag="cluster:$cluster"
+    "$rpath"/add_tag --id=$nodeid --tag="name:$name"
     
     save_details
     set_hostname || log "Was unable to set hostname"

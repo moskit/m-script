@@ -22,8 +22,16 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="1"
 
-possible_options="id name log_request cloud tag"
-necessary_options=""
+request() {
+  tags="`echo "$nodeObject" | grep '"tags"/"items"' | cut -sd'|' -f2 | tr '\n' ','`\"${tagstring}\""
+  body="{[ \"items\": $tags ], \"fingerprint\": $tagsFingerprint }"
+  [ -n "$log_request" ] && log "$CURL \"https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags\" -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\""
+  resp=`$CURL "https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags" -d "$body" -H "Content-Type: application/json" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
+  echo "$resp" > "$M_TEMP/${rcommand}.resp"
+}
+
+possible_options="id name region log_request cloud tag"
+necessary_options="tag"
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && ${0} --help
@@ -45,6 +53,16 @@ do
 done
 IFS=$IFS1
 
+found=0
+for option in `echo $necessary_options | sed 's/,//g'`; do
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
+done
+if [[ found -eq 1 ]]; then
+  missing_options=${missing_options#*,}
+  echo "Necessary options: $missing_options not found"
+  exit 1
+fi
+
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
 
@@ -55,9 +73,24 @@ LOG="$M_ROOT/logs/cloud.log"
 
 source "$rpath/functions.sh" || exit 1
 
-tagstring="${tag%:*}---${tag#*:}"
+[ -z "$name" ] && [ -n "$id" ] && name=$id
 
+if [ `expr "$tag" : ".*:"` -gt 0 ]; then
+  tagstring="${tag%:*}---${tag#*:}"
+else
+  tagstring=$tag
+fi
 
+nodeObject=`"$rpath"/get_node_details --cloud=$CLOUD --name=$name`
+tagsFingerprint=`echo "$nodeObject" | grep tagsFingerprint | cut -sd'|' -f2`
+if [ -z "$region" ]; then
+  region=`echo "$nodeObject" | grep region | cut -sd'|' -f2`
+fi
 
+token=`get_oath2_token`
+request && log "Request sent" || proper_exit 1 91
+[ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 92
+[ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 93
 
+proper_exit 0 95
 
