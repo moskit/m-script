@@ -124,36 +124,36 @@ ShowDisk() {
 }
 
 printlist() {
-  if [ -n "$id" ]; then
-    filter="^0/\"items\""
+  if [ -z "$id" ]; then
+    filter="0/\"items\"/"
     snfield=3
   else
-    filter="^0"
+    filter=""
     snfield=1
   fi
-  for sn in `grep "$filter" "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f${snfield} | sort | uniq`; do
-    diskObject=`grep "^0/\"items\"/$sn/" "$M_TEMP/${rcommand}.resp"`
-    diskname=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
-    disksize=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
-    diskzone=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
+  for sn in `grep "^${filter}" "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f${snfield} | sort | uniq`; do
+    diskObject=`grep "^${filter}$sn/" "$M_TEMP/${rcommand}.resp"`
+    diskname=`echo "$diskObject" | grep "^${filter}$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
+    disksize=`echo "$diskObject" | grep "^${filter}$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
+    diskzone=`echo "$diskObject" | grep "^${filter}$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
     diskzone=${diskzone##*/}
-    diskstatus=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
-    for du in `echo "$diskObject" | grep "^0/\"items\"/$sn/\"users\"" | cut -sd'/' -f5`; do
-      user=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
+    diskstatus=`echo "$diskObject" | grep "^${filter}$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
+    for du in `echo "$diskObject" | grep "^${filter}$sn/\"users\"" | cut -sd'/' -f5`; do
+      user=`echo "$diskObject" | grep "^${filter}$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
       userlist="${userlist}${user##*/},"
     done
     userlist="${userlist%,}"
     if [ -n "$view" ]; then
-      disksource=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"sourceImage\"" | cut -sd'|' -f2 | tr -d '"'`
+      disksource=`echo "$diskObject" | grep "^${filter}$sn/\"sourceImage\"" | cut -sd'|' -f2 | tr -d '"'`
       disksource=${disksource##*/}
-      disktype=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"type\"" | cut -sd'|' -f2 | tr -d '"'`
+      disktype=`echo "$diskObject" | grep "^${filter}$sn/\"type\"" | cut -sd'|' -f2 | tr -d '"'`
       disktype=${disktype##*/}
-      for dl in `echo "$diskObject" | grep "^0/\"items\"/$sn/\"licenses\"" | cut -sd'/' -f5`; do
-        license=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
+      for dl in `echo "$diskObject" | grep "^${filter}$sn/\"licenses\"" | cut -sd'/' -f5`; do
+        license=`echo "$diskObject" | grep "^${filter}$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
         licenselist="${licenselist}${license##*/},"
       done
       licenselist="${licenselist%,}"
-      lastAttachTimestamp=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
+      lastAttachTimestamp=`echo "$diskObject" | grep "^${filter}$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
       
       case $view in
         list)
