@@ -19,10 +19,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 
-CURL=`which curl 2>/dev/null`
-[ -z "$CURL" ] && echo "Curl not found" && exit 1
-
-possible_options="id to from log_request cloud action zone region type size snapshot iops kmskey encrypted as view list show help"
+possible_options="id name to from log_request cloud action zone region type size snapshot iops kmskey encrypted as view list show help"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -45,7 +42,7 @@ do
 done
 IFS=$IFS1
 
-[ -z "$@" ] && help=yes
+[ -z "$*" ] && help=yes
 
 if [ -n "$help" ]; then
   cat << "EOF"
@@ -96,8 +93,6 @@ trap unlock_cloudops 15
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
-
-CURL="$CURL -s -k"
 
 [ -n "$name" ] && id=$name
 [ -n "$region" ] && zone=$region
@@ -158,14 +153,16 @@ printlist() {
 }
 
 DeleteDisk() {
-  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
+  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$id" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
 }
 
 [ -n "$list" ] && action=list
+[ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
+[ -n "$name" ] && [ -z "$id" ] && id=$name
 
 case $action in
   create)
-    [ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
+    
     [ -z "$size" ] && [ -z "$snapshot" ] && echo "If disk is not created from a snapshot, its size is mandatory" && proper_exit 1 166
     CreateDisk
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
