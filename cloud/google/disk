@@ -161,11 +161,12 @@ ShowDisk() {
 }
 
 printlist() {
-  for sn in `grep '^0/"items"' "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f3`; do
+  for sn in `grep '^0/"items"' "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f3 | sort | uniq`; do
     diskObject=`grep "^0/\"items\"/$sn/" "$M_TEMP/${rcommand}.resp"`
     diskname=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
     disksize=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
     diskzone=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
+    diskzone=${diskzone##*/}
     diskstatus=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
     for du in `echo "$diskObject" | grep "^0/\"items\"/$sn/\"users\"" | cut -sd'/' -f5`; do
       user=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
@@ -196,12 +197,14 @@ printlist() {
         none)
           ;;
         *)
-          echo -e "------------------------------------------------------------------------------\nDisk: $diskname  Size: ${disksize}GB  Status: $diskstatus\n  Used By: $userlist\nLast Attached At: $lastAttachTimestamp  Zone: $diskzone  Disk Type: $disktype\nDisk Source Image: $disksource  Licenses: $licenselist"
+          echo -e "------------------------------------------------------------------------------\nDisk: $diskname  Size: ${disksize}GB  Status: $diskstatus\nUsed By: $userlist\nLast Attached At: $lastAttachTimestamp  Zone: $diskzone  Disk Type: $disktype\nDisk Source Image: $disksource  Licenses: $licenselist"
           ;;
       esac
     else
       echo "Disk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Used By: ${userlist}"
     fi
+    unset licenselist userlist
+  done
 }
 
 [ -n "$list" ] && action=list
