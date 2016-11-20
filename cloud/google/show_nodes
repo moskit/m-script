@@ -74,7 +74,7 @@ list_nodes() {
   if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
     [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
     declare -a nodelist
-    for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
+    for sn in `cat "$M_TEMP/${rcommand}.resp" | grep '0/"items"' | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
       node=`grep "^0/\"items\"/$sn/" "$M_TEMP/${rcommand}.resp"`
       id=`echo "$node" | grep '"id"|' | cut -sd'|' -f2 | tr -d '"'`
@@ -97,8 +97,6 @@ list_nodes() {
           icluster=`grep ^$IP\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
           if [ -n "$icluster" ]; then
             $debug && [ -n "$update_nodes_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed $icluster"
-            # this IP is found in nodes.list, end of search
-            break
           fi
         else
           # no icluster means that node will not be shown, but only if there

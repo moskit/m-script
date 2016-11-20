@@ -161,7 +161,47 @@ ShowDisk() {
 }
 
 printlist() {
-  cat "$M_TEMP/${rcommand}.resp"
+  for sn in `grep '^0/"items"' "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f3`; do
+    diskObject=`grep "^0/\"items\"/$sn/" "$M_TEMP/${rcommand}.resp"`
+    diskname=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
+    disksize=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
+    diskzone=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
+    diskstatus=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
+    for du in `echo "$diskObject" | grep "^0/\"items\"/$sn/\"users\"" | cut -sd'/' -f5`; do
+      user=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
+      userlist="${userlist}${user##*/},"
+    done
+    userlist="${userlist%,}"
+    if [ -n "$view" ]; then
+      disksource=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"sourceImage\"" | cut -sd'|' -f2 | tr -d '"'`
+      disksource=${disksource##*/}
+      disktype=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"type\"" | cut -sd'|' -f2 | tr -d '"'`
+      disktype=${disktype##*/}
+      for dl in `echo "$diskObject" | grep "^0/\"items\"/$sn/\"licenses\"" | cut -sd'/' -f5`; do
+        license=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
+        licenselist="${licenselist}${license##*/},"
+      done
+      lastAttachTimestamp=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
+      
+      case $view in
+        list)
+          echo "Disk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Used By: $userlist  Last Attached At: $lastAttachTimestamp  Zone: $diskzone  Disk Type: $disktype  Disk Source Image: $disksource  Licenses: $licenselist"
+          ;;
+        table)
+          echo "$diskname|$disksize|$diskstatus|$userlist|$lastAttachTimestamp|$diskzone|$disktype|$disksource|$licenselist"
+          ;;
+        column)
+          echo -e "Disk: $diskname\nSize: ${disksize}GB\nStatus: $diskstatus\nUsed By: $userlist\nLast Attached At: $lastAttachTimestamp\nZone: $diskzone\nDisk Type: $disktype\nDisk Source Image: $disksource\nLicenses: $licenselist"
+          ;;
+        none)
+          ;;
+        *)
+          echo -e "------------------------------------------------------------------------------\nDisk: $diskname  Size: ${disksize}GB  Status: $diskstatus\n  Used By: $userlist\nLast Attached At: $lastAttachTimestamp  Zone: $diskzone  Disk Type: $disktype\nDisk Source Image: $disksource  Licenses: $licenselist"
+          ;;
+      esac
+    else
+      echo "Disk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Used By: ${userlist}"
+    fi
 }
 
 [ -n "$list" ] && action=list

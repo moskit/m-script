@@ -79,10 +79,11 @@ else
   tagstring=$tag
 fi
 
-nodeObject=`"$rpath"/get_node_details --cloud=$CLOUD --name=$name`
+nodeObject=`IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name`
 tagsFingerprint=`echo "$nodeObject" | grep tagsFingerprint | cut -sd'|' -f2`
 if [ -z "$region" ]; then
   region=`echo "$nodeObject" | grep region | cut -sd'|' -f2`
+  region=${region##*/}
 fi
 
 token=`get_oath2_token`
