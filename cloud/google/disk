@@ -91,9 +91,6 @@ source "$rpath/functions.sh" || exit 1
 trap unlock_cloudops 3
 trap unlock_cloudops 15
 
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
-
 [ -n "$name" ] && id=$name
 [ -n "$region" ] && zone=$region
 
@@ -123,11 +120,18 @@ ShowDisk() {
     local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/\" -H \"Authorization:$token\""
   fi
   [ -n "$log_request" ] && log "$request"
-  exec "$request" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+  /bin/sh -c "$request" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 }
 
 printlist() {
-  for sn in `grep '^0/"items"' "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f3 | sort | uniq`; do
+  if [ -n "$id" ]; then
+    filter="^0/\"items\""
+    snfield=3
+  else
+    filter="^0"
+    snfield=1
+  fi
+  for sn in `grep "$filter" "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f${snfield} | sort | uniq`; do
     diskObject=`grep "^0/\"items\"/$sn/" "$M_TEMP/${rcommand}.resp"`
     diskname=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
     disksize=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
