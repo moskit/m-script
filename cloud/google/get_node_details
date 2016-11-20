@@ -59,7 +59,7 @@ printreturn() {
 }
 
 request() {
-  $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances/$name -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
+  $CURL "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP"/${rcommand}.resp
 }
 
 find_zone() {
@@ -79,7 +79,7 @@ find_zone() {
   echo "$region"
 }
 
-possible_options="cloud id name ip return verbose log_request"
+possible_options="cloud id name region zone ip return verbose log_request"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -112,32 +112,31 @@ LOG="$M_ROOT/logs/cloud.log"
 
 source "$rpath/functions.sh" || exit 1
 
-# GET https://www.googleapis.com/compute/v1/projects/project/zones/zone/instances/instance
-
 lock_cloudops || exit 10
 
 if [ -z "$name" ] ; then
   if [ -z "$ip" ] ; then
     echo "One of ip or name is required to identify the node"
-    proper_exit 1 77
+    proper_exit 1 120
   else
     find_name_by_ip $ip
-    [ -z "$name" ] && log "unable to find name by IP $ip" && proper_exit 1 80
+    [ -z "$name" ] && log "unable to find name by IP $ip" && proper_exit 1 123
   fi
 fi
 
+[ -z "$region" ] && [ -n "$zone" ] && region=$zone
 [ -z "$region" ] && region=`find_zone $name`
-[ -z "$region" ] && echo "Unable to determine zone" && proper_exit 1 110
+[ -z "$region" ] && echo "Unable to determine zone" && proper_exit 1 129
 
 token=`get_oath2_token`
-request && log "Request sent" || proper_exit 1 159
+request && log "Request sent" || proper_exit 1 132
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 161
 [ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
 
 printreturn "$reqparsed" || exit_status=2
 
-proper_exit $exit_status 166
+proper_exit 0 139
 
 
 

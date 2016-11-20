@@ -135,6 +135,9 @@ else
 fi
 key=`echo "$clusterObject" | cut -sd'|' -f2`
 
+[ -n "$debug" ] && debug=true || debug=false
+[ -n "$dry" ] && dry=true || dry=false
+
 log "Checking cluster $cluster limit..."
 check_cluster_limit "$cluster" || proper_exit 5 194
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
