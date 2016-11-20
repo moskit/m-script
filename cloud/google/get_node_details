@@ -114,6 +114,8 @@ source "$rpath/functions.sh" || exit 1
 
 lock_cloudops || exit 10
 
+[ -n "$id" ] && name=$id
+
 if [ -z "$name" ] ; then
   if [ -z "$ip" ] ; then
     echo "One of ip or name is required to identify the node"

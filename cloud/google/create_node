@@ -151,7 +151,6 @@ request && log "Request sent" || proper_exit 1 205
 [ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 207
 [ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
 
-nodeid=`grep '"name"' $M_TEMP/${rcommand}.resp | cut -sd'|' -f2`
 exit_status=0
 
 if ! $dry ; then
@@ -162,16 +161,17 @@ if ! $dry ; then
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     
-    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid --zone=$zone`
+    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$name --zone=$zone`
     
     status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
     log "status is $status"
     [ "_$status" == "_RUNNING" ] && break
+    #[ -n "$verbose" ] && progress=
   done
   if [ "_$status" == "_RUNNING" ]; then
   
-    "$rpath"/add_tag --id=$nodeid --tag="cluster:$cluster"
-    "$rpath"/add_tag --id=$nodeid --tag="name:$name"
+    "$rpath"/add_tag --id=$name --tag="cluster:$cluster"
+    "$rpath"/add_tag --id=$name --tag="name:$name"
     
     save_details
     set_hostname || log "Was unable to set hostname"
