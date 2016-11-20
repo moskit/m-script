@@ -112,52 +112,18 @@ reqfailed() {
   fi
 }
 
-printlist() {
-  for n in `echo "$reqparsed" | grep -v 'xmlns=' | cut -sd'/' -f8 | grep -v ^$ | sort -n | uniq` ; do
-    vol=`echo "$reqparsed" | grep \"DiskSet\"\/0\/\"item\"\/$n\/`
-    volid=`echo "$vol" | grep \"DiskSet\"\/0\/\"item\"\/$n\/\"DiskId\" | cut -sd'|' -f2 | tr -d '"'`
-    volsize=`echo "$vol" | grep '"size"' | cut -sd'|' -f2 | tr -d '"'`
-    volstatus=`echo "$vol" | grep \"DiskSet\"\/0\/\"item\"\/$n\/\"status\" | cut -sd'|' -f2 | tr -d '"'`
-    volattachedto=`echo "$vol" | grep '"attachmentSet"' | grep '"instanceId"' | cut -sd'|' -f2 | tr -d '"'`
-    [ -z "$volattachedto" ] && volattachedto=None
-    if [ -n "$view" ]; then
-      volcreatetime=`echo "$vol" | grep '"createTime"' | cut -sd'|' -f2 | tr -d '"'`
-      volzone=`echo "$vol" | grep '"availabilityZone"' | cut -sd'|' -f2 | tr -d '"'`
-      volattachedas=`echo "$vol" | grep '"attachmentSet"' | grep '"device"' | cut -sd'|' -f2 | tr -d '"'`
-      volattachstatus=`echo "$vol" | grep '"attachmentSet"' | grep '"status"' | cut -sd'|' -f2 | tr -d '"'`
-      volattachtime=`echo "$vol" | grep '"attachmentSet"' | grep '"attachTime"' | cut -sd'|' -f2 | tr -d '"'`
-      voldeleteonterm=`echo "$vol" | grep '"attachmentSet"' | grep '"deleteOnTermination"' | cut -sd'|' -f2 | tr -d '"'`
-      voltype=`echo "$vol" | grep '"DiskType"' | cut -sd'|' -f2 | tr -d '"'`
-      voliops=`echo "$vol" | grep '"iops"' | cut -sd'|' -f2 | tr -d '"'`
-      case $view in
-        list)
-          echo "Disk: $volid  Size: ${volsize}GB  Status: $volstatus  Attached To: $volattachedto  Attached As: $volattachedas  Attachment Status: $volattachstatus  Attached At: $volattachtime  Created At: $volcreatetime  Availability Zone: $volzone  Delete On Termination: $voldeleteonterm  Disk Type: $voltype  IOPS: $voliops"
-          ;;
-        table)
-          echo "$volid|$volsize|$volstatus|$volattachedto|$volattachedas|$volattachstatus|$volattachtime|$volcreatetime|$volzone|$voldeleteonterm|$voltype|$voliops"
-          ;;
-        column)
-          echo -e "Disk: $volid\nSize: ${volsize}GB\nStatus: $volstatus\nAttached To: $volattachedto\nAttached As: $volattachedas\nAttachment Status: $volattachstatus\nAttached At: $volattachtime\nCreated At: $volcreatetime\nAvailability Zone: $volzone\nDelete On Termination: $voldeleteonterm\nDisk Type: $voltype\nIOPS: $voliops"
-          ;;
-        none)
-          ;;
-        *)
-          echo -e "------------------------------------------------------------------------------\nDisk: $volid  Size: ${volsize}GB  Status: $volstatus\nAttached To: $volattachedto  Attached As: $volattachedas  Attachment Status: $volattachstatus  Attached At: $volattachtime\nCreated At: $volcreatetime  Availability Zone: $volzone  Delete On Termination: $voldeleteonterm\nDisk Type: $voltype  IOPS: $voliops"
-          ;;
-      esac
-    else
-      echo "Disk: $volid  Size: ${volsize}GB  Status: $volstatus  Attached To: ${volattachedto}"
-    fi
-    
-  done
-}
-
 DeleteDisk() {
   $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$id" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
 }
 
 ShowDisk() {
-  $CURL "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+  if [ -n "$id" ]; then
+    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$id\" -H \"Authorization:$token\""
+  else
+    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/\" -H \"Authorization:$token\""
+  fi
+  [ -n "$log_request" ] && log "$request"
+  exec "$request" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 }
 
 printlist() {
@@ -182,6 +148,7 @@ printlist() {
         license=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
         licenselist="${licenselist}${license##*/},"
       done
+      licenselist="${licenselist%,}"
       lastAttachTimestamp=`echo "$diskObject" | grep "^0/\"items\"/$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
       
       case $view in
@@ -197,7 +164,7 @@ printlist() {
         none)
           ;;
         *)
-          echo -e "------------------------------------------------------------------------------\nDisk: $diskname  Size: ${disksize}GB  Status: $diskstatus\nUsed By: $userlist\nLast Attached At: $lastAttachTimestamp  Zone: $diskzone  Disk Type: $disktype\nDisk Source Image: $disksource  Licenses: $licenselist"
+          echo -e "------------------------------------------------------------------------------\nDisk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Disk Type: $disktype\nUsed By: $userlist\nLast Attached At: $lastAttachTimestamp  Zone: $diskzone\nDisk Source Image: $disksource  Licenses: $licenselist"
           ;;
       esac
     else
@@ -210,6 +177,8 @@ printlist() {
 [ -n "$list" ] && action=list
 [ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
 [ -n "$name" ] && [ -z "$id" ] && id=$name
+
+token=`get_oath2_token`
 
 case $action in
   create)
@@ -242,7 +211,7 @@ case $action in
     reqfailed && proper_exit 1 190
     ;;
   show|list)
-    token=`get_oath2_token`
+
     ShowDisk
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     reqfailed && proper_exit 1 195
