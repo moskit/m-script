@@ -156,6 +156,14 @@ DeleteDisk() {
   $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$id" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
 }
 
+ShowDisk() {
+  $CURL "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+}
+
+printlist() {
+  cat "$M_TEMP/${rcommand}.resp"
+}
+
 [ -n "$list" ] && action=list
 [ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
 [ -n "$name" ] && [ -z "$id" ] && id=$name
@@ -191,7 +199,7 @@ case $action in
     reqfailed && proper_exit 1 190
     ;;
   show|list)
-    DescribeDisk
+    ShowDisk
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     reqfailed && proper_exit 1 195
     reqparsed=`printlist`
