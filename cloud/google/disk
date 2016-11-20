@@ -199,6 +199,7 @@ case $action in
     reqfailed && proper_exit 1 190
     ;;
   show|list)
+    token=`get_oath2_token`
     ShowDisk
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     reqfailed && proper_exit 1 195

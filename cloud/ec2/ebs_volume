@@ -24,8 +24,8 @@ CURL=`which curl 2>/dev/null`
 SSLEX=`which openssl 2>/dev/null`
 [ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
 
-possible_options="name id to from log_request cloud action zone type size snapshot iops kmskey encrypted as view"
-necessary_options="action"
+possible_options="id to from log_request cloud action zone type size snapshot iops kmskey encrypted as view list show help"
+necessary_options=""
 IFS1=$IFS
 IFS='-'
 for s_option in "$@"
@@ -47,14 +47,40 @@ do
 done
 IFS=$IFS1
 
-found=0
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: $missing_options not found"
-  exit 1
+[ -z "$@" ] && help=yes
+
+if [ -n "$help" ]; then
+  cat << "EOF"
+Usage: $rcommand {options}
+
+Options:
+
+id={disk ID}           - EC2 ID of the disk (vol-XXXXXXXX)
+from/to={instance ID}  - EC2 instance ID for detach/attach operations
+action={action}        - action to execute on the disk
+                         availavle actions:
+                         create, attach, detach, delete|destroy, show|list
+list|show              - same as --action=list
+                         action=list and action=show is the same request, it's
+                         just that 'show' is more natural when details on a
+                         single disk are requested (with --id option)
+type={disk type}       - type of the disk, required to create a disk
+                         available types:
+                         gp2, sc1, io1, standard (default)
+size
+snapshot
+iops
+kmskey
+encrypted
+as
+view
+
+Common options:
+
+cloud
+zone
+
+EOF
 fi
 
 [ -n "$cloud" ] && CLOUD=$cloud
@@ -159,6 +185,8 @@ printlist() {
     
   done
 }
+
+[ -n "$list" ] && action=list
 
 case $action in
   create)

@@ -18,8 +18,6 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
-CURL=`which curl 2>/dev/null`
-CURL="$CURL -s -k"
 V="1"
 
 request() {

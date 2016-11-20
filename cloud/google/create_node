@@ -18,13 +18,11 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
-CURL=`which curl 2>/dev/null`
-CURL="$CURL -s -k"
 V="1"
 
 SSH=`which ssh 2>/dev/null`
 
-possible_options="cloud region cluster image name type return verbose debug dry log_request"
+possible_options="cloud region zone cluster image name type return verbose debug dry log_request"
 necessary_options=""
 
 request() {
@@ -164,7 +162,7 @@ if ! $dry ; then
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     
-    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid`
+    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid --zone=$zone`
     
     status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
     log "status is $status"
