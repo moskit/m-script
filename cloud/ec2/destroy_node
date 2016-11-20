@@ -19,7 +19,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 
-possible_options="name log_request cloud id ip help"
+possible_options="name log_request cloud id ip help force last first cluster nochecks"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
@@ -64,7 +64,7 @@ id={instance id}       - EC2 instance ID
 name={node name)       - M-Script node name
 ip={ip}                - node IP address
 
-  One of nodeid, nodename, nodeip is mandatory
+  One of id, name, ip is mandatory
 
 cloud={cloud name}     - must be provided. Only this cloud will be searched for
                          the node to destroy. In most cases it is not mandatory
