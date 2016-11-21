@@ -125,35 +125,33 @@ ShowDisk() {
 
 printlist() {
   if [ -z "$id" ]; then
-    filter="0/\"items\"/"
-    snfield=3
+    nodelist=`cut -d'/' -f3- "$M_TEMP/${rcommand}.resp"`
   else
-    filter=""
-    snfield=1
+    nodelist=`cat "$M_TEMP/${rcommand}.resp"`
   fi
-  for sn in `grep "^${filter}" "$M_TEMP/${rcommand}.resp" | cut -sd'/' -f${snfield} | sort | uniq`; do
-    diskObject=`grep "^${filter}$sn/" "$M_TEMP/${rcommand}.resp"`
-    diskname=`echo "$diskObject" | grep "^${filter}$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
-    disksize=`echo "$diskObject" | grep "^${filter}$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
-    diskzone=`echo "$diskObject" | grep "^${filter}$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
+  for sn in `cut -sd'/' -f1 "$M_TEMP/${rcommand}.resp" | sort | uniq`; do
+    diskObject=`grep "^$sn/" "$M_TEMP/${rcommand}.resp"`
+    diskname=`echo "$diskObject" | grep "^$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
+    disksize=`echo "$diskObject" | grep "^$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
+    diskzone=`echo "$diskObject" | grep "^$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
     diskzone=${diskzone##*/}
-    diskstatus=`echo "$diskObject" | grep "^${filter}$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
-    for du in `echo "$diskObject" | grep "^${filter}$sn/\"users\"" | cut -sd'/' -f5`; do
-      user=`echo "$diskObject" | grep "^${filter}$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
+    diskstatus=`echo "$diskObject" | grep "^$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
+    for du in `echo "$diskObject" | grep "^$sn/\"users\"" | cut -sd'/' -f3`; do
+      user=`echo "$diskObject" | grep "^$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
       userlist="${userlist}${user##*/},"
     done
     userlist="${userlist%,}"
     if [ -n "$view" ]; then
-      disksource=`echo "$diskObject" | grep "^${filter}$sn/\"sourceImage\"" | cut -sd'|' -f2 | tr -d '"'`
+      disksource=`echo "$diskObject" | grep "^$sn/\"sourceImage\"" | cut -sd'|' -f2 | tr -d '"'`
       disksource=${disksource##*/}
-      disktype=`echo "$diskObject" | grep "^${filter}$sn/\"type\"" | cut -sd'|' -f2 | tr -d '"'`
+      disktype=`echo "$diskObject" | grep "^$sn/\"type\"" | cut -sd'|' -f2 | tr -d '"'`
       disktype=${disktype##*/}
-      for dl in `echo "$diskObject" | grep "^${filter}$sn/\"licenses\"" | cut -sd'/' -f5`; do
-        license=`echo "$diskObject" | grep "^${filter}$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
+      for dl in `echo "$diskObject" | grep "^$sn/\"licenses\"" | cut -sd'/' -f3`; do
+        license=`echo "$diskObject" | grep "^$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
         licenselist="${licenselist}${license##*/},"
       done
       licenselist="${licenselist%,}"
-      lastAttachTimestamp=`echo "$diskObject" | grep "^${filter}$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
+      lastAttachTimestamp=`echo "$diskObject" | grep "^$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
       
       case $view in
         list)
@@ -217,7 +215,6 @@ case $action in
   show|list)
 
     ShowDisk
-    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     reqfailed && proper_exit 1 195
     reqparsed=`printlist`
     ;;
