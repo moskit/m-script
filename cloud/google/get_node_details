@@ -40,9 +40,11 @@ printreturn() {
     iname=`echo "$1" | grep '^0/"name"|' | cut -sd'|' -f2 | tr -d '"'`
     creationTimestamp=`echo "$1" | grep '^0/"creationTimestamp"|' | cut -sd'|' -f2 | tr -d '"'`
     machineType=`echo "$1" | grep '^0/"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
+    machineType=${machineType##*/}
     istatus=`echo "$1" | grep '^0/"status"|' | cut -sd'|' -f2 | tr -d '"'`
     icluster=`echo "$1" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | cut -sd'-' -f4`
     region=`echo "$1" | grep '^0/"zone"|' | cut -sd'|' -f2 | tr -d '"'`
+    region=${region##*/}
     intIP=`echo "$1" | grep '^0/"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`
     extIP=`echo "$1" | grep '^0/"networkInterfaces"/0/"accessConfigs"/0/"natIP"|' | cut -sd'|' -f2 | tr -d '"'`
     tagsFingerprint=`echo "$1" | grep '^0/"tags"/"fingerprint"|' | cut -sd'|' -f2 | tr -d '"'`
@@ -53,7 +55,8 @@ printreturn() {
       diskmode=`echo "$disk" | grep '/"mode"|' | cut -sd'|' -f2 | tr -d '"'`
       diskname=`echo "$disk" | grep '/"deviceName"|' | cut -sd'|' -f2 | tr -d '"'`
       diskboot=`echo "$disk" | grep '/"boot"|' | cut -sd'|' -f2 | tr -d '"'`
-      disklicenses=`echo "$disk" | grep '/"licenses"|' | cut -sd'|' -f2 | tr -d '"'`
+      disklicenses=`echo "$disk" | grep '/"licenses"/' | cut -sd'|' -f2 | tr -d '"'`
+      disklicenses=${disklicenses##*/}
       diskautoDelete=`echo "$disk" | grep '/"autoDelete"|' | cut -sd'|' -f2 | tr -d '"'`
       echo -e "disk${disksn}:type|$disktype\ndisk${disksn}:mode|$diskmode\ndisk${disksn}:name|$diskname\ndisk${disksn}:boot|$diskboot\ndisk${disksn}:autoDelete|$autoDelete\ndisk${disksn}:licenses|$disklicenses"
     done
