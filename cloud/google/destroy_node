@@ -32,26 +32,31 @@ find_name_by_ip() {
   fi
 }
 
-request() {
+request_node() {
   $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+}
+
+# TODO disk name can be custom and there may be multiple disks
+request_disk() {
   $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/disks/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
 }
 
-find_zone() {
-  # In GCE, zone and name identify the node. So it is a bit tricky, because
-  # at least one detail has to be known beforehand: the zone the node is in.
-  # Of course, it is defined in the cluster configuration, but what if it's 
-  # been changed there. This would make its nodes lost, even if not totally,
-  # but at least for some actions.
-  # So we rely on the cloud list here, but to be on the safe side, avoid using
-  # same names for nodes in different zones, even if GCE allows this.
-  nodecluster=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#" | grep "|$CLOUD$" | cut -sd'|' -f4,5 | grep ^$1\| | cut -sd'|' -f2`
-  if [ -n "$nodecluster" ]; then
-    region=`grep ^$nodecluster\| "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3`
-  else
-    region=`grep "|$name|" "$M_ROOT/cloud/${CLOUD}.list" | cut -sd'|' -f9`
-  fi
-  echo "$region"
+waitfor_node_destroyed() {
+  log "Waiting for node $name destroyed..."
+  waittimeout=1200
+  waitperiod=5
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    
+    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$name --zone=$zone`
+    
+    # waiting for not found error
+    status=0
+    status=`echo "$details" | grep -c '"errors"/0/"reason"|"notFound"'`
+    log "status is $status"
+    [ $status -eq 1 ] && break
+  done
 }
 
 printreturn() {
@@ -154,7 +159,9 @@ fi
 lock_cloudops || exit 10
 
 token=`get_oath2_token`
-request && log "Request sent" || proper_exit 1 132
+request_node && log "Request for node destroy sent" || proper_exit 1 132
+waitfor_node_destroyed
+request_disk && log "Request for disk destroy sent"
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 161
 [ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208

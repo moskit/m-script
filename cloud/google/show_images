@@ -77,6 +77,6 @@ source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -n "$showdeprecated" ] && all=yes
 
 token=`get_oath2_token`
-$CURL https://www.googleapis.com/compute/v1/projects/$project/global/images -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+$CURL https://www.googleapis.com/compute/v$V/projects/$project/global/images -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 list_images
 

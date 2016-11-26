@@ -125,7 +125,7 @@ ShowDisk() {
 
 printlist() {
   if [ -z "$id" ]; then
-    disklist=`cut -d'/' -f3- "$M_TEMP/${rcommand}.resp"`
+    disklist=`cat "$M_TEMP/${rcommand}.resp" | grep '^0/"items"' | cut -d'/' -f3-`
   else
     disklist=`cat "$M_TEMP/${rcommand}.resp"`
   fi

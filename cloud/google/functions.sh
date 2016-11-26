@@ -63,4 +63,20 @@ get_oath2_token() {
   echo "$token_type $access_token"
 }
 
+find_zone() {
+  # In GCE, zone and name identify the node. So it is a bit tricky, because
+  # at least one detail has to be known beforehand: the zone the node is in.
+  # Of course, it is defined in the cluster configuration, but what if it's 
+  # been changed there. This would make its nodes lost, even if not totally,
+  # but at least for some actions.
+  # So we rely on the cloud list here, but to be on the safe side, avoid using
+  # same names for nodes in different zones, even if GCE allows this.
+  nodecluster=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#" | grep "|$CLOUD$" | cut -sd'|' -f4,5 | grep ^$1\| | cut -sd'|' -f2`
+  if [ -n "$nodecluster" ]; then
+    region=`grep ^$nodecluster\| "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3`
+  else
+    region=`grep "|$name|" "$M_ROOT/cloud/${CLOUD}.list" | cut -sd'|' -f9`
+  fi
+  echo "$region"
+}
 
