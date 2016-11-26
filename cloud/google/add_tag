@@ -22,7 +22,7 @@ V="1"
 
 request() {
   tags="`echo "$nodeObject" | grep '"tags"/"items"' | cut -sd'|' -f2 | tr '\n' ','`\"${tagstring}\""
-  body="{[ \"items\": $tags ], \"fingerprint\": $tagsFingerprint }"
+  body="{ \"items\": [ $tags ], \"fingerprint\": \"$tagsFingerprint\" }"
   [ -n "$log_request" ] && log "$CURL \"https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags\" -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\""
   resp=`$CURL "https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags" -d "$body" -H "Content-Type: application/json" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
   echo "$resp" > "$M_TEMP/${rcommand}.resp"
