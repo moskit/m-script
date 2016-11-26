@@ -24,7 +24,7 @@ V="1"
 
 GCLOUD="$M_ROOT/lib/google-cloud-sdk/bin/gcloud"
 
-possible_options="cluster state filter region zone short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists"
+possible_options="cluster state filter region zone short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists debug"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -82,7 +82,7 @@ list_nodes() {
       imageId=`echo "$node" | grep '"licenses"/0|' | cut -sd'|' -f2 | tr -d '"'`
       flavorId=`echo "$node" | grep '"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
       istatus=`echo "$node" | grep '"status"|' | cut -sd'|' -f2 | tr -d '"'`
-      icluster=`echo "$node" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | cut -sd'-' -f4`
+      icluster=`echo "$node" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | awk -F'---' '{print $2}'`
       region=`echo "$node" | grep '"zone"|' | cut -sd'|' -f2 | tr -d '"'`
       intIP=`echo "$node" | grep '"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`
       extIP=`echo "$node" | grep '"networkInterfaces"/0/"accessConfigs"/0/"natIP"|' | cut -sd'|' -f2 | tr -d '"'`
@@ -97,13 +97,13 @@ list_nodes() {
           icluster=`grep ^$IP\| "$M_ROOT/nodes.list" | cut -d'|' -f5`
           if [ -n "$icluster" ]; then
             $debug && [ -n "$update_nodes_list" ] && ecf=1 && log "missing cluster for IP ${ip}, assumed $icluster"
+          else
+            # no icluster means that the node will not be shown, but only if there
+            # is no option --all. With this option, however, we want to see all
+            # clusters assigned via metadata
+            [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
+            $debug && [ -n "$update_nodes_list" ] && unset ecf
           fi
-        else
-          # no icluster means that node will not be shown, but only if there
-          # is no option --all. With this option, however, we want to see all
-          # clusters assigned via metadata
-          [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -eq 0 ] && [ -z "$all" ] && unset icluster
-          $debug && [ -n "$update_nodes_list" ] && unset ecf
         fi
       else
         # if no IP, it shouldn't make its way to nodes.list
