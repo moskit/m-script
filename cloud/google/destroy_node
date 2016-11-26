@@ -49,7 +49,8 @@ waitfor_node_destroyed() {
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     
-    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$name --zone=$zone`
+    IAMACHILD=1 "$rpath"/get_node_details --id=$name --zone=$zone
+    details=`cat "$M_TEMP/get_node_details.resp"`
     
     # waiting for not found error
     status=0

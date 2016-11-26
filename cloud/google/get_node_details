@@ -122,23 +122,23 @@ if [ -z "$name" ] ; then
     proper_exit 1 120
   else
     find_name_by_ip $ip
-    [ -z "$name" ] && log "unable to find name by IP $ip" && proper_exit 1 123
+    [ -z "$name" ] && log "unable to find name by IP $ip" && proper_exit 1 125
   fi
 fi
 
 [ -z "$region" ] && [ -n "$zone" ] && region=$zone
 [ -z "$region" ] && region=`find_zone $name`
-[ -z "$region" ] && echo "Unable to determine zone" && proper_exit 1 129
+[ -z "$region" ] && echo "Unable to determine zone" && proper_exit 1 131
 
 token=`get_oath2_token`
-request && log "Request sent" || proper_exit 1 132
+request && log "Request sent" || proper_exit 1 134
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 161
-[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 136
+[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 137
 
 printreturn "$reqparsed" || exit_status=2
 
-proper_exit 0 139
+proper_exit 0 141
 
 
 
