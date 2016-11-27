@@ -38,7 +38,7 @@ request_node() {
 
 # TODO disk name can be custom and there may be multiple disks
 request_disk() {
-  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/disks/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
+  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/disks/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 }
 
 waitfor_node_destroyed() {
@@ -49,19 +49,29 @@ waitfor_node_destroyed() {
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     
-    IAMACHILD=1 "$rpath"/get_node_details --id=$name --zone=$zone
+    istatus=`IAMACHILD=1 "$rpath"/get_node_details --id=$name --zone=$zone | grep ^status | cut -sd'|' -f2`
     details=`cat "$M_TEMP/get_node_details.resp"`
     
     # waiting for not found error
     status=0
     status=`echo "$details" | grep -c '"errors"/0/"reason"|"notFound"'`
-    log "status is $status"
-    [ $status -eq 1 ] && break
+    if [ $status -eq 0 ] ; then
+      log "status is $istatus"
+    else
+      log "status is 'not found'"
+      break
+    fi
   done
 }
 
 printreturn() {
-  cat "$M_TEMP/${rcommand}.resp"
+  ret=`cat "$M_TEMP/${rcommand}.resp"`
+  op=`echo "$ret" | grep '"operationType"' | cut -sd'|' -f2 | tr -d '"'`
+  target=`echo "$ret" | grep '"targetId"' | cut -sd'|' -f2 | tr -d '"'`
+  target=${target##*/}
+  status=`echo "$ret" | grep '"status"' | cut -sd'|' -f2 | tr -d '"'`
+  progress=`echo "$ret" | grep '"progress"' | cut -sd'|' -f2`
+  echo "Operation: $op  Target: $target  Status: $status  Progress: $progress"
 }
 
 possible_options="cloud id name region zone ip return verbose log_request force last first cluster nochecks"
@@ -160,21 +170,22 @@ fi
 lock_cloudops || exit 10
 
 token=`get_oath2_token`
-request_node && log "Request for node destroy sent" || proper_exit 1 132
+request_node && log "Request for node destroy sent" || proper_exit 1 163
 waitfor_node_destroyed
 request_disk && log "Request for disk destroy sent"
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 161
-[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 167
+[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 168
 
 printreturn "$reqparsed" || exit_status=2
 
-"$M_ROOT"/cloud/common/update_nodes_list
+#IAMACHILD=1 "$M_ROOT"/cloud/common/update_nodes_list
 
 # using zone+name combination that 100% identifies the instance
+sed -i "/\|$region\|$name\|\$cluster\|$CLOUD$/d" "$M_ROOT/nodes.list"
 sed -i "/\|$name\|.*\|$region\|/d" "$M_ROOT/cloud/${CLOUD}.list"
 
-proper_exit 0 139
+proper_exit 0 178
 
 
 

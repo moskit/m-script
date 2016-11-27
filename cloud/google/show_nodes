@@ -22,8 +22,6 @@ CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 V="1"
 
-GCLOUD="$M_ROOT/lib/google-cloud-sdk/bin/gcloud"
-
 possible_options="cluster state filter region zone short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists debug"
 necessary_options=""
 
