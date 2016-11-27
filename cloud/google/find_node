@@ -121,8 +121,13 @@ fi
 
 if [ -z "$name" ] ; then
   if [ -z "$ip" ] ; then
-    echo "One of ip or name is required to identify the node"
-    exit 1
+    if [ -z "$cluster" ]; then
+      echo "One of ip, name or cluster is required to identify the node"
+      proper_exit 1 126
+    else
+      list_the_cluster
+      proper_exit 0 129
+    fi
   else
     find_name_by_ip $ip
     [ -z "$name" ] && log "unable to find name by IP $ip" && exit 1
