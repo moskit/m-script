@@ -58,7 +58,7 @@ printreturn() {
       disklicenses=`echo "$disk" | grep '/"licenses"/' | cut -sd'|' -f2 | tr -d '"'`
       disklicenses=${disklicenses##*/}
       diskautoDelete=`echo "$disk" | grep '/"autoDelete"|' | cut -sd'|' -f2 | tr -d '"'`
-      echo -e "disk${disksn}:type|$disktype\ndisk${disksn}:mode|$diskmode\ndisk${disksn}:name|$diskname\ndisk${disksn}:boot|$diskboot\ndisk${disksn}:autoDelete|$autoDelete\ndisk${disksn}:licenses|$disklicenses"
+      echo -e "disk${disksn}:type|$disktype\ndisk${disksn}:mode|$diskmode\ndisk${disksn}:name|$diskname\ndisk${disksn}:boot|$diskboot\ndisk${disksn}:autoDelete|$diskautoDelete\ndisk${disksn}:licenses|$disklicenses"
     done
   fi
 }

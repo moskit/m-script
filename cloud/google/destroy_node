@@ -169,6 +169,11 @@ reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
 
 printreturn "$reqparsed" || exit_status=2
 
+"$M_ROOT"/cloud/common/update_nodes_list
+
+# using zone+name combination that 100% identifies the instance
+sed -i "/\|$name\|.*\|$region\|/d" "$M_ROOT/cloud/${CLOUD}.list"
+
 proper_exit 0 139
 
 
