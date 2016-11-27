@@ -99,12 +99,25 @@ if [ -z "$id" ]; then
 fi
 [ -z "$id" ] && echo "Unable to find ID of this node" && proper_exit 1 98
 
+# IP is required, to get it removed from lists
+if [ -z "$ip" ]; then
+  if [ "_$network" == "_EXTERNAL" ]; then
+    ip=`IAMACHILD=1 "$rpath"/get_node_details --id=$id | grep ^publicIpAddress | cut -sd'|' -f2`
+  else
+    ip=`IAMACHILD=1 "$rpath"/get_node_details --id=$id | grep ^privateIpAddress | cut -sd'|' -f2`
+  fi
+fi
+
 ec2_api_request TerminateInstances "InstanceId.1=${id}"
 check_request_result instanceId,previousState,currentState || proper_exit 1 101
 
 if [ -n "$ip" ]; then
-  sed -i "/^${ip}|/d" "$M_ROOT/nodes.list" "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  sed -i "/^$ip|/d" "$M_ROOT/nodes.list" "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  SSHK=`which ssh-keygen 2>/dev/null`
+  $SSHK -q -R "$ip" >/dev/null 2>&1 && log "$ip removed from known_hosts"
+  sed -i "/^$ip /d" /etc/hosts && log "$ip removed from /etc/hosts"
 fi
 sed -i "/|$id|/d" "$M_ROOT/cloud/${CLOUD}.list"
+[ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
 
 proper_exit 0 105

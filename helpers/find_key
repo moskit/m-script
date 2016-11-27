@@ -78,25 +78,11 @@ case $where in
       find_cluster_key "$cluster" && echo "$M_ROOT/keys/$KEY" && exit 0
       log "no luck"
     else
-      # finding cluster from the cloud metadata
+      # finding cluster from cloud metadata
       if [ -n "$CLOUD" ]; then
         source "$M_ROOT/conf/clouds/${CLOUD}.conf"
         log "no cluster found for server ${1}, querying cloud $CLOUD_PROVIDER API"
-        case $CLOUD_PROVIDER in
-        rackspace)
-          cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_node --cloud=$CLOUD --name=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
-          [ -z "$cluster" ] && cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/find_node --cloud=$CLOUD --ip=$1 | grep "\"metadata\"/\"$CLUSTER_TAG\"|" | cut -d'|' -f2`
-        ;;
-        ec2)
-          
-        ;;
-        ganeti)
-          
-        ;;
-        *)
-          
-        ;;
-        esac
+        cluster=`IAMACHILD=1 "$M_ROOT"/cloud/common/get_node_details --cloud=$CLOUD --name=$1 | grep "^cluster" | cut -sd'|' -f2`
       fi
       if [ -z "$cluster" ]; then
         log "cluster not found for server $1"

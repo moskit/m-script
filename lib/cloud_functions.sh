@@ -27,7 +27,7 @@ log() {
 }
 
 CLOUDS=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
-export CLOUDS
+export CLOUDS LOG
 
 # current cloud passed as an environment variable
 if [ -n "$CLOUD" ]; then
@@ -284,4 +284,28 @@ check_node_up() {
   "$M_ROOT"/helpers/mssh "$1" true
 }
 
-
+run_init() {
+  local initcloud=$1
+  local initcluster=$2
+  local initip=$3
+  DISTRO=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "^$initcluster|" | cut -d'|' -f11`
+  source "$M_ROOT/conf/clouds/${initcloud}.conf"
+  source "$M_ROOT/conf/deployment.conf"
+  [ -z "$CONNECT_TIMEOUT" ] && CONNECT_TIMEOUT=5
+  [ -z "$SSHPORT" ] && SSHPORT=22
+  [ -z "$SSH_USER" ] && SSH_USER=root
+  key=`"$M_ROOT"/helpers/find_key --cluster=$initcluster`
+  export SSH_USER SSHPORT CONNECT_TIMEOUT key initcloud initcluster initip
+  if [ -e "$ROLES_ROOT/init/${CLOUD_PROVIDER}_${DISTRO}.sh" ]; then
+    /bin/bash "$ROLES_ROOT/init/${CLOUD_PROVIDER}_${DISTRO}.sh"
+  fi
+  if [ "_$initcloud" != "$_CLOUD_PROVIDER" ]; then
+    if [ -e "$ROLES_ROOT/init/${initcloud}_${DISTRO}.sh" ]; then
+      /bin/bash "$ROLES_ROOT/init/${initcloud}_${DISTRO}.sh"
+    fi
+  fi
+}
+  
+  
+  
+  

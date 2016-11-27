@@ -216,7 +216,7 @@ IPS=( `echo -e "$ipint\n$ipext\n$ip" | sort | uniq` )
 
 if [ $reqres -eq 0 ] && [ `grep -c "itemNotFound" "$M_TEMP/${rcommand}.resp"` -eq 0 ]; then
   log "Node name ${name}, id ${id}, IP ${IPS[*]} terminated successfully"
-  echo -e "`date`\n\nNode ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../rackspace.log
+  echo -e "`date`\n\nNode ${id} `[ -n "${IPS[*]}" ] && echo "IP(s): ${IPS[*]}"` terminated" >> "$rpath"/../${CLOUD}.log
   removed=true
 else
   log "Node name ${name}, id ${id}, IP ${IPS[*]} is NOT terminated"
@@ -226,7 +226,7 @@ if [ $removed -o $force ]; then
   SSHK=`which ssh-keygen 2>/dev/null`
   [ -n "$name" ] && $SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
 
-  sed -i "/^$id|/d" "$rpath/../rackspace.list" && log "$id removed from cloud/rackspace.list"
+  sed -i "/^$id|/d" "$rpath/../${CLOUD}.list" && log "$id removed from cloud/${CLOUD}.list"
   
   for ipa in ${IPS[*]} ; do
     if [ -n "$ipa" ] ; then

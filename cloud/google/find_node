@@ -153,6 +153,7 @@ else
   res=$?
   listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
   echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
+  echo "$details"
   if [ $res -eq 2 ]; then
     exit_status=1
   else

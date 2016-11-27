@@ -52,18 +52,6 @@ printreturn() {
   done
 }
 
-set_hostname() {
-  if [ -n "$extIP" ]; then
-    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
-    sshres=$?
-  fi
-  if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
-    $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
-    sshres=$?
-  fi
-  return $sshres
-}
-
 save_details() {
   listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
   echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
@@ -170,11 +158,13 @@ if ! $dry ; then
   done
   if [ "_$status" == "_RUNNING" ]; then
   
-    "$rpath"/add_tag --id=$name --tag="cluster:$cluster"
-    "$rpath"/add_tag --id=$name --tag="name:$name"
+    "$rpath"/add_tag --id=$name --tag="cluster:$cluster" --region=$region
+    sleep 2
+    "$rpath"/add_tag --id=$name --tag="name:$name" --region=$region
     
     save_details
-    set_hostname || log "Was unable to set hostname"
+    run_init $CLOUD $cluster $ip >> "$LOG" 2>/dev/null || log "Init script failed"
+    
     "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
     [ -n "$return" ] && printreturn $return
   else

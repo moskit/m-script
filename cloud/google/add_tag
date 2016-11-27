@@ -22,13 +22,14 @@ V="1"
 
 request() {
   tags="`echo "$nodeObject" | grep '"tags"/"items"' | cut -sd'|' -f2 | tr '\n' ','`\"${tagstring}\""
+  log "TAGS: $tags"
   body="{ \"items\": [ $tags ], \"fingerprint\": \"$tagsFingerprint\" }"
   [ -n "$log_request" ] && log "$CURL \"https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags\" -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\""
   resp=`$CURL "https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags" -d "$body" -H "Content-Type: application/json" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
   echo "$resp" > "$M_TEMP/${rcommand}.resp"
 }
 
-possible_options="id name region log_request cloud tag"
+possible_options="id name zone region log_request cloud tag"
 necessary_options="tag"
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -72,6 +73,7 @@ LOG="$M_ROOT/logs/cloud.log"
 source "$rpath/functions.sh" || exit 1
 
 [ -z "$name" ] && [ -n "$id" ] && name=$id
+[ -z "$region" ] && [ -n "$zone" ] && region=$zone
 
 if [ `expr "$tag" : ".*:"` -gt 0 ]; then
   tagstring="${tag%:*}---${tag#*:}"
@@ -79,7 +81,9 @@ else
   tagstring=$tag
 fi
 
-nodeObject=`IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name`
+lock_cloudops || exit 10
+
+nodeObject=`IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name --region=$region`
 tagsFingerprint=`echo "$nodeObject" | grep tagsFingerprint | cut -sd'|' -f2`
 if [ -z "$region" ]; then
   region=`echo "$nodeObject" | grep region | cut -sd'|' -f2`
