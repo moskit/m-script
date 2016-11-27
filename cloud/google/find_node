@@ -50,9 +50,14 @@ list_the_cluster() {
   else
     for node in `IAMACHILD=1 "$rpath"/show_nodes --all --view=table | cut -sd'|' -f2,3,4,5,6,7,8,9 | grep '|RUNNING|' | grep "|${cluster}|" | cut -sd'|' -f2` ; do
       sed -i "/|$name|/d" "$M_ROOT/cloud/${CLOUD}.list"
-      details=`IAMACHILD=1 "$rpath"/get_node_details --id=$name`
-      listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
-      echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
+      details=`IAMACHILD=1 "$rpath"/get_node_details --id=$node`
+      if [ $? -eq 0 ]; then
+        listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
+        echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
+      else
+        echo "ERROR getting the node $node details"
+        return 1
+      fi
     done
   fi
 }
@@ -128,10 +133,10 @@ if [ -z "$name" ] ; then
   if [ -z "$ip" ] ; then
     if [ -z "$cluster" ]; then
       echo "One of ip, name or cluster is required to identify the node"
-      proper_exit 1 126
+      proper_exit 1 136
     else
-      list_the_cluster
-      proper_exit 0 129
+      list_the_cluster || proper_exit 1 138
+      proper_exit 0 139
     fi
   else
     find_name_by_ip $ip
