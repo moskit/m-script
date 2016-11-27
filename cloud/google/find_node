@@ -49,7 +49,7 @@ list_the_cluster() {
     IAMACHILD=1 "$rpath"/show_nodes --all --view=table --noupdate | cut -sd'|' -f2,3,4,5,6,7,8,9 | grep '|RUNNING|' | grep "|${cluster}|"
   else
     for node in `IAMACHILD=1 "$rpath"/show_nodes --all --view=table | cut -sd'|' -f2,3,4,5,6,7,8,9 | grep '|RUNNING|' | grep "|${cluster}|" | cut -sd'|' -f1` ; do
-      sed -i "/|$name|/d" "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null
+      sed -i "/|$node|/d" "$M_ROOT/cloud/${CLOUD}.list" 2>/dev/null
       details=`IAMACHILD=1 "$rpath"/get_node_details --id=$node`
       if [ $? -eq 0 ]; then
         listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
