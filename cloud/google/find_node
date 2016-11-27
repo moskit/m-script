@@ -46,9 +46,14 @@ IFS=$IFS1
 
 list_the_cluster() {
   if [ -n "$quick" ]; then
-    IAMACHILD=1 "$rpath"/show_nodes --all --view=table --noupdate | cut -sd'|' -f2,3,5,6,7 | grep '|RUNNING|' | grep "|${cluster}$"
+    IAMACHILD=1 "$rpath"/show_nodes --all --view=table --noupdate | cut -sd'|' -f2,3,4,5,6,7,8,9 | grep '|RUNNING|' | grep "|${cluster}|"
   else
-    IAMACHILD=1 "$rpath"/show_nodes --all --view=table | cut -sd'|' -f2,3,5,6,7 | grep '|running|' | grep "|${cluster}$"
+    for node in `IAMACHILD=1 "$rpath"/show_nodes --all --view=table | cut -sd'|' -f2,3,4,5,6,7,8,9 | grep '|RUNNING|' | grep "|${cluster}|" | cut -sd'|' -f2` ; do
+      sed -i "/|$name|/d" "$M_ROOT/cloud/${CLOUD}.list"
+      details=`IAMACHILD=1 "$rpath"/get_node_details --id=$name`
+      listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
+      echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
+    done
   fi
 }
 
@@ -85,7 +90,7 @@ Options:
   
   --cluster=[cluster name]      - finds all nodes in this cluster
                                   (see also --fast and --slow below).
-                                  If either of ip/name/id is provided, this
+                                  If either of ip/name is provided, this
                                   option is ignored
   
   --cloud=[cloud name]          - must be provided for any of the searches
@@ -97,7 +102,7 @@ Options:
                                   
   --slow                        - for cluster search, gets details for each
                                   node in this cloud listed in nodes.list
-                                  and cloud/rackspace.list from the cloud API
+                                  and cloud/google.list from the cloud API
                                   and does its best to fix any inconsistencies
                                   found
                                   
@@ -135,13 +140,15 @@ if [ -z "$name" ] ; then
 fi
 
 if [ -n "$onlyid" ]; then
-  echo "$id"
+  echo "$name"
 else
-  echo "ID found: $id"
-  IAMACHILD=1 "$rpath"/get_node_details --id=$id
+  echo "ID found: $name"
+  sed -i "/|$name|/d" "$M_ROOT/cloud/${CLOUD}.list"
+  details=`IAMACHILD=1 "$rpath"/get_node_details --id=$name`
   res=$?
+  listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
+  echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
   if [ $res -eq 2 ]; then
-    sed -i "/|$id|/d" "$M_ROOT/cloud/${CLOUD}.list"
     exit_status=1
   else
     exit_status=$res
