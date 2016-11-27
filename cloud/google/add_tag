@@ -83,8 +83,10 @@ fi
 
 lock_cloudops || exit 10
 
-nodeObject=`IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name --region=$region`
-tagsFingerprint=`echo "$nodeObject" | grep tagsFingerprint | cut -sd'|' -f2`
+IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name --region=$region
+nodeObject=`cat "$M_TEMP/get_node_details.resp"`
+tagsFingerprint=`echo "$nodeObject" | grep '^0/"tags"/"fingerprint"|' | cut -sd'|' -f2 | tr -d '"'`
+
 if [ -z "$region" ]; then
   region=`echo "$nodeObject" | grep region | cut -sd'|' -f2`
   region=${region##*/}
