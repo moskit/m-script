@@ -75,7 +75,7 @@ find_zone() {
   if [ -n "$nodecluster" ]; then
     region=`grep ^$nodecluster\| "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3`
   else
-    region=`grep "|$name|" "$M_ROOT/cloud/${CLOUD}.list" | cut -sd'|' -f9`
+    region=`grep "|$1|" "$M_ROOT/cloud/${CLOUD}.list" | cut -sd'|' -f6`
   fi
   echo "$region"
 }

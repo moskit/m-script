@@ -81,6 +81,8 @@ else
   tagstring=$tag
 fi
 
+[ -z "$region" ] && find_zone $name
+
 lock_cloudops || exit 10
 
 IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name --region=$region

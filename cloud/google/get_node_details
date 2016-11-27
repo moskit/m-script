@@ -47,8 +47,7 @@ printreturn() {
     region=${region##*/}
     intIP=`echo "$1" | grep '^0/"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`
     extIP=`echo "$1" | grep '^0/"networkInterfaces"/0/"accessConfigs"/0/"natIP"|' | cut -sd'|' -f2 | tr -d '"'`
-    tagsFingerprint=`echo "$1" | grep '^0/"tags"/"fingerprint"|' | cut -sd'|' -f2 | tr -d '"'`
-    echo -e "id|$id\nname|$iname\nmachineType|$machineType\nstatus|$istatus\ncluster|$icluster\nregion|$region\nintIP|$intIP\nextIP|$extIP\ntagsFingerprint|$tagsFingerprint"
+    echo -e "id|$id\nname|$iname\nmachineType|$machineType\nstatus|$istatus\ncluster|$icluster\nregion|$region\nintIP|$intIP\nextIP|$extIP"
     for disksn in `echo "$1" | grep '^0/"disks"/' | cut -sd'/' -f3 | sort | uniq`; do
       disk=`echo "$1" | grep "^0/\"disks\"/$disksn/"`
       disktype=`echo "$disk" | grep '/"type"|' | cut -sd'|' -f2 | tr -d '"'`
