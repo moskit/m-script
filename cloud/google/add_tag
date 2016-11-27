@@ -87,11 +87,6 @@ IAMACHILD=1 "$rpath"/get_node_details --cloud=$CLOUD --name=$name --region=$regi
 nodeObject=`cat "$M_TEMP/get_node_details.resp"`
 tagsFingerprint=`echo "$nodeObject" | grep '^0/"tags"/"fingerprint"|' | cut -sd'|' -f2 | tr -d '"'`
 
-if [ -z "$region" ]; then
-  region=`echo "$nodeObject" | grep region | cut -sd'|' -f2`
-  region=${region##*/}
-fi
-
 token=`get_oath2_token`
 request && log "Request sent" || proper_exit 1 91
 [ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 92
