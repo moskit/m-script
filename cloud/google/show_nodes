@@ -80,7 +80,8 @@ list_nodes() {
       imageId=`echo "$node" | grep '"licenses"/0|' | cut -sd'|' -f2 | tr -d '"'`
       flavorId=`echo "$node" | grep '"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
       istatus=`echo "$node" | grep '"status"|' | cut -sd'|' -f2 | tr -d '"'`
-      icluster=`echo "$node" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | awk -F'---' '{print $2}'`
+      icluster=`echo "$node" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"'`
+      icluster=`expr "$icluster" : '.*---\(.*\)$'`
       region=`echo "$node" | grep '"zone"|' | cut -sd'|' -f2 | tr -d '"'`
       intIP=`echo "$node" | grep '"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`
       extIP=`echo "$node" | grep '"networkInterfaces"/0/"accessConfigs"/0/"natIP"|' | cut -sd'|' -f2 | tr -d '"'`

@@ -42,7 +42,8 @@ printreturn() {
     machineType=`echo "$1" | grep '^0/"machineType"|' | cut -sd'|' -f2 | tr -d '"'`
     machineType=${machineType##*/}
     istatus=`echo "$1" | grep '^0/"status"|' | cut -sd'|' -f2 | tr -d '"'`
-    icluster=`echo "$1" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"' | cut -sd'-' -f4`
+    icluster=`echo "$1" | grep "\"tags\"/\"items\"" | grep "\"${CLUSTER_TAG}\-\-\-" | cut -sd'|' -f2 | tr -d '"'`
+    icluster=`expr "$icluster" : '.*---\(.*\)$'`
     region=`echo "$1" | grep '^0/"zone"|' | cut -sd'|' -f2 | tr -d '"'`
     region=${region##*/}
     intIP=`echo "$1" | grep '^0/"networkInterfaces"/0/"networkIP"|' | cut -sd'|' -f2 | tr -d '"'`

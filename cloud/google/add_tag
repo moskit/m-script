@@ -25,7 +25,8 @@ request() {
   log "TAGS: $tags"
   body="{ \"items\": [ $tags ], \"fingerprint\": \"$tagsFingerprint\" }"
   [ -n "$log_request" ] && log "$CURL \"https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags\" -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\""
-  resp=`$CURL "https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags" -d "$body" -H "Content-Type: application/json" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
+  respraw=`$CURL "https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$region/instances/$name/setTags" -d "$body" -H "Content-Type: application/json" -H "Authorization:$token"`
+  resp=`echo "$respraw" | "$M_ROOT"/lib/json2txt`
   echo "$resp" > "$M_TEMP/${rcommand}.resp"
 }
 
@@ -91,7 +92,7 @@ tagsFingerprint=`echo "$nodeObject" | grep '^0/"tags"/"fingerprint"|' | cut -sd'
 
 token=`get_oath2_token`
 request && log "Request sent" || proper_exit 1 91
-[ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 92
+[ `echo "$resp" | grep -v '^$' | wc -l` -eq 0 ] && log "empty response or response is not JSON:\n$respraw" && proper_exit 1 92
 [ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 93
 
 proper_exit 0 95
