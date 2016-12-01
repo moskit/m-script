@@ -36,7 +36,7 @@ request_node() {
   $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 }
 
-# TODO disk name can be custom and there may be multiple disks
+# TODO disk name may be custom and there may be multiple disks
 request_disk() {
   $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/disks/$name" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 }
@@ -111,7 +111,7 @@ source "$rpath/functions.sh" || exit 1
 trap unlock_cloudops 3
 trap unlock_cloudops 15
 
-[ -n "$cluster" ] && [ `grep -c \|$cluster\| "$M_ROOT"/nodes.list` -eq 0 ] && log "Nodes list has no nodes in cluster ${cluster}. Try 'find_node --cluster=$cluster' and repeat" && exit 1
+[ -n "$cluster" ] && [ `grep -c \|$cluster\| "$M_ROOT"/nodes.list` -eq 0 ] && log "Nodes list has no nodes in cluster ${cluster}. Try 'find_node --cluster=$cluster' and re-run" && exit 1
 [ -z "$cluster" ] && cluster=$M_CLUSTER
 
 if [ -z "$cloud" ]; then
@@ -181,17 +181,25 @@ lock_cloudops || exit 10
 
 token=`get_oath2_token`
 request_node && log "Request for node destroy sent" || proper_exit 1 163
+reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 185
+[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 186
+pr=`printreturn "$reqparsed"`
+echo -e "\n`date` request to destroy node $name in region $region\n\n$pr" >> "$M_ROOT/cloud/${CLOUD}.log"
+echo "$pr"
+
 waitfor_node_destroyed
 echo "Node $name in zone $region destroyed successfully"
 request_disk && log "Request for disk destroy sent"
 reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 167
-[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 168
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 192
+[ `echo "$reqparsed" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$reqparsed" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 193
 
-sleep 3
+sleep 5
 echo "Request for the root disk deletion has been sent. Reply received:"
-printreturn "$reqparsed" || exit_status=2
-
+pr=`printreturn "$reqparsed"`
+echo -e "\n`date` request to destroy root disk of node $name in region $region\n\n$pr" >> "$M_ROOT/cloud/${CLOUD}.log"
+echo "$pr"
 #IAMACHILD=1 "$M_ROOT"/cloud/common/update_nodes_list
 
 # using zone+name combination that 100% identifies the instance
