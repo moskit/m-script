@@ -28,7 +28,7 @@ necessary_options=""
 request() {
   url="https://www.googleapis.com/compute/v$V/projects/$PROJECT_ID/zones/$zone/instances"
   body="{ \"name\": \"$name\", \"machineType\": \"zones/$zone/machineTypes/$type\", \"networkInterfaces\": $networkInterfaces, \"disks\": $disks }"
-  [ -n "$log_request" ] && echo "$CURL -X POST $url -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\"" >> $LOG
+  [ -n "$log_request" ] && LR="--log_request" && echo "$CURL -X POST $url -d \"$body\" -H \"Content-Type: application/json\" -H \"Authorization:$token\"" >> $LOG
   resp=`$CURL -X POST $url -d "$body" -H "Content-Type: application/json" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt`
   echo "$resp" > "$M_TEMP/${rcommand}.resp"
 }
@@ -160,9 +160,9 @@ if ! $dry ; then
   done
   if [ "_$status" == "_RUNNING" ]; then
   
-    "$rpath"/add_tag --id=$name --tag="cluster:$cluster" --region=$region
+    "$rpath"/add_tag --id=$name --tag="cluster:$cluster" --region=$region $LR
     sleep 2
-    "$rpath"/add_tag --id=$name --tag="name:$name" --region=$region
+    "$rpath"/add_tag --id=$name --tag="name:$name" --region=$region $LR
     
     save_details
     run_init $CLOUD $cluster $ip >> "$LOG" 2>&1 && log "Startup script finished successfully" || log "Startup script failed"

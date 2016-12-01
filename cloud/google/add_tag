@@ -82,7 +82,8 @@ else
   tagstring=$tag
 fi
 
-[ -z "$region" ] && find_zone $name
+[ -z "$region" ] && region=`find_zone $name`
+[ -z "$region" ] && echo "unable to find zone" && exit 1
 
 lock_cloudops || exit 10
 
@@ -92,7 +93,7 @@ tagsFingerprint=`echo "$nodeObject" | grep '^0/"tags"/"fingerprint"|' | cut -sd'
 
 token=`get_oath2_token`
 request && log "Request sent" || proper_exit 1 91
-[ `echo "$resp" | grep -v '^$' | wc -l` -eq 0 ] && log "empty response or response is not JSON:\n$respraw" && proper_exit 1 92
+[ `echo "$resp" | grep -v '^$' | wc -l` -eq 0 ] && log "empty response or response is not JSON:" && log "$respraw" && proper_exit 1 92
 [ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 93
 
 proper_exit 0 95
