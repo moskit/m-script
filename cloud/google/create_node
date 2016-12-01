@@ -163,7 +163,7 @@ if ! $dry ; then
     "$rpath"/add_tag --id=$name --tag="name:$name" --region=$region
     
     save_details
-    run_init $CLOUD $cluster $ip >> "$LOG" 2>/dev/null && log "Startup script finished successfully" || log "Startup script failed"
+    run_init $CLOUD $cluster $ip >> "$LOG" 2>&1 && log "Startup script finished successfully" || log "Startup script failed"
     
     "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
     [ -n "$return" ] && printreturn $return
