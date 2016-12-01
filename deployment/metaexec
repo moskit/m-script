@@ -219,7 +219,7 @@ meta_exit() {
 
 createnode() {
   ip=0 
-  ip="$(IAMACHILD=1 "$rpath"/../cloud/$CLOUD_PROVIDER/create_node --cluster=$cluster --return=ip "$V" "$T" 2>>"$rpath"/../logs/cloud.log | tail -1)"
+  ip="$(IAMACHILD=1 "$rpath"/../cloud/$CLOUD_PROVIDER/create_node --cluster=$cluster --return=ip "$V" "$T" "$LR" 2>>"$rpath"/../logs/cloud.log | tail -1)"
   [ $? -ne 0 ] && ip=$? 
   log "($CLOUD) create_node returned this: $ip"
 }
@@ -229,7 +229,7 @@ trap meta_exit 3 6 15
 SSH=`which ssh 2>/dev/null`
 SCP=`which scp 2>/dev/null`
 
-possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newnode list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name"
+possible_options="help verbose debug flavor ip cloud cluster task role timestamp test dry command output repeat newnode list skip force ignoreipnotpresent ignoreemptycluster ignorenocluster usage user nosudo nolock newtimestamp name log_request"
 [ -z "$*" ] && usage="yes"
 
 IFSORIG=$IFS
@@ -269,6 +269,7 @@ export verbose debug
 [ -n "$repeat" ] && timestamp=repeat
 [ -n "$newtimestamp" ] && unset timestamp timestampact
 [ -n "$usage" ] && help="yes" && debug=false
+[ -n "$log_request" ] && LR="--log_request"
 
 if [ -n "$help" ]; then
   if $debug ; then
