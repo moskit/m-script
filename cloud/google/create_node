@@ -63,8 +63,8 @@ save_details() {
   else
     ip=$intIP
   fi
-  echo "$ip|$key|$zone|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
-  echo "$ip|$key|$zone|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
+  echo "$ip|$keyname|$zone|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  echo "$ip|$keyname|$zone|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
 }
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -119,8 +119,8 @@ else
   image=`echo "$imageObject" | cut -sd':' -f2`
   [ -z "$image" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 65
 fi
-key=`echo "$clusterObject" | cut -sd'|' -f2`
-key="$M_ROOT/keys/$key"
+keyname=`echo "$clusterObject" | cut -sd'|' -f2`
+key="$M_ROOT/keys/$keyname"
 # required for init_run
 export key SSH_USER SSHPORT
 
@@ -161,19 +161,36 @@ if ! $dry ; then
   done
   if [ "_$status" == "_RUNNING" ]; then
   
-    "$rpath"/add_tag --id=$name --tag="cluster:$cluster" --region=$region $LR
+    "$rpath"/add_tag --id=$name --tag="cluster:$cluster" --region=$zone $LR
     sleep 2
-    "$rpath"/add_tag --id=$name --tag="name:$name" --region=$region $LR
+    "$rpath"/add_tag --id=$name --tag="name:$name" --region=$zone $LR
     
     save_details
-    run_init $CLOUD $cluster $ip >> "$LOG" 2>&1 && log "Startup script finished successfully" || log "Startup script failed"
-    
     "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+    
+    # node may be running, but not up
+    log "Waiting for node $name up..."
+    waittimeout=300
+    waitperiod=2
+    checks=`expr $waittimeout / $waitperiod`
+    for ((i=1; i<$checks; i++)) ; do
+      check_node_up $ip && break
+      sleep $waitperiod
+    done
+    check_node_up $ip
+    if [ $? -ne 0 ]; then
+      log "ERROR: running node is not up or not accessibke after $waittimeout sec"
+      proper_exit 1 183
+    fi
+    
+    log "Running init script, if present..."
+    run_init $CLOUD $cluster $ip >> "$LOG" 2>&1 && log "Startup script finished successfully" || log "Startup script failed"
+
     [ -n "$return" ] && printreturn $return
   else
     exit_status=1
   fi
 fi
 
-proper_exit $exit_status 235
+proper_exit $exit_status 195
 
