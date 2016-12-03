@@ -120,6 +120,7 @@ else
   [ -z "$image" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 65
 fi
 key=`echo "$clusterObject" | cut -sd'|' -f2`
+key="$M_ROOT/keys/$key"
 # required for init_run
 export key
 
