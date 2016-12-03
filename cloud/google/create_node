@@ -122,7 +122,7 @@ fi
 key=`echo "$clusterObject" | cut -sd'|' -f2`
 key="$M_ROOT/keys/$key"
 # required for init_run
-export key
+export key SSH_USER SSHPORT
 
 [ -n "$debug" ] && debug=true || debug=false
 [ -n "$dry" ] && dry=true || dry=false

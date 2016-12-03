@@ -72,6 +72,7 @@ find_zone() {
   # So we rely on the cloud list here, but to be on the safe side, avoid using
   # same names for nodes in different zones, even if GCE allows this.
   nodecluster=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#" | grep "|$CLOUD$" | cut -sd'|' -f4,5 | grep ^$1\| | cut -sd'|' -f2`
+  if [ `echo "$nodecluster" | wc -l` -ne 1 ]; then unset nodecluster ; fi
   if [ -n "$nodecluster" ]; then
     region=`grep ^$nodecluster\| "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3`
   else

@@ -298,10 +298,12 @@ run_init() {
   export SSH_USER SSHPORT CONNECT_TIMEOUT key initcloud initcluster initip
   if [ -e "$ROLES_ROOT/init/${CLOUD_PROVIDER}_${DISTRO}.sh" ]; then
     /bin/bash "$ROLES_ROOT/init/${CLOUD_PROVIDER}_${DISTRO}.sh"
+    return $?
   fi
   if [ "_$initcloud" != "$_CLOUD_PROVIDER" ]; then
     if [ -e "$ROLES_ROOT/init/${initcloud}_${DISTRO}.sh" ]; then
       /bin/bash "$ROLES_ROOT/init/${initcloud}_${DISTRO}.sh"
+      return $?
     fi
   fi
 }

@@ -161,7 +161,7 @@ if [ -z "$ip" ]; then
 fi
 
 if [ -z "$cluster" ]; then
-  nodecluster=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#" | grep "|$CLOUD$" | cut -sd'|' -f4,5 | grep ^$1\| | cut -sd'|' -f2`
+  nodecluster=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#" | grep "|$CLOUD$" | cut -sd'|' -f4,5 | grep ^$name\| | cut -sd'|' -f2`
   if [ `echo "$nodecluster" | wc -l` -ne 1 ]; then unset nodecluster ; fi
   if [ -n "$nodecluster" ]; then
     cluster=$nodecluster
@@ -210,6 +210,7 @@ sed -i "/\|$name\|.*\|$region\|/d" "$M_ROOT/cloud/${CLOUD}.list"
 
 SSHK=`which ssh-keygen 2>/dev/null`
 $SSHK -q -R "$ip" >/dev/null 2>&1 && log "$ip removed from known_hosts"
+$SSHK -q -R "$name" >/dev/null 2>&1 && log "$name removed from known_hosts"
 sed -i "/^$ip /d" /etc/hosts && log "$ip removed from /etc/hosts"
 
 proper_exit 0 178
