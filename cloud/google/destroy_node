@@ -205,8 +205,8 @@ echo "$pr"
 #IAMACHILD=1 "$M_ROOT"/cloud/common/update_nodes_list
 
 # using zone+name combination that 100% identifies the instance
-sed -i "/\|$region\|$name\|\$cluster\|$CLOUD$/d" "$M_ROOT/nodes.list"
-sed -i "/\|$name\|.*\|$region\|/d" "$M_ROOT/cloud/${CLOUD}.list"
+sed -i "/|$region|$name|$cluster|$CLOUD$/d" "$M_ROOT/nodes.list"
+sed -i "/|$name|.*|$region|/d" "$M_ROOT/cloud/${CLOUD}.list"
 
 SSHK=`which ssh-keygen 2>/dev/null`
 $SSHK -q -R "$ip" >/dev/null 2>&1 && log "$ip removed from known_hosts"
