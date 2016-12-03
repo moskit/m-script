@@ -161,6 +161,8 @@ if [ -z "$ip" ]; then
 fi
 
 if [ -z "$cluster" ]; then
+  nodecluster=`cat "$M_ROOT/nodes.list" | grep -vE "^#|^[[:space:]]#" | grep "|$CLOUD$" | cut -sd'|' -f4,5 | grep ^$1\| | cut -sd'|' -f2`
+  if [ `echo "$nodecluster" | wc -l` -ne 1 ]; then unset nodecluster ; fi
   if [ -n "$nodecluster" ]; then
     cluster=$nodecluster
   else
