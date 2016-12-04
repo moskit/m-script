@@ -59,6 +59,10 @@ get_oath2_token() {
     echo "$reply" > "$M_ROOT/keys/gcetoken"
   fi
   access_token=`echo "$reply" | grep access_token | cut -sd'|' -f2 | tr -d '"'`
+  if [ -z "$access_token" ]; then
+    echo "$CLOUD ${callername}: Failed to obtain access token" >> "$LOG"
+    return 1
+  fi
   token_type=`echo "$reply" | grep token_type | cut -sd'|' -f2 | tr -d '"'`
   echo "$token_type $access_token"
 }

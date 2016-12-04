@@ -443,7 +443,7 @@ else
         [ -z "$cluster" ] && cluster=$M_CLUSTER
       fi
     else
-      source "$ROLES_ROOT/roles/$role/role.rc"
+      [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
       [ -z "$cluster" ] && cluster=$M_CLUSTER
       [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"

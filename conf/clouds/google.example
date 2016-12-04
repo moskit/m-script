@@ -28,6 +28,11 @@ CONNECT_TIMEOUT=5
 # will be 1000 :)
 NAME_INDEX_LENGTH=3
 
+# Index separator. For example, for cluster named webapp2, node names would be:
+# 1. With separator empty - webapp2001, webapp2003 and so on
+# 2. With separator "-" - webapp2-001, webapp2-003 and so on
+NAME_INDEX_SEPARATOR="-"
+
 # What is to be used as server name for servers list. Also available as command
 # line option --name_source
 # host - real hostname (default, slower)
@@ -36,6 +41,8 @@ NAME_INDEX_LENGTH=3
 #           DNS name
 # tag:tagname - specific tag in metadata; tagname defines the name of the tag
 # NAME_SOURCE=
+
+CLUSTER_TAG=cluster
 
 # What source of server name to be used as a fallback in case default source
 # fails to return anything or returns empty string (see the sources list above).
@@ -48,5 +55,4 @@ NAME_INDEX_LENGTH=3
 # There is no default, so if this is unset or empty, the feature is disabled.
 FORCE_LIST_UPDATE_AFTER=1800
 
-CLUSTER_TAG=cluster
 

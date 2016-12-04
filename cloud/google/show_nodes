@@ -172,7 +172,7 @@ if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
   [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] 2>/dev/null && log "$M_TEMP/${rcommand}.resp is older than $FORCE_LIST_UPDATE_AFTER sec, update forced" && unset noupdate
 fi
 if [ -z "$noupdate" ] ; then
-  token=`get_oath2_token`
+  token=`get_oath2_token` || proper_exit 2 175
   if [ -z "$region" ]; then
     if [ -n "$cluster" ]; then
       region=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3`
@@ -184,7 +184,7 @@ if [ -z "$noupdate" ] ; then
       fi
     else
       # if no region and no cluster, we cycle all regions found in clusters.conf
-      rm "$M_TEMP"/${rcommand}.resp
+      rm "$M_TEMP"/${rcommand}.resp 2>/dev/null
       for region in `grep -vE "^#|^[[:space:]]#" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3 | sort | uniq` ; do
         $CURL https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$region/instances -H "Authorization:$token" >> "$M_TEMP"/${rcommand}.resp.tmp
       done
@@ -200,6 +200,6 @@ fi
 list_nodes
 
 [ -n "$count" ] && echo $icount
-proper_exit 0 321
+proper_exit 0 203
 
 
