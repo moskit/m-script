@@ -110,14 +110,14 @@ reqfailed() {
 }
 
 DeleteDisk() {
-  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$id" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
+  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls/$id" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
 }
 
-ShowDisk() {
+ShowRules() {
   if [ -n "$id" ]; then
-    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/$id\" -H \"Authorization:$token\""
+    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls/$id\" -H \"Authorization:$token\""
   else
-    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/zones/$zone/disks/\" -H \"Authorization:$token\""
+    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls/\" -H \"Authorization:$token\""
   fi
   [ -n "$log_request" ] && log "$request"
   /bin/sh -c "$request" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
