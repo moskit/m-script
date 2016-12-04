@@ -50,8 +50,6 @@ Usage: $rcommand {options}
 
 Options:
 
-id={disk ID}           - EC2 ID of the disk (vol-XXXXXXXX)
-from/to={instance ID}  - EC2 instance ID for detach/attach operations
 action={action}        - action to execute on the disk
                          availavle actions:
                          create, attach, detach, delete|destroy, show|list
@@ -62,12 +60,7 @@ list|show              - same as --action=list
 type={disk type}       - type of the disk, required to create a disk
                          available types:
                          gp2, sc1, io1, standard (default)
-size
-snapshot
-iops
-kmskey
-encrypted
-as
+
 view
 
 Common options:
@@ -88,8 +81,7 @@ LOG="$M_ROOT/logs/cloud.log"
 
 source "$rpath/functions.sh" || exit 1
 
-trap unlock_cloudops 3
-trap unlock_cloudops 15
+trap unlock_cloudops 3 6 9 15
 
 [ -n "$name" ] && id=$name
 [ -n "$region" ] && zone=$region
@@ -109,112 +101,30 @@ reqfailed() {
   fi
 }
 
-DeleteDisk() {
-  $CURL -X DELETE "https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls/$id" -H "Authorization:$token" | "$M_ROOT"/lib/json2txt >> "$M_TEMP/${rcommand}.resp"
-}
-
-ShowRules() {
+request() {
   if [ -n "$id" ]; then
-    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls/$id\" -H \"Authorization:$token\""
+    local request="$CURL \"$endpoint/$id\" -H \"Authorization:$token\""
   else
-    local request="$CURL \"https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls/\" -H \"Authorization:$token\""
+    local request="$CURL \"$endpoint/\" -H \"Authorization:$token\""
   fi
   [ -n "$log_request" ] && log "$request"
   /bin/sh -c "$request" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
 }
 
 printlist() {
-  if [ -z "$id" ]; then
-    ruleslist=`cat "$M_TEMP/${rcommand}.resp" | grep '^0/"items"' | cut -d'/' -f3-`
-  else
-    ruleslist=`cat "$M_TEMP/${rcommand}.resp"`
-  fi
-  for sn in `echo "$ruleslist" | cut -sd'/' -f1 | sort | uniq`; do
-    fwObject=`echo "$ruleslist" | grep "^$sn/"`
-    diskname=`echo "$fwObject" | grep "^$sn/\"name\"" | cut -sd'|' -f2 | tr -d '"'`
-    disksize=`echo "$fwObject" | grep "^$sn/\"sizeGb\"" | cut -sd'|' -f2 | tr -d '"'`
-    diskzone=`echo "$fwObject" | grep "^$sn/\"zone\"" | cut -sd'|' -f2 | tr -d '"'`
-    diskzone=${diskzone##*/}
-    diskstatus=`echo "$fwObject" | grep "^$sn/\"status\"" | cut -sd'|' -f2 | tr -d '"'`
-    for du in `echo "$fwObject" | grep "^$sn/\"users\"" | cut -sd'/' -f3`; do
-      user=`echo "$fwObject" | grep "^$sn/\"users\"/$du" | cut -sd'|' -f2 | tr -d '"'`
-      userlist="${userlist}${user##*/},"
-    done
-    userlist="${userlist%,}"
-    if [ -n "$view" ]; then
-      disksource=`echo "$fwObject" | grep "^$sn/\"sourceImage\"" | cut -sd'|' -f2 | tr -d '"'`
-      disksource=${fwObject##*/}
-      disktype=`echo "$fwObject" | grep "^$sn/\"type\"" | cut -sd'|' -f2 | tr -d '"'`
-      disktype=${disktype##*/}
-      for dl in `echo "$fwObject" | grep "^$sn/\"licenses\"" | cut -sd'/' -f3`; do
-        license=`echo "$fwObject" | grep "^$sn/\"licenses\"/$dl" | cut -sd'|' -f2 | tr -d '"'`
-        licenselist="${licenselist}${license##*/},"
-      done
-      licenselist="${licenselist%,}"
-      lastAttachTimestamp=`echo "$fwObject" | grep "^$sn/\"lastAttachTimestamp\"" | cut -sd'|' -f2 | tr -d '"'`
-      
-      case $view in
-        list)
-          echo "Disk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Used By: $userlist  Last Attached At: $lastAttachTimestamp  Zone: $diskzone  Disk Type: $disktype  Disk Source Image: $disksource  Licenses: $licenselist"
-          ;;
-        table)
-          echo "$diskname|$disksize|$diskstatus|$userlist|$lastAttachTimestamp|$diskzone|$disktype|$disksource|$licenselist"
-          ;;
-        column)
-          echo -e "Disk: $diskname\nSize: ${disksize}GB\nStatus: $diskstatus\nUsed By: $userlist\nLast Attached At: $lastAttachTimestamp\nZone: $diskzone\nDisk Type: $disktype\nDisk Source Image: $disksource\nLicenses: $licenselist"
-          ;;
-        none)
-          ;;
-        *)
-          echo -e "------------------------------------------------------------------------------\nDisk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Disk Type: $disktype\nUsed By: $userlist\nLast Attached At: $lastAttachTimestamp  Zone: $diskzone\nDisk Source Image: $disksource  Licenses: $licenselist"
-          ;;
-      esac
-    else
-      echo "Disk: $diskname  Size: ${disksize}GB  Status: $diskstatus  Used By: ${userlist}"
-    fi
-    unset licenselist userlist
-  done
+  cat "$M_TEMP/${rcommand}.resp"
 }
 
 [ -n "$list" ] && action=list
-[ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
+#[ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
 [ -n "$name" ] && [ -z "$id" ] && id=$name
 
 token=`get_oath2_token`
 
 case $action in
-  create)
-    
-    [ -z "$size" ] && [ -z "$snapshot" ] && echo "If disk is not created from a snapshot, its size is mandatory" && proper_exit 1 166
-    CreateDisk
-    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    reqfailed && proper_exit 1 169
-    ;;
-  attach)
-    [ -z "$to" ] && echo "Instance ID to attach this Disk to not provided, use option --to" && proper_exit 1 172
-    [ -z "$id" ] && echo "Disk name not provided, use option --name" && proper_exit 1 173
-    [ -z "$as" ] && echo "Disk device name not provided, use option --as" && proper_exit 1 174
-    AttachDisk
-    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    reqfailed && proper_exit 1 177
-    ;;
-  detach)
-    [ -z "$from" ] && echo "Instance to detach this disk from not provided, use option --from={instance name}" && proper_exit 1 180
-    [ -z "$id" ] && echo "Disk name not provided, use option --name" && proper_exit 1 181
-    DetachDisk
-    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    reqfailed && proper_exit 1 184
-    ;;
-  delete|destroy)
-    [ -z "$id" ] && echo "Disk name not provided, use option --name|id" && proper_exit 1 187
-    token=`get_oath2_token`
-    DeleteDisk
-    reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-    reqfailed && proper_exit 1 190
-    ;;
   show|list)
-
-    ShowRules
+    endpoint="https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/firewalls"
+    request
     reqfailed && proper_exit 1 195
     reqparsed=`printlist`
     ;;

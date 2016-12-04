@@ -116,7 +116,6 @@ printlist() {
 }
 
 [ -n "$list" ] && action=list
-[ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
 [ -n "$name" ] && [ -z "$id" ] && id=$name
 
 token=`get_oath2_token`
