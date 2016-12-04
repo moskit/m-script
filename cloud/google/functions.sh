@@ -52,7 +52,8 @@ get_oath2_token() {
     time_now=`date +"%s"`
     since_prev=`expr $time_now - $time_prev + 60`
   fi
-  if [ $since_prev -lt $expires_in ] 2>/dev/null; then
+  if [ $since_prev -lt $expires_in ] 2>/dev/null && [ -n "$reply_prev" ]; then
+    echo "$CLOUD ${callername}: token not expired, using the existing one" >> "$LOG"
     reply=$reply_prev
   else
     reply=`$CURL "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" -H "Metadata-Flavor: Google" | "$M_ROOT"/lib/json2txt`
