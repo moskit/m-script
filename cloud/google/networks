@@ -1,0 +1,137 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+possible_options="id name to from log_request cloud action zone region type size snapshot iops kmskey encrypted as view list show help"
+necessary_options=""
+IFS1=$IFS
+IFS='-'
+for s_option in "$@"
+do
+  found=false
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+
+  for option in ${possible_options// /-} ; do
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+  done
+  
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -z "$*" ] && help=yes
+
+if [ -n "$help" ]; then
+  cat << "EOF"
+Usage: $rcommand {options}
+
+Options:
+
+action={action}        - action to execute on the disk
+                         availavle actions:
+                         create, attach, detach, delete|destroy, show|list
+list|show              - same as --action=list
+                         action=list and action=show is the same request, it's
+                         just that 'show' is more natural when details on a
+                         single disk are requested (with --id option)
+type={disk type}       - type of the disk, required to create a disk
+                         available types:
+                         gp2, sc1, io1, standard (default)
+
+view
+
+Common options:
+
+cloud
+zone
+
+EOF
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+LOG="$M_ROOT/logs/cloud.log"
+
+source "$rpath/functions.sh" || exit 1
+
+trap unlock_cloudops 3 6 9 15
+
+[ -n "$name" ] && id=$name
+[ -n "$region" ] && zone=$region
+
+reqfailed() {
+  if [ `echo "$reqparsed" | wc -l` -eq 0 ]; then
+    log "file $M_TEMP/${rcommand}.resp is empty"
+    echo "Empty response"
+  else
+    errmsg=`echo "$reqparsed" | grep Error | cut -d'|' -f2`
+    if [ -n "$errmsg" ]; then
+      log "request failed with error $errmsg"
+      echo "$errmsg"
+    else
+      return 1
+    fi
+  fi
+}
+
+request() {
+  if [ -n "$id" ]; then
+    local request="$CURL \"$endpoint/$id\" -H \"Authorization:$token\""
+  else
+    local request="$CURL \"$endpoint/\" -H \"Authorization:$token\""
+  fi
+  [ -n "$log_request" ] && log "$request"
+  /bin/sh -c "$request" | "$M_ROOT"/lib/json2txt > "$M_TEMP/${rcommand}.resp"
+}
+
+printlist() {
+  cat "$M_TEMP/${rcommand}.resp"
+}
+
+[ -n "$list" ] && action=list
+[ -z "$zone" ] && echo "Zone is mandatory, use option --zone" && proper_exit 1 165
+[ -n "$name" ] && [ -z "$id" ] && id=$name
+
+token=`get_oath2_token`
+
+case $action in
+  show|list)
+    endpoint="https://www.googleapis.com/compute/v1/projects/$PROJECT_ID/global/networks"
+    request
+    reqfailed && proper_exit 1 195
+    reqparsed=`printlist`
+    ;;
+  *)
+    echo "Action $action is not supported yet"
+    proper_exit 1 200
+    ;;
+esac
+
+echo "$reqparsed"
