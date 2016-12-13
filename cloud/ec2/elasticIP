@@ -63,6 +63,7 @@ fi
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/lib/functions.sh"
 LOG="$M_ROOT/logs/cloud.log"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
@@ -94,13 +95,16 @@ request() {
   fi
 }
 
+COL=`tput cols 2>/dev/null`
+[ -n "$COL" ] && col=$((COL/3)) || col=26
+
 case $action in
   create|allocate)
     [ -z "$domain" ] && echo "Option --domain=vpc|standard is mandatory for this action" && exit 1
     request AllocateAddress
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 103
     ;;
   attach|associate)
     [ -n "$allocationid" ] && qparams="${qparams}\nAllocationId=${allocationid}"
@@ -112,13 +116,65 @@ case $action in
     request AssociateAddress
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 115
     ;;
   show|list)
     request DescribeAddresses
     reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
     [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 90
-    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 91
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 121
+    for as in `echo "$reqparsed" | cut -sd'/' -f6 | sort | uniq`; do
+      printcol "Domain"
+      printcol "Allocation ID"
+      echo "Public IP"
+      printf "%${COL}s\n" | tr ' ' '-'
+      for ipobject in `echo "$reqparsed" | grep "\"addressesSet\"/$as" | cut -sd'/' -f8 | sort | uniq`; do
+        thisip=`echo "$ipobject" | grep publicIp | cut -sd'|' -f2 | tr -d '"'`
+        thisallocid=`echo "$ipobject" | grep allocationId | cut -sd'|' -f2 | tr -d '"'`
+        thisdomain=`echo "$ipobject" | grep domain | cut -sd'|' -f2 | tr -d '"'`
+        printcol "$thisdomain"
+        printcol "$thisallocid"
+        echo "$thisip"
+      done
+    done
+    ;;
+  destroy|terminate|release)
+    if [ -n "$allocationid" ]; then
+      qparams="${qparams}\nAllocationId=${allocationid}"
+      request ReleaseAddress
+      reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+      [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 146
+      if [ `echo "$reqparsed" | grep -c Error` -ne 0 ]; then
+        ipline=`$0 --action=list 2>/dev/null | grep "\ $allocationid\ "`
+        if [ "_`echo "$ipline" | cut -sd' ' -f1`" != "_vpc" ]; then
+          [ -z "$publicip" ] && publicip=`expr "$ipline" : ".*\ \(.*\)$"`
+          qparams="\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nPublicIp=$publicip"
+          request ReleaseAddress
+          reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+          [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 154
+          [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 155
+        fi
+      fi
+    elif [ -n "publicip" ]; then
+      ipline=`$0 --action=list 2>/dev/null | grep "\ ${publicip}$"`
+      if [ "_`echo "$ipline" | cut -sd' ' -f1`" == "_vpc" ]; then
+        allocationid=`expr "$ipline" : ".*\ \(.*\)\ *${publicip}$"`
+        qparams="${qparams}\nAllocationId=${allocationid}"
+        request ReleaseAddress
+        reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+        [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 154
+        [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 166
+      else
+        qparams="\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nPublicIp=$publicip"
+        request ReleaseAddress
+        reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
+        [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 154
+        [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 172
+      fi
+    else
+      echo "One of --allocationid or --publicip options is mandatory"
+      proper_exit 1 176
+    fi
     ;;
   *)
     echo "Action $action is not supported yet"
