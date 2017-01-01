@@ -29,7 +29,7 @@ for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
   
   for dbh in $dbhs ; do
 
-    source "$PWD/../../standalone/MySQL/${dbh}.dat"
+    source "$PWD/../../standalone/MySQL/${dbh}.dat" 2>/dev/null
     open_line "$dbh"
     print_inline "qps|MySQL/qps" "connps|MySQL/connps" "qcachehitsratio|MySQL/cache" "locksratio|MySQL/locks" "Threads_connected|MySQL/threads" "threadsps|MySQL/threadsps"
     close_line

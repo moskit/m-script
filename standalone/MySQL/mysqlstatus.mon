@@ -54,7 +54,7 @@ for dbhost in $dbhosts ; do
   locksratio=`solve 2 "$waitedlocks / $immediatelocks * 100"`
 
   store_results "dbhost|text,qps|integer,connps|real,qcachehits|integer,threadsps|real,waitedlocks|real,immediatelocks|real,Threads_connected|integer"
-  check_results "qps|Queries / sec|integer,connps|Connections / sec|real,threadsps|Threads created / sec|real,Threads_connected|Threads connected|integer,qcachehitsratio|Cache hits to total queries ratio|real,locksratio|Waited locks to total locks ratio (%)|real"
+  check_results "qps|Queries / sec|integer,connps|Connections / sec|real,threadsps|Threads created / sec|real,Threads_connected|Threads connected|integer,qcachehitsratio|Cache hits to total queries ratio (%)|real,locksratio|Waited locks to total locks ratio (%)|real"
 
   echo -e "qps=$qps\nconnps=$connps\nqcachehits=$qcachehits\nThreads_connected=$Threads_connected\nthreadsps=$threadsps\nqcachehitsratio=$qcachehitsratio\nlocksratio=$locksratio" > "$rpath/${dbhost}.dat"
 done

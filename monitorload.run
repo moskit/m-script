@@ -58,7 +58,7 @@ start)
   
   LOAD_CRIT=${LOAD_CRIT%.*} ; [ -z "$LOAD_CRIT" ] && LOAD_CRIT=0
   install -d "$M_TEMP"
-  [ -z "$BASIC_SEQUENCE" ] &&  BASIC_SEQUENCE=connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,servers.mon,netstat.mon
+  [ -z "$BASIC_SEQUENCE" ] &&  BASIC_SEQUENCE=connections.mon,bandwidth.mon,services.mon,mem.mon,cpu.mon,netstat.mon
   [ -z "$HIGH_LOAD_SEQUENCE" ] && HIGH_LOAD_SEQUENCE=mem.mon
   echo $$ > $pidfile
   

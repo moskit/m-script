@@ -117,7 +117,7 @@ else
   for cld in $cloud ; do
     $headers && echo "Cloud: $cld"
     
-    clust=`echo -e "$cluster" | tr ',' '\n'`
+    clust=`echo -e "$cluster" | tr ',' '\n' | grep -v ^$SUPER_CLUSTER$`
 
     [ "_$cluster" == "_all" ] && clust=`cat "$M_ROOT/nodes.list" | grep "|${cld}$" | grep -vE '^$|^#|^[[:space:]]*#' | cut -d'|' -f5 | sort | uniq | grep -v "^${SUPER_CLUSTER}$"`
     [ -z "$clust" ] && clust=$M_CLUSTER

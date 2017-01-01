@@ -208,7 +208,7 @@ for cld in $CLOUD ; do
   [ -n "$verbose" ] && echo -e "### Cloud $cld\n    Command: $command"
   if [ -n "$command" ] ; then
     for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
-      [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1,12 | grep "|${cld}$" | cut -d'|' -f1 | grep -c "^${icluster}$"` -eq 0 ] && echo "Cluster $icluster not found" && continue
+      [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1,12 | grep "|${cld}$" | cut -d'|' -f1 | grep -c "^${icluster}$"` -eq 0 ] && continue
       unset SSH_REMOTE_USER nosudo
       [ -n "$user" ] && SSH_REMOTE_USER="$user"
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "^$icluster|" | cut -s -d'|' -f13`

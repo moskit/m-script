@@ -91,7 +91,7 @@ EOF
     nonbackup='yes'
     onlypickup='yes'
     removeoldlocal='no'
-    if [ X$s_optarg == 'Xhelp' ]; then
+    if [ _$s_optarg == '_help' ]; then
       cat <<"EOF"
     This option makes the program skip the backup creation part and only pick up
   files and transfer them to (from) another location.
@@ -102,7 +102,7 @@ EOF
   (see conf/backup.conf)
 EOF
       exit 0
-    elif [ "X$s_optarg" != "X" ] && [ "X$s_optarg" != "Xyes" ]; then
+    elif [ -n "$s_optarg" ] && [ "_$s_optarg" != "_yes" ]; then
       if [ ! -e $s_optarg ]; then
         echo "Path $s_optarg doesn't exist!" | tee -a $stderrto
         echo "Check if it exists or use --only-pickup=help to get more help." | tee -a $stderrto

@@ -84,7 +84,7 @@ fi
 found=0
 
 for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
+  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
 done
 if [[ found -eq 1 ]]; then
   missing_options=${missing_options#*,}
