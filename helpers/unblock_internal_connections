@@ -103,6 +103,8 @@ source "$M_ROOT/conf/mon.conf"
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$SSHPORT" ] && SSHPORT=22
 
+localips=`"$M_ROOT"/helpers/localips`
+
 IFS1=$IFS
 IFS='
 '
@@ -228,8 +230,9 @@ for IP in `get_ips --cloud=$cloud --cluster=$cluster --region=$region` ; do
   else
     for IP2UB in `get_ips --cluster=$fromcluster --region=$fromregion` ; do
       if [ "_$fromcluster" == "_$SUPER_CLUSTER" ]; then
-        [ "_$cluster" != "_$SUPER_CLUSTER" ] && [ `$rpath/localips | grep -c "^$IP2UB$"` -eq 0 ] && continue
+        [ "_$cluster" != "_$SUPER_CLUSTER" ] && [ `echo "$localips" | grep -c "^$IP2UB$"` -eq 0 ] && continue
       fi
+      echo "$localips" | grep -q "^$IP2UB$" && continue
       unblock_ip
     done &
   fi
