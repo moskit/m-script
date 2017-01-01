@@ -27,7 +27,7 @@ SSH=`which ssh 2>/dev/null`
 [ -f "/sbin/iptables-save" ] && IPTS=/sbin/iptables-save || IPTS=`which iptables-save 2>/dev/null`
 [ -n "$CONNECT_TIMEOUT" ] && TIMEOUT="-o ConnectTimeout=$CONNECT_TIMEOUT"
 
-possible_options="cluster help region verbose ip fromregion fromcluster fromip"
+possible_options="cluster help region cloud verbose ip fromregion fromcluster fromip"
 commflag=0
 for s_option in "${@}"
 do
@@ -98,10 +98,9 @@ fi
 
 [ -z "$ip" -a -z "$cluster" ] && echo "Neither target cluster nor target IP is defined! If you want to specify all clusters, use --cluster=all." && exit 1
 
-localip=`$rpath/localips`
-
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$SSHPORT" ] && SSHPORT=22
 
 IFS1=$IFS
@@ -216,25 +215,12 @@ unblock_ip() {
 
 }
 
-for dserver in `cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:space:]]*#` ; do
-  IP=${dserver%%|*}
-  DCLUSTER=`echo "$dserver" | cut -sd'|' -f5`
-  # we do not want to mess with super cluster unless it is our explicit target
-  [ "_$DCLUSTER" == "_$SUPER_CLUSTER" ] && [ "_$DCLUSTER" != "_$cluster" ] && continue
-  [ -n "$ip" ] && [ "_$IP" != "_$ip" ] && continue
-  KEY=`"$rpath"/find_key node $IP` || continue
-  if [ -n "$region" ] ; then
-    DREGION=`echo $dserver | cut -d'|' -f3`
-    [ "_$DREGION" == "_$region" ] || continue
-  fi
-  if [ -z "$ip" ]; then
-    if [ "_$cluster" != "_all" ] ; then
-      [ "_$DCLUSTER" == "_$cluster" ] || continue
-    fi
-  fi
+for node in `get_ips --cloud=$cloud --cluster=$cluster --region=$region` ; do
+  [ -n "$ip" ] && [ "_$node" != "_$ip" ] && continue
+  KEY=`"$rpath"/find_key node $node` || continue
   if [ "_$verbose" == "_yes" ] ; then
     echo
-    echo "--- Server: $dserver"
+    echo "--- Node: $node"
     echo
   fi
 
@@ -242,20 +228,11 @@ for dserver in `cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v  ^#|grep -v ^[[:
     IP2UB=$fromip
     unblock_ip
   else
-    for sserver in `cat "$M_ROOT/nodes.list" | grep -v ^$ | grep -v ^# | grep -v ^[[:space:]]*#` ; do
-      if [ -n "$fromregion" ] ; then
-      SREGION=`echo $sserver | cut -d'|' -f3`
-      [ "_$SREGION" == "_$fromregion" ] || continue
+    for IP2UB in `get_ips --cluster=$fromcluster --region=$fromregion` ; do
+      if [ "_$fromcluster" == "_$SUPER_CLUSTER" ]; then
+        [ "_$cluster" != "_$SUPER_CLUSTER" ] && [ `$rpath/localips | grep -c "^$IP2UB$"` -eq 0 ] && continue
       fi
-      SCLUSTER=`echo $sserver | cut -d'|' -f5`
-      if [ -n "$fromcluster" ] ; then
-        [ "_$SCLUSTER" == "_$fromcluster" ] || continue
-      fi
-      IP2UB=${sserver%%|*}
-      [ "_$SCLUSTER" == "_$SUPER_CLUSTER" ] && [ "_$DCLUSTER" != "_$SUPER_CLUSTER" ] && [ `echo "$localip" | grep -c $IP2UB` -eq 0 ] && continue
-
       unblock_ip
-
     done &
   fi
 done
