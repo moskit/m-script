@@ -215,13 +215,11 @@ unblock_ip() {
 
 }
 
-for node in `get_ips --cloud=$cloud --cluster=$cluster --region=$region` ; do
-  [ -n "$ip" ] && [ "_$node" != "_$ip" ] && continue
-  KEY=`"$rpath"/find_key node $node` || continue
+for IP in `get_ips --cloud=$cloud --cluster=$cluster --region=$region` ; do
+  [ -n "$ip" ] && [ "_$IP" != "_$ip" ] && continue
+  KEY=`"$rpath"/find_key node $IP` || continue
   if [ "_$verbose" == "_yes" ] ; then
-    echo
-    echo "--- Node: $node"
-    echo
+    echo -e "\n--- Node: $IP\n"
   fi
 
   if [ -n "$fromip" ]; then
