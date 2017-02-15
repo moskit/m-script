@@ -47,13 +47,17 @@ EOF
 }
 
 remove_ip_from() {
-  for rule in `$IPTS | grep -E "^-A ${2}.*${1} |^-A ${2}.*${1}/" | sed 's|-A|-D|'`; do
-    $IPT $rule && log "IP $1 removed from chain $2"
+  for rule in `$IPTS | grep -E "^-A ${2}.*${1} |^-A ${2}.*${1}/"`; do
+    method=`expr "$rule" : ".*-j\ \(.*\)$" | tr -d ' '`
+    $IPT -D $2 -s $1 -j $method && log "IP $1 removed from chain $2"
   done
-  [ "_$2" == "_M_IPBLOCK_TMP" ] && sed -i "/^${1}$/d" "$M_TEMP/ip_block.tmp" || sed -i "/^${1}$/d" "$M_TEMP/ip_block.const"
+  [ "_$2" == "_M_IPBLOCK_TMP" ] && sed -i "/^${1}|/d" "$M_TEMP/ip_block.tmp" || sed -i "/^${1}|/d" "$M_TEMP/ip_block.const"
 }
 
 [ -z "$1" ] && usage
+
+IFS='
+'
 
 case $1 in
   tmp|temporary|temp)

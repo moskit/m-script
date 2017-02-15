@@ -32,6 +32,7 @@ interval="$interval sec"
 [ -z "$maxfail" ] && maxfail=5
 [ -z "$maxinvalid" ] && maxinvalid=3
 [ -z "$maxfailroot" ] && maxfailroot=3
+[ -z "$maxkeyfail" ] && maxkeyfail=5
 [ -z "$timeformat" ] && timeformat="%b %_d %H:%M:%S"
 [ -z "$method" ] && method="REJECT"
 export BLOCK_CALLER="$rcommand"
@@ -46,10 +47,18 @@ logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --ma
 [ -n "$logged" ] && date_header
 
 invalidusers=`echo "$logged" | grep "Invalid\\ user"`
+invalidusers=`echo "$invalidusers" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
 rootfails=`echo "$logged" | grep "Failed\\ password\\ for\\ root"`
+rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
 userfails=`echo "$logged" | grep "Failed\\ password\\ for\\ " | grep -v "Failed\\ password\\ for\\ root" | grep -v "Failed\\ password\\ for\\ invalid"`
+userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
+allconnects=`echo "$logged" | grep "Remote:\\ "`
+allconnects=`echo "$keyfails" | grep -oE "Remote:\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
 loginbykey=`echo "$logged" | grep "Accepted\\ publickey\\ for"`
+loginbykeyips=`echo "$loginbykey" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
 loginbypass=`echo "$logged" | grep "Accepted\\ password\\ for"`
+loginbypassips=`echo "$loginbypass" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
+allips=`echo "$invalidusers" "$rootfails" "$userfails" "$loginbykeyips" "$loginbypassips" | sort | uniq`
 
 if [ -n "$loginbykey" ]; then
   echo -e "\n<OK> Successful logins using key authentication:\n-------------------------------------------------\n"
@@ -62,7 +71,7 @@ fi
 
 if [ -n "$rootfails" ]; then
   echo -e "\n<**> Failed attempts to login as root:\n---------------------------------------\n"
-  rootfails=`echo "$rootfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
+  
   for ipaddr in `echo "$rootfails" | sort | uniq` ; do
     invalid=`echo "$rootfails" | grep -c "^${ipaddr}$"`
     score=$(($invalid * 100 / $maxfailroot))
@@ -73,7 +82,6 @@ fi
 
 if [ -n "$invalidusers" ]; then
   echo -e "\n<**> Attempts to login as non-existing user:\n---------------------------------------------\n"
-  invalidusers=`echo "$invalidusers" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   for ipaddr in `echo "$invalidusers" | sort | uniq` ; do
     invalid=`echo "$invalidusers" | grep -c "^${ipaddr}$"`
     score=$(($invalid * 100 / $maxinvalid))
@@ -84,13 +92,29 @@ fi
 
 if [ -n "$userfails" ]; then
   echo -e "\n<**> Failed attempts to login as non-root user:\n------------------------------------------------\n"
-  userfails=`echo "$userfails" | grep -oE "from\ [0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" | cut -d ' ' -f2`
   for ipaddr in `echo "$userfails" | sort | uniq` ; do
     invalid=`echo "$userfails" | grep -c "^${ipaddr}$"`
     score=$(($invalid * 100 / $maxfail))
     echo "<**> ${ipaddr}: $invalid attempts"
     $blockip && iptoblock+=( ${ipaddr}/${score} )
   done
+fi
+
+if [ -n "$allconnects" ]; then
+  for ipaddr in `echo "$allconnects" | sort | uniq` ; do
+    if ! `echo "$allips" | grep -q "^$ipaddr$"` ; then
+      suspips+=( $ipaddr )
+    fi
+  done
+  if [ ${#suspips[*]} -gt 0 ]; then
+    echo -e "\n<**> Failed attempts to login using key authentication:\n------------------------------------------------\n"
+    for ipaddr in ${suspips[*]}; do
+      invalid=`echo "$allconnects" | grep -c "^${ipaddr}$"`
+      score=$(($invalid * 100 / $maxkeyfail))
+      echo "<**> ${ipaddr}: $invalid attempts"
+      $blockip && iptoblock+=( ${ipaddr}/${score} )
+    done
+  fi
 fi
 
 if $blockip ; then
