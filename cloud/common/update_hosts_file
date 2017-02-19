@@ -41,15 +41,15 @@ for HOST in `cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|
   fi
   if [ -n "$1" ]; then
     if [ "$1" == "everywhere" ]; then
-      cloudexec --cluster=all --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
+      cloudexec --cluster=all --nolocalhost \(sed -i \\\"/^$ip \\\| $ip /d\\\" /etc/hosts \; sed -i \\\"/ $hname \\\| $hname$/d\\\" /etc/hosts \; echo \\\"$ip $hname\\\" \>\> /etc/hosts\)
     else
       args=`echo "$@" | tr ',' ' '`
       for arg in $args ; do
         if [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1 | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | grep -v "^$" | grep -c "^${arg}$"` -eq 1 ]; then
-          cloudexec --cluster="$arg" --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
+          cloudexec --cluster="$arg" --nolocalhost \(sed -i \\\"/^$ip \\\| $ip /d\\\" /etc/hosts \; sed -i \\\"/ $hname \\\| $hname$/d\\\" /etc/hosts \; echo \\\"$ip $hname\\\" \>\> /etc/hosts\)
         else
           IP=`name_to_ip $arg || echo $arg`
-          cloudexec --ip=$IP --nolocalhost \(sed -i \"/^$ip \\\| $ip /d\" /etc/hosts \; sed -i \"/ $hname \\\| $hname$/d\" /etc/hosts \; echo \"$ip $hname\" \>\> /etc/hosts\)
+          cloudexec --ip=$IP --nolocalhost \(sed -i \\\"/^$ip \\\| $ip /d\\\" /etc/hosts \; sed -i \\\"/ $hname \\\| $hname$/d\\\" /etc/hosts \; echo \\\"$ip $hname\\\" \>\> /etc/hosts\)
         fi
       done
     fi
