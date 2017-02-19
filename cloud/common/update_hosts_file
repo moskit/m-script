@@ -29,13 +29,13 @@ IFS='
 [ `cat -E /etc/hosts | tail -1 | grep -c \$$` -eq 0 ] && echo >> /etc/hosts
 while [ `cat /etc/hosts | tail -1 | grep -c ^$` -eq 1 ] ; do sed -i '$d' /etc/hosts ; done
 if [ -n "$2" ]; then
-  for clfilter in `echo "$2" | tr ',' ' '`; do
-    hosts="$hosts\n`cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | cut -d'|' -f1,4 | grep -vE "\|${clfilter}$"`"
+  for clfilter in `echo "$2" | tr ',' '\n'`; do
+    hosts="$hosts\n`cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | cut -d'|' -f1,4,5 | grep -E "\|${clfilter}$" | cut -d'|' -f1,2`"
   done
 else
   hosts=`cat "$M_ROOT/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#|^#|^$" | cut -d'|' -f1,4`
 fi
-for HOST in `echo "$hosts" | grep -v ^$` ; do
+for HOST in `echo -e "$hosts" | grep -v ^$` ; do
   ip=`echo $HOST | cut -d'|' -f1`
   hname=`echo $HOST | cut -d'|' -f2`
   [ -z "$hname" ] && error+=("Server $ip has no name") && continue
