@@ -148,15 +148,11 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
       if [ "_${portstcp[$i]}" == "_$t" ]
       then
         unset portstcp[$i]
-        printf "$prog"
-        m=`expr length $prog`
-        l=`expr 20 - $m`
-        for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "$t"
-        m=`expr length "$t"`
-        l=`expr 40 - $m`
-        for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSTCP | grep -v LISTEN | awk '{print $4}' | grep "$mtch" | wc -l`\n"
+        col=20
+        printcol "$prog"
+        col=40
+        printcol "$t"
+        echo "`$NETCONNSTCP | grep -v LISTEN | awk '{print $4}' | grep "$mtch" | wc -l`"
         portfound=1
         break
       fi
@@ -167,7 +163,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
       spidmaster=`ps -p $spid -o ppid= 2>/dev/null | tr -d ' '`
       if [[ $spidmaster -ne $masterpid ]]; then
         echo "<***> Service $prog listening on TCP $t is a new service"
-        "$M_ROOT"/lib/showproc $spid
+        $SHOW_NEW_PROC_DETAILS && "$M_ROOT"/lib/showproc $spid
       fi
     fi
     skip=0
@@ -203,15 +199,11 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       if [ "_${portsudp[$i]}" == "_$t" ]
       then
         unset portsudp[$i]
-        printf "$prog"
-        m=`expr length $prog`
-        l=`expr 20 - $m`
-        for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "$t"
-        m=`expr length "$t"`
-        l=`expr 40 - $m`
-        for ((n=1; n <= $l; n++)); do printf " "; done
-        printf "`$NETCONNSUDP | awk '{print $4}' | grep "$mtch" | wc -l`\n"
+        col=20
+        printcol "$prog"
+        col=40
+        printcol "$t"
+        echo "`$NETCONNSUDP | awk '{print $4}' | grep "$mtch" | wc -l`"
         portfound=1
         break
       fi
@@ -221,7 +213,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       masterpid=`cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | grep ^${t}\| | cut -d'|' -f3`
       if [[ `ps -p $spid -o ppid= | tr -d ' '` -ne $masterpid ]]; then
         echo "<***> Service $prog listening on UDP $t is a new service"
-        "$M_ROOT"/lib/showproc $spid
+        $SHOW_NEW_PROC_DETAILS && "$M_ROOT"/lib/showproc $spid
       fi
     fi
     skip=0
@@ -262,18 +254,16 @@ do
     if [ "_${sockets[$i]}" == "_$t" ]
     then
       unset sockets[$i]
-      printf "$sname"
-      m=`expr length $sname`
-      l=`expr 20 - $m`
-      for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "$t\n"
+      col=20
+      printcol "$sname"
+      echo "$t"
       socketfound=1
       break
     fi
   done
   if [[ $socketfound -ne 1 ]]; then
     echo "<***> Service $sname listening on unix socket $t is a new service"
-    "$M_ROOT"/lib/showproc $spid
+    $SHOW_NEW_PROC_DETAILS && "$M_ROOT"/lib/showproc $spid
   fi
 done < "$M_TEMP/sockets.$$"
 
