@@ -198,8 +198,8 @@ print_report_title() {
 printcol() {
   if [ -n "$1" ] ; then
     l=`expr $col - 1`
-    str=`echo "$1" | cut -b $l`
-    printf "%-${l}s" $str
+    str=`echo "$1" | cut -b 1-$l`
+    printf "%-${col}s" $str
   else
     printf "%${col}s"
   fi
@@ -411,3 +411,14 @@ function get_interval() {
   interval=`expr $timeindexnow - $lasttimeindex 2>/dev/null || echo $FREQ`
   export timeindexnow lasttimeindex interval
 }
+
+getprocessname() {
+  if [ -d /proc/$1 ] ; then
+    pfull=`cat /proc/$1/cmdline | tr '\0' ' '`
+    pcomm=`cat /proc/$1/comm || echo $pfull | cut -d' ' -f1`
+  else
+    pfull="unknown"
+    pcomm="unknown"
+  fi
+}
+
