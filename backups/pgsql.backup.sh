@@ -18,12 +18,12 @@
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
-#*/ (this is needed to fool vi syntax highlighting)
-
-source "$rpath/conf/mon.conf"
+#*/
+[ -z "$M_ROOT" ] && M_ROOT="$rpath/.."
+source "$M_ROOT/conf/mon.conf"
 
 if [ -z "$1" ]; then
-  echo "Error: configuration file is not defined for $0" >> "$rpath/m_backup.error"
+  echo "Error: configuration file is not defined for $0" >> "$M_ROOT/m_backup.error"
   exit 1
 else
   source "$1"
@@ -39,9 +39,9 @@ BZIP2="$(which bzip2)"
 if [ -n "$pgsqlpass" ]; then
   echo "*:*:*:*:$pgsqlpass" > ~/.pgpass && chmod 600 ~/.pgpass
 fi
-[ -z "$pgsqluser" ] && echo "Error: database user not defined" >> "$rpath/m_backup.error" && exit 1
-[ -z "$pgsqlhost" ] && echo "Error: database host not defined" >> "$rpath/m_backup.error" && exit 1
-[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$rpath"
+[ -z "$pgsqluser" ] && echo "Error: database user not defined" >> "$M_ROOT/m_backup.error" && exit 1
+[ -z "$pgsqlhost" ] && echo "Error: database host not defined" >> "$M_ROOT/m_backup.error" && exit 1
+[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$M_ROOT"
 
 MBD="$DEST/backup.tmp/pgsql"
 
@@ -57,7 +57,7 @@ rm -f "$M_TEMP/pgsql.backup.error" 2>/dev/null
 # Get all database list first
 if [ -z "$pgdblist" ]; then
   pgdblist="$($PSQL -U $pgsqluser -h $pgsqlhost  -t --list -A | cut -d'|' -f1 | grep -vE "^postgres|^template" 2>"$M_TEMP/pgsql.backup.error")"
-  [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: Error getting database list:" >> "$rpath/m_backup.log" && cat "$M_TEMP/pgsql.backup.error" >> "$rpath/m_backup.error" && exit 1
+  [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: Error getting database list:" >> "$M_ROOT/m_backup.log" && cat "$M_TEMP/pgsql.backup.error" >> "$M_ROOT/m_backup.error" && exit 1
 fi
 
 for db in $pgdblist ; do
@@ -72,7 +72,7 @@ for db in $pgdblist ; do
     rm -f "$M_TEMP/pgsql.backup.error" 2>/dev/null
   	FILE="$MBD/$db.$archname.gz"
     $PG_DUMP -U $pgsqluser -h $pgsqlhost $db 2>>"$M_TEMP/pgsql.backup.error" | $GZIP > $FILE 2>>"$M_TEMP/pgsql.backup.error"
-    [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: $db backup failed" >> "$rpath/m_backup.log" && cat "$M_TEMP/pgsql.backup.error" >> "$rpath/m_backup.error" || echo "pgsql: $db dumped OK" >> "$rpath/m_backup.log"
+    [ `cat "$M_TEMP/pgsql.backup.error" 2>/dev/null | wc -l` -gt 0 ] && echo "pgsql: $db backup failed" >> "$M_ROOT/m_backup.log" && cat "$M_TEMP/pgsql.backup.error" >> "$M_ROOT/m_backup.error" || echo "pgsql: $db dumped OK" >> "$M_ROOT/m_backup.log"
   fi
 done
 

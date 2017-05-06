@@ -19,7 +19,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-[ -z "$M_ROOT" ] && M_ROOT="$rpath"
+[ -z "$M_ROOT" ] && M_ROOT="$rpath/.."
 
 if [ -z "$1" ]; then
   echo "Error: configuration file is not defined for $0" >> "$M_ROOT/m_backup.error"
@@ -33,7 +33,7 @@ MONGODUMP=`which mongodump 2>/dev/null`
 GZIP=`which gzip 2>/dev/null`
 BZIP2=`which bzip2 2>/dev/null`
 TAR="`which tar 2>/dev/null`"
-LOG="$M_ROOT/m_backup.log"
+LOG="$M_ROOT/logs/m_backup.log"
 
 [ -z "$MONGO" ] && echo "Mongo client (mongo) not found, exiting." && exit 1
 [ -z "$MONGODUMP" ] && echo "Mongo dump utility (mongodump) not found, exiting." && exit 1

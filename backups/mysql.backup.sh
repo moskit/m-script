@@ -17,10 +17,12 @@
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
 rcommand=${xcommand##*/}
 rpath=${xcommand%/*}
-#*/ (this is needed to fool vi syntax highlighting)
+#*/
+[ -z "$M_ROOT" ] && M_ROOT="$rpath/.."
+source "$M_ROOT/lib/functions"
 
 if [ -z "$1" ]; then
-  echo "Error: configuration file is not defined for $0" >> "$rpath/m_backup.error"
+  echo "Error: configuration file is not defined for $0" >> "$M_ROOT/m_backup.error"
   exit 1
 else
   source "$1"
@@ -32,11 +34,11 @@ CHOWN=`which chown 2>/dev/null`
 CHMOD=`which chmod 2>/dev/null`
 GZIP=`which gzip 2>/dev/null`
 
-[ -z "$MYSQL" ] && echo "ERROR: mysql CLI not found" >> "$rpath/m_backup.error" && exit 1
-[ -z "$MYSQLDUMP" ] && echo "ERROR: mysqldump utility not found" >> "$rpath/m_backup.error" && exit 1
-[ -z "$mysqluser" ] && echo "ERROR: database user not defined" >> "$rpath/m_backup.error" && exit 1
-[ -z "$mysqlhost" ] && echo "ERROR: database host not defined" >> "$rpath/m_backup.error" && exit 1
-[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$rpath"
+[ -z "$MYSQL" ] && echo "ERROR: mysql CLI not found" >> "$M_ROOT/m_backup.error" && exit 1
+[ -z "$MYSQLDUMP" ] && echo "ERROR: mysqldump utility not found" >> "$M_ROOT/m_backup.error" && exit 1
+[ -z "$mysqluser" ] && echo "ERROR: database user not defined" >> "$M_ROOT/m_backup.error" && exit 1
+[ -z "$mysqlhost" ] && echo "ERROR: database host not defined" >> "$M_ROOT/m_backup.error" && exit 1
+[ -n "$localbackuppath" ] && DEST="$localbackuppath" || DEST="$M_ROOT"
 OPTIONS="$mysqldumpoptions"
 
 MBD="$DEST/backup.tmp/mysql"
@@ -57,7 +59,7 @@ if [ -n "$debugflag" ]; then
 fi
 
 if [ -z "$mysqldblist" ]; then
-  mysqldblist="$($MYSQL "-u$mysqluser" -h $mysqlhost "$PASS" -Bse 'show databases')" 2>>"$rpath/m_backup.error"
+  mysqldblist="$($MYSQL "-u$mysqluser" -h $mysqlhost "$PASS" -Bse 'show databases')" 2>>"$M_ROOT/m_backup.error"
 fi
 
 for db in $mysqldblist ; do
@@ -70,7 +72,7 @@ for db in $mysqldblist ; do
     
   if $dumpdb ; then
     FILE="$MBD/$db.$archname.gz"
-    $MYSQLDUMP "-u$mysqluser" -h$mysqlhost "$PASS" $VERB $OPTIONS "$db" 2>>"$rpath/m_backup.error" | $GZIP > $FILE 2>>"$rpath/m_backup.error" && echo "mysql: $db dumped OK" >>"$rpath/m_backup.log"
+    $MYSQLDUMP "-u$mysqluser" -h$mysqlhost "$PASS" $VERB $OPTIONS "$db" 2>>"$M_ROOT/m_backup.error" | $GZIP > $FILE 2>>"$M_ROOT/m_backup.error" && echo "mysql: $db dumped OK" >>"$M_ROOT/m_backup.log"
   fi
 done
 
