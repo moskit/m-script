@@ -1,0 +1,83 @@
+#!/bin/bash
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+source "$M_ROOT/lib/functions.sh" # includes mon.conf
+source "$rpath/${rcommand%.mon}.conf"
+[ -z "$file" ] && echo "file is not defined" >&2 && exit 1
+interval=`expr $FREQ + $timeshift 2>/dev/null` || interval=210
+LOG="$M_ROOT/logs/httpmon.log"
+[ -z "$maxlines" ] && maxlines=10000
+# per second
+[ -z "$maxrate" ] && maxrate=30
+[ -z "$timeformat" ] && timeformat="%d/%b/%Y:%H:%M"
+[ -z "$method" ] && method="DROP"
+[ -n "$flooddetector" ] && flooddetector=true || flooddetector=false
+export BLOCK_CALLER="$rcommand"
+maxreqn=`expr $maxrate \* $interval`
+logged=`"$M_ROOT"/helpers/logreader --file=$file --timeformat="$timeformat" --maxlines=$maxlines --interval="$interval sec"`
+echo -e "\n    URL  Requests  Average  Minimal  Maximal\n------------------------------------------------------------------------------\n"
+IFSORIG=$IFS
+IFS='
+'
+requestips=`echo "$logged" | cut -d' ' -f1`
+requests=`echo "$requestips" | wc -l`
+ips=`echo "$requestips" | sort | uniq -c`
+users=`echo "$ips" | wc -l`
+url2=`echo "$logged" | cut -d' ' -f7 | cut -sd'/' -f1,2,3 | cut -d'?' -f1`
+urlresp=`echo "$logged" | cut -d' ' -f7,11`
+for url in `echo "$url2" | sort | uniq`; do
+  resptime=`echo "$urlresp" | grep "^$url\ " | cut -sd' ' -f2 | grep "[0-9\.]"`
+  reqn=`echo "$resptime" | wc -l`
+  if [ $reqn -gt 1 ]; then
+    resptotal=$(solve 3 "`echo "$resptime" | tr '\n' '+'`0")
+    [ -z "$resptotal" ] && continue
+    reqtotal=`echo "$logged" | cut -d' ' -f7 | grep "^$url" | wc -l`
+    respavg=`solve 3 "$resptotal / $reqtotal"`
+    respmin=`echo "$resptime" | sort -n | head -1`
+    respmax=`echo "$resptime" | sort -n | tail -1`
+#log "**** URL: $url :: reqn>1 :: `echo "$resptime" | tr '\n' '+'`0 = $resptotal :: $resptotal / $reqtotal = $respavg :: MIN: $respmin MAX: $respmax ****"
+  else
+    [ -z "$resptime" ] && continue
+    respavg=$resptime
+    respmin=$resptime
+    respmax=$resptime
+#log "**** URL: $url :: reqn=1 :: resptime: $resptime ****"
+  fi
+  unset resptime
+  [ `solve 3 "$respmax < $respmax_1"` -eq 1 ] && warn="<OK>"
+  if [ -z "$warn" ]; then
+    [ `solve 3 "$respmax < $respmax_2"` -eq 1 ] && warn="<*>"
+    if [ -z "$warn" ]; then
+      if [ `solve 3 "$respmax < $respmax_3"` -eq 1 ]; then
+        warn="<**>"
+      else
+        warn="<***>"
+      fi
+    fi
+  fi
+  echo "$warn  $url  $reqn  $respavg  $respmin  $respmax"
+  unset warn
+  store_results "url|text,reqn|integer,respavg|real,respmin|real,respmax|real" "$rpath/urlperf-reporting.db|urlperf"
+done
+echo
+
+# Flood detection and blocking
+if $flooddetector ; then
+  for reqn in `echo "$ips" | sort -n | sed 's|^\s*||' | tail -3`; do
+  n=`echo $reqn | cut -d' ' -f1`
+  ip=`echo $reqn | cut -d' ' -f2`
+  if [[ $n -gt $maxreqn ]]; then
+    echo "$ip" | "$M_ROOT"/helpers/block_ip - --method="$method" --block_forever_after=0
+    echo "<***> IP $ip has been blocked for $n requests over $interval seconds"
+  fi
+  done
+fi
+
+IFS=$IFSORIG
+
+store_results "requests|integer,users|integer"
+
+
