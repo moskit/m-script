@@ -21,6 +21,7 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$M_ROOT/conf/mon.conf" || exit 99
 source "${0%.mon}.conf" || exit 99
+source "$M_ROOT/lib/functions.sh"
      
 portstcp=( `cat "$M_ROOT/ports.tcp.list" 2>/dev/null | cut -d'|' -f1` )
 portsudp=( `cat "$M_ROOT/ports.udp.list" 2>/dev/null | cut -d'|' -f1` )
