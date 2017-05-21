@@ -123,7 +123,7 @@ df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
     echo "/dev/$disk" >> "$M_TEMP/disk.tmp.ext"
   fi
   echo "$disk|$used|$usedm|$free" >> "$M_TEMP/diskusage"
-
+  unset realdisk
 done
 
 # inodes usage
@@ -143,9 +143,9 @@ df -i | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | s
   usedm=$(echo "$LINE" | cut -d'|' -f3)
   free=$(echo "$LINE" | cut -d'|' -f4)
   unset warnind
-  x1="$(echo "$used >= $DISK_WARN_1" | bc)"
-  x2="$(echo "$used >= $DISK_WARN_2" | bc)"
-  x3="$(echo "$used >= $DISK_WARN_3" | bc)"
+  x1="$(echo "$used >= $DISK_WARN_1" | bc 2>/dev/null)"
+  x2="$(echo "$used >= $DISK_WARN_2" | bc 2>/dev/null)"
+  x3="$(echo "$used >= $DISK_WARN_3" | bc 2>/dev/null)"
   [ "$x1" == "1" ] && warnind=' <*> '
   [ "$x2" == "1" ] && warnind='<**> '
   [ "$x3" == "1" ] && warnind='<***>'
