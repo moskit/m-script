@@ -1,0 +1,56 @@
+#!/bin/bash
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+mysqlbin=`which mysql 2>/dev/null`
+[ -z "$mysqlbin" ] && echo "MySQL CLI not found" && exit 1
+
+source "$M_ROOT/lib/functions.sh"
+source "$rpath/mysql.conf"
+
+get_lock
+
+MyTEMP="$M_TEMP/mysql"
+[ -d "$MyTEMP" ] || install -d "$MyTEMP"
+
+get_interval || unlock_exit 0
+
+if [ -n "$dbcluster" ]; then
+  dbhosts=`"$M_ROOT"/cloud/common/get_ips --names --cluster="$dbcluster"`
+else
+  dbhosts=localhost
+fi
+
+[ -n "$dbuser" ] && A="-u $dbuser"
+[ -n "$dbpassword" ] && A="$A -p$dbpassword"
+[ -n "$dbport" ] && P="-P $dbport"
+
+for dbhost in $dbhosts ; do
+
+  echo -e "    Host $dbhost\n"
+  H="-h $dbhost"
+
+  mysqlbin="$mysqlbin -Bs $H $P $A 2>/dev/null"
+
+  tblobject=`echo 'SELECT table_schema, table_name, round((data_length / 1024 / 1024), 2), round((index_length / 1024 / 1024), 2) FROM information_schema.TABLES' | $mysqlbin`
+  
+  IFS='
+'
+  for tbl in `echo "$tblobject"`; do
+  
+    dbname=`echo "$tbl" | cut -sd'|' -f1`
+    tblname=`echo "$tbl" | cut -sd'|' -f2`
+    datasize=`echo "$tbl" | cut -sd'|' -f3`
+    indexsize=`echo "$tbl" | cut -sd'|' -f4`
+    
+    store_results "dbname|text,tblname|text,datasize|real,indexsize|real"
+    
+  done
+
+done
+
+exit 10
+
