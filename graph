@@ -101,8 +101,8 @@ With --from but without --to the latter defaults to the current time.
 
 Options:
 
---ip=<IP>               IP address of the server to get data from.
-                        Server must be present in nodes.list.
+--ip=<IP>               IP address of the node to get data from.
+                        Node must be present in nodes.list.
                         If empty, means localhost.
                     
 --from=<date/time>      Time of the beginning of the graph in any format
@@ -189,6 +189,8 @@ if [ -n "$ip" ] ; then
       else
         unset localip
       fi
+    else
+      unset localip
     fi
   fi
 else

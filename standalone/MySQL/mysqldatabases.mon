@@ -33,9 +33,9 @@ for dbhost in $dbhosts ; do
   echo -e "    Host $dbhost\n"
   H="-h $dbhost"
 
-  mysqlbin="$mysqlbin -Bs $H $P $A 2>/dev/null"
+  mysqlbin="$mysqlbin -Bs $H $P $A"
 
-  tblobject=`echo 'SELECT table_schema, table_name, round((data_length / 1024 / 1024), 2), round((index_length / 1024 / 1024), 2) FROM information_schema.TABLES' | $mysqlbin`
+  tblobject=`echo 'SELECT table_schema, table_name, round((data_length / 1024 / 1024), 2), round((index_length / 1024 / 1024), 2) FROM information_schema.TABLES' | $mysqlbin 2>/dev/null | tr '\t' '|'`
   
   IFS='
 '
@@ -52,5 +52,5 @@ for dbhost in $dbhosts ; do
 
 done
 
-exit 10
+unlock_exit 10
 

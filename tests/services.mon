@@ -20,26 +20,17 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$M_ROOT/conf/mon.conf"
 
-getprocessname() {
-  if [ -d /proc/$1 ] ; then
-    pfull=`ps -wwo cmd= $1`
-    pcomm=`echo $pfull | cut -d' ' -f1`
-  else
-    pfull="unknown"
-    pcomm="unknown"
-  fi
-}
+source "$M_ROOT/lib/functions.sh"
 
 checkpidfile() {
   pid=`cat "$1"|grep -v ^$|sed 's|[^[0-9]]||g'|tail -1 2>/dev/null`
   if [ -n "$pid" ] ; then
     if [ -d "/proc/$pid" ] ; then
       getprocessname $pid
-      printf "$pcomm"
-      m=`expr length $pcomm`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "PID $pid"
-      m=`expr length $pid`;l=`expr 20 - $m`;for ((n=1; n <= $l; n++)); do printf " "; done
-      printf "${1}\n"
+      col=20
+      printcol "$pcomm"
+      printcol "PID $pid"
+      echo "$1"
       echo "${1}|$pid|$pfull" >> "$M_TEMP"/services.tmp
     else
       echo "<***> Stale pidfile found: $1. Process with ID $pid doesn't exist. Removing."
@@ -54,22 +45,17 @@ checkpidfile() {
 IFS1=$IFS
 IFS='
 '
-echo ""
-echo "Running services"
-echo "----------------"
-echo
-echo "    Process           PID                     PID file"
-echo
-for LINE in `cat "$M_ROOT/conf/services.conf"|grep -v ^$|grep -v ^#|grep -v ^[[:space:]]*#` ; do
+echo -e "\nRunning services\n----------------\n\n    Process           PID                     PID file\n"
+
+for LINE in `cat "$M_ROOT/conf/services.conf"|grep -vE "^[[:space:]]*$|^#[[:space:]]*"` ; do
   LINE=`echo "$LINE" | sed 's|[[:space:]]*$||'`
   thepath=`echo "$LINE" | sed 's|[[:space:]]*recursive||'`
-  # to workaround the weird idea of some OS packagers to have /var/run in
-  # non-standard location, symlinked
+  # for symlinked run folder
   thepath="${thepath%/}/"
   if [ -d "$thepath" ] ; then
     if [[ "$LINE" =~ [[:space:]]*recursive$ ]] ; then
       find "$thepath" -name "*\.pid" | while read pidfile ; do
-        for exclpidfile in `cat "$M_ROOT/conf/pidfiles.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+        for exclpidfile in `cat "$M_ROOT/conf/pidfiles.exclude" | grep -vE "^[[:space:]]*$|^#[[:space:]]*"`
         do
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done
@@ -80,7 +66,7 @@ for LINE in `cat "$M_ROOT/conf/services.conf"|grep -v ^$|grep -v ^#|grep -v ^[[:
       done
     else
       find "$thepath" -maxdepth 1 -name "*\.pid" | while read pidfile ; do
-        for exclpidfile in `cat "$M_ROOT/conf/pidfiles.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+        for exclpidfile in `cat "$M_ROOT/conf/pidfiles.exclude" | grep -vE "^[[:space:]]*$|^#[[:space:]]*"`
         do
           [[ $pidfile =~ $exclpidfile ]] && skip=1 && break
         done

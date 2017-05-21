@@ -25,7 +25,7 @@ M-Script is a framework for infrastructure coding, configuration management and 
 
 
 * conf/mon.conf           - the main configuration file (name is historical, maybe will be renamed one day), settings related to the system as a whole are there.
-* nodes.list              - all nodes are listed in it along with a cluster they belong to and cloud they are located in. If nodes are located in a supported cloud, such nodes get listed automatically via cloud API, other nodes must be added manually. Manual and cloud-based nodes can be combined, this allows to combine cloud and non-cloud resources.
+* nodes.list              - all nodes are listed in it along with a cluster they belong to and a cloud they are located in. If nodes are located in a supported cloud, such nodes get listed automatically via cloud API, other nodes must be added manually. Manual and cloud-based nodes can be combined, this allows to combine cloud and non-cloud resources.
 * conf/clusters.conf      - cluster in M-Script's terminology is a collection of identical nodes of the same role. Cluster can be a single node or a dynamically scalable collection of any size. This file defines essential attributes of nodes within a cluster, including size or VM configuration, role associated with the cluster, access details, image off of which this cluster nodes are built, location (region), network/firewall settings etc.
 * conf/mail.alert.list    - recipients for alerts.
 * conf/mail.admin.list    - recipients for reports and analytics.
@@ -44,7 +44,7 @@ M-Script is a framework for infrastructure coding, configuration management and 
 
 ## Monitoring
 
-* monitorload.run         - monitoring service (daemon)
+* monitorload.run         - monitoring service (daemon). Can be used as an sysvinit-style rc-script (setup process symlinks it into /etc/init.d).
 * mon.run                 - main monitoring tool. It runs individual monitors and handles the output: saves data into database and sends alerts and reports. It is invoked periodically by monitorload service.
 
 ### Basic sequence monitors
@@ -98,6 +98,14 @@ It is a deployment, provisioning and maintenance tasks scripting central.
 * deployment/propvar      - used to propagate a variable's value across the scripts within a task, for use inside the scripts
 
 
+## Backup system
+
+* backups/backup.run      - runs backups. Has an extensive lot of options, in both command-line and configuration files.
+* backups/mysql.backup.sh - MySQL backup tool
+* backups/pgsql.backup.sh - PostgreSQL backup tool
+* backups/mongo.backup.sh - MongoDB backup tool
+
+
 ## Helpers
 
 A collection of helper scripts that can be used both manually and in the deployment system's scripts
@@ -127,6 +135,11 @@ A collection of helper scripts that can be used both manually and in the deploym
 * helpers/update_dns_serial       - used to update serial number of DNS zone file after edit
 * helpers/upgrade.sh              - updates M-Script from repository or from the latest tarball
 * helpers/wrapper                 - an easy way to make a service out of any program and create a Sysvinit rc file for it
+* lib/showproc                    - shows info about certain system process by its PID
+* lib/xml2txt                     - XML to greppable TXT converter
+* lib/json2txt                    - JSON to greppable TXT converter
+* lib/txt2html                    - TXT to HTML converter (for use in web interface)
+* lib/urlencode                   - well, urlencode (awk script)
 
 
 ## Cloud management
@@ -153,5 +166,15 @@ Most of the cloud-related executables that are in PATH, are wrappers located in 
 * cloud/common/update_nodes_list  - updates nodes.list using cloud API
 
 
+## Other important executables
 
+* setup.run               - setup program. Installs a few dependencies if can't find them and creates the database if it does not exist. By default the process is interactive, add parameter 'default' to disable this ('setup.run default').
+* msh                     - M-Shell. It is just a Bash shell with M-Script's environment configured (PATHs and some specific variables like CLOUD and CLUSTER).
+* getdash.ssh             - pulls monitoring data from other nodes if dashboard (web interface) is enabled on this node.
+* graph                   - graphs generator (SVG).
+* lib/mq.run              - queue manager
+* lib/genhtml             - generates HTML reports
+* lib/genjson             - generates JSON reports
+* lib/sendalert           - sends alerts
+* lib/sendreport          - sends reports
 

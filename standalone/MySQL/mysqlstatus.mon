@@ -35,11 +35,11 @@ for dbhost in $dbhosts ; do
   echo -e "    Host $dbhost\n"
   H="-h $dbhost"
 
-  mysqlbin="$mysqlbin -NB $H $P $A"
+  mysqlbin="$mysqlbin -Bs $H $P $A"
   
   [ -e "$MyTEMP/${dbhost}.status.dat" ] && sed 's/=/_prev=/' "$MyTEMP/${dbhost}.status.dat" > "$MyTEMP/${dbhost}.status.dat.prev"
 
-  echo "show status" | $mysqlbin | tr '\t' '=' > "$MyTEMP/${dbhost}.status.dat"
+  echo "show status" | $mysqlbin | tr '\t' '=' | sed 's|=|="|;s|$|"|' > "$MyTEMP/${dbhost}.status.dat"
 
   source "$MyTEMP/${dbhost}.status.dat.prev" 2>/dev/null || unlock_exit 0
   source "$MyTEMP/${dbhost}.status.dat"

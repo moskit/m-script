@@ -37,21 +37,23 @@ while read FILE ; do
   echo "$file|`$MD "$file" | cut -d' ' -f1`" >> "$M_TEMP/files.mon.tmp"
 done <"${0%.mon}.conf"
 
-if [ `cat "$M_TEMP/files.mon.prev" 2>/dev/null | wc -l` -eq `cat "$M_TEMP/files.mon.tmp" | wc -l` ]; then
-  for chng in `$DIFF "$M_TEMP/files.mon.prev" "$M_TEMP/files.mon.tmp"  | grep ^\> | tr -d '^\> '`; do
-    filename=`echo "$chng" | cut -d'|' -f1`
-    alevel=`grep -E "^$filename\||^$filename$" "${0%.mon}.conf" | cut -d'|' -f2`
-    [ -z "$alevel" ] && alevel=1
-    case $alevel in
-      3)
-      warn='<***>' ;;
-      2)
-      warn='<**>' ;;
-      1)
-      warn='<*>' ;;
-    esac
-    echo -e "$warn File `echo "$chng" | cut -d'|' -f1` has been changed"
-  done
-else
-  echo "<*> List of files to be monitored for changes has been changed"
+if [ -e "$M_TEMP/files.mon.prev" ]; then
+  if [ `cat "$M_TEMP/files.mon.prev" 2>/dev/null | wc -l` -eq `cat "$M_TEMP/files.mon.tmp" | wc -l` ]; then
+    for chng in `$DIFF "$M_TEMP/files.mon.prev" "$M_TEMP/files.mon.tmp"  | grep ^\> | tr -d '^\> '`; do
+      filename=`echo "$chng" | cut -d'|' -f1`
+      alevel=`grep -E "^$filename\||^$filename$" "${0%.mon}.conf" | cut -d'|' -f2`
+      [ -z "$alevel" ] && alevel=1
+      case $alevel in
+        3)
+        warn='<***>' ;;
+        2)
+        warn='<**>' ;;
+        1)
+        warn='<*>' ;;
+      esac
+      echo -e "$warn File `echo "$chng" | cut -d'|' -f1` has been changed"
+    done
+  else
+    echo "<*> List of files to be monitored for changes has been changed"
+  fi
 fi

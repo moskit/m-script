@@ -108,15 +108,9 @@ start)
 
 ##### Running tests #####
 
-## A pause to secure the lock
     sleep 10
-    # Running actions from the queue first
-    "$rpath"/lib/mq.run &
     
-    # Unblocking IPs that might have been temporarily blocked by monitors
-    "$rpath"/helpers/unblock_ip tmp
-    
-### Tests that run if load has changed - we are interested in more metrics here
+### Tests that run if load has changed
     if [ "_$x" == "_1" ]; then
       if [[ $rloadabs -lt $LOAD_CRIT ]]; then
         "$rpath"/mon.run -ao </dev/null &

@@ -38,6 +38,8 @@ fi
 sleep $((RANDOM%5))
 for ((i=1; i<=10; i++))
 do
+  # if the "next run lock" appears while we are waiting, we must give up immediately
+  find "$rpath" -maxdepth 1 -name next.run.lock && echo "Next run lock detected!" >> "$rpath/monitoring.log" && exit 1
   if [ -e "$rpath/mon.run.lock" ] ; then
     printf "." >> "$rpath/monitoring.log"
     sleep $((RANDOM%10))
@@ -338,11 +340,13 @@ function timeshift() {
 function action() {
   local newfile=false
   act=`echo "$@" | sed 's|/|\\\/|g;s| |\\\ |g'`
-log "action: matching $act"
   [ -f "$rpath/actions.in" ] || newfile=true
   JOBINTIME=`date +"%y%m%d%H%M%S"`
   echo "`cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "$act" | cut -d'|' -f3`|$JOBINTIME|" >> "$rpath/actions.in" && log "=== job created: $@"
   $newfile && chmod 600 "$rpath/actions.in"
+}
+
+function runqueue() {
   "$rpath"/lib/mq.run &
 }
 
@@ -367,6 +371,7 @@ case $1 in
     deltimeindex
     cleanup
     touch "$M_ROOT/next.run.lock"
+    runqueue
   ;;
   -dry | --dry | --dry-run | -test | --test)
     export TEST=1
@@ -414,6 +419,7 @@ case $1 in
     runactions
     deltimeindex
     cleanup
+    runqueue
   ;;
   *)
     echo "Run mon.run --help to see available options"
