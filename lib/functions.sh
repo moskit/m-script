@@ -422,3 +422,154 @@ getprocessname() {
   fi
 }
 
+get_opts() {
+  declare -i ppn
+  ppn=1
+  commfound=false
+  subcommfound=false
+  short=false
+  IFS='-'
+  for s_option in "$@"
+  do
+    found=false
+    case $s_option in
+    --*=*)
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
+      s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
+      ;;
+    --*)
+      s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
+      s_optarg='yes'
+      ;;
+    -*)
+      s_optname=`echo "$s_option" | tr -d '-'`
+      short=true
+      s_optarg="yes" # a default value in case there is none
+      ;;
+    *=*)
+      echo "Wrong syntax: long options must start with a double dash"
+      exit 1
+      ;;
+    *)
+      if $short ; then
+        s_optarg="$s_option"
+        short=false
+      else
+        s_param=$s_option
+        unset s_optname s_optarg
+        case $ppn in
+          1)
+            IFS=$IFS1
+            for comm in $possible_commands ; do
+              if [ "_$s_param" == "_$comm" ]; then
+                if $commfound ; then
+                  echo "Only one command can be executed!"
+                  echo "Commands are: $possible_commands"
+                  exit 1
+                else
+                  found=true
+                  commfound=true
+                fi
+              fi
+            done
+            if ! $found ; then 
+              echo "Unknown command: $s_param"
+              exit 1
+            fi
+            command1=$s_param
+            IFS='-'
+            ;;
+          2)
+            IFS=$IFS1
+            for subcomm in $possible_subcommands ; do
+              [ "_${subcomm%%:*}" == "_$command1" ] && subcommands=${subcomm#*:}
+              for sub in `echo $subcommands | tr ',' ' '` ; do
+                if [ "_$s_param" == "_$sub" ]; then
+                  if $subcommfound ; then
+                    echo "Only one subcommand can be executed!"
+                    echo "Subcommands for $command1 are: ${subcommands}"
+                    exit 1
+                  else
+                    found=true
+                    subcommfound=true
+                  fi
+                fi
+              done
+              unset subcommands
+            done
+            if ! $found ; then 
+              param1=$s_param
+            else
+              command2=$s_param
+            fi
+            IFS='-'
+            ;;
+          3)
+            if [ -z "$param1" ] ; then
+              param1=$s_param
+            else
+              param2=$s_param
+            fi
+            ;;
+          4)
+            if [ -z "$param2" ] ; then
+              param2=$s_param
+            else
+              echo "Wrong number of positional parameters!"
+              exit 1
+            fi
+            ;;
+          *)
+            echo "Wrong number of positional parameters!"
+            exit 1
+            ;;
+        esac
+        shift
+        ppn+=1
+      fi
+      ;;
+    esac
+    for option in `echo $possible_options | sed 's| |-|g'`; do
+      if [ "_$s_optname" == "_$option" ]; then
+        if [ -n "$s_optarg" ]; then
+          eval "$s_optname=\"$s_optarg\""
+        else
+          [ -z "$(eval echo \$$option)" ] && eval "$option="
+        fi
+        found=1
+      fi
+    done
+  done
+  IFS=$IFS1
+}
+
+colors() {
+  # simple colors for output, call this function to assign vars when needed
+  CONTR_SEQ='\033['
+  UNSET_COLOR="${CONTR_SEQ}0m"
+  FG_BLACK='30m'
+  FG_RED='31m'
+  FG_GREEN='32m'
+  FG_YELLOW='33m'
+  FG_BLUE='34m'
+  FG_MAGENTA='35m'
+  FG_CYAN='36m'
+  FG_WHITE='37m'
+  BG_BLACK='40m'
+  BG_RED='41m'
+  BG_GREEN='42m'
+  BG_YELLOW='43m'
+  BG_BLUE='44m'
+  BG_MAGENTA='45m'
+  BG_CYAN='46m'
+  BG_WHITE='47m'
+  ATTR_NONE='00;'
+  ATTR_BOLD='01;'
+  ATTR_UNDERSCORE='04;'
+  ATTR_BLINK='05;'
+  ATTR_REVERSE='07;'
+  ATTR_CONCEALED='08;'
+  # Example:
+  # echo -e "$CONTR_SEQ$ATTR_BOLD$FG_RED$HOSTNAME$CONTR_SEQ$ATTR_BLINK${FG_WHITE}:$UNSET_COLOR"
+  # echo -e "$CONTR_SEQ$FG_MAGENTA blablabla $UNSET_COLOR"  ### - simplest case
+}
