@@ -29,12 +29,12 @@ get_opts "$@"
 
 if [ -n "$conf" ]; then
   if [ ! -e "$conf" ]; then
-    if [ -e "${conf%.conf}" ]; then
-      conf="${conf%.conf}"
+    if [ -e "${conf}.conf" ]; then
+      conf="${conf}.conf"
     elif [ -e "$M_ROOT/conf/$conf" ]; then
       conf="$M_ROOT/conf/$conf"
-    elif [ -e "$M_ROOT/conf/${conf%.conf}" ]; then
-      conf="$M_ROOT/conf/${conf%.conf}"
+    elif [ -e "$M_ROOT/conf/${conf}.conf" ]; then
+      conf="$M_ROOT/conf/${conf}.conf"
     else
       errorexit "Backup configuration $conf does not exist"
     fi
@@ -55,7 +55,8 @@ fi
 case $command1 in
 run)
   if [ -e "$rpath/${operation}.backup.sh" ]; then
-    do_backup "$rpath/${operation}.backup.sh" "$id" "$conf" >>"$LOG" 2>&1
+    export targetpath sourcepath targetuser targethost
+    do_backup "$rpath/${operation}.backup.sh" "$id" "$conf" >>"$LOG" 2>&1 || errorexit "Backup failed"
   else
     starttime=`date +"%s"`
     case $operation in

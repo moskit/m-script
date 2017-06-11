@@ -15,16 +15,19 @@ fi
 
 [ -f "$rpath/${rcommand%%.*}.conf" ] && source "$rpath/${rcommand%%.*}.conf"
 
-[ -z "$dbhost" ] && dbhost=localhost
-[ -z "$dbport" ] && dbport=3306
+# server can be login-path
+if [ -z "$server" ]; then
+  [ -z "$dbhost" ] && dbhost=localhost
+  [ -z "$dbport" ] && dbport=3306
+  [ -z "$dbuser" ] && errorexit "User not specified"
+  [ -z "$dbpassword" ] && errorexit "Password not specified"
+  server="${dbuser}:${dbpassword}@${dbhost}:${dbport}"
+fi
 
-[ -z "$dbuser" ] && errorexit "User not specified"
-[ -z "$dbpassword" ] && errorexit "Password not specified"
-
-export MYSQL_PWD="$dbpassword"
+[ -d "$targetpath/$1" ] || install -d "$targetpath/$1"
 
 MBLM=`which mysqlbinlogmove 2>/dev/null`
 [ -z "$MBLM" ] && echo "Utility mysqlbinlogmove from MySQL Utilities package not found" && exit 1
 
 install -d "$targetpath/$1"
-$MBLM $OPTIONS --server="${dbuser}@${dbhost}:${dbport}" --log-type=all "$targetpath/$1"
+$MBLM $OPTIONS --server="$server" --log-type=all "$targetpath/$1"
