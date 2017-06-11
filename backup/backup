@@ -13,122 +13,141 @@ source "$M_ROOT/lib/backup_functions"
 trap 'errorexit "Backup process interrupted"' QUIT INT TERM ABRT
 
 # variable command1
-possible_commands=""
+possible_commands="run show list"
 # variable command2
 possible_subcommands=""
-possible_options="id type"
+possible_options="id operation o t s c u h targetpath sourcepath targetuser targethost conf"
 
-get_opts
+get_opts "$@"
 
+[ -z "$operation" ] && operation=$o
+[ -z "$targetpath" ] && targetpath=$t
+[ -z "$sourcepath" ] && sourcepath=$s
+[ -z "$targetuser" ] && targetuser=$u
+[ -z "$targethost" ] && targethost=$h
+[ -z "$conf" ] && conf=$c
 
-
-if [ -e "$1" ]; then
-  conf=$1
-else
-  if [ -e "$M_ROOT/conf/$1" ]; then
-    conf="$M_ROOT/conf/$1"
-  else
-    errorexit "Backup configuration $1 does not exist"
+if [ -n "$conf" ]; then
+  if [ ! -e "$conf" ]; then
+    if [ -e "${conf%.conf}" ]; then
+      conf="${conf%.conf}"
+    elif [ -e "$M_ROOT/conf/$conf" ]; then
+      conf="$M_ROOT/conf/$conf"
+    elif [ -e "$M_ROOT/conf/${conf%.conf}" ]; then
+      conf="$M_ROOT/conf/${conf%.conf}"
+    else
+      errorexit "Backup configuration $conf does not exist"
+    fi
   fi
+  source "$conf"
 fi
 
-source "$conf"
-
 [ -z "$id" ] && id="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
-[ -z "$backuptype" ] && backuptype="files"
+
 if [ -n "$targetpath" ]; then
   [ -d "$targetpath" ] || install -d "$targetpath"
-else
+elif [ "_$command1" == "_run" ]; then
   errorexit "Target path not specified"
 fi
 
 [ -z "$LOG" ] && LOG="$M_ROOT/logs/backup.log"
 
-if [ -e "$rpath/${backuptype}.backup.sh" ]; then
-  do_backup "$rpath/${backuptype}.backup.sh" "$id" "$conf" >>"$LOG" 2>&1
-else
-  starttime=`date +"%s"`
-  case $backuptype in
-    tar)
-      [ "_$followlinks" == "_yes" ] && OPTIONS="$OPTIONS -h"
-      [ "_$numericids" == "_yes" ] && OPTIONS="$OPTIONS --numeric-owner"
-      [ "_$preserveperm" == "_yes" ] && OPTIONS="$OPTIONS -p"
-      [ "_$samefs" == "_yes" ] && OPTIONS="$OPTIONS --one-file-system"
-      if [ -f "${conf}.exclude" ]; then
-        OPTIONS="$OPTIONS --totals -X ${conf}.exclude"
-      else
-        OPTIONS="$OPTIONS --totals"
-      fi
-      if [ -e "${conf}.list" ]; then
-        tar_backup "${conf}.list" | grep -vE 'Removing leading|as we read' >>"$LOG" 2>&1
+case $command1 in
+run)
+  if [ -e "$rpath/${operation}.backup.sh" ]; then
+    do_backup "$rpath/${operation}.backup.sh" "$id" "$conf" >>"$LOG" 2>&1
+  else
+    starttime=`date +"%s"`
+    case $operation in
+      tar)
+        [ "_$followlinks" == "_yes" ] && OPTIONS="$OPTIONS -h"
+        [ "_$numericids" == "_yes" ] && OPTIONS="$OPTIONS --numeric-owner"
+        [ "_$preserveperm" == "_yes" ] && OPTIONS="$OPTIONS -p"
+        [ "_$samefs" == "_yes" ] && OPTIONS="$OPTIONS --one-file-system"
+        if [ -f "${conf}.exclude" ]; then
+          OPTIONS="$OPTIONS --totals -X ${conf}.exclude"
+        else
+          OPTIONS="$OPTIONS --totals"
+        fi
+        if [ -e "${conf}.list" ]; then
+          tar_backup "${conf}.list" | grep -vE 'Removing leading|as we read' >>"$LOG" 2>&1
+          res=$?
+        fi
+        finishtime=`date +"%s"`
+        timespent `expr $finishtime - $starttime`
+        if [ $res -eq 0 ]; then
+          log "$operation : operation finished in $timetotal"
+        fi
+        ;;
+      scp)
+        [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -p"
+        [ -n "$bwlimit" ] && OPTIONS="$OPTIONS -l $bwlimit"
+        [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -C"
+        starttime=`date +"%s"`
+        $SCP $OPTIONS "$sourcepath"/* "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
         res=$?
-      fi
-      finishtime=`date +"%s"`
-      timespent `expr $finishtime - $starttime`
-      if [ $res -eq 0 ]; then
-        log "$backuptype : operation finished in $timetotal"
-      fi
-      ;;
-    scp)
-      [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -p"
-      [ -n "$bwlimit" ] && OPTIONS="$OPTIONS -l $bwlimit"
-      [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -C"
-      starttime=`date +"%s"`
-      $SCP $OPTIONS "$sourcepath"/* "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
-      res=$?
-      totalsize=`du -k -s "$sourcepath" | cut -f1`
-      finishtime=`date +"%s"`
-      timespent `expr $finishtime - $starttime`
-      if [ $res -eq 0 ]; then
-        log "scp backup: success, files size $totalsize"
-      else
-        log "scp backup: failure"
-      fi
-      log "scp backup: operation finished in $timetotal"
-      ;;
-    rsync)
-      [ "_$followlinks" == "_yes" ] || OPTIONS="$OPTIONS -l"
-      [ "_$numericids" != "_yes" ] || OPTIONS="$OPTIONS --numeric-owner"
-      [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -Ago"
-      [ "_$samefs" != "_yes" ] || OPTIONS="$OPTIONS --safe-links"
-      [ -n "_$bwlimit" ] && OPTIONS="$OPTIONS --bwlimit=`expr $bwlimit / 8`"
-      [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -z"
-      OPTIONS="$OPTIONS -rt"
-      starttime=`date +"%s"`
-      $RSYNC $OPTIONS "$sourcepath"/* -e "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
-      res=$?
-      totalsize=`du -k -s "$sourcepath" | cut -f1`
-      finishtime=`date +"%s"`
-      timespent `expr $finishtime - $starttime`
-      if [ $res -eq 0 ]; then
-        log "rsync backup: success, files size $totalsize"
-      else
-        log "rsync backup: failure"
-      fi
-      log "rsync backup: operation finished in $timetotal"
-      ;;
-    s3)
-      [ "_$preserveperm" != "_yes" ] && OPTIONS="$OPTIONS --no-preserve"
-      targetpath=${targetpath#/}
-      s3target="s3://`echo "${targethost%/}/${targetpath%/}/" | sed 's|s3://||;s|//|/|g'`"
-      starttime=`date +"%s"`
-      $S3 $OPTIONS sync $sourcepath/ "$s3target" >>"$LOG" 2>&1
-      res=$?
-      totalsize=`du -k -s "$sourcepath" | cut -f1`
-      finishtime=`date +"%s"`
-      timespent `expr $finishtime - $starttime`
-      if [ $res -eq 0 ]; then
-        log "S3 backup: success, files size $totalsize"
-      else
-        log "S3 backup: failure"
-      fi
-      log "S3 backup: operation finished in $timetotal"
-      ;;
-    *)
-      errorexit "Unknown backup type"
-      ;;
-  esac
-fi
+        totalsize=`du -k -s "$sourcepath" | cut -f1`
+        finishtime=`date +"%s"`
+        timespent `expr $finishtime - $starttime`
+        if [ $res -eq 0 ]; then
+          log "scp backup: success, files size $totalsize"
+        else
+          log "scp backup: failure"
+        fi
+        log "scp backup: operation finished in $timetotal"
+        ;;
+      rsync)
+        [ "_$followlinks" == "_yes" ] || OPTIONS="$OPTIONS -l"
+        [ "_$numericids" != "_yes" ] || OPTIONS="$OPTIONS --numeric-owner"
+        [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -Ago"
+        [ "_$samefs" != "_yes" ] || OPTIONS="$OPTIONS --safe-links"
+        [ -n "_$bwlimit" ] && OPTIONS="$OPTIONS --bwlimit=`expr $bwlimit / 8`"
+        [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -z"
+        OPTIONS="$OPTIONS -rt"
+        starttime=`date +"%s"`
+        $RSYNC $OPTIONS "$sourcepath"/* -e "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
+        res=$?
+        totalsize=`du -k -s "$sourcepath" | cut -f1`
+        finishtime=`date +"%s"`
+        timespent `expr $finishtime - $starttime`
+        if [ $res -eq 0 ]; then
+          log "rsync backup: success, files size $totalsize"
+        else
+          log "rsync backup: failure"
+        fi
+        log "rsync backup: operation finished in $timetotal"
+        ;;
+      s3)
+        [ "_$preserveperm" != "_yes" ] && OPTIONS="$OPTIONS --no-preserve"
+        targetpath=${targetpath#/}
+        s3target="s3://`echo "${targethost%/}/${targetpath%/}/" | sed 's|s3://||;s|//|/|g'`"
+        starttime=`date +"%s"`
+        $S3 $OPTIONS sync $sourcepath/ "$s3target" >>"$LOG" 2>&1
+        res=$?
+        totalsize=`du -k -s "$sourcepath" | cut -f1`
+        finishtime=`date +"%s"`
+        timespent `expr $finishtime - $starttime`
+        if [ $res -eq 0 ]; then
+          log "S3 backup: success, files size $totalsize"
+        else
+          log "S3 backup: failure"
+        fi
+        log "S3 backup: operation finished in $timetotal"
+        ;;
+      *)
+        errorexit "Unknown operation: $operation"
+        ;;
+    esac
+  fi
+  ;;
+show)
+  echo
+  ;;
+list)
+  echo
+  ;;
+esac
+
 
 
 
