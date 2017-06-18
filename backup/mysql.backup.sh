@@ -63,7 +63,7 @@ xz)
 esac
     
 if [ -z "$mysqldblist" ]; then
-  mysqldblist="$($MYSQL "-u $dbuser" -h ${dbhost}:${dbport} -Bse 'show databases')"
+  mysqldblist="$($MYSQL "-u $dbuser" -h $dbhost -P $dbport -Bse 'show databases')"
 fi
 
 for db in $mysqldblist ; do

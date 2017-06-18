@@ -15,19 +15,28 @@ fi
 
 [ -f "$rpath/${rcommand%%.*}.conf" ] && source "$rpath/${rcommand%%.*}.conf"
 
-# server can be login-path
-if [ -z "$server" ]; then
-  [ -z "$dbhost" ] && dbhost=localhost
-  [ -z "$dbport" ] && dbport=3306
-  [ -z "$dbuser" ] && errorexit "User not specified"
-  [ -z "$dbpassword" ] && errorexit "Password not specified"
-  server="${dbuser}:${dbpassword}@${dbhost}:${dbport}"
-fi
+[ -z "$dbhost" ] && dbhost=localhost
+[ -z "$dbport" ] && dbport=3306
+[ -z "$dbuser" ] && errorexit "User not specified"
+[ -z "$dbpassword" ] && errorexit "Password not specified"
+server="${dbuser}:${dbpassword}@${dbhost}:${dbport}"
 
-[ -d "$targetpath/$1" ] || install -d "$targetpath/$1"
+export MYSQL_PWD="$dbpassword"
+
+MYSQL=`which mysql 2>/dev/null`
+[ -z "$MYSQL" ] && echo "Mysql CLI not found"
+STAT=`which stat 2>/dev/null`
+[ -z "$STAT" ] && echo "Utility stat not found"
+
+# bin-log flush must be performed by its original owner
+indexfile=`$MYSQL -u $dbuser -h ${dbhost} -P ${dbport} -Bse "show variables like 'log_bin_index'" | tr '\t' '|' | cut -sd'|' -f2`
+mysqluser=`$STAT -c %U "$indexfile"`
+mysqlgroup=`$STAT -c %G "$indexfile"`
+
+[ -d "$targetpath/$1" ] || install -o $mysqluser -g $mysqlgroup -d "$targetpath/$1"
 
 MBLM=`which mysqlbinlogmove 2>/dev/null`
 [ -z "$MBLM" ] && echo "Utility mysqlbinlogmove from MySQL Utilities package not found" && exit 1
 
-install -d "$targetpath/$1"
-$MBLM $OPTIONS --server="$server" --log-type=all "$targetpath/$1"
+su - $mysqluser -s /bin/bash -c "$MBLM $OPTIONS --server=\"$server\" \"$targetpath/$1\""
+
