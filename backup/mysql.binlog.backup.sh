@@ -21,8 +21,6 @@ fi
 [ -z "$dbpassword" ] && errorexit "Password not specified"
 server="${dbuser}:${dbpassword}@${dbhost}:${dbport}"
 
-export MYSQL_PWD="$dbpassword"
-
 MYSQL=`which mysql 2>/dev/null`
 [ -z "$MYSQL" ] && echo "Mysql CLI not found"
 STAT=`which stat 2>/dev/null`

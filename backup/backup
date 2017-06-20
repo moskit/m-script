@@ -5,7 +5,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath")
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/backup_functions.sh"
