@@ -81,6 +81,8 @@ run)
         fi
         ;;
       scp)
+        SCP=`which scp 2>/dev/null`
+        [ -z "$SCP" ] && errorexit "scp not found!"
         [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -p"
         [ -n "$bwlimit" ] && OPTIONS="$OPTIONS -l $bwlimit"
         [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -C"
@@ -98,6 +100,8 @@ run)
         log "scp backup: operation finished in $timetotal"
         ;;
       rsync)
+        RSYNC=`which scp 2>/dev/null`
+        [ -z "$RSYNC" ] && errorexit "rsync not found!"
         [ "_$followlinks" == "_yes" ] || OPTIONS="$OPTIONS -l"
         [ "_$numericids" != "_yes" ] || OPTIONS="$OPTIONS --numeric-owner"
         [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -Ago"
@@ -119,6 +123,8 @@ run)
         log "rsync backup: operation finished in $timetotal"
         ;;
       s3)
+        S3=`which s3cmd 2>/dev/null`
+        [ -z "$S3" ] && errorexit "s3cmd not found!"
         [ "_$preserveperm" != "_yes" ] && OPTIONS="$OPTIONS --no-preserve"
         targetpath=${targetpath#/}
         s3target="s3://`echo "${targethost%/}/${targetpath%/}/" | sed 's|s3://||;s|//|/|g'`"

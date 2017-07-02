@@ -1,5 +1,10 @@
 #!/bin/bash
 
+log() {
+  if [ -n "$LOG" ]; then
+    echo -e "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${0##*/}: ${@}">>$LOG
+  fi
+}
 
 errorexit() {
   echo -e "$CONTR_SEQ$ATTR_BOLD${FG_RED}$1${UNSET_COLOR}" >&2
