@@ -76,7 +76,9 @@ generate_csr() {
 
 generate_signed() {
   #$OSSL x509 -req -in ${filename%.*}.csr -CA ${filename%.*}-ca.pem -CAkey ${filename%.*}-ca.key -CAcreateserial -out $filename -days $days
-  $OSSL ca -infiles ${filename%.*}.csr -out $filename -days $days $CONFIG
+  touch serial index.txt
+  $OSSL ca -in ${filename%.*}.csr -out $filename -cert ${filename%.*}-ca.pem -keyfile ${filename%.*}-ca.key -days $days $CONFIG
+  rm serial index.txt
 }
 
 read_csr() {
@@ -137,7 +139,7 @@ if [ -n "$generate" ]; then
 fi
 
 if [ -n "$info" ]; then
-  [ -n "$generate" ] && echo "Option 'info' and 'generate' can't go together" && exit 1
+  [ -n "$generate" ] && echo "Option 'info' and 'generate' can't be used together" && exit 1
   case $info in
     req|csr|CSR)
       read_csr
