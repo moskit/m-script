@@ -77,9 +77,9 @@ generate_csr() {
 generate_signed() {
   #$OSSL x509 -req -in ${filename%.*}.csr -CA ${filename%.*}-ca.pem -CAkey ${filename%.*}-ca.key -CAcreateserial -out $filename -days $days
   touch index.txt
-  echo 1 > serial
+  printf "%127s"1 | tr ' ' '0' > serial
   $OSSL ca -in ${filename%.*}.csr -out $filename -cert ${filename%.*}-ca.pem -keyfile ${filename%.*}-ca.key -days $days $CONFIG
-  rm serial index.txt
+  rm serial serial.old index.txt index.txt.old index.txt.attr 01.pem
 }
 
 read_csr() {
