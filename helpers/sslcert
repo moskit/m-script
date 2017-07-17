@@ -63,15 +63,24 @@ generate_htpasswd() {
 }
 
 generate_selfsigned() {
-  $OSSL req -x509 -newkey rsa:${length} -keyout ${filename%.*}.key -out $filename -days $days -nodes $CONFIG
+  $OSSL req -x509 -nodes -newkey rsa:${length} -keyout ${filename%.*}.key -out $filename -days $days $CONFIG
+}
+
+generate_ca() {
+  $OSSL req -new -x509 -extensions v3_ca -keyout ${filename%.*}-ca.key -out ${filename%.*}-ca.pem -days $days $CONFIG
 }
 
 generate_csr() {
-  $OSSL req -out ${filename%.*}.csr -new -newkey rsa:${length} -nodes -keyout ${filename%.*}.key $CONFIG
+  $OSSL req -new -nodes -out ${filename%.*}.csr -newkey rsa:${length} -keyout ${filename%.*}.key $CONFIG
+}
+
+generate_signed() {
+  #$OSSL x509 -req -in ${filename%.*}.csr -CA ${filename%.*}-ca.pem -CAkey ${filename%.*}-ca.key -CAcreateserial -out $filename -days $days
+  $OSSL ca -infiles ${filename%.*}.csr -out $filename -days $days $CONFIG
 }
 
 read_csr() {
-  [ -z "$filename" ] && echo "Option --filename is mandatory" && exho 1
+  [ -z "$filename" ] && echo "Option --filename is mandatory" && exit 1
   [ -e "$filename" ] && echo "File $filename not found" && exit 1
   [ -n "$url" ] && echo "Option --url is ignored"
   $OSSL req -in $filename -noout -text
@@ -112,20 +121,10 @@ if [ -n "$generate" ]; then
       [ -z "$length" ] && length=2048
       expr $days : "^[0-9]*$" 2>/dev/null || exit 1
       expr $length : "^[0-9]*$" 2>/dev/null || exit 1
-      if [ -n "$filename" ]; then
-        filename1=$filename
-        filename=${filename%.*}CA.pem
-      else
-        filename=serverCA.pem
-      fi
-      generate_selfsigned
-      if [ -n "$filename1" ]; then
-        filename=$filename1
-      else
-        filename=server.pem
-      fi
+      [ -z "$filename" ] && filename="server.pem"
+      generate_ca
       generate_csr
-      $OSSL x509 -req -in ${filename%.*}.csr -CA ${filename%.*}CA.pem -CAkey ${filename%.*}CA.key -CAcreateserial -out $filename -days $days
+      generate_signed
       ;;
     htpasswd)
       [ -z "$filename" ] && filename="htpasswd"
