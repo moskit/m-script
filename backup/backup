@@ -42,13 +42,9 @@ if [ -n "$conf" ]; then
   source "$conf"
 fi
 
+[ -z "$targetpath" ] && errorexit "Target path not specified"
 [ -z "$id" ] && id="$(hostname -f)$(date +".%Y.%m.%d_%H.%M")"
 
-if [ -n "$targetpath" ]; then
-  [ -d "$targetpath" ] || install -d "$targetpath"
-elif [ "_$command1" == "_run" ]; then
-  errorexit "Target path not specified"
-fi
 
 [ -z "$LOG" ] && LOG="$M_ROOT/logs/backup.log"
 
@@ -65,13 +61,14 @@ run)
         [ "_$numericids" == "_yes" ] && OPTIONS="$OPTIONS --numeric-owner"
         [ "_$preserveperm" == "_yes" ] && OPTIONS="$OPTIONS -p"
         [ "_$samefs" == "_yes" ] && OPTIONS="$OPTIONS --one-file-system"
+        [ -d "$targetpath" ] || install -d "$targetpath"
         if [ -f "${conf}.exclude" ]; then
           OPTIONS="$OPTIONS --totals -X ${conf}.exclude"
         else
           OPTIONS="$OPTIONS --totals"
         fi
         if [ -e "${conf}.list" ]; then
-          tar_backup "${conf}.list" | grep -vE 'Removing leading|as we read' >>"$LOG" 2>&1
+          tar_files "${conf}.list" | grep -vE 'Removing leading|as we read' >>"$LOG" 2>&1
           res=$?
         fi
         finishtime=`date +"%s"`
@@ -81,6 +78,8 @@ run)
         fi
         ;;
       scp)
+        [ -z "$targetuser" ] && targetuser=$USER
+        [ -z "$targethost" ] && errorexit "Target host is not specified"
         SCP=`which scp 2>/dev/null`
         [ -z "$SCP" ] && errorexit "scp not found!"
         [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -p"
@@ -100,6 +99,8 @@ run)
         log "scp backup: operation finished in $timetotal"
         ;;
       rsync)
+        [ -z "$targetuser" ] && targetuser=$USER
+        [ -z "$targethost" ] && errorexit "Target host is not specified"
         RSYNC=`which scp 2>/dev/null`
         [ -z "$RSYNC" ] && errorexit "rsync not found!"
         [ "_$followlinks" == "_yes" ] || OPTIONS="$OPTIONS -l"
@@ -110,7 +111,12 @@ run)
         [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -z"
         OPTIONS="$OPTIONS -rt"
         starttime=`date +"%s"`
-        $RSYNC $OPTIONS "$sourcepath"/* -e "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
+        # if either remote host or remote user is not specified, it's a local transfer
+        if [ -z "$targetuser" ] || [ -z "$targethost" ]; then
+          $RSYNC $OPTIONS "$sourcepath"/ "$targetpath" >>"$LOG" 2>&1
+        else
+          $RSYNC $OPTIONS "$sourcepath"/ "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
+        fi
         res=$?
         totalsize=`du -k -s "$sourcepath" | cut -f1`
         finishtime=`date +"%s"`
@@ -122,7 +128,8 @@ run)
         fi
         log "rsync backup: operation finished in $timetotal"
         ;;
-      s3)
+      s3cmd)
+        [ -z "$targethost" ] && errorexit "Please specify bucket name as targethost"
         S3=`which s3cmd 2>/dev/null`
         [ -z "$S3" ] && errorexit "s3cmd not found!"
         [ "_$preserveperm" != "_yes" ] && OPTIONS="$OPTIONS --no-preserve"
