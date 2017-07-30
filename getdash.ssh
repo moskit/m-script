@@ -164,7 +164,7 @@ if [ -n "$DASHBOARD_UPLOAD" ]; then
   destcluster=`cat "$rpath/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,4,5 | grep -E "^$DASHBOARD_UPLOAD|\|$DASHBOARD_UPLOAD\|" | cut -sd'|' -f3`
   mpath=`grep ^$destcluster\| "$rpath/conf/clusters.conf" | cut -d'|' -f8`
   [ -z "$mpath" ] && mpath=$M_ROOT
-  $RSYNC -u -l --delete --exclude '/bin/*' --exclude '/css/*' --exclude '/dashboard/*' --exclude '/graphs/*' --exclude '/images/*' --exclude '/javascripts/*' --exclude '/preloaders/*' "$M_ROOT/www/*" "${DASHBOARD_UPLOAD}:$mpath/" >> "$LOG"
+  $RSYNC -u -l --delete --exclude '/bin/*' --exclude '/css/*' --exclude '/dashboard/*' --exclude '/graphs/*' --exclude '/images/*' --exclude '/javascripts/*' --exclude '/preloaders/*' --exclude '/nodes/localhost/*' "$M_ROOT"/www/* "${DASHBOARD_UPLOAD}:$mpath/" >> "$LOG" 2>&1
 fi
 
 exit 0

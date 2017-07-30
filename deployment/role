@@ -270,7 +270,7 @@ case $command1 in
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
-        [ -n "$COL" ] && col=$((COL/3)) || col=26
+        [ -n "$COL" ] && col=$((COL/2)) || col=36
         printcol "File"
         echo "Script"
         printf "%${COL}s\n" | tr ' ' '-'
@@ -321,7 +321,7 @@ case $command1 in
             echo "$im"
             unset r
           done
-          [ -n "$r" ] && echo "$r"
+          [ -n "$r" ] && [ -n "$all" ] && echo "$r"
         done
       ;;
       *)
@@ -409,6 +409,7 @@ case $command1 in
         install -d "$ROLES_ROOT/roles/$param1/common/files"
       done
     fi
+    [ -d "$ROLES_ROOT/conf" ] || mkdir "$ROLES_ROOT/conf"
     echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.conf"
     ;;
   edit)
@@ -585,6 +586,9 @@ case $command1 in
         ;;
     esac
     ;;
+  select)
+    
+    ;;
   help)
     cat <<"EOF"
 
@@ -609,7 +613,7 @@ Syntax: role command <sub-command> <args> <--option=value>
 EOF
     ;;
   *)
-  
+    echo "Command $command1 is not implemented yet ;)"
     ;;
 esac
 
