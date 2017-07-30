@@ -16,7 +16,7 @@ trap 'errorexit "Backup process interrupted"' QUIT INT TERM ABRT
 possible_commands="run show list"
 # variable command2
 possible_subcommands=""
-possible_options="id operation o t s c u h targetpath sourcepath targetuser targethost conf"
+possible_options="id operation o t s c u h k key targetpath sourcepath targetuser targethost conf"
 
 get_opts "$@"
 
@@ -25,6 +25,7 @@ get_opts "$@"
 [ -z "$sourcepath" ] && sourcepath=$s
 [ -z "$targetuser" ] && targetuser=$u
 [ -z "$targethost" ] && targethost=$h
+[ -z "$key" ] && key=$k
 [ -z "$conf" ] && conf=$c
 
 if [ -n "$conf" ]; then
