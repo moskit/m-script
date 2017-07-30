@@ -35,6 +35,20 @@ timespent() {
   fi
 }
 
+sizeof() {
+  spath=$1
+  totalsize=`du -k -s "$spath" | cut -f1`
+  if [ $totalsize -lt 100000 ]; then
+    totalsize="$totalsize kB"
+  elif [ $totalsize -lt 100000000 ]; then
+    totalsize="`expr $totalsize / 1000` MB"
+  elif [ $totalsize -lt 100000000000 ]; then
+    totalsize="`expr $totalsize / 1000000` GB"
+  else
+    totalsize="`expr $totalsize / 1000000000` TB"
+  fi
+}
+
 splitfile() {
   if [ -n "$split_size" ]; then
     split -b $split_size -d $1 $1

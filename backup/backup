@@ -75,8 +75,11 @@ run)
         finishtime=`date +"%s"`
         timespent `expr $finishtime - $starttime`
         if [ $res -eq 0 ]; then
-          log "$operation : operation finished in $timetotal"
+          log "tar backup: success, files size $totalsize"
+        else
+          log "tar backup: failure"
         fi
+        log "tar backup: operation finished in $timetotal"
         ;;
       scp)
         [ -z "$targetuser" ] && targetuser=$USER
@@ -89,7 +92,7 @@ run)
         starttime=`date +"%s"`
         $SCP $OPTIONS "$sourcepath"/* "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
         res=$?
-        totalsize=`du -k -s "$sourcepath" | cut -f1`
+        sizeof "$sourcepath"
         finishtime=`date +"%s"`
         timespent `expr $finishtime - $starttime`
         if [ $res -eq 0 ]; then
@@ -102,13 +105,13 @@ run)
       rsync)
         [ -z "$targetuser" ] && targetuser=$USER
         [ -z "$targethost" ] && errorexit "Target host is not specified"
-        RSYNC=`which scp 2>/dev/null`
+        RSYNC=`which rsync 2>/dev/null`
         [ -z "$RSYNC" ] && errorexit "rsync not found!"
         [ "_$followlinks" == "_yes" ] || OPTIONS="$OPTIONS -l"
         [ "_$numericids" != "_yes" ] || OPTIONS="$OPTIONS --numeric-owner"
         [ "_$preserveperm" != "_yes" ] || OPTIONS="$OPTIONS -Ago"
         [ "_$samefs" != "_yes" ] || OPTIONS="$OPTIONS --safe-links"
-        [ -n "_$bwlimit" ] && OPTIONS="$OPTIONS --bwlimit=`expr $bwlimit / 8`"
+        [ -n "_$bwlimit" ] && OPTIONS="$OPTIONS --bwlimit=`expr $bwlimit / 8 2>/dev/null || echo 0`"
         [ "_$xfercompression" != "_yes" ] || OPTIONS="$OPTIONS -z"
         OPTIONS="$OPTIONS -rt"
         starttime=`date +"%s"`
@@ -119,7 +122,7 @@ run)
           $RSYNC $OPTIONS "$sourcepath"/ "$targetuser"@"${targethost}:${targetpath}" >>"$LOG" 2>&1
         fi
         res=$?
-        totalsize=`du -k -s "$sourcepath" | cut -f1`
+        sizeof "$sourcepath"
         finishtime=`date +"%s"`
         timespent `expr $finishtime - $starttime`
         if [ $res -eq 0 ]; then
@@ -139,7 +142,7 @@ run)
         starttime=`date +"%s"`
         $S3 $OPTIONS sync $sourcepath/ "$s3target" >>"$LOG" 2>&1
         res=$?
-        totalsize=`du -k -s "$sourcepath" | cut -f1`
+        sizeof "$sourcepath"
         finishtime=`date +"%s"`
         timespent `expr $finishtime - $starttime`
         if [ $res -eq 0 ]; then
