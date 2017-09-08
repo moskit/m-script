@@ -31,14 +31,12 @@ if [ -z "$CURL" ]; then
   WGET=`which wget 2>/dev/null`
 fi
 
-# TODO find a place for this
-TIMEOUT=300
-
 getwarn() {
+  t=`expr t2 - t1`
   [ -z "$probetime3" ] && return
-  [ `echo "scale=2; $t >= $probetime3" | bc` -eq 1 ] && warn='<***>'
-  [ -z "$warn" ] && [ `echo "scale=2; $t >= $probetime2" | bc` -eq 1 ] && warn='<**>'
-  [ -z "$warn" ] && [ `echo "scale=2; $t >= $probetime1" | bc` -eq 1 ] && warn='<*>'  
+  [ `echo "scale=2; $t >= $probetime3" | bc` -eq 1 ] && warn='<***>' && return
+  [ `echo "scale=2; $t >= $probetime2" | bc` -eq 1 ] && warn='<**>' && return
+  [ `echo "scale=2; $t >= $probetime1" | bc` -eq 1 ] && warn='<*>' && return
 }
 
 for mserver in `cat "$rpath/../conf/servers.conf" | grep -vE "^$|^#|^[[:space:]]*#"`
@@ -57,8 +55,10 @@ do
   [ -z "$servername" ] && servername=$serverip
   if [ -z "$serverport" ] ; then
     for ((i=0; i<3; i++)) ; do
-      t=`(time -p $PING -c1 $serverip >/dev/null) 2>&1 | grep real | cut -d' ' -f2`
+      t1=`date +"%s"`
+      $PING -c1 $serverip >/dev/null 2>&1
       [ $? -ne 0 ] && testres=false
+      t2=`date +"%s"`
       getwarn
     done
     [ -z "$warn" ] && warn='<OK>'
@@ -69,8 +69,10 @@ do
     fi
     unset testres
   elif [ "_$serverport" == "_22" ] ; then
-    t=`(time -p mssh $serverip echo -n >/dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+    t1=`date +"%s"`
+    mssh $serverip echo -n >/dev/null 2>&1
     [ $? -ne 0 ] && testres=false
+    t2=`date +"%s"`
     getwarn
     [ -z "$warn" ] && warn='<OK>'
     if $testres ; then
@@ -81,8 +83,10 @@ do
     unset testres
   else
     if [ -n "$CURL" ]; then
-      t=`(time -p $CURL -m $TIMEOUT -s "${serverip}:$serverport" > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      t1=`date +"%s"`
+      $CURL -m $TIMEOUT -s "${serverip}:$serverport" > /dev/null 2>&1
       testres=$?
+      t2=`date +"%s"`
       getwarn
       [ -z "$warn" ] && warn='<OK>'
       case $testres in
@@ -111,8 +115,10 @@ do
       continue
     fi
     if [ -n "$LYNX" ]; then
-      t=`(time -p $LYNX -dump http://${serverip}:$serverport > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      t1=`date +"%s"`
+      $LYNX -dump http://${serverip}:$serverport > /dev/null 2>&1
       [ $? -ne 0 ] && testres=false
+      t2=`date +"%s"`
       getwarn
       [ -z "$warn" ] && warn='<OK>'
       if $testres ; then
@@ -123,8 +129,10 @@ do
       continue
     fi
     if [ -n "$LINKS" ]; then
-      t=`(time -p $LINKS -dump http://${serverip}:$serverport > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      t1=`date +"%s"`
+      $LINKS -dump http://${serverip}:$serverport > /dev/null 2>&1
       [ $? -ne 0 ] && testres=false
+      t2=`date +"%s"`
       getwarn
       [ -z "$warn" ] && warn='<OK>'
       if $testres ; then
@@ -135,8 +143,10 @@ do
       continue
     fi
     if [ -n "$WGET" ]; then
-      t=`(time -p $WGET -O - http://${serverip}:$serverport > /dev/null 2>&1) 2>&1 | grep real | cut -d' ' -f2`
+      t1=`date +"%s"`
+      $WGET -O - http://${serverip}:$serverport > /dev/null 2>&1
       [ $? -ne 0 ] && testres=false
+      t2=`date +"%s"`
       getwarn
       [ -z "$warn" ] && warn='<OK>'
       if $testres ; then
