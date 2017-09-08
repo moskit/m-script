@@ -32,7 +32,7 @@ if [ -z "$CURL" ]; then
 fi
 
 getwarn() {
-  t=`expr t2 - t1`
+  t=`expr $t2 - $t1`
   [ -z "$probetime3" ] && return
   [ `echo "scale=2; $t >= $probetime3" | bc` -eq 1 ] && warn='<***>' && return
   [ `echo "scale=2; $t >= $probetime2" | bc` -eq 1 ] && warn='<**>' && return
@@ -48,6 +48,7 @@ do
   probetime1=`echo $mserver|cut -sd'|' -f4`
   probetime2=`echo $mserver|cut -sd'|' -f5`
   probetime3=`echo $mserver|cut -sd'|' -f6`
+  timeout=`echo $mserver|cut -sd'|' -f7`
   if [ -z "$TIMEOUT" ]; then
     [ -n "$probetime3" ] && TIMEOUT=`expr $probetime3 + 1 2>/dev/null || echo 5` || TIMEOUT=5
   fi
@@ -109,7 +110,7 @@ do
         echo "$warn $servername is online (Curl test, port $serverport, connect time $t sec)"
         ;;
         *)
-        echo "<OK> Curl test returned code $res for $servername port $serverport, connect time was $t sec"
+        echo "<OK> Curl test returned code $testres for $servername port $serverport, connect time was $t sec"
         ;;
       esac
       continue
