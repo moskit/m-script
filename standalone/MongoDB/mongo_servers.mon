@@ -267,7 +267,7 @@ if [ -n "$MONGO_CONFIG_SERVERS" ] ; then
   if [ "_$cluster" == "_1" ] ; then
     for name in $MONGO_CONFIG_SERVERS ; do
       port=${name#*:}
-      clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+      clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|:$port|g"`"
     done
     collect_hosts $clusterips
   else
@@ -300,7 +300,7 @@ else
     for name in $MONGO_SERVERS ; do
       port=`echo "$name" | cut -sd':' -f2`
       [ -z "$port" ] && port=$defaultport
-      clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|$port|g"`"
+      clusterips="$clusterips `"$M_ROOT/cloud/common/get_ips" --cluster="${name%:*}"|sed "s|$|:$port|g"`"
     done
     collect_hosts $clusterips
   else

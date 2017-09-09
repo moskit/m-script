@@ -1,0 +1,54 @@
+#!/bin/bash
+# Copyright (C) 2012-2017 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+##### This script converts oplog.bson to javascript that can be then fed
+##### to MongoDB via MongoDB shell
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+JQ=`which jq 2>/dev/null`
+BD=`which bsondump 2>/dev/null`
+
+[ -z "$JQ" ] && echo "jq not found, cannot read JSON" && exit 1
+[ -z "$BD" ] && echo "bsondump not found, cannot read oplog.bson" && exit 1
+[ -z "$1" ] && echo -e "\nUsage: ${0##*/} {path/to/oplog.bson}\n" && exit 1
+[ "${1##*/}" != "oplog.bson" ] && echo "The name of the oplog bson dump must be oplog.bson" && exit 1
+[ -e "$1" ] && echo -e "\nFile $1 not found\n\nUsage: ${0##*/} {path/to/oplog.bson}\n" && exit 1
+
+JQ="$JQ -r -M"
+
+$BD $1 | while read record ; do
+  ns=`echo "$record" | $JQ '.ns'`
+  op=`echo "$record" | $JQ '.op'`
+  object=`echo "$record" | $JQ -c '.o' | sed 's/"/\\"/g;s/\$/\\$/g'`
+  id=`echo "$record" | $JQ '.o2._id."$binary"'`
+  case $op in
+    i)
+      echo "${ns}.insert($object)"
+    ;;
+    u)
+      echo "${ns}.update({\"_id\": \"$id\"}, {$object})"
+    ;;
+    d)
+      echo "${ns}.remove({\"_id\": \"$id\"}"
+    ;;
+  esac
+done
+
