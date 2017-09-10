@@ -7,7 +7,7 @@ echo ""
 
 echo "<ul id=\"tabnav\">"
 echo "<li class=\"tab active\" id=\"dash\" onClick=\"setUpdater('dash')\">Servers Health</li>"
-for standalone in Graphs `find ${PWD}/../../standalone/rc -type l` ; do
+for standalone in `find ${PWD}/../../standalone/rc -type l` ; do
   standalone=`readlink $standalone | tr ' ' '_'`
   standalone=${standalone%/}
   standalone=${standalone##*/}
