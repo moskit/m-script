@@ -1,5 +1,6 @@
 window.onload = function() {
   el = document.body;
+  docroot = document.URL.match(/.*\/\/[^\/]*(\/.*)\/dashboard\//)[1];
   el.observe('click', hideAll);
   fillTabs();
   initMonitors(updater);
@@ -29,7 +30,6 @@ initMonitors = function(updater) {
       setTimeout(waitforTab, 100);
     }
   }, 100);
-
   if (updview) {
     setTimeout(function waitforView() {
       if (document.body.contains($(updater))) {
@@ -51,15 +51,15 @@ setUpdater = function(updater) {
 startUpdater = function(updater,preloader) {
   if (updaterstopped == 1) {
     if (preloader == 1) {
-      new Ajax.Updater('content', '/bin/preloader.cgi?updater=' + updater, {
+      new Ajax.Updater('content', docroot + '/bin/preloader.cgi?updater=' + updater, {
         method: 'get', onFailure: function() {
-          new Ajax.Updater('content', '/preloaders/default.html', {
+          new Ajax.Updater('content', docroot + '/preloaders/default.html', {
             method: 'get'
           });
         }
       });
     }
-    pu = new Ajax.PeriodicalUpdater('content', '/bin/' + updater + '.cgi', {
+    pu = new Ajax.PeriodicalUpdater('content', docroot + '/bin/' + updater + '.cgi', {
       method: 'get', frequency: 100, decay: 1.5
     });
     updaterstopped = 0;
@@ -77,22 +77,19 @@ showVars = function(result_div,newvar) {
   if (!newvar == '') {
 //    result_div.appendChild(document.createTextNode(newvar));  
 //    result_div.appendChild(document.createElement('br'));  
-
     var result_wrap, line_index, line;
-
     result_wrap = document.createElement('div');
     line = document.createTextNode(newvar);
     result_wrap.appendChild(line);
     result_div.appendChild(result_wrap);
     result_div.appendChild(line);
     result_div.appendChild(document.createElement('br'));
-
     //result_div.scrollTop = result_div.scrollHeight;
   }
 }
 
 fillTabs = function() {
-  var the_url = '/bin/filltabs.cgi';
+  var the_url = docroot + '/bin/filltabs.cgi';
   new Ajax.Request(the_url, {
     onSuccess: function(response) {
       $('tabs').update(response.responseText);
@@ -103,7 +100,7 @@ fillTabs = function() {
 showURL = function(theid,url,scriptname) {
   if ($('data_' + theid).style.display == "none") {
     hideblocked = 1;
-    var the_url = '/bin/fetchurl.cgi?url=' + escape(url) + '&to=/' + scriptname + '/' + escape(theid) + '.html';
+    var the_url = docroot + '/bin/fetchurl.cgi?url=' + escape(url) + '&to=/' + scriptname + '/' + escape(theid) + '.html';
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
         $('data_' + theid).update(response.responseText);
@@ -142,9 +139,9 @@ showData = function(theid,base) {
     hideblocked = 1;
     stopUpdater(updater);
     if (server == 'localhost') {
-      var the_url = '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(report) + '.html';
+      var the_url = docroot + '/bin/getdata.cgi?path=' + base + '/localhost/' + escape(report) + '.html';
     } else {
-      var the_url = '/bin/getdata.cgi?path=' + base + '/' + path + '/' + escape(report) + '.html';
+      var the_url = docroot + '/bin/getdata.cgi?path=' + base + '/' + path + '/' + escape(report) + '.html';
     }
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
@@ -182,7 +179,7 @@ showDetails = function(theid,script) {
     cursor_saved = $(theid).style.cursor
     cursor_style($(theid),'wait');
     waitingEffect($(theid),'start');
-    var the_url = '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
+    var the_url = docroot + '/bin/showdetails.cgi?script=' + script + '&cluster=' + cluster + '&server=' + server;
     new Ajax.Request(the_url, {
       onSuccess: function(response) {
      // new Effect.SlideDown(server + '|' + cluster + '_details', {duration: 0.3});
@@ -204,7 +201,6 @@ waitingEffect = function(theid,action) {
     reverser   = function(pos){
       return 1 - transition((-Math.cos((pos*50*2)*Math.PI)/2) + .5);
     };
-
     waitingE = new Effect.Opacity(element,
       Object.extend(Object.extend({  duration: 20, from: 0,
         afterFinishInternal: function(effect) { effect.element.setStyle({opacity: oldOpacity}); }
@@ -230,11 +226,11 @@ showMenu = function(theid,thetext,action) {
         e.stop();
       }
     });
-	  
-	  if (action == 'gettags') {
-	    var the_path = $('path_' + theid).value;
+          
+          if (action == 'gettags') {
+            var the_path = $('path_' + theid).value;
       if (the_path) {
-        var the_url = '/bin/gettags?path=' + escape(the_path);
+        var the_url = docroot + '/bin/gettags?path=' + escape(the_path);
         new Ajax.Request(the_url, {
           onComplete: function(response) {
 //            var result_array = response.responseText.split('\n');  
@@ -243,9 +239,9 @@ showMenu = function(theid,thetext,action) {
           }
         });
       }
-	  }
-	}
-//	if (!e) var e = window.event;
+          }
+        }
+//      if (!e) var e = window.event;
 //  e.cancelBubble = true;
 //  if (e.stopPropagation) e.stopPropagation();
 }
