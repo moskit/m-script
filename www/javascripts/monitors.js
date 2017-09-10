@@ -1,6 +1,6 @@
 window.onload = function() {
   el = document.body;
-  docroot = document.URL.match(/.*\/\/[^\/]*(\/.*)\/dashboard\//)[1];
+  docroot = document.URL.match(/.*\/\/[^\/]*(\/.*)\/dashboard\//);
   if (docroot) {
     docroot = docroot[1];
   } else {
