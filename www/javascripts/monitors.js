@@ -1,6 +1,11 @@
 window.onload = function() {
   el = document.body;
   docroot = document.URL.match(/.*\/\/[^\/]*(\/.*)\/dashboard\//)[1];
+  if (docroot) {
+    docroot = docroot[1];
+  } else {
+    docroot = '';
+  }
   el.observe('click', hideAll);
   fillTabs();
   initMonitors(updater);
