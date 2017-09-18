@@ -2,7 +2,7 @@
 
 M_ROOT="$PWD/../.."
 parent="$1"
-node="$2"
+node="${2#*/}"
 IFS='
 '
 chunksmax=0
