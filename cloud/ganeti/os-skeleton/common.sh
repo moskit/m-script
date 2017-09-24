@@ -45,6 +45,7 @@ M_TEMP="$M_TEMP/cloud/ganeti"
 
 source "$M_TEMP/vars"
 [ -z "$VARIANTS_DIR" ] && echo "VARIANTS_DIR not defined" && exit 1
+source "$M_ROOT/cloud/ganeti/functions.sh"
 
 CLEANUP=( )
 
@@ -100,38 +101,6 @@ mkfs_disk0() {
   # and also run a sync to be sure.
   sync
   sleep 2
-}
-
-mount_disk0() {
-  local target=$1
-  mount $root_dev $target
-  CLEANUP+=("umount $target")
-  # sync the file systems before unmounting to ensure everything is flushed
-  # out
-  CLEANUP+=("sync")
-}
-
-map_disk0() {
-  blockdev="$1"
-  filesystem_dev_base=`$KPARTX -l -p- $blockdev | grep -m 1 -- "-1.*$blockdev" | $AWK '{print $1}'`
-  if [ -z "$filesystem_dev_base" ]; then
-    log_error "Cannot interpret kpartx output and get partition mapping"
-    exit 1
-  fi
-  $KPARTX -a -p- $blockdev > /dev/null
-  filesystem_dev="/dev/mapper/$filesystem_dev_base"
-  if [ ! -b "$filesystem_dev" ]; then
-    `which dmsetup` mknodes
-  fi
-  if [ ! -b "$filesystem_dev" ]; then
-    log_error "Can't find kpartx mapped partition: $filesystem_dev"
-    exit 1
-  fi
-  echo "$filesystem_dev"
-}
-
-unmap_disk0() {
-  $KPARTX -d -p- $1
 }
 
 setup_console() {
