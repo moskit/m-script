@@ -48,6 +48,17 @@ fi
 $QEMU_IMG convert "$IMAGE_FILE" -O host_device "$blockdev" > /dev/null
 
 filesystem_dev=$(map_disk0 $blockdev)
+mapres=$?
+if [ $mapres -ne 0 ]; then
+  log_error "map_disk0 exit status: $mapres"
+  $LOSETUP -d $blockdev
+  blockdev=$ORIGINAL_BLOCKDEV
+  blockdev=$($LOSETUP -f --show $blockdev)
+  CLEANUP+=("$LOSETUP -d $blockdev")
+  format_disk0 $blockdev
+  filesystem_dev=$(map_disk0 $blockdev)
+  $QEMU_IMG convert "$IMAGE_FILE" -O host_device "$filesystem_dev" > /dev/null
+fi
 CLEANUP+=("unmap_disk0 $blockdev")
 
 #mke2fs -Fjq $filesystem_dev

@@ -34,8 +34,8 @@ map_disk0() {
   filesystem_dev_base=`kpartx -l -p- $blockdev | grep -m 1 -- "-1.*$blockdev" | awk '{print $1}'`
   if [ -z "$filesystem_dev_base" ]; then
     log_error "Cannot interpret kpartx output and get partition mapping using command:"
-    log_error "kpartx -l -p- $blockdev | grep -m 1 -- \"-1.*$blockdev\" | awk '{print $1}'"
-    exit 1
+    log_error "kpartx -l -p- $blockdev | grep -m 1 -- \"-1.*$blockdev\" | awk '{print \$1}'"
+    return 10
   fi
   kpartx -a -p- $blockdev > /dev/null
   filesystem_dev="/dev/mapper/$filesystem_dev_base"
