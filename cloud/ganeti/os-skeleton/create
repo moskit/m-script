@@ -32,8 +32,8 @@ fi
 # This is needed for file disks.
 if [ ! -b $blockdev ]; then
   ORIGINAL_BLOCKDEV=$blockdev
-  blockdev=$($LOSETUP -f --show $blockdev)
   log_error "$LOSETUP -f --show $blockdev"
+  blockdev=$($LOSETUP -f --show $blockdev)
   CLEANUP+=("$LOSETUP -d $blockdev")
 fi
 
