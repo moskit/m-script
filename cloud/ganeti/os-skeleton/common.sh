@@ -81,6 +81,7 @@ get_api10_arguments() {
   else
     blockdev=$DISK_0_PATH
   fi
+  log_error "blockdev: $blockdev"
   if [ "$SCRIPT_NAME" = "rename" -a -z "$OLD_INSTANCE_NAME" ]; then
     log_error "Missing OS API Variable OLD_INSTANCE_NAME"
   fi
