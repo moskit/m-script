@@ -45,13 +45,19 @@ disksize="`echo "$vmini" | cut -d'|' -f3`"
 disk=`"$M_ROOT/cloud/$CLOUD_PROVIDER"/get_node_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
 if [ -z "$disk" ] ; then
   if [ -n "$2" ]; then
-    if [ -e "$2" ]; then
-      disk=$2
+    if [ -e "$GANETI_FOLDERS_ROOT/file-storage/$vm/$2" ]; then
+      disk="$GANETI_FOLDERS_ROOT/file-storage/$vm/$2"
     else
-      echo "Disk $2 not found"
-      exit 1
+      if [ -e "$2" ]; then
+        disk=$2
+      else
+        echo "Disk $2 not found"
+        exit 1
+      fi
+    fi
   else
     echo -e "Disk not found. Provide path to the disk as a second positional parameter to this command. The list of possible disks:\n`ls "$GANETI_FOLDERS_ROOT/file-storage/$vm"`"
+    exit 1
   fi
 fi
 
