@@ -32,7 +32,7 @@ GI=`which gnt-instance 2>/dev/null`
 
 vm="$1"
 vmini=`$GI list --no-header --separator='|' -o oper_state,disk_template,disk.size/0 "$vm"`
-[ "X`echo "$vmini" | cut -d'|' -f1`" != "XN" ] && echo "VM must exist and be stopped" && exit 1
+[ "_`echo "$vmini" | cut -d'|' -f1`" != "_N" ] && echo "VM must exist and be stopped" && exit 1
 
 disktype="`echo "$vmini" | cut -d'|' -f2`"
 disksize="`echo "$vmini" | cut -d'|' -f3`"
@@ -43,8 +43,17 @@ disksize="`echo "$vmini" | cut -d'|' -f3`"
 # file or device
 
 disk=`"$M_ROOT/cloud/$CLOUD_PROVIDER"/get_node_details --name="$vm" | grep '/"Disks"/"disk/0"/"on primary"|' | cut -d'|' -f2 | tail -1 | tr -d '"'`
-[ -z "$disk" ] && echo "unable to get disk details" && exit 1
-disk=`expr "$disk" : "\(.*\) ("`
+if [ -z "$disk" ] ; then
+  if [ -n "$2" ]; then
+    if [ -e "$2" ]; then
+      disk=$2
+    else
+      echo "Disk $2 not found"
+      exit 1
+  else
+    echo -e "Disk not found. Provide path to the disk as a second positional parameter to this command. The list of possible disks:\n`ls "$GANETI_FOLDERS_ROOT/file-storage/$vm"`"
+  fi
+fi
 
 if [ ! -b "$disk" ]; then
   blockdev=$($LOSETUP -f --show "$disk")
