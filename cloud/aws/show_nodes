@@ -67,6 +67,7 @@ fi
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
 LOG="$M_ROOT/logs/cloud.log"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
@@ -82,7 +83,6 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
-CURL="$CURL -s -k"
 declare -i icount
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
@@ -94,21 +94,7 @@ fi
 METHOD=GET
 ACTION=DescribeInstances
 SERVICE=ec2
-
-request() {
-  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15"`
-  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
-  signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature"`
-    log "$reqres"
-    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=${timestamp}&Version=2013-07-15&Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  fi
-}
+ENDPOINT="ec2.${region}.amazonaws.com"
 
 get_iname() {
   for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
@@ -245,7 +231,7 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $METHOD $ENDPOINT $ACTION`
+  reqparsed=`aws_api_request $SERVICE $METHOD $ENDPOINT $ACTION | "$M_ROOT"/lib/xml2txt`
   $keep_response && echo "$reqparsed" > "$M_TEMP/${rcommand}.resp" || echo -n > "$M_TEMP/${rcommand}.resp"
   [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245

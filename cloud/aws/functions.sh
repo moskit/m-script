@@ -24,14 +24,10 @@ callername=${caller##*/}
 
 SSLEX=`which openssl 2>/dev/null`
 CURL=`which curl 2>/dev/null`
-CURL="$CURL -s -k"
+CURL="$CURL -s"
 
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
-
-[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
 SignatureMethod=HmacSHA256
 SignatureVersion=4
@@ -83,7 +79,7 @@ aws_api_request() {
     HEADERS="host:${endpoint%%/*}\nx-amz-date:${timestamp}"
   fi
   CanonicalHeaders="`echo -e "$HEADERS" | LC_COLLATE=C sort | sed "s|^ ||;s| $||;s|  *| |g;s|\(.*\)|\L\1|g;s|$|\n|"`\n"
-  SignedHeaders=`echo -e "$CanonicalHeaders" | tr -d':' -f1`
+  SignedHeaders=`echo -e "$CanonicalHeaders" | cut -d':' -f1`
   SignedHeaders=`echo -e "$SignedHeaders" | tr '\n' ';'`
   SignedHeaders="${SignedHeaders%;}"
   HashedPayload=`echo -e "$PAYLOAD" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
