@@ -160,7 +160,7 @@ list_nodes() {
     fi
   else
     [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/${rcommand}.resp and run without --noupdate if necessary."
-    proper_exit 1 304
+    proper_exit 1 163
   fi
   IFS=$IFS1
 }

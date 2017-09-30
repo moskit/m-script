@@ -72,7 +72,7 @@ LOG="$M_ROOT/logs/cloud.log"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-[ -z "$region" ] && region=$EC2_REGION
+[ -z "$region" ] && region=$DEFAULT_REGION
 [ -z "$status" ] && [ -n "$state" ] && status=$state
 [ -z "$status" ] && status="running"
 [ -n "$name_source" ] && NAME_SOURCE=$name_source
@@ -86,6 +86,14 @@ CURL="$CURL -s -k"
 declare -i icount
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
+
+if [ -z "$region" ]; then
+  region="us-east-1"
+fi
+
+METHOD=GET
+ACTION=DescribeInstances
+SERVICE=ec2
 
 request() {
   timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
@@ -237,9 +245,9 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  request
-  reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-  [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 244
+  reqparsed=`aws_api_request $SERVICE $METHOD $ENDPOINT $ACTION`
+  $keep_response && echo "$reqparsed" > "$M_TEMP/${rcommand}.resp" || echo -n > "$M_TEMP/${rcommand}.resp"
+  [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
 else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER

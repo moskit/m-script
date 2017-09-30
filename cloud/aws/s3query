@@ -74,3 +74,12 @@ canonicalize() {
 hdate=`date -u -R`
 
 signature=`printf "$server_date" | $SSLEX dgst -binary -sha1 -hmac $AWS_SECRET_ACCESS_KEY | base64`
+
+
+
+
+
+
+
+
+

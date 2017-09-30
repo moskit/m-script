@@ -98,26 +98,26 @@ lock_cloudops || exit 10
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
 [ -z "$cluster" ] && echo "Cluster not defined" && exit 1
 clusterObject=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | tail -1`
-if [ -z "$clusterObject" ] ; then echo "Cluster $cluster is not configured"; proper_exit 1 65; fi
+if [ -z "$clusterObject" ] ; then echo "Cluster $cluster is not configured"; proper_exit 1 101; fi
 
 if [ -n "$region" ]; then
   zone="$region"
 else
   zone=`echo "$clusterObject" | cut -sd'|' -f3`
-  [ -z "$zone" ] && echo "ERROR: zone not defined for cluster $cluster!" && proper_exit 1 65
+  [ -z "$zone" ] && echo "ERROR: zone not defined for cluster $cluster!" && proper_exit 1 107
 fi
 if [ -z "$type" ]; then
   type=`echo "$clusterObject" | cut -sd'|' -f5`
-  [ -z "$type" ] && echo "ERROR: type not defined for cluster $cluster!" && proper_exit 1 65
+  [ -z "$type" ] && echo "ERROR: type not defined for cluster $cluster!" && proper_exit 1 111
 fi
 if [ -n "$image" ]; then
   imageObject="$image"
 else
   imageObject=`echo "$clusterObject" | cut -sd'|' -f6`
   imageProject=`echo "$imageObject" | cut -sd':' -f1`
-  [ -z "$imageProject" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 65
+  [ -z "$imageProject" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 118
   image=`echo "$imageObject" | cut -sd':' -f2`
-  [ -z "$image" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 65
+  [ -z "$image" ] && echo "ERROR: image not defined or definition malformed for cluster $cluster!" && proper_exit 1 120
 fi
 keyname=`echo "$clusterObject" | cut -sd'|' -f2`
 key="$M_ROOT/keys/$keyname"
@@ -128,19 +128,19 @@ export key SSH_USER SSHPORT
 [ -n "$dry" ] && dry=true || dry=false
 
 log "Checking cluster $cluster limit..."
-check_cluster_limit "$cluster" || proper_exit 5 194
+check_cluster_limit "$cluster" || proper_exit 5 131
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 94
+[ -z "$name" ] && proper_exit 6 133
 log "Double-checking name"
-IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 96
+IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 135
 
 networkInterfaces="[{ \"accessConfigs\": [{ \"type\": \"ONE_TO_ONE_NAT\", \"name\": \"External NAT\" }], \"network\": \"global/networks/default\" }]"
 disks="[{ \"autoDelete\": \"$diskAutoDelete\", \"boot\": \"true\", \"type\": \"PERSISTENT\", \"initializeParams\": { \"sourceImage\": \"projects/$imageProject/global/images/$image\" } }]"
 
 token=`get_oath2_token`
-request && log "Request sent" || proper_exit 1 205
-[ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 207
-[ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 208
+request && log "Request sent" || proper_exit 1 141
+[ `echo "$resp" | wc -l` -eq 0 ] && log "empty response or response is not JSON" && proper_exit 1 142
+[ `echo "$resp" | grep -c '"error"'` -ne 0 ] && log "request failed with error(s) `echo "$resp" | grep '"message"|' | cut -d'|' -f2`" && proper_exit 1 143
 
 exit_status=0
 

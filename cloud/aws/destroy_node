@@ -108,7 +108,7 @@ if [ -z "$ip" ]; then
   fi
 fi
 
-ec2_api_request TerminateInstances "InstanceId.1=${id}"
+aws_api_request TerminateInstances "InstanceId.1=${id}"
 check_request_result instanceId,previousState,currentState || proper_exit 1 101
 
 if [ -n "$ip" ]; then

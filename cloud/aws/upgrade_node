@@ -1,0 +1,126 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+SSLEX=`which openssl 2>/dev/null`
+[ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
+
+possible_options="name log_request cloud nodeid description noreboot help wait"
+necessary_options="name nodeid"
+IFS1=$IFS
+IFS='-'
+for s_option in "$@"
+do
+  found=false
+  s_option=${s_option/--/}
+  s_optname=${s_option%%=*}
+  s_optarg=${s_option##*=}
+  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
+
+  for option in ${possible_options// /-} ; do
+    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
+  done
+  
+  if ! $found ; then 
+    echo "Unknown option: $s_optname"
+    exit 1
+  fi
+done
+IFS=$IFS1
+
+[ -z "$*" ] && help=yes
+
+if [ -z "$help" ]; then
+  found=0
+  for option in `echo $necessary_options | sed 's/,//g'`; do
+    [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
+  done
+  if [[ found -eq 1 ]]; then
+    missing_options=${missing_options#*,}
+    echo "Necessary options: $missing_options not found"
+    exit 1
+  fi
+else
+  cat << "EOF"
+Usage: node save {options}
+
+Options:
+
+name={name}            - name of the image (mandatory)
+nodeid={instance id}   - EC2 instance ID
+nodename={node name)   - M-Script node name
+nodeip={ip}            - node IP address (the one from nodes.list)
+
+  One of nodeid, nodename, nodeip is mandatory
+  
+noreboot<=yes>       - to save a running node (may lead to image inconsistency)
+description={descr}  - description of the image, visible when 'describe images'
+                       is called
+cloud={cloud}        - narrows the search for the node to be saved; useful
+                       when there is a possibility that nodes from different
+                       clouds may have same IP or name
+wait<=minutes>       - do not exit until image is ready; if value is omitted,
+                       it's the default wait time 1 hour
+
+EOF
+
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+LOG="$M_ROOT/logs/cloud.log"
+
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+
+### There is no API call for node upgrade, so this script is a combination of
+### API calls combined to achieve the goal. The sequence is:
+###
+### 1. create an image of the node
+### 2. wait till it's ready
+### 3. create a new node based on this image
+### 4. find EBS volumes attached to the old node
+### 5. detach them
+### 6. attach them to the new node
+### 7. find out if there was Elastic IP attached to the old node
+### 8. if found, attach it to the new node
+### 9. destroy the old node
+
+imagename="`date +"%Y%m%d_%H%M%S"`_`echo "${nodeid}${nodename}${nodeip}"`_upgrade"
+$rpath/save_node --nodeid=$nodeid --nodename=$nodename --nodeip=$nodeip --name=$imagename --noreboot=yes --wait=$wait --cloud=$CLOUD
+res=$?
+
+if [ $res -eq 33 ]; then
+  echo "Timeout reached while waiting for image ready. Timeout was set to $wait minutes."
+  exit 1
+fi
+
+imageid=`$rpath/find_images --filter="name:$imagename"`
+
+
+
+
+
