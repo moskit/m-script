@@ -80,27 +80,34 @@ aws_api_request() {
     qpar="`echo "$qpar" | cut -d'=' -f1 | "$fpath"/urlencode`=`echo "$qpar" | cut -sd'=' -f2 | "$fpath"/urlencode`"
     qparams1="${qparams1}\n${qpar}"
   done
-  CanonicalQueryString=`echo -n -e "$qparams1" | grep -v ^$ | tr '\n' '&'`
+  CanonicalQueryString=`echo -e "$qparams1" | grep -v ^$ | tr '\n' '&'`
+  # grep adds newline at the end anyway
+  CanonicalQueryString=${CanonicalQueryString%&}
   
   if [ -z "$HEADERS" ]; then
     HEADERS="host:${endpoint%%/*}\nx-amz-date:${timestamp}"
   fi
   SortedHeaders=`echo -e "$HEADERS" | LC_COLLATE=C sort`
   for header in $SortedHeaders ; do
-    headername=`echo "$header" | cut -sd':' -f1 | sed "s|^ ||;s| $||;s|  *| |g;s|\(.*\)|\L\1|g`
-    headervalue=`echo "$header" | cut -sd':' -f2 | sed "s|^ ||;s| $||;s|  *| |g`
-    CanonicalHeaders="${CanonicalHeaders}\n${headername}:${headervalue}"
+    headername=`echo "$header" | cut -sd':' -f1 | sed "s|^ ||;s| $||;s|  *| |g;s|\(.*\)|\L\1|g"`
+    headervalue=`echo "$header" | cut -sd':' -f2 | sed "s|^ ||;s| $||;s|  *| |g"`
+    if [ -z "$CanonicalHeaders" ]; then
+      CanonicalHeaders="${headername}:${headervalue}"
+    else
+      CanonicalHeaders="${CanonicalHeaders}\n${headername}:${headervalue}"
+    fi
   done
   IFS=$IFSORIG
   SignedHeaders=`echo -e "$CanonicalHeaders" | cut -d':' -f1`
   SignedHeaders=`echo -e "$SignedHeaders" | tr '\n' ';'`
-  SignedHeaders="${SignedHeaders%;}\n"
-  HashedPayload=`echo -e "$PAYLOAD" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
-  CanonicalRequest="$method\n$CanonicalURI\n$CanonicalQueryString\n$CanonicalHeaders\n$SignedHeaders\n$HashedPayload"
-  SignedRequest=`echo -e "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
+  SignedHeaders="${SignedHeaders%;}"
+  
+  HashedPayload=`echo -n "$PAYLOAD" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
+  CanonicalRequest=`echo -e "$method\n$CanonicalURI\n$CanonicalQueryString\n$CanonicalHeaders\n\n$SignedHeaders\n$HashedPayload"`
+  SignedRequest=`echo -n "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
 
   thedate=`date -u +"%Y%m%d"`
-  StringToSign="AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest"
+  StringToSign=`echo -e "AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest"`
   
   # kSecret = your secret access key
   # kDate = HMAC("AWS4" + kSecret, Date)
@@ -112,8 +119,7 @@ aws_api_request() {
   kRegion=`echo -n "$region" | $SSLEX dgst -binary -sha256 -hmac "$kDate"`
   kService=`echo -n "$service" | $SSLEX dgst -binary -sha256 -hmac "$kRegion"`
   kSigning=`echo -n "aws4_request" | $SSLEX dgst -binary -sha256 -hmac "$kService"`
-  signature=`echo -n "$StringToSign" | $SSLEX dgst -binary -sha256 -hmac "$kSigning"`
-  signature=`echo -n "$signature" | base64`
+  signature=`echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2`
 
   # querystring = Action=action
   # querystring += &X-Amz-Algorithm=algorithm
@@ -121,7 +127,8 @@ aws_api_request() {
   # querystring += &X-Amz-Date=date
   # querystring += &X-Amz-Expires=timeout interval
   # querystring += &X-Amz-SignedHeaders=signed_headers
-
+  
+  SignedHeaders=`echo -e "$SignedHeaders" | tr -d '\n' | "$rpath"/urlencode`
   Query="${CanonicalQueryString}&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=`echo -n "${AWS_ACCESS_KEY_ID}/$thedate/$region/$service/aws4_request" | "$fpath"/urlencode`&X-Amz-Date=${timestamp}&X-Amz-Expires=120&X-Amz-SignedHeaders=${SignedHeaders}&X-Amz-Signature=$signature"
   
   if [ "_$log_request" == "_yes" ]; then
@@ -132,7 +139,7 @@ aws_api_request() {
   else
     $CURL "https://${endpoint}?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   fi
-
+  
 }
 
 check_request_result() {
