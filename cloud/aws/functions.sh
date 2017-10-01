@@ -68,20 +68,33 @@ aws_api_request() {
   local params
   params="$@"
   timestamp=`date -u +"%Y%m%dT%H%M%SZ"`
+  IFSORIG=$IFS
   
   CanonicalURI="/`echo "$endpoint" | cut -sd'/' -f2- | "$fpath"/urlencode`"
 
-  qparams="Action=${action}\n$params\nVersion=$Version" | tr '&' '\n'
-  qparams=`echo -e -n "$qparams" | LC_COLLATE=C sort | grep -v ^$ | tr '\n' '&'`
-  CanonicalQueryString=`echo -n "${qparams%&}" | "$fpath"/urlencode`
+  qparams=`echo -e "Action=${action}\n$params\nVersion=$Version" | tr '&' '\n'`
+  qparams=`echo -e -n "$qparams" | LC_COLLATE=C sort | grep -v ^$`
+  IFS='
+'
+  for qpar in $qparams ; do
+    qpar="`echo "$qpar" | cut -d'=' -f1 | "$fpath"/urlencode`=`echo "$qpar" | cut -sd'=' -f2 | "$fpath"/urlencode`"
+    qparams1="${qparams1}\n${qpar}"
+  done
+  CanonicalQueryString=`echo -n -e "$qparams1" | grep -v ^$ | tr '\n' '&'`
   
   if [ -z "$HEADERS" ]; then
     HEADERS="host:${endpoint%%/*}\nx-amz-date:${timestamp}"
   fi
-  CanonicalHeaders="`echo -e "$HEADERS" | LC_COLLATE=C sort | sed "s|^ ||;s| $||;s|  *| |g;s|\(.*\)|\L\1|g;s|$|\n|"`\n"
+  SortedHeaders=`echo -e "$HEADERS" | LC_COLLATE=C sort`
+  for header in $SortedHeaders ; do
+    headername=`echo "$header" | cut -sd':' -f1 | sed "s|^ ||;s| $||;s|  *| |g;s|\(.*\)|\L\1|g`
+    headervalue=`echo "$header" | cut -sd':' -f2 | sed "s|^ ||;s| $||;s|  *| |g`
+    CanonicalHeaders="${CanonicalHeaders}\n${headername}:${headervalue}"
+  done
+  IFS=$IFSORIG
   SignedHeaders=`echo -e "$CanonicalHeaders" | cut -d':' -f1`
   SignedHeaders=`echo -e "$SignedHeaders" | tr '\n' ';'`
-  SignedHeaders="${SignedHeaders%;}"
+  SignedHeaders="${SignedHeaders%;}\n"
   HashedPayload=`echo -e "$PAYLOAD" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
   CanonicalRequest="$method\n$CanonicalURI\n$CanonicalQueryString\n$CanonicalHeaders\n$SignedHeaders\n$HashedPayload"
   SignedRequest=`echo -e "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
