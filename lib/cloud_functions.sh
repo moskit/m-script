@@ -22,7 +22,7 @@ dpath=${dpath%/*}
 
 log() {
   if [ -n "$LOG" ]; then
-    echo "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${CLOUD}/${0##*/}: ${@}">>$LOG
+    echo -e "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${CLOUD}/${0##*/}: ${@}">>$LOG
   fi
 }
 

@@ -207,7 +207,7 @@ printcol() {
 
 log() {
   if [ -n "$LOG" ]; then
-    echo "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${0##*/}: ${@}">>$LOG
+    echo -e "`date +"%m.%d %H:%M:%S"` ($PPID/$$) ${0##*/}: ${@}">>$LOG
   fi
 }
 
@@ -573,4 +573,25 @@ colors() {
   # Example:
   # echo -e "$CONTR_SEQ$ATTR_BOLD$FG_RED$HOSTNAME$CONTR_SEQ$ATTR_BLINK${FG_WHITE}:$UNSET_COLOR"
   # echo -e "$CONTR_SEQ$FG_MAGENTA blablabla $UNSET_COLOR"  ### - simplest case
+}
+
+resolve_disks() {
+  sysfsmount=`cat /etc/mtab | grep '^sysfs '`
+  if [ -n "$sysfsmount" ]; then
+    sfsmp=`echo $sysfsmount | cut -sd' ' -f2`
+    for blkdev in $sfsmp/block/* ; do
+      sysblkdev=`readlink -f $blkdev`
+      if [[ $sysblkdev =~ '/devices/virtual/' ]]; then
+        name=`cat $sysblkdev/dm/name`
+      else
+        name=$blkdev
+      fi
+      size=`cat $sysblkdev/size`
+      removable=`cat $sysblkdev/removable`
+    done
+    
+  else
+  
+  
+  fi
 }

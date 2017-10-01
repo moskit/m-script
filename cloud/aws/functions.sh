@@ -29,18 +29,16 @@ CURL="$CURL -s"
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
 
-SignatureMethod=HmacSHA256
-SignatureVersion=4
-Version="2016-11-15"
-
-AuthParams="SignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}"
+[ -n "$verbose" ] && debug=true || debug=false
 
 aws_api_request() {
-  ### aws_api_request {service} {GET|POST} {endpoint} {action} <params>
+  ### aws_api_request {service} {version} {authmethod} {GET|POST} {endpoint} {action} <params>
   ### endpoint must not contain https://
   ### headers must be assigned to variable HEADERS. If it's empty, two basic
   ### headers are generated: host and x-amz-date
   ### payload (if present) must be assigned to variable PAYLOAD
+  ### version is API version, e.g. 2016-11-15 (see API documentation)
+  ### authmethod can be header or params
   # CanonicalRequest =
   # HTTPRequestMethod + '\n' +
   # CanonicalURI + '\n' +
@@ -49,14 +47,17 @@ aws_api_request() {
   # SignedHeaders + '\n' +
   # HexEncode(Hash(RequestPayload))
   [ -z "$3" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
-  #SignatureMethod=HmacSHA256
-  SignatureVersion=4
-  Version="2016-11-15"
   [ -z "$region" ] && log "region not specified" && return 2
   local service
   service=$1
   shift
-  local httpmethod
+  local Version
+  Version=$1
+  shift
+  local authmethod
+  authmethod=$1
+  shift
+  local method
   method=$1
   shift
   local endpoint
@@ -70,14 +71,13 @@ aws_api_request() {
   timestamp=`date -u +"%Y%m%dT%H%M%SZ"`
   IFSORIG=$IFS
   
-  CanonicalURI="/`echo "$endpoint" | cut -sd'/' -f2- | "$fpath"/urlencode`"
-
+  CanonicalURI="/`echo "$endpoint" | cut -sd'/' -f2- | "$M_ROOT"/cloud/aws/urlencode`"
   qparams=`echo -e "Action=${action}\n$params\nVersion=$Version" | tr '&' '\n'`
   qparams=`echo -e -n "$qparams" | LC_COLLATE=C sort | grep -v ^$`
   IFS='
 '
   for qpar in $qparams ; do
-    qpar="`echo "$qpar" | cut -d'=' -f1 | "$fpath"/urlencode`=`echo "$qpar" | cut -sd'=' -f2 | "$fpath"/urlencode`"
+    qpar="`echo "$qpar" | cut -d'=' -f1 | "$M_ROOT"/cloud/aws/urlencode`=`echo "$qpar" | cut -sd'=' -f2 | "$M_ROOT"/cloud/aws/urlencode`"
     qparams1="${qparams1}\n${qpar}"
   done
   CanonicalQueryString=`echo -e "$qparams1" | grep -v ^$ | tr '\n' '&'`
@@ -85,7 +85,7 @@ aws_api_request() {
   CanonicalQueryString=${CanonicalQueryString%&}
   
   if [ -z "$HEADERS" ]; then
-    HEADERS="host:${endpoint%%/*}\nx-amz-date:${timestamp}"
+    HEADERS="Host: ${endpoint%%/*}\nX-Amz-Date: ${timestamp}"
   fi
   SortedHeaders=`echo -e "$HEADERS" | LC_COLLATE=C sort`
   for header in $SortedHeaders ; do
@@ -105,7 +105,6 @@ aws_api_request() {
   HashedPayload=`echo -n "$PAYLOAD" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
   CanonicalRequest=`echo -e "$method\n$CanonicalURI\n$CanonicalQueryString\n$CanonicalHeaders\n\n$SignedHeaders\n$HashedPayload"`
   SignedRequest=`echo -n "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
-
   thedate=`date -u +"%Y%m%d"`
   StringToSign=`echo -e "AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest"`
   
@@ -119,8 +118,8 @@ aws_api_request() {
   kRegion=`echo -n "$region" | $SSLEX dgst -binary -sha256 -hmac "$kDate"`
   kService=`echo -n "$service" | $SSLEX dgst -binary -sha256 -hmac "$kRegion"`
   kSigning=`echo -n "aws4_request" | $SSLEX dgst -binary -sha256 -hmac "$kService"`
-  signature=`echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2`
-
+  #signature=`echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2`
+  signature=`echo -n "$StringToSign" | $SSLEX dgst -binary -sha256 -hmac "$kSigning" | od -An -t x1 -v | tr -d ' \n'`
   # querystring = Action=action
   # querystring += &X-Amz-Algorithm=algorithm
   # querystring += &X-Amz-Credential= urlencode(access_key_ID + '/' + credential_scope)
@@ -128,18 +127,27 @@ aws_api_request() {
   # querystring += &X-Amz-Expires=timeout interval
   # querystring += &X-Amz-SignedHeaders=signed_headers
   
-  SignedHeaders=`echo -e "$SignedHeaders" | tr -d '\n' | "$rpath"/urlencode`
-  Query="${CanonicalQueryString}&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=`echo -n "${AWS_ACCESS_KEY_ID}/$thedate/$region/$service/aws4_request" | "$fpath"/urlencode`&X-Amz-Date=${timestamp}&X-Amz-Expires=120&X-Amz-SignedHeaders=${SignedHeaders}&X-Amz-Signature=$signature"
+  if $debug ; then
+    log "AUTH process interals:\n=== CanonicalQueryString:\n$CanonicalQueryString\n=== SortedHeaders:\n$SortedHeaders\n=== CanonicalHeaders:\n$CanonicalHeaders\n=== SignedHeaders:\n$SignedHeaders\n=== HashedPayload:\n$HashedPayload\n=== CanonicalRequest:\n$CanonicalRequest\n=== SignedRequest:\n$SignedRequest\n=== StringToSign:\n$StringToSign\n=== signature:\n$signature"
+  fi
+  if [ "_$authmethod" == "_header" ]; then
+    AuthHeader="Authorization: AWS4-HMAC-SHA256 Credential=$AWS_ACCESS_KEY_ID/$thedate/$region/$service/aws4_request, SignedHeaders=${SignedHeaders}, Signature=$signature"
+    SortedHeaders=`echo -e "$SortedHeaders\n$AuthHeader"`
+    Query="${CanonicalQueryString}"
+  else
+    SignedHeaders=`echo -e "$SignedHeaders" | tr -d '\n' | "$M_ROOT"/cloud/aws/urlencode`
+    Query="${CanonicalQueryString}&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=`echo -n "${AWS_ACCESS_KEY_ID}/$thedate/$region/$service/aws4_request" | "$fpath"/urlencode`&X-Amz-Date=${timestamp}&X-Amz-Expires=120&X-Amz-SignedHeaders=${SignedHeaders}&X-Amz-Signature=$signature"
+  fi
   
   if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://${endpoint}?${Query}\""
-    reqres=`$CURL "https://${endpoint}?${Query}"`
+    log "$CURL -vvv -X $method -H \"$SortedHeaders\" \"https://${endpoint}/?${Query}\""
+    reqres=`$CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}"`
     log "$reqres"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   else
-    $CURL "https://${endpoint}?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
+    $CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   fi
-  
+  unset reqres Query SignedHeaders signature endpoint SortedHeaders thedate service timestamp CanonicalQueryString qpar header CanonicalRequest qparams1 CanonicalHeaders
 }
 
 check_request_result() {
