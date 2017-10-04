@@ -590,7 +590,7 @@ resolve_disks() {
       removable=`cat $sysblkdev/removable`
     done
     
-  else
+
   
   
   fi

@@ -145,6 +145,7 @@ function get_serverstatus() {
 
 function get_mongosstatus() {
   serverstatus=`$MONGO $AUTH "$cs"/admin --quiet "$rpath/serverstatus.mongos.js" 2>/dev/null`
+  [ $? -ne 0 ] && return 1
   [ -e "$rpath/data/${cs}.dat" ] && serverstatusprev=`cat "$rpath/data/${cs}.dat" | sed 's|=|_prev=|'`
   echo "$serverstatus" > "$rpath/data/${cs}.dat"
   statusreport=`parse_data "$cs"`
@@ -190,7 +191,7 @@ function parse_data() {
     inTheCache=`echo "$wtstatus" | grep '"bytes currently in the cache"' | cut -d'|' -f2`
     cacheMaxSizeMB=`solve 1 "$cacheMaxSize / 1048576"`
     inTheCacheMB=`solve 1 "$inTheCache / 1048576"`
-    echo -e "\n Cache usage\n\nCache configured (MB):   $cacheMaxSizeMB\nCache used (MB):   $inTheCacheMB\nCache used (%):   `solve 1 "$inTheCache / $cacheMaxSize * 100"`"
+    echo -e "\n Cache usage\n\nCache configured (MB):   $cacheMaxSizeMB\nCache used (MB):   $inTheCacheMB\nCache used (%):   `solve 1 "100 * $inTheCache / $cacheMaxSize"`"
   else
     [ -z "$accessesNotInMemory_prev" ] && accessesNotInMemory_prev=$accessesNotInMemory
     [ -n "$accessesNotInMemory" ] && recstatsNotInMemory=`solve 1 "($accessesNotInMemory - $accessesNotInMemory_prev) / $timediff"`
@@ -455,7 +456,7 @@ fi
 if [ -e "$rpath/mongo_mongos_servers.list" ] ; then
   for cs in `cat "$rpath/mongo_mongos_servers.list" | cut -sd'|' -f1` ; do
     [ -d "$M_ROOT/www/MongoDB/Balancers/$cs" ] || install -d "$M_ROOT/www/MongoDB/Balancers/$cs"
-    get_mongosstatus
+    get_mongosstatus || continue
     echo "$reporthtml" > "$M_ROOT/www/MongoDB/Balancers/$cs/${cs}_name.html"
   done
 fi
