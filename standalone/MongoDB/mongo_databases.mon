@@ -38,7 +38,7 @@ source "$M_ROOT/lib/functions.sh"
 get_lock
 
 if [ -e "$rpath/mongo_mongos_servers.list" ]; then
-  nmongos=`wc -l "$rpath/mongo_mongos_servers.list"`
+  nmongos=`cat "$rpath/mongo_mongos_servers.list" | wc -l`
   hostport=`head -$((RANDOM%$nmongos+1)) "$rpath/mongo_mongos_servers.list" | tail -1 | cut -d'|' -f1`
 fi
 [ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`cat "$rpath/mongo_servers.list" | grep -vE "slave$|arbiter$" | cut -d'|' -f1 | tr '\n' ' '`
