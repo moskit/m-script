@@ -43,10 +43,14 @@ fi
 
 get_serverstatus() {
   mv "$rpath/data/${cs}.ext.dat" "$rpath/data/${cs}.ext.dat.prev" 2>/dev/null
-  [ -e "$rpath/data/${cs}.ext.dat.prev" ] && sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
   serverstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.ext.js" 2>/dev/null)
-  
   echo "$serverstatus" > "$rpath/data/${cs}.ext.dat"
+  if [ -e "$rpath/data/${cs}.ext.dat.prev" ]; then
+    sed -i 's|=|_prev=|' "$rpath/data/${cs}.ext.dat.prev"
+  else
+    log "no previous data found"
+    return 1
+  fi
   if $WT ; then
     mv "$rpath/data/${cs}.ext.wt.dat" "$rpath/data/${cs}.ext.wt.dat.prev" 2>/dev/null
     wtstatus=$($MONGO $AUTH $cs/admin --quiet "$rpath/serverstatus.wt.js" 2>/dev/null | "$M_ROOT/lib"/json2txt)
