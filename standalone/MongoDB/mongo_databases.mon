@@ -37,7 +37,10 @@ source "$M_ROOT/lib/functions.sh"
 
 get_lock
 
-[ -e "$rpath/mongo_mongos_servers.list" ] && hostport=`head -1 "$rpath/mongo_mongos_servers.list" | cut -d'|' -f1`
+if [ -e "$rpath/mongo_mongos_servers.list" ]; then
+  nmongos=`wc -l "$rpath/mongo_mongos_servers.list"`
+  hostport=`head -$((RANDOM%$nmongos+1)) "$rpath/mongo_mongos_servers.list" | tail -1 | cut -d'|' -f1`
+fi
 [ -z "$hostport" -a -e "$rpath/mongo_servers.list" ] && hostport=`cat "$rpath/mongo_servers.list" | grep -vE "slave$|arbiter$" | cut -d'|' -f1 | tr '\n' ' '`
 [ -z "$hostport" ] && echo "No servers found" && unlock_exit 1
 

@@ -30,24 +30,25 @@ BD=`which bsondump 2>/dev/null`
 [ -z "$BD" ] && echo "bsondump not found, cannot read oplog.bson" && exit 1
 [ -z "$1" ] && echo -e "\nUsage: ${0##*/} {path/to/oplog.bson}\n" && exit 1
 [ "${1##*/}" != "oplog.bson" ] && echo "The name of the oplog bson dump must be oplog.bson" && exit 1
-[ -e "$1" ] && echo -e "\nFile $1 not found\n\nUsage: ${0##*/} {path/to/oplog.bson}\n" && exit 1
+[ ! -e "$1" ] && echo -e "\nFile $1 not found\n\nUsage: ${0##*/} {path/to/oplog.bson}\n" && exit 1
 
 JQ="$JQ -r -M"
 
 $BD $1 | while read record ; do
   ns=`echo "$record" | $JQ '.ns'`
   op=`echo "$record" | $JQ '.op'`
-  object=`echo "$record" | $JQ -c '.o' | sed 's/"/\\"/g;s/\$/\\$/g'`
+  object=`echo "$record" | $JQ -c '.o' | sed 's/"/\\"/g;s/\\$/\\\$/g'`
   id=`echo "$record" | $JQ '.o2._id."$binary"'`
   case $op in
     i)
-      echo "${ns}.insert($object)"
+      object=`echo "$object" | $JQ -c 'del(._id)'`
+      echo "db.${ns}.insert($object)"
     ;;
     u)
-      echo "${ns}.update({\"_id\": \"$id\"}, {$object})"
+      echo "db.${ns}.update({\"_id\": \"$id\"}, {$object})"
     ;;
     d)
-      echo "${ns}.remove({\"_id\": \"$id\"}"
+      echo "db.${ns}.remove({\"_id\": \"$id\"}"
     ;;
   esac
 done
