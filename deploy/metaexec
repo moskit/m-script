@@ -361,7 +361,7 @@ EOF
   exit 0
 fi
 
-source "$M_ROOT/conf/deployment.conf"
+source "$M_ROOT/conf/deploy.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
 
@@ -370,10 +370,10 @@ export CLOUD
 [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 [ -z "$CLOUD" ] && echo "Cloud is not defined" && exit 1
 
-[ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deployment
+[ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deploy
 [ -z "$M_DEPL_WORK_DIR" ] && M_DEPL_WORK_DIR=/root/deploy.tmp
 
-export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
+export PATH="$M_ROOT/deploy:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
 [ -n "$ignoreipnotpresent" -o -n "$force" -o -n "$ignorenocluster" ] && ignorenocluster="yes" && force="yes"
 [ -n "$user" ] && SSH_REMOTE_USER="$user"

@@ -34,7 +34,7 @@ M-Script is a framework for infrastructure coding, configuration management and 
 * conf/backup.conf.list   - list of paths to backup (may not exist or be empty).
 * conf/actions.conf       - programmable actions configuration: list of conditions with actions that are executed if the correspondent conditions are met.
 * conf/dash.conf          - settings related to web UI.
-* conf/deployment.conf    - settings for the deployment system.
+* conf/deploy.conf    - settings for the deployment system.
 * conf/clouds/*.conf      - cloud configurations. Each supported cloud has its template file in this folder. To enable a cloud, use its template file to create {yourcloudname}.conf. To enable a pseudo-cloud (a cloud made of any nodes not manageable via API), use any template with CLOUD_PROVIDER variable and all cloud-specific settings deleted.
 * tests/*.conf            - configuration files of correspondent monitors, located in the same folder
 
@@ -91,11 +91,11 @@ These are included into the basic tarball:
 
 It is a deployment, provisioning and maintenance tasks scripting central.
 
-* deployment/metaexec     - executes tasks (a.k.a. metascripts) or individual scripts. With --newnode option creates a new node and runs the provided task on it.
-* deployment/deploy_file  - generates a file from a template and places it onto the target node(s)
-* deployment/deploy.run   - executes an individual script locally or remotely, normally invoked by metaexec
-* deployment/message      - used to store the messages from individual scripts to show them after the task has finished, for use inside the scripts
-* deployment/propvar      - used to propagate a variable's value across the scripts within a task, for use inside the scripts
+* deploy/metaexec     - executes tasks (a.k.a. metascripts) or individual scripts. With --newnode option creates a new node and runs the provided task on it.
+* deploy/deploy_file  - generates a file from a template and places it onto the target node(s)
+* deploy/deploy.run   - executes an individual script locally or remotely, normally invoked by metaexec
+* deploy/message      - used to store the messages from individual scripts to show them after the task has finished, for use inside the scripts
+* deploy/propvar      - used to propagate a variable's value across the scripts within a task, for use inside the scripts
 
 
 ## Backup system

@@ -24,7 +24,7 @@ M_ROOT="$rpath"
 setup_env() {
   [ -f $HOME/.bashrc ] && source $HOME/.bashrc
   source "$rpath/conf/mon.conf"
-  source "$rpath/conf/deployment.conf"
+  source "$rpath/conf/deploy.conf"
   HOME_ORIG=$HOME
   HOME=$M_ROOT
   # with a single cloud we can speed up things a bit (see scripts in cloud/common)
@@ -35,7 +35,7 @@ setup_env() {
     # DEFAULT_CLOUD is not present in any config because it seems more reasonable
     # to have it in some environment settings file like .bash_profile, .bashrc or
     # .msh.env. But you can put it into any config sourced above, that is
-    # mon.conf or deployment.conf
+    # mon.conf or deploy.conf
     if [ -n "$DEFAULT_CLOUD" ]; then
       CLOUD="$DEFAULT_CLOUD"
       export CLOUD
@@ -47,7 +47,7 @@ setup_env() {
   $ALWAYS_LOGIN_SHELL && source /etc/profile
   [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
   [ -f "$HOME/.msh.env" ] && source "$HOME/.msh.env"
-  export PATH="$M_ROOT/deployment:$M_ROOT/cloud/common:$M_ROOT/helpers:$M_ROOT/backup:${PATH}"
+  export PATH="$M_ROOT/deploy:$M_ROOT/cloud/common:$M_ROOT/helpers:$M_ROOT/backup:${PATH}"
 }
 
 cr() {

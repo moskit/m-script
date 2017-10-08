@@ -221,7 +221,7 @@ fi
 
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
 source "$M_ROOT/conf/mon.conf"
-source "$M_ROOT/conf/deployment.conf"
+source "$M_ROOT/conf/deploy.conf"
 
 [ -n "$debug" ] && verbose="yes" && debug=true || debug=false
 [ -n "$cloud" ] || cloud=$CLOUD
@@ -238,11 +238,11 @@ fi
 
 source "$M_ROOT/conf/clouds/${cloud}.conf"
 
-export PATH="$M_ROOT/deployment:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
+export PATH="$M_ROOT/deploy:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
 [ -n "$SSHPORT" ] || SSHPORT=22
 
 localip=`"$M_ROOT"/helpers/localips`
-install -d "$M_TEMP/deployment/"
+install -d "$M_TEMP/deploy/"
 IFS1=$IFS
 IFS='
 '
@@ -271,7 +271,7 @@ fi
 
 find_source
 # fullfrom and realrole are now defined
-tmpfile="$M_TEMP/deployment/`echo $fullfrom | tr '/' '_'`"
+tmpfile="$M_TEMP/deploy/`echo $fullfrom | tr '/' '_'`"
 rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 
 [ -f "$ROLES_ROOT/conf/$role.conf" ] && store_vars "$ROLES_ROOT/conf/$role.conf"

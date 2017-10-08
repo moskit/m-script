@@ -290,7 +290,7 @@ run_init() {
   local initip=$3
   DISTRO=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "^$initcluster|" | cut -d'|' -f11`
   source "$M_ROOT/conf/clouds/${initcloud}.conf"
-  source "$M_ROOT/conf/deployment.conf"
+  source "$M_ROOT/conf/deploy.conf"
   [ -z "$CONNECT_TIMEOUT" ] && CONNECT_TIMEOUT=5
   [ -z "$SSHPORT" ] && SSHPORT=22
   [ -z "$SSH_USER" ] && SSH_USER=root

@@ -219,7 +219,7 @@ for cld in $CLOUD ; do
     from=${command%% *}
     ## Deployment system integration ##
     if [ ! -e "$from" ]; then
-      source "$M_ROOT/conf/deployment.conf"
+      source "$M_ROOT/conf/deploy.conf"
       for r in $role $ROLEINCL $metarole common ; do
         for f in $flavor common ; do
           from1=`find "$ROLES_ROOT/roles/$r/$f/files/" -maxdepth 1 -name "${from##*/}" \( -type f -o -type l \)`

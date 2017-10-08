@@ -344,7 +344,7 @@ case $command1 in
       if [ $(cd -P "$ROLES_ROOT/roles/$param2/../" && pwd) == "$ROLES_ROOT/roles" ]; then
         echo "Role $param2 exists, adding files missing in the target role. Use --all to overwrite existing files."
       else
-        echo "Role folder must be a subfolder of ${ROLES_ROOT}/roles. You can change ROLES_ROOT setting in conf/deployment.conf"
+        echo "Role folder must be a subfolder of ${ROLES_ROOT}/roles. You can change ROLES_ROOT setting in conf/deploy.conf"
         exit 1
       fi
     fi

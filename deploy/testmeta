@@ -73,12 +73,12 @@ if [ -z "$output" ] ; then
   [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 fi
 
-source "$rpath/../conf/deployment.conf"
+source "$rpath/../conf/deploy.conf"
 source "$rpath/../conf/clouds/${CLOUD}.conf"
 [ -n "$cloud" ] || cloud=$CLOUD
 [ -n "$cloud" ] || cloud=common
 M_ROOT=$(cd "$rpath/../" && pwd)
-export PATH=$M_ROOT/deployment:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH
+export PATH=$M_ROOT/deploy:$M_ROOT/cloud/${cloud}:$M_ROOT/helpers:$PATH
 [ -z "$role" ] && role=$M_ROLE
 [ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -v ^# | grep -v ^$ | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
 if [ -z "$role" -o -z "$flavor" ] ; then

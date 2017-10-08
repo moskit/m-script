@@ -320,7 +320,7 @@ chmod 755 "$rpath/"*.run "$rpath/"*.sh
 chmod 600 "$rpath/conf/backup.conf"
 chown -R root:root "$rpath"
 install -m 700 -d "$rpath/keys"
-install -d "$rpath/logs" "$rpath/deployment/roles" "$rpath/standalone/rc" "$rpath/cloud/ganeti/os-images" "$rpath/www/nodes"
+install -d "$rpath/logs" "$rpath/deploy/roles" "$rpath/standalone/rc" "$rpath/cloud/ganeti/os-images" "$rpath/www/nodes"
 echo -e "$rpath/fixports.run\n/etc/init.d/monitorload start" >> "$rpath/conf/actions.allowed.list"
 "$rpath"/helpers/init_rc
 "$rpath"/fixports.run
