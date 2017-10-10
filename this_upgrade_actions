@@ -1,2 +1,2 @@
 # 1464117610
-mv "$M_ROOT/standalone/MongoDB/databases.sql3" "$M_ROOT/standalone/MongoDB/databases.sql3.1464117610"
+mv "$M_ROOT/conf/deployment.conf" "$M_ROOT/conf/deploy.conf"
