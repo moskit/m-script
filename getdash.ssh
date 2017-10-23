@@ -34,7 +34,7 @@ LOG="$rpath/logs/dashboard.log"
 timeindexnow=`date +"%s"`
 if [ -n "$1" ]; then
   if [ "$1" == "--help" ]; then
-    echo -e "\nUsage: getdash.ssh {monitor to fetch} {target cluster} {name to show as}\n"
+    echo -e "\nUsage: getdash.ssh {monitor to fetch} {<target cloud>/target cluster} {name to show as}\n"
   else
     monitor="$1"
   fi
@@ -53,7 +53,16 @@ fi
 IFS1=$IFS ; IFS='
 '
 
-for cld in `cat "$rpath/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq` ; do
+targetcloud=`echo "$targetcluster" | cut -sd'|' -f1`
+targetcluster=`echo "$targetcluster" | cut -d'|' -f2`
+
+if [ -n "$targetcloud" ]; then
+  clds=$targetcloud
+else
+  clds=`cat "$rpath/nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f6 | sort | uniq`
+fi
+
+for cld in $clds ; do
 
   source "$rpath/conf/clouds/${cld}.conf"
   [ -z "$SSHPORT" ] && SSHPORT=22

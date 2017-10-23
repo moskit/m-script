@@ -2,6 +2,7 @@
 scriptname=${0%.cgi}
 scriptname=${scriptname##*/}
 source "$PWD/../../lib/dash_functions.sh"
+source "$PWD/../../standalone/%{SAM}%/nginx.conf"
 print_cgi_headers
 print_timeline "Server"
 
@@ -10,43 +11,26 @@ title2="users"
 title3="4xx"
 title4="5xx"
 
-open_cluster "orders.whmcs"
+if [ -n "$CONF_LIST" ]; then
+  ngconfs=`echo "$CONF_LIST" | tr ',' ' '`
+else
+  ngconfs=$NGINX_SERVER
+fi
+
+for target in $ngconfs ; do
+open_cluster "$target"
   print_cluster_inline title1 title2 title3 title4
   close_cluster_line
 
   open_line "Performance"
-    record=`/opt/m/helpers/mssh proxy sqlite3 $M_ROOT/standalone/HTTP/orders.whmcs.db \"select requests,users,err4xx,err5xx from orders_whmcs order by timeindex desc limit 1\" 2>&1`
+    record=`/opt/m/helpers/mssh proxy sqlite3 $M_ROOT/standalone/%{SAM}%/${target}.db \"select requests,users,err4xx,err5xx from ${target}_perf order by timeindex desc limit 1\" 2>&1`
     requests=`echo "$record" | cut -sd'|' -f1`
     users=`echo "$record" | cut -sd'|' -f2`
     err4xx=`echo "$record" | cut -sd'|' -f3`
     err5xx=`echo "$record" | cut -sd'|' -f4`
     print_inline requests users err4xx err5xx
   close_line
-  print_dashlines "orders.whmcs" "HTTP/requests"
+  print_dashlines "$target" "%{SAM}%/requests"
 close_cluster
-
-open_cluster "fastfollowerz.com"
-  print_cluster_inline title1 title2 title3 title4
-  close_cluster_line
-
-  open_line "Performance"
-    record=`/opt/m/helpers/mssh proxy sqlite3 $M_ROOT/standalone/HTTP/fastfollowerz.com.db \"select requests,users,err4xx,err5xx from fastfollowerz_com order by timeindex desc limit 1\" 2>&1`
-    requests=`echo "$record" | cut -sd'|' -f1`
-    users=`echo "$record" | cut -sd'|' -f2`
-    err4xx=`echo "$record" | cut -sd'|' -f3`
-    err5xx=`echo "$record" | cut -sd'|' -f4`
-    print_inline requests users err4xx err5xx
-  close_line
-  print_dashlines "fastfollowerz.com" "HTTP/requests"
-close_cluster
-
-open_cluster "fastfollowerz.co"
-close_cluster_line
-print_dashlines "fastfollowerz.co" "HTTP/requests"
-close_cluster
-
-open_cluster "reporting"
-close_cluster_line
-print_dashlines "reporting" "HTTP/requests"
-close_cluster
+done
 

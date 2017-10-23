@@ -1,0 +1,3 @@
+log_format  monitor  '$remote_addr [$time_local] "$request" '
+                     '$status $upstream_status $upstream_response_time '
+                     '$upstream_addr';
