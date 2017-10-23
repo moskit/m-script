@@ -10,7 +10,7 @@ source "$rpath/${rcommand%.mon}.conf"
 if [ -n "$CONF_LIST" ]; then
   ngconfs=`echo "$CONF_LIST" | tr ',' ' '`
 else
-  ngconfs=$NGINX_SERVER
+  ngconfs=${rcommand%.mon}.conf
 fi
 
 for ngconf in $ngconfs ; do
