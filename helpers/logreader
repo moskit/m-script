@@ -55,14 +55,14 @@ IFS=$IFS1
 if [ "$mehod" == "linecount" ]; then
   if [ ! -e "$M_TEMP/logreader.${file##*/}.count" ]; then
     method="timestamp"
-    wc -l "$file" > "$M_TEMP/logreader.${file##*/}.count"
+    cat "$file" | wc -l > "$M_TEMP/logreader.${file##*/}.count"
   fi
 fi
 
 case $method in
   linecount)
     prevcount=`cat "$M_TEMP/logreader.${file##*/}.count"`
-    currcount=`wc -l "$file"`
+    currcount=`cat "$file" | wc -l`
     echo $currcount > "$M_TEMP/logreader.${file##*/}.count"
     ln=`expr $currcount - $prevcount`
     if [ $ln -gt 0 ] 2>/dev/null ; then
