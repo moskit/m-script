@@ -20,7 +20,7 @@ rcommand=${rpath##*/}
 rpath=${rpath%/*}
 #*/
 
-possible_options="file lines maxlines period interval timeformat help verbose resolution amendformat safetylimit"
+possible_options="file lines maxlines period interval timeformat help verbose resolution amendformat safetylimit method"
 necessary_options="file"
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
 
@@ -51,82 +51,107 @@ IFS=$IFS1
 
 [ -n "$verbose" ] && debug=true || debug=false
 
-source "$rpath/../conf/mon.conf"
-# defaults
-[ -n "$period" ] && interval="$period"
-[ -z "$maxlines" ] && maxlines=1000
-[ -z "$safetylimit" ] && safetylimit=200
-
-if [ -n "$interval" ]; then
-  if ! expr "$interval" : ".*[^[0-9]]*" >/dev/null ; then
-    interval="$interval sec"
+[ -z "$method" ] && method="linecount"
+if [ "$mehod" == "linecount" ]; then
+  if [ ! -e "$M_TEMP/logreader.${file##*/}.count" ]; then
+    method="timestamp"
+    wc -l "$file" > "$M_TEMP/logreader.${file##*/}.count"
   fi
-else
-  interval="$FREQ sec"
-fi
-[ -z "$timeformat" ] && timeformat='%b %e %H:%M'
-if [ -n "$resolution" ]; then
-  case $resolution in
-    min|minute|minutes)
-      res="1 min"
-      ;;
-    sec|second|seconds)
-      res="1 sec"
-      ;;
-  esac
-fi
-if [ -z "$res" ]; then
-  lastletter=`echo ${timeformat##*%} | cut -b 1`
-  [ "X$lastletter" == "XM" ] && res="1 min"
-  [ "X$lastletter" == "XS" ] && res="1 sec"
 fi
 
-$debug && echo "resolution: $res"
-
-timepattern=`date -d "-${interval}" +"$timeformat"`
-timecurrent=`date +"$timeformat"`
-
-$debug && echo "from: $timepattern to: $timecurrent"
-
-ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
-if $debug ; then
-  [ -z "$ln" ] && echo -e "Was unable to find the lines number, command was:\ntail -n $maxlines \"$file\" | grep -n -m 1 -h \"$timepattern\" | cut -d':' -f1"
-else
-  $debug && echo "lines number: $ln"
-fi
-
-if [ -n "$amendformat" ]; then
-  timepattern=`amend "$timepattern"`
-  timecurrent=`amend "$timecurrent"`
-  $debug && echo "Amended: from: $timepattern to: $timecurrent"
-fi
-
-if [ -z "$ln" ] ; then
-  $debug && echo "scanning the tail of the log with $res resolution"
-  badpattern=false
-  declare -i i ; i=0 ; ilimit=$safetylimit # safety limit
-  while [[ "$timepattern" != "$timecurrent" ]]; do
-    dd=`date -d "$timepattern" 2>/dev/null`
-    if [ -z "$dd" ]; then
-      $debug && echo -e "Empty date pattern, command was:\ndate -d \"$timepattern\""
-      echo "Unable to restore date/time using pattern: $timepattern" >> "$rpath/../monitoring.log" && break
+case $method in
+  linecount)
+    prevcount=`cat "$M_TEMP/logreader.${file##*/}.count"`
+    currcount=`wc -l "$file"`
+    echo $currcount > "$M_TEMP/logreader.${file##*/}.count"
+    ln=`expr $currcount - $prevcount`
+    if [ $ln -gt 0 ] 2>/dev/null ; then
+      tail -n $ln "$file"
+    elif [ $ln -eq 0 ] 2>/dev/null ; then
+      exit 10
     else
-      $debug && echo "$dd"
+      exit 1
     fi
-    timepattern=`date -d "$dd + $res" 2>/dev/null || badpattern=true`
-    timepatternf=`date -d "$timepattern" +"$timeformat" 2>/dev/null || badpattern=true`
-    i+=1
-    $debug && echo "    $i :: $timepatternf"
-    [ $i -gt $ilimit ] && break
-    $badpattern && echo "Unable to restore date/time using pattern: $timepattern formatted as $timepatternf" >> "$rpath/../monitoring.log" && break
-    ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepatternf" | cut -d':' -f1`
-    $debug && echo "Datetime pattern: $timepattern Number of lines back: $ln"
-    [[ $ln -gt 0 ]] && break
-  done
-fi
+    ;;
+  timestamp)
+    source "$rpath/../conf/mon.conf"
+    # defaults
+    [ -n "$period" ] && interval="$period"
+    [ -z "$maxlines" ] && maxlines=1000
+    [ -z "$safetylimit" ] && safetylimit=200
 
-[[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln
+    if [ -n "$interval" ]; then
+      if ! expr "$interval" : ".*[^[0-9]]*" >/dev/null ; then
+        interval="$interval sec"
+      fi
+    else
+      interval="$FREQ sec"
+    fi
+    [ -z "$timeformat" ] && timeformat='%b %e %H:%M'
+    if [ -n "$resolution" ]; then
+      case $resolution in
+        min|minute|minutes)
+          res="1 min"
+          ;;
+        sec|second|seconds)
+          res="1 sec"
+          ;;
+      esac
+    fi
+    if [ -z "$res" ]; then
+      lastletter=`echo ${timeformat##*%} | cut -b 1`
+      [ "_$lastletter" == "_M" ] && res="1 min"
+      [ "_$lastletter" == "_S" ] && res="1 sec"
+    fi
 
+    $debug && echo "resolution: $res"
+
+    timepattern=`date -d "-${interval}" +"$timeformat"`
+    timecurrent=`date +"$timeformat"`
+
+    $debug && echo "from: $timepattern to: $timecurrent"
+
+    ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepattern" | cut -d':' -f1`
+    if $debug ; then
+      [ -z "$ln" ] && echo -e "Was unable to find the lines number, command was:\ntail -n $maxlines \"$file\" | grep -n -m 1 -h \"$timepattern\" | cut -d':' -f1"
+    else
+      $debug && echo "lines number: $ln"
+    fi
+
+    if [ -n "$amendformat" ]; then
+      timepattern=`amend "$timepattern"`
+      timecurrent=`amend "$timecurrent"`
+      $debug && echo "Amended: from: $timepattern to: $timecurrent"
+    fi
+
+    if [ -z "$ln" ] ; then
+      $debug && echo "scanning the tail of the log with $res resolution"
+      badpattern=false
+      declare -i i ; i=0 ; ilimit=$safetylimit # safety limit
+      while [[ "$timepattern" != "$timecurrent" ]]; do
+        dd=`date -d "$timepattern" 2>/dev/null`
+        if [ -z "$dd" ]; then
+          $debug && echo -e "Empty date pattern, command was:\ndate -d \"$timepattern\""
+          echo "Unable to restore date/time using pattern: $timepattern" >> "$rpath/../monitoring.log" && break
+        else
+          $debug && echo "$dd"
+        fi
+        timepattern=`date -d "$dd + $res" 2>/dev/null || badpattern=true`
+        timepatternf=`date -d "$timepattern" +"$timeformat" 2>/dev/null || badpattern=true`
+        i+=1
+        $debug && echo "    $i :: $timepatternf"
+        [ $i -gt $ilimit ] && break
+        $badpattern && echo "Unable to restore date/time using pattern: $timepattern formatted as $timepatternf" >> "$rpath/../monitoring.log" && break
+        ln=`tail -n $maxlines "$file" | grep -n -m 1 -h "$timepatternf" | cut -d':' -f1`
+        $debug && echo "Datetime pattern: $timepattern Number of lines back: $ln"
+        [[ $ln -gt 0 ]] && break
+      done
+    fi
+
+    [[ $ln -gt 0 ]] && tail -n $maxlines "$file" | tail -n +$ln
+    ;;
+  esac
+  
 exit 0
 
 
