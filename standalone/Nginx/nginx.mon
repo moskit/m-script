@@ -21,7 +21,7 @@ for ngconf in $ngconfs ; do
   ngconfcluster=`echo "$NGINX_SERVER" | cut -sd'|' -f2`
   ngconfserver=`echo "$NGINX_SERVER" | cut -d'|' -f3`
   if [ -n "$ngconfcluster" ]; then
-    # it is a data collector
+    # if cluster is defined, it is a data collector
     [ -z "$ngconfcloud" ] && ngconfcloud=$CLOUD
     "$M_ROOT"/getdash.ssh Nginx $ngconfcloud/$ngconfcluster $ngconfserver
   else      

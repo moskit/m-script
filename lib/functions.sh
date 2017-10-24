@@ -595,3 +595,33 @@ resolve_disks() {
   
   fi
 }
+
+resolve_markdown() {
+  [ -e "$1" ] && echo "*** file not found!" && exit 1
+  tmpfile="${1}.tmp"
+  cat "$1" | sed 's|}\%|}\%\\\n|g' | \
+    sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
+    sed 's|\\"|\\\\"|g' | \
+    sed 's|"|\\\"|g' | \
+    sed 's|`|\\\`|g' >> "${tmpfile}.orig"
+
+  $debug && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
+
+  for LINE in `cat -E "${tmpfile}.orig"` ; do
+    if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
+      KEEP="${KEEP}`echo "$LINE" | sed 's|\\\\$$||'`"
+      continue
+    else
+      LINE="${KEEP}`echo $LINE | sed 's|\$$||'`"
+      unset KEEP
+      a=`eval "echo \"$LINE\""`
+      if [ $? -eq 0 ] && [ -n "$a" ]; then
+        echo "$a" >> "$tmpfile"
+      else
+        echo "$LINE" >> "$tmpfile"
+      fi
+      $debug && tail -1 "$tmpfile" || true
+    fi
+  done
+}
+

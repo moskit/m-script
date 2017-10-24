@@ -1,0 +1,17 @@
+#!/bin/bash
+
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+
+export SAM="${rpath##*/}"
+
+mkdir -p "$rpath/../../www/bin/$SAM"
+
+source "$rpath/../../lib/functions.sh"
+
+resolve_markdown "$rpath/wwwbin/${SAM}.cgi" > "$rpath/../../www/bin/${SAM}.cgi"
+for clicker in "$rpath/wwwbin/${SAM}" ; do
+resolve_markdown "$clicker" "$rpath/../../www/bin/${SAM}/$clicker"
+
