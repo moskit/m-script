@@ -72,7 +72,11 @@ shards=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"
 
 $SPLIT_LARGE_CHUNKS && maxsize=`$MONGO $AUTH "$confserver"/admin --quiet --eval "db = db.getSiblingDB(\"config\"); db.settings.find({ \"_id\" : \"chunksize\"}).forEach(printjson)" | "$M_ROOT"/lib/json2txt | grep \"value\" | cut -d'|' -f2`
 
-mongos=`head -n $((RANDOM%$a+1)) "$rpath/mongo_mongos_servers.list" 2>/dev/null | tail -1 | cut -sd'|' -f1`
+if [ -n "$MONGOS" ]; then
+  mongos=$MONGOS
+else
+  mongos=`head -n $((RANDOM%$a+1)) "$rpath/mongo_mongos_servers.list" 2>/dev/null | tail -1 | cut -sd'|' -f1`
+fi
 
 for ns in $sharded ; do
   if [ -n "$1" ]; then [ "$1" != "$ns" ] && continue ; fi
