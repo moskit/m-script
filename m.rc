@@ -64,9 +64,11 @@ cr() {
   [ -e role.rc ] && source role.rc
   if [ -n "$cluster" ]; then
     M_CLUSTER="$cluster"
+    echo "Default cluster is $M_CLUSTER"
   else
     M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
-  [ `echo -e "$M_CLUSTER" | wc -l` -gt 1 ] && echo "More than one cluster found for this role. Selecting the first one." && M_CLUSTER=`echo -e "$M_CLUSTER" | head -1`
+    ncl=`echo -e "$M_CLUSTER" | wc -l`
+  [ $ncl -gt 1 ] && M_CLUSTER=`echo -n "$M_CLUSTER" | tr '\n' ','` && echo "$ncl clusters found for this role. Default cluster is a list: $M_CLUSTER"
   fi
   if [ -z "$M_CLUSTER" ]; then
     echo "Cluster not found for this role, default cluster and flavor cannot be determined."

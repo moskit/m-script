@@ -386,21 +386,21 @@ case $command1 in
     declare -a flarr
     [ -n "$param2" ] && echo "Usage: role create NAME" && exit 1
     [ -z "$param1" ] && echo "Usage: role create NAME" && exit 1
-    for fl in `find "$ROLES_ROOT/roles/"*/ -maxdepth 1 -type d | sed "s|^$ROLES_ROOT/roles/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
+    for fl in `find "$ROLES_ROOT/roles/"*/ -maxdepth 1 -type d 2>/dev/null | sed "s|^$ROLES_ROOT/roles/||" | cut -d '/' -f2 | sort | uniq | grep -v ^$` ; do
       flarr+=( "$fl" )
     done
-    echo -e "\nChoose existing system flavors from the list and/or add new ones. Existing flavors can be added by their numbers.\n\nExample: 2,4,5,centos6    - will add existing flavors with numbers 2, 4 and 5 and create a new one named centos6\n\nTo have all listed flavors in the new role just press Enter\n\n"
+    echo -e "\nChoose existing system flavors from the list and/or add new ones. Existing flavors can be added by their numbers.\n\nExample: 2,4,5,centos7    - will add existing flavors with numbers 2, 4 and 5 and create a new one named centos7\n\nTo have all listed flavors in the new role press Enter\n\n"
     for ((i=0; i<${#flarr[*]}; i++)) ; do
       echo "$((i+1)). ${flarr[$i]}"
     done
     echo
-    read -p "Otherwise input flavor numbers, separated by comma: " roleslist
-    if [ -z "$roleslist" ] ; then
+    read -p "Otherwise input flavor numbers, separated by comma: " rolelist
+    if [ -z "$rolelist" ] ; then
       for fl in ${flarr[*]} ; do
         install -d "$ROLES_ROOT/roles/$param1/$fl"
       done
     else
-      for r in `echo -e "$roleslist" | sed 's|,|\n|g'` ; do
+      for r in `echo -e "$rolelist" | sed 's|,|\n|g'` ; do
         if [[ $r =~ ^[[0-9]]* ]]; then
           install -d "$ROLES_ROOT/roles/$param1/${flarr[$r-1]}/files"
         else

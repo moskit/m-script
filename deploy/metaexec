@@ -498,8 +498,8 @@ fi
 
 if [ -n "$newnode" ]; then
   
-  [ -z "$NEW_NODE_CREATE_TRIES" ] && NEW_NODE_CREATE_TRIES=3
-  [ -z "$WAIT_BETWEEN_TRIES" ] && WAIT_BETWEEN_TRIES=30
+  [ -z "$NEW_NODE_CREATE_ATTEMPTS" ] && NEW_NODE_CREATE_ATTEMPTS=3
+  [ -z "$WAIT_BETWEEN_ATTEMPTS" ] && WAIT_BETWEEN_ATTEMPTS=30
   echo "*** Creating new node in cloud $CLOUD"
   log "creating new node in cloud $CLOUD"
   if [ -z "$test" ]; then
@@ -510,8 +510,8 @@ if [ -n "$newnode" ]; then
     fi
     log "initiating create_node sequence"
     
-    for ((i=0; i<$NEW_NODE_CREATE_TRIES; i++)); do
-      [ $i -eq 0 ] || sleep $WAIT_BETWEEN_TRIES
+    for ((i=0; i<$NEW_NODE_CREATE_ATTEMPTS; i++)); do
+      [ $i -eq 0 ] || sleep $WAIT_BETWEEN_ATTEMPTS
       createnode $T
       if [[ `expr "$ip" : "[0-9]*\.[0-9.]*$"` -ne 0 ]]; then
         break
