@@ -603,6 +603,7 @@ resolve_markdown() {
   [ ! -e "$1" ] && echo "*** file $1 not found!" >&2 && exit 1
   [ -n "$debug" ] || debug=false
   tmpfile="${1}.tmp"
+  rm "$tmpfile" "${tmpfile}.orig"
   cat "$1" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
     sed 's|\\"|\\\\"|g' | \
