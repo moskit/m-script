@@ -597,7 +597,10 @@ resolve_disks() {
 }
 
 resolve_markdown() {
-  [ -e "$1" ] && echo "*** file not found!" && exit 1
+  IFSORIG=$IFS
+  IFS='
+'
+  [ ! -e "$1" ] && echo "*** file $1 not found!" >&2 && exit 1
   tmpfile="${1}.tmp"
   cat "$1" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
@@ -605,7 +608,7 @@ resolve_markdown() {
     sed 's|"|\\\"|g' | \
     sed 's|`|\\\`|g' >> "${tmpfile}.orig"
 
-  $debug && echo -e "\n --- TMP FILE ---\n\n" && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n"
+  $debug && echo -e "\n --- TMP FILE ---\n\n" >&2 && cat "${tmpfile}.orig" && echo -e " --- END OF TMP FILE ---\n\n --- TMP FILE w/vars substituted ---\n\n" >&2
 
   for LINE in `cat -E "${tmpfile}.orig"` ; do
     if [[ `echo $LINE | grep -c '\\\\$$'` -gt 0 ]]; then
@@ -620,8 +623,9 @@ resolve_markdown() {
       else
         echo "$LINE" >> "$tmpfile"
       fi
-      $debug && tail -1 "$tmpfile" || true
+      $debug && tail -1 "$tmpfile" >&2 || true
     fi
   done
+  IFS=$IFSORIG
 }
 
