@@ -621,11 +621,10 @@ resolve_markdown() {
       unset KEEP
       a=`eval "echo \"$LINE\""`
       if [ $? -eq 0 ] && [ -n "$a" ]; then
-        echo "$a" >> "$tmpfile"
+        echo "$a"
       else
-        echo "$LINE" >> "$tmpfile"
+        echo "$LINE"
       fi
-      $debug && tail -1 "$tmpfile" >&2 || true
     fi
   done
   IFS=$IFSORIG
