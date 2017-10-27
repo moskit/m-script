@@ -15,6 +15,7 @@ fi
 
 for ngconf in $ngconfs ; do
   source "$rpath/${ngconf}.conf"
+  ngconf_sn=`echo "$ngconf" | tr '-' '_'`
   [ -z "$NGINX_SERVER" ] && echo "NGINX_SERVER is not defined" >&2 && continue
   [ -z "$file" ] && echo "file is not defined" >&2 && continue
   ngconfcloud=`echo "$NGINX_SERVER" | cut -sd'|' -f1`
@@ -81,7 +82,7 @@ for ngconf in $ngconfs ; do
       fi
       echo "$warn  $url  $reqn  $respavg  $respmin  $respmax"
       unset warn
-      store_results "url|text,reqn|integer,respavg|real,respmin|real,respmax|real" "$rpath/${ngconf}.db|${ngconf}_perf"
+      store_results "url|text,reqn|integer,respavg|real,respmin|real,respmax|real" "$rpath/${ngconf}.db|${ngconf_sn}_perf"
     done
     echo
 
@@ -108,7 +109,7 @@ for ngconf in $ngconfs ; do
     
     IFS=$IFSORIG
 
-    store_results "requests|integer,users|integer" "$rpath/${ngconf}.db|$ngconf"
+    store_results "requests|integer,users|integer" "$rpath/${ngconf}.db|$ngconf_sn"
 
   fi
 done
