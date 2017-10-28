@@ -14,17 +14,18 @@ else
 fi
 
 for ngconf in $ngconfs ; do
-  source "$rpath/${ngconf}.conf"
-  ngconf_sn=`echo "$ngconf" | tr '-' '_'`
+  ngconf=${ngconf##*/}
+  [ -e "$rpath/${ngconf}.conf" ] && source "$rpath/${ngconf}.conf"
   [ -z "$NGINX_SERVER" ] && echo "NGINX_SERVER is not defined" >&2 && continue
   [ -z "$file" ] && echo "file is not defined" >&2 && continue
   ngconfcloud=`echo "$NGINX_SERVER" | cut -sd'|' -f1`
   ngconfcluster=`echo "$NGINX_SERVER" | cut -sd'|' -f2`
   ngconfserver=`echo "$NGINX_SERVER" | cut -d'|' -f3`
+  ngconfserver_sn=`echo "$ngconfserver" | tr '-' '_'`
   if [ -n "$ngconfcluster" ]; then
     # if cluster is defined, it is a data collector
     [ -z "$ngconfcloud" ] && ngconfcloud=$CLOUD
-    "$M_ROOT"/getdash.ssh Nginx $ngconfcloud/$ngconfcluster $ngconfserver
+    "$M_ROOT"/getdash.ssh nginx $ngconfcloud/$ngconfcluster $ngconfserver
   else      
 
     # per second
@@ -82,7 +83,7 @@ for ngconf in $ngconfs ; do
       fi
       echo "$warn  $url  $reqn  $respavg  $respmin  $respmax"
       unset warn
-      store_results "url|text,reqn|integer,respavg|real,respmin|real,respmax|real" "$rpath/${ngconf}.db|${ngconf_sn}_perf"
+      store_results "url|text,reqn|integer,respavg|real,respmin|real,respmax|real" "$rpath/${ngconfserver}.db|${ngconfserver_sn}_perf"
     done
     echo
 
@@ -109,7 +110,7 @@ for ngconf in $ngconfs ; do
     
     IFS=$IFSORIG
 
-    store_results "requests|integer,users|integer" "$rpath/${ngconf}.db|$ngconf_sn"
+    store_results "requests|integer,users|integer" "$rpath/${ngconfserver}.db|$ngconfserver_sn"
 
   fi
 done
