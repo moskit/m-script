@@ -157,7 +157,7 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc
         done
       else
         for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$shardname|$"` ; do
-          print_mongo_server "$s"
+          print_mongo_server "$shardname" "$s"
         done
       fi
     done
