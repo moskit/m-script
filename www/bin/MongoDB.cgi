@@ -142,19 +142,24 @@ if [ `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" 2>/dev/null | wc
 
   clustername="Shard Servers"
   open_cluster "$clustername"
-  print_cluster_inline "Lag||status_short"
+  if [ -n "`cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -sd'|' -f3`" ]; then
+    print_cluster_inline "Lag||status_short"
+  fi
   close_cluster_line
-    for rs in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
-      echo "<div class=\"server hilited\" id=\"$rs\">"
-      echo "<div class=\"servername\" id=\"${rs}_name\">Replica Set: ${rs}</div>"
+    for shardname in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -d'|' -f2 | sort | uniq` ; do
+      echo "<div class=\"server hilited\" id=\"$shardname\">"
+      echo "<div class=\"servername\" id=\"${shardname}_name\">Shard: ${shardname}</div>"
       echo "</div>"
-      for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$rs|"` ; do
-        print_mongo_server "$clustername" "$s"
-      done
-    done
-### Not members of any RS
-    for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep ^.*\|$` ; do
-      print_mongo_server "$s"
+      rs=`cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | cut -sd'|' -f2,3 | grep "^$shardname|" | cut -sd'|' -f2`
+      if [ -n "$rs" ]; then
+        for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$shardname|$rs|"` ; do
+          print_mongo_server "$clustername" "$s"
+        done
+      else
+        for s in `cat "$PWD/../../standalone/$scriptname/mongo_shards.list" | grep "|$shardname|$"` ; do
+          print_mongo_server "$s"
+        done
+      fi
     done
   close_cluster
   
