@@ -428,7 +428,7 @@ if [ -n "$shardhosts" ] ; then
       fi
       unset master members
     else
-      shardlist+=("${memberhost}:${memberport}|$shard")
+      shardlist+=("${shardhost}|$shard|")
     fi
   done
   echo -e ${shardlist[*]} | tr ' ' '\n' | sort | uniq > "$M_TEMP/mongo_shards.list"
