@@ -164,12 +164,14 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
       spidmaster=`ps -p $spid -o ppid= 2>/dev/null | tr -d ' '`
       if [[ $spidmaster -ne $masterpid ]]; then
         echo "<***> Service $prog listening on TCP $t is a new service"
-        $SHOW_NEW_PROC_DETAILS && "$M_ROOT"/lib/showproc $spid
+        $SHOW_NEW_PROC_DETAILS && procdetails="$procdetails\n`"$M_ROOT"/lib/showproc $spid`"
       fi
     fi
     skip=0
   done < "$M_TEMP/ports.tcp.$$"
-
+  echo "$procdetails"
+  unset procdetails
+  
   if [[ ${#portstcp[*]} -gt 0 ]]
   then
     for t in ${portstcp[*]} ; do
@@ -214,19 +216,22 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       masterpid=`cat "$M_ROOT/ports.tcp.list" 2>/dev/null | grep -v '^#' | grep -v '^[[:space:]]*#' | grep ^${t}\| | cut -d'|' -f3`
       if [[ `ps -p $spid -o ppid= | tr -d ' '` -ne $masterpid ]]; then
         echo "<***> Service $prog listening on UDP $t is a new service"
-        $SHOW_NEW_PROC_DETAILS && "$M_ROOT"/lib/showproc $spid
+        $SHOW_NEW_PROC_DETAILS && procdetails="$procdetails\n`"$M_ROOT"/lib/showproc $spid`"
       fi
     fi
     skip=0
   done < "$M_TEMP/ports.udp.$$"
-
+  echo "$procdetails"
+  unset procdetails
+  
   if [[ ${#portsudp[*]} -gt 0 ]]; then
     for t in ${portsudp[*]} ; do
       prog=`grep "^$t|" "$M_ROOT/ports.udp.list" | cut -d'|' -f2`
       chk_portexclusions $t $prog
       [[ $skip -ne 1 ]] && echo "<***> There is no service listening on UDP: $t (was $prog)"
       skip=0
-    done
+    doneecho "$procdetails"
+  unset procdetails
   fi
 fi
 
@@ -234,46 +239,44 @@ echo -e "\n    Name              Socket file\n"
 
 $SOCKCONNS | grep STREAM > "$M_TEMP/sockets.$$"
 
-while read LINE
-do
-  sockets=( ${sockets[*]} )
-  
-  [[ $skip -eq 1 ]] && skip=0 && continue
-  socketfound=0
-  t="${LINE##*[[:space:]]}"
-  sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
-  spid=${sname%/*}
-  sname=${sname#*/}
-  for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+if [ -f "$M_TEMP/sockets.$$" ]; then
+  while read LINE
   do
-    [ `expr "$t" : ".*$exclsocket"` -ne 0 ] && continue 2
-    [ `expr "$sname" : ".*$exclsocket"` -ne 0 ] && continue 2
-  done
-  # now compare sockets
-  for ((i=0; i<${#sockets[*]}; i++))
-  do
-    if [ "_${sockets[$i]}" == "_$t" ]
-    then
-      unset sockets[$i]
-      col=20
-      printcol "$sname"
-      echo "$t"
-      socketfound=1
-      break
+    sockets=( ${sockets[*]} )
+    
+    [[ $skip -eq 1 ]] && skip=0 && continue
+    socketfound=0
+    t="${LINE##*[[:space:]]}"
+    sname=$(echo $LINE | awk -F'STREAM' '{print $2}' | awk '{print $3}')
+    spid=${sname%/*}
+    sname=${sname#*/}
+    for exclsocket in `cat "$M_ROOT/conf/sockets.exclude" | grep -v '^#' | grep -v '^[[:space:]]*#'`
+    do
+      [ `expr "$t" : ".*$exclsocket"` -ne 0 ] && continue 2
+      [ `expr "$sname" : ".*$exclsocket"` -ne 0 ] && continue 2
+    done
+    # now compare sockets
+    for ((i=0; i<${#sockets[*]}; i++))
+    do
+      if [ "_${sockets[$i]}" == "_$t" ]
+      then
+        unset sockets[$i]
+        col=20
+        printcol "$sname"
+        echo "$t"
+        socketfound=1
+        break
+      fi
+    done
+    if [[ $socketfound -ne 1 ]]; then
+      echo "<***> Service $sname listening on unix socket $t is a new service"
+      $SHOW_NEW_PROC_DETAILS && procdetails="$procdetails\n`"$M_ROOT"/lib/showproc $spid`"
     fi
-  done
-  if [[ $socketfound -ne 1 ]]; then
-    echo "<***> Service $sname listening on unix socket $t is a new service"
-    $SHOW_NEW_PROC_DETAILS && "$M_ROOT"/lib/showproc $spid
-  fi
-done < "$M_TEMP/sockets.$$"
+  done < "$M_TEMP/sockets.$$"
+  echo "$procdetails"
+  unset procdetails
 
-if [[ ${#sockets[*]} -gt 0 ]]
-then
- echo "
- "
 fi
-
 rm -f "$M_TEMP"/ports.*.$$ "$M_TEMP"/sockets.$$
 # End of netstat test
 

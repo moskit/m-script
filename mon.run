@@ -114,6 +114,7 @@ function mailalert() {
 
 function cleanup() {
   rm -f "$rpath"/alert* 2>/dev/null
+  unset al0 al1 al2 al3
 }
 
 function runscript() {
@@ -231,7 +232,7 @@ function runactions() {
 
       for ((i=$level; i<=$levelmax; i++)) ; do
 
-        for line in $(echo "`eval echo "\\$al\$i"`") ; do
+        for line in `eval "echo \\$al\${i}"` ; do
           [ -z "$line" ] && continue
           if [ -z "$nalerts" ]; then
             if [[ $line =~ $pattern_match ]]; then

@@ -25,6 +25,8 @@ source "$M_ROOT/lib/functions.sh"
 diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
 sinceboot=`cat /proc/uptime | cut -d'.' -f1` || sinceboot=1000000
 
+# stat -f -c "%c %d %b %f %s %T" /
+
 resolve_uuid() {
   local resdisk
   if [ "${1:0:4}" == "UUID" ]; then
@@ -52,16 +54,16 @@ check_slaves() {
 }
 
 if [ "_$SQLITE3" == "_1" ]; then
-  alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g'`
+  alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g' | grep -v ^$`
 fi
 
 echo -e "\nDisks usage:\n------------\n\n    Disk\t\t\t\tMountpoint\t\t\tUsage\n"
-df -m | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
+df -ml | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
   #if [ -n "$LONGLINE" ]; then
   #  LINE="$LONGLINE $LINE"
   #  LONGLINE=""
   #fi
-  ## Sometimes df breaks a line, if it is much longer than 80 symbols
+  ## Sometimes df breaks the line, if it is much longer than 80 symbols
   #if [ -z "$(echo "$LINE" | awk '{ print $6}')" ] && [ -z "$LONGLINE" ]; then
   #  LONGLINE="$LINE"
   #  continue
@@ -174,7 +176,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     if [ "_$SQLITE3" == "_1" ]; then
       disktable=${disk/-/_}
       tablefound=false
-      echo "$alltables" | grep -q ^$disk$ && tablefound=true
+      echo "$alltables" | grep -q ^$disktable$ && tablefound=true
       if ! $tablefound ; then
         log "creating table $disktable"
         dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disktable} on $disktable (timeindex);"

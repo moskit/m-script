@@ -55,8 +55,6 @@ $AWK '
 	    c = substr ($0, i, 1)
 	    if ( c ~ /[a-zA-Z0-9.-]/ ) {
 		encoded = encoded c		# safe character
-	    } else if ( c == " " ) {
-		encoded = encoded "+"	# special handling
 	    } else {
 		# unsafe character, encode it as a two-digit hex-number
 		lo = ord [c] % 16

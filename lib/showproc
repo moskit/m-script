@@ -10,7 +10,7 @@ show_open_files() {
   for entry in $proc/fd/* ; do
     list+=( `readlink $entry` )
   done
-  list=`echo "${list[*]}" | tr ' ' '\n' | grep -vE '/pts/|socket:|pipe:|/dev/null|anon_inode:|^$'`
+  list=`echo "${list[*]}" | tr ' ' '\n' | grep -vE '/pts/|net:|socket:|pipe:|/dev/null|anon_inode:|^$'`
   if [ -n "$list" ]; then
     echo -e "  Files opened:\n\n$list"
   else

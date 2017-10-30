@@ -186,7 +186,7 @@ do
 done
 IFS=$IFS1
 
-if [ "X$help" == "Xyes" ] ; then
+if [ "_$help" == "_yes" ] ; then
   cat <<"EOF"
 Usage: ${0##*/} <options> <source path> <target path>"
 
