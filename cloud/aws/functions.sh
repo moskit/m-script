@@ -46,7 +46,7 @@ aws_api_request() {
   # CanonicalHeaders + '\n' +
   # SignedHeaders + '\n' +
   # HexEncode(Hash(RequestPayload))
-  [ -z "$3" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
+  [ -z "$6" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
   [ -z "$region" ] && log "region not specified" && return 2
   local service
   service=$1
@@ -128,7 +128,7 @@ aws_api_request() {
   # querystring += &X-Amz-SignedHeaders=signed_headers
   
   if $debug ; then
-    log "AUTH process interals:\n=== CanonicalQueryString:\n$CanonicalQueryString\n=== SortedHeaders:\n$SortedHeaders\n=== CanonicalHeaders:\n$CanonicalHeaders\n=== SignedHeaders:\n$SignedHeaders\n=== HashedPayload:\n$HashedPayload\n=== CanonicalRequest:\n$CanonicalRequest\n=== SignedRequest:\n$SignedRequest\n=== StringToSign:\n$StringToSign\n=== signature:\n$signature"
+    log "AUTH process internals:\n=== CanonicalQueryString:\n$CanonicalQueryString\n=== SortedHeaders:\n$SortedHeaders\n=== CanonicalHeaders:\n$CanonicalHeaders\n=== SignedHeaders:\n$SignedHeaders\n=== HashedPayload:\n$HashedPayload\n=== CanonicalRequest:\n$CanonicalRequest\n=== SignedRequest:\n$SignedRequest\n=== StringToSign:\n$StringToSign\n=== signature:\n$signature"
   fi
   if [ "_$authmethod" == "_header" ]; then
     AuthHeader="Authorization: AWS4-HMAC-SHA256 Credential=$AWS_ACCESS_KEY_ID/$thedate/$region/$service/aws4_request, SignedHeaders=${SignedHeaders}, Signature=$signature"
@@ -147,7 +147,7 @@ aws_api_request() {
   else
     $CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   fi
-  unset reqres Query SignedHeaders signature endpoint SortedHeaders thedate service timestamp CanonicalQueryString qpar header CanonicalRequest qparams1 CanonicalHeaders
+  unset HEADERS reqres Query SignedHeaders signature endpoint SortedHeaders thedate service timestamp CanonicalQueryString qpar header CanonicalRequest qparams1 CanonicalHeaders
 }
 
 check_request_result() {
