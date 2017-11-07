@@ -169,7 +169,7 @@ if [ -f "$M_TEMP/ports.tcp.$$" ] ; then
     fi
     skip=0
   done < "$M_TEMP/ports.tcp.$$"
-  echo "$procdetails"
+  echo -e "$procdetails"
   unset procdetails
   
   if [[ ${#portstcp[*]} -gt 0 ]]
@@ -221,7 +221,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
     fi
     skip=0
   done < "$M_TEMP/ports.udp.$$"
-  echo "$procdetails"
+  echo -e "$procdetails"
   unset procdetails
   
   if [[ ${#portsudp[*]} -gt 0 ]]; then
@@ -230,8 +230,7 @@ if [ -f "$M_TEMP/ports.udp.$$" ] ; then
       chk_portexclusions $t $prog
       [[ $skip -ne 1 ]] && echo "<***> There is no service listening on UDP: $t (was $prog)"
       skip=0
-    doneecho "$procdetails"
-  unset procdetails
+    done
   fi
 fi
 
