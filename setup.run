@@ -43,6 +43,9 @@ createdb() {
 if [ -f /etc/debian_version ]; then OS="debian"; fi
 if [ -f /etc/gentoo-release ]; then OS="gentoo"; fi
 if [ -f /etc/redhat-release ]; then OS="redhat"; fi
+if [ -f /etc/system-release ]; then
+  grep -q -i amazon /etc/system-release && OS="redhat"
+fi
 
 if [ -z "$defopt" ] ; then
   echo -e "*** If during the setup process you choose to allow the script to install ***\n*** suggested packages and it fails to install them for whatever reason,  ***\n*** it doesn't cause any problems at all, just run the script again       ***\n*** (you may also want to install failed packages manually before this)   ***\n"
