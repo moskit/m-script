@@ -106,8 +106,9 @@ function collect_hosts() {
     port=`echo "$name" | cut -sd':' -f2`
     # TODO:
     #rname=`ip_to_name ${name%:*}`
+    rname=${name%:*}
     [ -n "$port" ] || port=$defaultport
-    configips="$configips ${name}:$port"
+    configips="$configips ${rname}:$port"
   done
 }
 
