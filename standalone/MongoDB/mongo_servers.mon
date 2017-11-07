@@ -420,7 +420,8 @@ if [ -n "$shardhosts" ] ; then
       if [ -n "$members" ]; then
         for member in `echo "$members" | grep \/\"host\"\| | cut -sd'|' -f2 | tr -d '"'`; do
           find_rsmemberrole "$member"
-          memberhost=`ip_to_name ${member%%:*}`
+          #memberhost=`ip_to_name ${member%%:*}`
+          memberhost=${member%%:*}
           memberport=${member#*:}
           shardlist+=("${memberhost}:${memberport}|$shard|${replicaset}${rsmemberrole}")
         done
