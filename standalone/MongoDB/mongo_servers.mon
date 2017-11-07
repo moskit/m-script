@@ -104,9 +104,10 @@ function find_rsmemberrole() {
 function collect_hosts() {
   for name in $@ ; do
     port=`echo "$name" | cut -sd':' -f2`
-    rname=`ip_to_name ${name%:*}`
+    # TODO:
+    #rname=`ip_to_name ${name%:*}`
     [ -n "$port" ] || port=$defaultport
-    configips="$configips ${rname}:$port"
+    configips="$configips ${name}:$port"
   done
 }
 
