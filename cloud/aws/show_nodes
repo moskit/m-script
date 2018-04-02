@@ -69,6 +69,7 @@ source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 source "$rpath/functions.sh"
 LOG="$M_ROOT/logs/cloud.log"
+keep_response=true
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
@@ -95,7 +96,8 @@ METHOD=GET
 ACTION=DescribeInstances
 SERVICE=ec2
 ENDPOINT="ec2.${region}.amazonaws.com"
-VERSION="2016-11-15"
+VERSION="2013-10-15"
+AUTHMETHOD=header
 
 get_iname() {
   for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
@@ -127,15 +129,15 @@ list_nodes() {
   IFS1=$IFS
   IFS='
 '
-  if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
-    [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
+  if [ `echo "$reqparsed" | wc -l` -gt 0 ]; then
+    [ "_$view" == "_raw" ] && echo "$reqparsed" && return
     declare -a nodelist
     
 #==============================================================================
-    for sn in `cat "$M_TEMP/${rcommand}.resp" | awk -F'"reservationSet"/' '{print $2}' | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
+    for sn in `echo "$reqparsed" | awk -F'"reservationSet"/' '{print $2}' | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId icluster
 
-      node=`grep \"reservationSet\"\/$sn\/ "$M_TEMP/${rcommand}.resp"`
+      node=`echo "$reqparsed" | grep \"reservationSet\"\/$sn\/`
       
       intIP=`echo "$node" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'` # may be multiple
       extIP=`echo "$node" | grep '/"ipAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
@@ -232,7 +234,7 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $VERSION params $METHOD $ENDPOINT $ACTION | "$M_ROOT"/lib/xml2txt`
+  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $ENDPOINT $ACTION | "$M_ROOT"/lib/xml2txt`
   $keep_response && echo "$reqparsed" > "$M_TEMP/${rcommand}.resp" || echo -n > "$M_TEMP/${rcommand}.resp"
   [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
