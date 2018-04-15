@@ -16,6 +16,7 @@ parser.add_argument("authmethod")
 parser.add_argument("method")
 parser.add_argument("endpoint")
 parser.add_argument("action")
+parser.add_argument("timestamp")
 args = parser.parse_args()
 
 endpoint = 'https://' + args.endpoint
@@ -47,8 +48,12 @@ if region is None:
     region = 'us-east-1'
 
 # Create a date for headers and the credential string
-t = datetime.datetime.utcnow()
-amzdate = t.strftime('%Y%m%dT%H%M%SZ')
+if timestamp is None:
+    t = datetime.datetime.utcnow()
+    amzdate = t.strftime('%Y%m%dT%H%M%SZ')
+else:
+    amzdate = timestamp
+
 datestamp = t.strftime('%Y%m%d') # Date w/o time, used in credential scope
 canonical_uri = '/' 
 canonical_querystring = request_parameters
