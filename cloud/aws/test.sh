@@ -6,8 +6,11 @@ fpath=${fpath%/*}
 
 caller=$(readlink -f "$0")
 callername=${caller##*/}
+debug=true
+LOG="$M_ROOT/logs/cloud.log"
+verbose="yes"
+log_request="yes"
 
-SSLEX=`which openssl 2>/dev/null`
 [ -z "$AWS_ACCESS_KEY_ID" ] && echo "AWS_ACCESS_KEY_ID not found!" && exit 1
 [ -z "AWS_SECRET_ACCESS_KEY" ] && echo "AWS_SECRET_ACCESS_KEY not found!" && exit 1
 region=$DEFAULT_REGION
