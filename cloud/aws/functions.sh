@@ -106,7 +106,7 @@ aws_api_request() {
   CanonicalRequest=`echo -e "$method\n$CanonicalURI\n$CanonicalQueryString\n$CanonicalHeaders\n\n$SignedHeaders\n$HashedPayload"`
   SignedRequest=`echo -n "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
   thedate=`date -u +"%Y%m%d"`
-  StringToSign=`echo -e "AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest"`
+  StringToSign=`echo -e "AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest" | iconv -t utf-8`
   
   # kSecret = your secret access key
   # kDate = HMAC("AWS4" + kSecret, Date)
@@ -114,12 +114,13 @@ aws_api_request() {
   # kService = HMAC(kRegion, Service)
   # kSigning = HMAC(kService, "aws4_request")
   
-  kDate=`echo -n "$thedate" | $SSLEX dgst -binary -sha256 -hmac "AWS4${AWS_SECRET_ACCESS_KEY}"`
-  kRegion=`echo -n "$region" | $SSLEX dgst -binary -sha256 -hmac "$kDate"`
-  kService=`echo -n "$service" | $SSLEX dgst -binary -sha256 -hmac "$kRegion"`
-  kSigning=`echo -n "aws4_request" | $SSLEX dgst -binary -sha256 -hmac "$kService"`
-  #signature=`echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2`
-  signature=`echo -n "$StringToSign" | $SSLEX dgst -binary -sha256 -hmac "$kSigning" | od -An -t x1 -v | tr -d ' \n'`
+  key1=`echo "AWS4${AWS_SECRET_ACCESS_KEY}" | iconv -t utf-8`
+  kDate=`sign "$key1" "$thedate"`
+  kRegion=`sign "$kDate" "$region"`
+  kService=`sign "$kRegion" "$service"`
+  kSigning=`sign "$kService" "aws4_request"`
+  
+  signature=`sign "$kSigning" "$StringToSign" | od -An -t x1 -v | tr -d ' \n'`
   # querystring = Action=action
   # querystring += &X-Amz-Algorithm=algorithm
   # querystring += &X-Amz-Credential= urlencode(access_key_ID + '/' + credential_scope)
@@ -148,6 +149,13 @@ aws_api_request() {
     $CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   fi
   unset HEADERS reqres Query SignedHeaders signature endpoint SortedHeaders thedate service timestamp CanonicalQueryString qpar header CanonicalRequest qparams1 CanonicalHeaders
+}
+
+sign() {
+  # sign skey smsg
+  skey="$1"
+  smsg=`echo "$2" | iconv -t utf-8`
+  echo -n "$smsg" | $SSLEX dgst -binary -sha256 -hmac "$skey"
 }
 
 check_request_result() {

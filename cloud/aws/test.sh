@@ -32,6 +32,6 @@ echo "signature = $signature"
 echo
 echo "https://${endpoint}?${Query}"
 
-python "$tpath"/test.py $@> "$tpath/test.py.log"
+python "$tpath"/test.py $@ $timestamp > "$tpath/test.py.log"
 
 

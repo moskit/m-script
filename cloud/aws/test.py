@@ -48,8 +48,8 @@ if region is None:
     region = 'us-east-1'
 
 # Create a date for headers and the credential string
+t = datetime.datetime.utcnow()
 if timestamp is None:
-    t = datetime.datetime.utcnow()
     amzdate = t.strftime('%Y%m%dT%H%M%SZ')
 else:
     amzdate = timestamp
