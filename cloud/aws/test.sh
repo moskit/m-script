@@ -1,8 +1,8 @@
 #!/bin/bash
-fpath=$(readlink -f "$BASH_SOURCE")
-fpath=${fpath%/*}
+tpath=$(readlink -f "$BASH_SOURCE")
+tpath=${tpath%/*}
 #*/
-[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$tpath/../")
 
 caller=$(readlink -f "$0")
 callername=${caller##*/}
@@ -15,9 +15,10 @@ log_request="yes"
 [ -z "AWS_SECRET_ACCESS_KEY" ] && echo "AWS_SECRET_ACCESS_KEY not found!" && exit 1
 region=$DEFAULT_REGION
 
-source "$fpath/functions.sh"
+source "$M_ROOT/lib/functions.sh"
+source "$tpath/functions.sh"
 
-aws_api_request $@
+aws_api_request $@ > "$tpath/test.sh.log"
 
 echo "canonical_querystring = $CanonicalQueryString"
 echo -e "canonical_headers = $CanonicalHeaders"
@@ -31,6 +32,6 @@ echo "signature = $signature"
 echo
 echo "https://${endpoint}?${Query}"
 
-python "$fpath"/test.py $@
+python "$tpath"/test.py $@> "$tpath/test.py.log"
 
 
