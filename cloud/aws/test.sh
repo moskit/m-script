@@ -8,14 +8,9 @@ caller=$(readlink -f "$0")
 callername=${caller##*/}
 
 SSLEX=`which openssl 2>/dev/null`
-AWS_SECRET_ACCESS_KEY='wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY'
-dateStamp='20150830'
-timeStamp='20150830T123600Z'
-region='us-east-1'
-service='iam'
-HEADERS='Host: iam.amazonaws.com
-Content-Type: application/x-www-form-urlencoded; charset=utf-8
-X-Amz-Date: 20150830T123600Z'
+[ -z "$AWS_ACCESS_KEY_ID" ] && echo "AWS_ACCESS_KEY_ID not found!" && exit 1
+[ -z "AWS_SECRET_ACCESS_KEY" ] && echo "AWS_SECRET_ACCESS_KEY not found!" && exit 1
+region=$DEFAULT_REGION
 
 aws_api_request() {
   ### aws_api_request {service} {GET|POST} {endpoint} {action} <params>
@@ -32,7 +27,7 @@ aws_api_request() {
   # HexEncode(Hash(RequestPayload))
   [ -z "$3" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
   #SignatureMethod=HmacSHA256
-  Version="2010-05-08"
+  Version="2013-10-15"
   [ -z "$region" ] && log "region not specified" && return 2
   local service
   service=$1
@@ -64,8 +59,8 @@ aws_api_request() {
   CanonicalQueryString=`echo -e "$qparams1" | grep -v ^$ | tr '\n' '&'`
   # grep adds newline at the end anyway
   CanonicalQueryString=${CanonicalQueryString%&}
-echo "=== Canonical Query String ==="
-echo "$CanonicalQueryString"
+
+echo "canonical_querystring = $CanonicalQueryString"
 
   if [ -z "$HEADERS" ]; then
     HEADERS="host:${endpoint%%/*}\nx-amz-date:${timestamp}"
@@ -81,34 +76,27 @@ echo "$CanonicalQueryString"
     fi
   done
   IFS=$IFSORIG
-echo
-echo "=== Canonical Headers ==="
-echo -e "$CanonicalHeaders"
+
+echo -e "canonical_headers = $CanonicalHeaders"
   SignedHeaders=`echo -e "$CanonicalHeaders" | cut -d':' -f1`
   SignedHeaders=`echo -e "$SignedHeaders" | tr '\n' ';'`
   SignedHeaders="${SignedHeaders%;}"
-echo
-echo "=== Signed Headers ==="
-echo "$SignedHeaders"
+echo "signed_headers = $SignedHeaders"
+
   HashedPayload=`echo -n "$PAYLOAD" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
-echo
-echo "=== Hashed Payload ==="
-echo "$HashedPayload"
+echo "payload_hash = $HashedPayload"
+
   CanonicalRequest=`echo -e "$method\n$CanonicalURI\n$CanonicalQueryString\n$CanonicalHeaders\n\n$SignedHeaders\n$HashedPayload"`
   SignedRequest=`echo -n "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
-echo
-echo "=== Canonical Request ==="
-echo "$CanonicalRequest"
-echo
-echo "=== Hashed Request ==="
-echo "$SignedRequest"
+
+echo "canonical_request = $CanonicalRequest"
+echo "signed_request = $SignedRequest"
+
   thedate=$dateStamp
   StringToSign=`echo -e "AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest"`
-echo
-echo "=== String To Sign ==="
-echo "$StringToSign"
-echo
-echo "=== Deriving A Signing Key ==="
+
+echo "string_to_sign = $StringToSign"
+
   # kSecret = your secret access key
   # kDate = HMAC("AWS4" + kSecret, Date)
   # kRegion = HMAC(kDate, Region)
@@ -116,25 +104,23 @@ echo "=== Deriving A Signing Key ==="
   # kSigning = HMAC(kService, "aws4_request")
 
   kDate=`echo -n "$thedate" | $SSLEX dgst -binary -sha256 -hmac "AWS4${AWS_SECRET_ACCESS_KEY}"`
-  echo -n "$kDate" | od -An -t x1 -v | tr -d ' \n'
-  echo
+  #echo -n "$kDate" | od -An -t x1 -v | tr -d ' \n'
+  #echo
   kRegion=`echo -n "$region" | $SSLEX dgst -binary -sha256 -hmac "$kDate"`
-  echo -n "$kRegion" | od -An -t x1 -v | tr -d ' \n'
-  echo
+  #echo -n "$kRegion" | od -An -t x1 -v | tr -d ' \n'
+  #echo
   kService=`echo -n "$service" | $SSLEX dgst -binary -sha256 -hmac "$kRegion"`
-  echo -n "$kService"  | od -An -t x1 -v | tr -d ' \n'
-  echo
+  #echo -n "$kService"  | od -An -t x1 -v | tr -d ' \n'
+  #echo
   kSigning=`echo -n "aws4_request" | $SSLEX dgst -binary -sha256 -hmac "$kService"`
-  echo -n "$kSigning"  | od -An -t x1 -v | tr -d ' \n'
-  echo
+  #echo -n "$kSigning"  | od -An -t x1 -v | tr -d ' \n'
+  #echo
   signature=`echo -n "$StringToSign" | $SSLEX dgst -binary -sha256 -hmac "$kSigning" | od -An -t x1 -v | tr -d ' \n'`
 
   echo
 
-echo
-echo "=== Signature ==="
-echo "$signature"
-echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2
+echo "signature = $signature"
+#echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2
 echo
 
 # querystring = Action=action
@@ -151,7 +137,8 @@ echo
 
 }
 
-aws_api_request $*
+aws_api_request $@
 
+python "$fpath"/test.py $@
 
 

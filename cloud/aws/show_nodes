@@ -161,6 +161,10 @@ list_nodes() {
       iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f16`
       if [ -n "$iclustertag" ]; then
         icluster=`echo "$tags" | grep "\"item\"/$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
+        if [ -n "$CLUSTER_TAG_REGEXP" ]; then
+          ctregexp=`echo "$CLUSTER_TAG_REGEXP" | sed 's_\_\\g;s_*_\*_g'`
+          icluster=`expr "$icluster" : "$ctregexp"`
+        fi
       else
         [ -z "$all" ] && continue
       fi
@@ -234,8 +238,8 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $ENDPOINT $ACTION | "$M_ROOT"/lib/xml2txt`
-  $keep_response && echo "$reqparsed" > "$M_TEMP/${rcommand}.resp" || echo -n > "$M_TEMP/${rcommand}.resp"
+  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $ENDPOINT $ACTION`
+  echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
   [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
 else
