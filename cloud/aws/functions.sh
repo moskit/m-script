@@ -107,29 +107,20 @@ aws_api_request() {
   SignedRequest=`echo -n "$CanonicalRequest" | $SSLEX dgst -sha256 | cut -sd' ' -f2`
   thedate=`date -u +"%Y%m%d"`
   StringToSign=`echo -e "AWS4-HMAC-SHA256\n${timestamp}\n$thedate/$region/$service/aws4_request\n$SignedRequest" | iconv -t utf-8`
-  
-  # kSecret = your secret access key
-  # kDate = HMAC("AWS4" + kSecret, Date)
-  # kRegion = HMAC(kDate, Region)
-  # kService = HMAC(kRegion, Service)
-  # kSigning = HMAC(kService, "aws4_request")
-  
   key1=`echo "AWS4${AWS_SECRET_ACCESS_KEY}" | iconv -t utf-8`
-  kDate=`sign "$key1" "$thedate"`
-  kRegion=`sign "$kDate" "$region"`
-  kService=`sign "$kRegion" "$service"`
-  kSigning=`sign "$kService" "aws4_request"`
-  
-  signature=`sign "$kSigning" "$StringToSign" | od -An -t x1 -v | tr -d ' \n'`
-  # querystring = Action=action
-  # querystring += &X-Amz-Algorithm=algorithm
-  # querystring += &X-Amz-Credential= urlencode(access_key_ID + '/' + credential_scope)
-  # querystring += &X-Amz-Date=date
-  # querystring += &X-Amz-Expires=timeout interval
-  # querystring += &X-Amz-SignedHeaders=signed_headers
+  kDate=`sign "$key1" $thedate`
+  kRegion=`sign "$kDate" $region hex`
+  kService=`sign "$kRegion" $service hex`
+  kSigning=`sign "$kService" "aws4_request" hex`
+
+  if $debug ; then
+    log "Keys sequence:\n$kDate\n$kRegion\n$kService\n$kSigning\n"
+  fi
+
+  signature=`sign "$kSigning" "$StringToSign" hex`
   
   if $debug ; then
-    log "AUTH process internals:\n=== CanonicalQueryString:\n$CanonicalQueryString\n=== SortedHeaders:\n$SortedHeaders\n=== CanonicalHeaders:\n$CanonicalHeaders\n=== SignedHeaders:\n$SignedHeaders\n=== HashedPayload:\n$HashedPayload\n=== CanonicalRequest:\n$CanonicalRequest\n=== SignedRequest:\n$SignedRequest\n=== StringToSign:\n$StringToSign\n=== signature:\n$signature"
+    log "AUTH process internals:\n=== CanonicalQueryString:\n$CanonicalQueryString\n=== SortedHeaders:\n$SortedHeaders\n=== CanonicalHeaders:\n$CanonicalHeaders\n=== SignedHeaders:\n$SignedHeaders\n=== HashedPayload:\n$HashedPayload\n=== CanonicalRequest:\n$CanonicalRequest\n=== SignedRequest:\n$SignedRequest\n=== StringToSign:\n$StringToSign\n=== signing_key: $kSigning=== signature:\n$signature"
   fi
   if [ "_$authmethod" == "_header" ]; then
     AuthHeader="Authorization: AWS4-HMAC-SHA256 Credential=$AWS_ACCESS_KEY_ID/$thedate/$region/$service/aws4_request, SignedHeaders=${SignedHeaders}, Signature=$signature"
@@ -155,7 +146,11 @@ sign() {
   # sign skey smsg
   skey="$1"
   smsg=`echo "$2" | iconv -t utf-8`
-  echo -n "$smsg" | $SSLEX dgst -binary -sha256 -hmac "$skey"
+  if [ "_$3" == "_hex" ]; then
+    echo -n "$smsg" | $SSLEX dgst -sha256 -mac HMAC -macopt "hexkey:$skey" | cut -d' ' -f2
+  else
+    echo -n "$smsg" | $SSLEX dgst -sha256 -hmac "$skey" | cut -d' ' -f2
+  fi
 }
 
 check_request_result() {

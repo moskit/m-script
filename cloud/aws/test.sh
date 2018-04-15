@@ -20,18 +20,6 @@ source "$tpath/functions.sh"
 
 aws_api_request $@ > "$tpath/test.sh.log"
 
-echo "canonical_querystring = $CanonicalQueryString"
-echo -e "canonical_headers = $CanonicalHeaders"
-echo "signed_headers = $SignedHeaders"
-echo "payload_hash = $HashedPayload"
-echo "canonical_request = $CanonicalRequest"
-echo "signed_request = $SignedRequest"
-echo "string_to_sign = $StringToSign"
-echo "signature = $signature"
-#echo -n "$StringToSign" | $SSLEX dgst -hex -sha256 -hmac "$kSigning" | cut -sd' ' -f2
-echo
-echo "https://${endpoint}?${Query}"
-
 python "$tpath"/test.py $@ $timestamp > "$tpath/test.py.log"
 
 

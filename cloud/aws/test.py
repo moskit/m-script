@@ -49,10 +49,10 @@ if region is None:
 
 # Create a date for headers and the credential string
 t = datetime.datetime.utcnow()
-if timestamp is None:
+if args.timestamp is None:
     amzdate = t.strftime('%Y%m%dT%H%M%SZ')
 else:
-    amzdate = timestamp
+    amzdate = args.timestamp
 
 datestamp = t.strftime('%Y%m%d') # Date w/o time, used in credential scope
 canonical_uri = '/' 
