@@ -61,7 +61,7 @@ remote_exec() {
   else
     KEY=`$M_ROOT/helpers/find_key node $IP`
     [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
-    if [ "_$nosudo" == "_yes" ]; then
+    if [ "_$noclsudo" == "_yes" ]; then
       $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; "$command"\)
     else
       $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" sudo bash -c \"test -e \\\"$M_ROOT_REMOTE/m.rc\\\" \&\& source \\\"$M_ROOT_REMOTE/m.rc\\\" \; export ip=$IP \; "$command"\"
@@ -201,10 +201,13 @@ for cld in $CLOUD ; do
   if [ -n "$command" ] ; then
     for icluster in `echo -e "${clusters}\n"|sed 's|,|\n|g'` ; do
       [ `cat "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f1,12 | grep "|${cld}$" | cut -d'|' -f1 | grep -c "^${icluster}$"` -eq 0 ] && continue
-      unset SSH_REMOTE_USER nosudo
-      [ -n "$user" ] && SSH_REMOTE_USER="$user"
+      unset SSH_REMOTE_USER noclsudo
+      if [ -n "$user" ]; then
+        [ "_$nosudo" == "_yes" ] && noclsudo="yes"
+        SSH_REMOTE_USER="$user"
+      fi
       [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | grep "^$icluster|" | cut -s -d'|' -f13`
-      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && nosudo="yes"
+      [ -z "$SSH_REMOTE_USER" ] && SSH_REMOTE_USER="root" && noclsudo="yes"
       n=0
       unset CLUSTER KEY REGION NAME M_ROOT_REMOTE
       M_ROOT_REMOTE=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
