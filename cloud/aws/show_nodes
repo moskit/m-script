@@ -61,6 +61,10 @@ if [[ found -eq 1 ]]; then
   exit 1
 fi
 
+if [ -n "$help" ]; then
+  echo "Possible options: $possible_options"
+fi
+
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
 
@@ -129,7 +133,7 @@ list_nodes() {
   IFS1=$IFS
   IFS='
 '
-  if [ `echo "$reqparsed" | wc -l` -eq 0 ]; then
+  if [ `echo -n "$reqparsed" | wc -l` -lt 3 ]; then
     reqparsed=`cat "$M_TEMP/${rcommand}.resp" 2>/dev/null`
   fi
   [ "_$view" == "_raw" ] && echo "$reqparsed" && return
@@ -163,8 +167,7 @@ list_nodes() {
     if [ -n "$iclustertag" ]; then
       icluster=`echo "$tags" | grep "\"item\"/$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       if [ -n "$CLUSTER_TAG_REGEXP" ]; then
-        ctregexp=`echo "$CLUSTER_TAG_REGEXP" | sed 's_\_\\g;s_*_\*_g'`
-        icluster=`expr "$icluster" : "$ctregexp"`
+        icluster=`expr "$icluster" : "$CLUSTER_TAG_REGEXP"`
       fi
     else
       [ -z "$all" ] && continue
@@ -199,7 +202,7 @@ list_nodes() {
             echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g'
             ;;
           column)
-            echo -e "ID: $id\nName: $iname\nStatus: $istatus\next IP: $extIPprint\nintIP: $intIPprint\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
+            echo -e "ID: $id\nName: $iname\nStatus: $istatus\nPublic IP: $extIPprint\nPrivate IP: $intIPprint\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
             echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
             ;;
           none)

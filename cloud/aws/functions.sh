@@ -134,7 +134,6 @@ aws_api_request() {
   if [ "_$log_request" == "_yes" ]; then
     log "$CURL -vvv -X $method -H \"$SortedHeaders\" \"https://${endpoint}/?${Query}\""
     reqres=`$CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}"`
-    log "$reqres"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   else
     $CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
