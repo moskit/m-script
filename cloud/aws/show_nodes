@@ -28,38 +28,9 @@ LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
 
-possible_options="cloud help region verbose cluster state status filter short noupdate view update_nodes_list forceupdate all count resolveids id name_source log_request"
+possible_options="cloud help region verbose cluster state status filter noupdate view update_nodes_list forceupdate all count resolveids name_source log_request"
 necessary_options=""
-IFS1=$IFS
-IFS='-'
-for s_option in "$@"
-do
-  found=false
-  s_option=${s_option/--/}
-  s_optname=${s_option%%=*}
-  s_optarg=${s_option##*=}
-  [ "_$s_optarg" == "_$s_optname" ] && s_optarg="yes"
-
-  for option in ${possible_options// /-} ; do
-    [ "_$s_optname" == "_$option" ] && eval "$s_optname=\"$s_optarg\"" && found=true && break
-  done
-  
-  if ! $found ; then 
-    echo "Unknown option: $s_optname"
-    exit 1
-  fi
-done
-IFS=$IFS1
-
-found=0
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ -z "$(eval echo \$$option)" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: $missing_options not found"
-  exit 1
-fi
+get_opts "$@"
 
 if [ -n "$help" ]; then
   echo "Possible options: $possible_options"

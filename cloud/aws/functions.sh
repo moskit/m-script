@@ -39,13 +39,6 @@ aws_api_request() {
   ### payload (if present) must be assigned to variable PAYLOAD
   ### version is API version, e.g. 2016-11-15 (see API documentation)
   ### authmethod can be header or params
-  # CanonicalRequest =
-  # HTTPRequestMethod + '\n' +
-  # CanonicalURI + '\n' +
-  # CanonicalQueryString + '\n' +
-  # CanonicalHeaders + '\n' +
-  # SignedHeaders + '\n' +
-  # HexEncode(Hash(RequestPayload))
   [ -z "$6" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
   [ -z "$region" ] && log "region not specified" && return 2
   local service

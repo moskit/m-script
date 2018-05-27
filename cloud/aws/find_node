@@ -46,7 +46,7 @@ IFS=$IFS1
 
 list_the_cluster() {
   if [ -n "$quick" ]; then
-    IAMACHILD=1 "$rpath"/show_nodes --all --view=table --noupdate | grep -v ^EBS | cut -sd'|' -f2,3,5,6,7 | grep '|running|' | grep "|${cluster}$"
+    cat "$M_ROOT/cloud/nodes.list.${CLOUD}" | grep -E "^.*\|.*\|.*\|.*\|$cluster"
   else
     IAMACHILD=1 "$rpath"/show_nodes --all --view=table | grep -v ^EBS | cut -sd'|' -f2,3,5,6,7 | grep '|running|' | grep "|${cluster}$"
   fi

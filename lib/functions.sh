@@ -445,7 +445,7 @@ get_opts() {
     -*)
       s_optname=`echo "$s_option" | tr -d '-'`
       short=true
-      s_optarg="yes" # a default value in case there is none
+      s_optarg="yes"
       ;;
     *=*)
       echo "Wrong syntax: long options must start with a double dash"
