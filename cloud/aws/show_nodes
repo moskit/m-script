@@ -30,7 +30,6 @@ debug=false
 
 possible_options="cloud help region verbose cluster state status filter noupdate view update_nodes_list forceupdate all count resolveids name_source log_request"
 necessary_options=""
-get_opts "$@"
 
 if [ -n "$help" ]; then
   echo "Possible options: $possible_options"
@@ -41,10 +40,13 @@ fi
 
 source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
 source "$rpath/functions.sh"
 LOG="$M_ROOT/logs/cloud.log"
 keep_response=true
+
+get_opts "$@"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
