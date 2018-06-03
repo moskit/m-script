@@ -423,6 +423,7 @@ getprocessname() {
 }
 
 get_opts() {
+  # Usage: get_opts $@
   IFS1=$IFS
   declare -i ppn
   ppn=1

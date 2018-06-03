@@ -20,15 +20,7 @@ rpath="${rpath%/*}"
 [ -n "$M_ROOT" ] || M_ROOT=$(readlink -f "$rpath/../../")
 #*/
 
-printcol() {
-  if [ -n "$1" ] ; then
-    l=`expr $col - 1`
-    str=`echo "$1" | cut -b 1-${l}`
-    printf "%-${l}s" $str
-  else
-    printf "%${col}s"
-  fi
-}
+source "$M_ROOT/lib/functions.sh"
 
 find_clust() {
   clust=`echo -e "$cluster" | tr ',' '\n'`
@@ -50,107 +42,7 @@ ppn=1
 commfound=false
 subcommfound=false
 
-IFS1=$IFS
-IFS='-'
-for s_option in "$@"
-do
-  found=false
-  case $s_option in
-  --*=*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
-    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'`
-    ;;
-  --*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-    s_optarg='yes'
-    ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
-  *)
-    s_param=$s_option
-    s_optname=''
-    s_optarg=''
-    case $ppn in
-      1)
-        for comm in ${possible_commands// /-}; do
-          if [ "_$s_param" == "_$comm" ]; then
-            if $commfound ; then
-              echo "Only one command can be executed!"
-              echo "Commands are: $possible_commands"
-              exit 1
-            else
-              found=true
-              commfound=true
-            fi
-          fi
-        done
-        if ! $found ; then 
-          echo "Unknown command: $s_param"
-          exit 1
-        fi
-        command1=$s_param
-        ;;
-      2)
-        for subcomm in ${possible_subcommands// /-}; do
-          [ "_${subcomm%%:*}" == "_$command1" ] && subcommands=${subcomm#*:}
-          for sub in ${subcommands//,/-}; do
-            if [ "_$s_param" == "_$sub" ]; then
-              if $subcommfound ; then
-                echo "Only one subcommand can be executed!"
-                echo "Subcommands for $command1 are: ${subcommands}"
-                exit 1
-              else
-                found=true
-                subcommfound=true
-              fi
-            fi
-          done
-          unset subcommands
-        done
-        if ! $found ; then 
-          param1=$s_param
-        else
-          command2=$s_param
-        fi
-        ;;
-      3)
-        if [ -z "$param1" ] ; then
-          param1=$s_param
-        else
-          param2=$s_param
-        fi
-        ;;
-      4)
-        if [ -z "$param2" ] ; then
-          param2=$s_param
-        else
-          echo "Wrong number of positional parameters!"
-          exit 1
-        fi
-        ;;
-      *)
-        echo "Wrong number of positional parameters!"
-        exit 1
-        ;;
-    esac
-    shift
-    ppn+=1
-    ;;
-  esac
-  for option in `echo $possible_options | sed 's| |-|g'`; do
-    if [ "_$s_optname" == "_$option" ]; then
-      if [ -n "$s_optarg" ]; then
-        eval "$s_optname=\"$s_optarg\""
-        dashoptions="$dashoptions --$s_optname=\"$s_optarg\""
-      else
-        [ -z "$(eval echo \$$option)" ] && eval "$option="
-      fi
-      found=1
-    fi
-  done
-done
+get_opts $@
 
 if [ -n "$cloud" ]; then
   cloud=`echo -e "$cloud" | tr ',' '\n'`
