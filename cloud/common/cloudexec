@@ -62,14 +62,14 @@ remote_exec() {
     KEY=`$M_ROOT/helpers/find_key node $IP`
     [ $? -ne 0 ] && echo "Key not found for IP $IP" && continue
     if [ "_$noclsudo" == "_yes" ]; then
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; "$command"\)
+      $SSH $TIMEOUT $SSHOPTS -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" \(test -e "$M_ROOT_REMOTE/m.rc" \&\& source "$M_ROOT_REMOTE/m.rc" \; export ip=$IP \; "$command"\)
     else
-      $SSH $TIMEOUT -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" sudo bash -c \"test -e \\\"$M_ROOT_REMOTE/m.rc\\\" \&\& source \\\"$M_ROOT_REMOTE/m.rc\\\" \; export ip=$IP \; "$command"\"
+      $SSH $TIMEOUT $SSHOPTS -i "$KEY" -p $SSHPORT "$SSH_REMOTE_USER"@"$IP" sudo bash -c \"test -e \\\"$M_ROOT_REMOTE/m.rc\\\" \&\& source \\\"$M_ROOT_REMOTE/m.rc\\\" \; export ip=$IP \; "$command"\"
     fi
   fi
 }
 
-possible_options="cluster help region verbose limit ip nolocalhost user nosudo cloud threaded"
+possible_options="cluster help region verbose limit ip nolocalhost user nosudo cloud threaded disablestrict"
 commflag=0
 for s_option in "$@"
 do
@@ -118,33 +118,32 @@ Any option can be passed as environment variable of the same name.
 
 Options:
 
-  --cloud=[cloud name]     - limits operations by this cloud. Multiple clouds
+  --cloud=[cloud name]     - limit operations by this cloud. Multiple clouds
                              are allowed, separated by comma.
-  --cluster=[cluster name] - the command will be executed on all nodes
-                             from this cluster. Multiple clusters are
-                             allowed, separated by comma.
+  --cluster=[cluster name] - execute the command on all nodes in this cluster. 
+                             Multiple clusters are allowed, separated by comma.
                              MUST be defined. To execute the command on all
-                             nodes, use --cluster=all. Accepts also M_CLUSTER
+                             nodes, use --cluster=all. Also accepts M_CLUSTER
                              environment variable (used by msh).
   --all                    - shortcut for --cluster=all.
-  --region=[region]        - the command will be executed on all nodes from
-                             this region.
-  --ip=IP                  - executes the command on a single node. This
-                             allows other scripts to include this one the
-                             way that makes possible to apply it to a single
-                             node or multiple nodes depending on which
-                             variables are defined. With this option non-empty,
+  --region=[region]        - execute the command on all nodes from this region.
+  --ip=IP                  - execute the command on a single node. This is
+                             useful when cloudexec is used in other scripts, it
+                             allows for different behavior depending on whether
+                             IP is defined. With this option non-empty,
                              cluster and region are ignored.
-  --verbose                - shows each node details before running the
-                             command.
-  --limit=N                - executes the command on first N nodes of each
-                             cluster defined by the --cluster option
-  --user=[username]        - connects to remote nodes as user [username] and
-                             executes all commands via sudo. Default user is
+  --verbose                - show each node details before running the command.
+  --limit=N                - execute the command on first N nodes of each
+                             cluster defined by the --cluster option.
+  --user=[username]        - connect to remote nodes as user [username] and
+                             execute all commands via sudo. Default user is
                              root.
-  --nosudo                 - if user is defined, executes commands without sudo.
-                             If user is not defined, does nothing.
-  --threaded               - executes commands on multiple nodes in parallel.
+  --nosudo                 - if user is defined, execute commands without sudo.
+                             If user is not defined, it is root, and this option
+                             is ignored.
+  --threaded               - execute commands on multiple nodes in parallel.
+  --disablestrict          - useful for connecting to newly created nodes, to
+                             add their host keys to known_hosts automatically.
 
 EOF
   exit 0
@@ -154,6 +153,7 @@ trap cleanup EXIT
 
 [ -n "$cloud" ] && CLOUD=$cloud
 [ -z "$CLOUD" ] && CLOUD=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
+[ -n "$disablestrict" ] && SSHOPTS="-o StrictHostKeyChecking=no"
 declare -i result
 result=0
 
