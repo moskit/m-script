@@ -39,8 +39,7 @@ getwarn() {
   [ `echo "scale=2; $t >= $probetime1" | bc` -eq 1 ] && warn='<*>' && return
 }
 
-for mserver in `cat "$rpath/../conf/servers.conf" | grep -vE "^$|^#|^[[:space:]]*#"`
-do
+for mserver in `cat "$rpath/servers.conf" | grep -vE "^$|^#|^[[:space:]]*#"`; do
   unset warn
   serverip=`echo $mserver|cut -sd'|' -f1`
   servername=`echo $mserver|cut -sd'|' -f2`
@@ -49,8 +48,12 @@ do
   probetime2=`echo $mserver|cut -sd'|' -f5`
   probetime3=`echo $mserver|cut -sd'|' -f6`
   timeout=`echo $mserver|cut -sd'|' -f7`
+  path=`echo $mserver|cut -sd'|' -f8`
+  payload=`echo $mserver|cut -sd'|' -f9`
+  headers=`echo $mserver|cut -sd'|' -f10`
+  showflag=`echo $mserver|cut -sd'|' -f11`
   if [ -z "$TIMEOUT" ]; then
-    [ -n "$probetime3" ] && TIMEOUT=`expr $probetime3 + 1 2>/dev/null || echo 5` || TIMEOUT=5
+    [ -n "$probetime3" ] && TIMEOUT=`expr $probetime3 + 1 2>/dev/null` || TIMEOUT=5
   fi
   testres=true
   [ -z "$servername" ] && servername=$serverip
@@ -83,9 +86,12 @@ do
     fi
     unset testres
   else
+    [ -n "$path" ] && testurl="${serverip}:$serverport/$path" || testurl="${serverip}:$serverport"
     if [ -n "$CURL" ]; then
       t1=`date +"%s"`
-      $CURL -m $TIMEOUT -s "${serverip}:$serverport" > /dev/null 2>&1
+      [ -n "$headers" ] && CURL="$CURL -H \"$headers\""
+      [ -n "$payload" ] && CURL="$CURL -X POST --data \"$payload\""
+      output=`$CURL -m $TIMEOUT -s "$testurl" 2>&1`
       testres=$?
       t2=`date +"%s"`
       getwarn
@@ -94,20 +100,31 @@ do
         7)
         echo "<***> Curl test connect to $servername failed!"
         ;;
+        35)
+        echo "<***> Curl test connect to $servername: SSL handshake failed!"
+        ;;
         28)
         echo "<***> Curl test connect to $servername timeout! (timeout set to $TIMEOUT seconds)"
         ;;
         3)
-        echo "<**> Curl test: bad URL ${serverip}:$serverport"
+        echo "<**> Curl test: bad URL $testurl"
         ;;
         6)
-        echo "<**> Curl test: unable to resolve ${serverip}:$serverport"
+        echo "<**> Curl test: unable to resolve ${testurl%%/*}"
         ;;
         1)
         echo "<**> Curl test: unsupported protocol"
         ;;
         0)
-        echo "$warn $servername is online (Curl test, port $serverport, connect time $t sec)"
+        if [ -n "$path" ]; then
+          repmessage="$servername reply to request to $path OK, reply time was $t sec"
+        elif [ -n "$payload" ]; then
+          repmessage="$servername reply to POST request OK, reply time was $t sec"
+        else
+          repmessage="$servername is online, reply time was $t sec"
+        fi
+        echo "$warn $repmessage"
+        [ -n "$showflag" ] && echo -e "----- Test Output -----\n$output\n-----------------------"
         ;;
         *)
         echo "<OK> Curl test returned code $testres for $servername port $serverport, connect time was $t sec"
