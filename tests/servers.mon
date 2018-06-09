@@ -117,11 +117,11 @@ for mserver in `cat "$rpath/servers.conf" | grep -vE "^$|^#|^[[:space:]]*#"`; do
         ;;
         0)
         if [ -n "$path" ]; then
-          repmessage="$servername reply to request to $path OK, reply time was $t sec"
+          repmessage="$servername replied to request to /$path, reply time was $t sec"
         elif [ -n "$payload" ]; then
-          repmessage="$servername reply to POST request OK, reply time was $t sec"
+          repmessage="$servername replied to POST request to /$path, reply time was $t sec"
         else
-          repmessage="$servername is online, reply time was $t sec"
+          repmessage="$servername replied on port ${serverport}, reply time was $t sec"
         fi
         echo "$warn $repmessage"
         [ -n "$showflag" ] && echo -e "----- Test Output -----\n$output\n-----------------------"
