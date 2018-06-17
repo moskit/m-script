@@ -36,25 +36,12 @@ fi
 for cld in $cloud ; do
   [ -n "$PS1" ] && echo "*** Cloud $cld"
   regions=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f1,3,12 | grep "|$cld$" | sort | uniq`
-  if [ -n "$region" ]; then
-    for aregion in `echo "$region" | tr ',' ' '`; do
-      echo "$regions"| cut -sd'|' -f2 | grep "$aregion" && foundregions+=( $aregion )
-    done
-    for rgn in ${foundregions[*]} ; do
-      if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
-        source "$M_ROOT/conf/clouds/${cld}.conf"
-        export CLOUD=$cld
-      else
-        echo "No configuration found for cloud $cld"
-        continue
-      fi
-      if [ -n "$CLOUD_PROVIDER" ]; then
-        "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$rgn $@
-      else
-        "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=$rgn $@
-      fi
-    done
-  else
+  for rgn in `echo "$regions" | cut -sd'|' -f2` ; do
+    if [ -n "$region" ]; then
+      for aregion in `echo "$region" | tr ',' ' '`; do
+        echo "$regions"| cut -sd'|' -f2 | grep "$aregion" || continue
+      done
+    fi
     if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
       source "$M_ROOT/conf/clouds/${cld}.conf"
       export CLOUD=$cld
@@ -63,10 +50,10 @@ for cld in $cloud ; do
       continue
     fi
     if [ -n "$CLOUD_PROVIDER" ]; then
-      "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld $@
+      "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$rgn $@
     else
-      "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld $@
+      "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=$rgn $@
     fi
-  fi
+  done
 done
 
