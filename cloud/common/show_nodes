@@ -35,11 +35,11 @@ fi
 
 for cld in $cloud ; do
   [ -n "$PS1" ] && echo "*** Cloud $cld"
-  regions=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f1,3,12 | grep "|$cld$" | sort | uniq`
-  for rgn in `echo "$regions" | cut -sd'|' -f2` ; do
+  regions=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3,12 | grep "|$cld$"`
+  for rgn in `echo "$regions" | cut -sd'|' -f1 | sort | uniq` ; do
     if [ -n "$region" ]; then
       for aregion in `echo "$region" | tr ',' ' '`; do
-        echo "$regions"| cut -sd'|' -f2 | grep "$aregion" || continue
+        echo "$regions" | cut -sd'|' -f1 | grep "^$aregion$" || continue
       done
     fi
     if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
