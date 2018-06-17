@@ -51,7 +51,6 @@ get_opts "$@"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-[ -z "$region" ] && region=$DEFAULT_REGION
 [ -z "$status" ] && [ -n "$state" ] && status=$state
 [ -z "$status" ] && status="running"
 [ -n "$name_source" ] && NAME_SOURCE=$name_source
@@ -65,8 +64,12 @@ declare -i icount
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
+
 if [ -z "$region" ]; then
-  region="us-east-1"
+  region=`find_region`
+  [ -z "$region" ] && region=$DEFAULT_REGION
+  [ -z "$region" ] && region="us-east-1"
+  log "searching nodes in region $region"
 fi
 
 METHOD=GET
