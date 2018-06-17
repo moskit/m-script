@@ -5,7 +5,7 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
-possible_options="cloud region"
+possible_options="cloud region cluster"
 necessary_options=""
 
 IFSORIG=$IFS
@@ -33,10 +33,21 @@ if [ -z "$cloud" ] || [ "_$cloud" == "_all" ]; then
   cloud=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f12 | sort | uniq | grep -v ^$`
 fi
 
+[ -z "$cluster" ] && [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
+
 for cld in $cloud ; do
+  clusters=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f1,3,12 | grep "|$cld$"`
+  clustersfound=false
+  if [ -n "$cluster" ]; then
+    if [ "$cluster" != "all" ]; then
+      for cl in `echo "$cluster" | tr ',' ' '`; do
+        echo "$clusters" | grep "^$cl|" && clustersfound=true
+      done
+      $clustersfound || continue 2
+    fi
+  fi
   [ -n "$PS1" ] && echo "*** Cloud $cld"
-  regions=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f3,12 | grep "|$cld$"`
-  for rgn in `echo "$regions" | cut -sd'|' -f1 | sort | uniq` ; do
+  for rgn in `echo "$clusters" | cut -sd'|' -f2 | sort | uniq` ; do
     if [ -n "$region" ]; then
       for aregion in `echo "$region" | tr ',' ' '`; do
         echo "$regions" | cut -sd'|' -f1 | grep "^$aregion$" || continue
