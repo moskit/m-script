@@ -42,12 +42,15 @@ for cld in $cloud ; do
     if [ "$cluster" != "all" ]; then
       for cl in `echo "$cluster" | tr ',' ' '`; do
         echo "$clusters" | grep -q "^$cl|" && clustersfound=true
+        regions+=( `echo "$clusters" | grep "^$cl|" | cut -sd'|' -f2` )
       done
       $clustersfound || continue
     fi
+  else
+    regions=( `echo "$clusters" | cut -sd'|' -f2` )
   fi
   [ -n "$PS1" ] && echo "*** Cloud $cld"
-  for rgn in `echo "$clusters" | cut -sd'|' -f2 | sort | uniq` ; do
+  for rgn in `echo "${regions[*]}" | tr ' ' '\n' | sort | uniq` ; do
     if [ -n "$region" ]; then
       regionfound=false
       for aregion in `echo "$region" | tr ',' ' '`; do

@@ -150,7 +150,8 @@ list_nodes() {
     if [ -n "$iclustertag" ]; then
       icluster=`echo "$tags" | grep "\"item\"/$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
       if [ -n "$CLUSTER_TAG_REGEXP" ]; then
-        icluster=`expr "$icluster" : "$CLUSTER_TAG_REGEXP"`
+        iclusterregex=`expr "$icluster" : "$CLUSTER_TAG_REGEXP"`
+        [ -n "$iclusterregex" ] && icluster=$iclusterregex
       fi
     else
       [ -z "$all" ] && continue
@@ -171,9 +172,11 @@ list_nodes() {
 
       if [ -n "$cluster" ] || [ -n "$all" ]; then
         if [ -n "$cluster" ]; then
-          for cl in `echo "$cluster" | tr ',' ' '`; do
-            [[ "$cl" != "$icluster" ]] && continue 2
+          clfound=false
+          for cl in `echo "$cluster" | tr ',' '\n'`; do
+            [[ "$cl" == "$icluster" ]] && clfound=true
           done
+          $clfound || continue
         fi
         [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
         extIPprint=`echo "$extIP" | sed 's|\n|,|'`
@@ -216,7 +219,7 @@ list_nodes() {
       log "ERROR: generated list is empty, not saving it"
     else
       log "saving generated list (${#nodelist[*]} nodes)"
-      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}"
+      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
     fi
   fi
   IFS=$IFS1
