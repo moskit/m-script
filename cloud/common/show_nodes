@@ -41,17 +41,19 @@ for cld in $cloud ; do
   if [ -n "$cluster" ]; then
     if [ "$cluster" != "all" ]; then
       for cl in `echo "$cluster" | tr ',' ' '`; do
-        echo "$clusters" | grep "^$cl|" && clustersfound=true
+        echo "$clusters" | grep -q "^$cl|" && clustersfound=true
       done
-      $clustersfound || continue 2
+      $clustersfound || continue
     fi
   fi
   [ -n "$PS1" ] && echo "*** Cloud $cld"
   for rgn in `echo "$clusters" | cut -sd'|' -f2 | sort | uniq` ; do
     if [ -n "$region" ]; then
+      regionfound=false
       for aregion in `echo "$region" | tr ',' ' '`; do
-        echo "$regions" | cut -sd'|' -f1 | grep "^$aregion$" || continue
+        [ "_$aregion" == "_$rgn" ] && regionfound=true
       done
+      $regionfound || continue 
     fi
     if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
       source "$M_ROOT/conf/clouds/${cld}.conf"
