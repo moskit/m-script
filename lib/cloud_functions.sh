@@ -306,7 +306,9 @@ run_init() {
     fi
   fi
 }
-  
-  
-  
-  
+
+find_region() {
+  [ -z "$M_CLUSTER" ] && return 1
+  grep "^$M_CLUSTER|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3
+}
+

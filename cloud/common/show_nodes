@@ -5,7 +5,7 @@ rpath=${0%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
 
-possible_options="cloud"
+possible_options="cloud region"
 necessary_options=""
 
 IFSORIG=$IFS
@@ -35,17 +35,38 @@ fi
 
 for cld in $cloud ; do
   [ -n "$PS1" ] && echo "*** Cloud $cld"
-  if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
-    source "$M_ROOT/conf/clouds/${cld}.conf"
-    export CLOUD=$cld
+  regions=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f1,3,12 | grep "|$cld$" | sort | uniq`
+  if [ -n "$region" ]; then
+    for aregion in `echo "$region" | tr ',' ' '`; do
+      echo "$regions"| cut -sd'|' -f2 | grep "$aregion" && foundregions+=( $aregion )
+    done
+    for rgn in ${foundregions[*]} ; do
+      if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
+        source "$M_ROOT/conf/clouds/${cld}.conf"
+        export CLOUD=$cld
+      else
+        echo "No configuration found for cloud $cld"
+        continue
+      fi
+      if [ -n "$CLOUD_PROVIDER" ]; then
+        "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$rgn $@
+      else
+        "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=$rgn $@
+      fi
+    done
   else
-    echo "No configuration found for cloud $cld"
-    continue
-  fi
-  if [ -n "$CLOUD_PROVIDER" ]; then
-    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld $@
-  else
-    "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld $@
+    if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
+      source "$M_ROOT/conf/clouds/${cld}.conf"
+      export CLOUD=$cld
+    else
+      echo "No configuration found for cloud $cld"
+      continue
+    fi
+    if [ -n "$CLOUD_PROVIDER" ]; then
+      "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld $@
+    else
+      "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld $@
+    fi
   fi
 done
 
