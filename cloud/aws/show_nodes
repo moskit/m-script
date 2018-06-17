@@ -64,6 +64,13 @@ declare -i icount
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
+if [ -n "$cluster" ]; then
+  if [ "$cluster" == "all" ]; then
+    unset M_CLUSTER
+  fi
+else
+  [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
+fi
 
 if [ -z "$region" ]; then
   region=`find_region`
@@ -163,8 +170,11 @@ list_nodes() {
     if [ -z "$update_nodes_list" ] ; then
 
       if [ -n "$cluster" ] || [ -n "$all" ]; then
-        [ -n "$cluster" ] && [[ "$cluster" != "$icluster" ]] && continue
-
+        if [ -n "$cluster" ]; then
+          for cl in `echo "$cluster" | tr ',' ' '`; do
+            [[ "$cl" != "$icluster" ]] && continue 2
+          done
+        fi
         [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
         extIPprint=`echo "$extIP" | sed 's|\n|,|'`
         intIPprint=`echo "$intIP" | sed 's|\n|,|'`
