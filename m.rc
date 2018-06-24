@@ -54,7 +54,7 @@ cr() {
   [ -z "$1" ] && cd "$ROLES_ROOT/roles" && return
   [ "_$1" == "_--list" ] && ls "$ROLES_ROOT/roles" && return
   [ "_$1" == "_--reload" ] && cr "$role" && return
-  if [ ! -d "$ROLES_ROOT/roles/$1" ] ; then
+  if [ -n "$1" ] && [ ! -d "$ROLES_ROOT/roles/$1" ] ; then
     echo "Role $1 doesn't exist. Use cr --list to get the list of roles available."
     return
   fi
@@ -68,7 +68,7 @@ cr() {
   else
     M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
     ncl=`echo -e "$M_CLUSTER" | wc -l`
-  [ $ncl -gt 1 ] && M_CLUSTER=`echo -n "$M_CLUSTER" | tr '\n' ','` && echo "$ncl clusters found for this role. Default cluster is a list: $M_CLUSTER"
+  [ $ncl -gt 1 ] && M_CLUSTER=`echo -n "$M_CLUSTER" | tr '\n' ','` && echo -e "$ncl clusters found for this role. Default cluster is a list: $M_CLUSTER\nTo set specific cluster, use command 'role set cluster <cluster name>'."
   fi
   if [ -z "$M_CLUSTER" ]; then
     echo "Cluster not found for this role, default cluster and flavor cannot be determined."

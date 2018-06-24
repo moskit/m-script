@@ -23,8 +23,8 @@ rpath="${rpath%/*}"
 # no need to use this script outside msh
 [ -z "$ROLES_ROOT" ] && echo "ROLES_ROOT not defined" && exit 1
 
-possible_commands="help list clone create edit show"
-possible_subcommands="list:meta,metas,tasks,scripts,commands,files,roles edit:meta,task,script,command,file show:meta,task,script,command,file"
+possible_commands="help list clone create edit show set"
+possible_subcommands="list:meta,metas,tasks,scripts,commands,files,roles edit:meta,task,script,command,file show:meta,task,script,command,file set:cluster"
 possible_options="role cluster flavor method all strip"
 
 printcol() {
@@ -542,7 +542,7 @@ case $command1 in
     [ -z "$ENCRYPT_METHOD" ] && ENCRYPT_METHOD="aes-128-cbc"
     case $command2 in
       conf)
-        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$ROLES_ROOT/conf/${role}.conf"
+        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$ROLES_ROOT/conf/${role}.conf"`
         ;;
       file)
         if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/$param1" ]; then
@@ -554,7 +554,7 @@ case $command1 in
         fi
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/$param1"
         [ ! -e "$rf" ] && echo "File $param1 doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
-        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$rf"
+        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$rf"`
         ;;
       *)
         echo -e "Usage: role encrypt file|conf NAME\n       NAME can be omitted in case of conf" && exit 0
@@ -567,7 +567,7 @@ case $command1 in
     [ -z "$ENCRYPT_METHOD" ] && ENCRYPT_METHOD="aes-128-cbc"
     case $command2 in
       conf)
-        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$ROLES_ROOT/conf/${role}.conf"
+        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$ROLES_ROOT/conf/${role}.conf"`
         ;;
       file)
         if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/${param1}.enc" ]; then
@@ -579,15 +579,24 @@ case $command1 in
         fi
         [ ! -e "$rf" ] && rf="$ROLES_ROOT/roles/$role/common/files/${param1}.enc"
         [ ! -e "$rf" ] && echo "File ${param1}.enc doesn't exist in this role. Flavors $flavor and common have been searched. Use options --role= and --flavor= to search in other roles and flavors." && exit 1
-        ENCRYPT_PASSWORD=$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$rf"
+        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$rf"`
         ;;
       *)
         echo -e "Usage: role decrypt file|conf NAME\n       NAME can be omitted in case of conf" && exit 0
         ;;
     esac
     ;;
-  select)
-    
+  set)
+    role_required
+    [ -z "$param1" ] && echo -e "Usage: role set {variable} {value}" && exit 1
+    case $command2 in
+      cluster)
+        export M_CLUSTER=$param1
+        ;;
+      *)
+        echo "Unknown variable to set: $command2"
+        ;;
+    esac
     ;;
   help)
     cat <<"EOF"
