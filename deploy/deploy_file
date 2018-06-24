@@ -19,47 +19,7 @@ rcommand=${0##*/}
 rpath=${0%/*}
 #*/
 
-store_vars() {
-  if [ -f "${tmpfile}.var" ]; then
-    [ -n "$verbose" ] && echo "Reading existing variables"
-    source "${tmpfile}.var"
-  fi
-  [ -n "$verbose" ] && echo "Sourcing $1"
-  for LINE in `cat "$1" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
-    # to respect environment variables and variables passed from command line
-    pvar=`expr "$LINE" : '[[:space:]]*\([a-zA-Z0-9_]*\)=.*$'`
-    if [ -n "$pvar" ]; then
-      pval="`eval echo "\\$$pvar"`"
-      if [ -n "$pval" ]; then
-        [ `expr "$pval" : "[0-9]*$"` -eq 0 ] && echo "${pvar}=\"`eval echo "\\$$pvar"`\"" >> "${tmpfile}.var" && continue || echo "${pvar}=`eval echo "\\$$pvar"`" >> "${tmpfile}.var" && continue
-      fi
-    fi
-    $debug && echo "  == $LINE"
-    ELINE=`echo "$LINE" | sed 's|"|\\\"|g' | sed "s|'|\\\'|g" | sed 's_|_\\\|_g'`
-    $debug && echo "  << $ELINE"
-    # This conditional evaluation below is a workaround for hard nuts like pipes
-    # inside sub-shells. More complex constructs involving both sub-shell and 
-    # non-sub-shell expression in a single line both with pipes will probably 
-    # not work. Just avoid such things.
-    eval "$LINE" 2>/dev/null
-    eval $(eval "echo \"$LINE\"") 2>/dev/null
-    if [ $? -eq 0 ]; then
-      $debug && echo "evaluating plain line"
-      eval "echo \"$LINE\"" >> "${tmpfile}.var"
-    else
-      eval "$ELINE" 2>/dev/null
-      eval $(eval "echo \"$ELINE\"") 2>/dev/null
-      if [ $? -eq 0 ]; then
-        $debug && echo "evaluating converted line"
-        eval "echo \"$ELINE\"" >> "${tmpfile}.var"
-      else
-        echo -e "ERROR: both plain and converted lines evaluation failed for this line:\n\n$LINE\n\n"
-        exit 1
-      fi
-    fi
-    $debug && echo "  >> `tail -1 "${tmpfile}.var"`"
-  done
-}
+source "$M_ROOT/lib/deploy_functions.sh"
 
 find_source() {
   if [ -f "$from" ] ; then
@@ -106,7 +66,7 @@ find_source() {
 prepare_file() {
   [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
   if [ -f "$ROLES_ROOT/conf/$role.conf" ]; then
-    store_vars "$ROLES_ROOT/conf/$role.conf"
+    store_vars "$ROLES_ROOT/conf/$role.conf" "${tmpfile}.var"
   else
     echo "role config for $role not found!"
   fi
@@ -274,14 +234,18 @@ find_source
 tmpfile="$M_TEMP/deploy/`echo $fullfrom | tr '/' '_'`"
 rm -f "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 
-[ -f "$ROLES_ROOT/conf/$role.conf" ] && store_vars "$ROLES_ROOT/conf/$role.conf"
+if [ -f "${tmpfile}.var" ]; then
+  [ -n "$verbose" ] && echo "Reading existing variables"
+  source "${tmpfile}.var"
+fi
+[ -f "$ROLES_ROOT/conf/$role.conf" ] && store_vars "$ROLES_ROOT/conf/$role.conf" "${tmpfile}.var"
 # file prepared by deploy.run (useful if deploy_file is called from there)
-[ -n "$VARFILE" ] && store_vars "$VARFILE"
+[ -n "$VARFILE" ] && store_vars "$VARFILE" "${tmpfile}.var"
 ## ROLEINCL - role of symlinked script or script defined in meta  from another
 ## role
 ## realrole - same as ROLEINCL, but when file to deploy is found in that role,
 ## not just script containing deploy_file
-[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/${ROLEINCL}.conf" ] && store_vars "$ROLES_ROOT/conf/${ROLEINCL}.conf"
+[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/${ROLEINCL}.conf" ] && store_vars "$ROLES_ROOT/conf/${ROLEINCL}.conf" "${tmpfile}.var"
 
 if [ -z "$local" ]; then
 

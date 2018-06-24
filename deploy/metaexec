@@ -400,6 +400,7 @@ if [ -n "$timestamp" ]; then
   [ -n "$newnode" ] && echo "Repeating existing sequence is not available for new node. If you want to repeat a meta that has brought up a previous node, it's safe to run $rcommand --repeat or $rcommand --timestamp=<timestamp> without other arguments. It will pick up IP address of that node and all relevant arguments." && exit 1
   if [ "_$timestamp" == "_repeat" ]; then
     timestampact=`ls -1tr "$M_DEPL_WORK_DIR" | tail -1` && timestampact=${timestampact##*.} && echo "Restoring process with timestamp $timestampact"
+    rm "$M_DEPL_WORK_DIR"/*.$timestampact/messages 2>/dev/null
   else
     timestampact="$timestamp"
   fi
@@ -418,7 +419,7 @@ else
 fi
 
 if [ -n "$ip" ]; then
-  [ -n "$newnode" ] && echo "Both newnode and ip are defined. Not sure what to do." && exit 1
+  [ -n "$newnode" ] && echo "Both newnode and ip are given. Not sure what to do." && exit 1
   if [ `expr "$ip" : "[^[0-9.]]*" 2>/dev/null` -ne 0 ] ; then
     echo "Something's wrong with IP: $ip"
     exit 1
@@ -488,9 +489,11 @@ install $V -d "$CURRTASKDIR"
 export CURRTASKDIR
 touch "$CURRTASKDIR/log"
 
+# the condition below does not work when multiple clusters are specified
+# this situation is dealt with later
 if [ -z "$flavor" ]; then
   flavor=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f11`
-  [ -z "$flavor" ] && echo -e "Unable to find the flavor of this cluster/node OS\n\n (hint: option --flavor is available)\n" && exit 1 || echo "Using flavor $flavor, default for cluster $cluster"
+  [ -n "$flavor" ] && echo "Using flavor $flavor, default for cluster $cluster"
 fi
 
 [ -z "$NODE_CHECKS_NUMBER" ] && NODE_CHECKS_NUMBER=20
@@ -537,6 +540,27 @@ if [ -n "$newnode" ]; then
   else
     echo "*** This is a test"
   fi
+  
+  $debug && log "ensuring the target node $ip is accessible"
+  if [ -z "$test" -a -n "$ip" ]; then
+    for ((k=0; k<$NODE_CHECKS_NUMBER; k++)); do
+      $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
+      if [ $? -ne 0 ]; then
+        echo "Unable to login to the node $ip using key ${KEY}, trying again...">>"$LOG"
+        loggedin=false
+        sleep $NODE_CHECKS_PERIOD
+      else
+        loggedin=true
+        break
+      fi
+    done
+    if ! $loggedin && [ -n "$newnode" ]; then
+      # stop useless node and tell the parent process that something's wrong
+      IAMACHILD=1 "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
+      meta_exit 13 573
+    fi
+  fi
+  
 fi
 
 # Default output is console, colored if colors are supported
@@ -565,31 +589,24 @@ if [ -n "$ip" ]; then
   fi
 fi
 
-KEY=`"$M_ROOT"/helpers/find_key cluster "$cluster"` || KEY=`"$M_ROOT"/helpers/find_key node "$ip"` || meta_exit 1 509
-[ -z "$KEY" ] && echo "Access key not found!" && meta_exit 1 510
+# the start of the cluster object cluster|key|flavor required to support
+# multiple clusters in metaexec
+for cl in `echo $cluster | tr ',' ' '`; do
+  KEY=`"$M_ROOT"/helpers/find_key cluster "$cl"`
+  if [ -z "$KEY" ]; then
+    KEY=`"$M_ROOT"/helpers/find_key node "$ip"`
+  fi
+  [ -z "$KEY" ] && echo "Access key for cluster $cl not found!" && meta_exit 1 510
+  CL+=( "$cl|$KEY" )
+done
+
 [ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
 # it's here because createnode function re-reads cloud config
 [ -n "$SSHPORT" ] || SSHPORT=22
+
+
 if [ -z "$list" ]; then
-  $debug && log "ensuring the target node $ip is accessible"
-  if [ -z "$test" -a -n "$ip" ]; then
-    for ((k=0; k<$NODE_CHECKS_NUMBER; k++)); do
-      $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
-      if [ $? -ne 0 ]; then
-        echo "Unable to login to the node $ip using key ${KEY}, trying again...">>"$LOG"
-        loggedin=false
-        sleep $NODE_CHECKS_PERIOD
-      else
-        loggedin=true
-        break
-      fi
-    done
-    if ! $loggedin && [ -n "$newnode" ]; then
-      # stop useless node and tell the parent process that something's wrong
-      IAMACHILD=1 "$M_ROOT"/cloud/$CLOUD_PROVIDER/destroy_node --ip=$ip
-      meta_exit 13 573
-    fi
-  fi
+
   #[ -z "$SCP" ] && echo "SCP not found!" && exit 1
 
   #${rpath}/testmeta --flavor=$flavor --task=$task --role=$role || exit 1
@@ -622,6 +639,7 @@ for pre in "$ROLES_ROOT/roles/$role"/*.meta.pre ; do
     fi
   fi
 done
+
 IFS='
 '
 if [ -e "$CURRTASKDIR/meta.pre" ]; then
@@ -696,6 +714,8 @@ for meta in `cat "$CURRTASKDIR"/meta` ; do
   fi
   metan+=1
 done
+
+
 IFS=$IFSORIG
 
 echo
