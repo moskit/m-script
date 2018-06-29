@@ -108,16 +108,28 @@ case $command1 in
     fi
     ;;
   show)
-    "$rpath"/get_node_details $dashoptions $@
+    for cld in $cloud ; do
+      if [ -z "$cluster" ]; then
+        find_clust || continue
+      else
+        clust=`echo "$cluster" | tr ',' ' '`
+        for cl in `echo -e "$clust"` ; do
+          nodes=`grep -E "\|$cl\|$cld$|\|$cl\|$cld\|$" "$M_ROOT"/nodes.list | cut -sd'|' -f1`
+          for node in $nodes ; do
+            "$rpath"/get_node_details --cloud=$cld --cluster=$cl --ip=$node
+          done
+        done
+      fi
+    done
     ;;
   create)
-    "$rpath"/create_node $dashoptions $@
+    "$rpath"/create_node $@
     ;;
   destroy)
-    "$rpath"/destroy_node $dashoptions $@
+    "$rpath"/destroy_node $@
     ;;
   save)
-    "$rpath"/save_node $dashoptions $@
+    "$rpath"/save_node $@
     ;;
   stop|shutdown)
     if [ -n "$ip" ]; then
@@ -130,11 +142,11 @@ case $command1 in
       stopres=1
     fi
     if [ $stopres -eq 1 ]; then
-      "$M_ROOT"/cloud/common/stop_node $dashoptions && exit 0
+      "$M_ROOT"/cloud/common/stop_node $@ && exit 0
     fi
     ;;
   start|boot)
-    "$M_ROOT"/cloud/common/start_node $dashoptions && exit 0
+    "$M_ROOT"/cloud/common/start_node $@ && exit 0
     # TODO find_by_id
     if [ -n "$ip" ] || [ -n "$name" ]; then
       sleep 10

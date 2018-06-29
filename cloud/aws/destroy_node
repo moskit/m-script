@@ -60,16 +60,16 @@ Usage: destroy_node {options}
 
 where options are:
 
-id={instance id}       - EC2 instance ID
-name={node name)       - M-Script node name
-ip={ip}                - node IP address
+--id={instance id}     - EC2 instance ID
+--name={node name)     - M-Script node name
+--ip={ip}              - node IP address
 
-  One of id, name, ip is mandatory
+  One of id, name, or ip is required
 
-cloud={cloud name}     - must be provided. Only this cloud will be searched for
-                         the node to destroy. In most cases it is not mandatory
-                         to provide it via command-line option though since
-                         it is provided via environment variable CLOUD
+--cloud={cloud name}   - must be provided. Only this cloud will be searched for
+                         the node to destroy. In most cases it is not required
+                         to provide it via command-line option since it is
+                         provided as environment variable CLOUD
                          
 EOF
 

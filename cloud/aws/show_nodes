@@ -216,7 +216,8 @@ list_nodes() {
   done
   if [ -n "$update_nodes_list" ]; then
     if [ ${#nodelist[*]} -eq 0 ]; then
-      log "ERROR: generated list is empty, not saving it"
+      log "generated list is empty"
+      echo -n > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
     else
       log "saving generated list (${#nodelist[*]} nodes)"
       for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
