@@ -308,7 +308,14 @@ run_init() {
 }
 
 find_region() {
-  [ -z "$M_CLUSTER" ] && return 1
-  grep "^$M_CLUSTER|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3
+  local region_cluster
+  [ -n "$1" ] && region_cluster=$1
+  if [ -z "$region_cluster" ]; then
+    region_cluster=$M_CLUSTER
+    [ -z "$region_cluster" ] && return 1
+  fi
+  for rc in `echo "$region_cluster" | tr ',' ' '`; do
+    grep "^$rc|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3
+  done
 }
 

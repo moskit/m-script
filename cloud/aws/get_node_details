@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 
-possible_options="cloud id name ip return verbose log_request"
+possible_options="cloud cluster id name ip return verbose log_request"
 necessary_options=""
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && echo "Node details? Which node?" && exit 1
@@ -73,37 +73,30 @@ source "$M_ROOT/lib/cloud_functions.sh"
 
 exit_status=0
 
-# TODO: add this to cloud config
-SignatureMethod=HmacSHA256
-SignatureVersion=2
-Version="2013-07-15"
+if [ -z "$region" ]; then
+  [ -n "$cluster" ] && region=`find_region $cluster` || region=`find_region`
+  [ `echo "$region" | wc -l` -gt 1 ] && echo "More than one region returned for cluster $region_cluster" && exit 1
+  [ -z "$region" ] && region=$DEFAULT_REGION
+  [ -z "$region" ] && region="us-east-1"
+  log "searching nodes in region $region"
+fi
+
+METHOD=GET
+ACTION=DescribeInstances
+SERVICE=ec2
+ENDPOINT="ec2.${region}.amazonaws.com"
+VERSION="2013-10-15"
+AUTHMETHOD=header
 
 find_by_id() {
-  qparams="Filter.1.Name=instance-id\nFilter.1.Value=${1}"
+  qparams="Filter.1.Name=instance-id&Filter.1.Value=${1}"
 }
 
 find_by_ip() {
   if [ "_$NETWORK" == "_external" ]; then
-    qparams="Filter.1.Name=ip-address\nFilter.1.Value=${1}"
+    qparams="Filter.1.Name=ip-address&Filter.1.Value=${1}"
   else
-    qparams="Filter.1.Name=private-ip-address\nFilter.1.Value=${1}"
-  fi
-}
-
-request() {
-  timestamp=`date +"%Y-%m-%dT%H%%3A%M%%3A%S"`
-  qparams="${qparams}\nSignatureMethod=${SignatureMethod}\nSignatureVersion=${SignatureVersion}\nVersion=${Version}\nTimestamp=${timestamp}"
-  qparams=`echo -e -n "$qparams" | sort | tr '\n' '&'`
-  query=`echo -n "AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams%&}"`
-  Q=`echo -ne "GET\nec2.amazonaws.com\n/\n$query"`
-  signature=`echo -n "$Q"| $SSLEX dgst -binary -sha256 -hmac "$AWS_SECRET_ACCESS_KEY" | base64 | "$M_ROOT"/lib/urlencode`
-  if [ "_$log_request" == "_yes" ]; then
-    log "$CURL \"https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams}Signature=$signature\""
-    reqres=`$CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams}Signature=$signature"`
-    log "$reqres"
-    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
-  else
-    $CURL "https://ec2.amazonaws.com/?AWSAccessKeyId=${AWS_ACCESS_KEY_ID}&Action=DescribeInstances&${qparams}Signature=$signature" | "$M_ROOT"/lib/xml2txt | grep -v ^$ > "$M_TEMP/${rcommand}.resp"
+    qparams="Filter.1.Name=private-ip-address&Filter.1.Value=${1}"
   fi
 }
 
@@ -154,11 +147,12 @@ else
   find_by_id $id
 fi
 
-request && log "Request sent" || proper_exit 1 159
-reqparsed=`cat "$M_TEMP/${rcommand}.resp"`
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 161
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 162
+[ -n "$verbose" ] && log "sending request"
+reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $ENDPOINT $ACTION $qparams`
+echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 153
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 154
 
 printreturn "$reqparsed" || exit_status=2
 
-proper_exit $exit_status 166
+proper_exit $exit_status 158

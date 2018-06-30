@@ -16,7 +16,7 @@ for cld in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | 
     [ $res -eq 10 ] && log "$cld list is not updated: failed to acquire cloud operations lock" && continue
     [ $res -eq 0 ] && log "$cld list updated successfully"
     [ $res -eq 1 ] && log "ERROR $cld list is not updated"
-    [ -e "$M_ROOT/cloud/nodes.list.${cld}" ] && catline+=("$M_ROOT/cloud/nodes.list.${cld}.${rgn}")
+    [ -e "$M_ROOT/cloud/nodes.list.${cld}.${rgn}" ] && catline+=("$M_ROOT/cloud/nodes.list.${cld}.${rgn}")
   done
 done
 

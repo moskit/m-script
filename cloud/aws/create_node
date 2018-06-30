@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 
-possible_options="cloud region cluster image ami aki kernel name return verbose subnet number additional_params log_request dry"
+possible_options="cloud region cluster image ami aki kernel name return verbose subnet number additional_params log_request dry help"
 necessary_options=""
 IFS1=$IFS
 IFS='-'
