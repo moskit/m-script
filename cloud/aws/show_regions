@@ -72,7 +72,7 @@ AUTHMETHOD=header
 list_regions() {
   for sn in `echo "$reqparsed" | cut -sd'/' -f8 | sort | uniq`; do
     regionObject=`echo "$reqparsed" | grep "\"regionInfo\"/0/\"item\"/$sn/"`
-    echo "`echo "$regionObject" | grep 'regionName' | cut -sd'|' -f2`|`echo "$regionObject" | grep 'regionENdpoint' | cut -sd'|' -f2`"
+    echo "`echo "$regionObject" | grep 'regionName' | cut -sd'|' -f2 | tr -d '"'`|`echo "$regionObject" | grep 'regionEndpoint' | cut -sd'|' -f2 | tr -d '"'`"
   done
 }
 
