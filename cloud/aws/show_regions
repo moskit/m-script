@@ -61,10 +61,11 @@ else
   [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 fi
 
+[ -z "$region" ] && region="us-east-1"
+
 METHOD=GET
 ACTION=DescribeRegions
 SERVICE=ec2
-ENDPOINT="ec2.${region}.amazonaws.com"
 VERSION="2013-10-15"
 AUTHMETHOD=header
 

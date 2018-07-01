@@ -32,8 +32,7 @@ LOG="$M_ROOT/logs/cloud.log"
 [ -n "$verbose" ] && debug=true || debug=false
 
 aws_api_request() {
-  ### aws_api_request {service} {version} {authmethod} {GET|POST} {endpoint} {action} <params>
-  ### endpoint must not contain https://
+  ### aws_api_request {service} {version} {authmethod} {GET|POST} {region} {action} <params>
   ### headers must be assigned to variable HEADERS. If it's empty, two basic
   ### headers are generated: host and x-amz-date
   ### payload (if present) must be assigned to variable PAYLOAD
@@ -41,6 +40,7 @@ aws_api_request() {
   ### authmethod can be header or params
   [ -z "$6" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
   [ -z "$region" ] && log "region not specified" && return 2
+  endpoint="${service}.${region}.amazonaws.com"
   local service
   service=$1
   shift
