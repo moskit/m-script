@@ -70,7 +70,10 @@ VERSION="2013-10-15"
 AUTHMETHOD=header
 
 list_regions() {
-  echo "$reqparsed"
+  for sn in `echo "$reqparsed" | cut -sd'/' -f8 | sort | uniq`; do
+    regionObject=`echo "$reqparsed" | grep "\"regionInfo\"/0/\"item\"/$sn/"`
+    echo "`echo "$regionObject" | grep 'regionName' | cut -sd'|' -f2`|`echo "$regionObject" | grep 'regionENdpoint' | cut -sd'|' -f2`"
+  done
 }
 
 if [ -z "$noupdate" ]; then
