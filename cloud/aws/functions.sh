@@ -39,8 +39,6 @@ aws_api_request() {
   ### version is API version, e.g. 2016-11-15 (see API documentation)
   ### authmethod can be header or params
   [ -z "$6" ] && log "Wrong number of parameters: aws_api_request $*" && return 1
-  [ -z "$region" ] && log "region not specified" && return 2
-  endpoint="${service}.${region}.amazonaws.com"
   local service
   service=$1
   shift
@@ -53,14 +51,16 @@ aws_api_request() {
   local method
   method=$1
   shift
-  local endpoint
-  endpoint=$1
+  local region
+  region=$1
   shift
   local action
   action=$1
   shift
   local params
   params="$@"
+  [ -z "$region" ] && log "region not specified" && return 2
+  endpoint="${service}.${region}.amazonaws.com"
   timestamp=`date -u +"%Y%m%dT%H%M%SZ"`
   IFSORIG=$IFS
   
