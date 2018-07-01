@@ -61,9 +61,21 @@ export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
 declare -i icount
+declare -i filterindex
+filterindex=0
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
-[ -n "$filter" ] && filter="${filter},addresses,cluster"
-
+if [ -n "$filter" ]; then
+  for f in `echo "$filter" | tr ',' ' '`; do
+    filterindex+=1
+    fn=`echo "$f" | cut -d'=' -f1`
+    fv=`echo "$f" | cut -d'=' -f2`
+    qparams="${qparams}Filter.${filterindex}.Name=${fn}&Filter.${filterindex}.Value=${fv}&"
+  done
+fi
+if [ -n "$state" ]; then
+  filterindex+=1
+  qparams="${qparams}Filter.${filterindex}.Name=instance-state-name&Filter.${filterindex}.Value=${state}&"
+fi
 if [ -n "$cluster" ]; then
   if [ "$cluster" == "all" ]; then
     unset M_CLUSTER
@@ -84,6 +96,7 @@ ACTION=DescribeInstances
 SERVICE=ec2
 VERSION="2013-10-15"
 AUTHMETHOD=header
+[ -n "$qparams" ] && qparams=${qparams%&}
 
 get_iname() {
   for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
@@ -233,7 +246,7 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION`
+  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION $qparams`
   echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
   [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
