@@ -44,25 +44,14 @@ source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
 source "$rpath/functions.sh"
 LOG="$M_ROOT/logs/cloud.log"
-keep_response=true
 
 get_opts "$@"
 
 M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 
-[ -z "$status" ] && [ -n "$state" ] && status=$state
-[ -z "$status" ] && status="running"
-[ -n "$name_source" ] && NAME_SOURCE=$name_source
-[ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
-[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
-
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
-
-declare -i icount
-[ -n "$forceupdate" ] && unset noupdate # for compatibility
-[ -n "$filter" ] && filter="${filter},addresses,cluster"
 
 if [ -n "$cluster" ]; then
   if [ "$cluster" == "all" ]; then
@@ -72,158 +61,15 @@ else
   [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 fi
 
-if [ -z "$region" ]; then
-  region=`find_region`
-  [ -z "$region" ] && region=$DEFAULT_REGION
-  [ -z "$region" ] && region="us-east-1"
-  log "searching nodes in region $region"
-fi
-
 METHOD=GET
-ACTION=DescribeInstances
+ACTION=DescribeRegions
 SERVICE=ec2
 ENDPOINT="ec2.${region}.amazonaws.com"
 VERSION="2013-10-15"
 AUTHMETHOD=header
 
-get_iname() {
-  for ns in $NAME_SOURCE $NAME_SOURCE_FALLBACK ; do
-    case $ns in
-      host)
-        get_hostname $1
-        ;;
-      privateDnsName|metadata)
-        sname=`echo "$node" | grep '/"privateDnsName"/0' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'`
-        ;;
-      dnsName)
-        sname=`echo "$node" | grep '/"dnsName"/0' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'`
-        ;;
-      *)
-        # anything else is considered to be a tag as the source (see config)
-        NAMETAG="${ns#*:}"
-        [ -z "$NAMETAG" ] && NAMETAG=name
-        nametagind=`echo "$tags" | grep '/"key"/' | grep \|\"$NAMETAG\" | cut -d'/' -f16`
-        sname=`echo "$tags" | grep "\"item\"/$nametagind/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
-        ;;
-    esac
-    [ -n "$sname" ] && break
-  done
-  echo "$sname"
-}
-
-list_nodes() {
-  $debug && [ -n "$update_nodes_list" ] && log "Updating node list"
-  IFS1=$IFS
-  IFS='
-'
-  if [ `echo -n "$reqparsed" | wc -l` -lt 3 ]; then
-    reqparsed=`cat "$M_TEMP/${rcommand}.resp" 2>/dev/null`
-  fi
-  [ "_$view" == "_raw" ] && echo "$reqparsed" && return
-  declare -a nodelist
-#==============================================================================
-  for sn in `echo "$reqparsed" | awk -F'"reservationSet"/' '{print $2}' | grep instancesSet | cut -d'/' -f1,2,3,4,5,6,7 | sort | uniq` ; do
-    unset id name istatus extIP intIP IP imageId flavorId icluster
-
-    node=`echo "$reqparsed" | grep \"reservationSet\"\/$sn\/`
-    
-    intIP=`echo "$node" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'` # may be multiple
-    extIP=`echo "$node" | grep '/"ipAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
-    
-    id=`echo "$node" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`
-    imageId=`echo "$node" | grep '/"imageId"/0' | cut -d'|' -f2 | tr -d '"'`
-    istatus=`echo "$node" | grep '/"instanceState"/0/"name"/0' | cut -d'|' -f2 | tr -d '"'`
-    flavorId=`echo "$node" | grep '/"instanceType"/0' | cut -d'|' -f2 | tr -d '"'`
-    secgroup=`echo "$node" | grep '/"groupSet"/0/"item"/0/"groupName"' | cut -d'|' -f2 | sort | uniq | tr -d '"' | tr '\n' ','`
-    izone=`echo "$node" | grep '/"placement"/0/"availabilityZone"/0' | cut -d'|' -f2 | tr -d '"'`
-    iaki=`echo "$node" | grep '/"kernelId"/0' | cut -d'|' -f2 | tr -d '"'`
-    #iari=`echo "$sn" | grep '/"ipAddress"/0' | cut -d'|' -f2 | tr -d '"'`
-    if [ "_$NETWORK" == "_external" ] ; then
-      IP=$extIP
-    else
-      IP=$intIP
-    fi
-
-    tags=`echo "$node" | grep '/"tagSet"/'`
-    iname=`get_iname $IP`
-    iclustertag=`echo "$tags" | grep '/"key"/' | grep \|\"$CLUSTER_TAG\" | cut -d'/' -f16`
-    if [ -n "$iclustertag" ]; then
-      icluster=`echo "$tags" | grep "\"item\"/$iclustertag/\"value\"/" | cut -d'|' -f2 | head -1 | tr -d '"'`
-      if [ -n "$CLUSTER_TAG_REGEXP" ]; then
-        iclusterregex=`expr "$icluster" : "$CLUSTER_TAG_REGEXP"`
-        [ -n "$iclusterregex" ] && icluster=$iclusterregex
-      fi
-    else
-      [ -z "$all" ] && continue
-    fi
-    
-    ikey=`echo "$node" | grep '/"keyName"/0' | cut -d'|' -f2 | tr -d '"'`
-    
-    bdevs=`echo "$node" | grep '/"blockDeviceMapping"/'`
-    unset ebs
-    for bdev in `echo "$bdevs" | grep '|"attached"' | cut -d'/' -f16 | sort | uniq` ; do
-      bdevname=`echo "$bdevs" | grep "/$bdev/\"deviceName\"" | cut -d'|' -f2 | tr -d '"'`
-      bdevid=`echo "$bdevs" | grep "/$bdev/\"ebs\"/0/\"volumeId\"" | cut -d'|' -f2 | tr -d '"'`
-      bdevsince=`echo "$bdevs" | grep "/$bdev/\"ebs\"/0/\"attachTime\"" | cut -d'|' -f2 | tr -d '"'`
-      ebs+=("$bdevid|$bdevname|$bdevsince")
-    done
-
-    if [ -z "$update_nodes_list" ] ; then
-
-      if [ -n "$cluster" ] || [ -n "$all" ]; then
-        if [ -n "$cluster" ]; then
-          clfound=false
-          for cl in `echo "$cluster" | tr ',' '\n'`; do
-            [[ "$cl" == "$icluster" ]] && clfound=true
-          done
-          $clfound || continue
-        fi
-        [ "_$status" != "_$istatus" ] && [ "_$status" != "_all" ] && continue
-        extIPprint=`echo "$extIP" | sed 's|\n|,|'`
-        intIPprint=`echo "$intIP" | sed 's|\n|,|'`
-        case $view in
-          list)
-            echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIPprint  intIP: $intIPprint  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
-            echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
-            ;;
-          table)
-            echo "$id|$iname|$istatus|$izone|$extIPprint|$intIPprint|$icluster|$imageId|$flavorId|$iaki|$iari|$secgroup|$ikey"
-            echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g'
-            ;;
-          column)
-            echo -e "ID: $id\nName: $iname\nStatus: $istatus\nPublic IP: $extIPprint\nPrivate IP: $intIPprint\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
-            echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
-            ;;
-          none)
-            ;;
-          *)
-            echo -e "------------------------------------------------------------------------------\nNode ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIPprint    Private IP: $intIPprint\nNode image: $imageId    AKI: $iaki    ARI: $iari\nNode size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
-            [ ${#ebs[*]} -ne 0 ] && echo "${ebs[*]}" | grep -v ^$ | sed 's_^_  EBS: _g;s_|_  _g'
-            ;;
-        esac
-        icount+=1
-      fi
-    else
-      if [ -n "$icluster" ] ; then
-        if [ `grep -c ^$icluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
-          key=`grep ^$icluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
-          [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)" && key="$ikey"
-          check_super_cluster $ip "$icluster" && continue
-          nodelist+=("$IP|$key|$izone|$iname|$icluster|$CLOUD")
-        fi
-      fi
-    fi
-  done
-  if [ -n "$update_nodes_list" ]; then
-    if [ ${#nodelist[*]} -eq 0 ]; then
-      log "generated list is empty"
-      echo -n > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
-    else
-      log "saving generated list (${#nodelist[*]} nodes)"
-      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
-    fi
-  fi
-  IFS=$IFS1
+list_regions() {
+  echo "$reqparsed"
 }
 
 if [ -z "$noupdate" ]; then
@@ -244,7 +90,6 @@ else
   [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
 fi
 
-list_nodes
+list_regions
 
-[ -n "$count" ] && echo $icount
 proper_exit 0 252

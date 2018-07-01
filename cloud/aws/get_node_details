@@ -70,6 +70,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
 
 exit_status=0
 
@@ -89,42 +90,34 @@ VERSION="2013-10-15"
 AUTHMETHOD=header
 
 find_by_id() {
-  qparams="Filter.1.Name=instance-id&Filter.1.Value=${1}"
+  qparams="Filter.1.Name=instance-id&Filter.1.Value.1=${1}"
 }
 
 find_by_ip() {
   if [ "_$NETWORK" == "_external" ]; then
-    qparams="Filter.1.Name=ip-address&Filter.1.Value=${1}"
+    qparams="Filter.1.Name=ip-address&Filter.1.Value.1=${1}"
   else
-    qparams="Filter.1.Name=private-ip-address&Filter.1.Value=${1}"
+    qparams="Filter.1.Name=private-ip-address&Filter.1.Value.1=${1}"
   fi
 }
 
 printreturn() {
   reservationId=`echo "$1" | grep '"reservationId"/' | cut -sd'|' -f2 | tr -d '"'`
   [ -z "$reservationId" ] && return 1
-  instanceId=`echo "$1" | grep '"instanceId"/' | cut -sd'|' -f2 | tr -d '"'`
-  imageId=`echo "$1" | grep '"imageId"/' | cut -sd'|' -f2 | tr -d '"'`
-  status=`echo "$1" | grep '"instanceState"/0/"name"/' | cut -sd'|' -f2 | tr -d '"'`
-  privateDnsName=`echo "$1" | grep '"privateDnsName"/' | grep -v networkInterfaceSet | cut -sd'|' -f2 | tr -d '"'`
-  keyName=`echo "$1" | grep '"keyName"/' | cut -sd'|' -f2 | tr -d '"'`
-  instanceType=`echo "$1" | grep '"instanceType"/' | cut -sd'|' -f2 | tr -d '"'`
-  launchTime=`echo "$1" | grep '"launchTime"/' | cut -sd'|' -f2 | tr -d '"'`
-  availabilityZone=`echo "$1" | grep '"availabilityZone"/' | cut -sd'|' -f2 | tr -d '"'`
-  tenancy=`echo "$1" | grep '"tenancy"/' | cut -sd'|' -f2 | tr -d '"'`
-  subnetId=`echo "$1" | grep '"subnetId"/' | grep -v networkInterfaceSet | cut -sd'|' -f2 | tr -d '"'`
-  vpcId=`echo "$1" | grep '"vpcId"/' | grep -v networkInterfaceSet | cut -sd'|' -f2 | tr -d '"'`
-  privateIpAddress=`echo "$1" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -sd'|' -f2 | tr -d '"'`
-  publicIpAddress=`echo "$1" | grep '/"ipAddress"/' | cut -sd'|' -f2 | tr -d '"'`
-  groupId=`echo "$1" | grep '"groupId"/' | grep -v networkInterfaceSet | cut -sd'|' -f2 | tr -d '"'`
-  groupName=`echo "$1" | grep '"groupName"/' | grep -v networkInterfaceSet | cut -sd'|' -f2 | tr -d '"'`
-  stateReason=`echo "$1" | grep '"stateReason"/0/"message"/' | cut -sd'|' -f2 | tr -d '"'`
-  architecture=`echo "$1" | grep '"architecture"/' | cut -sd'|' -f2 | tr -d '"'`
-  rootDeviceType=`echo "$1" | grep '"rootDeviceType"/' | cut -sd'|' -f2 | tr -d '"'`
-  virtualizationType=`echo "$1" | grep '"virtualizationType"/' | cut -sd'|' -f2 | tr -d '"'`
-  hypervisor=`echo "$1" | grep '"hypervisor"/' | cut -sd'|' -f2 | tr -d '"'`
-  ebsOptimized=`echo "$1" | grep '"ebsOptimized"/' | cut -sd'|' -f2 | tr -d '"'`
-  echo -e "reservationId|$reservationId\ninstanceId|$instanceId\nimageId|$imageId\nstatus|$status\nprivateDnsName|$privateDnsName\nkeyName|$keyName\ninstanceType|$instanceType\nlaunchTime|$launchTime\navailabilityZone|$availabilityZone\ntenancy|$tenancy\nsubnetId|$subnetId\nvpcId|$vpcId\nprivateIpAddress|$privateIpAddress\npublicIpAddress|$publicIpAddress\ngroupId|$groupId\ngroupName|$groupName\nstateReason|$stateReason\narchitecture|$architecture\nrootDeviceType|$rootDeviceType\nvirtualizationType|$virtualizationType\nhypervisor|$hypervisor\nebsOptimized|$ebsOptimized"
+  case $return in
+  grep|greppable)
+    for sn in `echo "$1" | cut -d'/' -f5,6,7,8,9,10,11,12 | sort | uniq`; do
+      echo "*** $sn ***"
+      echo "$1" | cut -d'/' -f13- | tr -d '"'
+    done
+    ;;
+  yaml)
+    echo "$1" | "$M_ROOT"/lib/txt2yaml
+    ;;
+  *)
+    echo "Unknown output format: $return"
+    ;;
+  esac
 }
 
 lock_cloudops || exit 10
