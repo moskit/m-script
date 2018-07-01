@@ -28,7 +28,7 @@ LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
 
-possible_options="cloud help region verbose cluster state status filter noupdate view update_nodes_list forceupdate all count resolveids name_source log_request"
+possible_options="cloud help region verbose cluster state filter noupdate view update_nodes_list forceupdate all count resolveids name_source log_request"
 necessary_options=""
 
 if [ -n "$help" ]; then
@@ -133,20 +133,22 @@ list_nodes() {
   fi
   [ "_$view" == "_raw" ] && echo "$reqparsed" && return
   declare -a nodelist
-#==============================================================================
   insIndex=`echo "$reqparsed" | cut -d'/' -f5,6,7,8,9,10,11,12 | grep instancesSet | sort | uniq`
   case $view in
     grep|greppable)
+      declare -i nn
+      nn=0
       for ind in $insIndex ; do
         echo "*** $ind ***"
+        nn+=1
         instanceObject=`echo "$reqparsed" | grep "$ind"`
-        echo "$instanceObject" | cut -d'/' -f13- | tr -d '"'
+        echo "$instanceObject" | cut -d'/' -f13- | tr -d '"' | sed "s_^_$nn/_"
       done
       ;;
     *)
       for ind in $insIndex ; do
         unset id name istatus extIP intIP IP imageId flavorId icluster
-        node=`echo "$reqparsed" | grep \"reservationSet\"\/$sn\/`
+        node=`echo "$reqparsed" | grep "$ind"`
         intIP=`echo "$node" | grep '/"privateIpAddress"/' | grep -v networkInterfaceSet | cut -d'|' -f2 | tr -d '"'` # may be multiple
         extIP=`echo "$node" | grep '/"ipAddress"/' | cut -d'|' -f2 | tr -d '"'` # may be multiple
         id=`echo "$node" | grep '/"instanceId"/0' | cut -d'|' -f2 | tr -d '"'`
@@ -199,7 +201,7 @@ list_nodes() {
             intIPprint=`echo "$intIP" | sed 's|\n|,|'`
             case $view in
               list)
-                echo "ID: $id  Name: $iname  Status: $istatus  ext IP: $extIPprint  intIP: $intIPprint  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
+                echo "ID: $id  Name: $iname  State: $istatus  ext IP: $extIPprint  intIP: $intIPprint  Cluster: $icluster  Image: $imageId  Size: $flavorId  AKI: $iaki  ARI: $iari  Security group: $secgroup  Zone: $izone  Keypair: $ikey"
                 echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
                 ;;
               table)
@@ -207,13 +209,13 @@ list_nodes() {
                 echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g'
                 ;;
               column)
-                echo -e "ID: $id\nName: $iname\nStatus: $istatus\nPublic IP: $extIPprint\nPrivate IP: $intIPprint\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
+                echo -e "ID: $id\nName: $iname\State: $istatus\nPublic IP: $extIPprint\nPrivate IP: $intIPprint\nImage: $imageId\nAKI: $iaki\nARI: $iari\nSize: $flavorId\nSecurity group: $secgroup\nZone: $izone\nKeypair: $ikey\n"
                 echo "${ebs[*]}" | grep -v ^$ | sed 's_^_EBS: _g;s_|_  _g'
                 ;;
               none)
                 ;;
               *)
-                echo -e "------------------------------------------------------------------------------\nNode ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIPprint    Private IP: $intIPprint\nNode image: $imageId    AKI: $iaki    ARI: $iari\nNode size: $flavorId    Status: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
+                echo -e "------------------------------------------------------------------------------\nNode ID: $id    Name: $iname    Cluster: $icluster\nPublic IP: $extIPprint    Private IP: $intIPprint\nNode image: $imageId    AKI: $iaki    ARI: $iari\nNode size: $flavorId    State: $istatus    Keypair: $ikey\nSecurity group: $secgroup    Zone: $izone"
                 [ ${#ebs[*]} -ne 0 ] && echo "${ebs[*]}" | grep -v ^$ | sed 's_^_  EBS: _g;s_|_  _g'
                 ;;
             esac
