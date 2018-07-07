@@ -27,12 +27,13 @@ addnode() {
   nd="$1"
   i=$2
   selfclosed=false
+  justprinted=false
   expr "$nd" : ^\? >/dev/null && return 0
   #nd=`echo "$nd" | sed 's|"|\\\"|g'`
   $debug && echo "==== $nd ="
   if `expr "$nd" : ^\< >/dev/null` ; then
     tag=`expr "$nd" : "^<\([^\ ]*\)\(\ \|>$\|/\)"`
-    [ "X<${tag}>" == "X$nd" ] || vars=`expr "$nd" : "^<${tag}\ \(.*=.*\)\(>$\|/>$\)"`
+    [ "_<${tag}>" == "_$nd" ] || vars=`expr "$nd" : "^<${tag}\ \(.*=.*\)\(>$\|/>$\)"`
     nd=`expr "$nd" : "^<\(.*\)>$"`
   else
     tag=$nd
@@ -42,29 +43,31 @@ addnode() {
   index[$i]="$tag"
 
   unset ndcont
-  if [ $i -gt 1 ] ; then
-    # this means the node is closed and the previous value was its content:
-    $debug && echo "  -- X${index[$i-2]} == X${nd#/} -"
-    if [ "X${index[$i-2]}" == "X${nd#/}" ] ; then
-      ndcont="${index[$i-1]}"
+  if ! $justprinted ; then
+    if [ $i -gt 1 ] && ! $selfclosed ; then
+      # this means the node is closed and the previous value was its content:
+      $debug && echo "  ?? ${index[$i-2]} == ${nd#/} ??"
+      if [ "_${index[$i-2]}" == "_${nd#/}" ] ; then
+        ndcont="${index[$i-1]}"
+      fi
+    fi
+    n=${#branch[*]}
+    [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
+    if [ $i -ne 0 ]; then
+      $debug && echo "  ?? /${index[$i]} == ${index[$i-1]} ??"
+      [ "_/${index[$i]}" == "_${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
+    fi
+
+    if $debug ; then
+      echo -e "----------------------------\n$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
+      for ((l=0; l<$n; l++)) ; do
+        txtline="$txtline\"${branch[$l]}\"/"
+      done
+      echo "***** $txtline"
+      unset txtline
     fi
   fi
-  n=${#branch[*]}
-  [ -z "${ndarr[$n]}" ] && ndarr[$n]=0
-  $debug && echo "X/${index[$i]} == X${index[$i-1]}"
-  if [ $i -ne 0 ]; then
-    [ "X/${index[$i]}" == "X${index[$i-1]}" ] && ndarr[$n]=`expr ${ndarr[$n]} + 1`
-  fi
-
-#  if $debug ; then
-#    echo -e "----------------------------\n$i | $n | ${ndarr[$n]} --  $ndcont  --  ${index[$i]}"
-#    for ((l=0; l<$n; l++)) ; do
-#      txtline="$txtline\"${branch[$l]}\"/"
-#    done
-#    echo "***** $txtline"
-#    unset txtline
-#  fi
-  
+  justprinted=false
   if [ -n "$ndcont" ] ; then
     # we got the full line, printing
     txtline="${savedline[$n-2]}"
@@ -80,7 +83,7 @@ addnode() {
     $debug && echo "     unsetting branch[$n-2] :: ${branch[$n-2]}"
     unset branch[$n-1] branch[$n-2] ndarr[$n] savedline[$n-2] savedline[$n-1] savedline[$n]
     unset txtline
-
+    justprinted=true
   else
     branch[$n]="$tag"
     if [ $n -gt 0 ]; then
@@ -95,11 +98,11 @@ addnode() {
     fi
     if $selfclosed ; then
       $debug && echo "     self-closed, unsetting branch[$n] :: ${branch[$n]}"
-      unset branch[$n] ndarr[$n] savedline[$n]
+      unset branch[$n] ndarr[$n] savedline[$n] index[$i-1]
     else
-      $debug && echo "     $n: X${branch[$n]} == X/${branch[$n-1]}"
+      $debug && echo "     $n: ?? ${branch[$n]} == /${branch[$n-1]} ??"
       if [ $n -ne 0 ]; then
-        if [ "X${branch[$n]}" == "X/${branch[$n-1]}" ] 2>/dev/null ; then
+        if [ "_${branch[$n]}" == "_/${branch[$n-1]}" ] 2>/dev/null ; then
           $debug && echo "     unsetting branch[$n] :: ${branch[$n]}" && echo "     unsetting branch[$n-1] :: ${branch[$n-1]}"
           unset branch[$n-1] branch[$n] ndarr[$n] savedline[$n] savedline[$n-1]
         fi
