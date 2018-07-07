@@ -26,7 +26,7 @@ SSLEX=`which openssl 2>/dev/null`
 
 CURL="$CURL -s -k"
 
-possible_options="cloud cluster id name ip return verbose log_request"
+possible_options="cloud cluster id name ip return verbose log_request region view"
 necessary_options=""
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
 [ -z "$ARGV" ] && echo "Node details? Which node?" && exit 1
@@ -103,7 +103,7 @@ find_by_ip() {
 printreturn() {
   reservationId=`echo "$1" | grep '"reservationId"/' | cut -sd'|' -f2 | tr -d '"'`
   [ -z "$reservationId" ] && return 1
-  case $return in
+  case $view in
   grep|greppable)
     for sn in `echo "$1" | cut -d'/' -f5,6,7,8,9,10,11,12 | grep 'instancesSet' | sort | uniq`; do
       echo "*** $sn ***"
