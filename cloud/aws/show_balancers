@@ -61,7 +61,12 @@ else
   [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 fi
 
-[ -z "$region" ] && region="us-east-1"
+if [ -z "$region" ]; then
+  region=`find_region`
+  [ -z "$region" ] && region=$DEFAULT_REGION
+  [ -z "$region" ] && region="us-east-1"
+  log "searching balancers in region $region"
+fi
 
 METHOD=GET
 ACTION=DescribeLoadBalancers

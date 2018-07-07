@@ -53,13 +53,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
-if [ -n "$cluster" ]; then
-  if [ "$cluster" == "all" ]; then
-    unset M_CLUSTER
-  fi
-else
-  [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
-fi
+[ -z "$region" ] && region="us-east-1"
 
 METHOD=GET
 ACTION=DescribeRegions
