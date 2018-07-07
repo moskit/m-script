@@ -28,8 +28,8 @@ LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
 
-possible_options="cloud help region verbose cluster state filter noupdate view forceupdate all count resolveids log_request"
-necessary_options=""
+possible_options="cloud help region verbose filter noupdate view forceupdate log_request arn"
+necessary_options="arn"
 
 if [ -n "$help" ]; then
   echo "Possible options: $possible_options"
@@ -64,22 +64,22 @@ fi
 [ -z "$region" ] && region="us-east-1"
 
 METHOD=GET
-ACTION=DescribeLoadBalancers
+ACTION=DescribeTargetHealth
 SERVICE=elasticloadbalancing
 VERSION="2015-12-01"
 AUTHMETHOD=header
 
-list_balancers() {
-  for sn in `echo "$reqparsed" | grep '/"LoadBalancers"/' | cut -sd'/' -f6,7,8 | tr '/' ' ' | sort -u -k '3.1n' | tr ' ' '/'`; do
-    balancerObject=`echo "$reqparsed" | grep "/$sn/"`
+list_targets() {
+  for sn in `echo "$reqparsed" | grep '/"TargetHealthDescriptions"/' | cut -sd'/' -f6,7,8 | tr '/' ' ' | sort -u -k '3.1n' | tr ' ' '/'`; do
+    tgObject=`echo "$reqparsed" | grep "/$sn/"`
     echo "*** $sn ***" | tr -d '"'
-    echo "$balancerObject" | cut -sd'/' -f9- | tr -d '"'
+    echo "$tgObject" | cut -sd'/' -f9- | tr -d '"'
   done
 }
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION`
+  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION TargetGroupArn=$tgarn`
   echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
   check_request_result || proper_exit 81
 else
@@ -94,6 +94,6 @@ else
   [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
 fi
 
-list_balancers
+list_target_groups
 
 proper_exit 0 100
