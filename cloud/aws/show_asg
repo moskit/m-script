@@ -1,0 +1,99 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+SSLEX=`which openssl 2>/dev/null`
+[ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
+
+LOG="$M_ROOT/logs/cloud.log"
+
+debug=false
+
+possible_options="cloud help region verbose cluster state status filter noupdate view forceupdate all count resolveids log_request"
+necessary_options=""
+
+if [ -n "$help" ]; then
+  echo "Possible options: $possible_options"
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
+LOG="$M_ROOT/logs/cloud.log"
+
+get_opts "$@"
+
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+
+export IAMACHILD M_TEMP CLOUD
+lock_cloudops || exit 10
+
+if [ -n "$cluster" ]; then
+  if [ "$cluster" == "all" ]; then
+    unset M_CLUSTER
+  fi
+else
+  [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
+fi
+
+[ -z "$region" ] && region="us-east-1"
+
+METHOD=GET
+ACTION=DescribeAutoScalingGroups
+SERVICE=autoscaling
+VERSION="2011-01-01"
+AUTHMETHOD=header
+
+list_asg() {
+  for sn in `echo "$reqparsed" | grep 'regionInfo' | cut -sd'/' -f8 | sort | uniq`; do
+    regionObject=`echo "$reqparsed" | grep "\"regionInfo\"/0/\"item\"/$sn/"`
+    echo "`echo "$regionObject" | grep 'regionName' | cut -sd'|' -f2 | tr -d '"'`|`echo "$regionObject" | grep 'regionEndpoint' | cut -sd'|' -f2 | tr -d '"'`"
+  done
+}
+
+if [ -z "$noupdate" ]; then
+  [ -n "$verbose" ] && log "sending request"
+  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION`
+  echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
+  [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
+  [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
+else
+  # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
+  # if no setting, force update is disabled
+  if [ -n "$FORCE_LIST_UPDATE_AFTER" ]; then
+    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0`)
+    [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
+  fi
+  [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
+  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && proper_exit 1 245
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
+fi
+
+list_regions
+
+proper_exit 0 252
