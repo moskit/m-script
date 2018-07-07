@@ -79,7 +79,7 @@ list_targets() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION TargetGroupArn=$tgarn`
+  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION TargetGroupArn=$arn`
   echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
   check_request_result || proper_exit 81
 else
