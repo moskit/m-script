@@ -64,12 +64,12 @@ fi
 [ -z "$region" ] && region="us-east-1"
 
 METHOD=GET
-ACTION=DescribeAutoScalingGroups
-SERVICE=autoscaling
-VERSION="2011-01-01"
+ACTION=DescribeTargetGroups
+SERVICE=elasticloadbalancing
+VERSION="2015-12-01"
 AUTHMETHOD=header
 
-list_asg() {
+list_target_groups() {
   for sn in `echo "$reqparsed" | grep '/"AutoScalingGroups"/' | cut -sd'/' -f6,7,8 | sort | uniq`; do
     asgObject=`echo "$reqparsed" | grep "\"AutoScalingGroups\"/$sn/"`
     echo "*** $sn ***"
@@ -95,6 +95,6 @@ else
   [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
 fi
 
-list_asg
+list_target_groups
 
 proper_exit 0 100
