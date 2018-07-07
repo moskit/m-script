@@ -105,9 +105,9 @@ printreturn() {
   [ -z "$reservationId" ] && return 1
   case $return in
   grep|greppable)
-    for sn in `echo "$1" | cut -d'/' -f5,6,7,8,9,10,11,12 | sort | uniq`; do
+    for sn in `echo "$1" | cut -d'/' -f5,6,7,8,9,10,11,12 | grep 'instancesSet' | sort | uniq`; do
       echo "*** $sn ***"
-      echo "$1" | cut -d'/' -f13- | tr -d '"'
+      echo "$1" | cut -d'/' -f13- | tr -d '"' | grep -v ^$
     done
     ;;
   yaml)

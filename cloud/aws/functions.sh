@@ -127,6 +127,7 @@ aws_api_request() {
   if [ "_$log_request" == "_yes" ]; then
     log "$CURL -vvv -X $method -H \"$SortedHeaders\" \"https://${endpoint}/?${Query}\""
     reqres=`$CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}"`
+    echo "$reqres" > "$M_TEMP/${callername}.resp.${region}"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   else
     $CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
@@ -146,7 +147,9 @@ sign() {
 }
 
 check_request_result() {
-  reqparsed=`cat "$M_TEMP/${callername}.resp"`
+  if [ -z "$reqparsed" ]; then
+    reqparsed=`cat "$1"`
+  fi
   if [ `echo "$reqparsed" | wc -l` -eq 0 ]; then
     log "file $M_TEMP/${callername}.resp is empty"
     echo "ERROR: empty response" >&2

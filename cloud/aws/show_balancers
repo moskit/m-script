@@ -28,7 +28,7 @@ LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
 
-possible_options="cloud help verbose noupdate view forceupdate all resolveids log_request"
+possible_options="cloud help region verbose cluster state status filter noupdate view forceupdate all count resolveids log_request"
 necessary_options=""
 
 if [ -n "$help" ]; then
@@ -61,16 +61,19 @@ else
   [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 fi
 
+[ -z "$region" ] && region="us-east-1"
+
 METHOD=GET
-ACTION=DescribeRegions
-SERVICE=ec2
-VERSION="2013-10-15"
+ACTION=DescribeLoadBalancers
+SERVICE=elasticloadbalancing
+VERSION="2015-12-01"
 AUTHMETHOD=header
 
-list_regions() {
-  for sn in `echo "$reqparsed" | grep 'regionInfo' | cut -sd'/' -f8 | sort | uniq`; do
-    regionObject=`echo "$reqparsed" | grep "\"regionInfo\"/0/\"item\"/$sn/"`
-    echo "`echo "$regionObject" | grep 'regionName' | cut -sd'|' -f2 | tr -d '"'`|`echo "$regionObject" | grep 'regionEndpoint' | cut -sd'|' -f2 | tr -d '"'`"
+list_balancers() {
+  for sn in `echo "$reqparsed" | cut -sd'/' -f6,7,8 | sort | uniq`; do
+    balancerObject=`echo "$reqparsed" | grep "/$sn/"`
+    echo "*** $sn ***"
+    echo "$tgObject" | cut -sd'/' -f9-
   done
 }
 
@@ -87,10 +90,10 @@ else
     [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
   fi
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
-  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && proper_exit 1 90
-  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 91
+  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && proper_exit 1 245
+  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
 fi
 
-list_regions
+list_balancers
 
-proper_exit 0 252
+proper_exit 0 100
