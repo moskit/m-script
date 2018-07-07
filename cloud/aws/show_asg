@@ -75,6 +75,7 @@ VERSION="2011-01-01"
 AUTHMETHOD=header
 
 list_asg() {
+  [ "_$view" == "_raw" ] && echo "$reqparsed" && return 0
   for sn in `echo "$reqparsed" | grep '/"AutoScalingGroups"/' | cut -sd'/' -f6,7,8 | tr '/' ' ' | sort -u -k '3.1n' | tr ' ' '/'`; do
     asgObject=`echo "$reqparsed" | grep "/$sn/"`
     echo "*** $sn ***" | tr -d '"'

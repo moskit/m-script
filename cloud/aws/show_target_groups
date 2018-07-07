@@ -75,20 +75,11 @@ VERSION="2015-12-01"
 AUTHMETHOD=header
 
 list_target_groups() {
+  [ "_$view" == "_raw" ] && echo "$reqparsed" && return 0
   for sn in `echo "$reqparsed" | grep '/"TargetGroups"/' | cut -sd'/' -f6,7,8 | tr '/' ' ' | sort -u -k '3.1n' | tr ' ' '/'`; do
     tgObject=`echo "$reqparsed" | grep "/$sn/"`
     echo "*** $sn ***" | tr -d '"'
     echo "$tgObject" | cut -sd'/' -f9- | tr -d '"'
-    if [ -n "$show_targets" ]; then
-      echo "  === targets ==="
-      tgarn=`echo "$tgObject" | grep '"TargetGroupArn"' | cut -sd'|' -f2 | tr -d '"'`
-      targets=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region DescribeTargetHealth TargetGroupArn=$tgarn | "$M_ROOT"/lib/xml2txt`
-      for sn in `echo "$targets" | grep '/"TargetHealthDescriptions"/' | cut -sd'/' -f6,7,8 | tr '/' ' ' | sort -u -k '3.1n' | tr ' ' '/'`; do
-        tghealthObject=`echo "$targets" | grep "/$sn/"`
-        echo "  --- $sn ---"
-        echo "$tghealthObject" | cut -sd'/' -f9- | tr -d '"'
-      done
-    fi
   done
 }
 

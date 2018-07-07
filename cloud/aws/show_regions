@@ -62,6 +62,7 @@ VERSION="2013-10-15"
 AUTHMETHOD=header
 
 list_regions() {
+  [ "_$view" == "_raw" ] && echo "$reqparsed" && return 0
   for sn in `echo "$reqparsed" | grep 'regionInfo' | cut -sd'/' -f8 | sort | uniq`; do
     regionObject=`echo "$reqparsed" | grep "\"regionInfo\"/0/\"item\"/$sn/"`
     echo "`echo "$regionObject" | grep 'regionName' | cut -sd'|' -f2 | tr -d '"'`|`echo "$regionObject" | grep 'regionEndpoint' | cut -sd'|' -f2 | tr -d '"'`"

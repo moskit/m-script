@@ -75,6 +75,7 @@ VERSION="2015-12-01"
 AUTHMETHOD=header
 
 list_targets() {
+  [ "_$view" == "_raw" ] && echo "$reqparsed" && return 0
   for sn in `echo "$reqparsed" | grep '/"TargetHealthDescriptions"/' | cut -sd'/' -f6,7,8 | tr '/' ' ' | sort -u -k '3.1n' | tr ' ' '/'`; do
     tgObject=`echo "$reqparsed" | grep "/$sn/"`
     echo "*** $sn ***" | tr -d '"'
