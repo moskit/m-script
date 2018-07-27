@@ -108,10 +108,10 @@ for ns in $sharded ; do
                   log "waiting for lock"
                   sleep 10
                 else
-                  break
+                  continue 2
                 fi
               else
-                break
+                continue 2
               fi
             done
             size=`expr $size + $SIZE`
@@ -135,10 +135,10 @@ for ns in $sharded ; do
                   log "waiting for lock"
                   sleep 10
                 else
-                  break
+                  continue 2
                 fi
               else
-                break
+                continue 2
               fi
             done
           fi

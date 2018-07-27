@@ -591,7 +591,9 @@ case $command1 in
     [ -z "$param1" ] && echo -e "Usage: role set {variable} {value}" && exit 1
     case $command2 in
       cluster)
+        # TODO: is there a way to execute it in parent shell automatically?
         export M_CLUSTER=$param1
+        echo -e "Execute the command below:\nexport M_CLUSTER=$param1"
         ;;
       *)
         echo "Unknown variable to set: $command2"

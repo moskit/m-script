@@ -4,3 +4,11 @@ while true; do ps aux | awk '{print $3" "$11" "$12" "$13" "$14" "$15}' | grep -v
 
 #getting IP
 /sbin/ifconfig eth0 | sed '/inet\ /!d;s/.*r://;s/\ .*//'
+
+file role.rc in a role's home folder can define cluster for the role:
+cluster={cluster name}
+This cluster definition has priority over the usual definition in clusters.conf
+
+? metaline syntax
+metatype|condition role/flavor/script|metarole
+what is metarole (env variable)?

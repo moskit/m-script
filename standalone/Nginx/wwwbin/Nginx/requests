@@ -5,8 +5,8 @@ source "$M_ROOT/conf/dash.conf"
 source "$M_ROOT/lib/dash_functions.sh"
 
 dbname="${1#*/}"
-tblname="${dbname/./_}"
-echo "graph --database=standalone/%{SAM}%/${dbname}.db --table=$tblname --metric=requests --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1"
-publish_graph `"$M_ROOT"/graph --database=standalone/HTTP/${dbname}.db --table=$tblname --metric=requests --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`
+tblname="${dbname/-/_}"
 
-publish_graph `"$M_ROOT"/graph --database=standalone/HTTP/${dbname}.db --table=$tblname --metric=users --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`
+publish_graph `"$M_ROOT"/graph --database=standalone/%{SAM}%/${dbname}.db --table=$tblname --metric=requests --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`
+
+publish_graph `"$M_ROOT"/graph --database=standalone/%{SAM}%/${dbname}.db --table=$tblname --metric=users --perpixel --width=750 --height=300 --padding=10 --legend=160 2>&1`

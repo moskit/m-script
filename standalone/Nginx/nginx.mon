@@ -13,6 +13,9 @@ else
   ngconfs=${rcommand%.mon}
 fi
 
+168.1.128.77 - - [29/Oct/2017:17:48:46 +0000] "GET / HTTP/1.0" 302           302               0.004                                   10.1.4.37:33049 241 "-" "Mozilla/5.0(WindowsNT6.1;rv:31.0)Gecko/20100101Firefox/31.0" "-"
+110.45.244.5 - - [29/Oct/2017:20:24:37 +0000] "GET / HTTP/1.0" 302 502, 502, 302 0.001, 0.001, 0.004 10.1.4.37:33048, 10.1.4.37:33045, 10.1.4.37:33043 241 "-" "masscan/1.0 (https://github.com/robertdavidgraham/masscan)" "-"
+
 for ngconf in $ngconfs ; do
   ngconf=${ngconf##*/}
   [ -e "$rpath/${ngconf}.conf" ] && source "$rpath/${ngconf}.conf"

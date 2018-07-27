@@ -91,8 +91,7 @@ start)
   
 ##### Main loop ########################################
 
-  while true
-  do
+  while true; do
     nextrunlockfile=`find "$rpath" -maxdepth 1 -name next.run.lock`
     if [ -n "$nextrunlockfile" ]; then
       rm "$nextrunlockfile"

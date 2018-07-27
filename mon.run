@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-currentlocale=`echo ${LC_MESSAGES}`
 export LC_MESSAGES="C"
 
 [ -h $0 ] && xcommand=`readlink $0` || xcommand=$0
@@ -62,8 +61,7 @@ fi
 touch "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` >>> locking by $commline" >> "$rpath/monitoring.log"
 
 function mailreport() {
-  while read RLINE
-  do
+  while read RLINE; do
     if [ -n "$RLINE" ]; then
       cat "$rpath/conf/rep.header" "$rpath/report" | $MAILX -s "Server $HOSTNAME report" "$RLINE"
     fi
@@ -108,7 +106,7 @@ function mailalert() {
       unset aldriver minlevel aladdress albody
     done
   fi
-  unset al aln al1 al2 al3
+  unset al aln
   IFS=$IFS1
 }
 
@@ -185,10 +183,11 @@ function runactions() {
     al1="$al1`grep '<\*>' "$rpath/report.blocked" | sed 's|<\*>||g'`"
     al0="$al0`grep '<OK>' "$rpath/report.blocked" | sed 's|<OK>||g'`"
   fi
-  rm -f "$rpath/report.blocked"
+  rm "$rpath/report.blocked"
+
   IFS1=$IFS; IFS='
 '
-  for action in `cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f3 | sort | uniq` ; do
+  for action in `cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f3 | sort -u` ; do
     actiongrep=`echo "$action" | sed 's_\\$_\\\\$_'`
     all_alerts_found=false
     action_blocked "$action" && log "not doing anything: action $action is blocked" && continue
@@ -272,14 +271,12 @@ function runactions() {
       done   ## <-- finished reading alerts
       
       if $alert_match ; then
-        # matching condition found, but conditions might be ANDed
+        # matching condition found, but conditions may be ANDed
         # multiple conditions with the same action are ANDed
         # to make them ORed, add marks to the beginning of action, enclosed in
         # percent sign, e.g. %1% [action], %2% [action] and so on
         all_alerts_found=true
         log "alert match! XVAR: $XVAR"
-      else
-        all_alerts_found=false
       fi
       if ! $action_alert_found ; then
         # if no match, alert is not consequent and must be zeroed
@@ -431,6 +428,4 @@ case $1 in
   ;;
 esac
 rm -f "$rpath/mon.run.lock" && echo "`date +"%H:%M:%S"` <<< unlocking by $commline" >> "$rpath/monitoring.log"
-
-export LC_MESSAGES=`echo $currentlocale`
 

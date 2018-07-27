@@ -19,6 +19,7 @@ rpath=$(readlink -f "$BASH_SOURCE")
 rcommand=${rpath##*/}
 rpath=${rpath%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/..")
+export M_ROOT
 #*/
 source "$M_ROOT/conf/mon.conf"
 rm -rf "$M_TEMP"/.update/
@@ -112,7 +113,7 @@ if [ -f "$M_ROOT/this_upgrade_actions" ] ; then
     fi
     echo "timestamps: now $timeindex, last $lastts, this $thists, git $gitts" >> "$M_ROOT/upgrade_actions.log"
     if [ `expr $thists \> $lastts` -eq 1 ] ; then
-      echo "`date` Running this upgrade specific actions script" >> "$M_ROOT/upgrade_actions.log"
+      echo "`date` Running this upgrade specific actions" >> "$M_ROOT/upgrade_actions.log"
       
       bash "$M_ROOT/this_upgrade_actions" "$rpath" 2>&1 | tee -a "$M_ROOT/upgrade_actions.log"
       if [[ $? -eq 0 ]] ; then
