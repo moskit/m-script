@@ -182,9 +182,9 @@ function runactions() {
     al2="$al2`grep '<\*\*>' "$rpath/report.blocked" | sed 's|<\*\*>||g'`"
     al1="$al1`grep '<\*>' "$rpath/report.blocked" | sed 's|<\*>||g'`"
     al0="$al0`grep '<OK>' "$rpath/report.blocked" | sed 's|<OK>||g'`"
+    rm "$rpath/report.blocked"
   fi
-  rm "$rpath/report.blocked"
-
+  
   IFS1=$IFS; IFS='
 '
   for action in `cat "$rpath/conf/actions.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f3 | sort -u` ; do

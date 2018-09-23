@@ -43,7 +43,7 @@ if [ $alertbody == "text" ]; then
   postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"$alheader\", \"text\": \"$postbody\" }"
 else
   altime=`echo -e "$postbody" | head -1 | tr -d '*'`
-  postbody=`echo -e "$postbody" | tail -n +2`
+  postbody=`echo -e "$postbody" | tail -n +2 | sed 's|"|\\"|g'`
   allevel=`echo "$alheader" | cut -d' ' -f1`
   case $allevel in
     '***') alcolor='#F00' ;;

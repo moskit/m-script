@@ -136,6 +136,7 @@ function get_serverstatus() {
     [ $rsoptime -eq 0 ] 2>/dev/null && [ -n "$masteroptime" ] && rsoptime=$masteroptime
     $ismaster && masteroptime=$rsoptime && rlag=0 || rlag=`expr $masteroptime - $rsoptime 2>/dev/null || unset rlag`
     rspingMs=`echo "$rsstatusraw" | grep ^$n\/ | grep \"pingMs\"\| | cut -sd'|' -f2`
+    rspingMs=`expr "$rspingMs" : ".*(\(.*\))"`
     rsconfigVersion=`echo "$rsstatusraw" | grep ^$n\/ | grep \"configVersion\"\| | cut -sd'|' -f2`
     echo -e "rshealth=$rshealth\nrsstate=$rsstate\nrsstateStr=$rsstateStr\nrlag=$rlag\nrspingMs=$rspingMs\nrsconfigVersion=$rsconfigVersion" >> "$rpath/data/${cs}.dat"
   fi
@@ -516,7 +517,7 @@ if [ -e "$rpath/mongo_servers.list" ] ; then
       get_serverstatus
       echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"
       ismaster=false
-      for cs in `cat "$rpath/mongo_servers.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$`; do
+      for cs in `cat "$rpath/mongo_servers.list" | grep -v \|master= | cut -sd'|' -f1,3 | grep \|$csrs$ | cut -sd'|' -f1`; do
         if [ -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs" ]; then install -d "$M_ROOT/www/MongoDB/MongoDB Servers/$cs"; fi
         get_serverstatus
         echo "$reporthtml" > "$M_ROOT/www/MongoDB/MongoDB Servers/$cs/${cs}_name.html"

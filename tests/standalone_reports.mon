@@ -37,7 +37,7 @@ for sa in `echo "$SATESTS" | tr ',' ' '` ; do
       sareport=`cat $sarep 2>/dev/null`
       if echo "$sareport" | grep -qE '<\*|<OK>' ; then
         echo -e "${sarep##*/}\n---\n"
-        echo "$sareport" | grep -E '^Server|^\-\-\-'
+        echo "$sareport" | grep '^Server'
         echo
         echo "$sareport" | grep -E '<\*|<OK>'
       fi

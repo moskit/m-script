@@ -8,6 +8,7 @@ rpath=${rpath%/*}
 [ -z "$1" ] && echo "Usage: $rcommand testname" && exit 1
 
 "$rpath"/sa_disable $1 norestart
+[ ! -d "$rpath/../standalone/$1" ] && echo "Folder standalone/$1 not found!" && exit 1
 install -d "$rpath/../standalone/$1/rc" "$rpath/../standalone/rc"
 n=`ls -1 "$rpath/../standalone/rc" | grep ^[0-9]*\. | cut -d'.' -f1 | tail -1`
 n=`expr $n + 1`
@@ -19,12 +20,13 @@ for mon in "$rpath/../standalone/$1"/*.mon ; do
     [ "$mon" == "servers.mon" ] && echo "*** $1/servers.mon is not enabled! Name \"servers\" is reserved for main process (servers health monitor), please rename it." && continue
     [ ${#n} -eq 1 ] && m="0$n"
     ln -s "$mon" "$rpath/../standalone/$1/rc/${m}.${mon##*/}"
+    modified=true
     n=`expr $n + 1`
   fi
 done
 
 [ -d "$rpath/../standalone/$1/wwwbin" ] && cp -r "$rpath/../standalone/$1/wwwbin/"* "$rpath/../www/bin/" || true
 
-[ -x "$rpath/../standalone/$1"/setup.run ] && "$rpath/../standalone/$1"/setup.run && mv "$rpath/../standalone/$1/setup.run" "$rpath/../standalone/$1/setup.run.done" || true
+[ -x "$rpath/../standalone/$1"/setup.run ] && "$rpath/../standalone/$1"/setup.run && mv "$rpath/../standalone/$1/setup.run" "$rpath/../standalone/$1/setup.run.done"
 
 "$rpath"/../monitorload.run restart
