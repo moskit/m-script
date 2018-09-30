@@ -43,6 +43,7 @@ function collect_hosts() {
   configips="${configips#* }"
 }
 
+if [ -n "$BA_LOGIN" ] && [ -n "$BA_PASS" ]; then AUTH="${BA_LOGIN}:${BA_PASS}@"; fi
 if [ -n "$ES_SERVERS" ] ; then
   defaultport=9200
   ES_SERVERS=`echo $ES_SERVERS | sed 's|,| |g'`
@@ -66,6 +67,7 @@ if [ -n "$ES_SERVERS" ] ; then
       host=`echo "$server" | cut -d':' -f1`
       port=`echo "$server" | cut -sd':' -f2`
       [ -z "$port" ] && port=$defaultport
+      [ `expr "$port" : ".*[^0-9]"` -ne 0 ] && log "bad port number: $port" && unlock_exit 1
       clustername=`cat "$M_ROOT/nodes.list" | grep -E "\|$host\||^$host\|" | cut -d'|' -f5`
       if [ -z "$clustername" ]; then
         # no cloud, so it's a single host
@@ -113,9 +115,9 @@ $debug && log "server lists updated"
 
 for node in `cat "$rpath"/*.es_nodes.list 2>/dev/null` ; do
   if $HANDLE_NODES ; then
-    allclusters="$allclusters\n$node|`$CURL -m 2 "http://$node/_cluster/state/_"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+    allclusters="$allclusters\n$node|`$CURL -m 2 "http://$AUTH$node/_cluster/state/_"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   else
-    allclusters="$allclusters\n$node|`$CURL -m 2 "http://$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
+    allclusters="$allclusters\n$node|`$CURL -m 2 "http://$AUTH$node/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_nodes=true&filter_metadata=true"|"$M_ROOT/lib/json2txt" | grep cluster_name | cut -sd'|' -f2 | tr -d '"'`"
   fi
 done
 
@@ -138,7 +140,7 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
   [ -n "$clusterport1" ] && clusterport="$clusterport1" || clusterport="$clusterport2"
   $debug && log "ES cluster ${escluster}: 2 random hosts selected: $clusterhost1 and $clusterhost2"
   
-  health=`($CURL -m 2 "http://$clusterhost1/_cluster/health" || $CURL -m 5 "http://$clusterhost2/_cluster/health") | "$M_ROOT"/lib/json2txt`
+  health=`($CURL -m 2 "http://$AUTH$clusterhost1/_cluster/health" || $CURL -m 5 "http://$AUTH$clusterhost2/_cluster/health") | "$M_ROOT"/lib/json2txt`
   mv "$rpath/${escluster}.dat" "$rpath/${escluster}.dat.prev"
   echo "$health" > "$rpath/${escluster}.dat"
   $debug && log "ES cluster ${escluster}: health data collected"
@@ -191,9 +193,9 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
   fi
   $debug && log "ES cluster ${escluster}: health data stored in database"
   if $HANDLE_NODES ; then
-    nodes=`($CURL -m 3 "http://$clusterhost1/_cluster/state/nodes" || $CURL -m 6 "http://$clusterhost2/_cluster/state/nodes") | "$M_ROOT"/lib/json2txt`
+    nodes=`($CURL -m 3 "http://$AUTH$clusterhost1/_cluster/state/nodes" || $CURL -m 6 "http://$AUTH$clusterhost2/_cluster/state/nodes") | "$M_ROOT"/lib/json2txt`
   else
-    nodes=`($CURL -m 3 "http://$clusterhost1/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://$clusterhost2/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt`
+    nodes=`($CURL -m 3 "http://$AUTH$clusterhost1/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true" || $CURL -m 6 "http://$AUTH$clusterhost2/_cluster/state?filter_routing_table=true&filter_blocks=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt`
   fi
   echo "$nodes" > "$rpath/data/${escluster}.nodes"
   $debug && log "ES cluster ${escluster}: nodes list compiled"
@@ -214,7 +216,7 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
     # This clusternode is an ID assigned by ES, like 2dsOVGfwR5GjTpyA-jbbGw
     ismaster=`grep ^0\/\"master_node\" "$rpath/data/${escluster}.nodes" | grep -c "$clusternode"`
     nodehost=`grep "\"$clusternode\"\/\"transport_address\"|" "$rpath/data/${escluster}.nodes"`
-    nodehost=${nodehost#/transport_address|}
+    nodehost=`echo "$nodehost" | cut -sd'|' -f2 | tr -d '"'`
     nodehost=${nodehost%:*}
     nodehost=${nodehost##*/}
     rname=`ip_to_name "$nodehost" 2>/dev/null`
@@ -231,9 +233,10 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
     echo -e "clusternode_id|$clusternode\nip|$nodehost\nmaster|$ismaster" > "$rpath/data/${escluster}.${rname}.dat.tmp"
     
     if $HANDLE_NODES ; then
-      ($CURL -m 5 "http://$clusterhost1/_nodes/$clusternode/stats/indices,process,jvm,network,transport,http" || $CURL -m 5 "http://$clusterhost2/_nodes/$clusternode/stats/indices,process,jvm,network,transport,http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
+      #($CURL -m 5 "http://$clusterhost1/_nodes/$clusternode/stats/indices,process,jvm,network,transport,http" || $CURL -m 5 "http://$clusterhost2/_nodes/$clusternode/stats/indices,process,jvm,network,transport,http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
+      ($CURL -m 5 "http://$AUTH$clusterhost1/_nodes/$clusternode/stats/indices,process,jvm,transport,http" || $CURL -m 5 "http://$AUTH$clusterhost2/_nodes/$clusternode/stats/indices,process,jvm,transport,http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
     else
-      ($CURL -m 5 "http://$clusterhost1/_cluster/nodes/$clusternode/stats?indices&process&jvm&network&transport&http" || $CURL -m 5 "http://$clusterhost2/_cluster/nodes/$clusternode/stats?indices&process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
+      ($CURL -m 5 "http://$AUTH$clusterhost1/_cluster/nodes/$clusternode/stats?indices&process&jvm&network&transport&http" || $CURL -m 5 "http://$AUTH$clusterhost2/_cluster/nodes/$clusternode/stats?indices&process&jvm&network&transport&http") | "$M_ROOT"/lib/json2txt | cut -d'/' -f4- >> "$rpath/data/${escluster}.${rname}.dat.tmp"
     fi
 
     mv "$rpath/data/${escluster}.${rname}.dat" "$rpath/data/${escluster}.${rname}.dat.prev"
@@ -257,9 +260,9 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
       jvm_mem_nonheap_used=`grep ^\"jvm\"\/\"mem\"\/\"non_heap_used_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       jvm_mem_nonheap_committed=`grep ^\"jvm\"\/\"mem\"\/\"non_heap_committed_in_bytes\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       jvm_threads=`grep ^\"jvm\"\/\"threads\"\/\"count\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
-      network_active_opens=$(expr `grep ^\"network\"\/\"tcp\"\/\"active_opens\"\| $rpath/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^\"network\"\/\"tcp\"\/\"active_opens\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` 2>/dev/null) || network_active_opens=0
-      network_passive_opens=$(expr `grep ^\"network\"\/\"tcp\"\/\"passive_opens\"\| $rpath/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^\"network\"\/\"tcp\"\/\"passive_opens\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` 2>/dev/null) || network_passive_opens=0
-      network_curr_estab=`grep ^\"network\"\/\"tcp\"\/\"curr_estab\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
+      #network_active_opens=$(expr `grep ^\"network\"\/\"tcp\"\/\"active_opens\"\| $rpath/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^\"network\"\/\"tcp\"\/\"active_opens\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` 2>/dev/null) || network_active_opens=0
+      #network_passive_opens=$(expr `grep ^\"network\"\/\"tcp\"\/\"passive_opens\"\| $rpath/data/${escluster}.${rname}.dat | cut -d'|' -f2` - `grep ^\"network\"\/\"tcp\"\/\"passive_opens\"\| "$rpath/data/${escluster}.${rname}.dat.prev" | cut -d'|' -f2` 2>/dev/null) || network_passive_opens=0
+      #network_curr_estab=`grep ^\"network\"\/\"tcp\"\/\"curr_estab\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       transport_server_open=`grep ^\"transport\"\/\"server_open\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       http_server_open=`grep ^\"http\"\/\"current_open\"\| "$rpath/data/${escluster}.${rname}.dat" | cut -d'|' -f2`
       $debug && log "    stats put to variables"
@@ -273,9 +276,9 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
   eval echo -e \${${escluster}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${escluster}.nodes.list
   
   if $HANDLE_NODES ; then
-    routes=`($CURL -m 5 "http://$clusterhost1/_cluster/state/routing_table" || $CURL -m 10 "http://$clusterhost2/_cluster/state/routing_table") | "$M_ROOT"/lib/json2txt`
+    routes=`($CURL -m 5 "http://$AUTH$clusterhost1/_cluster/state/routing_table" || $CURL -m 10 "http://$AUTH$clusterhost2/_cluster/state/routing_table") | "$M_ROOT"/lib/json2txt`
   else
-    routes=`($CURL -m 5 "http://$clusterhost1/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://$clusterhost2/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt`
+    routes=`($CURL -m 5 "http://$AUTH$clusterhost1/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true" || $CURL -m 10 "http://$AUTH$clusterhost2/_cluster/state?filter_blocks=true&filter_nodes=true&filter_metadata=true") | "$M_ROOT"/lib/json2txt`
   fi
   echo "$routes" > "$rpath/data/${escluster}.routing"
   $debug && log "ES cluster ${escluster}: routing data collected"
