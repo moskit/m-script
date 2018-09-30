@@ -68,7 +68,7 @@ for hpdb in `cat "$rpath/data/databases.dat" | cut -d'|' -f1,2` ; do
 
   dbdat=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); printjson(db.stats())" 2>/dev/null | "$M_ROOT"/lib/json2txt`
   
-  collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames()" 2>/dev/null | grep -vE "exception|Error|failed" | tr ',' '\n'`
+  collections=`$MONGO $AUTH "$hp/admin" --quiet --eval "db = db.getSiblingDB(\"$db\"); db.getCollectionNames().forEach(printjson)" 2>/dev/null | grep -vE "exception|Error|failed" | tr -d'"'`
   
   for coll in `echo "$collections"`; do
     colldata=`$MONGO $AUTH "$hp/admin" --quiet --eval "var cdb = '$db', cns = '$coll'" "$rpath/collinfo.js"`
