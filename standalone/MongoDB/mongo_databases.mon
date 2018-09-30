@@ -37,7 +37,7 @@ source "$M_ROOT/lib/functions.sh"
 
 get_lock
 
-if [ -e "$rpath/mongo_mongos_servers.list" ]; then
+if [ `cat "$rpath/mongo_mongos_servers.list" | wc -l` -gt 0 ]; then
   # if a static mongos defined in the conf
   if [ -n "$MONGOS" ]; then
     hostport=$MONGOS
