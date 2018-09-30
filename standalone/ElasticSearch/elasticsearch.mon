@@ -185,6 +185,7 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
   echo "$warnind Initializing shards: $initializing_shards" >> "$rpath/${escluster}.report"
   [ "_$unassigned_shards" == "_0" ] && warnind='<OK> ' || warnind='<***>'
   echo "$warnind Unassigned shards: $unassigned_shards" >> "$rpath/${escluster}.report"
+  echo >> "$rpath/${escluster}.report"
   $debug && log "ES cluster ${escluster}: health report generated"
   
   if [ "_$SQLITE3" == "_1" ] ; then
