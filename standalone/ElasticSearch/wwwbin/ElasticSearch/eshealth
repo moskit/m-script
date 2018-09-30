@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "<div id=\"$1\">"
+cat "$PWD/../../standalone/ElasticSearch/${1}.report" | "$PWD"/../../lib/txt2html
+echo "</div>"

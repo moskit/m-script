@@ -31,7 +31,7 @@ for ngconf in $ngconfs ; do
     close_cluster_line
 
     open_line "Performance"
-      record=`sqlite3 $M_ROOT/standalone/%{SAM}%/${ngconfserver}.db \"select requests,users,err4xx,err5xx from ${ngconfserver_sn}_perf order by timeindex desc limit 1\" 2>&1`
+      record=`sqlite3 $M_ROOT/standalone/%{SAM}%/${ngconfserver}.db \"select requests,users from ${ngconfserver_sn} order by timeindex desc limit 1\" 2>&1`
       requests=`echo "$record" | cut -sd'|' -f1`
       users=`echo "$record" | cut -sd'|' -f2`
       err4xx=`echo "$record" | cut -sd'|' -f3`
