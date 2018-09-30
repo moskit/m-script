@@ -60,9 +60,9 @@ for cluster in `find "$PWD/../../standalone/$scriptname/data" -type f -name "*.n
         indices_size_in_bytes=`grep ^\"indices\"/\"store\"/\"size_in_bytes\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2 | tr -d '"'`
         indices_size_in_mbytes=`echo "scale=2; $indices_size_in_bytes / 1048576" | bc`
         
-        echo "<div class=\"status\" id=\"${node}_size onclick=\"showDetails('${clustername}_name','ElasticSearch/ind_size')\">${indices_size_in_mbytes}</div>"
+        echo "<div class=\"status\" id=\"${node}_size onclick=\"showDetails('${clustername}_name','ElasticSearch/index_size')\">${indices_size_in_mbytes}</div>"
         
-        echo "<div class=\"status\" id=\"${node}_docs onclick=\"showDetails('${clustername}_name','ElasticSearch/ind_docsnum')\">`grep ^\\"indices\\"/\\"docs\\"/\\"count\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
+        echo "<div class=\"status\" id=\"${node}_docs onclick=\"showDetails('${clustername}_name','ElasticSearch/index_docsnum')\">`grep ^\\"indices\\"/\\"docs\\"/\\"count\\"\| "$PWD/../../standalone/$scriptname/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_files\">`grep ^\\"process\\"/\\"open_file_descriptors\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         echo "<div class=\"status\" id=\"${node}_conn\">`grep ^\\"http\\"/\\"current_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2` / `grep ^\\"transport\\"/\\"server_open\\"\| "$PWD/../../standalone/${scriptname}/data/${clustername}.${node%:*}.dat" | cut -d'|' -f2`</div>"
         
