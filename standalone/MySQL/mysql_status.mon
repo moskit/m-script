@@ -1,0 +1,76 @@
+#!/bin/bash
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+mysqlbin=`which mysql 2>/dev/null`
+[ -z "$mysqlbin" ] && echo "MySQL CLI not found" && exit 1
+
+source "$M_ROOT/lib/functions.sh"
+source "$rpath/mysql.conf"
+
+get_lock
+
+MyTEMP="$M_TEMP/mysql"
+[ -d "$MyTEMP" ] || install -d "$MyTEMP"
+
+get_interval || unlock_exit 0
+
+date_header
+
+if [ -n "$dbcluster" ]; then
+  dbhosts=`"$M_ROOT"/cloud/common/get_ips --names --cluster="$dbcluster"`
+else
+  dbhosts=localhost
+fi
+
+[ -n "$dbuser" ] && A="-u $dbuser"
+[ -n "$dbpassword" ] && A="$A -p$dbpassword"
+[ -n "$dbport" ] && P="-P $dbport"
+
+for dbhost in $dbhosts ; do
+
+  echo -e "    Host $dbhost\n"
+  H="-h $dbhost"
+
+  mysqlbin="$mysqlbin -Bs $H $P $A"
+  
+  [ -e "$MyTEMP/${dbhost}.status.dat" ] && sed 's/=/_prev=/' "$MyTEMP/${dbhost}.status.dat" > "$MyTEMP/${dbhost}.status.dat.prev"
+
+  echo "show status" | $mysqlbin 2>/dev/null | tr '\t' '=' | sed 's|=|="|;s|$|"|' > "$MyTEMP/${dbhost}.status.dat"
+
+  source "$MyTEMP/${dbhost}.status.dat.prev" 2>/dev/null || unlock_exit 0
+  source "$MyTEMP/${dbhost}.status.dat"
+
+  qps=`expr \( $Queries - $Queries_prev \) / $interval`
+  connps=`solve 2 "($Connections - $Connections_prev)/$interval"`
+  qcachehits=`expr \( $Qcache_hits - $Qcache_hits_prev \) / $interval`
+  qcachehitsratio=`solve 2 "$qcachehits / $qps * 100"`
+  threadsps=`solve 2 "($Threads_created - $Threads_created_prev)/$interval"`
+  waitedlocks=`solve 2 "($Table_locks_waited - $Table_locks_waited_prev)/$interval"`
+  immediatelocks=`solve 2 "($Table_locks_immediate - $Table_locks_immediate_prev)/$interval"`
+  locksratio=`solve 2 "$waitedlocks / $immediatelocks * 100"`
+  aborted_clients=`solve 2 "( $Aborted_clients - $Aborted_clients_prev )/$interval"`
+  aborted_connects=`solve 2 "( $Aborted_connects - $Aborted_connects_prev )/$interval"`
+  innodb_rows_read=`solve 2 "( $Innodb_rows_read - $Innodb_rows_read_prev )/$interval"`
+  innodb_rows_inserted=`solve 2 "( $Innodb_rows_inserted - $Innodb_rows_inserted_prev )/$interval"`
+  innodb_rows_deleted=`solve 2 "( $Innodb_rows_deleted - $Innodb_rows_deleted_prev )/$interval"`
+  innodb_rows_updated=`solve 2 "( $Innodb_rows_updated - $Innodb_rows_updated_prev )/$interval"`
+  innodb_row_lock_waits=`solve 2 "( $Innodb_row_lock_waits - $Innodb_row_lock_waits_prev )/$interval"`
+  innodb_row_lock_time=`solve 2 "( $Innodb_row_lock_time - $Innodb_row_lock_time_prev )/$interval"`
+  innodb_data_read=`solve 2 "( $Innodb_data_read - $Innodb_data_read_prev )/$interval"`
+  innodb_data_written=`solve 2 "($Innodb_data_written - $Innodb_data_written_prev )/$interval"`
+
+  store_results "dbhost|text,qps|integer,connps|real,qcachehits|integer,threadsps|real,waitedlocks|real,immediatelocks|real,Threads_connected|integer,aborted_clients|real,aborted_connects|real,innodb_rows_read|real,innodb_rows_inserted|real,innodb_rows_deleted|real,innodb_rows_updated|real,innodb_row_lock_waits|real,innodb_row_lock_time|real,innodb_data_read|real,innodb_data_written|real"
+
+  check_results "qps|Queries / sec|integer,connps|Connections / sec|real,threadsps|Threads created / sec|real,Threads_connected|Threads connected|integer,qcachehitsratio|Cache hits to total queries ratio (%)|real,locksratio|Waited locks to total locks ratio (%)|real,aborted_clients|Clients aborted connections / sec|real,aborted_connects|Server aborted connections / sec|real"
+
+  echo -e "qps=$qps\nconnps=$connps\nqcachehits=$qcachehits\nThreads_connected=$Threads_connected\nthreadsps=$threadsps\nqcachehitsratio=$qcachehitsratio\nlocksratio=$locksratio\naborted_clients=$aborted_clients\naborted_connects=$aborted_connects" > "$rpath/${dbhost}.dat"
+
+  unset qps connps qcachehits qcachehitsratio threadsps waitedlocks immediatelocks locksratio aborted_clients aborted_connects innodb_rows_read innodb_rows_inserted innodb_rows_deleted innodb_rows_updated innodb_row_lock_waits innodb_row_lock_time innodb_data_read innodb_data_written
+done
+
+release_lock
+

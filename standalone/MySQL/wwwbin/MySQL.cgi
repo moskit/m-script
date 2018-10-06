@@ -7,7 +7,7 @@ source "$PWD/../../lib/cloud_functions.sh"
 source "$PWD/../../standalone/MySQL/mysql.conf"
 
 print_cgi_headers
-print_nav_bar "MySQL|Performance" "MySQL/resources|Resources" "MySQL/databases|Data" "MySQL/logreader|Logs"
+print_nav_bar "MySQL|Performance" "MySQL/errors|Errors" "MySQL/databases|Data" "MySQL/logreader|Logs"
 
 print_page_title "Node" "Queries / sec" "Connections / sec" "Cache hits ratio, %" "Table locks waited, %" "Threads active" "Threads created / sec"
 
@@ -40,11 +40,22 @@ for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
   
 done
 
-for dbcl in `echo "$dbcluster" | tr ',' ' '`; do
+print_timeline "MySQL Status"
+open_cluster "mysql-monitor-tmp"
+close_cluster_line
+print_dashlines "mysql_status"
+close_cluster
 
-  open_cluster "$dbcl"
-  close_cluster_line
-  print_dashlines "mysqlstatus"
-  close_cluster
-  
-done
+print_timeline "Replication Status"
+open_cluster "mysql-monitor-tmp"
+close_cluster_line
+print_dashlines "mysql_replication"
+close_cluster
+
+print_timeline "Process List"
+open_cluster "mysql-monitor-tmp"
+close_cluster_line
+print_dashlines "mysql_processlist"
+close_cluster
+
+

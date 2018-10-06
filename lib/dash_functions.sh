@@ -188,10 +188,10 @@ print_inline() {
 
 print_dashline() {
   # if source is a folder:
-  # print_dashlines path/to/folder <"onclick">
+  # print_dashline path/to/folder <"onclick">
   # where folder is the one where dash.html is located, path relative to M_ROOT/www
   # if source is an Sqlite database:
-  # print_dashlines "/path/to/db/file|table name|node field name|/path/to/test/conf" <"onclick">
+  # print_dashline "/path/to/db/file|table name|node field name|/path/to/test/conf" <"onclick">
   local target="$1"
   shift
   local onclick="$1"

@@ -1,0 +1,67 @@
+#!/bin/bash
+rpath=$(readlink -f "$BASH_SOURCE")
+rcommand=${rpath##*/}
+rpath=${rpath%/*}
+#*/
+
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+mysqlbin=`which mysql 2>/dev/null`
+[ -z "$mysqlbin" ] && echo "MySQL CLI not found" && exit 1
+
+source "$M_ROOT/lib/functions.sh"
+source "$rpath/mysql.conf"
+
+get_lock
+
+MyTEMP="$M_TEMP/mysql"
+[ -d "$MyTEMP" ] || install -d "$MyTEMP"
+
+get_interval || unlock_exit 0
+
+date_header
+
+find_value_for() {
+  column=$1
+  shift
+  echo "$*" | grep -A1 "name=\"$column\"" | tail -1 | cut -sd'|' -f2 | tr -d '"'
+}
+
+if [ -n "$dbcluster" ]; then
+  dbhosts=`"$M_ROOT"/cloud/common/get_ips --names --cluster="$dbcluster"`
+else
+  dbhosts=localhost
+fi
+
+[ -n "$dbuser" ] && A="-u $dbuser"
+[ -n "$dbpassword" ] && A="$A -p$dbpassword"
+[ -n "$dbport" ] && P="-P $dbport"
+
+for dbhost in $dbhosts ; do
+
+  echo -e "Host $dbhost\n---------------\n"
+  H="-h $dbhost"
+  mysqlbin="$mysqlbin -BsX $H $P $A"
+  declare -i n
+  n=0
+  processlist=`echo "SHOW PROCESSLIST" | $mysqlbin 2>/dev/null | "$M_ROOT"/lib/xml2txt`
+  for processrow in `echo "$processlist" | cut -sd'/' -f6 | sort -u`; do
+    process=`echo "$processlist" | grep "\"row\"/$processrow/"`
+    command=`find_value_for Command "$process"`
+    [ -z "$command" ] && continue
+    if [ "_$command" != "_Sleep" ] && [ "_$command" != "_Connect" ] && [[ ! "$command" =~ "Binlog" ]] ; then
+      runningtime=`find_value_for Time "$process"`
+      if [ -n "$long_time" ]; then
+        if [ $time -gt $long_time ] 2>/dev/null; then
+          longquery=`find_value_for Info "$process"`
+          echo "Long query: $longquery"
+        fi
+      fi
+      n+=1
+    fi
+  done
+  echo -e "Number of running queries: $n\n"
+
+done
+
+release_lock
+
