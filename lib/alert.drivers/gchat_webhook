@@ -1,0 +1,74 @@
+#!/bin/bash
+# Copyright (C) 2016 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../")
+#*/
+
+### Address means channel (without hashtag).
+### So a line in mail.alert.list may look like this:
+### Alerts 3 slack_webhook
+### Check slack_webhook.conf for the rest of it
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+CURL="$CURL -s -k"
+
+source "${0}.conf"
+
+postbody=`cat $1`
+shift
+aladdress="$1"
+shift
+alheader="$1"
+
+[ -z "$hookurl" ] && echo "ERROR: hook url is not defined, check ${rcommand}.conf" && exit 1
+[ -z "$alertbody" ] && alertbody=text
+
+if [ $alertbody == "text" ]; then
+  postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"$alheader\", \"text\": \"$postbody\" }"
+else
+  altime=`echo -e "$postbody" | head -1 | tr -d '*'`
+  postbody=`echo -e "$postbody" | tail -n +2 | sed 's|"|\\"|g'`
+  allevel=`echo "$alheader" | cut -d' ' -f1`
+  case $allevel in
+    '***') alcolor='#F00' ;;
+    '**') alcolor='#F70' ;;
+    '*') alcolor='#A80' ;;
+    *) alcolor='#0F0' ;;
+  esac
+  postdata="{
+  \"channel\": \"#${aladdress}\",
+  \"username\": \"m-script\",
+  \"icon_emoji\": \"$emoji\",
+  \"attachments\": [ 
+    {
+      \"fallback\": \"$postbody\",
+      \"color\": \"$alcolor\",
+      \"pretext\": \"$altime\",
+      \"title\": \"$alheader\",
+      \"title_link\": \"$myaddress\",
+      \"text\": \"$postbody\",
+      \"ts\": `date +%s`
+    }
+  ]
+}"
+
+fi
+
+$CURL -X POST -H 'Content-type: application/json' --data "$postdata" "$hookurl"
+
