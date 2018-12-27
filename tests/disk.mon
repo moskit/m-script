@@ -22,11 +22,6 @@ source "$rpath/../conf/mon.conf"
 source "${0%.mon}.conf"
 source "$M_ROOT/lib/functions.sh"
 
-diffsec=`expr $timeindexnow - $lasttimeindex 2>/dev/null` || diffsec=1000000
-sinceboot=`cat /proc/uptime | cut -d'.' -f1` || sinceboot=1000000
-
-# stat -f -c "%c %d %b %f %s %T" /
-
 resolve_uuid() {
   local resdisk
   if [ "${1:0:4}" == "UUID" ]; then
@@ -56,6 +51,8 @@ check_slaves() {
 if [ "_$SQLITE3" == "_1" ]; then
   alltables=`dbquery "$rpath/../sysdata" ".tables" | sed 's|\ \ *|\n|g' | grep -v ^$`
 fi
+
+rm $M_TEMP/disk.tmp*
 
 echo -e "\nDisks usage:\n------------\n\n    Disk\t\t\t\tMountpoint\t\t\tUsage\n"
 df -ml | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | sed 's_  *_|_g' | while read LINE ; do
@@ -97,7 +94,7 @@ df -ml | grep -vE "^shm|^tmpfs|^devtmpfs|^udev|^none|^Filesystem" | tr -d '%' | 
     printf "%${l}s"
   fi
   printf "$used%%\n"
-  
+
 ## Discovering what this disk really is
   disk=`echo $disk | cut -d'/' -f3-`
   if `grep -q $disk$ /proc/partitions` ; then
@@ -164,96 +161,6 @@ for sw in `echo "$swaps"` ; do
   [ -n "$swdisk" ] && echo "/dev/${swdisk##*/}" >> "$M_TEMP/disk.tmp.ext"
 done
 echo
-
-if [ "_$SQLITE3" == "_1" ]; then
-  echo -e "\nAverage disk I/O usage:\n-----------------------\n\n    Disk                           Time percentage                 Mbytes/sec\n"
-
-  for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
-
-    disk=${LINE##*/}
-    [ -z "$disk" ] && continue
-    
-    if [ "_$SQLITE3" == "_1" ]; then
-      disktable=${disk/-/_}
-      tablefound=false
-      echo "$alltables" | grep -q ^$disktable$ && tablefound=true
-      if ! $tablefound ; then
-        log "creating table $disktable"
-        dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disktable} on $disktable (timeindex);"
-      fi
-    fi
-    # reading stats
-    dr=$(cat /proc/diskstats | grep " $disk " | awk '{ print $6 }')
-    [ -z "$dr" ] && disk=`expr $disk : '\(.*[a-z]\)'` && dr=$(cat /proc/diskstats | grep " ${disk} " | awk '{ print $6 }')
-    drtime=$(cat /proc/diskstats | grep " $disk " | awk '{ print $7 }')
-    lastdrtime=`dbquery "$rpath/../sysdata" "select drtime from $disktable where timeindex='$lasttimeindex'"`
-    [ -z "$lastdrtime" ] && lastdrtime=$drtime
-    
-    drratio=`solve 2 "($drtime - $lastdrtime) / ($diffsec * 1000)"`
-
-    replinerd=`printf %-22s "$LINE read:"`
-    replinerd=`printf "${replinerd}${drratio}"`
-
-    # writing stats
-    dw=$(cat /proc/diskstats | grep " $disk " | awk '{ print $10 }')
-    dwtime=$(cat /proc/diskstats | grep " $disk " | awk '{ print $11 }')
-    lastdwtime=`dbquery "$rpath/../sysdata" "select dwtime from $disktable where timeindex='$lasttimeindex'"`
-    [ -z "$lastdwtime" ] && lastdwtime=$dwtime
-    
-    dwratio=`solve 2 "($dwtime - $lastdwtime) / ($diffsec * 1000)"`
-
-    replinerw=`printf %-22s "$LINE write:"`
-    replinerw=`printf "${replinerw}${dwratio}"`
-
-    [ -n "$dr" ] || dr=0
-    diskreads=`solve 2 "($dr / 2048)"`
-    diskreadslast=`dbquery "$rpath/../sysdata" "select diskreads from $disktable where timeindex='$lasttimeindex'"`
-    [ -n "$diskreadslast" ] || diskreadslast=$diskreads
-    drspeed=`solve 2 "($diskreads - $diskreadslast) / $diffsec"`
-    testres=0
-    for n in 3 2 1 ; do
-      thr=`eval echo "\\$drspeed_\$n"`
-      [ -n "$thr" ] && testres=`solve 2 "$drspeed >= $thr"`
-      [ $testres -eq 1 ] && break
-    done
-    [ $testres -eq 0 ] && drwarn="<OK> " || drwarn="<`printf %${n}s | tr ' ' '*'`>"
-
-    replinerd=`printf %-60s "${drwarn} ${replinerd}"`
-    replinerd="${replinerd}${drspeed}"
-    
-    [ -n "$dw" ] || dw=0
-    diskwrites=`solve 2 "($dw / 2048)"`
-    diskwriteslast=`dbquery "$rpath/../sysdata" "select diskwrites from $disktable where timeindex='$lasttimeindex'"`
-    [ -n "$diskwriteslast" ] || diskwriteslast=$diskwrites
-    dwspeed=`solve 2 "($diskwrites - $diskwriteslast) / $diffsec"`
-    testres=0
-    for n in 3 2 1 ; do
-      thr=`eval echo "\\$dwspeed_\$n"`
-      [ -n "$thr" ] && testres=`solve 2 "$dwspeed >= $thr"`
-      [ $testres -eq 1 ] && break
-    done
-    [ $testres -eq 0 ] && dwwarn="<OK> " || dwwarn="<`printf %${n}s | tr ' ' '*'`>"
-
-    replinerw=`printf %-60s "${dwwarn} ${replinerw}"`
-    replinerw="${replinerw}${dwspeed}"
-    
-    du=`grep "$disk|" "$M_TEMP/diskusage" | tail -1`
-    used=`echo "$du" | cut -d'|' -f2`
-    usedm=`echo "$du" | cut -d'|' -f3`
-    free=`echo "$du" | cut -d'|' -f4`
-    dui=`grep "$disk|" "$M_TEMP/diskusage.i" | tail -1`
-    usedi=`echo "$dui" | cut -d'|' -f2`
-    usedmi=`echo "$dui" | cut -d'|' -f3`
-    freei=`echo "$dui" | cut -d'|' -f4`
-    if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "insert into $disktable (timeindex, diskusage, diskusagemb, diskfree, inodeusage, inodeusagei, inodefree, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
-    fi
-    echo -e "$replinerd\n$replinerw"
-  done
-fi
-
-echo
 cat $M_TEMP/disk.tmp.discovered 2>/dev/null
-
-rm -f $M_TEMP/disk.tmp* $M_TEMP/diskusage $M_TEMP/diskusage.i >/dev/null 2>&1
-
+rm $M_TEMP/diskusage $M_TEMP/diskusage.i >/dev/null 2>&1
+exit 0
