@@ -28,19 +28,19 @@ CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 CURL="$CURL -s -k"
 
-source "${0}.conf"
-
 postbody=`cat $1`
 shift
 aladdress="$1"
 shift
 alheader="$1"
 
+hookurl=`grep ^$aladdress\| "${0}.conf" | cut -sd'|' -f2`
+
 [ -z "$hookurl" ] && echo "ERROR: hook url is not defined, check ${rcommand}.conf" && exit 1
 [ -z "$alertbody" ] && alertbody=text
 
 if [ $alertbody == "text" ]; then
-  postdata="{ \"channel\": \"#${aladdress}\", \"username\": \"$alheader\", \"text\": \"$postbody\" }"
+  postdata="{ \"text\": \"$alheader\n\`\`\`\n$postbody\n\`\`\`\" }"
 else
   altime=`echo -e "$postbody" | head -1 | tr -d '*'`
   postbody=`echo -e "$postbody" | tail -n +2 | sed 's|"|\\"|g'`

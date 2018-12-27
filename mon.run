@@ -69,6 +69,18 @@ function mailreport() {
 }
 
 function mailalert() {
+  if echo "$@" | grep -q '<\*\*\*>' ; then
+    al3=`echo "$monoutput" | grep -vE '<\*\*>|<\*>|<OK>' | sed 's|<\*\*\*>||;s|^[[:space:]]*||'`
+  fi
+  if echo "$@" | grep -q '<\*\*>' ; then
+    al2=`echo "$monoutput" | grep -vE '<\*\*\*>|<\*>|<OK>' | sed 's|<\*\*>||;s|^[[:space:]]*||'`
+  fi
+  if echo "$@" | grep -q '<\*>' ; then
+    al1=`echo "$monoutput" | grep -vE '<\*\*\*>|<\*\*>|<OK>' | sed 's|<\*>||;s|^[[:space:]]*||'`
+  fi
+  if echo "$@" | grep -q '<OK>' ; then
+    al0=`echo "$monoutput" | grep -vE '<\*\*\*>|<\*\*>|<\*>' | sed 's|<OK>||;s|^[[:space:]]*||'`
+  fi
   IFS1=$IFS; IFS='
 '
   if [ -n "$al1" ]; then
@@ -143,6 +155,7 @@ function runscript() {
           echo "$monoutput" >> "$rpath/report.blocked"
         else  
           echo "$monoutput" >> "$rpath/report"
+          mailalert "$monoutput"
         fi
         time1=`date +"%s"`
         dbquery "$rpath/sysdata" "insert into selfmon (timeindex, day, monitor, duration) values ('$timeindexnow', '$daynow', '$rmon', '`expr $time1 - $time0`')"
@@ -163,15 +176,12 @@ function runscript() {
           echo "$monoutput" >> "$rpath/report.blocked"
         else
           echo "$monoutput" >> "$rpath/report"
+          mailalert "$monoutput"
         fi
       fi
     done
   fi
   echo >> "$rpath/report"
-  al3=`grep -vE '<\*\*>|<\*>|<OK>' "$rpath/report" | sed 's|<\*\*\*>||;s|^[[:space:]]*||'`
-  al2=`grep -vE '<\*\*\*>|<\*>|<OK>' "$rpath/report" | sed 's|<\*\*>||;s|^[[:space:]]*||'`
-  al1=`grep -vE '<\*\*\*>|<\*\*>|<OK>' "$rpath/report" | sed 's|<\*>||;s|^[[:space:]]*||'`
-  al0=`grep -vE '<\*\*\*>|<\*\*>|<\*>' "$rpath/report" | sed 's|<OK>||;s|^[[:space:]]*||'`
 }
 
 function runactions() {
@@ -367,7 +377,6 @@ case $1 in
   --alert-only | -ao | -alert | --only-alert)
     newtimeindex
     runscript SQL
-    mailalert
     gendash nodes "$M_ROOT/report" marked
     runactions
     deltimeindex
@@ -406,7 +415,6 @@ case $1 in
     newtimeindex
     runscript SQL
     mailreport
-    mailalert
     genreport nodes "$M_ROOT/report"
     deltimeindex
     cleanup
@@ -416,7 +424,6 @@ case $1 in
     newtimeindex
     runscript "$1" $SQL
     timeshift
-    mailalert
     gendash nodes "$M_ROOT/report"
     runactions
     deltimeindex
