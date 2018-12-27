@@ -102,7 +102,7 @@ if [ "_$SQLITE3" == "_1" ]; then
     replinerw="${replinerw}${dwspeed}"
     
     if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "insert into $disktable (timeindex, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
+      dbquery "$rpath/../sysdata" "insert into $disktable (timeindex, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
     fi
     echo -e "$replinerd\n$replinerw"
   done
