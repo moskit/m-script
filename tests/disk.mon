@@ -162,5 +162,32 @@ for sw in `echo "$swaps"` ; do
 done
 echo
 cat $M_TEMP/disk.tmp.discovered 2>/dev/null
+
+if [ "_$SQLITE3" == "_1" ]; then
+  for LINE in `cat $M_TEMP/disk.tmp.ext | sort | uniq`; do
+    disk=${LINE##*/}
+    [ -z "$disk" ] && continue
+    if [ "_$SQLITE3" == "_1" ]; then
+      disktable="${disk/-/_}_usage"
+      tablefound=false
+      echo "$alltables" | grep -q ^$disktable$ && tablefound=true
+      if ! $tablefound ; then
+        log "creating table $disktable"
+        dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer); create index ti${disktable} on $disktable (timeindex);"
+      fi
+    fi
+    du=`grep "$disk|" "$M_TEMP/diskusage" | tail -1`
+    used=`echo "$du" | cut -d'|' -f2`
+    usedm=`echo "$du" | cut -d'|' -f3`
+    free=`echo "$du" | cut -d'|' -f4`
+    dui=`grep "$disk|" "$M_TEMP/diskusage.i" | tail -1`
+    usedi=`echo "$dui" | cut -d'|' -f2`
+    usedmi=`echo "$dui" | cut -d'|' -f3`
+    freei=`echo "$dui" | cut -d'|' -f4`
+    if [ "_$1" == "_SQL" ]; then
+      dbquery "$rpath/../sysdata" "insert into $disktable (timeindex, diskusage, diskusagemb, diskfree, inodeusage, inodeusagei, inodefree) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei')"
+    fi
+  done
+fi
 rm $M_TEMP/diskusage $M_TEMP/diskusage.i >/dev/null 2>&1
 exit 0

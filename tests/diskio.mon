@@ -43,7 +43,7 @@ if [ "_$SQLITE3" == "_1" ]; then
       echo "$alltables" | grep -q ^$disktable$ && tablefound=true
       if ! $tablefound ; then
         log "creating table $disktable"
-        dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskusage real, diskusagemb real, diskfree real, inodeusage real, inodeusagei integer, inodefree integer, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disktable} on $disktable (timeindex);"
+        dbquery "$rpath/../sysdata" "create table $disktable (timeindex integer primary key, diskreads real, diskwrites real, drspeed real, dwspeed real, drtime integer, dwtime integer, drratio real, dwratio real); create index ti${disktable} on $disktable (timeindex);"
       fi
     fi
     # reading stats
@@ -101,16 +101,8 @@ if [ "_$SQLITE3" == "_1" ]; then
     replinerw=`printf %-60s "${dwwarn} ${replinerw}"`
     replinerw="${replinerw}${dwspeed}"
     
-    du=`grep "$disk|" "$M_TEMP/diskusage" | tail -1`
-    used=`echo "$du" | cut -d'|' -f2`
-    usedm=`echo "$du" | cut -d'|' -f3`
-    free=`echo "$du" | cut -d'|' -f4`
-    dui=`grep "$disk|" "$M_TEMP/diskusage.i" | tail -1`
-    usedi=`echo "$dui" | cut -d'|' -f2`
-    usedmi=`echo "$dui" | cut -d'|' -f3`
-    freei=`echo "$dui" | cut -d'|' -f4`
     if [ "_$1" == "_SQL" ]; then
-      dbquery "$rpath/../sysdata" "insert into $disktable (timeindex, diskusage, diskusagemb, diskfree, inodeusage, inodeusagei, inodefree, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
+      dbquery "$rpath/../sysdata" "insert into $disktable (timeindex, diskreads, diskwrites, drspeed, dwspeed, drtime, dwtime, drratio, dwratio) values ('$timeindexnow', '$used', '$usedm', '$free', '$usedi', '$usedmi', '$freei', '$diskreads', '$diskwrites', '$drspeed', '$dwspeed', '$drtime', '$dwtime', '$drratio', '$dwratio')"
     fi
     echo -e "$replinerd\n$replinerw"
   done
