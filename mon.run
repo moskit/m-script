@@ -168,10 +168,10 @@ function runscript() {
     done
   fi
   echo >> "$rpath/report"
-  al3=`grep '<\*\*\*>' "$rpath/report" | sed 's|<\*\*\*>||;s|^[[:space:]]*||'`
-  al2=`grep '<\*\*>' "$rpath/report" | sed 's|<\*\*>||;s|^[[:space:]]*||'`
-  al1=`grep '<\*>' "$rpath/report" | sed 's|<\*>||;s|^[[:space:]]*||'`
-  al0=`grep '<OK>' "$rpath/report" | sed 's|<OK>||;s|^[[:space:]]*||'`
+  al3=`grep -vE '<\*\*>|<\*>|<OK>' "$rpath/report" | sed 's|<\*\*\*>||;s|^[[:space:]]*||'`
+  al2=`grep -vE '<\*\*\*>|<\*>|<OK>' "$rpath/report" | sed 's|<\*\*>||;s|^[[:space:]]*||'`
+  al1=`grep -vE '<\*\*\*>|<\*\*>|<OK>' "$rpath/report" | sed 's|<\*>||;s|^[[:space:]]*||'`
+  al0=`grep -vE '<\*\*\*>|<\*\*>|<\*>' "$rpath/report" | sed 's|<OK>||;s|^[[:space:]]*||'`
 }
 
 function runactions() {
