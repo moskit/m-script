@@ -28,7 +28,7 @@ STAT=`which stat 2>/dev/null`
 [ -z "$STAT" ] && echo "stat not found" >&2 && exit 1
 LOG="$M_ROOT/logs/cloud.log"
 [ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP/cloud/$CLOUD"
-local VERSION="v$API_VERSION"
+VERSION="v$API_VERSION"
 
 do_api_request() {
   ### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
@@ -49,16 +49,16 @@ do_api_request() {
   action=$1
   shift
   local params
-  params="?${@}"
+  [ -n "$@" ] && params="/?${@}"
   [ -z "$region" ] && log "region not specified" && return 2
   Headers="-H Content-Type: application/json -H Authorization: Bearer $DO_TOKEN"
   if [ "_$log_request" == "_yes" ]; then
-    log "$CURL -vvv -X $method -H \"$Headers\" \"https://${DO_APIURL}/${service}/${params}\""
-    reqres=`$CURL -X $method -H "$SortedHeaders" "https://${DO_APIURL}/${service}/${params}"`
+    log "$CURL -vvv -X $method $Headers \"https://${DO_API}/$Version/${service}${params}\""
+    reqres=`$CURL -X $method $Headers "https://${DO_API}/$Version/${service}${params}"`
     echo "$reqres" > "$M_TEMP/cloud/$CLOUD/${callername}.resp.${region}"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   else
-    $CURL -X $method -H "$Headers" "https://${DO_APIURL}/${service}/${params}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
+    $CURL -X $method $Headers "https://${DO_API}/$Version/${service}${params}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   fi
 }
 

@@ -6,7 +6,7 @@ API_VERSION=2
 CLOUD_NAME="Digital Ocean"
 
 # API URL
-DO_APIURL="https://api.digitalocean.com"
+DO_API="api.digitalocean.com"
 DO_TOKEN=""
 
 DEFAULT_REGION=""
