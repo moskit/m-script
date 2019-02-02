@@ -21,9 +21,6 @@ rpath=${0%/*}
 
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
-SSLEX=`which openssl 2>/dev/null`
-[ -z "$SSLEX" ] && echo "openssl binary not found" && exit 1
-
 LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
@@ -45,15 +42,10 @@ source "$M_ROOT/lib/cloud_functions.sh"
 source "$rpath/functions.sh"
 LOG="$M_ROOT/logs/cloud.log"
 keep_response=true
-
-get_opts "$@"
-
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
-
 [ -n "$name_source" ] && NAME_SOURCE=$name_source
 [ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
+get_opts "$@"
 
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
@@ -79,25 +71,26 @@ HTTPMETHOD=GET
 SERVICE=droplets
 AUTHMETHOD=header
 
-
-
+list_nodes() {
+  cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
+}
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
   reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION $qparams`
-  echo "$reqparsed" > "$M_TEMP/${rcommand}.resp"
+  echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
   [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
 else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
   # if no setting, force update is disabled
   if [ -n "$FORCE_LIST_UPDATE_AFTER" ]; then
-    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/${rcommand}.resp" || echo 0`)
+    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" || echo 0`)
     [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
   fi
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
-  [ ! -e "$M_TEMP/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp not found" && proper_exit 1 245
-  [ `cat "$M_TEMP/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/${rcommand}.resp is empty" && proper_exit 1 246
+  [ ! -e "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp not found" && proper_exit 1 245
+  [ `cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp is empty" && proper_exit 1 246
 fi
 
 list_nodes

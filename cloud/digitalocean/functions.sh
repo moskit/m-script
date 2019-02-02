@@ -18,22 +18,16 @@ fpath=$(readlink -f "$BASH_SOURCE")
 fpath=${fpath%/*}
 #*/
 [ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$fpath/../")
-
+[ -z "$CLOUD" ] && echo "No cloud defined" >&2 && exit 1
 caller=$(readlink -f "$0")
 callername=${caller##*/}
-
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "curl not found" >&2 && exit 1
 CURL="$CURL -s -k"
 STAT=`which stat 2>/dev/null`
 [ -z "$STAT" ] && echo "stat not found" >&2 && exit 1
-
-[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
-
-[ -z "$CLOUD" ] && echo "No cloud defined" >&2 && exit 1
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+[ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP/cloud/$CLOUD"
 
 do_api_request() {
   ### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
@@ -60,7 +54,7 @@ do_api_request() {
   if [ "_$log_request" == "_yes" ]; then
     log "$CURL -vvv -X $method -H \"$Headers\" \"https://${DO_APIURL}/${service}/${params}\""
     reqres=`$CURL -X $method -H "$SortedHeaders" "https://${DO_APIURL}/${service}/${params}"`
-    echo "$reqres" > "$M_TEMP/${callername}.resp.${region}"
+    echo "$reqres" > "$M_TEMP/cloud/$CLOUD/${callername}.resp.${region}"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   else
     $CURL -X $method -H "$Headers" "https://${DO_APIURL}/${service}/${params}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
