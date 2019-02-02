@@ -77,7 +77,7 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION $qparams`
+  reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD $region "" $qparams`
   echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
   [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245

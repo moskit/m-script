@@ -28,6 +28,7 @@ STAT=`which stat 2>/dev/null`
 [ -z "$STAT" ] && echo "stat not found" >&2 && exit 1
 LOG="$M_ROOT/logs/cloud.log"
 [ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP/cloud/$CLOUD"
+local VERSION="v$API_VERSION"
 
 do_api_request() {
   ### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
