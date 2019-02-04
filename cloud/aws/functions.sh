@@ -28,7 +28,7 @@ CURL="$CURL -s"
 
 [ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
 LOG="$M_ROOT/logs/cloud.log"
-
+[ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP/cloud/$CLOUD"
 [ -n "$verbose" ] && debug=true || debug=false
 
 aws_api_request() {
@@ -127,7 +127,7 @@ aws_api_request() {
   if [ "_$log_request" == "_yes" ]; then
     log "$CURL -vvv -X $method -H \"$SortedHeaders\" \"https://${endpoint}/?${Query}\""
     reqres=`$CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}"`
-    echo "$reqres" > "$M_TEMP/${callername}.resp.${region}"
+    echo "$reqres" > "$M_TEMP/cloud/$CLOUD/${callername}.resp.${region}"
     echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
   else
     $CURL -X $method -H "$SortedHeaders" "https://${endpoint}/?${Query}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
@@ -151,7 +151,7 @@ check_request_result() {
     reqparsed=`cat "$1"`
   fi
   if [ `echo "$reqparsed" | wc -l` -eq 0 ]; then
-    log "file $M_TEMP/${callername}.resp is empty"
+    log "file $M_TEMP/cloud/$CLOUD/${callername}.resp is empty"
     echo "ERROR: empty response" >&2
     return 1
   fi

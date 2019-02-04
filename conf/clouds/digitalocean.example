@@ -1,37 +1,21 @@
-##################################
-##  Amazon cloud configuration  ##
-##################################
-
-CLOUD_PROVIDER=aws
+CLOUD_PROVIDER=digitalocean
+API_VERSION=2
 
 # Short, or internal, name is the name of this file without extension.
 # Below is a long name that appears in reports, alerts and web interface
-CLOUD_NAME="AWS"
+CLOUD_NAME="Digital Ocean"
 
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
+# API URL
+DO_API="api.digitalocean.com"
+DO_TOKEN=""
 
-DEFAULT_REGION=
-
-### Settings for server images ###
-
-# S3 bucket to save AMI to:
-BUCKETNAME=
-# Multiple paths must be separated by comma
-EXCLUDE_PATHS=
-SAVED_FILES_PATH=/mnt
-ARCH=i386
-
-####################
-## Common options ##
-####################
+DEFAULT_REGION=""
 
 # Network used for communication with this cloud. Possible values:
 # internal (private IP ranges: 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
 # external
 # Default: internal
 NETWORK=
-
 
 # In case you are using non-standard SSH port
 SSHPORT=
@@ -71,5 +55,4 @@ FORCE_LIST_UPDATE_AFTER=1800
 
 # tag name to define cluster (default: "cluster")
 # CLUSTER_TAG=
-# CLUSTER_TAG_REGEXP=
 

@@ -42,9 +42,9 @@ role_required() {
     if [ -e "$ROLES_ROOT/roles/$role/role.rc" ]; then
       source "$ROLES_ROOT/roles/$role/role.rc"
     fi
-    if [ -z "$cluster" ]; then
+    if [ -z "$cluster" ] && [ "_$1" != "_noclusterok" ]; then
       if [ `cat "$M_ROOT/conf/clusters.conf" | cut -d'|' -f10 | grep "^$role$" | wc -l` -eq 0 ]; then
-        echo "Warning: unable to associate a cluster with this role ($role). Some functions may not work correctly, and you'll have to define flavor either using option --flavor or as an environment variable."
+        echo "Warning: unable to associate a cluster with this role ($role). Define OS flavor either using option --flavor or as an environment variable."
       fi
     fi
   else
@@ -181,7 +181,7 @@ case $command1 in
   list)
     case $command2 in
       meta|metas|tasks)
-        role_required
+        role_required noclusterok
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -220,7 +220,7 @@ case $command1 in
         done
       ;;
       scripts|commands)
-        role_required
+        role_required noclusterok
         [ -z "$param1" ] && param1="$role"
         [ -z "$param1" ] && echo "Role is empty" && exit 1
         COL=`tput cols 2>/dev/null`
@@ -232,8 +232,12 @@ case $command1 in
         printcol "Meta"
         echo "Role"
         printf "%${COL}s\n" | tr ' ' '-'
-        [ -n "$flavor" ] && allscripts=( `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
-        allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
+        if [ -n "$flavor" ]; then
+          allscripts=( `find "$ROLES_ROOT/roles/$param1/$flavor/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
+          allscripts+=( `find "$ROLES_ROOT/roles/$param1/common/" -maxdepth 1 -type f -o -type l ! -name "\.*"` )
+        else
+          allscripts=( `find "$ROLES_ROOT/roles/$param1/"*/ -maxdepth 1 -type f -o -type l ! -name "\.*"` )
+        fi
         for sc in ${allscripts[*]} ; do
           scr="${sc/$ROLES_ROOT\/roles\//}" && scr="${scr/$param1\//}"
           for m in `find "$ROLES_ROOT/roles/$param1" -mindepth 1 -maxdepth 1 -name "*\.meta"` ; do
