@@ -633,3 +633,11 @@ resolve_markdown() {
   rm "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 }
 
+readpath() { # readpath {/path/to/greppable/file|-} {path/inside/file} <filter>
+  [ -n "$3" ] && obj=`cat "$1" | tr -d '"' | grep "$2" | grep "$3"` || obj=`cat "$1" | tr -d '"' | grep "$2"`
+  local length=`echo "${2%/}" | grep -o '/' | wc -l`
+  res=`echo "$obj" | cut -sd'/' -f$((length+2))-`
+  [ `echo "$res" | wc -l` -eq 1 ] && echo "$res" | cut -sd'|' -f2 && return 0
+  [ `echo "$res" | cut -sd'|' -f1 | grep -vE '^[0-9]*$'` -eq 0 ] && echo "$res" | tr '\n' ' ' && return 0
+  echo "$res"
+}

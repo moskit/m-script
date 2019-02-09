@@ -72,15 +72,45 @@ SERVICE=droplets
 AUTHMETHOD=header
 
 list_nodes() {
-  cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
+  IFSORIG=$IFS; IFS='
+'
+  nodes=`cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" 2>/dev/null | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
+  for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort | uniq` ; do
+    nodeObj=`echo "$nodes" | grep "^$sn\/"`
+    if [ "_$NETWORK" == "_internal" ]; then
+      nodeIP=`echo "$nodeObj" | readpath - 0/droplets/$sn/networks/v4/0/ip_address "type|private"`
+    else
+      nodeIP=`echo "$nodeObj" | readpath - 0/droplets/$sn/networks/v4/0/ip_address "type|public"`
+    fi
+    nodeCluster=`echo "$nodeObj" | readpath - 0/droplets/$sn/tags "${CLUSTER_TAG}:" | tail -1`
+    nodeName=`echo "$nodeObj" | readpath - 0/droplets/$sn/name`
+    if [ -n "$nodeCluster" ]; then
+      if [ `grep -c ^$nodeCluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
+        key=`grep ^$nodeCluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
+        [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)" && key="$ikey"
+        check_super_cluster $ip "$nodeCluster" && continue
+        nodelist+=("$nodeIP|$key|$region|$nodeName|$nodeCluster|$CLOUD")
+      fi
+    fi
+  done
+  if [ -n "$update_nodes_list" ]; then
+    if [ ${#nodelist[*]} -eq 0 ]; then
+      log "generated list is empty"
+      echo -n > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
+    else
+      log "saving generated list (${#nodelist[*]} nodes)"
+      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
+    fi
+  fi
+  IFS=$IFSORIG
 }
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
   reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD $region "" $qparams`
   echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
-  [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
-  [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
+  [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
+  [ `echo "$reqparsed" | grep -cvE "\/\"droplets\"\/|\/\"meta\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
 else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
   # if no setting, force update is disabled

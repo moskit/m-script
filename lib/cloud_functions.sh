@@ -318,4 +318,3 @@ find_region() {
     grep "^$rc|" "$M_ROOT/conf/clusters.conf" | cut -sd'|' -f3
   done
 }
-

@@ -51,14 +51,15 @@ do_api_request() {
   local params
   [ -n "$@" ] && params="/?${@}"
   [ -z "$region" ] && log "region not specified" && return 2
-  Headers="-H Content-Type: application/json -H Authorization: Bearer $DO_TOKEN"
+  Headers="Content-Type: application/json
+Authorization: Bearer $DO_TOKEN"
   if [ "_$log_request" == "_yes" ]; then
-    log "$CURL -vvv -X $method $Headers \"https://${DO_API}/$Version/${service}${params}\""
-    reqres=`$CURL -X $method $Headers "https://${DO_API}/$Version/${service}${params}"`
+    log "$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\""
+    reqres=`$CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}"`
     echo "$reqres" > "$M_TEMP/cloud/$CLOUD/${callername}.resp.${region}"
-    echo "$reqres" | "$M_ROOT"/lib/xml2txt | grep -v ^$
+    echo "$reqres" | "$M_ROOT"/lib/json2txt | grep -v ^$
   else
-    $CURL -X $method $Headers "https://${DO_API}/$Version/${service}${params}" | "$M_ROOT"/lib/xml2txt | grep -v ^$
+    $CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}" | "$M_ROOT"/lib/json2txt | grep -v ^$
   fi
 }
 
