@@ -38,14 +38,12 @@ fi
 for cld in $cloud ; do
   clusters=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^$|^#|^[[:space:]]*#" | cut -d'|' -f1,3,12 | grep "|$cld$"`
   clustersfound=false
-  if [ -n "$cluster" ]; then
-    if [ "$cluster" != "all" ]; then
-      for cl in `echo "$cluster" | tr ',' ' '`; do
-        echo "$clusters" | grep -q "^$cl|" && clustersfound=true
-        regions+=( `echo "$clusters" | grep "^$cl|" | cut -sd'|' -f2` )
-      done
-      $clustersfound || continue
-    fi
+  if [ -n "$cluster" ] && [ "$cluster" != "all" ]; then
+    for cl in `echo "$cluster" | tr ',' ' '`; do
+      echo "$clusters" | grep -q "^$cl|" && clustersfound=true
+      regions+=( `echo "$clusters" | grep "^$cl|" | cut -sd'|' -f2` )
+    done
+    $clustersfound || continue
   else
     regions=( `echo "$clusters" | cut -sd'|' -f2` )
   fi
