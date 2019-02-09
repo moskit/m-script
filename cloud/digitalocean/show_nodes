@@ -72,6 +72,8 @@ SERVICE=droplets
 AUTHMETHOD=header
 
 list_nodes() {
+  [ "_$view" == "_raw" ] && echo "$reqparsed" && return
+  declare -a nodelist
   IFSORIG=$IFS; IFS='
 '
   nodes=`cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" 2>/dev/null | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
@@ -82,8 +84,12 @@ list_nodes() {
     else
       nodeIP=`echo "$nodeObj" | readpath - 0/droplets/$sn/networks/v4/0/ip_address "type|public"`
     fi
-    nodeCluster=`echo "$nodeObj" | readpath - 0/droplets/$sn/tags "${CLUSTER_TAG}:" | tail -1`
     nodeName=`echo "$nodeObj" | readpath - 0/droplets/$sn/name`
+    if [ -n "$CLUSTER_TAG" ]; then
+      nodeCluster=`echo "$nodeObj" | readpath - 0/droplets/$sn/tags "${CLUSTER_TAG}:" | tail -1`
+    elif [ -n "$CLUSTER_TAG_REGEXP" ]; then
+      nodeCluster=`expr "$nodeName" : "$CLUSTER_TAG_REGEXP"`
+    fi
     if [ -n "$nodeCluster" ]; then
       if [ `grep -c ^$nodeCluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
         key=`grep ^$nodeCluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
@@ -91,6 +97,24 @@ list_nodes() {
         check_super_cluster $ip "$nodeCluster" && continue
         nodelist+=("$nodeIP|$key|$region|$nodeName|$nodeCluster|$CLOUD")
       fi
+    fi
+    if [ -n "$cluster" ] && [ -z "$update_nodes_list" ]; then
+      case $view in
+      nodelist)
+        if [ "$cluster" == "all" ]; then
+          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
+        else
+          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
+        fi
+        ;;
+      *)
+        if [ "$cluster" == "all" ]; then
+          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
+        else
+          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
+        fi
+        ;;
+      esac
     fi
   done
   if [ -n "$update_nodes_list" ]; then
