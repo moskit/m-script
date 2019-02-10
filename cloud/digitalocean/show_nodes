@@ -77,16 +77,16 @@ list_nodes() {
   IFSORIG=$IFS; IFS='
 '
   nodes=`cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" 2>/dev/null | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
-  for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort | uniq` ; do
-    nodeObj=`echo "$nodes" | grep "^$sn\/"`
+  for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort -n | uniq` ; do
+    nodeObj=`echo "$nodes" | grep "^$nodesn\/"`
     if [ "_$NETWORK" == "_internal" ]; then
-      nodeIP=`echo "$nodeObj" | readpath - $sn/networks/v4/0/ip_address "type|private"`
+      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4/0/ip_address "type|private"`
     else
-      nodeIP=`echo "$nodeObj" | readpath - $sn/networks/v4/0/ip_address "type|public"`
+      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4/0/ip_address "type|public"`
     fi
-    nodeName=`echo "$nodeObj" | readpath - $sn/name`
+    nodeName=`echo "$nodeObj" | readpath - $nodesn/name`
     if [ -n "$CLUSTER_TAG" ]; then
-      nodeCluster=`echo "$nodeObj" | readpath - $sn/tags "${CLUSTER_TAG}:" | tail -1`
+      nodeCluster=`echo "$nodeObj" | readpath - $nodesn/tags "${CLUSTER_TAG}:" | tail -1`
     elif [ -n "$CLUSTER_TAG_REGEXP" ]; then
       nodeCluster=`expr "$nodeName" : "$CLUSTER_TAG_REGEXP"`
     fi
