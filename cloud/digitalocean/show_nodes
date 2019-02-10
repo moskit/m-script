@@ -72,10 +72,10 @@ list_nodes() {
   nodes=`echo "$reqparsed" | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
   for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort -n | uniq` ; do
     nodeObj=`echo "$nodes" | grep "^$nodesn/"`
-    if [ "_$NETWORK" == "_internal" ]; then
-      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|private" "ip_address"`
-    else
+    if [ "_$NETWORK" == "_external" ]; then
       nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|public" "ip_address"`
+    else
+      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|private" "ip_address"`
     fi
     nodeName=`echo "$nodeObj" | readpath - $nodesn/name`
     nodeRegion=`echo "$nodeObj" | readpath - $nodesn/region/slug`
@@ -85,9 +85,11 @@ list_nodes() {
       nodeCluster=`expr "$nodeName" : "$CLUSTER_TAG_REGEXP"`
     fi
     if [ -n "$nodeCluster" ]; then
-      if [ `grep -c ^$nodeCluster\| "$M_ROOT/conf/clusters.conf"` -ne 0 ] ; then
-        key=`grep ^$nodeCluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
-        [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)" && key="$ikey"
+      confClusterObj=`grep ^$nodeCluster\| "$M_ROOT/conf/clusters.conf"`
+      if [ -n "$confClusterObj" ] ; then
+        key=`echo "$confClusterObj" | cut -d'|' -f2`
+        confRegion=`echo "$confClusterObj" | cut -d'|' -f3`
+        [ "_$confRegion" != "_$nodeRegion" ] && log "Cluster of node $nodeName is ${nodeCluster}, but region of $nodeCluster must be $confRegion" && continue
         check_super_cluster $ip "$nodeCluster" && continue
         nodelist+=("$nodeIP|$key|$nodeRegion|$nodeName|$nodeCluster|$CLOUD")
       fi
