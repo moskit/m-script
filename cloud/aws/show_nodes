@@ -233,34 +233,37 @@ list_nodes() {
   if [ -n "$update_nodes_list" ]; then
     if [ ${#nodelist[*]} -eq 0 ]; then
       log "generated list is empty"
-      echo -n > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
     else
       log "saving generated list (${#nodelist[*]} nodes)"
-      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
+      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
     fi
   fi
   IFS=$IFS1
 }
 
-if [ -z "$noupdate" ]; then
-  [ -n "$verbose" ] && log "sending request"
-  reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $region $ACTION $qparams`
-  echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
-  [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
-  [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
-else
-  # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
-  # if no setting, force update is disabled
-  if [ -n "$FORCE_LIST_UPDATE_AFTER" ]; then
-    tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" || echo 0`)
-    [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
+for rgn in `echo "$region" | tr ',' ' '` ; do
+  if [ -z "$noupdate" ]; then
+    [ -n "$verbose" ] && log "sending request"
+    reqparsed=`aws_api_request $SERVICE $VERSION $AUTHMETHOD $METHOD $rgn $ACTION $qparams`
+    echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
+    [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
+    [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
+  else
+    # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
+    # if no setting, force update is disabled
+    if [ -n "$FORCE_LIST_UPDATE_AFTER" ]; then
+      tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" || echo 0`)
+      [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] && unset noupdate
+    fi
+    [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
+    [ ! -e "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp not found" && proper_exit 1 245
+    [ `cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp is empty" && proper_exit 1 246
   fi
-  [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
-  [ ! -e "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp not found" && proper_exit 1 245
-  [ `cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp is empty" && proper_exit 1 246
-fi
 
-list_nodes
+  rm "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  list_nodes
 
-[ -n "$count" ] && echo $icount
+  [ -n "$count" ] && echo $icount
+done
+
 proper_exit 0 252

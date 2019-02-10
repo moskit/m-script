@@ -9,15 +9,14 @@ source "$M_ROOT/lib/cloud_functions.sh"
 declare -a catline
 
 for cld in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -d'|' -f12 | sort | uniq | grep -v ^$`; do
-  for rgn in `cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -sd'|' -f3,12 | sort | uniq | grep -v ^$ | grep "|$cld$" | cut -sd'|' -f1`; do
-    source "$M_ROOT/conf/clouds/${cld}.conf"
-    [ -n "$CLOUD_PROVIDER" ] && "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$rgn --forceupdate --update_nodes_list $@
-    res=$?
-    [ $res -eq 10 ] && log "$cld list is not updated: failed to acquire cloud operations lock" && continue
-    [ $res -eq 0 ] && log "$cld list updated successfully"
-    [ $res -eq 1 ] && log "ERROR $cld list is not updated"
-    [ -e "$M_ROOT/cloud/nodes.list.${cld}.${rgn}" ] && catline+=("$M_ROOT/cloud/nodes.list.${cld}.${rgn}")
-  done
+  regions=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^#|^[[:space:]]#|^$" | cut -sd'|' -f3,12 | sort | uniq | grep -v ^$ | grep "|$cld$" | cut -sd'|' -f1 | tr '\n' ','`
+  source "$M_ROOT/conf/clouds/${cld}.conf"
+  [ -n "$CLOUD_PROVIDER" ] && "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$regions --forceupdate --update_nodes_list $@
+  res=$?
+  [ $res -eq 10 ] && log "$cld list is not updated: failed to acquire cloud operations lock" && continue
+  [ $res -eq 0 ] && log "$cld list updated successfully"
+  [ $res -eq 1 ] && log "ERROR $cld list is not updated"
+  [ -e "$M_ROOT/cloud/nodes.list.${cld}" ] && catline+=("$M_ROOT/cloud/nodes.list.${cld}")
 done
 
 comments=`cat "$M_ROOT/nodes.list" | grep "^[[:space:]]*#"`
