@@ -78,7 +78,7 @@ list_nodes() {
 '
   nodes=`echo "$reqparsed" | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
   for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort -n | uniq` ; do
-    nodeObj=`echo "$nodes" | grep "^$nodesn\/"`
+    nodeObj=`echo "$nodes" | grep "^$nodesn/"`
     if [ "_$NETWORK" == "_internal" ]; then
       nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4/0/ip_address "type|private"`
     else
@@ -86,7 +86,7 @@ list_nodes() {
     fi
     nodeName=`echo "$nodeObj" | readpath - $nodesn/name`
     if [ -n "$CLUSTER_TAG" ]; then
-      nodeCluster=`echo "$nodeObj" | readpath - $nodesn/tags "${CLUSTER_TAG}:" | tail -1`
+      nodeCluster=`echo "$nodeObj" | readpath - $nodesn/tags "${CLUSTER_TAG}:" | cut -sd':' -f2 | tail -1`
     elif [ -n "$CLUSTER_TAG_REGEXP" ]; then
       nodeCluster=`expr "$nodeName" : "$CLUSTER_TAG_REGEXP"`
     fi
@@ -98,25 +98,25 @@ list_nodes() {
         nodelist+=("$nodeIP|$key|$region|$nodeName|$nodeCluster|$CLOUD")
       fi
     fi
-    if [ -n "$cluster" ] && [ -z "$update_nodes_list" ]; then
-      case $view in
-      nodelist)
-        if [ "$cluster" == "all" ]; then
-          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
-        else
-          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
-        fi
-        ;;
-      *)
-        if [ "$cluster" == "all" ]; then
-          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
-        else
-          for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
-        fi
-        ;;
-      esac
-    fi
   done
+  if [ -n "$cluster" ] && [ -z "$update_nodes_list" ]; then
+    case $view in
+    nodelist)
+      if [ "$cluster" == "all" ]; then
+        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
+      else
+        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
+      fi
+      ;;
+    *)
+      if [ "$cluster" == "all" ]; then
+        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
+      else
+        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
+      fi
+      ;;
+    esac
+  fi
   if [ -n "$update_nodes_list" ]; then
     if [ ${#nodelist[*]} -eq 0 ]; then
       log "generated list is empty"

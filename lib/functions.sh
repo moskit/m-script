@@ -633,8 +633,16 @@ resolve_markdown() {
   rm "$tmpfile" "${tmpfile}.orig" 2>/dev/null
 }
 
-readpath() { # readpath {/path/to/greppable/file|-} {path/inside/file} <filter>
-  [ -n "$3" ] && obj=`cat $1 | tr -d '"' | grep "^${2%/}" | grep "$3"` || obj=`cat $1 | tr -d '"' | grep "^${2%/}"`
+readpath() { # readpath {/path/to/greppable/file|-} {path/to/object} <object filter> <value filter>
+  if [ -n "$4" ]; then # supposed to return multiple arrays, one of them has to be chosen based on $3
+    local objarr=`cat $1 | tr -d '"' | grep "^${2%/}"`
+    local objarrindex=`echo "$objarr" | grep "$3" | cut -sd'/' -f1`
+    local obj=`echo "$objarr" | grep "^$objarrindex/" | grep "$4"`
+  elif [ -n "$3" ]; # simple grep
+    local obj=`cat $1 | tr -d '"' | grep "^${2%/}" | grep "$3"`
+  else
+    local obj=`cat $1 | tr -d '"' | grep "^${2%/}"`
+  fi
   local length=`echo "${2%/}" | grep -o '/' | wc -l`
   res=`echo "$obj" | cut -sd'/' -f$((length+2))-`
   [ `echo -n "$res" | wc -l` -eq 0 ] && echo "$obj" | cut -sd'|' -f2 && return 0
