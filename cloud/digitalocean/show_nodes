@@ -60,13 +60,6 @@ else
   [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 fi
 
-if [ -z "$region" ]; then
-  region=`find_region`
-  [ -z "$region" ] && region=$DEFAULT_REGION
-  [ -z "$region" ] && echo "Region not defined!" >&2 && proper_exit 1 74
-  log "searching nodes in region $region"
-fi
-
 HTTPMETHOD=GET
 SERVICE=droplets
 AUTHMETHOD=header
@@ -85,6 +78,7 @@ list_nodes() {
       nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|public" "ip_address"`
     fi
     nodeName=`echo "$nodeObj" | readpath - $nodesn/name`
+    nodeRegion=`echo "$nodeObj" | readpath - $nodesn/region/slug`
     if [ -n "$CLUSTER_TAG" ]; then
       nodeCluster=`echo "$nodeObj" | readpath - $nodesn/tags "${CLUSTER_TAG}:" | cut -sd':' -f2 | tail -1`
     elif [ -n "$CLUSTER_TAG_REGEXP" ]; then
@@ -95,7 +89,7 @@ list_nodes() {
         key=`grep ^$nodeCluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f2`
         [ "_$key" != "_$ikey" ] && log "Warning: key name from conf/clusters.conf ($key) for node $IP (name: $iname) doesn't match the one from node metadata ($ikey)" && key="$ikey"
         check_super_cluster $ip "$nodeCluster" && continue
-        nodelist+=("$nodeIP|$key|$region|$nodeName|$nodeCluster|$CLOUD")
+        nodelist+=("$nodeIP|$key|$nodeRegion|$nodeName|$nodeCluster|$CLOUD")
       fi
     fi
   done
@@ -131,7 +125,7 @@ list_nodes() {
 
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
-  reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD $region "" $qparams`
+  reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" "" $qparams`
   echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
   [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 244
   [ `echo "$reqparsed" | grep -cvE "\/\"droplets\"\/|\/\"meta\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 245
