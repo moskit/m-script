@@ -80,9 +80,9 @@ list_nodes() {
   for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort -n | uniq` ; do
     nodeObj=`echo "$nodes" | grep "^$nodesn/"`
     if [ "_$NETWORK" == "_internal" ]; then
-      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4/0/ip_address "type|private"`
+      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|private" "ip_address"`
     else
-      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4/0/ip_address "type|public"`
+      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|public" "ip_address"`
     fi
     nodeName=`echo "$nodeObj" | readpath - $nodesn/name`
     if [ -n "$CLUSTER_TAG" ]; then

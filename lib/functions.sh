@@ -638,7 +638,7 @@ readpath() { # readpath {/path/to/greppable/file|-} {path/to/object} <object fil
     local objarr=`cat $1 | tr -d '"' | grep "^${2%/}"`
     local objarrindex=`echo "$objarr" | grep "$3" | cut -sd'/' -f1`
     local obj=`echo "$objarr" | grep "^$objarrindex/" | grep "$4"`
-  elif [ -n "$3" ]; # simple grep
+  elif [ -n "$3" ]; then # simple grep
     local obj=`cat $1 | tr -d '"' | grep "^${2%/}" | grep "$3"`
   else
     local obj=`cat $1 | tr -d '"' | grep "^${2%/}"`
