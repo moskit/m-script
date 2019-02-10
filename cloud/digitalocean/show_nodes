@@ -80,13 +80,13 @@ list_nodes() {
   for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort | uniq` ; do
     nodeObj=`echo "$nodes" | grep "^$sn\/"`
     if [ "_$NETWORK" == "_internal" ]; then
-      nodeIP=`echo "$nodeObj" | readpath - 0/droplets/$sn/networks/v4/0/ip_address "type|private"`
+      nodeIP=`echo "$nodeObj" | readpath - $sn/networks/v4/0/ip_address "type|private"`
     else
-      nodeIP=`echo "$nodeObj" | readpath - 0/droplets/$sn/networks/v4/0/ip_address "type|public"`
+      nodeIP=`echo "$nodeObj" | readpath - $sn/networks/v4/0/ip_address "type|public"`
     fi
-    nodeName=`echo "$nodeObj" | readpath - 0/droplets/$sn/name`
+    nodeName=`echo "$nodeObj" | readpath - $sn/name`
     if [ -n "$CLUSTER_TAG" ]; then
-      nodeCluster=`echo "$nodeObj" | readpath - 0/droplets/$sn/tags "${CLUSTER_TAG}:" | tail -1`
+      nodeCluster=`echo "$nodeObj" | readpath - $sn/tags "${CLUSTER_TAG}:" | tail -1`
     elif [ -n "$CLUSTER_TAG_REGEXP" ]; then
       nodeCluster=`expr "$nodeName" : "$CLUSTER_TAG_REGEXP"`
     fi
