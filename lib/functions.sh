@@ -634,16 +634,16 @@ resolve_markdown() {
 }
 
 readpath() { # readpath {/path/to/greppable/file|-} {path/to/object} <object filter> <value filter>
+  local length=`echo "${2%/}" | grep -o '/' | wc -l`
   if [ -n "$4" ]; then # supposed to return multiple arrays, one of them has to be chosen based on $3
     local objarr=`cat $1 | tr -d '"' | grep "^${2%/}"`
-    local objarrindex=`echo "$objarr" | grep "$3" | cut -sd'/' -f1`
-    local obj=`echo "$objarr" | grep "^$objarrindex/" | grep "$4"`
+    local objarrindex=`echo "$objarr" | grep "$3" | cut -sd'/' -f$((length+2))- | cut -sd'/' -f1`
+    local obj=`echo "$objarr" | grep "^${2%/}/$objarrindex/" | grep "$4"`
   elif [ -n "$3" ]; then # simple grep
     local obj=`cat $1 | tr -d '"' | grep "^${2%/}" | grep "$3"`
   else
     local obj=`cat $1 | tr -d '"' | grep "^${2%/}"`
   fi
-  local length=`echo "${2%/}" | grep -o '/' | wc -l`
   res=`echo "$obj" | cut -sd'/' -f$((length+2))-`
   [ `echo -n "$res" | wc -l` -eq 0 ] && echo "$obj" | cut -sd'|' -f2 && return 0
   [ `echo -n "$res" | wc -l` -eq 1 ] && echo "$res" | cut -sd'|' -f2 && return 0
