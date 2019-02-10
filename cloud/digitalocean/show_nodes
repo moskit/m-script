@@ -76,7 +76,7 @@ list_nodes() {
   declare -a nodelist
   IFSORIG=$IFS; IFS='
 '
-  nodes=`cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" 2>/dev/null | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
+  nodes=`echo "$reqparsed" | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
   for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort -n | uniq` ; do
     nodeObj=`echo "$nodes" | grep "^$nodesn\/"`
     if [ "_$NETWORK" == "_internal" ]; then
@@ -145,6 +145,7 @@ else
   [ -n "$verbose" ] && log "not sending request: noupdate is set, using existing data"
   [ ! -e "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp not found" && proper_exit 1 245
   [ `cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | wc -l` -eq 0 ] && echo "No existing data found, run without --noupdate" && log "file $M_TEMP/cloud/$CLOUD/${rcommand}.resp is empty" && proper_exit 1 246
+  reqparsed=`cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"`
 fi
 
 list_nodes
