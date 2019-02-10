@@ -48,26 +48,20 @@ for cld in $cloud ; do
     regions=( `echo "$clusters" | cut -sd'|' -f2` )
   fi
   [ -n "$PS1" ] && echo "*** Cloud $cld"
-  for rgn in `echo "${regions[*]}" | tr ' ' '\n' | sort | uniq` ; do
-    if [ -n "$region" ]; then
-      regionfound=false
-      for aregion in `echo "$region" | tr ',' ' '`; do
-        [ "_$aregion" == "_$rgn" ] && regionfound=true
-      done
-      $regionfound || continue 
-    fi
-    if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
-      source "$M_ROOT/conf/clouds/${cld}.conf"
-      export CLOUD=$cld
-    else
-      echo "No configuration found for cloud $cld"
-      continue
-    fi
-    if [ -n "$CLOUD_PROVIDER" ]; then
-      "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$rgn $@
-    else
-      "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=$rgn $@
-    fi
-  done
+  if [ -z "$region" ]; then
+    region=`echo "${regions[*]}" | tr ' ' '\n' | sort | uniq | tr '\n' ','`
+  fi
+  if [ -e "$M_ROOT/conf/clouds/${cld}.conf" ]; then
+    source "$M_ROOT/conf/clouds/${cld}.conf"
+    export CLOUD=$cld
+  else
+    echo "No configuration found for cloud $cld"
+    continue
+  fi
+  if [ -n "$CLOUD_PROVIDER" ]; then
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$region $@
+  else
+    "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=$region $@
+  fi
 done
 
