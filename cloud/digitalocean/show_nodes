@@ -51,6 +51,7 @@ export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
 declare -i icount
+[ -n "$all" ] && cluster=all
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
 if [ -n "$cluster" ]; then
   if [ "$cluster" == "all" ]; then
@@ -93,7 +94,11 @@ list_nodes() {
         [ "_$confRegion" != "_$nodeRegion" ] && log "Cluster of node $nodeName is ${nodeCluster}, but region of $nodeCluster must be $confRegion" && continue
         check_super_cluster $ip "$nodeCluster" && continue
         nodelist+=("$nodeIP|$key|$nodeRegion|$nodeName|$nodeCluster|$CLOUD")
+      elif [ -n "$all" ]; then
+        nodelist+=("$nodeIP||$nodeRegion|$nodeName||$CLOUD")
       fi
+    elif [ -n "$all" ]; then
+      nodelist+=("$nodeIP||$nodeRegion|$nodeName||$CLOUD")
     fi
   done
   if [ -n "$cluster" ] && [ -z "$update_nodes_list" ]; then
