@@ -20,8 +20,8 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
 M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
 exit_status=0
 
 lock_cloudops || exit 10
@@ -45,7 +45,7 @@ if [ -z "$keypair" ]; then
   log "key not specified"
   proper_exit 48
 else
-  keyid=`"$rpath"/show_sshkeys | readpath - 0/ssh_keys "name|cluster_key" id`
+  keyid=`IAMACHILD=1 "$rpath"/show_sshkeys | readpath - 0/ssh_keys "name|cluster_key" id`
 fi
 nodename=`generate_name $cluster` || proper_exit 52
 [ -n "$userdata" ] && userdata="\"$userdata\"" || userdata=null
