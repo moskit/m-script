@@ -7,7 +7,8 @@ rpath=${0%/*}
 
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
-
+OSSL=`which openssl 2>/dev/null`
+[ -z "$OSSL" ] && echo "Openssl not found" && exit 1
 CURL="$CURL -s -k"
 
 possible_options="cloud region cluster image name return verbose subnet number additional_params log_request dry help userdata"
@@ -47,7 +48,7 @@ if [ -z "$keypair" ]; then
   log "key not specified"
   proper_exit 48
 else
-  fingerprint=`openssl pkey -in "$M_ROOT/keys/$keypair" -pubout -outform DER | openssl md5 -c`
+  fingerprint=`$OSSL pkey -in "$M_ROOT/keys/$keypair" -pubout -outform DER | openssl md5 -c`
 fi
 nodename=`generate_name $cluster` || proper_exit 52
 [ -n "$userdata" ] && userdata="\"$userdata\"" || userdata=null
