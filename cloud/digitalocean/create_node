@@ -30,7 +30,7 @@ get_opts
 [ -n "$debug" ] && debug=true || debug=false
 [ -n "$dry" ] && dry=true || dry=false
 [ -z "$cluster" ] && cluster="$M_CLUSTER"
-[ -z "$cluster" ] && echo "Cluster not defined" && exit 1
+[ -z "$cluster" ] && echo "Cluster not defined" && proper_exit 1 33
 clusterconf=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | tail -1`
 [ -z "$clusterconf" ] && echo "Cluster $cluster is not configured" && proper_exit 1 37
 
