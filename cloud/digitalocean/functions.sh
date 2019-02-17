@@ -54,6 +54,8 @@ do_api_request() {
 Authorization: Bearer $DO_TOKEN"
   if [ "_$method" == "_POST" ]; then
     local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d '$postbody'"
+  else
+    local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\""
   fi
   if [ "_$log_request" == "_yes" ]; then
     log "$apirequest"
