@@ -1,0 +1,78 @@
+#!/bin/bash
+# Copyright (C) 2008-2011 Igor Simonov (me@igorsimonov.com)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+rcommand=${0##*/}
+rpath=${0%/*}
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+#*/
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+LOG="$M_ROOT/logs/cloud.log"
+
+debug=false
+
+possible_options="cloud help region verbose cluster tag noupdate view update_nodes_list forceupdate all count resolveids name_source log_request id"
+necessary_options=""
+
+if [ -n "$help" ]; then
+  echo "Possible options: $possible_options"
+fi
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "No cloud defined" && exit 1
+
+source "$M_ROOT/conf/mon.conf"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/functions.sh"
+source "$M_ROOT/lib/cloud_functions.sh"
+source "$rpath/functions.sh"
+LOG="$M_ROOT/logs/cloud.log"
+keep_response=true
+[ -n "$name_source" ] && NAME_SOURCE=$name_source
+[ -z "$NAME_SOURCE_FALLBACK" ] && NAME_SOURCE_FALLBACK=metadata
+[ -z "$CLUSTER_TAG" ] && CLUSTER_TAG="cluster"
+get_opts "$@"
+
+export IAMACHILD M_TEMP CLOUD
+lock_cloudops || exit 10
+
+declare -i icount
+[ -n "$all" ] && cluster=all
+[ -n "$forceupdate" ] && unset noupdate # for compatibility
+if [ -n "$cluster" ]; then
+  if [ "$cluster" == "all" ]; then
+    unset M_CLUSTER
+  fi
+else
+  [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
+fi
+
+HTTPMETHOD=GET
+SERVICE="droplets/$id"
+AUTHMETHOD=header
+
+[ -n "$verbose" ] && log "sending request"
+reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
+echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
+[ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 73
+[ `echo "$reqparsed" | grep -cvE "\/\"droplets\"\/|\/\"meta\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 74
+echo "$reqparsed"
+proper_exit 0 76
+
+
+
+

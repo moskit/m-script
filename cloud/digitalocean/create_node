@@ -1,0 +1,144 @@
+#!/bin/bash
+
+rcommand=${0##*/}
+rpath=${0%/*}
+#*/
+[ -z "$M_ROOT" ] && M_ROOT=$(readlink -f "$rpath/../../")
+
+CURL=`which curl 2>/dev/null`
+[ -z "$CURL" ] && echo "Curl not found" && exit 1
+
+CURL="$CURL -s -k"
+
+possible_options="cloud region cluster image name return verbose subnet number additional_params log_request dry help userdata"
+necessary_options=""
+get_opts
+
+[ -n "$cloud" ] && CLOUD=$cloud
+[ -z "$CLOUD" ] && echo "CLOUD not defined" && exit 1
+export CLOUD
+
+[ -n "$debug" ] && debug=true || debug=false
+[ -n "$dry" ] && dry=true || dry=false
+
+source "$M_ROOT/conf/mon.conf"
+M_TEMP="$M_TEMP/cloud/$CLOUD"
+[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+source "$M_ROOT/lib/cloud_functions.sh"
+
+exit_status=0
+
+lock_cloudops || exit 10
+
+[ -z "$cluster" ] && cluster="$M_CLUSTER"
+[ -z "$cluster" ] && echo "Cluster not defined" && exit 1
+clusterconf=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | tail -1`
+[ -z "$clusterconf" ] && echo "Cluster $cluster is not configured" && proper_exit 1 37
+
+size=`echo "$clusterconf" | cut -sd'|' -f5`
+[ -z "$size" ] && echo "size not specified" && proper_exit 1 40
+[ -z "$number" ] && number=1
+secgroup=`echo "$clusterconf" | cut -sd'|' -f4`
+keypair=`echo "$clusterconf" | cut -sd'|' -f2`
+[ -z "$region" ] && region=`echo "$clusterconf" | cut -sd'|' -f3`
+[ -z "$region" ] && log "region not specified" && proper_exit 45
+if [ -z "$keypair" ]; then
+  log "key not specified"
+  proper_exit 48
+else
+  fingerprint=`openssl pkey -in "$M_ROOT/keys/$keypair" -pubout -outform DER | openssl md5 -c`
+fi
+nodename=`generate_name $cluster` || proper_exit 52
+[ -n "$userdata" ] && userdata="\"$userdata\"" || userdata=null
+[ -z "$NETWORK" ] && NETWORK=internal
+[ "_$NETWORK" == "_internal" ] && privatenet=true || privatenet=false
+image=`echo "$clusterconf" | cut -sd'|' -f6`
+[ -z "$image" ] && echo "image not specified" && proper_exit 57
+POSTBODY="{\"name\": \"$nodename\",
+  \"region\": \"$region\",
+  \"size\": \"size\",
+  \"image\": \"$image\",
+  \"ssh_keys\": \$fingerprint\",
+  \"backups\": false,
+  \"ipv6\": ${ipv6},
+  \"user_data\": $userdata,
+  \"private_networking\": ${privatenet},
+  \"volumes\": null,
+  \"tags\": [
+    \"cluster:$cluster\"
+  ]
+}"
+HTTPMETHOD=POST
+SERVICE=droplets
+AUTHMETHOD=header
+
+printreturn() {
+  for res in `echo $1 | tr ',' ' '` ; do
+    case $res in
+      ip)
+        echo "$ip"
+        ;;
+      ipext)
+        echo "$extIP"
+        ;;
+      ipint)
+        echo "$intIP"
+        ;;
+      id)
+        echo "$nodeid"
+        ;;
+    esac
+  done
+}
+
+save_details() {
+  listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
+  echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
+  intIP=`echo "$details" | grep privateIpAddress | cut -sd'|' -f2`
+  extIP=`echo "$1" | grep publicIpAddress | cut -sd'|' -f2`
+  if [ "_$NETWORK" == "_external" ] ; then
+    ip=$extIP
+  else
+    ip=$intIP
+  fi
+  key=`echo "$details" | grep keyName | cut -sd'|' -f2`
+  region=`echo "$details" | grep availabilityZone | cut -sd'|' -f2`
+  echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
+}
+
+log "Checking cluster $cluster limit..."
+check_cluster_limit "$cluster" || proper_exit 5 112
+[ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
+[ -z "$name" ] && proper_exit 6 114
+log "Double-checking name"
+IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 116
+### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
+reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "$postbody" ""` && log "Request sent" || proper_exit 1 118
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "API reply is empty" && proper_exit 1 119
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 120
+nodeid=`echo "$reqparsed" | grep '"droplet"/"id"' | cut -sd'|' -f2`
+
+if ! $dry ; then
+  log "Waiting for node $name ready..."
+  waittimeout=1200
+  waitperiod=10
+  checks=`expr $waittimeout / $waitperiod`
+  for ((i=1; i<$checks; i++)) ; do
+    sleep $waitperiod
+    details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid`
+    status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
+    log "status is $status"
+    [ "_$status" == "_running" ] && break
+  done
+  if [ "_$status" == "_running" ]; then
+    save_details
+    "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
+    [ -n "$return" ] && printreturn $return
+  else
+    exit_status=1
+  fi
+fi
+
+proper_exit $exit_status 235
