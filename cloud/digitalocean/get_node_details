@@ -69,7 +69,7 @@ AUTHMETHOD=header
 reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
 echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
 [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 73
-[ `echo "$reqparsed" | grep -cvE "\/\"droplets\"\/|\/\"meta\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 74
+[ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 74
 echo "$reqparsed"
 proper_exit 0 76
 
