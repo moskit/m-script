@@ -53,11 +53,12 @@ do_api_request() {
   Headers="Content-Type: application/json
 Authorization: Bearer $DO_TOKEN"
   if [ "_$method" == "_POST" ]; then
-    local request="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d \"$postbody\""
-  if [ "_$log_request" == "_yes" ]; then
-    log "$request"
+    local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d '$postbody'"
   fi
-  $request || "$M_ROOT"/lib/json2txt | grep -v ^$
+  if [ "_$log_request" == "_yes" ]; then
+    log "$apirequest"
+  fi
+  $apirequest || "$M_ROOT"/lib/json2txt | grep -v ^$
 }
 
 
