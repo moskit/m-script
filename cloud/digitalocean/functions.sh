@@ -60,7 +60,11 @@ Authorization: Bearer $DO_TOKEN"
   if [ "_$log_request" == "_yes" ]; then
     log "$apirequest"
   fi
-  $apirequest || "$M_ROOT"/lib/json2txt | grep -v ^$
+  if [ "_$method" == "_POST" ]; then
+    $CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}" -d "$postbody" | "$M_ROOT"/lib/json2txt | grep -v ^$
+  else
+    $CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}" | "$M_ROOT"/lib/json2txt | grep -v ^$
+  fi
 }
 
 
