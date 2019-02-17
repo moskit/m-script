@@ -25,7 +25,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 exit_status=0
 
 lock_cloudops || exit 10
-get_opts
+get_opts $@
 
 [ -n "$debug" ] && debug=true || debug=false
 [ -n "$dry" ] && dry=true || dry=false
