@@ -91,17 +91,14 @@ printreturn() {
 }
 
 save_details() {
-  listdetails=`echo "$details" | cut -sd'|' -f2 | tr '\n' '|'`
-  echo "${listdetails%|}" >> "$M_ROOT/cloud/${CLOUD}.list"
-  intIP=`echo "$details" | grep privateIpAddress | cut -sd'|' -f2`
-  extIP=`echo "$1" | grep publicIpAddress | cut -sd'|' -f2`
+  intIP=`echo "$details" | readpath - 0/droplet/networks/v4 "type|private" "ip_address"`
+  extIP=`echo "$details" | readpath - 0/droplet/networks/v4 "type|public" "ip_address"`
   if [ "_$NETWORK" == "_external" ] ; then
     ip=$extIP
   else
     ip=$intIP
   fi
-  key=`echo "$details" | grep keyName | cut -sd'|' -f2`
-  region=`echo "$details" | grep availabilityZone | cut -sd'|' -f2`
+  region=`echo "$details" | readpath - 0/droplet/region/slug`
   echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/cloud/nodes.list.${CLOUD}"
   echo "$ip|$key|$region|$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
 }
@@ -110,13 +107,14 @@ log "Checking cluster $cluster limit..."
 check_cluster_limit "$cluster" || proper_exit 5 112
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
 [ -z "$name" ] && proper_exit 6 114
-log "Double-checking name"
-IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 116
+#log "Double-checking name"
+#IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 116
 ### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
 reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "$postbody" ""` && log "Request sent" || proper_exit 1 118
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "API reply is empty" && proper_exit 1 119
 [ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 120
 nodeid=`echo "$reqparsed" | grep '"droplet"/"id"' | cut -sd'|' -f2`
+[ -z "$nodeid" ] && log "node id is empty" && proper_exit 1 120
 
 if ! $dry ; then
   log "Waiting for node $name ready..."
@@ -126,11 +124,11 @@ if ! $dry ; then
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     details=`IAMACHILD=1 "$rpath"/get_node_details --id=$nodeid`
-    status=`echo "$details" | grep "^status|" | cut -sd'|' -f2`
+    status=`echo "$details" | readpath - 0/droplet/status`
     log "status is $status"
-    [ "_$status" == "_running" ] && break
+    [ "_$status" == "_active" ] && break
   done
-  if [ "_$status" == "_running" ]; then
+  if [ "_$status" == "_active" ]; then
     save_details
     "$M_ROOT"/cloud/common/update_hosts_file && log "/etc/hosts updated" || log "error updating /etc/hosts"
     [ -n "$return" ] && printreturn $return
