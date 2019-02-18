@@ -46,14 +46,14 @@ do_api_request() {
   method=$1
   shift
   local postbody
-  postbody=$1
+  postbody="$1"
   shift
   local params
   [ -n "$@" ] && params="/?${@}"
   Headers="Content-Type: application/json
 Authorization: Bearer $DO_TOKEN"
   if [ "_$method" == "_POST" ]; then
-    local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d '$postbody'"
+    local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d \"$postbody\""
   else
     local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\""
   fi
