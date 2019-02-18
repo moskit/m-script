@@ -9,7 +9,7 @@ CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "Curl not found" && exit 1
 CURL="$CURL -s -k"
 
-possible_options="cloud region cluster image name return verbose subnet number additional_params log_request dry help userdata"
+possible_options="cloud region cluster image name return verbose subnet number additional_params log_request dry help userdata ipv6"
 necessary_options=""
 
 
@@ -33,7 +33,7 @@ get_opts $@
 [ -z "$cluster" ] && echo "Cluster not defined" && proper_exit 1 33
 clusterconf=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | tail -1`
 [ -z "$clusterconf" ] && echo "Cluster $cluster is not configured" && proper_exit 1 37
-
+[ -n "$ipv6" ] && ipv6=true || ipv6=false
 size=`echo "$clusterconf" | cut -sd'|' -f5`
 [ -z "$size" ] && echo "size not specified" && proper_exit 1 40
 [ -z "$number" ] && number=1
@@ -55,9 +55,9 @@ image=`echo "$clusterconf" | cut -sd'|' -f6`
 [ -z "$image" ] && echo "image not specified" && proper_exit 57
 POSTBODY="{\"name\": \"$nodename\",
   \"region\": \"$region\",
-  \"size\": \"size\",
+  \"size\": \"$size\",
   \"image\": \"$image\",
-  \"ssh_keys\": \$keyid\",
+  \"ssh_keys\": \"$keyid\",
   \"backups\": false,
   \"ipv6\": ${ipv6},
   \"user_data\": $userdata,
