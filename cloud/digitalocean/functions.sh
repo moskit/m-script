@@ -36,20 +36,15 @@ do_api_request() {
   local service
   service=$1
   shift
-  local Version
-  Version=$1
+  local Version=$1
   shift
-  local authmethod
-  authmethod=$1
+  local authmethod=$1
   shift
-  local method
-  method=$1
+  local method=$1
   shift
-  local postbody
-  postbody="$1"
+  local postbody="$1"
   shift
-  local params
-  [ -n "$@" ] && params="/?${@}"
+  [ -n "$*" ] && local params="/?$*"
   Headers="Content-Type: application/json
 Authorization: Bearer $DO_TOKEN"
   if [ "_$method" == "_POST" ]; then
