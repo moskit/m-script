@@ -53,7 +53,7 @@ do_api_request() {
   Headers="Content-Type: application/json
 Authorization: Bearer $DO_TOKEN"
   if [ "_$method" == "_POST" ]; then
-    local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d '$postbody'"
+    local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\" -d \"$postbody\""
   else
     local apirequest="$CURL -X $method -H \"$Headers\" \"https://${DO_API}/$Version/${service}${params}\""
   fi
@@ -61,7 +61,7 @@ Authorization: Bearer $DO_TOKEN"
     log "$apirequest"
   fi
   if [ "_$method" == "_POST" ]; then
-    $CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}" -d '$postbody' | "$M_ROOT"/lib/json2txt | grep -v ^$
+    $CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}" -d "$postbody" | "$M_ROOT"/lib/json2txt | grep -v ^$
   else
     $CURL -X $method -H "$Headers" "https://${DO_API}/$Version/${service}${params}" | "$M_ROOT"/lib/json2txt | grep -v ^$
   fi

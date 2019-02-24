@@ -125,7 +125,8 @@ list_nodes() {
       echo -n > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
     else
       log "saving generated list (${#nodelist[*]} nodes)"
-      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
+      rm "$M_ROOT/cloud"/nodes.list.${CLOUD}.*
+      for ((i=0; i<${#nodelist[*]}; i++)); do rgn=`echo "${nodelist[$i]}" | cut -sd'|' -f3`; echo "${nodelist[$i]}" >> "$M_ROOT/cloud/nodes.list.${CLOUD}.${rgn}" ; done
     fi
   fi
   IFS=$IFSORIG

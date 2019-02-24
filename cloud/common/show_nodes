@@ -59,9 +59,9 @@ for cld in $cloud ; do
     continue
   fi
   if [ -n "$CLOUD_PROVIDER" ]; then
-    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=$region $@
+    "$M_ROOT"/cloud/$CLOUD_PROVIDER/show_nodes --cloud=$cld --region=${region%,} $@
   else
-    "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=$region $@
+    "$M_ROOT"/cloud/common/show_noncloud_nodes --cloud=$cld --region=${region%,} $@
   fi
 done
 

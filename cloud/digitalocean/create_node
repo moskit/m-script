@@ -106,15 +106,15 @@ save_details() {
 log "Checking cluster $cluster limit..."
 check_cluster_limit "$cluster" || proper_exit 5 112
 [ -z "$name" ] && name=`generate_name $cluster` && log "Name auto-generated: $name"
-[ -z "$name" ] && proper_exit 6 114
+[ -z "$name" ] && proper_exit 6 109
 #log "Double-checking name"
 #IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 116
 ### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
-reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "$POSTBODY" ""` && log "Request sent" || proper_exit 1 118
-[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "API reply is empty" && proper_exit 1 119
-[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 120
+reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "$POSTBODY" ""` && log "Request sent" || proper_exit 1 113
+[ `echo "$reqparsed" | wc -l` -eq 0 ] && log "API reply is empty" && proper_exit 1 114
+[ `echo "$reqparsed" | grep -c Error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 115
 nodeid=`echo "$reqparsed" | grep '"droplet"/"id"' | cut -sd'|' -f2`
-[ -z "$nodeid" ] && log "node id is empty" && proper_exit 1 120
+[ -z "$nodeid" ] && log "node id is empty" && log "$reqparsed" && proper_exit 1 117
 
 if ! $dry ; then
   log "Waiting for node $name ready..."
