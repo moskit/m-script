@@ -638,7 +638,7 @@ readpath() { # readpath {/path/to/greppable/file|-} {path/to/object} <object fil
   if [ -n "$4" ]; then # supposed to return multiple arrays, one of them has to be chosen based on $3
     local objarr=`cat $1 | tr -d '"' | grep "^${2%/}"`
     local objarrindex=`echo "$objarr" | grep "$3" | cut -sd'/' -f$((length+2))- | cut -sd'/' -f1`
-    local obj=`echo "$objarr" | grep "^${2%/}/$objarrindex/" | grep "$4"`
+    local obj=`echo "$objarr" | grep "^${2%/}/$objarrindex/$4"`
   elif [ -n "$3" ]; then # simple grep
     local obj=`cat $1 | tr -d '"' | grep "^${2%/}" | grep "$3"`
   else

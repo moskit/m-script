@@ -69,15 +69,15 @@ Authorization: Bearer $DO_TOKEN"
 
 find_id_by_name() {
   local id=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "name|$1" "id"`
-  [ -n "$id" ] && echo "$id" || show_nodes --all --view=raw | readpath - 0/droplets "name|$1" "id"
+  [ -z "$id" ] && echo "$id" || (IAMACHILD=1 show_nodes --all --view=raw | readpath - 0/droplets "name|$1" "id")
 }
 
 find_name_by_id() {
   local name=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "id|$1" "name"`
-  [ -n "$name" ] && echo "$name" || show_nodes --all --view=raw | readpath - 0/droplets "id|$1" "name"
+  [ -z "$name" ] && echo "$name" || (IAMACHILD=1 show_nodes --all --view=raw | readpath - 0/droplets "id|$1" "name")
 }
 
 find_id_by_ip() {
   local id=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id"`
-  [ -n "$id" ] && echo "$id" || show_nodes --all --view=raw | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id"
+  [ -z "$id" ] && echo "$id" || (IAMACHILD=1 show_nodes --all --view=raw | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id")
 }

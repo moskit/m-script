@@ -25,7 +25,7 @@ LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
 
-possible_options="cloud help region verbose cluster tag noupdate view update_nodes_list forceupdate all count resolveids name_source log_request id"
+possible_options="cloud help region verbose cluster noupdate view name_source log_request id name ip"
 necessary_options=""
 
 if [ -n "$help" ]; then
@@ -68,6 +68,7 @@ if [ -z "$id" ]; then
     id=`find_id_by_ip $ip`
   fi
 fi
+[ -z "$id" ] && log "node ID not found" && proper_exit 1 71
 
 HTTPMETHOD=GET
 SERVICE="droplets/$id"
@@ -76,10 +77,10 @@ AUTHMETHOD=header
 [ -n "$verbose" ] && log "sending request"
 reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
 echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
-[ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 73
-[ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 74
+[ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 79
+[ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 80
 echo "$reqparsed"
-proper_exit 0 76
+proper_exit 0 82
 
 
 
