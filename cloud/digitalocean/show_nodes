@@ -122,11 +122,10 @@ list_nodes() {
   if [ -n "$update_nodes_list" ]; then
     if [ ${#nodelist[*]} -eq 0 ]; then
       log "generated list is empty"
-      echo -n > "$M_ROOT/cloud/nodes.list.${CLOUD}.${region}"
+      echo -n > "$M_ROOT/cloud"/nodes.list.${CLOUD}
     else
       log "saving generated list (${#nodelist[*]} nodes)"
-      rm "$M_ROOT/cloud"/nodes.list.${CLOUD}.*
-      for ((i=0; i<${#nodelist[*]}; i++)); do rgn=`echo "${nodelist[$i]}" | cut -sd'|' -f3`; echo "${nodelist[$i]}" >> "$M_ROOT/cloud/nodes.list.${CLOUD}.${rgn}" ; done
+      for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done > "$M_ROOT/cloud/nodes.list.${CLOUD}"
     fi
   fi
   IFS=$IFSORIG
