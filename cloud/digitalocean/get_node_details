@@ -61,6 +61,14 @@ else
   [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 fi
 
+if [ -z "$id" ]; then
+  if [ -n "$name" ]; then
+    id=`find_id_by_name $name`
+  elif [ -n "$ip" ]; then
+    id=`find_id_by_ip $ip`
+  fi
+fi
+
 HTTPMETHOD=GET
 SERVICE="droplets/$id"
 AUTHMETHOD=header
