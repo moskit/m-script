@@ -536,7 +536,7 @@ if [ -n "$newnode" ]; then
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
     done
-    [ $i -eq $NEW_NODE_CREATE_TRIES ] && log "Maximal number of tries reached, exiting" && meta_exit 1 483
+    [ $i -eq $NEW_NODE_CREATE_ATTEMPTS ] && log "Maximal number of tries reached, exiting" && meta_exit 1 483
   else
     echo "*** This is a test"
   fi
