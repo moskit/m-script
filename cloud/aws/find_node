@@ -21,7 +21,7 @@ rpath=${0%/*}
 CURL=`which curl 2>/dev/null`
 CURL="$CURL -s -k"
 
-possible_options="cloud id name ip return verbose cluster help updatelist quick slow onlyid"
+possible_options="cloud id name ip return verbose cluster help updatelist onlyid"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -93,14 +93,6 @@ Options:
                                   option or via environment variable CLOUD;
                                   command-line option has higher priority
                                   
-  --quick                       - search in the existing data, no API call
-                                  
-  --slow                        - for cluster search, gets details for each
-                                  node in this cloud listed in nodes.list
-                                  and cloud/rackspace.list from the cloud API
-                                  and does its best to fix any inconsistencies
-                                  found
-                                  
   --onlyid                      - doesn't output details of the node, only its
                                   ID
                                   
@@ -108,7 +100,6 @@ EOF
 
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
-[ -n "$fast" -a -n "$slow" ] && echo "both --fast and --slow options are set, not sure what to do" && exit 1
 
 source "$rpath/../../conf/mon.conf"
 [ -n "$CLOUD" ] && source "$rpath/../../conf/clouds/${CLOUD}.conf"
