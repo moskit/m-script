@@ -36,16 +36,8 @@ get_opts "$@"
 export IAMACHILD M_TEMP CLOUD
 lock_cloudops || exit 10
 
-declare -i icount
-[ -n "$all" ] && cluster=all
 [ -n "$forceupdate" ] && unset noupdate # for compatibility
-if [ -n "$cluster" ]; then
-  if [ "$cluster" == "all" ]; then
-    unset M_CLUSTER
-  fi
-else
-  [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
-fi
+[ -z "$cluster" ] && [ -n "$M_CLUSTER" ] && cluster=$M_CLUSTER
 
 if [ -z "$id" ]; then
   if [ -n "$name" ]; then
@@ -54,7 +46,14 @@ if [ -z "$id" ]; then
     id=`find_id_by_ip $ip`
   fi
 fi
-[ -z "$id" ] && log "node ID not found" && proper_exit 1 71
+if [ -z "$id" ]; then
+  if [ -n "$cluster" ]; then
+    grep "$cluster|$cloud$" "$M_ROOT/cloud/nodes.list.${CLOUD}"
+  else
+    log "neither node nor cluster specified"
+    proper_exit 1 54
+  fi
+fi
 
 HTTPMETHOD=GET
 SERVICE="droplets/$id"
