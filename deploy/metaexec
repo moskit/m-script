@@ -113,7 +113,7 @@ run_meta() {
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       thescript=${metascript##*/}
-      therest=${metascript%/*}
+      therest=`echo "$metascript" | cut -sd'/' -f1,2`
       [ `expr "$therest" : "\.*/"` -gt 0 ] && therest=`expr "$therest" : "\.*/\(.*\)"`
       if [ -z "$therest" ]; then
         # if both role and flavor are defined
