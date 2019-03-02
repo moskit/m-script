@@ -154,12 +154,13 @@ run_meta() {
           [ -d "$ROLES_ROOT/roles/$therest" ] && therole="$therest" || theflavor="$therest"
         fi
         if [ -n "$therole" ]; then
-          msfoundinrole=`find "$ROLES_ROOT/roles/$therole" -name "$thescript"`
-          msfoundinflavor=`find "$ROLES_ROOT/roles"/*/"$theflavor" -name "$thescript"`
-          echo -e -n "Script $metascript not found "
-          [ -n "$msfoundinrole" ] && echo -e "\n  Found: $msfoundinrole"
-          [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
-          res=1
+          metascript=`find "$ROLES_ROOT/roles/$therole" -name "$thescript"`
+          if [ -z "$metascript" ]; then
+            msfoundinflavor=`find "$ROLES_ROOT/roles"/*/"$theflavor" -name "$thescript"`
+            echo -e -n "Script $metascript not found "
+            [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
+            res=1
+          fi
         else
           if [ -e "$ROLES_ROOT/roles/$role/$theflavor/$thescript" ]; then
             metascript="$role/$theflavor/$thescript"
@@ -173,8 +174,8 @@ run_meta() {
       fi
     fi
     if [ $res -eq 0 ]; then
-      [ -e "$CURRTASKDIR/$metascript" ] && rm -f "$CURRTASKDIR/$metascript"
-      [ -e "$CURRTASKDIR/$metascript.var" ] && rm -f "$CURRTASKDIR/${metascript}.var"
+      [ -e "$CURRTASKDIR/$metascript" ] && rm "$CURRTASKDIR/$metascript"
+      [ -e "$CURRTASKDIR/$metascript.var" ] && rm "$CURRTASKDIR/${metascript}.var"
       deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $F $P $SU
       res=$?
     fi
