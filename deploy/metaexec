@@ -113,7 +113,7 @@ run_meta() {
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
     if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       thescript=${metascript##*/}
-      therest=`echo "$metascript" | cut -sd'/' -f1`
+      therest=${metascript%/*}
       [ `expr "$therest" : "\.*/"` -gt 0 ] && therest=`expr "$therest" : "\.*/\(.*\)"`
       if [ -z "$therest" ]; then
         # if both role and flavor are defined
@@ -150,7 +150,9 @@ run_meta() {
       else
         therole=`echo "$therest" | cut -sd'/' -f1`
         theflavor=`echo "$therest" | cut -sd'/' -f2`
-        [ -z "$therole" -a -z "$theflavor" ] && theflavor="$therest"
+        if [ -z "$therole" ] && [ -z "$theflavor" ]; then
+          [ -d "$ROLES_ROOT/roles/$therest" ] && therole="$therest" || theflavor="$therest"
+        fi
         if [ -n "$therole" ]; then
           msfoundinrole=`find "$ROLES_ROOT/roles/$therole" -name "$thescript"`
           msfoundinflavor=`find "$ROLES_ROOT/roles"/*/"$theflavor" -name "$thescript"`

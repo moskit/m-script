@@ -49,6 +49,7 @@ fi
 if [ -z "$id" ]; then
   if [ -n "$cluster" ]; then
     grep "$cluster|$cloud$" "$M_ROOT/cloud/nodes.list.${CLOUD}"
+    exit 0
   else
     log "neither node nor cluster specified"
     proper_exit 1 54
