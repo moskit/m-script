@@ -112,8 +112,9 @@ check_cluster_limit "$cluster" || proper_exit 5 112
 #IAMACHILD=1 find_node --name="$name" --updatelist >/dev/null 2>&1 && log "Node with name $name already exists!" && proper_exit 6 116
 ### do_api_request {service} {version} {authmethod} {httpmethod} {postbody} <params>
 reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "$POSTBODY" ""` && log "Request sent" || proper_exit 1 113
+echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
 [ `echo "$reqparsed" | wc -l` -eq 0 ] && log "API reply is empty" && proper_exit 1 114
-[ `echo "$reqparsed" | grep -ic error` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep -i error`" && proper_exit 1 115
+[ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep -i error`" && proper_exit 1 115
 nodeid=`echo "$reqparsed" | grep '"droplet"/"id"' | cut -sd'|' -f2`
 [ -z "$nodeid" ] && log "node id is empty" && log "$reqparsed" && proper_exit 1 117
 
