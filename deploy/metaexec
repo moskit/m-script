@@ -534,7 +534,7 @@ if [ -n "$newnode" ]; then
       [[ $res -eq 9 ]] && log "Failed to find out what region (datacenter) to use, define it in clusters.conf, please" && meta_exit 1 476
       [[ $res -eq 1 ]] && log "Something went wrong, unable to add a node to the cluster $cluster"
       if [ -z "$ip" ]; then
-        log "Was unable either to create a cloud node in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_TRIES && continue
+        log "Was unable either to create a cloud node in the cloud $CLOUD or to get its IP address." && sleep $WAIT_BETWEEN_ATTEMPTS && continue
       fi
       [[ `expr $ip : [0-9.]*$` -eq 0 ]] && log "Something's wrong with IP: $ip"
       echo "Something went wrong, check $LOG and fix the problem, next try is in $WAIT_BETWEEN_TRIES seconds"
