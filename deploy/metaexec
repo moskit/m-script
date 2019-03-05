@@ -281,48 +281,48 @@ Usage: ${0##*/} <options>
 
 Common options:
 
-  --help		this help
-  --usage		short help
-  --verbose		shows the output of each command; also exports
-			"verbose=yes" to descendant processes, so it can be 
-			used in scripts
-  --debug		adds verbosity; also exports "debug=yes" to descendant
-			processes, so it can be used in scripts
-  --test|--dry		makes all preparations but doesn't really execute
-			any scripts; in combination with --verbose or --debug
-			outputs the resulting scripts and files with all
-			variables substituted
+  --help    this help
+  --usage   short help
+  --verbose   shows the output of each command; also exports
+      "verbose=yes" to descendant processes, so it can be 
+      used in scripts
+  --debug   adds verbosity; also exports "debug=yes" to descendant
+      processes, so it can be used in scripts
+  --test|--dry    makes all preparations but doesn't really execute
+      any scripts; in combination with --verbose or --debug
+      outputs the resulting scripts and files with all
+      variables substituted
 
 Target selection options:
 
-  --ip=[IP]		target is this IP only
-  --ignoreemptycluster	useful only in combination with --ip in some cases;
-			prevents from complaining about cluster not defined
-  --cluster=[name]	allows to define cluster; overwrites M_CLUSTER 
-			environment variable if it is defined
-  --role=[name]		(re)defines cluster based on role
-  --flavor=[name]	(re)defines cluster(s) based on flavor, i.e. selects
-			all hosts of this flavor as a target
-  --cloud=[name]	(re)defines cluster(s) based on cloud, i.e. selects
-			all hosts in this cloud as a target
+  --ip=[IP]   target is this IP only
+  --ignoreemptycluster  useful only in combination with --ip in some cases;
+      prevents from complaining about cluster not defined
+  --cluster=[name]  allows to define cluster; overwrites M_CLUSTER 
+      environment variable if it is defined
+  --role=[name]   (re)defines cluster based on role
+  --flavor=[name] (re)defines cluster(s) based on flavor, i.e. selects
+      all hosts of this flavor as a target
+  --cloud=[name]  (re)defines cluster(s) based on cloud, i.e. selects
+      all hosts in this cloud as a target
 
 Commands selection options:
 
-  --task=[name]		task is defined by metascript "extension"; metascript
-			must be located in the root folder of the role, so e.g.
-			file meta.deploy corresponds to the task named "deploy"
+  --task=[name]   task is defined by metascript "extension"; metascript
+      must be located in the root folder of the role, so e.g.
+      file meta.deploy corresponds to the task named "deploy"
                         and contains the list of all correspondent commands
-			inside
-  --command=[command string]	executes a single command defined by command
-			string; syntax is "command-type role/flavor/command"
-			where command-type is either "remote" or "local";
-			see documentation for more details
-  --command=[number,...]	executes command(s) defined by their numbers in
-			existing metascript defined by the --task option; see
-			also option --list
-  --list		outputs all commands listed in metascript defined by 
-			the --task option with their numbers
-  --skip=[number,...]	allows to skip certain commands while executing 
+      inside
+  --command=[command string]  executes a single command defined by command
+      string; syntax is "command-type role/flavor/command"
+      where command-type is either "remote" or "local";
+      see documentation for more details
+  --command=[number,...]  executes command(s) defined by their numbers in
+      existing metascript defined by the --task option; see
+      also option --list
+  --list    outputs all commands listed in metascript defined by 
+      the --task option with their numbers
+  --skip=[number,...] allows to skip certain commands while executing 
                         metascript defined by the --task option
 
 Repeat options:
@@ -330,24 +330,24 @@ Repeat options:
   These options don't require other options to be defined, all the options
   are inherited from the session being repeated
 
-  --repeat		repeats the last meta execution starting from the
-			command that failed during the previous run; if there
-			were no failed commands, does nothing
-  --timestamp=[string]  	repeats execution of the session defined by its
-			timestamp; session timestamp is shown when metascript
-			execution has finished, either successfully or not
+  --repeat    repeats the last meta execution starting from the
+      command that failed during the previous run; if there
+      were no failed commands, does nothing
+  --timestamp=[string]    repeats execution of the session defined by its
+      timestamp; session timestamp is shown when metascript
+      execution has finished, either successfully or not
   --newtimestamp    forces new timestamp generation; necessary if metaexec
       command is included in the script that is run by another metaexec command
 
 Other options:
 
-  --newnode		this is a shortcut combining create_node command and
-			metascript execution on this new node when it is
-			ready; includes all necessary automation: getting
-			new node status, repeating the call if it has failed,
-			inserting the IP into the list, ensuring it is up
-			and accessible etc. See documentation for more details
-			
+  --newnode   this is a shortcut combining create_node command and
+      metascript execution on this new node when it is
+      ready; includes all necessary automation: getting
+      new node status, repeating the call if it has failed,
+      inserting the IP into the list, ensuring it is up
+      and accessible etc. See documentation for more details
+      
   --nolock   the default is to lock cloud operations if --newnode option
       is present; this helps to avoid background API calls caused
       by absence of the target node in nodes.list which may happen
@@ -375,6 +375,8 @@ export CLOUD
 
 [ -z "$ROLES_ROOT" ] && ROLES_ROOT=/opt/m/deploy
 [ -z "$M_DEPL_WORK_DIR" ] && M_DEPL_WORK_DIR=/root/deploy.tmp
+[ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
+[ -n "$SSHPORT" ] || SSHPORT=22
 
 export PATH="$M_ROOT/deploy:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
@@ -577,8 +579,8 @@ if [ "$output" == "console" ]; then
     [ -f ~/.dir_colors   ] && match_lhs="${match_lhs}$(<~/.dir_colors)"
     [ -f /etc/DIR_COLORS ] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
     [ -z "$match_lhs" ] \
-	    && type -P dircolors >/dev/null \
-	    && match_lhs=$(dircolors --print-database)
+      && type -P dircolors >/dev/null \
+      && match_lhs=$(dircolors --print-database)
     [[ $'\n'$match_lhs == *$'\n'"TERM "${safe_term}* ]] && use_color=true
   else
     use_color=true
@@ -604,8 +606,7 @@ for cl in `echo $cluster | tr ',' ' '`; do
 done
 
 [ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
-# it's here because createnode function re-reads cloud config
-[ -n "$SSHPORT" ] || SSHPORT=22
+[ -n "$SSHPORT" ] || SSHPORT=22  # createnode function re-reads cloud config
 
 
 if [ -z "$list" ]; then
