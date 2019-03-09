@@ -138,7 +138,7 @@ genline() {
       esac
     fi
     if [ -n "$ipr" ]; then
-      echo "$ipr \"$1 $metascript\""
+      echo "$ipr $metascript"
     else
       echo -e "# ERROR generating full line:\n# $metatype $metascript\n# either meta type is unknown or it is empty and no shebang in the script"
       log "ERROR generating full line from $@ (metatype not defined)"
