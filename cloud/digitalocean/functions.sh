@@ -65,17 +65,20 @@ Authorization: Bearer $DO_TOKEN"
 find_id_by_name() {
   IAMACHILD=1 
   local id=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "name|$1" "id"`
-  [ -z "$id" ] && echo "$id" || show_nodes --all --view=raw | readpath - 0/droplets "name|$1" "id"
+  [ -n "$id" ] && echo "$id" || show_nodes --all --view=raw | readpath - 0/droplets "name|$1" "id"
 }
 
 find_name_by_id() {
   IAMACHILD=1 
   local name=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "id|$1" "name"`
-  [ -z "$name" ] && echo "$name" || show_nodes --all --view=raw | readpath - 0/droplets "id|$1" "name"
+  [ -n "$name" ] && echo "$name" || show_nodes --all --view=raw | readpath - 0/droplets "id|$1" "name"
 }
 
 find_id_by_ip() {
-  IAMACHILD=1 
-  local id=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id"`
-  [ -z "$id" ] && echo "$id" || show_nodes --all --view=raw | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id"
+  id=`grep "|$ip|" "$M_ROOT/cloud/nodes.list.${CLOUD}" | cut -sd'|' -f1`
+  if [ -z "$id" ]; then
+    IAMACHILD=1 
+    local id=`show_nodes --all --view=raw --noupdate | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id"`
+  fi
+  [ -n "$id" ] && echo "$id" || show_nodes --all --view=raw | readpath - 0/droplets "networks/v4/[0-9]*/ip_address|$1" "id"
 }
