@@ -129,7 +129,7 @@ genline() {
     ;;
   *)
     # finding out from shebang
-    ipr=`head -1 "$metascript" 2>/dev/null || log "$metascript not found" | grep ^#! | cut -b 3- | awk '{print $1}'`
+    ipr=`head -1 "$metascript" 2>/dev/null | grep ^#! | cut -b 3- | awk '{print $1}'`
     if [ -n "$ipr" ] ; then
       case $ipr in
         runlocal|local) ipr="local" ;;
