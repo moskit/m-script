@@ -11,7 +11,7 @@ LOG="$M_ROOT/logs/cloud.log"
 
 debug=false
 
-possible_options="cloud id name ip return verbose cluster help updatelist onlyid log_request"
+possible_options="cloud id name ip return verbose cluster help updatelist onlyid log_request quick"
 necessary_options=""
 
 if [ -n "$help" ]; then
@@ -61,11 +61,23 @@ SERVICE="droplets/$id"
 AUTHMETHOD=header
 
 [ -n "$verbose" ] && log "sending request"
+if [ -n "$quick" ]; then
+  grep "^$id|" "$M_ROOT/cloud/node.ids.$CLOUD"
+  proper_exit 0 66
+fi
 reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
 echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
 [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 79
 [ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"`" && proper_exit 1 80
-echo "$reqparsed"
+id=`echo "$reqparsed" | readpath - 0/droplet/id`
+if [ "_$NETWORK" == "_external" ]; then
+  ip=`echo "$reqparsed" | readpath - 0/droplet/networks/v4 "type|public" "ip_address"`
+else
+  ip=`echo "$reqparsed" | readpath - 0/droplet/networks/v4 "type|private" "ip_address"`
+fi
+region=`echo "$reqparsed" | readpath - 0/droplet/region/slug`
+grep -q "^$id|$ip|$region$" "$M_ROOT/cloud/node.ids.$CLOUD" || echo "$id|$ip|$region" >> "$M_ROOT/cloud/node.ids.$CLOUD"
+echo "$id|$ip|$region"
 proper_exit 0 82
 
 
