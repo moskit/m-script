@@ -58,9 +58,10 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       fi
     fi
   else
-    therole=`echo "$therest" | cut -sd'/' -f1`
-    theflavor=`echo "$therest" | cut -sd'/' -f2`
+    therole=`eval "echo \"$therest\"" | cut -sd'/' -f1`
+    theflavor=`eval "echo \"$therest\"" | cut -sd'/' -f2`
     if [ -z "$therole" ] && [ -z "$theflavor" ]; then
+      therest=`eval "echo \"$therest\""`
       [ -d "$ROLES_ROOT/roles/$therest" ] && therole="$therest" || theflavor="$therest"
     fi
     if [ -n "$therole" ]; then
