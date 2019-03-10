@@ -35,30 +35,30 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
         roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$role|" | cut -sd'|' -f2`
         if [ -e "$ROLES_ROOT/roles/$role/$roleflavor/$thescript" ]; then
           metascript="$role/$roleflavor/$thescript"
+          return 0
         fi
         # if not in the configured flavor, then it is in 'common'
         if [ -e "$ROLES_ROOT/roles/$role/common/$thescript" ]; then
           metascript="$role/common/$thescript"
+          return 0
         fi
       fi
       if [ -z "$metascript" ]; then
         if [ -e "$ROLES_ROOT/roles/common/$roleflavor/$thescript" ]; then
           metascript="common/$roleflavor/$thescript"
+          return 0
         elif [ -e "$ROLES_ROOT/roles/common/$roleflavor/$thescript" ]; then
           metascript="common/common/$thescript"
+          return 0
         fi
       fi
-      if [ -z "$metascript" ]; then
-        echo "metascript \"$metascript\" not found"
+      thescript=$(cd $ROLES_ROOT/roles; find -name "$thescript")
+      if [ -n "$thescript" ]; then
+        log "$thescript found in other role(s):\n$thescript"
         return 1
-      else
-        thescript=$(cd $ROLES_ROOT/roles; find -name "$thescript")
-        if [ -n "$thescript" ]; then
-          echo -e "$thescript found in other role(s):\n$thescript"
-          return 1
-        fi
       fi
-    fi
+      log "metascript \"$metascript\" not found"
+      return 1
   else
     therole=`eval "echo \"$therest\"" | cut -sd'/' -f1`
     theflavor=`eval "echo \"$therest\"" | cut -sd'/' -f2`
@@ -70,19 +70,23 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$therole|" | cut -sd'|' -f2`
       if [ -e "$ROLES_ROOT/roles/$therole/$roleflavor/$thescript" ]; then
         metascript="$therole/$roleflavor/$thescript"
+        return 0
       fi
       # if not in the configured flavor, then it is in 'common'
       if [ -e "$ROLES_ROOT/roles/$therole/common/$thescript" ]; then
         metascript="$therole/common/$thescript"
+        return 0
       fi
     else
       if [ -e "$ROLES_ROOT/roles/$role/$theflavor/$thescript" ]; then
         metascript="$role/$theflavor/$thescript"
+        return 0
       elif [ -e "$ROLES_ROOT/roles/common/$theflavor/$thescript" ]; then
         metascript="common/$theflavor/$thescript"
+        return 0
       else
         msfoundinflavor=$(cd "$ROLES_ROOT/roles"; find */"$theflavor" -name "$thescript")
-        [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor" && return 1
+        [ -n "$msfoundinflavor" ] && log "Found: $msfoundinflavor" && return 1
       fi
     fi
   fi
