@@ -20,17 +20,17 @@ rpath=${0%/*}
 [ -z "$M_ROOT" ] && M_ROOT=$(cd "$rpath/../" && pwd)
 LOG="$M_ROOT/logs/deploy.log"
 
-find_metascript() {
+find_script() {
 if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
   thescript=${1##*/}
   therest=${1%/*}
   [ "_$thescript" == "_$therest" ] && unset therest
   if [ -z "$therest" ]; then
-    # if both role and flavor are defined
+    # if both role and flavor are known
     if [ -e "$ROLES_ROOT/roles/$role/$flavor/$thescript" ]; then
       metascript="$role/$flavor/$thescript"
     else
-      # if role is known, flavor may be bound to it via cluster configuration
+      # if role is known, flavor may be bound to it in cluster configuration
       if [ -n "$role" ]; then
         roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$role|" | cut -sd'|' -f2`
         if [ -e "$ROLES_ROOT/roles/$role/$roleflavor/$thescript" ]; then
@@ -42,17 +42,19 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
         fi
       fi
       if [ -z "$metascript" ]; then
-        # last resort
-        metascript=$(cd "$ROLES_ROOT/roles"; find -name "$thescript")
+        if [ -e "$ROLES_ROOT/roles/common/$roleflavor/$thescript" ]; then
+          metascript="common/$roleflavor/$thescript"
+        elif [ -e "$ROLES_ROOT/roles/common/$roleflavor/$thescript" ]; then
+          metascript="common/common/$thescript"
+        fi
       fi
       if [ -z "$metascript" ]; then
         echo "metascript \"$metascript\" not found"
         return 1
       else
-        if [ `echo "$metascript" | wc -l` -gt 1 ]; then
-          echo "Found more than one scripts with the name ${thescript}:"
-          echo "$metascript"
-          echo "Please narrow the search conditions"
+        thescript=$(cd $ROLES_ROOT/roles; find -name "$thescript")
+        if [ -n "$thescript" ]; then
+          echo -e "$thescript found in other role(s):\n$thescript"
           return 1
         fi
       fi
@@ -65,21 +67,22 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       [ -d "$ROLES_ROOT/roles/$therest" ] && therole="$therest" || theflavor="$therest"
     fi
     if [ -n "$therole" ]; then
-      metascript=$(cd "$ROLES_ROOT/roles"; find "$therole" -name "$thescript")
-      if [ -z "$metascript" ]; then
-        msfoundinflavor=$(cd "$ROLES_ROOT/roles"; find */"$theflavor" -name "$thescript")
-        echo -e -n "Script $metascript not found "
-        [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
-        return 1
+      roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$therole|" | cut -sd'|' -f2`
+      if [ -e "$ROLES_ROOT/roles/$therole/$roleflavor/$thescript" ]; then
+        metascript="$therole/$roleflavor/$thescript"
+      fi
+      # if not in the configured flavor, then it is in 'common'
+      if [ -e "$ROLES_ROOT/roles/$therole/common/$thescript" ]; then
+        metascript="$therole/common/$thescript"
       fi
     else
       if [ -e "$ROLES_ROOT/roles/$role/$theflavor/$thescript" ]; then
         metascript="$role/$theflavor/$thescript"
+      elif [ -e "$ROLES_ROOT/roles/common/$theflavor/$thescript" ]; then
+        metascript="common/$theflavor/$thescript"
       else
         msfoundinflavor=$(cd "$ROLES_ROOT/roles"; find */"$theflavor" -name "$thescript")
-        echo -e -n "Script $metascript not found"
-        [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor"
-        return 1
+        [ -n "$msfoundinflavor" ] && echo -e "\n  Found: $msfoundinflavor" && return 1
       fi
     fi
   fi
@@ -93,7 +96,7 @@ genline() {
     shift
   fi
   metascript=$@
-  find_metascript "$metascript" || return 1
+  find_script "$metascript" || return 1
   case $metatype in
   local)
     echo "local \"$metascript\""
@@ -181,7 +184,7 @@ run_meta() {
     P="--ignoreipnotpresent"
   fi
   if [ -n "$metatype" ] && [ -n "$metascript" ] ; then
-    find_metascript "$metascript" || return 1
+    find_script "$metascript" || return 1
     [ -e "$CURRTASKDIR/$metascript" ] && rm "$CURRTASKDIR/$metascript"
     [ -e "$CURRTASKDIR/$metascript.var" ] && rm "$CURRTASKDIR/${metascript}.var"
     deploy.run --type=$metatype --file=$metascript --ip=$ip --key="$KEY" --cluster="$cluster" --role="$role" --flavor="$flavor" --timestamp=$timestampact --task="$task" $dry $V $D $I $F $P $SU
