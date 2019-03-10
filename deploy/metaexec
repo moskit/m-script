@@ -30,7 +30,6 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
     if [ -e "$ROLES_ROOT/roles/$role/$flavor/$thescript" ]; then
       metascript="$role/$flavor/$thescript"
     else
-      # if role is known, flavor may be bound to it in cluster configuration
       if [ -n "$role" ]; then
         roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$role|" | cut -sd'|' -f2`
         if [ -e "$ROLES_ROOT/roles/$role/$roleflavor/$thescript" ]; then
@@ -68,6 +67,10 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       [ -d "$ROLES_ROOT/roles/$therest" ] && therole="$therest" || theflavor="$therest"
     fi
     if [ -n "$therole" ]; then
+      if [ -e "$ROLES_ROOT/roles/$therole/$flavor/$thescript" ]; then
+        metascript="$therole/$flavor/$thescript"
+        return 0
+      fi
       roleflavor=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -sd'|' -f10,11 | grep "^$therole|" | cut -sd'|' -f2`
       if [ -e "$ROLES_ROOT/roles/$therole/$roleflavor/$thescript" ]; then
         metascript="$therole/$roleflavor/$thescript"
