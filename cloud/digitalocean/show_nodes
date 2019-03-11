@@ -131,6 +131,7 @@ list_nodes() {
   IFS=$IFSORIG
 }
 
+qparams="per_page=100"
 if [ -z "$noupdate" ]; then
   [ -n "$verbose" ] && log "sending request"
   reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
