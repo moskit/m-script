@@ -16,6 +16,8 @@ DEFAULT_REGION=""
 # external
 # Default: internal
 NETWORK=
+# Whether create internal network interface. Default: true if NETWORK=internal, otherwise false.
+CREATE_INTERNAL=
 
 # In case you are using non-standard SSH port
 SSHPORT=

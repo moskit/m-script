@@ -49,7 +49,11 @@ fi
 nodename=`generate_name $cluster` || proper_exit 52
 [ -n "$userdata" ] && userdata="\"$userdata\"" || userdata=null
 [ -z "$NETWORK" ] && NETWORK=internal
-[ "_$NETWORK" == "_internal" ] && privatenet=true || privatenet=false
+if $CREATE_INTERNAL; then
+  privatenet=true
+else
+  [ "_$NETWORK" == "_internal" ] && privatenet=true || privatenet=false
+fi
 image=`echo "$clusterconf" | cut -sd'|' -f6`
 [ -z "$image" ] && echo "image not specified" && proper_exit 57
 POSTBODY="{\"name\": \"$nodename\",
