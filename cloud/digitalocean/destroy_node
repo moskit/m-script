@@ -81,7 +81,7 @@ if [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ]; then
   ip=`grep "^$id|" "$M_ROOT/cloud/node.ids.${CLOUD}" | cut -sd'|' -f2`
   sed -i "/^$ip|/d" "$M_ROOT/nodes.list" "$M_ROOT/cloud/nodes.list.${CLOUD}"
   sed -i "/^$id|/d" "$M_ROOT/cloud/node.ids.${CLOUD}"
-  exit 0
+  proper_exit 0
 else
   echo "$reqparsed"
 fi
