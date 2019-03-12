@@ -67,16 +67,18 @@ AUTHMETHOD=header
 
 list_nodes() {
   [ "_$view" == "_raw" ] && echo "$reqparsed" && return
-  declare -a nodelist
+  declare -a nodelist nodelistext
   IFSORIG=$IFS; IFS='
 '
   nodes=`echo "$reqparsed" | grep -v "\/\"meta\"\/" | cut -sd'/' -f3-`
   for nodesn in `echo "$nodes" | cut -d'/' -f1 | sort -n | uniq` ; do
     nodeObj=`echo "$nodes" | grep "^$nodesn/"`
+    extIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|public" "ip_address"`
+    intIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|private" "ip_address"`
     if [ "_$NETWORK" == "_external" ]; then
-      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|public" "ip_address"`
+      nodeIP=$extIP
     else
-      nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4 "type|private" "ip_address"`
+      nodeIP=$intIP
     fi
     [ -z "$nodeIP" ] && nodeIP=`echo "$nodeObj" | readpath - $nodesn/networks/v4/0/ip_address`
     nodeName=`echo "$nodeObj" | readpath - $nodesn/name`
@@ -94,27 +96,30 @@ list_nodes() {
         [ "_$confRegion" != "_$nodeRegion" ] && log "Cluster of node $nodeName is ${nodeCluster}, but region of $nodeCluster must be $confRegion" && continue
         check_super_cluster $ip "$nodeCluster" && continue
         nodelist+=("$nodeIP|$key|$nodeRegion|$nodeName|$nodeCluster|$CLOUD")
+        nodelistext+=("$intIP|$extIP|$key|$nodeRegion|$nodeName|$nodeCluster|$CLOUD")
       elif [ -n "$all" ]; then
         nodelist+=("$nodeIP||$nodeRegion|$nodeName||$CLOUD")
+        nodelistext+=("$intIP|$extIP||$nodeRegion|$nodeName|$nodeCluster|$CLOUD")
       fi
     elif [ -n "$all" ]; then
       nodelist+=("$nodeIP||$nodeRegion|$nodeName||$CLOUD")
+      nodelistext+=("$intIP|$extIP||$nodeRegion|$nodeName||$CLOUD")
     fi
   done
   if [ -n "$cluster" ] && [ -z "$update_nodes_list" ]; then
     case $view in
     nodelist)
       if [ "$cluster" == "all" ]; then
-        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
+        for ((i=0; i<${#nodelistext[*]}; i++)); do echo "${nodelistext[$i]}"; done
       else
-        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
+        for ((i=0; i<${#nodelistext[*]}; i++)); do echo "${nodelistext[$i]}"; done | grep "|$cluster|$CLOUD$"
       fi
       ;;
     *)
       if [ "$cluster" == "all" ]; then
-        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done
+        for ((i=0; i<${#nodelistext[*]}; i++)); do echo "${nodelistext[$i]}"; done
       else
-        for ((i=0; i<${#nodelist[*]}; i++)); do echo "${nodelist[$i]}"; done | grep "|$cluster|$CLOUD$"
+        for ((i=0; i<${#nodelistext[*]}; i++)); do echo "${nodelistext[$i]}"; done | grep "|$cluster|$CLOUD$"
       fi
       ;;
     esac
