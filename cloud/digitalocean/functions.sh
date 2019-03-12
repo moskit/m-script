@@ -23,7 +23,7 @@ caller=$(readlink -f "$0")
 callername=${caller##*/}
 CURL=`which curl 2>/dev/null`
 [ -z "$CURL" ] && echo "curl not found" >&2 && exit 1
-CURL="$CURL -s -k"
+CURL="$CURL -s -k --http1.1"
 STAT=`which stat 2>/dev/null`
 [ -z "$STAT" ] && echo "stat not found" >&2 && exit 1
 LOG="$M_ROOT/logs/cloud.log"
