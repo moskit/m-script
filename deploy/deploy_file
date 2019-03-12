@@ -71,6 +71,7 @@ prepare_file() {
     echo "role config for $role not found!"
   fi
   [ -f "${tmpfile}.var" ] && source "${tmpfile}.var"
+  export ip=$IP
   rm -f "$tmpfile" "${tmpfile}.orig"
   cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
@@ -258,6 +259,7 @@ if [ -z "$local" ]; then
     cat "$tmpfile"
   else
     if [ -n "$ip" ] ; then
+      export ip
     # Single destination: region, cluster, cloud are ignored
       if [ `echo "$localip" | grep -c "^$ip$"` -ne 0 ] ; then
         prepare_file
@@ -269,7 +271,6 @@ if [ -z "$local" ]; then
         if `"$M_ROOT"/helpers/mssh $ip test -d "$to"` ; then
           to=${to%/}/${from##*/}
         fi
-        export ip
         prepare_file
         cloudsync --ip=$ip "$tmpfile" "$to"
       fi
@@ -278,8 +279,7 @@ if [ -z "$local" ]; then
       for cl in `echo -e $cluster | tr ',' '\n'` ; do
         for node in `cat "$rpath/../nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
           IP=${node%%|*}
-          ip=$IP
-          export ip
+          export IP
           if [ -n "$region" ] ; then
             REGION=`echo $node | cut -d'|' -f3`
             [ "_$REGION" == "_$region" ] || continue
