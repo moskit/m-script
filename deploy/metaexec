@@ -518,6 +518,17 @@ if [ -z "$flavor" ]; then
   [ -n "$flavor" ] && echo "Using flavor $flavor, default for cluster $cluster"
 fi
 
+for cl in `echo $cluster | tr ',' ' '`; do
+  KEY=`"$M_ROOT"/helpers/find_key cluster "$cl"`
+  if [ -z "$KEY" ]; then
+    KEY=`"$M_ROOT"/helpers/find_key node "$ip"`
+  fi
+  [ -z "$KEY" ] && echo "Access key for cluster $cl not found!" && meta_exit 1 510
+  CL+=( "$cl|$KEY" )
+done
+
+[ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
+
 [ -z "$NODE_CHECKS_NUMBER" ] && NODE_CHECKS_NUMBER=20
 [ -z "$NODE_CHECKS_PERIOD" ] && NODE_CHECKS_PERIOD=30
 
@@ -568,7 +579,7 @@ if [ -n "$newnode" ]; then
     for ((k=0; k<$NODE_CHECKS_NUMBER; k++)); do
       $SSH -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo >>$LOG 2>&1
       if [ $? -ne 0 ]; then
-        echo "Unable to login to the node $ip using key ${KEY}, trying again...">>"$LOG"
+        echo "Unable to login to the node $ip using key \"${KEY}\", trying again...">>"$LOG"
         loggedin=false
         sleep $NODE_CHECKS_PERIOD
       else
@@ -611,20 +622,7 @@ if [ -n "$ip" ]; then
   fi
 fi
 
-# the start of the cluster object cluster|key|flavor required to support
-# multiple clusters in metaexec
-for cl in `echo $cluster | tr ',' ' '`; do
-  KEY=`"$M_ROOT"/helpers/find_key cluster "$cl"`
-  if [ -z "$KEY" ]; then
-    KEY=`"$M_ROOT"/helpers/find_key node "$ip"`
-  fi
-  [ -z "$KEY" ] && echo "Access key for cluster $cl not found!" && meta_exit 1 510
-  CL+=( "$cl|$KEY" )
-done
-
-[ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
 [ -n "$SSHPORT" ] || SSHPORT=22  # createnode function re-reads cloud config
-
 
 if [ -z "$list" ]; then
   if [ -z "$timestamp" ]; then
