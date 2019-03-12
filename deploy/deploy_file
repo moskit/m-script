@@ -269,6 +269,7 @@ if [ -z "$local" ]; then
         if `"$M_ROOT"/helpers/mssh $ip test -d "$to"` ; then
           to=${to%/}/${from##*/}
         fi
+        export ip
         prepare_file
         cloudsync --ip=$ip "$tmpfile" "$to"
       fi
@@ -277,6 +278,8 @@ if [ -z "$local" ]; then
       for cl in `echo -e $cluster | tr ',' '\n'` ; do
         for node in `cat "$rpath/../nodes.list" | grep -vE "^[[:space:]]*$|^[[:space:]]*#"` ; do
           IP=${node%%|*}
+          ip=$IP
+          export ip
           if [ -n "$region" ] ; then
             REGION=`echo $node | cut -d'|' -f3`
             [ "_$REGION" == "_$region" ] || continue
@@ -298,7 +301,6 @@ if [ -z "$local" ]; then
             if `"$M_ROOT"/helpers/mssh $IP test -d "$to"` ; then
               to=${to%/}/${from##*/}
             fi
-            export ip=$IP
             prepare_file
             cloudsync --ip=$IP "$tmpfile" "$to"
           fi
