@@ -46,7 +46,7 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
         if [ -e "$ROLES_ROOT/roles/common/$roleflavor/$thescript" ]; then
           metascript="common/$roleflavor/$thescript"
           return 0
-        elif [ -e "$ROLES_ROOT/roles/common/$roleflavor/$thescript" ]; then
+        elif [ -e "$ROLES_ROOT/roles/common/common/$thescript" ]; then
           metascript="common/common/$thescript"
           return 0
         fi
