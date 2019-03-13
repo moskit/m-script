@@ -21,7 +21,8 @@ rpath=${0%/*}
 LOG="$M_ROOT/logs/deploy.log"
 
 find_script() {
-if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
+  [ -e "$ROLES_ROOT/roles/$1" ] && metascript=$1 && return 0
+  unset metascript
   thescript=${1##*/}
   therest=${1%/*}
   [ "_$thescript" == "_$therest" ] && unset therest
@@ -51,9 +52,9 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
           return 0
         fi
       fi
-      thescript=$(cd $ROLES_ROOT/roles; find -name "$thescript")
-      if [ -n "$thescript" ]; then
-        log "$thescript found in other role(s):\n$thescript"
+      thescriptfound=$(cd $ROLES_ROOT/roles; find -name "$thescript")
+      if [ -n "$thescriptfound" ]; then
+        log "$thescript found in other role(s):\n$thescriptfound"
         return 1
       fi
       log "metascript \"$metascript\" not found"
@@ -94,7 +95,6 @@ if [ ! -e "$ROLES_ROOT/roles/$metascript" ] ; then
       fi
     fi
   fi
-fi
 }
 
 genline() {
