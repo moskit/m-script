@@ -57,7 +57,7 @@ find_script() {
         log "$thescript found in other role(s):\n$thescriptfound"
         return 1
       fi
-      log "metascript \"$metascript\" not found"
+      log "script \"$1\" not found"
       return 1
     fi
   else
