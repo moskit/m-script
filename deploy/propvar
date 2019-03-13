@@ -1,5 +1,5 @@
 #!/bin/bash
 
 [ -z "$CURRTASKDIR" ] && echo "CURRTASKDIR is not defined" && exit 1
-echo -e "$@" >> "$CURRTASKDIR/prop.var"
+echo -e "$@" | tr ' ' '\n' >> "$CURRTASKDIR/prop.var"
 

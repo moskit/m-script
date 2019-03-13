@@ -74,12 +74,12 @@ remote_sync() {
       [ "$from" != "$to" ] && cp -up $from $to || echo "Same file, skipping"
     fi
   else
-    KEY=`$M_ROOT/helpers/find_key node $IP` || continue
+    KEY=`$M_ROOT/helpers/find_key node $IP` || return 1
     if [ -n "$RSYNC" ] ; then
       rsout=`$RSYNC -l $recursive -e "$SSH $TIMEOUT -i \"$KEY\" -p $SSHPORT" "${from%/}" "$SSH_REMOTE_USER"@"${IP}:${to}" 2>&1`
       rsres=$?
       case $rsres in
-        0) echo "Success" && continue ;;
+        0) echo "Success" && return 0 ;;
         127) echo -n "no rsync on the target node ... " ;;
         *) echo -n "$rsout ... " ;;
       esac
