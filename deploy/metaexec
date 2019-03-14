@@ -99,9 +99,7 @@ find_script() {
 
 genline() {
   if [ -n "$2" ]; then
-    metatype=${1%/*}
-    metacond=${1#*/}
-    shift
+    metatype=$1
   fi
   metascript=$@
   find_script "$metascript" || return 1
