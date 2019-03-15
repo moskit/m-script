@@ -68,7 +68,7 @@ fi
 reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
 echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
 [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 79
-[ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"`" && proper_exit 1 80
+[ `echo "$reqparsed" | grep -cvE "\/\"droplet\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep -vE "\/\"droplet\"\/"`" && proper_exit 1 80
 id=`echo "$reqparsed" | readpath - 0/droplet/id`
 if [ "_$NETWORK" == "_external" ]; then
   ip=`echo "$reqparsed" | readpath - 0/droplet/networks/v4 "type|public" "ip_address"`

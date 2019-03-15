@@ -142,7 +142,7 @@ if [ -z "$noupdate" ]; then
   reqparsed=`do_api_request $SERVICE $VERSION $AUTHMETHOD $HTTPMETHOD "" $qparams`
   echo "$reqparsed" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
   [ `echo "$reqparsed" | grep -v ^$ | wc -l` -eq 0 ] && log "parsed response to $rcommand is empty" && proper_exit 1 138
-  [ `echo "$reqparsed" | grep -cvE "\/\"droplets\"\/|\/\"meta\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep Error | cut -d'|' -f2`" && proper_exit 1 139
+  [ `echo "$reqparsed" | grep -cvE "\/\"droplets\"\/|\/\"meta\"\/"` -ne 0 ] && log "request failed with error `echo "$reqparsed" | grep -vE "\/\"droplets\"\/|\/\"meta\"\/"`" && proper_exit 1 139
 else
   # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
   # if no setting, force update is disabled
