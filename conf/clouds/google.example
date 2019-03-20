@@ -3,6 +3,10 @@
 ##########################
 
 CLOUD_PROVIDER=google
+# Environment name, associated with this cloud. Defaults to the name of
+# this cloud (file name minus extension).
+#ENV_NAME=
+
 PROJECT_ID=
 # user of the project's ssh key
 SSH_USER=

@@ -1,4 +1,7 @@
 CLOUD_PROVIDER=digitalocean
+# Environment name, associated with this cloud. Defaults to the name of
+# this cloud (file name minus extension).
+#ENV_NAME=
 API_VERSION=2
 
 # Short, or internal, name is the name of this file without extension.

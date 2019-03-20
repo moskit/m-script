@@ -65,8 +65,8 @@ find_source() {
 
 prepare_file() {
   [ -z "$tmpfile" ] && echo -e "\n*** Full path to the source file not found!\n\n" && exit 1
-  if [ -f "$ROLES_ROOT/conf/$role.conf" ]; then
-    store_vars "$ROLES_ROOT/conf/$role.conf" "${tmpfile}.var"
+  if [ -f "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf" ]; then
+    store_vars "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf" "${tmpfile}.var"
   else
     echo "role config for $role not found!"
   fi
@@ -228,7 +228,7 @@ fi
 ([ -n "$all" ] || [ "$cluster" == "all" ]) && cluster=`cat "$rpath/../conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1`
 #[ `cat "${rpath}/../nodes.list" | grep -v ^$ | grep -v  ^# | grep -v ^[[:space:]]*# | cut -d'|' -f5 | grep -c "$cluster"` -eq 0 ] && [ -z "$test" -a -z "$dry" ] && echo "${rcommand}: no nodes found in cluster $cluster" && exit 1
 [ -z "$flavor" ] && flavor=`cat "$rpath/../conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f10,11 | grep ^$role\| | cut -d'|' -f2`
-[ -n "$verbose" ] && echo "### Reading configuration from $ROLES_ROOT/conf/$role.conf"
+[ -n "$verbose" ] && echo "### Reading configuration from $ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"
 
 find_source
 # fullfrom and realrole are now defined
@@ -239,14 +239,14 @@ if [ -f "${tmpfile}.var" ]; then
   [ -n "$verbose" ] && echo "Reading existing variables"
   source "${tmpfile}.var"
 fi
-[ -f "$ROLES_ROOT/conf/$role.conf" ] && store_vars "$ROLES_ROOT/conf/$role.conf" "${tmpfile}.var"
+[ -f "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf" ] && store_vars "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf" "${tmpfile}.var"
 # file prepared by deploy.run (useful if deploy_file is called from there)
 [ -n "$VARFILE" ] && store_vars "$VARFILE" "${tmpfile}.var"
 ## ROLEINCL - role of symlinked script or script defined in meta  from another
 ## role
 ## realrole - same as ROLEINCL, but when file to deploy is found in that role,
 ## not just script containing deploy_file
-[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/${ROLEINCL}.conf" ] && store_vars "$ROLES_ROOT/conf/${ROLEINCL}.conf" "${tmpfile}.var"
+[ -n "$ROLEINCL" ] && [ -f "$ROLES_ROOT/conf/${ROLEINCL}.${ENV_NAME}.conf" ] && store_vars "$ROLES_ROOT/conf/${ROLEINCL}.${ENV_NAME}.conf" "${tmpfile}.var"
 
 if [ -z "$local" ]; then
 

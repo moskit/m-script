@@ -382,8 +382,8 @@ case $command1 in
         $methodcommand "$f" "$ROLES_ROOT/roles/$param2/$nf"
       fi
     done
-    if [ -e "$ROLES_ROOT/conf/${sourcerole##*/}.conf" ]; then
-      cp "$ROLES_ROOT/conf/${sourcerole##*/}.conf" "$ROLES_ROOT/conf/${param2}.conf"
+    if [ -e "$ROLES_ROOT/conf/${sourcerole##*/}.${ENV_NAME}.conf" ]; then
+      cp "$ROLES_ROOT/conf/${sourcerole##*/}.${ENV_NAME}.conf" "$ROLES_ROOT/conf/${param2}.${ENV_NAME}.conf"
     fi
     ;;
   create)
@@ -414,7 +414,7 @@ case $command1 in
       done
     fi
     [ -d "$ROLES_ROOT/conf" ] || mkdir "$ROLES_ROOT/conf"
-    echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.conf"
+    echo -e '# Here come the variables, shell format, e.g.:\n# VAR=value\n' > "$ROLES_ROOT/conf/${param1}.${ENV_NAME}.conf"
     ;;
   edit)
     role_required
@@ -465,7 +465,7 @@ case $command1 in
         ;;
       conf)
         [ -d "$ROLES_ROOT/conf" ] || mkdir "$ROLES_ROOT/conf"
-        conf="$ROLES_ROOT/conf/${param1##*/}"
+        conf="$ROLES_ROOT/conf/${param1##*/}.${ENV_NAME}.conf"
         echo -e "\nEditing file $conf\n"
         [ -e "$conf" ] || echo "No such file, creating"
         $ED "$conf"
@@ -473,7 +473,7 @@ case $command1 in
       *)
         if [ -z "$command2" ] && [ "_$param1" == "_conf" ]; then
           [ -d "$ROLES_ROOT/conf" ] || mkdir "$ROLES_ROOT/conf"
-          conf="$ROLES_ROOT/conf/${role}.conf"
+          conf="$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"
           echo -e "\nEditing file $conf\n"
           [ -e "$conf" ] || echo "No such file, creating"
           $ED "$conf"
@@ -527,12 +527,12 @@ case $command1 in
         fi
         ;;
       conf)
-        conf="$ROLES_ROOT/conf/${param1##*/}"
+        conf="$ROLES_ROOT/conf/${param1##*/}.${ENV_NAME}.conf"
         cat "$conf"
         ;;
       *)
         if [ -z "$command2" ] && [ "_$param1" == "_conf" ]; then
-          conf="$ROLES_ROOT/conf/${role}.conf"
+          conf="$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"
           cat "$conf"
         else
           echo -e "Usage: role edit meta|script|file|conf NAME\n       NAME can be omitted in case of conf"
@@ -546,7 +546,7 @@ case $command1 in
     [ -z "$ENCRYPT_METHOD" ] && ENCRYPT_METHOD="aes-128-cbc"
     case $command2 in
       conf)
-        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$ROLES_ROOT/conf/${role}.conf"`
+        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/encrypt "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"`
         ;;
       file)
         if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/$param1" ]; then
@@ -571,7 +571,7 @@ case $command1 in
     [ -z "$ENCRYPT_METHOD" ] && ENCRYPT_METHOD="aes-128-cbc"
     case $command2 in
       conf)
-        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$ROLES_ROOT/conf/${role}.conf"`
+        ENCRYPT_PASSWORD=`$ENCRYPT_PASSWORD "$M_ROOT"/helpers/decrypt "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"`
         ;;
       file)
         if [ -h "$ROLES_ROOT/roles/$role/$flavor/files/${param1}.enc" ]; then

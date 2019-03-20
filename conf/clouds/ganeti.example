@@ -4,6 +4,9 @@
 # Local cloud, managed by Ganeti. Xen, KVM, LXC based local/clustered instances
 
 CLOUD_PROVIDER=ganeti
+# Environment name, associated with this cloud. Defaults to the name of
+# this cloud (file name minus extension).
+#ENV_NAME=
 
 # Short, or internal, name is the name of this file without extension.
 # Below is a long name that appears in reports, alerts and web interface
