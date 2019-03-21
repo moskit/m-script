@@ -66,7 +66,7 @@ cr() {
     M_CLUSTER="$cluster"
     echo "Default cluster is $M_CLUSTER"
   else
-    M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${M_ROLE}$ | cut -d'|' -f1`
+    M_CLUSTER=`cat "$rpath/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10,12 | grep \|${CLOUD}$ | grep \|${M_ROLE}\| | cut -sd'|' -f1`
     ncl=`echo -e "$M_CLUSTER" | wc -l`
   [ $ncl -gt 1 ] && M_CLUSTER=`echo -n "$M_CLUSTER" | tr '\n' ','` && echo -e "$ncl clusters found for this role. Default cluster is a list: $M_CLUSTER\nTo set specific cluster, use command 'role set cluster <cluster name>'."
   fi
@@ -76,15 +76,16 @@ cr() {
     export M_CLUSTER
     flavor=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f11`
     export flavor
-    CLOUD=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f12`
+    [ -z "$CLOUD" ] && CLOUD=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f12`
     export CLOUD
   fi
+  source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   set_default_ps
-  [ -f "$ROLES_ROOT/conf/${role}.conf" ] && source "$ROLES_ROOT/conf/${role}.conf"
+  [ -f "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf" ] && source "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"
 }
 
 exitrole() {
-  unset M_ROLE M_CLUSTER CLOUD role flavor cluster
+  unset M_ROLE M_CLUSTER role flavor cluster
   setup_env
   set_default_ps
 }
@@ -112,8 +113,8 @@ match_lhs=""
 [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
 [[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
 [[ -z ${match_lhs}    ]] \
-	&& type -P dircolors >/dev/null \
-	&& match_lhs=$(dircolors --print-database)
+  && type -P dircolors >/dev/null \
+  && match_lhs=$(dircolors --print-database)
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && M_COLOR=1
 
 if [ -n "$M_COLOR" ] ; then

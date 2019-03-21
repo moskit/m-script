@@ -140,7 +140,7 @@ touch "$varfile"
 chmod 600 "$varfile"
 export VARFILE=$varfile
 # common role's conf is sourced here to allow global variables that can be
-# used in other role.confs, but its vars are not saved yet
+# used in other role confs, but its vars are not saved yet
 [ -e "$ROLES_ROOT/conf/common.${ENV_NAME}.conf" ] && source "$ROLES_ROOT/conf/common.${ENV_NAME}.conf" 2>>"$LOG"
 # first goes the actual role. Variables assigned are not being overwritten
 # by included roles, thus actual role has higher priority
@@ -180,7 +180,7 @@ IFS=$IFS2
 # and some other variables
 M_ROOT_REMOTE=`grep "^$cluster|" "$M_ROOT/conf/clusters.conf" | cut -d'|' -f8`
 [ -n "$M_ROOT_REMOTE" ] || M_ROOT_REMOTE=$M_ROOT
-echo "M_ROOT_REMOTE=\"$M_ROOT_REMOTE\"" >> $varfile
+echo -e "M_ROOT_REMOTE=\"$M_ROOT_REMOTE\"\nENV_NAME=\"$ENV_NAME\"" >> $varfile
 # variables propagated from scripts via propvar
 if [ -f "$CURRTASKDIR/prop.var" ]; then
   $debug && echo -e "propagated variables found:\n`cat "$CURRTASKDIR/prop.var"`"

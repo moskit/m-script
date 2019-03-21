@@ -457,16 +457,12 @@ else
   # Cluster must be defined! If it is still not, we'll find it using the role
   if [ -z "$cluster" ]; then
     if [ -z "$role" ]; then
-      if [ -n "$M_ROLE" ]; then
-        role=$M_ROLE
-        # cluster could be defined in role.rc, this has a higher priority
-        [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
-        [ -z "$cluster" ] && cluster=$M_CLUSTER
-      fi
-    else
+      [ -n "$M_ROLE" ] && role=$M_ROLE
+    fi
+    if [ -n "$role" ]; then
       [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
       [ -z "$cluster" ] && cluster=$M_CLUSTER
-      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10,12 | grep \|${CLOUD}$ | grep \|${role}\| | cut -sd'|' -f1`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??
