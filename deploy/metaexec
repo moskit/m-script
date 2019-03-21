@@ -382,6 +382,7 @@ fi
 source "$M_ROOT/conf/deploy.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/lib/deploy_functions.sh"
 
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
@@ -462,7 +463,7 @@ else
     if [ -n "$role" ]; then
       [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
       [ -z "$cluster" ] && cluster=$M_CLUSTER
-      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10,12 | grep \|${CLOUD}$ | grep \|${role}\| | cut -sd'|' -f1`
+      [ -z "$cluster" ] && cluster=`find_cluster_by_role "$role"`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??

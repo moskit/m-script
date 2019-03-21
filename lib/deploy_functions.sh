@@ -84,7 +84,9 @@ ensure() {
     return 1
     ;;
   esac
-  
-  
-  
+}
+
+find_cluster_by_role() {
+  [ -z "$CLOUD" ] && echo "Unable to find cluster for this role: environment variable CLOUD is not specified" && return 1
+  cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10,12 | grep \|${CLOUD}$ | grep \|${1}\| | cut -sd'|' -f1
 }
