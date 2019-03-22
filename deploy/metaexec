@@ -698,6 +698,16 @@ else
   fi
 fi
 
+if [ -n "$ip" ]; then
+  $SSH -p $SSHPORT -i "$KEY" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo -n
+  [ $? -ne 0 ] && echo "Unable to connect to node $ip" && meta_exit 100 702
+else
+  for ip in `get_ips --cluster=$cluster`; do
+    $SSH -p $SSHPORT -i "$KEY" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo -n
+    [ $? -ne 0 ] && echo "Unable to connect to node $ip in cluster $cluster" &&meta_exit 100 705
+  done
+done
+ 
 for meta in `cat "$CURRTASKDIR"/meta` ; do
   meta=`eval "echo \"$meta\""`
   skipthis=false
