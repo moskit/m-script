@@ -141,7 +141,7 @@ check_cluster_limit() {
   [ -z "$limit" ] && return 0
   limit=${limit#*:}
   [ "$limit" == "0" ] && return 0
-  n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_servers --view=none --noupdate --count --cluster=$cluster`
+  n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_nodes --view=none --noupdate --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster limit is ${limit}, current servers number is $n"
   #[ `expr $n \>= 0` -gt 0 ] || return 1
@@ -161,7 +161,7 @@ check_cluster_minimum() {
   [ `expr "$limit" : '.*:'` -eq 0 ] && return 0
   limit=${limit%:*}
   [ "$limit" == "0" ] && return 0
-  n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_servers --view=none --count --cluster=$cluster`
+  n=`IAMACHILD=1 "$M_ROOT/cloud/$CLOUD_PROVIDER"/show_nodes --view=none --count --cluster=$cluster`
   [ -z "$n" ] && n=0
   log "cluster $cluster minimum is ${limit}, current servers number is $n"
   [ `expr $limit \< $n` -gt 0 ] && return 0
