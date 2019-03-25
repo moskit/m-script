@@ -197,7 +197,8 @@ if [ -z "$cloud" ]; then
 fi
 [ -z "$cloud" ] && echo "No cloud found, check your configuration!" && exit 1
 
-source "$M_ROOT/conf/clouds/${cloud}.conf"
+source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
+[ -z "$ENV_NAME" ] && ENV_NAME="local"
 
 export PATH="$M_ROOT/deploy:${M_ROOT}/cloud/${cloud}:${M_ROOT}/helpers:${PATH}"
 [ -n "$SSHPORT" ] || SSHPORT=22

@@ -25,7 +25,7 @@ rpath="${rpath%/*}"
 
 possible_commands="help list clone create edit show set"
 possible_subcommands="list:meta,metas,tasks,scripts,commands,files,roles edit:meta,task,script,command,file show:meta,task,script,command,file set:cluster"
-possible_options="role cluster flavor method all strip"
+possible_options="role cloud cluster flavor method all strip"
 
 printcol() {
   if [ -n "$1" ] ; then
@@ -158,6 +158,10 @@ do
     fi
   done
 done
+
+[ -z "$cloud" ] && cloud=$CLOUD
+source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
+[ -z "$ENV_NAME" ] && ENV_NAME="local"
 
 if [ "_$command1" == "_clone" ]; then 
   [ -z "$method" ] && echo -e "Using default method: copy\n    (other available methods are: symlink, copywithlinks - see 'role --help' for details)" && method="copy"
