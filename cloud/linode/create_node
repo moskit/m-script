@@ -213,9 +213,9 @@ ip_request() {
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}\""
     $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.privateip.resp"
     $dry && return 0
-    intIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`
+    intIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2 | tr -d '"'`
     if [ -z "$intIP" ]; then
-      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2`"
+      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2| tr -d '"'`"
       return 1
     fi
   fi
@@ -231,7 +231,7 @@ metadata_request() {
   $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.update.resp"
   res=`grep \/\"LinodeID\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`
   if [ -z "$res" ]; then
-    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`"
+    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2| tr -d '"'`"
     return 1
   fi
 }
@@ -264,8 +264,6 @@ wait_ready() {
     if [ "_`echo "$jobstatus" | grep \/\\\"HOST_SUCCESS\\\" | cut -sd'|' -f2`" == "_1" ]; then
       log "Job $1 finished"
       return 0
-    else
-      log "  ...`echo "$jobstatus" | grep \/\\\"DURATION\\\" | cut -sd'|' -f2`"
     fi
   done
   return 1
