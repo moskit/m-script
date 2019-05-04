@@ -257,15 +257,15 @@ wait_ready() {
   waittimeout=1200
   waitperiod=10
   checks=`expr $waittimeout / $waitperiod`
-  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}\""
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}&LinodeID=${newid}\""
   for ((i=1; i<$checks; i++)) ; do
     sleep $waitperiod
     jobstatus=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.job.list&JobID=${1}&LinodeID=${newid}" | "$M_ROOT/lib/json2txt"`
-    if [ "_`echo "$jobstatus" | grep \/\"HOST_SUCCESS\" | cut -sd'|' -f2`" == "_1" ]; then
+    if [ "_`echo "$jobstatus" | grep \/\\\"HOST_SUCCESS\\\" | cut -sd'|' -f2`" == "_1" ]; then
       log "Job $1 finished"
       return 0
     else
-      log "  ...`echo "$jobstatus" | grep \/\"DURATION\" | cut -sd'|' -f2`"
+      log "  ...`echo "$jobstatus" | grep \/\\\"DURATION\\\" | cut -sd'|' -f2`"
     fi
   done
   return 1
