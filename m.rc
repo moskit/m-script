@@ -104,7 +104,7 @@ set_default_ps() {
 }
 
 ce() {
-  [ -f "$M_ROOT/.msh.env.${1}" ] && source "$M_ROOT/.msh.env.${1}"
+  [ -f "$M_ROOT/.msh.env.${1}" ] && source "$M_ROOT/.msh.env.${1}" || echo "Environment $1 not found."
 }
 
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
