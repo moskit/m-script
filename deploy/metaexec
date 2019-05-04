@@ -99,9 +99,7 @@ find_script() {
 
 genline() {
   if [ -n "$2" ]; then
-    metatype=${1%/*}
-    metacond=${1#*/}
-    shift
+    metatype=$1
   fi
   metascript=$@
   find_script "$metascript" || return 1
@@ -384,6 +382,7 @@ fi
 source "$M_ROOT/conf/deploy.conf"
 source "$M_ROOT/lib/functions.sh"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/lib/deploy_functions.sh"
 
 [ -n "$cloud" ] && CLOUD=$cloud
 export CLOUD
@@ -459,16 +458,12 @@ else
   # Cluster must be defined! If it is still not, we'll find it using the role
   if [ -z "$cluster" ]; then
     if [ -z "$role" ]; then
-      if [ -n "$M_ROLE" ]; then
-        role=$M_ROLE
-        # cluster could be defined in role.rc, this has a higher priority
-        [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
-        [ -z "$cluster" ] && cluster=$M_CLUSTER
-      fi
-    else
+      [ -n "$M_ROLE" ] && role=$M_ROLE
+    fi
+    if [ -n "$role" ]; then
       [ -e "$ROLES_ROOT/roles/$role/role.rc" ] && source "$ROLES_ROOT/roles/$role/role.rc"
       [ -z "$cluster" ] && cluster=$M_CLUSTER
-      [ -z "$cluster" ] && cluster=`cat "$M_ROOT/conf/clusters.conf" | grep -vE "^[[:space:]]*$|^[[:space:]]*#" | cut -d'|' -f1,10 | grep \|${role}$ | cut -d'|' -f1`
+      [ -z "$cluster" ] && cluster=`find_cluster_by_role "$role"`
       [ -n "$cluster" ] && echo -e "\nUsing cluster ${cluster}, default for role $role"
     fi
     # Still no cluster??
@@ -703,6 +698,16 @@ else
   fi
 fi
 
+if [ -n "$ip" ]; then
+  $SSH -p $SSHPORT -i "$KEY" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo -n
+  [ $? -ne 0 ] && echo "Unable to connect to node $ip" && meta_exit 100 702
+else
+  for ip in `get_ips --cluster=$cluster`; do
+    $SSH -p $SSHPORT -i "$KEY" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo -n
+    [ $? -ne 0 ] && echo "Unable to connect to node $ip in cluster $cluster" &&meta_exit 100 705
+  done
+fi
+ 
 for meta in `cat "$CURRTASKDIR"/meta` ; do
   meta=`eval "echo \"$meta\""`
   skipthis=false

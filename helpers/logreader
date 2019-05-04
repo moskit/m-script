@@ -23,6 +23,7 @@ rpath=${rpath%/*}
 possible_options="file lines maxlines period interval timeformat help verbose resolution amendformat safetylimit method"
 necessary_options="file"
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g'`
+[ -z "$M_TEMP" ] && M_TEMP=/tmp/m_script
 
 amend() {
   amendcomm="echo \"$1\" | $amendformat"
