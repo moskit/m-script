@@ -24,7 +24,7 @@ CURL=`which curl 2>/dev/null`
 
 debug=false
 
-possible_options="cluster state filter region short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists"
+possible_options="cluster state filter region short noupdate view update_node_list forceupdate all status count resolveids cloud update_all_lists"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
@@ -147,7 +147,7 @@ request() {
     kernels=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels" | "$M_ROOT/lib/json2txt"` 
     echo "$kernels" > "$M_TEMP/kernels.resp"
     rm "$M_TEMP/kernels.list" 2>/dev/null
-    echo "$kernels" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$kernels" | grep \/$sn\/ | grep \"KERNELID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/kernels.list" ; done
+    echo "$kernels" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$kernels" | grep \/$sn\/ | grep \"KERNELID\" | cut -sd'|' -f2`|`echo "$kernels" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/kernels.list" ; done
   fi
 }
 
