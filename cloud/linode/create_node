@@ -57,6 +57,7 @@ source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 source "$M_ROOT/lib/functions.sh"
 [ -z "$SSHPORT" ] && SSHPORT=22
+export SSHPORT
 [ -z "$ROOTFS" ] && ROOTFS="ext4"
 lock_cloudops || exit 10
 
@@ -222,6 +223,8 @@ ip_request() {
 }
 
 get_assigned_ip() {
+  log "Sending IP listing request..."
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}\""
   $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" | readpath - '0/DATA' 'ISPUBLIC|1' IPADDRESS
 }
 
@@ -305,6 +308,8 @@ set_hostname() {
 }
 
 boot_request() {
+  log "Sending boot request..."
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.boot&LinodeID=${newid}\""
   $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.boot&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.boot.resp"
 }
 
