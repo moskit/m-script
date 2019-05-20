@@ -79,7 +79,7 @@ cr() {
     [ -z "$CLOUD" ] && CLOUD=`grep ^$M_CLUSTER\| "$rpath/conf/clusters.conf" | cut -d'|' -f12`
     export CLOUD
   fi
-  source "$M_ROOT/conf/clouds/${CLOUD}.conf"
+  [ -n "$CLOUD" ] && source "$M_ROOT/conf/clouds/${CLOUD}.conf"
   set_default_ps
   [ -f "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf" ] && source "$ROLES_ROOT/conf/${role}.${ENV_NAME}.conf"
 }

@@ -56,6 +56,7 @@ M_TEMP="$M_TEMP/cloud/$CLOUD"
 [ -d "$M_TEMP" ] || install -d "$M_TEMP"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
+source "$M_ROOT/lib/functions.sh"
 [ -z "$SSHPORT" ] && SSHPORT=22
 [ -z "$ROOTFS" ] && ROOTFS="ext4"
 lock_cloudops || exit 10

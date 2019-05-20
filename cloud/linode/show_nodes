@@ -24,7 +24,7 @@ CURL=`which curl 2>/dev/null`
 
 debug=false
 
-possible_options="cluster state filter region short noupdate view update_node_list forceupdate all status count resolveids cloud update_all_lists"
+possible_options="cluster state filter region short noupdate view update_node_list update_nodes_list forceupdate all status count resolveids cloud update_all_lists"
 necessary_options=""
 
 ARGV=`echo $@ | sed 's/^--//;s/ --/|/g;s/ /|/g'`
