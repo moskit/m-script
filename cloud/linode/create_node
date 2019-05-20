@@ -225,7 +225,7 @@ ip_request() {
 get_assigned_ip() {
   log "Sending IP listing request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}\""
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" | readpath - '0/DATA' 'ISPUBLIC|1' IPADDRESS
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" | readpath - '0/DATA' 'ISPUBLIC|1' 'IPADDRESS|'
 }
 
 metadata_request() {
@@ -353,6 +353,7 @@ else
     ip_request && log "IPs added" || exit_status=3
     metadata_request && log "Metadata updated" || exit_status=4
     extIP=`get_assigned_ip`
+    find_kernel
     create_config
     $dry || save_details
     boot_request || proper_exit 10 353
