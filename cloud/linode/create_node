@@ -52,8 +52,7 @@ export CLOUD
 [ -n "$dry" ] && dry=true || dry=false
 
 source "$M_ROOT/conf/mon.conf"
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
+[ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP/cloud/$CLOUD"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 source "$M_ROOT/lib/functions.sh"
@@ -66,31 +65,31 @@ lock_cloudops || exit 10
 if ! grep -q "^$cluster|" "$M_ROOT/conf/clusters.conf" ; then echo "Cluster $cluster is not configured"; proper_exit 1 65; fi
 
 flavorid() {
-  grep ^$1\| "$M_TEMP/flavors.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/flavors.list" | cut -sd'|' -f2
 }
 
 imageid() {
-  grep ^$1\| "$M_TEMP/images.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/images.list" | cut -sd'|' -f2
 }
 
 regionid() {
-  grep ^$1\| "$M_TEMP/regions.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/regions.list" | cut -sd'|' -f2
 }
 
 kernelid() {
-  grep ^$1\| "$M_TEMP/kernels.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/kernels.list" | cut -sd'|' -f2
 }
 
 find_image() {
   if [ -n "$image" ]; then
-    if [ ! -f "$M_TEMP/images.resp" ]; then
+    if [ ! -f "$M_TEMP/cloud/$CLOUD/images.resp" ]; then
       $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions\""
-      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt" > "$M_TEMP/images.resp"
+      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/images.resp"
     fi
-    grep -q \/\"DISTRIBUTIONID\"\|${image}$ "$M_TEMP/images.resp" && imageid=$image && log "Image ID for the new node is $imageid (`imageid $imageid`) based on command-line option" && return
+    grep -q \/\"DISTRIBUTIONID\"\|${image}$ "$M_TEMP/cloud/$CLOUD/images.resp" && imageid=$image && log "Image ID for the new node is $imageid (`imageid $imageid`) based on command-line option" && return
   fi
   imageid=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f6`
-  if grep -q \/\"DISTRIBUTIONID\"\|${imageid}$ "$M_TEMP/images.resp" ; then
+  if grep -q \/\"DISTRIBUTIONID\"\|${imageid}$ "$M_TEMP/cloud/$CLOUD/images.resp" ; then
     log "Image ID for the new node is $imageid (`imageid $imageid`) based on the cluster $cluster default"
   else
     log "Image ID $imageid not found, cannot continue"
@@ -100,28 +99,28 @@ find_image() {
 
 find_flavor() {
   if [ -n "$flavor" ]; then
-    if [ ! -f "$M_TEMP/flavors.resp" ]; then
+    if [ ! -f "$M_TEMP/cloud/$CLOUD/flavors.resp" ]; then
       $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans\""
-      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt" > "$M_TEMP/flavors.resp"
+      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/flavors.resp"
     fi
-    grep -q \/\"PLANID\"\|${flavor}$ "$M_TEMP/flavors.resp" && flavorid=$flavor && log "Flavor ID for the new node is $flavorid (`flavorid $flavorid`) based on command-line option" && return
+    grep -q \/\"PLANID\"\|${flavor}$ "$M_TEMP/cloud/$CLOUD/flavors.resp" && flavorid=$flavor && log "Flavor ID for the new node is $flavorid (`flavorid $flavorid`) based on command-line option" && return
   fi
   flavorid=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f5`
-  if grep -q \/\"PLANID\"\|${flavorid}$ "$M_TEMP/flavors.resp" ; then
+  if grep -q \/\"PLANID\"\|${flavorid}$ "$M_TEMP/cloud/$CLOUD/flavors.resp" ; then
     log "Flavor ID for the new node is $flavorid (`flavorid $flavorid`) based on the cluster $cluster default"
   else
     log "Flavor ID $flavorid not found, cannot continue"
     return 1
   fi
-  sn=`grep \/\"PLANID\"\|${flavorid}$ "$M_TEMP/flavors.resp" | cut -sd'/' -f3`
-  maxdisksize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"DISK\" | cut -sd'|' -f2`
+  sn=`grep \/\"PLANID\"\|${flavorid}$ "$M_TEMP/cloud/$CLOUD/flavors.resp" | cut -sd'/' -f3`
+  maxdisksize=`grep \/$sn\/ "$M_TEMP/cloud/$CLOUD/flavors.resp" | grep \/\"DISK\" | cut -sd'|' -f2`
   maxdisksize=`expr $maxdisksize \* 1024`
   log "Max disk size: $maxdisksize"
   if [ -z "$SWAP_PARTITION" ]; then
     swapdisksize=0
     log "Swap disk is not enabled"
   elif [ "$SWAP_PARTITION" == "2xRAM" ]; then
-    ramsize=`grep \/$sn\/ "$M_TEMP/flavors.resp" | grep \/\"RAM\" | cut -sd'|' -f2`
+    ramsize=`grep \/$sn\/ "$M_TEMP/cloud/$CLOUD/flavors.resp" | grep \/\"RAM\" | cut -sd'|' -f2`
     swapdisksize=`expr 2 \* $ramsize`
     log "Swap disk is set to 2xRAM. RAM size is $ramsize, swap disk size is $swapdisksize"
   else
@@ -140,14 +139,14 @@ find_flavor() {
 
 find_region() {
   if [ -n "$region" ]; then
-    if [ ! -f "$M_TEMP/regions.resp" ]; then
+    if [ ! -f "$M_TEMP/cloud/$CLOUD/regions.resp" ]; then
       $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters\""
-      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters" | "$M_ROOT/lib/json2txt" > "$M_TEMP/regions.resp"
+      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/regions.resp"
     fi
-    grep -q \/\"DATACENTERID\"\|${region}$ "$M_TEMP/regions.resp" && regionid=$region && log "flavor ID for the new node is $regionid (`regionid $regionid`) based on command-line option" && return
+    grep -q \/\"DATACENTERID\"\|${region}$ "$M_TEMP/cloud/$CLOUD/regions.resp" && regionid=$region && log "flavor ID for the new node is $regionid (`regionid $regionid`) based on command-line option" && return
   fi
   regionid=`grep ^$cluster\| "$M_ROOT/conf/clusters.conf" | cut -d'|' -f3`
-  if grep -q \/\"DATACENTERID\"\|${regionid}$ "$M_TEMP/regions.resp" ; then
+  if grep -q \/\"DATACENTERID\"\|${regionid}$ "$M_TEMP/cloud/$CLOUD/regions.resp" ; then
     log "Datacenter ID for the new node is $regionid (`regionid $regionid`) based on the cluster $cluster default"
   else
     log "Datacenter ID $regionid not found, cannot continue"
@@ -157,45 +156,45 @@ find_region() {
 
 find_kernel() {
   if [ -n "$KERNEL_ID" ]; then
-    if [ ! -f "$M_TEMP/kernels.resp" ]; then
+    if [ ! -f "$M_TEMP/cloud/$CLOUD/kernels.resp" ]; then
       $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels\""
-      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels" | "$M_ROOT/lib/json2txt" > "$M_TEMP/kernels.resp"
+      $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/kernels.resp"
     fi
-    grep -q \/\"KERNELID\"\|${KERNEL_ID}$ "$M_TEMP/kernels.resp" && kernelid=$KERNEL_ID && log "Kernel ID for the new node is $kernelid (`kernelid $kernelid`) based on cloud configuration" && return
+    grep -q \/\"KERNELID\"\|${KERNEL_ID}$ "$M_TEMP/cloud/$CLOUD/kernels.resp" && kernelid=$KERNEL_ID && log "Kernel ID for the new node is $kernelid (`kernelid $kernelid`) based on cloud configuration" && return
   fi
 }
 
 request() {
   log "Sending request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid\""
-  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.create&DatacenterID=${regionid}&PlanID=$flavorid" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
 }
 
 disk_request() {
   unset jobid
   log "Sending root disk request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootPass=${ROOTPASS}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}\""
-  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootPass=${ROOTPASS}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.rootdisk.resp"
-  jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
-  rootdiskid=`grep \/\"DiskID\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&FromDistributionID=${imageid}&rootPass=${ROOTPASS}&rootSSHKey=${PUBLIC_KEY}&Label=root&Type=${ROOTFS}&Size=${disksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.rootdisk.resp"
+  jobid=`grep \/\"JobID\" "$M_TEMP/cloud/$CLOUD/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
+  rootdiskid=`grep \/\"DiskID\" "$M_TEMP/cloud/$CLOUD/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`
   if [ -n "$jobid" ]; then
     wait_ready $jobid || return 1
   else
-    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`"
+    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/cloud/$CLOUD/${rcommand}.rootdisk.resp" | cut -sd'|' -f2`"
     return 1
   fi
   unset jobid
   if [ -n "$swapdisksize" ]; then
     log "Sending swap disk request..."
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}\""
-    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.swapdisk.resp"
+    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.disk.create&LinodeID=${newid}&Label=swap&Type=swap&Size=${swapdisksize}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.swapdisk.resp"
     $dry && return 0
-    jobid=`grep \/\"JobID\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
-    swapdiskid=`grep \/\"DiskID\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
+    jobid=`grep \/\"JobID\" "$M_TEMP/cloud/$CLOUD/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
+    swapdiskid=`grep \/\"DiskID\" "$M_TEMP/cloud/$CLOUD/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`
     if [ -n "$jobid" ]; then
       wait_ready $jobid || return 1
     else
-      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`"
+      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/cloud/$CLOUD/${rcommand}.swapdisk.resp" | cut -sd'|' -f2`"
       return 1
     fi
   fi
@@ -204,7 +203,7 @@ disk_request() {
 create_config() {
   log "Creating config..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1\""
-  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1&DiskList=${rootdiskd},${swapdiskid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.create_config.resp"
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1&DiskList=${rootdiskd},${swapdiskid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.create_config.resp"
 }
 
 ip_request() {
@@ -212,11 +211,11 @@ ip_request() {
   if [ "_$PRIVATE_IP" == "_yes" ]; then
     log "Sending private IP request..."
     $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}\""
-    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.privateip.resp"
+    $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.addprivate&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.privateip.resp"
     $dry && return 0
-    intIP=`grep \/\"IPADDRESS\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2 | tr -d '"'`
+    intIP=`grep \/\"IPADDRESS\" "$M_TEMP/cloud/$CLOUD/${rcommand}.privateip.resp" | cut -sd'|' -f2 | tr -d '"'`
     if [ -z "$intIP" ]; then
-      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.privateip.resp" | cut -sd'|' -f2| tr -d '"'`"
+      log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/cloud/$CLOUD/${rcommand}.privateip.resp" | cut -sd'|' -f2| tr -d '"'`"
       return 1
     fi
   fi
@@ -229,10 +228,10 @@ get_assigned_ip() {
 metadata_request() {
   log "Sending metadata update request..."
   $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}\""
-  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.update.resp"
-  res=`grep \/\"LinodeID\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2`
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.update&LinodeID=${newid}&Label=${name}&lpm_displayGroup=${cluster}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.update.resp"
+  res=`grep \/\"LinodeID\" "$M_TEMP/cloud/$CLOUD/${rcommand}.update.resp" | cut -sd'|' -f2`
   if [ -z "$res" ]; then
-    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/${rcommand}.update.resp" | cut -sd'|' -f2| tr -d '"'`"
+    log "`grep \/\"ERRORMESSAGE\" "$M_TEMP/cloud/$CLOUD/${rcommand}.update.resp" | cut -sd'|' -f2| tr -d '"'`"
     return 1
   fi
 }
@@ -306,7 +305,7 @@ set_hostname() {
 }
 
 boot_request() {
-  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.boot&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/${rcommand}.boot.resp"
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.boot&LinodeID=${newid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.boot.resp"
 }
 
 log "Checking cluster $cluster limit..."
@@ -337,12 +336,12 @@ exit_status=0
 
 request && log "Request sent" || proper_exit 1 337
 
-errors=`grep \/\"ERRORARRAY\" "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+errors=`grep \/\"ERRORARRAY\" "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | cut -d'|' -f2`
 if [ -n "$errors" ]; then
   echo -n "${errors}" >&2
   proper_exit 1 342
 else
-  newid=`grep \/\"LinodeID\"\| "$M_TEMP/${rcommand}.resp" | cut -d'|' -f2`
+  newid=`grep \/\"LinodeID\"\| "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | cut -d'|' -f2`
   $dry && newid=666
   if [ -n "$newid" ] ; then
     disk_request && log "Disks created" || exit_status=2

@@ -65,9 +65,8 @@ source "$M_ROOT/conf/mon.conf"
 source "$M_ROOT/conf/clouds/${CLOUD}.conf"
 source "$M_ROOT/lib/cloud_functions.sh"
 
-M_TEMP="$M_TEMP/cloud/$CLOUD"
-[ -d "$M_TEMP" ] || install -d "$M_TEMP"
-export IAMACHILD M_TEMP CLOUD
+[ -d "$M_TEMP/cloud/$CLOUD" ] || install -d "$M_TEMP/cloud/$CLOUD"
+export IAMACHILD CLOUD
 lock_cloudops || exit 10
 
 CURL="$CURL -s -k"
@@ -79,26 +78,26 @@ declare -i icount
 [ -n "$filter" ] && filter="${filter},addresses,cluster"
 
 flavorid() {
-  grep ^$1\| "$M_TEMP/flavors.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/flavors.list" | cut -sd'|' -f2
 }
 
 imageid() {
-  grep ^$1\| "$M_TEMP/images.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/images.list" | cut -sd'|' -f2
 }
 
 regionid() {
-  grep ^$1\| "$M_TEMP/regions.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/regions.list" | cut -sd'|' -f2
 }
 
 kernelid() {
-  grep ^$1\| "$M_TEMP/kernels.list" | cut -sd'|' -f2
+  grep ^$1\| "$M_TEMP/cloud/$CLOUD/kernels.list" | cut -sd'|' -f2
 }
 
 request() {
   local updateflavors updateimages updateregions
 
   log "calling API"
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list" | "$rpath/../../lib/json2txt" > "$M_TEMP/${rcommand}.resp"
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.list" | "$rpath/../../lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"
   
   if [ -z "$update_all_lists" ]; then
     updateflavors=false
@@ -106,48 +105,48 @@ request() {
     updateregions=false
   fi
 
-  if [ `cat "$M_TEMP/flavors.list" 2>/dev/null | wc -l` -lt 2 ]; then
+  if [ `cat "$M_TEMP/cloud/$CLOUD/flavors.list" 2>/dev/null | wc -l` -lt 2 ]; then
     updateflavors=true
   fi
-  if [ `cat "$M_TEMP/images.list" 2>/dev/null | wc -l` -lt 2 ]; then
+  if [ `cat "$M_TEMP/cloud/$CLOUD/images.list" 2>/dev/null | wc -l` -lt 2 ]; then
     updateimages=true
   fi
-  if [ `cat "$M_TEMP/regions.list" 2>/dev/null | wc -l` -lt 2 ]; then
+  if [ `cat "$M_TEMP/cloud/$CLOUD/regions.list" 2>/dev/null | wc -l` -lt 2 ]; then
     updateregions=true
   fi
-  if [ `cat "$M_TEMP/kernels.list" 2>/dev/null | wc -l` -lt 2 ]; then
+  if [ `cat "$M_TEMP/cloud/$CLOUD/kernels.list" 2>/dev/null | wc -l` -lt 2 ]; then
     updatekernels=true
   fi
 
   # IPs of all nodes
-  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" > "$M_TEMP/ips.list"
+  $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.ip.list" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/ips.list"
   
   if $updateflavors ; then
     flavors=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.LinodePlans" | "$M_ROOT/lib/json2txt"` 
-    echo "$flavors" > "$M_TEMP/flavors.resp"
-    rm "$M_TEMP/flavors.list" 2>/dev/null
-    echo "$flavors" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$flavors" | grep \/$sn\/ | grep \"PLANID\" | cut -sd'|' -f2`|`echo "$flavors" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/flavors.list" ; done
+    echo "$flavors" > "$M_TEMP/cloud/$CLOUD/flavors.resp"
+    rm "$M_TEMP/cloud/$CLOUD/flavors.list" 2>/dev/null
+    echo "$flavors" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$flavors" | grep \/$sn\/ | grep \"PLANID\" | cut -sd'|' -f2`|`echo "$flavors" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/cloud/$CLOUD/flavors.list" ; done
   fi
   
   if $updateimages ; then
     images=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.distributions" | "$M_ROOT/lib/json2txt"` 
-    echo "$images" > "$M_TEMP/images.resp"
-    rm "$M_TEMP/images.list" 2>/dev/null
-    echo "$images" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$images" | grep \/$sn\/ | grep \"DISTRIBUTIONID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/images.list" ; done
+    echo "$images" > "$M_TEMP/cloud/$CLOUD/images.resp"
+    rm "$M_TEMP/cloud/$CLOUD/images.list" 2>/dev/null
+    echo "$images" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$images" | grep \/$sn\/ | grep \"DISTRIBUTIONID\" | cut -sd'|' -f2`|`echo "$images" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/cloud/$CLOUD/images.list" ; done
   fi
 
   if $updateregions ; then
     regions=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.datacenters" | "$M_ROOT/lib/json2txt"` 
-    echo "$regions" > "$M_TEMP/regions.resp"
-    rm "$M_TEMP/regions.list" 2>/dev/null
-    echo "$regions" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$regions" | grep \/$sn\/ | grep \"DATACENTERID\" | cut -sd'|' -f2`|`echo "$regions" | grep \/$sn\/ | grep \"LOCATION\" | cut -sd'|' -f2`" >> "$M_TEMP/regions.list" ; done
+    echo "$regions" > "$M_TEMP/cloud/$CLOUD/regions.resp"
+    rm "$M_TEMP/cloud/$CLOUD/regions.list" 2>/dev/null
+    echo "$regions" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$regions" | grep \/$sn\/ | grep \"DATACENTERID\" | cut -sd'|' -f2`|`echo "$regions" | grep \/$sn\/ | grep \"LOCATION\" | cut -sd'|' -f2`" >> "$M_TEMP/cloud/$CLOUD/regions.list" ; done
   fi
   
   if $updatekernels ; then
     kernels=`$CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=avail.kernels" | "$M_ROOT/lib/json2txt"` 
-    echo "$kernels" > "$M_TEMP/kernels.resp"
-    rm "$M_TEMP/kernels.list" 2>/dev/null
-    echo "$kernels" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$kernels" | grep \/$sn\/ | grep \"KERNELID\" | cut -sd'|' -f2`|`echo "$kernels" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/kernels.list" ; done
+    echo "$kernels" > "$M_TEMP/cloud/$CLOUD/kernels.resp"
+    rm "$M_TEMP/cloud/$CLOUD/kernels.list" 2>/dev/null
+    echo "$kernels" | cut -sd'/' -f3 | sort | uniq | while read sn ; do echo "`echo "$kernels" | grep \/$sn\/ | grep \"KERNELID\" | cut -sd'|' -f2`|`echo "$kernels" | grep \/$sn\/ | grep \"LABEL\" | cut -sd'|' -f2`" >> "$M_TEMP/cloud/$CLOUD/kernels.list" ; done
   fi
 }
 
@@ -155,14 +154,14 @@ list_nodes() {
   IFS1=$IFS
   IFS='
 '
-  if [ `cat "$M_TEMP/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
-    [ "_$view" == "_raw" ] && cat "$M_TEMP/${rcommand}.resp" && return
+  if [ `cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" 2>/dev/null | wc -l` -gt 0 ]; then
+    [ "_$view" == "_raw" ] && cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" && return
     declare -a nodelist
     # full IP data as returned by api_action=linode.ip.list
-    allips=`cat "$M_TEMP/ips.list"`
-    for sn in `cat "$M_TEMP/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
+    allips=`cat "$M_TEMP/cloud/$CLOUD/ips.list"`
+    for sn in `cat "$M_TEMP/cloud/$CLOUD/${rcommand}.resp" | cut -d'/' -f3 | sort | uniq` ; do
       unset id name istatus extIP intIP IP imageId flavorId region icluster
-      for LINE in `grep "/\"DATA\"/$sn/" "$M_TEMP/${rcommand}.resp"` ; do
+      for LINE in `grep "/\"DATA\"/$sn/" "$M_TEMP/cloud/$CLOUD/${rcommand}.resp"` ; do
         lvar=`echo $LINE | cut -d'|' -f1 | cut -d'/' -f4 | tr -d '"'`
         if [ -n "$filter" ] ; then
           for fvar in `echo -e $filter | tr ',' '\n'` ; do            
@@ -292,7 +291,7 @@ list_nodes() {
       fi
     fi
   else
-    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/${rcommand}.resp and run without --noupdate if necessary."
+    [ -z "$noupdate" ] && echo "No data to output. Check API request result: $M_TEMP/cloud/$CLOUD/${rcommand}.resp" || echo "No data. Check if there is any existing data to output: $M_TEMP/cloud/$CLOUD/${rcommand}.resp and run without --noupdate if necessary."
     proper_exit 1 304
   fi
   IFS=$IFS1
@@ -301,8 +300,8 @@ list_nodes() {
 # force update if the tmp file is older than FORCE_LIST_UPDATE_AFTER
 # if no setting, force update is disabled
 if [ -n "$FORCE_LIST_UPDATE_AFTER" -a -n "$noupdate" ] ; then
-  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/${rcommand}.resp 2>/dev/null || echo 0` || echo 86400)
-  [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] 2>/dev/null && log "$M_TEMP/${rcommand}.resp is older than $FORCE_LIST_UPDATE_AFTER sec, update forced" && unset noupdate
+  tmpfileage=$(expr `date +"%s"` - `stat -c "%Z" $M_TEMP/cloud/$CLOUD/${rcommand}.resp 2>/dev/null || echo 0` || echo 86400)
+  [ $tmpfileage -gt $FORCE_LIST_UPDATE_AFTER ] 2>/dev/null && log "$M_TEMP/cloud/$CLOUD/${rcommand}.resp is older than $FORCE_LIST_UPDATE_AFTER sec, update forced" && unset noupdate
 fi
 if [ -z "$noupdate" ] ; then
   request
