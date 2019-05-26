@@ -307,7 +307,7 @@ set_hostname() {
     fi
     [[ $sshres -eq 0 ]] && break
     sleep 2
-  fi
+  done
   return $sshres
 }
 
