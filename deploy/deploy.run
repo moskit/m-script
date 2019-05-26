@@ -230,6 +230,8 @@ if [ "$type" == "remote" ]; then
   if [ -n "$ips" ]; then
     for IP in $ips ; do
       find_name $IP
+      sed -i '/^ip=/d' "$varfile"
+      echo "ip=$IP" >> "$varfile"
       if [ "_$nosudo" == "_yes" ]; then
         # install remote workdir
         $SSH -p $SSHPORT -i "$key" "$SSH_REMOTE_USER"@"$IP" install -d "$CURRTASKDIR/${file%/*}" >> "$M_ROOT/logs/deploy.log" 2>&1 || exit 1
@@ -317,7 +319,7 @@ else
 fi
 IFS=$IFS1
 
-unset ip cluster type file key role flavor result
+unset ip IP cluster type file key role flavor result
 exit $RETVAL
 
 
