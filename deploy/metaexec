@@ -393,7 +393,7 @@ export CLOUD
 [ -z "$M_DEPL_WORK_DIR" ] && M_DEPL_WORK_DIR=/root/deploy.tmp
 [ -z "$SSH" ] && echo "SSH client not found!" && meta_exit 1 511
 [ -n "$SSHPORT" ] || SSHPORT=22
-
+export SSHPORT
 export PATH="$M_ROOT/deploy:$M_ROOT/cloud/common:$M_ROOT/helpers:$PATH"
 [ -n "$task" ] || task=notask
 [ -n "$ignoreipnotpresent" -o -n "$force" -o -n "$ignorenocluster" ] && ignorenocluster="yes" && force="yes"

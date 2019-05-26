@@ -203,8 +203,8 @@ disk_request() {
 
 create_config() {
   log "Creating config..."
-  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1\""
-  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1&DiskList=${rootdiskd},${swapdiskid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.create_config.resp"
+  $debug && log "[DEBUG] $CURL -X GET \"${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1&DiskList=${rootdiskid},${swapdiskid}\""
+  $dry || $CURL -X GET "${LIN_APIURL}/?api_key=${LIN_AUTH_KEY}&api_action=linode.config.create&LinodeID=${newid}&KernelID=${kernelid}&Label=${name}_config&helper_network=1&DiskList=${rootdiskid},${swapdiskid}" | "$M_ROOT/lib/json2txt" > "$M_TEMP/cloud/$CLOUD/${rcommand}.create_config.resp"
 }
 
 ip_request() {
