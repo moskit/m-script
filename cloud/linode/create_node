@@ -296,13 +296,14 @@ printreturn() {
 }
 
 set_hostname() {
+  [ -n "$extIP" ] && KEY=`"$M_ROOT"/helpers/find_key node "$extIP"` || KEY=`"$M_ROOT"/helpers/find_key node "$intIP"`
   for ((i=0; i<100; i++)); do
     if [ -n "$extIP" ]; then
-      $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
+      $SSH  -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${extIP} hostname $name
       sshres=$?
     fi
     if [[ $sshres -ne 0 ]] && [ -n "$intIP" ]; then
-      [ $? -ne 0 ] && $SSH -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
+      [ $? -ne 0 ] && $SSH  -i "$KEY" -p $SSHPORT -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" root@${intIP} hostname $name
       sshres=$?
     fi
     [[ $sshres -eq 0 ]] && break
