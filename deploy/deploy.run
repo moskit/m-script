@@ -92,6 +92,7 @@ fi
 echo -e "\n\n-------------------\n${0} $*\n" >> "$rpath/../logs/deploy.log"
 
 [ -n "$cloud" ] || cloud=$CLOUD
+[ -z "$cloud" ] && echo "Cloud not defined!" && exit 1
 source "$M_ROOT/conf/deploy.conf" || exit 99
 source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
 [ -z "$ENV_NAME" ] && ENV_NAME="local"

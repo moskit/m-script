@@ -160,6 +160,7 @@ do
 done
 
 [ -z "$cloud" ] && cloud=$CLOUD
+[ -z "$cloud" ] && echo "Cloud not defined. Set environment variable CLOUD or run with the --cloud option, or cr into a role." && exit 1
 source "$M_ROOT/conf/clouds/${cloud}.conf" || exit 99
 [ -z "$ENV_NAME" ] && ENV_NAME="local"
 

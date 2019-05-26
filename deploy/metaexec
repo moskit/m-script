@@ -704,7 +704,7 @@ if [ -n "$ip" ]; then
 else
   for ip in `get_ips --cluster=$cluster`; do
     $SSH -p $SSHPORT -i "$KEY" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" -o "PasswordAuthentication=no" "$SSH_REMOTE_USER"@"$ip" echo -n
-    [ $? -ne 0 ] && echo "Unable to connect to node $ip in cluster $cluster" &&meta_exit 100 705
+    [ $? -ne 0 ] && echo "Unable to connect to node $ip in cluster $cluster" && meta_exit 100 705
   done
 fi
  
@@ -738,14 +738,3 @@ IFS=$IFSORIG
 
 echo
 meta_exit 0 597
-
-#echo "Preparing the keys"
-#if [ -f /root/.ssh/id_rsa.pub ] ; then
-#  echo "Using existing key"
-#else
-#  printf "Generating a new key..  "
-#  ssh-keygen -q -f /root/.ssh/id_rsa -N '' && printf "done\n" || printf "error\n"
-#fi
-    
-    
-    

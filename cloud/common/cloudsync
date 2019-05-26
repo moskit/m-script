@@ -171,9 +171,9 @@ localip=`"$M_ROOT"/helpers/localips 2>/dev/null`
 for cld in $CLOUD ; do
 
   if [ -n "$ip" ] ; then
-    cluster= ; region=
+    unset cluster region
     if [ `grep "|${cld}$" "$M_ROOT/nodes.list" | grep -c "^$ip|"` -eq 0 ] ; then
-      # maybe name passed as ip
+      # maybe name is passed as ip
       if [ `grep "|${cld}$" "$M_ROOT/nodes.list" | cut -d'|' -f4 | grep -c "^${ip}$"` -eq 0 ] ; then
         "$rpath"/find_node --cloud=$cld --ip=$ip --updatelist
         [ `grep "|${cld}$" "$M_ROOT/nodes.list" | grep -c "^$ip|"` -eq 0 ] && "$rpath"/find_node --cloud=$cld --name=$name --updatelist

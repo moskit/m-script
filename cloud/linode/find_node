@@ -108,7 +108,9 @@ list_the_cluster() {
         if ! `grep -q "^${ip}|" "$M_ROOT/nodes.list"` ; then
           echo "$ip|$key||$name|$cluster|$CLOUD" >> "$M_ROOT/nodes.list"
         fi
-        echo "$id|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster" >> "$M_ROOT/cloud/${CLOUD}.list"
+        if ! `grep -q "^${id}|" "$M_ROOT/cloud/${CLOUD}.list"`; then
+          echo "$id|$imageid|$flavorid|$name|$regionid|$extIP|$intIP|$cluster" >> "$M_ROOT/cloud/${CLOUD}.list"
+        fi
       fi
     fi
 
