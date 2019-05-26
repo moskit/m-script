@@ -71,7 +71,7 @@ prepare_file() {
     echo "role config for $role not found!"
   fi
   [ -f "${tmpfile}.var" ] && source "${tmpfile}.var"
-  export ip=$IP
+  [ -z "$ip" ] && ip=$IP
   rm -f "$tmpfile" "${tmpfile}.orig"
   cat "$fullfrom" | sed 's|}\%|}\%\\\n|g' | \
     sed "s|\\$|\\\\$|g;s|\%{\(.*\)}\%|$\{\1\}|g" | \
