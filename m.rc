@@ -111,8 +111,9 @@ ce() {
 [ ! -e "$M_ROOT/.dir_colors" ] && $M_DIR_COLORS && cp "$M_ROOT/conf/dir_colors" "$M_ROOT/.dir_colors"
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
 match_lhs=""
-[[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
 [[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
+[[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
+[[ -f "$M_ROOT/.dir_colors" ]] && match_lhs="${match_lhs}$(<$M_ROOT/.dir_colors)"
 [[ -z ${match_lhs}    ]] \
   && type -P dircolors >/dev/null \
   && match_lhs=$(dircolors --print-database)
