@@ -108,7 +108,7 @@ ce() {
   [ -f "$M_ROOT/.msh.env.${1}" ] && source "$M_ROOT/.msh.env.${1}" || echo "Environment $1 not found."
 }
 
-[ ! -e "$M_ROOT/.dir_colors" ] && $M_DIR_COLORS && cp conf/dir_colors "$M_ROOT/.dir_colors"
+[ ! -e "$M_ROOT/.dir_colors" ] && $M_DIR_COLORS && cp "$M_ROOT/conf/dir_colors" "$M_ROOT/.dir_colors"
 safe_term=${TERM//[^[:alnum:]]/?}   # sanitize TERM
 match_lhs=""
 [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
