@@ -73,14 +73,14 @@ if [ -n "$ES_SERVERS" ] ; then
         # no cloud, so it's a single host
         configips="${server}:${port}"
         clusternames="${server}"
-        clustervar="${server}"
+        clustervar=`echo "cluster${server}" | tr -d '\ -\.'`
       else
         [ "_$clustername" == "_$clusternameprev" ] && continue
         clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
         clusternameprev=$clustername
         clusternames="$clusternames $clustername"
         collect_hosts $clusterips
-        clustervar=`echo "$clustername" | tr -d '\ -'`
+        clustervar=`echo "cluster${clustername}" | tr -d '\ -\.'`
       fi
       eval "${clustervar}ips=\"$configips\""
     done
@@ -92,7 +92,7 @@ if [ -n "$ES_SERVERS" ] ; then
       port=`echo "$name" | cut -sd':' -f2`
       clusterips=`"$M_ROOT/cloud/common/get_ips" --cluster="$clustername" | sed "s|$|:$port|"`
       collect_hosts $clusterips
-      clustervar=`echo "$clustername" | tr -d '\ -'`
+      clustervar=`echo "cluster${clustername}" | tr -d '\ -\.'`
       eval "${clustervar}ips=\"$configips\""
       unset clusterips configips
       clusternames="$clusternames $clustername"
@@ -107,7 +107,7 @@ rm "$rpath"/*.es_nodes.list 2>/dev/null
 
 # These are servers clusters, not ES clusters
 for cluster in $clusternames ; do
-  clustervar=`echo "$cluster" | tr -d '\ -'`
+  clustervar=`echo "cluster${cluster}" | tr -d '\ -\.'`
   touch "$rpath/${cluster}.es_nodes.list"
   [ -n "`eval echo -e \\$${clustervar}ips | tr ' ' '\n' | sort | $DIFF -q - "$rpath/${cluster}.es_nodes.list"`" ] && eval echo -e \$${clustervar}ips | tr ' ' '\n' | sort > "$rpath/${cluster}.es_nodes.list"
 done
@@ -230,7 +230,8 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
       hostport="${nodehost}:${clusterport}"
       rname="$nodehost"
     fi
-    eval "${escluster}nodes+=( \"${hostport}\" )"
+    esclustervar=`echo "cluster${esclustername}" | tr -d '\ -\.'`
+    eval "${esclustervar}nodes+=( \"${hostport}\" )"
     echo -e "clusternode_id|$clusternode\nip|$nodehost\nmaster|$ismaster" > "$rpath/data/${escluster}.${rname}.dat.tmp"
     
     if $HANDLE_NODES ; then
@@ -274,7 +275,7 @@ for escluster in `echo -e "$allclusters" | cut -d'|' -f2 | sort | uniq | grep -v
     
   done
   
-  eval echo -e \${${escluster}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${escluster}.nodes.list
+  eval echo -e \${${esclustervar}nodes[*]} | tr ' ' '\n' | sort > "$rpath"/${escluster}.nodes.list
   
   if $HANDLE_NODES ; then
     routes=`($CURL -m 5 "http://$AUTH$clusterhost1/_cluster/state/routing_table" || $CURL -m 10 "http://$AUTH$clusterhost2/_cluster/state/routing_table") | "$M_ROOT"/lib/json2txt`
