@@ -34,7 +34,6 @@ sh "$M_TEMP"/cleanup
 rm -f "$M_TEMP"/cleanup
 $IPT -X M_ACCT_IN
 $IPT -X M_ACCT_OUT
-unset threshold NMAP NETSTAT MAILX possible_options necessary_options s_option s_optname s_optarg found s_param option missing_options ip if M_TEMP IFCFG IPT local_networks forwarded_only i ipt trin trout rpath
 }
 
 declare -i threshold
@@ -49,56 +48,8 @@ MAILX=`which mail 2>/dev/null`
 possible_options="ip if threshold local_networks forwarded_only"
 necessary_options=""
 [ -z "$@" ] && echo "Can't run without options. Possible options are: $possible_options" && exit 1
-for s_option in "$@"
-do
-  found=0
-  case $s_option in
-  --*=*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`  
-    s_optarg=`expr "X$s_option" : 'X[^=]*=\(.*\)'` 
-    ;;
-  --*)
-    s_optname=`expr "X$s_option" : 'X[^-]*-*\([^=]*\)'`    
-    s_optarg='yes' 
-    ;;
-  *=*)
-    echo "Wrong syntax: options must start with a double dash"
-    exit 1
-    ;;
-  *)
-    s_param=$s_option
-    s_optname=''
-    s_optarg=''
-    ;;
-  esac
-  for option in `echo $possible_options | sed 's/,//g'`; do 
-    [ "X$s_optname" == "X$option" ] && eval "$option=$s_optarg" && found=1
-  done
-  [ "X$s_option" == "X$s_param" ] && found=1
-  if [[ $found -ne 1 ]]; then 
-    echo "Unknown option: $s_optname"
-    exit 1
-  fi
-done
-found=0
 
-for option in `echo $necessary_options | sed 's/,//g'`; do
-  [ "X$(eval echo \$$option)" == "X" ] && missing_options="${missing_options}, --${option}" && found=1
-done
-if [[ found -eq 1 ]]; then
-  missing_options=${missing_options#*,}
-  echo "Necessary options: $missing_options not found"
-  exit 1
-fi
-
-if [ -n "$ip" ] && [ -f "$if" ] ; then
-  echo "Either --ip or --if option should be used, not both"
-  exit 0
-fi
-# need to check this before mangling the firewall :)
-if [ "X$local_networks" == "Xyes" ] ; then
-  [ "X$NMAP" == "X" ] && echo "Nmap not found. It's required for this script, sorry" && exit 0
-fi
+get_opts "$@"
 
 if [ -n "$threshold" ] ; then
   [[ $threshold =~ [A-Za-z.,] ]] && echo "Threshold must be an integer. Setting it to 0" && threshold=0
@@ -117,7 +68,7 @@ $IPT -L M_ACCT_IN >/dev/null 2>&1
 $IPT -L M_ACCT_OUT >/dev/null 2>&1
 [[ $? -eq 1 ]] && $IPT -N M_ACCT_OUT || $IPT -F M_ACCT_OUT
 
-if [ "X$forwarded_only" == "Xyes" ] ; then
+if [ "_$forwarded_only" == "_yes" ] ; then
   if [ -n "$if" ] ; then
     for i in $if ; do
       $IPT -A FORWARD -i $i -j M_ACCT_OUT && echo "$IPT -D FORWARD -i $i -j M_ACCT_OUT" >> $M_TEMP/cleanup
@@ -138,7 +89,7 @@ else
       $IPT -A OUTPUT -o $i -j M_ACCT_OUT && echo "$IPT -D OUTPUT -o $i -j M_ACCT_OUT" >> $M_TEMP/cleanup
     done
   else
-    [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+    [ -z "$IFCFG" ] && echo "No ifconfig found" && exit 1
     for i in `$IFCFG | grep -v '^ ' | grep -v ^$ | grep -v ^lo | awk '{print $1}' | tr -d ':'` ; do
       $IPT -A INPUT -i $i -j M_ACCT_IN && echo "$IPT -D INPUT -i $i -j M_ACCT_IN" >> $M_TEMP/cleanup
       $IPT -A OUTPUT -o $i -j M_ACCT_OUT && echo "$IPT -D OUTPUT -o $i -j M_ACCT_OUT" >> $M_TEMP/cleanup
@@ -147,12 +98,12 @@ else
   unset i
 fi
 
-if [ "X$local_networks" == "Xyes" ] ; then
+if [ "_$local_networks" == "_yes" ] ; then
   if [ -n "$ip" ] ; then
     for i in $ip ; do $NMAP -sP ${i%.*}.0/${class} -oG $M_TEMP/nmap.sp.${i} > /dev/null ; done
   fi
   if [ -n "$if" ] ; then
-    [ "X$IFCFG" == "X" ] && echo "No ifconfig found" && exit 1
+    [ -z "$IFCFG" ] && echo "No ifconfig found" && exit 1
   fi
 else
   $NETSTAT -tuapn | grep EST | grep -v '127.0.0.1' | awk '{print $5}' | awk -F':' '{print $1}' | sort | uniq > "$M_TEMP/ips.list"

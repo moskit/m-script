@@ -46,6 +46,14 @@ if [ -f /etc/redhat-release ]; then OS="redhat"; fi
 if [ -f /etc/system-release ]; then
   grep -q -i amazon /etc/system-release && OS="redhat"
 fi
+if [ -z "$OS" ]; then
+  if [ -f /etc/os-release ]; then
+    oslike=`grep ID_LIKE /etc/os-release | cut -sd'=' -f2 | tr -d '"'`
+    if echo "$oslike" | grep -qE "rhel|redhat|fedora"; then OS="redhat"; fi
+    if echo "$oslike" | grep -qE "debian|ubuntu"; then OS="debian"; fi
+  fi
+fi
+echo "OS type (detected): $OS"
 
 if [ -z "$defopt" ] ; then
   echo -e "*** If during the setup process you choose to allow the script to install ***\n*** suggested packages and it fails to install them for whatever reason,  ***\n*** it doesn't cause any problems at all, just run the script again       ***\n*** (you may also want to install failed packages manually before this)   ***\n"

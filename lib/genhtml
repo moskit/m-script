@@ -130,7 +130,7 @@ case $type in
       timerange=`expr \( $timenow - $oldestfiledate \) / 60 + 1`
     fi
     if [ `expr "$timerange" : ".*[^0-9]"` -eq 0 ]; then
-      find "$M_ROOT/www/$folder/" -type f -mmin +$timerange -exec rm '{}' \;
+      find "$M_ROOT/www/$folder/" -type f -name "*.html" -mmin +$timerange -exec rm '{}' \;
     else
       echo "ERROR: old files not removed from $M_ROOT/www/$folder" >> "$M_ROOT/logs/dashboard.log"
     fi

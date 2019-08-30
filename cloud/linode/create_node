@@ -338,7 +338,7 @@ PUBLIC_KEY=`cat "$rpath/../../keys/$pubkey" 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME/.ssh/id_rsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_dsa.pub 2>/dev/null`
 [ -z "$PUBLIC_KEY" ] && PUBLIC_KEY=`cat $HOME_ORIG/.ssh/id_rsa.pub 2>/dev/null`
-[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && echo "No public key found. Tried $M_ROOT/keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 246
+[ -z "$PUBLIC_KEY" ] && [ -z "$nokey" ] && log "No public key found. Tried $M_ROOT/keys/${pubkey}, public keys from $HOME/.ssh and $HOME_ORIG/.ssh" && proper_exit 1 341
 PUBLIC_KEY=`echo "$PUBLIC_KEY" | "$M_ROOT"/lib/urlencode`
 ROOTPASS=`head /dev/urandom -c200 | tr -dc 'a-zA-Z0-9' | cut -b -20`
 
